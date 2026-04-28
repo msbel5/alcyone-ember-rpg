@@ -1,0 +1,16 @@
+*.onnx filter=lfs diff=lfs merge=lfs -text
+*.onnx.data filter=lfs diff=lfs merge=lfs -text
+*.pb filter=lfs diff=lfs merge=lfs -text
+*.gguf filter=lfs diff=lfs merge=lfs -text
+Assets/Plugins/x86_64/*.dll filter=lfs diff=lfs merge=lfs -text
+Assets/Plugins/x86_64/cuda/*.dll filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.png filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.webp filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.tga filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.psd filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.wav filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+Assets/Art/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
