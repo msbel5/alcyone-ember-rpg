@@ -1,10 +1,10 @@
 using System;
 
 // Design note:
-// SliceSaveData is the Unity-serializable DTO tree for Sprint 1 JSON persistence.
+// SliceSaveData is the Unity-serializable DTO tree for slice JSON persistence.
 // Inputs: pure world-state values copied by the mapper.
 // Outputs: JsonUtility-friendly fields with no behavior.
-// Bible reference: MASTER_MECHANICS_BIBLE.md §48, PRD FR-06.
+// Bible reference: MASTER_MECHANICS_BIBLE.md §48, PRD Sprint 1 FR-06, Sprint 2 FR-02 through FR-04.
 namespace EmberCrpg.Data.Save
 {
     [Serializable]
@@ -18,8 +18,12 @@ namespace EmberCrpg.Data.Save
         public ActorSaveData guard;
         public ActorSaveData enemy;
         public InventorySaveData inventory;
+        public InventorySaveData merchantInventory;
         public PickupSaveData[] pickups;
         public TopicSaveData[] topics;
+        public bool doorOpen;
+        public bool guardDoorAccessGranted;
+        public int guardWarningCount;
         public bool encounterActive;
         public string lastNarrative;
     }

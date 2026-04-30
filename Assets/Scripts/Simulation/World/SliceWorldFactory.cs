@@ -1,14 +1,15 @@
 // Design note:
-// SliceWorldFactory builds the smallest fully wired world state for Sprint 1 from pure services.
+// SliceWorldFactory builds the smallest fully wired world state for the playable slice.
 // Inputs: room seed.
-// Outputs: deterministic room, actors, topics, inventory, and pickup state.
-// Bible reference: PRD FR-01 through FR-07.
+// Outputs: deterministic room, actors, inventories, topics, and interaction state.
+// Bible reference: PRD Sprint 1 FR-01 through FR-07, Sprint 2 FR-02 through FR-05.
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Simulation.Inventory;
 
 namespace EmberCrpg.Simulation.World
 {
@@ -16,6 +17,7 @@ namespace EmberCrpg.Simulation.World
     public sealed class SliceWorldFactory
     {
         private readonly ProceduralRoomGenerator _rooms = new ProceduralRoomGenerator();
+        private readonly SliceActorLoadoutFactory _actors = new SliceActorLoadoutFactory();
 
         public SliceWorldState Create(int roomSeed)
         {
@@ -25,31 +27,29 @@ namespace EmberCrpg.Simulation.World
             world.Time = new GameTime(8 * GameTime.MinutesPerHour);
             world.RoomSeed = roomSeed;
             world.Room = room;
-            world.Player = CreateActor(new ActorId(1), "Warden", ActorRole.Player, room.PlayerSpawn, 62, 18, 12, 2, 7, null);
-            world.Talker = CreateActor(new ActorId(2), "Sage Nera", ActorRole.Talker, room.TalkerSpawn, 28, 6, 6, 0, 1, talkTopics);
-            world.Merchant = CreateActor(new ActorId(3), "Quartermaster Ivo", ActorRole.Merchant, room.MerchantSpawn, 34, 8, 8, 1, 1, null);
-            world.Guard = CreateActor(new ActorId(4), "Sentinel Rook", ActorRole.Guard, room.GuardSpawn, 44, 10, 10, 3, 3, null);
-            world.Enemy = CreateActor(new ActorId(5), "Ash Rat", ActorRole.Enemy, room.EnemySpawn, 38, 11, 6, 1, 4, null);
+            world.Player = _actors.Create(new ActorId(1), "Warden", ActorRole.Player, room.PlayerSpawn);
+            world.Talker = _actors.Create(new ActorId(2), "Sage Nera", ActorRole.Talker, room.TalkerSpawn, talkTopics);
+            world.Merchant = _actors.Create(new ActorId(3), "Quartermaster Ivo", ActorRole.Merchant, room.MerchantSpawn);
+            world.Guard = _actors.Create(new ActorId(4), "Sentinel Rook", ActorRole.Guard, room.GuardSpawn);
+            world.Enemy = _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, room.EnemySpawn);
             world.PlayerInventory = new InventoryState(10);
+            world.MerchantInventory = new InventoryState(4);
+            world.MerchantInventory.TryAdd(SliceItemCatalog.CreateGateWrit());
             world.Pickups = new List<RoomPickup>
             {
-                new RoomPickup(new InventoryItem(new ItemId(1001), "ember_shard", "Ember Shard", 1), room.PickupSpawn),
+                new RoomPickup(SliceItemCatalog.CreateEmberShard(), room.PickupSpawn),
             };
             world.Topics = new List<AskAboutTopic>
             {
                 new AskAboutTopic("embers", "Embers", "The embers in this room never fully die; they mark old warding lines."),
-                new AskAboutTopic("gate", "Gate", "The south wall door was sealed after the last tunnel collapse, but the hinge still moves."),
+                new AskAboutTopic("gate", "Gate", "Quartermaster Ivo still issues writs for the south door, but Sentinel Rook honors only sealed paper."),
                 new AskAboutTopic("watch", "Watch", "Sentinel Rook keeps count of every footstep, including yours."),
             };
-            world.LastNarrative = "Explore the room, ask Sage Nera about a topic, then test the encounter turn loop.";
+            world.DoorOpen = false;
+            world.GuardDoorAccessGranted = false;
+            world.GuardWarningCount = 0;
+            world.LastNarrative = "Pick up the Ember Shard, trade for a gate writ, speak to Sentinel Rook, then work the south door.";
             return world;
-        }
-
-        private static ActorRecord CreateActor(ActorId id, string name, ActorRole role, GridPosition position, int mig, int accuracy, int dodge, int armor, int baseDamage, IEnumerable<string> topics)
-        {
-            var stats = new EmberStatBlock(mig, 50, 48, 44, 42, 40);
-            var vitals = new ActorVitals(new VitalStat(24, 24), new VitalStat(18, 18), new VitalStat(12, 12));
-            return new ActorRecord(id, name, role, stats, vitals, position, accuracy, dodge, armor, baseDamage, topics);
         }
     }
 }

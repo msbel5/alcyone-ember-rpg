@@ -2,7 +2,7 @@
 // SliceSaveMapper translates between pure world state and Unity-serializable DTOs.
 // Inputs: SliceWorldState or SliceSaveData snapshots.
 // Outputs: round-trippable save objects with no UnityEngine in Domain/Simulation.
-// Bible reference: PRD FR-06.
+// Bible reference: PRD Sprint 1 FR-06, Sprint 2 FR-02 through FR-04.
 using System.Linq;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Narrative;
@@ -25,13 +25,13 @@ namespace EmberCrpg.Data.Save
                 merchant = ActorSaveMapper.ToData(world.Merchant),
                 guard = ActorSaveMapper.ToData(world.Guard),
                 enemy = ActorSaveMapper.ToData(world.Enemy),
-                inventory = new InventorySaveData
-                {
-                    capacity = world.PlayerInventory.Capacity,
-                    items = world.PlayerInventory.Items.Select(ItemSaveMapper.ToData).ToArray(),
-                },
+                inventory = ToInventoryData(world.PlayerInventory),
+                merchantInventory = ToInventoryData(world.MerchantInventory),
                 pickups = world.Pickups.Select(ItemSaveMapper.ToData).ToArray(),
                 topics = world.Topics.Select(topic => new TopicSaveData { id = topic.Id, label = topic.Label, answer = topic.Answer }).ToArray(),
+                doorOpen = world.DoorOpen,
+                guardDoorAccessGranted = world.GuardDoorAccessGranted,
+                guardWarningCount = world.GuardWarningCount,
                 encounterActive = world.EncounterActive,
                 lastNarrative = world.LastNarrative,
             };
@@ -46,14 +46,33 @@ namespace EmberCrpg.Data.Save
             world.Merchant = ActorSaveMapper.ToActor(data.merchant);
             world.Guard = ActorSaveMapper.ToActor(data.guard);
             world.Enemy = ActorSaveMapper.ToActor(data.enemy);
-            world.PlayerInventory = new InventoryState(data.inventory.capacity);
-            foreach (var item in data.inventory.items)
-                world.PlayerInventory.TryAdd(ItemSaveMapper.ToItem(item));
-            world.Pickups = data.pickups.Select(ItemSaveMapper.ToPickup).ToList();
-            world.Topics = data.topics.Select(topic => new AskAboutTopic(topic.id, topic.label, topic.answer)).ToList();
+            world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
+            world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
+            world.Pickups = (data.pickups ?? new PickupSaveData[0]).Select(ItemSaveMapper.ToPickup).ToList();
+            world.Topics = (data.topics ?? new TopicSaveData[0]).Select(topic => new AskAboutTopic(topic.id, topic.label, topic.answer)).ToList();
+            world.DoorOpen = data.doorOpen;
+            world.GuardDoorAccessGranted = data.guardDoorAccessGranted;
+            world.GuardWarningCount = data.guardWarningCount;
             world.EncounterActive = data.encounterActive;
             world.LastNarrative = data.lastNarrative;
             return world;
+        }
+
+        private static InventorySaveData ToInventoryData(InventoryState inventory)
+        {
+            return new InventorySaveData
+            {
+                capacity = inventory.Capacity,
+                items = inventory.Items.Select(ItemSaveMapper.ToData).ToArray(),
+            };
+        }
+
+        private static InventoryState ToInventoryState(InventorySaveData inventory, int fallbackCapacity)
+        {
+            var state = new InventoryState(inventory?.capacity ?? fallbackCapacity);
+            foreach (var item in inventory?.items ?? new ItemSaveData[0])
+                state.TryAdd(ItemSaveMapper.ToItem(item));
+            return state;
         }
     }
 }
