@@ -42,6 +42,7 @@ namespace EmberCrpg.Data.Save
                 guard = ActorSaveMapper.ToData(world.Guard),
                 enemy = ActorSaveMapper.ToData(world.Enemy),
                 inventory = ToInventoryData(world.PlayerInventory),
+                playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
                 pickups = world.Pickups.Select(ItemSaveMapper.ToData).ToArray(),
                 topics = world.Topics.Select(topic => new TopicSaveData { id = topic.Id, label = topic.Label, answer = topic.Answer }).ToArray(),
@@ -77,6 +78,7 @@ namespace EmberCrpg.Data.Save
             world.Guard = ActorSaveMapper.ToActor(data.guard);
             world.Enemy = ActorSaveMapper.ToActor(data.enemy);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
+            world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
             world.Pickups = (data.pickups ?? new PickupSaveData[0]).Select(ItemSaveMapper.ToPickup).ToList();
             world.Topics = (data.topics ?? new TopicSaveData[0]).Select(topic => new AskAboutTopic(topic.id, topic.label, topic.answer)).ToList();
@@ -89,6 +91,24 @@ namespace EmberCrpg.Data.Save
             return world;
         }
 
+        private static EquipmentSaveData ToEquipmentData(EquipmentState equipment)
+        {
+            return new EquipmentSaveData
+            {
+                slots = new[] { EquipmentSlot.Weapon }
+                    .Select(slot => new EquippedItemSaveData { slot = (int)slot, itemId = equipment.GetEquippedItemId(slot).Value })
+                    .Where(slot => slot.itemId != 0UL)
+                    .ToArray(),
+            };
+        }
+
+        private static EquipmentState ToEquipmentState(EquipmentSaveData data)
+        {
+            var equipment = new EquipmentState();
+            foreach (var slot in data?.slots ?? new EquippedItemSaveData[0])
+                equipment.Equip((EquipmentSlot)slot.slot, new ItemId(slot.itemId));
+            return equipment;
+        }
 
         private static NpcMemorySaveData[] ToNpcMemoryData(NpcMemoryStore store)
         {

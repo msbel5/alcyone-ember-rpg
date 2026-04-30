@@ -1,5 +1,6 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
@@ -20,6 +21,8 @@ namespace EmberCrpg.Tests.EditMode.Save
         {
             var world = new SliceWorldFactory().Create(1337);
             world.Player.MoveTo(world.Merchant.Position.Translate(0, 1));
+            var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
+            new EquipmentService().TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
             world.PlayerInventory.TryAdd(world.Pickups[0].Item);
             world.Pickups[0].Collect();
             new MerchantTradeService().TradeGateWrit(world);
@@ -42,6 +45,8 @@ namespace EmberCrpg.Tests.EditMode.Save
             var loaded = service.LoadFromJson(json);
 
             Assert.That(loaded.PlayerInventory.Contains(SliceItemCatalog.GateWritTemplateId), Is.True);
+            Assert.That(loaded.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon).Id, Is.EqualTo(weapon.Id));
+            Assert.That(loaded.PlayerEquipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(weapon.Id));
             Assert.That(loaded.MerchantInventory.Contains(SliceItemCatalog.GateWritTemplateId), Is.False);
             Assert.That(loaded.MerchantInventory.Contains(SliceItemCatalog.EmberShardTemplateId), Is.True);
             Assert.That(loaded.GuardDoorAccessGranted, Is.True);

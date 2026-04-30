@@ -15,16 +15,16 @@ namespace EmberCrpg.Simulation.Combat
     {
         private readonly BodyPartSelector _bodyParts = new BodyPartSelector();
 
-        public int CalculateHitChance(ActorRecord attacker, ActorRecord defender)
+        public int CalculateHitChance(ActorRecord attacker, ActorRecord defender, int attackerAccuracyBonus = 0)
         {
-            var attackScore = 45 + attacker.Accuracy + attacker.Stats.Agi / 2 + attacker.Stats.Ins / 3;
+            var attackScore = 45 + attacker.Accuracy + attackerAccuracyBonus + attacker.Stats.Agi / 2 + attacker.Stats.Ins / 3;
             var defenseScore = defender.Dodge + defender.Stats.Agi / 3 + defender.Armor;
             return ClampPercent(attackScore - defenseScore);
         }
 
-        public CombatStrikeResult ResolveAttack(ActorRecord attacker, ActorRecord defender, IDeterministicRng rng)
+        public CombatStrikeResult ResolveAttack(ActorRecord attacker, ActorRecord defender, IDeterministicRng rng, int attackerAccuracyBonus = 0, int attackerDamageBonus = 0)
         {
-            var hitChance = CalculateHitChance(attacker, defender);
+            var hitChance = CalculateHitChance(attacker, defender, attackerAccuracyBonus);
             var roll = rng.RollPercent();
             var bodyPart = _bodyParts.Select(rng);
             var result = new CombatStrikeResult();
@@ -42,7 +42,7 @@ namespace EmberCrpg.Simulation.Combat
                 return result;
             }
 
-            var rawDamage = Math.Max(1, attacker.BaseDamage + attacker.Stats.Mig / 5);
+            var rawDamage = Math.Max(1, attacker.BaseDamage + attackerDamageBonus + attacker.Stats.Mig / 5);
             var mitigatedDamage = Math.Max(1, rawDamage - CalculateArmorMitigation(defender, bodyPart));
             defender.ApplyVitals(defender.Vitals.WithHealth(defender.Vitals.Health.Damage(mitigatedDamage)));
 
