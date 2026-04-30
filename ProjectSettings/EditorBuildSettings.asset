@@ -4,6 +4,9 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Sprint4Foundation.unity
+    guid: 92b2f977c6bb4e4ebc6c7ace4f8484a7
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
