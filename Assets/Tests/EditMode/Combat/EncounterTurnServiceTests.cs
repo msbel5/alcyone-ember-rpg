@@ -6,11 +6,11 @@ using EmberCrpg.Simulation.Rng;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Sprint 1's bounded turn loop compromise explicitly.
+// These tests pin Sprint 1's approved encounter-loop deviation explicitly.
 // They verify alternating turns and encounter completion without touching Unity presentation.
 namespace EmberCrpg.Tests.EditMode.Combat
 {
-    /// <summary>Verifies slice-only encounter progression.</summary>
+    /// <summary>Verifies approved Sprint 1 encounter progression.</summary>
     public sealed class EncounterTurnServiceTests
     {
         [Test]

@@ -37,7 +37,7 @@ This sprint is intentionally narrow: one room, one player, three NPC archetypes,
 - HP/Fatigue/Mana direction: `docs/mechanics/MASTER_MECHANICS_BIBLE.md:157`
 - inventory/item kernel direction: `docs/mechanics/ARCHITECTURE.md:173-210`
 
-### Temporary sprint deviation
+### Approved Sprint 1 deviation budget
 The repo lock says RTWP and explicitly rejects a turn-based combat state machine:
 - `docs/mechanics/MASTER_MECHANICS_BIBLE.md:10`
 - `docs/mechanics/ARCHITECTURE.md:9`
@@ -45,7 +45,7 @@ The repo lock says RTWP and explicitly rejects a turn-based combat state machine
 
 The active user addendum explicitly requires “one enemy + turn-based combat.”
 
-For Sprint 1 only, we allow a **bounded encounter turn loop** as a vertical-slice compromise. This must be documented in code comments and summary docs as a sprint-only implementation choice, not a silent long-term architecture rewrite.
+Sprint 1 now has an **approved deviation budget** for a bounded one-vs-one encounter turn loop. This is the accepted combat shape for this sprint, documented in code and sprint docs, while the repo's longer-term RTWP architecture remains intact outside this slice. Inspector reviews conformance to the documented scope, not whether the deviation was allowed.
 
 ## 4. Functional requirements
 

@@ -6,10 +6,10 @@ using EmberCrpg.Simulation.Rng;
 // EncounterTurnService advances Sprint 1's explicit bounded turn loop.
 // Inputs: encounter state, player actor, enemy actor, and deterministic RNG.
 // Outputs: one resolved strike per call plus finish/winner updates.
-// Bible reference: PRD temporary sprint-only encounter compromise for FR-02.
+// Bible reference: PRD approved Sprint 1 deviation budget for FR-02.
 namespace EmberCrpg.Simulation.Combat
 {
-    /// <summary>Slice-only one-vs-one encounter progression built on top of pure combat math.</summary>
+    /// <summary>Approved Sprint 1 one-vs-one encounter progression built on top of pure combat math.</summary>
     public sealed class EncounterTurnService
     {
         private readonly CombatMathService _combat = new CombatMathService();

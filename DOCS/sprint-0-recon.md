@@ -76,19 +76,19 @@ This repo has a lot of source material:
 So Sprint 1 risk is not “missing design.”
 The risk is translating scope into a thin, testable, deterministic C# slice without overbuilding.
 
-## 4. Sprint 1 scope adjustment forced by recon
+## 4. Approved Sprint 1 deviation budget
 
 ### Conflict
 The architecture says RTWP only; the user success criteria says one enemy turn-based combat must work.
 
-### Smallest viable adjustment
-Sprint 1 will implement a **slice-only deterministic encounter turn loop** instead of redefining the whole game architecture.
+### Approved adjustment
+Sprint 1 will implement a **bounded deterministic encounter turn loop** under an approved deviation budget instead of redefining the whole game architecture.
 
 Interpretation:
 - exploration stays lightweight real-time bootstrap level
 - combat entry switches into a deterministic alternating-turn encounter service
-- this is treated as a vertical-slice compromise, not a permanent engine-wide commitment
-- the deviation is documented in the Sprint 1 PRD and roadmap, so Inspector can review it as an explicit decision instead of a silent contradiction
+- this is treated as an approved Sprint 1 scope decision, not a silent architecture drift
+- the deviation is documented in the Sprint 1 PRD, roadmap, code comments, and Sprint 1 summary so Inspector can review scope conformance instead of debating legitimacy
 
 Why this is the smallest adjustment:
 - it satisfies the user’s stated success criteria
@@ -123,7 +123,7 @@ Implement the thinnest playable path that proves the repo can move from scaffold
 
 ### Captain
 - write Sprint 1 PRD and roadmap
-- lock the temporary combat-slice deviation in writing
+- lock the approved combat deviation budget in writing
 - delegate heavy mechanics implementation to Builder
 
 ### Builder
@@ -134,7 +134,7 @@ Implement the thinnest playable path that proves the repo can move from scaffold
 
 ### Inspector
 - verify Bible/architecture alignment
-- explicitly review the temporary encounter-loop deviation
+- explicitly review conformance to the approved encounter-loop deviation budget
 - reject anything undocumented or untested
 
 ### Archivist

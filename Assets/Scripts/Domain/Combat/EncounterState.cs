@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// EncounterState tracks Sprint 1's temporary bounded turn loop used only for the vertical slice.
+// EncounterState tracks Sprint 1's approved Sprint 1 bounded turn loop used by the vertical slice.
 // Inputs: player/enemy actor ids and resolved combat turn summaries.
 // Outputs: deterministic turn ownership, finish state, and accumulated log lines.
-// Bible reference: PRD temporary sprint deviation for FR-02.
+// Bible reference: PRD approved Sprint 1 deviation budget for FR-02.
 namespace EmberCrpg.Domain.Combat
 {
-    /// <summary>Bounded one-vs-one encounter state for the slice-only turn compromise.</summary>
+    /// <summary>Bounded one-vs-one encounter state for the approved Sprint 1 combat deviation.</summary>
     public sealed class EncounterState
     {
         private readonly List<string> _logLines = new List<string>();
