@@ -15,12 +15,14 @@ namespace EmberCrpg.Presentation.Slice
         private readonly SliceWorldView _view = new SliceWorldView();
 
         private SlicePlayerRig _player;
+        private SliceAudioCueDriver _audio;
         private string _savePath;
 
         private void Awake()
         {
             _savePath = Path.Combine(Application.persistentDataPath, "sprint2-slice.json");
             _player = new GameObject("SlicePlayer").AddComponent<SlicePlayerRig>();
+            _audio = gameObject.GetComponent<SliceAudioCueDriver>() ?? gameObject.AddComponent<SliceAudioCueDriver>();
             _session.StartNewWorld(1337);
             RebuildView();
         }
@@ -31,11 +33,12 @@ namespace EmberCrpg.Presentation.Slice
             HandleInput();
             _player.SnapToGrid(_session.World.Player.Position);
             _view.Sync(_session.World);
+            _audio.Apply(_session.CurrentAtmosphere);
         }
 
         private void OnGUI()
         {
-            GUI.Box(new Rect(10f, 10f, 760f, 230f), SliceHudFormatter.Format(_session.World, _savePath, _session.Status, _session.DescribeNextActor()));
+            GUI.Box(new Rect(10f, 10f, 820f, 255f), SliceHudFormatter.Format(_session.World, _savePath, _session.Status, _session.DescribeNextActor(), _session.CurrentAtmosphere));
         }
 
         private void HandleInput()

@@ -38,10 +38,12 @@ namespace EmberCrpg.Domain.Inventory
             return true;
         }
 
-        public bool TryRemove(string templateId, int quantity)
+        public bool TryRemove(string templateId, int quantity, EquipmentState equipment = null)
         {
             var existing = _items.FirstOrDefault(candidate => candidate.TemplateId == templateId);
             if (existing == null || existing.Quantity < quantity)
+                return false;
+            if (equipment != null && equipment.IsEquipped(existing.Id) && quantity >= existing.Quantity)
                 return false;
 
             existing.RemoveQuantity(quantity);
