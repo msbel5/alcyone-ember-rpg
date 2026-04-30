@@ -1,0 +1,39 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# IDE/generated project files
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Prototype art — 1.5GB of generated/third-party imagery from the
+# ember-rpg scaffold. Kept on disk but out of git until real Ember
+# art lands. Re-include selectively.
+Assets/Art/Prototype/
+Assets/Art/Prototype.meta
+
+# References (locally cloned/extracted, NOT pushed - too big)
+references/

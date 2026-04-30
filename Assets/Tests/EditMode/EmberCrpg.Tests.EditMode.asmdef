@@ -1,0 +1,23 @@
+{
+    "name": "EmberCrpg.Tests.EditMode",
+    "rootNamespace": "EmberCrpg.Tests.EditMode",
+    "references": [
+        "EmberCrpg.Domain",
+        "EmberCrpg.Simulation",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
