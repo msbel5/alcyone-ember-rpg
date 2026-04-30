@@ -253,6 +253,9 @@ IsWerewolf(actor) / IsVampire(actor)          -> bool
 
 // Memory queries (Ember extension)
 GetNpcMemory(npc)                             -> NpcMemoryView       // events, dispositionHistory, dialogueSeen
+GetDialogueContext(npc, topic)                -> DialogueMemoryContext // new/repeated/well-worn from dialogueSeen + topic events
+GetGuardContext(npc, passage)                 -> GuardMemoryContext    // stance from passage requests + clearance history
+GetMerchantContext(npc)                       -> MerchantMemoryContext // familiarity from transactions/trade events
 GetWitnessedCrimes(npc)                       -> List<CrimeEvent>
 HasMet(npc, other)                            -> bool
 GetTransactionLog(npc)                        -> List<TransactionRecord>
@@ -468,8 +471,9 @@ For when implementation begins, here are the canonical source files to open:
 - `Assets/Scripts/Domain/Memory/CrimeWitnessLog.cs`
 - `Assets/Scripts/Data/Saves/NpcMemoryData_v1.cs`
 
-**DM API (Ember — does not exist yet; build here)**
-- `Assets/Scripts/Domain/DM/IDmQueryService.cs` — Tier 1 + 2
-- `Assets/Scripts/Domain/DM/IDmRollService.cs` — Tier 3
-- `Assets/Scripts/Domain/DM/IDmMutationService.cs` — Tier 4
+**DM API (Ember — growing in thin deterministic slices)**
+- `Assets/Scripts/Simulation/Narrative/NpcMemoryQueryService.cs` — current memory-backed Tier 1 query contexts for dialogue, guard stance, and merchant familiarity
+- `Assets/Scripts/Domain/DM/IDmQueryService.cs` — future broader Tier 1 + 2 contract
+- `Assets/Scripts/Domain/DM/IDmRollService.cs` — future Tier 3 contract
+- `Assets/Scripts/Domain/DM/IDmMutationService.cs` — future Tier 4 contract
 - `Assets/Scripts/Simulation/Rng/IRng.cs` — deterministic RNG primitive

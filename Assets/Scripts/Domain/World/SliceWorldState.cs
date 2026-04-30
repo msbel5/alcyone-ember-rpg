@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 
 namespace EmberCrpg.Domain.World
@@ -26,6 +27,7 @@ namespace EmberCrpg.Domain.World
         public InventoryState MerchantInventory;
         public List<RoomPickup> Pickups = new List<RoomPickup>();
         public List<AskAboutTopic> Topics = new List<AskAboutTopic>();
+        public NpcMemoryStore NpcMemory = new NpcMemoryStore();
         public bool DoorOpen;
         public bool GuardDoorAccessGranted;
         public int GuardWarningCount;

@@ -1,4 +1,5 @@
 using System.Linq;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 
 // Design note:
@@ -11,17 +12,36 @@ namespace EmberCrpg.Simulation.Narrative
     /// <summary>Rules-based Ask About shell for the vertical slice.</summary>
     public sealed class AskAboutService
     {
+        private readonly NpcMemoryQueryService _memoryQueries = new NpcMemoryQueryService();
+
         public string Ask(SliceWorldState world, string topicId)
         {
             var topic = world.Topics.FirstOrDefault(candidate => candidate.Id == topicId);
             if (topic == null)
                 return "Sage Nera tilts her head. That topic is still a blank.";
 
-            var firstTime = !world.Talker.AskedTopicIds.Contains(topicId);
+            var context = _memoryQueries.GetDialogueContext(world.NpcMemory, world.Talker.Id, topicId);
+            var memory = world.NpcMemory.GetOrCreate(world.Talker.Id);
             world.Talker.RecordTopic(topicId);
-            return firstTime
-                ? $"Sage Nera says: {topic.Answer}"
-                : $"Sage Nera repeats: {topic.Answer}";
+            memory.MarkDialogueSeen(topicId);
+            memory.RecordEvent(new InteractionEvent(
+                world.Time,
+                ActorMemoryEventTypes.DialogueTopic,
+                world.Player.Id,
+                topicId,
+                string.Empty,
+                0,
+                world.Talker.Position));
+
+            switch (context.State)
+            {
+                case DialogueMemoryState.NewTopic:
+                    return $"Sage Nera says: {topic.Answer}";
+                case DialogueMemoryState.RememberedTopic:
+                    return $"Sage Nera repeats: {topic.Answer}";
+                default:
+                    return $"Sage Nera traces the familiar answer again ({context.TopicAskCount + 1} tellings): {topic.Answer}";
+            }
         }
     }
 }
