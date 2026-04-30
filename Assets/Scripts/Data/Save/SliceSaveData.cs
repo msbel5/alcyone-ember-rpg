@@ -12,6 +12,19 @@ namespace EmberCrpg.Data.Save
     {
         public long totalMinutes;
         public int roomSeed;
+        public int currentRoomId;
+        public int dungeonStartRoomId;
+        public int playerRoomId;
+        public int talkerRoomId;
+        public int merchantRoomId;
+        public int guardRoomId;
+        public int enemyRoomId;
+        public int pickupRoomId;
+        public DungeonRoomSaveData[] dungeonRooms;
+        public DungeonDoorSaveData[] dungeonDoors;
+        public DungeonSpawnSaveData[] dungeonSpawns;
+        public DungeonRoomStateSaveData[] dungeonRoomStates;
+        public DungeonDoorStateSaveData[] dungeonDoorStates;
         public ActorSaveData player;
         public ActorSaveData talker;
         public ActorSaveData merchant;
@@ -27,6 +40,56 @@ namespace EmberCrpg.Data.Save
         public int guardWarningCount;
         public bool encounterActive;
         public string lastNarrative;
+    }
+
+    [Serializable]
+    public sealed class DungeonRoomSaveData
+    {
+        public int id;
+        public int gridX;
+        public int gridY;
+        public int width;
+        public int height;
+        public string templateId;
+        public int[] doorIds;
+    }
+
+    [Serializable]
+    public sealed class DungeonDoorSaveData
+    {
+        public int id;
+        public int fromRoomId;
+        public int toRoomId;
+        public int fromX;
+        public int fromY;
+        public int toX;
+        public int toY;
+        public bool startsOpen;
+        public bool requiresGuardClearance;
+    }
+
+    [Serializable]
+    public sealed class DungeonSpawnSaveData
+    {
+        public int roomId;
+        public int kind;
+        public int positionX;
+        public int positionY;
+    }
+
+    [Serializable]
+    public sealed class DungeonRoomStateSaveData
+    {
+        public int roomId;
+        public bool visited;
+        public bool cleared;
+    }
+
+    [Serializable]
+    public sealed class DungeonDoorStateSaveData
+    {
+        public int doorId;
+        public bool open;
     }
 
     [Serializable]
