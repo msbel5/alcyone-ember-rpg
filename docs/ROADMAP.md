@@ -74,13 +74,12 @@ Status: implemented on branch, pending Inspector review
 Output:
 - `DOCS/sprint-2-summary.md`
 
-## Sprint 3 — Deeper simulation
+## Sprint 3 — Validation hardening and simulation depth
 
 Status: planned
 
-- persistent NPC memory
-- faction/reputation hooks
-- more room templates
-- quest hooks
-- expanded inventory/equipment
-- DM query tiers beyond shell level
+- run Unity-capable validation: EditMode, then manual slice pass
+- harden inventory identity flow (replace hardcoded shard id path with safer item-id generation)
+- decide whether CI should also watch agent branches or rely on PR-to-main as the gate
+- continue presentation seam cleanup if `SliceGameSession` should be split again
+- begin deeper simulation work: persistent NPC memory, richer room templates, faction/reputation hooks, expanded item/equipment state, and DM query tiers beyond shell level

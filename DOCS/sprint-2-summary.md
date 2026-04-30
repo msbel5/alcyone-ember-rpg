@@ -2,7 +2,7 @@
 
 _Date:_ 2026-04-30
 _Branch:_ `agent/sprint0-recon-sprint1-slice`
-_Status:_ implemented on branch, pending Inspector review (local Unity/.NET execution unavailable)
+_Status:_ approved after independent inspection (repo-evidence based; local Unity/.NET execution unavailable)
 
 ## 1. What Builder implemented
 
@@ -61,3 +61,8 @@ Recorded gates that did run:
 - Inspector should run Unity EditMode tests when a Unity-capable environment is available
 - do one manual play pass for: pickup → trade → guard clearance → door toggle → save/load → encounter still functioning
 - Sprint 1's approved encounter-loop deviation remains intentionally bounded; Sprint 2 did not expand that combat scope
+
+
+## 7. Approval note
+
+Sprint 2 received independent Inspector approval based on repo evidence and static gates. Follow-up items were recorded as Sprint 3 backlog, not approval blockers.
