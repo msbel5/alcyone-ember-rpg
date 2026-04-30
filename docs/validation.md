@@ -50,3 +50,13 @@ tools/validation/run-validation.sh --mode unity
 # Force the .NET fallback; still not a Unity run.
 tools/validation/run-validation.sh --mode fallback
 ```
+
+## Sprint 4 branch hygiene
+
+Sprint 4 phase branches should also run the branch hygiene guard before validation:
+
+```bash
+tools/validation/check-sprint4-branch-hygiene.sh
+```
+
+The guard verifies that the branch descends from the Sprint 4 baseline `b05100026c081361cf6f4c660dfa77fe620d644f` and that exact old branch-lineage commits `52f2e1e` / `116ae2e` are not present as fresh Sprint 4 commits. This is a lightweight guard only; reviewers must still reject copied or cherry-picked old work and any code copied from `Reference/` or `references/`.
