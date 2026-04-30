@@ -19,7 +19,7 @@ Output:
 
 ## Sprint 1 — Tiny playable vertical slice
 
-Status: in progress
+Status: approved (repo-evidence based; local Unity/.NET execution unavailable)
 
 Goal: prove this Unity rewrite can move, spawn, interact, fight, save, and test from a clean scaffold.
 

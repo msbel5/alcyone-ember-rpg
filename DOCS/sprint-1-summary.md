@@ -2,7 +2,7 @@
 
 _Date:_ 2026-04-30
 _Branch:_ `agent/sprint0-recon-sprint1-slice`
-_Status:_ builder handoff complete, inspector review pending
+_Status:_ approved after independent inspection (repo-evidence based; Unity/.NET execution unavailable locally)
 
 ## 1. Approved deviation budget
 
@@ -69,7 +69,11 @@ Recorded gates that did run:
 - `4fe978f` — deterministic slice domain/simulation/data kernels and EditMode tests
 - latest branch commit — FR-08 presentation shell plus durable approved-deviation docs (`PRD`, `ROADMAP`, `sprint-0-recon`, `sprint-1-summary`)
 
-## 6. Handoff notes
+## 6. Approval note
+
+Sprint 1 received independent Inspector approval based on repo evidence.
+
+## 7. Handoff notes
 
 - Inspector should review the approved deviation budget as documented scope, not as an unresolved architecture dispute
 - Inspector should verify that Presentation remains thin and that pure logic stayed in Domain/Simulation
