@@ -1,3 +1,4 @@
+using System.Linq;
 using EmberCrpg.Domain.World;
 
 // Design note:
@@ -18,6 +19,13 @@ namespace EmberCrpg.Simulation.World
                 return "The sealed south door refuses to move without Sentinel Rook's clearance.";
 
             world.DoorOpen = !world.DoorOpen;
+            var guardedDoor = world.Dungeon?.Doors.FirstOrDefault(door => door.RequiresGuardClearance);
+            if (guardedDoor != null)
+            {
+                var guardedState = world.DungeonDoorStates.FirstOrDefault(state => state.DoorId == guardedDoor.Id);
+                if (guardedState != null)
+                    guardedState.Open = world.DoorOpen;
+            }
             return world.DoorOpen
                 ? "The south door grinds open and the threshold is now passable."
                 : "You pull the south door shut and bar the threshold again.";
