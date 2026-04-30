@@ -1,0 +1,16 @@
+{
+    "name": "EmberCrpg.Data",
+    "rootNamespace": "EmberCrpg.Data",
+    "references": [
+        "EmberCrpg.Domain"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
