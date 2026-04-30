@@ -131,10 +131,13 @@ Goal: turn the validated Sprint 3 memory/narrative substrate into a broader clea
 
 ### Sprint 4 acceptance
 - deterministic seed produces a repeatable multi-room dungeon
+- real 3D movement with smooth camera controls works without jank in at least a multi-room traversal
 - player can traverse multiple rooms and return without corrupting room state
 - NPCs, items, enemies, memory, and generated layout survive save/load round-trip
 - inventory UI supports inspect, pickup/drop/use where available, and equip/unequip for at least one equipment slot
 - equipment state changes a tested mechanic and is visible to the player
+- real-time combat supports attack, wait, and block interactions; at least one enemy encounter exercises all three
 - audio/atmosphere hooks work from presentation code without adding `UnityEngine` to domain/simulation
 - local fallback validation passes; PR GitHub EditMode/PlayMode checks are green or explicitly explained
+- a manual play-pass video demonstrates multi-room traversal, combat, inventory use, and save/load before final approval
 - `DOCS/sprint-4-summary.md` records implementation, validation, and remaining risks before approval
