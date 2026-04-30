@@ -2,7 +2,8 @@
     "name": "EmberCrpg.Data",
     "rootNamespace": "EmberCrpg.Data",
     "references": [
-        "EmberCrpg.Domain"
+        "EmberCrpg.Domain",
+        "EmberCrpg.Simulation"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
