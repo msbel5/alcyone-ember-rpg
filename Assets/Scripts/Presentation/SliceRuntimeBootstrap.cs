@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 // Design note:
 // SliceRuntimeBootstrap auto-creates the slice presentation entry point in an empty scene.
@@ -13,7 +14,8 @@ namespace EmberCrpg.Presentation.Slice
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateController()
         {
-            if (Object.FindFirstObjectByType<SliceGameController>() != null)
+            var activeScene = SceneManager.GetActiveScene();
+            if (activeScene.name.Contains("Sprint4") || Object.FindFirstObjectByType<SliceGameController>() != null)
                 return;
 
             var controller = new GameObject("Sprint2SliceController");
