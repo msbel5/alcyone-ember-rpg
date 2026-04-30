@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 
 // Design note:
-// InventoryState owns the Sprint 1 ten-slot deterministic backpack.
-// Inputs: item add/remove requests from pure simulation services.
-// Outputs: bounded inventory state suitable for combat, pickup, and save/load tests.
-// Bible reference: ARCHITECTURE.md inventory kernel, PRD FR-05.
+// InventoryState owns the deterministic backpack and keeps equipment item identity unmerged.
+// Inputs: item add/remove/equipment lookup requests from pure simulation services.
+// Outputs: bounded inventory state suitable for combat, pickup, equipment, and save/load tests.
+// Bible reference: ARCHITECTURE.md inventory kernel, PRD FR-05, Sprint 4 Faz 4.
 namespace EmberCrpg.Domain.Inventory
 {
     /// <summary>Mutable inventory state with stack merge support and fixed capacity.</summary>
@@ -24,7 +24,7 @@ namespace EmberCrpg.Domain.Inventory
 
         public bool TryAdd(InventoryItem item)
         {
-            var existing = _items.FirstOrDefault(candidate => candidate.TemplateId == item.TemplateId);
+            var existing = item.IsEquipment ? null : _items.FirstOrDefault(candidate => !candidate.IsEquipment && candidate.TemplateId == item.TemplateId);
             if (existing != null)
             {
                 existing.AddQuantity(item.Quantity);
@@ -54,6 +54,16 @@ namespace EmberCrpg.Domain.Inventory
         public bool Contains(string templateId)
         {
             return _items.Any(candidate => candidate.TemplateId == templateId);
+        }
+
+        public InventoryItem FindById(EmberCrpg.Domain.Core.ItemId itemId)
+        {
+            return _items.FirstOrDefault(candidate => candidate.Id == itemId);
+        }
+
+        public InventoryItem FindFirstEquipment(EquipmentSlot slot)
+        {
+            return _items.FirstOrDefault(candidate => candidate.EquipmentSlot == slot);
         }
 
         public InventoryState Clone()

@@ -29,6 +29,7 @@ namespace EmberCrpg.Presentation.Slice
         private readonly MerchantTradeService _merchant = new MerchantTradeService();
         private readonly GuardInteractionService _guard = new GuardInteractionService();
         private readonly DoorInteractionService _door = new DoorInteractionService();
+        private readonly EquipmentService _equipment = new EquipmentService();
         private readonly JsonSliceSaveService _save = new JsonSliceSaveService();
 
         private EncounterState _encounter;
@@ -77,7 +78,8 @@ namespace EmberCrpg.Presentation.Slice
             }
             _encounter ??= new EncounterState(World.Player.Id, World.Enemy.Id);
             World.EncounterActive = true;
-            SetStatus(_turns.Advance(_encounter, World.Player, World.Enemy, _rng).Summary);
+            var playerEquipment = _equipment.GetCombatStats(World.PlayerInventory, World.PlayerEquipment);
+            SetStatus(_turns.Advance(_encounter, World.Player, World.Enemy, _rng, playerEquipment, new EquipmentCombatStats(0, 0)).Summary);
             if (_encounter.IsFinished)
                 World.EncounterActive = false;
         }
@@ -88,6 +90,22 @@ namespace EmberCrpg.Presentation.Slice
         public void TradeWithMerchant() => SetStatus(_merchant.TradeGateWrit(World));
         public void InteractWithGuard() => SetStatus(_guard.Interact(World));
         public void ToggleDoor() => SetStatus(_door.Toggle(World));
+
+        public void InspectInventory() => SetStatus(InventoryEquipmentFormatter.FormatInspect(World));
+
+        public void EquipFirstWeapon()
+        {
+            var weapon = World.PlayerInventory.FindFirstEquipment(EmberCrpg.Domain.Inventory.EquipmentSlot.Weapon);
+            SetStatus(weapon == null
+                ? "No weapon is available in your inventory."
+                : _equipment.TryEquip(World.PlayerInventory, World.PlayerEquipment, weapon.Id).Message);
+        }
+
+        public void UnequipWeapon()
+        {
+            SetStatus(_equipment.TryUnequip(World.PlayerEquipment, EmberCrpg.Domain.Inventory.EquipmentSlot.Weapon).Message);
+        }
+
         public string SaveToJson() => _save.SaveToJson(World);
 
         public void LoadFromJson(string json)
