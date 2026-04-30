@@ -1,7 +1,7 @@
 # Roadmap — Ember CRPG Unity
 
 _Last updated:_ 2026-04-30
-_Current branch:_ `agent/sprint0-recon-sprint1-slice`
+_Current branch:_ `agent/sprint-3-validation-and-depth`
 
 ## Sprint 0 — Recon and planning
 
@@ -19,7 +19,7 @@ Output:
 
 ## Sprint 1 — Tiny playable vertical slice
 
-Status: approved (repo-evidence based; local Unity/.NET execution unavailable)
+Status: approved and merged to `main`
 
 Goal: prove this Unity rewrite can move, spawn, interact, fight, save, and test from a clean scaffold.
 
@@ -62,7 +62,7 @@ Goal: prove this Unity rewrite can move, spawn, interact, fight, save, and test 
 
 ## Sprint 2 — Interaction refinement and presentation cleanup
 
-Status: implemented on branch, pending Inspector review
+Status: approved and merged to `main`
 
 - split presentation seams so `SliceGameController` delegates to session/HUD/view helpers
 - make the south door deterministic, saveable, and guard-gated
@@ -76,10 +76,30 @@ Output:
 
 ## Sprint 3 — Validation hardening and simulation depth
 
-Status: planned
+Status: implemented on branch, Inspector-approved, awaiting PR-to-main review
 
-- run Unity-capable validation: EditMode, then manual slice pass
-- harden inventory identity flow (replace hardcoded shard id path with safer item-id generation)
-- decide whether CI should also watch agent branches or rely on PR-to-main as the gate
-- continue presentation seam cleanup if `SliceGameSession` should be split again
-- begin deeper simulation work: persistent NPC memory, richer room templates, faction/reputation hooks, expanded item/equipment state, and DM query tiers beyond shell level
+### Shipped on this branch
+- hardened item identity flow with stable per-world item ids
+- persistent NPC memory and save/load support
+- three deterministic room templates
+- `city_watch` reputation hook and guard attitude shaping
+- `weapon` / `armor` equipment slots with separate equipped state
+- deterministic DM query tiers 1-3 over current world state, room layout, equipment, and memory
+- HUD surfacing for layout, guard attitude, and equipped items
+
+### Verified on this branch
+- clean diff hygiene (`git diff --check`)
+- no `UnityEngine` in Domain/Simulation
+- supplemental pure-C# NUnit harness pass: `79/79`
+- Inspector verdict: APPROVED
+
+### Still blocked
+- direct Unity EditMode execution on this Pi (no local Unity editor binary found)
+- real/manual in-engine slice pass on this Pi
+
+### Deferred follow-up
+- run the true Unity EditMode suite on a machine with the matching editor
+- capture a real manual slice pass with screenshots/notes
+- decide whether CI should validate agent branches directly or stay PR-to-main only
+- tune guard reputation curve if playtesting says the hostility ramp is too sharp
+- widen equipment/faction systems only when the slice grows beyond the current scope
