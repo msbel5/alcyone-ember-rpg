@@ -5,15 +5,16 @@ using EmberCrpg.Domain.DM;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
+using EmberCrpg.Simulation.Narrative;
 
 // Design note:
-// SliceDmQueryService turns slice world state plus NPC memory into typed Tier 1 DM answers.
+// SliceDmQueryService turns slice world state plus NPC memory into typed Tier 1-2 DM answers.
 // Inputs: pure world state and a player question string for deterministic focus selection.
-// Outputs: grounded current-state views with no live AI dependency.
+// Outputs: grounded current-state and inspection views with no live AI dependency.
 // Bible reference: ARCHITECTURE.md DM API Tier 1, ActorMemory, Sprint 3 query-surface slice.
 namespace EmberCrpg.Simulation.DM
 {
-    /// <summary>Deterministic Tier 1 DM query implementation for the vertical slice.</summary>
+    /// <summary>Deterministic DM query implementation for the vertical slice.</summary>
     public sealed class SliceDmQueryService : IDmQueryService
     {
         public DmWorldStateView GetWorldState(SliceWorldState world)
@@ -42,10 +43,26 @@ namespace EmberCrpg.Simulation.DM
                 objective);
         }
 
+        public DmInspectionView GetInspection(SliceWorldState world, string question)
+        {
+            var focus = ResolveFocusActor(world, question);
+            var reason = ResolveFocusReason(world, question, focus);
+            var weapon = world.PlayerEquipment == null || world.PlayerEquipment.Weapon == null ? "none" : world.PlayerEquipment.Weapon.DisplayName;
+            var armor = world.PlayerEquipment == null || world.PlayerEquipment.Armor == null ? "none" : world.PlayerEquipment.Armor.DisplayName;
+            return new DmInspectionView(
+                world.Room.LayoutId.ToString(),
+                GuardInteractionService.GetAttitudeLabel(world),
+                GuardInteractionService.GetWatchReputation(world),
+                weapon,
+                armor,
+                world.Pickups.Count(pickup => !pickup.IsCollected),
+                reason);
+        }
+
         public DmNpcMemoryView GetNpcMemory(SliceWorldState world, EmberCrpg.Domain.Core.ActorId npcId)
         {
             var actor = ResolveActor(world, npcId);
-            ActorMemory memory;
+            ActorMemory memory = null;
             var hasMemory = world.NpcMemories != null && world.NpcMemories.TryGet(npcId, out memory);
             if (!hasMemory)
                 return new DmNpcMemoryView(actor.Id, actor.Name, new string[0], new string[0]);
@@ -90,6 +107,24 @@ namespace EmberCrpg.Simulation.DM
             if (world.GuardDoorAccessGranted || world.PlayerInventory.Contains(SliceItemCatalog.GateWritTemplateId))
                 return world.Guard;
             return world.Talker;
+        }
+
+        private static string ResolveFocusReason(SliceWorldState world, string question, ActorRecord focus)
+        {
+            var text = (question ?? string.Empty).ToLowerInvariant();
+            if (focus.Id == world.Guard.Id && ContainsAny(text, "guard", "rook", "door", "clearance", "pass"))
+                return "question keywords point at the checkpoint";
+            if (focus.Id == world.Merchant.Id && ContainsAny(text, "merchant", "ivo", "trade", "writ", "quartermaster"))
+                return "question keywords point at the merchant loop";
+            if (focus.Id == world.Talker.Id && ContainsAny(text, "talk", "topic", "sage", "nera", "ask"))
+                return "question keywords point at Sage Nera";
+            if (world.NpcMemories != null && world.NpcMemories.Entries.Any(memory => memory.OwnerId == focus.Id && memory.Events.Count > 0))
+                return "most recent memory belongs to " + focus.Name;
+            if (focus.Id == world.Merchant.Id && world.PlayerInventory.Contains(SliceItemCatalog.EmberShardTemplateId))
+                return "inventory suggests a pending trade";
+            if (focus.Id == world.Guard.Id && (world.GuardDoorAccessGranted || world.PlayerInventory.Contains(SliceItemCatalog.GateWritTemplateId)))
+                return "checkpoint state is the next deterministic gate";
+            return "default slice focus";
         }
 
         private static bool ContainsAny(string text, params string[] keywords)

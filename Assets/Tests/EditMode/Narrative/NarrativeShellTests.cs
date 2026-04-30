@@ -31,6 +31,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         {
             var world = new SliceWorldFactory().Create(1337);
             var reply = new AskDmService().Ask(world, "What should I do?");
+            Assert.That(reply, Does.Contain("DM tier 1"));
             Assert.That(reply, Does.Contain("room seed 1337"));
             Assert.That(reply, Does.Contain("objective="));
         }
@@ -46,6 +47,31 @@ namespace EmberCrpg.Tests.EditMode.Narrative
 
             Assert.That(reply, Does.Contain("focus=Sentinel Rook"));
             Assert.That(reply, Does.Contain("warning #1"));
+        }
+
+        [Test]
+        public void AskDm_DetailQuestion_ReportsLayoutAttitudeAndEquipment()
+        {
+            var world = new SliceWorldFactory().Create(1337);
+
+            var reply = new AskDmService().Ask(world, "Explain the detailed room status.");
+
+            Assert.That(reply, Does.Contain("DM tier 2"));
+            Assert.That(reply, Does.Contain("layout="));
+            Assert.That(reply, Does.Contain("guard attitude="));
+            Assert.That(reply, Does.Contain("Warden Blade / Warden Coat"));
+        }
+
+        [Test]
+        public void AskDm_NarrativeQuestion_UsesTier3Framing()
+        {
+            var world = new SliceWorldFactory().Create(1337);
+
+            var reply = new AskDmService().Ask(world, "Describe the scene around the south door.");
+
+            Assert.That(reply, Does.Contain("DM tier 3"));
+            Assert.That(reply, Does.Contain(world.Room.LayoutId.ToString()));
+            Assert.That(reply, Does.Contain("south door"));
         }
 
         [Test]

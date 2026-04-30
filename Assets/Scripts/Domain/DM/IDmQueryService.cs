@@ -2,9 +2,9 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// IDmQueryService defines the slice's deterministic Tier 1 DM query surface.
+// IDmQueryService defines the slice's deterministic DM query surface.
 // Inputs: read-only world state plus an optional focus question.
-// Outputs: typed world and NPC-memory views that narration shells can format without inventing mechanics.
+// Outputs: typed world, inspection, and NPC-memory views that narration shells can format without inventing mechanics.
 // Bible reference: ARCHITECTURE.md Part 3 DM API Tier 1 + NPC Memory store.
 namespace EmberCrpg.Domain.DM
 {
@@ -14,6 +14,15 @@ namespace EmberCrpg.Domain.DM
         DmWorldStateView GetWorldState(SliceWorldState world);
         DmNpcMemoryView GetNpcMemory(SliceWorldState world, ActorId npcId);
         DmNpcMemoryView GetRelevantNpcMemory(SliceWorldState world, string question);
+        DmInspectionView GetInspection(SliceWorldState world, string question);
+    }
+
+    /// <summary>Query tiers supported by the slice narrator shell.</summary>
+    public enum DmQueryTier
+    {
+        Summary = 1,
+        Detail = 2,
+        Narrative = 3,
     }
 
     /// <summary>Typed current-world facts for narration shells.</summary>
@@ -37,6 +46,29 @@ namespace EmberCrpg.Domain.DM
         public int InventorySlotsUsed { get; }
         public int InventoryCapacity { get; }
         public string RecommendedObjective { get; }
+    }
+
+    /// <summary>Typed deeper inspection facts for detail/narrative tiers.</summary>
+    public sealed class DmInspectionView
+    {
+        public DmInspectionView(string roomLayout, string guardAttitude, int watchReputation, string equippedWeapon, string equippedArmor, int remainingPickups, string focusReason)
+        {
+            RoomLayout = roomLayout ?? string.Empty;
+            GuardAttitude = guardAttitude ?? string.Empty;
+            WatchReputation = watchReputation;
+            EquippedWeapon = equippedWeapon ?? "none";
+            EquippedArmor = equippedArmor ?? "none";
+            RemainingPickups = remainingPickups;
+            FocusReason = focusReason ?? string.Empty;
+        }
+
+        public string RoomLayout { get; }
+        public string GuardAttitude { get; }
+        public int WatchReputation { get; }
+        public string EquippedWeapon { get; }
+        public string EquippedArmor { get; }
+        public int RemainingPickups { get; }
+        public string FocusReason { get; }
     }
 
     /// <summary>Typed remembered facts for one NPC.</summary>
