@@ -1,6 +1,7 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Memory;
+using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
 using EmberCrpg.Simulation.Narrative;
 using EmberCrpg.Simulation.World;
@@ -29,6 +30,12 @@ namespace EmberCrpg.Tests.EditMode.Save
             world.Player.MoveTo(new GridPosition(world.Room.DoorCell.X, 1));
             new DoorInteractionService().Toggle(world);
             world.Enemy.ApplyVitals(world.Enemy.Vitals.WithHealth(world.Enemy.Vitals.Health.Damage(5)));
+            var farRoomState = world.DungeonRoomStates.Last();
+            farRoomState.Visited = true;
+            farRoomState.Cleared = true;
+            world.CurrentRoomId = farRoomState.RoomId;
+            var farDoorState = world.DungeonDoorStates.Last();
+            farDoorState.Open = false;
 
             var service = new EmberCrpg.Data.Save.JsonSliceSaveService();
             var json = service.SaveToJson(world);
@@ -40,6 +47,15 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(loaded.GuardDoorAccessGranted, Is.True);
             Assert.That(loaded.DoorOpen, Is.True);
             Assert.That(loaded.Enemy.Vitals.Health.Current, Is.EqualTo(world.Enemy.Vitals.Health.Current));
+            Assert.That(loaded.Dungeon.Rooms.Count, Is.EqualTo(world.Dungeon.Rooms.Count));
+            Assert.That(loaded.Dungeon.Doors.Select(door => door.Id), Is.EqualTo(world.Dungeon.Doors.Select(door => door.Id)));
+            Assert.That(loaded.CurrentRoomId, Is.EqualTo(world.CurrentRoomId));
+            Assert.That(loaded.EnemyRoomId, Is.EqualTo(world.EnemyRoomId));
+            Assert.That(loaded.MerchantRoomId, Is.EqualTo(world.MerchantRoomId));
+            Assert.That(loaded.TalkerRoomId, Is.EqualTo(world.TalkerRoomId));
+            Assert.That(loaded.Dungeon.FindSpawn(DungeonSpawnKind.Enemy).RoomId, Is.EqualTo(world.EnemyRoomId));
+            Assert.That(loaded.DungeonRoomStates.Last().Cleared, Is.True);
+            Assert.That(loaded.DungeonDoorStates.Last().Open, Is.False);
             Assert.That(loaded.NpcMemory.TryGet(loaded.Talker.Id, out var talkerMemory), Is.True);
             Assert.That(talkerMemory.HasDialogueSeen("embers"), Is.True);
             Assert.That(talkerMemory.CountEvents(ActorMemoryEventTypes.DialogueTopic), Is.EqualTo(2));

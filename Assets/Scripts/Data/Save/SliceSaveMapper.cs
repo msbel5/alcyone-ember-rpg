@@ -23,6 +23,19 @@ namespace EmberCrpg.Data.Save
             {
                 totalMinutes = world.Time.TotalMinutes,
                 roomSeed = world.RoomSeed,
+                currentRoomId = world.CurrentRoomId,
+                dungeonStartRoomId = world.Dungeon?.StartRoomId ?? 0,
+                playerRoomId = world.PlayerRoomId,
+                talkerRoomId = world.TalkerRoomId,
+                merchantRoomId = world.MerchantRoomId,
+                guardRoomId = world.GuardRoomId,
+                enemyRoomId = world.EnemyRoomId,
+                pickupRoomId = world.PickupRoomId,
+                dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
+                dungeonDoors = DungeonSaveMapper.ToDoorData(world.Dungeon),
+                dungeonSpawns = DungeonSaveMapper.ToSpawnData(world.Dungeon),
+                dungeonRoomStates = DungeonSaveMapper.ToRoomStateData(world.DungeonRoomStates),
+                dungeonDoorStates = DungeonSaveMapper.ToDoorStateData(world.DungeonDoorStates),
                 player = ActorSaveMapper.ToData(world.Player),
                 talker = ActorSaveMapper.ToData(world.Talker),
                 merchant = ActorSaveMapper.ToData(world.Merchant),
@@ -45,6 +58,19 @@ namespace EmberCrpg.Data.Save
         {
             var world = new SliceWorldFactory().Create(data.roomSeed);
             world.Time = new EmberCrpg.Domain.Core.GameTime(data.totalMinutes);
+            if (data.dungeonRooms != null && data.dungeonRooms.Length > 0)
+                world.Dungeon = DungeonSaveMapper.ToLayout(data.roomSeed, data.dungeonStartRoomId, data.dungeonRooms, data.dungeonDoors, data.dungeonSpawns);
+            world.CurrentRoomId = data.currentRoomId;
+            world.PlayerRoomId = data.playerRoomId;
+            world.TalkerRoomId = data.talkerRoomId;
+            world.MerchantRoomId = data.merchantRoomId;
+            world.GuardRoomId = data.guardRoomId;
+            world.EnemyRoomId = data.enemyRoomId;
+            world.PickupRoomId = data.pickupRoomId;
+            if (data.dungeonRoomStates != null && data.dungeonRoomStates.Length > 0)
+                world.DungeonRoomStates = DungeonSaveMapper.ToRoomStates(data.dungeonRoomStates);
+            if (data.dungeonDoorStates != null && data.dungeonDoorStates.Length > 0)
+                world.DungeonDoorStates = DungeonSaveMapper.ToDoorStates(data.dungeonDoorStates);
             world.Player = ActorSaveMapper.ToActor(data.player);
             world.Talker = ActorSaveMapper.ToActor(data.talker);
             world.Merchant = ActorSaveMapper.ToActor(data.merchant);
