@@ -4,6 +4,12 @@
 # - Linux64 headless build artifact
 # - Test results + screenshots uploaded for Alcyone to review on Pi
 #
+# NOTE: unity-test-runner can optionally post a GitHub Check when given
+# githubToken/checkName. That post can fail with "Resource not accessible by
+# integration" after Unity has already passed, which incorrectly fails the job
+# and blocks PlayMode/screenshots. Keep test evidence in uploaded artifacts
+# instead so CI status reflects Unity's actual test exit code.
+#
 # REQUIRES (one-time secrets setup):
 #   UNITY_EMAIL     - Unity ID email
 #   UNITY_PASSWORD  - Unity ID password
@@ -55,8 +61,6 @@ jobs:
           unityVersion: ${{ env.UNITY_VERSION }}
           testMode: editmode
           artifactsPath: editmode-results
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          checkName: EditMode Test Results
 
       - name: Upload EditMode Results
         uses: actions/upload-artifact@v4
@@ -96,8 +100,6 @@ jobs:
           unityVersion: ${{ env.UNITY_VERSION }}
           testMode: playmode
           artifactsPath: playmode-results
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          checkName: PlayMode Test Results
 
       - name: Upload PlayMode Results + Screenshots
         uses: actions/upload-artifact@v4
