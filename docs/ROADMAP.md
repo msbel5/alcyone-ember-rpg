@@ -11,7 +11,7 @@ Status: done
 - document prior-attempt lessons
 - fix branch hygiene
 - write Sprint 1 PRD
-- define the smallest viable scope adjustment for combat mode conflict
+- define and record the approved Sprint 1 combat deviation budget
 
 Output:
 - `DOCS/sprint-0-recon.md`
@@ -33,7 +33,7 @@ Goal: prove this Unity rewrite can move, spawn, interact, fight, save, and test 
 - DFU-inspired percentage hit chance
 - damage + armor + body part targeting weights
 - one enemy encounter loop
-- note: Sprint 1 uses a slice-only turn loop to satisfy the requested vertical slice; this does **not** rewrite the repo’s long-term RTWP architecture yet
+- approved deviation budget: Sprint 1 uses a bounded encounter turn loop as the accepted combat mode for this slice; the long-term RTWP architecture remains the default outside Sprint 1
 
 ### Phase 3 — Slice world
 - one procedural room
@@ -60,12 +60,12 @@ Goal: prove this Unity rewrite can move, spawn, interact, fight, save, and test 
 - NUnit tests cover mechanics systems
 - `DOCS/sprint-1-summary.md` written
 
-## Sprint 2 — Architecture reconciliation
+## Sprint 2 — Architecture follow-through
 
 Status: planned
 
-- decide whether combat stays encounter-turn-based for Ember or returns to the repo’s RTWP lock
-- if RTWP wins, convert Sprint 1 combat logic into pause-step services and keep the math layer
+- decide whether the approved Sprint 1 encounter loop graduates into a broader Ember combat model or is adapted back into RTWP pause-step services
+- if RTWP wins long-term, keep Sprint 1's deterministic combat math and remap only the encounter orchestration layer
 - add richer item/equipment and dialogue state
 - replace prototype bootstrap with proper scene/prefab composition
 
