@@ -1,3 +1,4 @@
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
 
@@ -15,6 +16,17 @@ namespace EmberCrpg.Simulation.Narrative
         {
             if (world.Player.Position.ManhattanDistanceTo(world.Guard.Position) > 2)
                 return "Stand closer to Sentinel Rook before asking for passage.";
+
+            var memory = world.NpcMemory.GetOrCreate(world.Guard.Id);
+            memory.RecordEvent(new InteractionEvent(
+                world.Time,
+                ActorMemoryEventTypes.PassageRequested,
+                world.Player.Id,
+                "south_door",
+                string.Empty,
+                world.GuardWarningCount,
+                world.Guard.Position));
+
             if (world.GuardDoorAccessGranted)
                 return world.DoorOpen
                     ? "Sentinel Rook keeps his spear low. The south door is already clear."
@@ -22,6 +34,14 @@ namespace EmberCrpg.Simulation.Narrative
             if (world.PlayerInventory.Contains(SliceItemCatalog.GateWritTemplateId))
             {
                 world.GuardDoorAccessGranted = true;
+                memory.RecordEvent(new InteractionEvent(
+                    world.Time,
+                    ActorMemoryEventTypes.ClearanceGranted,
+                    world.Player.Id,
+                    "south_door",
+                    SliceItemCatalog.GateWritTemplateId,
+                    1,
+                    world.Guard.Position));
                 return "Sentinel Rook checks the gate writ, marks your face, and grants clearance for the south door.";
             }
 

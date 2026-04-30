@@ -21,6 +21,7 @@ namespace EmberCrpg.Data.Save
         public InventorySaveData merchantInventory;
         public PickupSaveData[] pickups;
         public TopicSaveData[] topics;
+        public NpcMemorySaveData[] npcMemories;
         public bool doorOpen;
         public bool guardDoorAccessGranted;
         public int guardWarningCount;
@@ -87,5 +88,37 @@ namespace EmberCrpg.Data.Save
         public string id;
         public string label;
         public string answer;
+    }
+
+    [Serializable]
+    public sealed class NpcMemorySaveData
+    {
+        public ulong actorId;
+        public InteractionEventSaveData[] events;
+        public string[] dialogueSeen;
+        public TransactionSaveData[] transactions;
+    }
+
+    [Serializable]
+    public sealed class InteractionEventSaveData
+    {
+        public long timestampMinutes;
+        public string eventType;
+        public ulong actorSeen;
+        public string subjectId;
+        public string itemTemplateId;
+        public int amount;
+        public int locationX;
+        public int locationY;
+    }
+
+    [Serializable]
+    public sealed class TransactionSaveData
+    {
+        public long timestampMinutes;
+        public string transactionType;
+        public string itemTemplateId;
+        public int count;
+        public int goldDelta;
     }
 }

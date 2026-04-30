@@ -1,3 +1,4 @@
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 
 // Design note:
@@ -34,6 +35,21 @@ namespace EmberCrpg.Simulation.Inventory
             }
 
             world.MerchantInventory.TryAdd(SliceItemCatalog.CreateEmberShard());
+            var memory = world.NpcMemory.GetOrCreate(world.Merchant.Id);
+            memory.RecordEvent(new InteractionEvent(
+                world.Time,
+                ActorMemoryEventTypes.TradedWith,
+                world.Player.Id,
+                "gate_writ_trade",
+                SliceItemCatalog.GateWritTemplateId,
+                1,
+                world.Merchant.Position));
+            memory.RecordTransaction(new TransactionRecord(
+                world.Time,
+                "IssueGateWrit",
+                SliceItemCatalog.GateWritTemplateId,
+                1,
+                0));
             return "Quartermaster Ivo trades one Ember Shard for a sealed gate writ.";
         }
     }

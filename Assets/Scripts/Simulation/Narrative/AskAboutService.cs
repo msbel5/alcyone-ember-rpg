@@ -1,4 +1,5 @@
 using System.Linq;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 
 // Design note:
@@ -17,8 +18,19 @@ namespace EmberCrpg.Simulation.Narrative
             if (topic == null)
                 return "Sage Nera tilts her head. That topic is still a blank.";
 
-            var firstTime = !world.Talker.AskedTopicIds.Contains(topicId);
+            var memory = world.NpcMemory.GetOrCreate(world.Talker.Id);
+            var firstTime = !memory.HasDialogueSeen(topicId) && !world.Talker.AskedTopicIds.Contains(topicId);
             world.Talker.RecordTopic(topicId);
+            memory.MarkDialogueSeen(topicId);
+            memory.RecordEvent(new InteractionEvent(
+                world.Time,
+                ActorMemoryEventTypes.DialogueTopic,
+                world.Player.Id,
+                topicId,
+                string.Empty,
+                0,
+                world.Talker.Position));
+
             return firstTime
                 ? $"Sage Nera says: {topic.Answer}"
                 : $"Sage Nera repeats: {topic.Answer}";
