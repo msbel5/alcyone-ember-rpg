@@ -1,7 +1,7 @@
 # Roadmap — Ember CRPG Unity
 
 _Last updated:_ 2026-04-30
-_Current branch:_ `agent/sprint0-recon-sprint1-slice`
+_Current branch:_ `main` + agent summary branches
 
 ## Sprint 0 — Recon and planning
 
@@ -62,7 +62,7 @@ Goal: prove this Unity rewrite can move, spawn, interact, fight, save, and test 
 
 ## Sprint 2 — Interaction refinement and presentation cleanup
 
-Status: implemented on branch, pending Inspector review
+Status: approved and merged
 
 - split presentation seams so `SliceGameController` delegates to session/HUD/view helpers
 - make the south door deterministic, saveable, and guard-gated
@@ -74,12 +74,70 @@ Status: implemented on branch, pending Inspector review
 Output:
 - `DOCS/sprint-2-summary.md`
 
-## Sprint 3 — Validation hardening and simulation depth
+## Sprint 3 — Validation hardening and memory-backed narrative depth
+
+Status: approved and merged
+
+Fresh scope counted from `0f36891` to merge commit `0f5a99b`:
+
+- add Pi-local validation hardening with Unity detection and explicit .NET fallback mode
+- document the validation workflow and the limits of fallback evidence
+- add persistent NPC memory in clean domain/save/simulation layers
+- add a memory-backed DM query service for narrative-state inspection
+- unlock GitHub Unity PR checks by removing the failing check-posting path
+
+Validation evidence:
+- local `tools/validation/run-validation.sh --mode fallback` passed `73/73`
+- GitHub PR #5 checks: EditMode Tests SUCCESS; PlayMode Tests + Screenshots SUCCESS; Build Linux64 SKIPPED; Test Summary SUCCESS; GitGuardian SUCCESS
+
+Output:
+- `DOCS/sprint-3-validation.md`
+- `DOCS/sprint-3-summary.md`
+
+Notes:
+- local fallback is pure .NET domain/simulation/save corpus coverage, not a real local Unity EditMode run
+- old `52f2e1e` / `116ae2e` branch-lineage work is not counted as fresh Sprint 3 output
+
+## Sprint 4 — Multi-room dungeon, equipment UI, and atmosphere
 
 Status: planned
 
-- run Unity-capable validation: EditMode, then manual slice pass
-- harden inventory identity flow (replace hardcoded shard id path with safer item-id generation)
-- decide whether CI should also watch agent branches or rely on PR-to-main as the gate
-- continue presentation seam cleanup if `SliceGameSession` should be split again
-- begin deeper simulation work: persistent NPC memory, richer room templates, faction/reputation hooks, expanded item/equipment state, and DM query tiers beyond shell level
+Goal: turn the validated Sprint 3 memory/narrative substrate into a broader clean-room playable dungeon slice.
+
+### Faz 1 — Validation baseline and branch hygiene
+- start from `main` at or after `0f5a99b`
+- keep fallback validation and GitHub Unity checks as the quality floor
+- avoid importing old branch-lineage commits as fresh Sprint 4 work
+
+### Faz 2 — Deterministic dungeon traversal rules
+- define room graph contracts in pure simulation
+- model exits, transitions, encounter/loot placement, and save/load invariants
+- keep `UnityEngine` out of domain and simulation code
+
+### Faz 3 — Multi-room procedural dungeon
+- expand from one room to deterministic seeded multi-room generation
+- add room templates, door/transition rules, and room-local NPC/item/enemy placement
+- persist generated layout and room state across save/load
+
+### Faz 4 — Equipment and inventory UI
+- add player-facing inventory/equipment screens
+- implement equip/unequip rules, slot constraints, and item instance clarity
+- ensure equipped state affects at least one visible/stat-testable mechanic and persists
+
+### Faz 5 — Audio and atmosphere
+- add clean-room ambience/music/SFX hooks
+- vary atmosphere by room or state where useful
+- keep audio/presentation triggers decoupled from core simulation rules
+
+### Sprint 4 acceptance
+- deterministic seed produces a repeatable multi-room dungeon
+- real 3D movement with smooth camera controls works without jank in at least a multi-room traversal
+- player can traverse multiple rooms and return without corrupting room state
+- NPCs, items, enemies, memory, and generated layout survive save/load round-trip
+- inventory UI supports inspect, pickup/drop/use where available, and equip/unequip for at least one equipment slot
+- equipment state changes a tested mechanic and is visible to the player
+- real-time combat supports attack, wait, and block interactions; at least one enemy encounter exercises all three
+- audio/atmosphere hooks work from presentation code without adding `UnityEngine` to domain/simulation
+- local fallback validation passes; PR GitHub EditMode/PlayMode checks are green or explicitly explained
+- a manual play-pass video demonstrates multi-room traversal, combat, inventory use, and save/load before final approval
+- `DOCS/sprint-4-summary.md` records implementation, validation, and remaining risks before approval
