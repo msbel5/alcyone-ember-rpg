@@ -21,6 +21,11 @@ namespace EmberCrpg.Domain.Core
         }
 
         /// <summary>
+        /// Shared empty no-item sentinel.
+        /// </summary>
+        public static ItemId Empty => new ItemId(0UL);
+
+        /// <summary>
         /// Raw stable identifier carried by this item handle.
         /// </summary>
         public ulong Value

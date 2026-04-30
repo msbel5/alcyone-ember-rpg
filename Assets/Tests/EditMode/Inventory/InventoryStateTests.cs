@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 // Design note:
 // These tests pin Sprint 1's fixed-capacity backpack behavior.
-// They cover add/remove/full semantics only.
+// They cover add/remove/full semantics plus Sprint 3 take/split identity behavior.
 namespace EmberCrpg.Tests.EditMode.Inventory
 {
     /// <summary>Verifies deterministic ten-slot inventory behavior.</summary>
@@ -43,6 +43,22 @@ namespace EmberCrpg.Tests.EditMode.Inventory
             inventory.TryAdd(new InventoryItem(new ItemId(1), "ember_shard", "Ember Shard", 1));
             inventory.TryRemove("ember_shard", 1);
             Assert.That(inventory.Items.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TryTake_FromStack_SplitsRequestedQuantityIntoNewStableItem()
+        {
+            var inventory = new InventoryState(10);
+            var itemIds = new ItemInstanceSequence(42);
+            var expectedId = itemIds.Clone().TakeNext();
+            inventory.TryAdd(new InventoryItem(new ItemId(1), "ember_shard", "Ember Shard", 2));
+
+            InventoryItem taken;
+            var success = inventory.TryTake("ember_shard", 1, itemIds, out taken);
+
+            Assert.That(success, Is.True);
+            Assert.That(taken.Id, Is.EqualTo(expectedId));
+            Assert.That(inventory.Items[0].Quantity, Is.EqualTo(1));
         }
     }
 }

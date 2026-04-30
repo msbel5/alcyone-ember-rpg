@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
+using EmberCrpg.Domain.Core;
 
 // Design note:
 // InventoryState owns the Sprint 1 ten-slot deterministic backpack.
 // Inputs: item add/remove requests from pure simulation services.
-// Outputs: bounded inventory state suitable for combat, pickup, and save/load tests.
+// Outputs: bounded inventory state suitable for combat, pickup, trade, and save/load tests.
 // Bible reference: ARCHITECTURE.md inventory kernel, PRD FR-05.
 namespace EmberCrpg.Domain.Inventory
 {
@@ -48,6 +49,28 @@ namespace EmberCrpg.Domain.Inventory
             if (existing.Quantity == 0)
                 _items.Remove(existing);
 
+            return true;
+        }
+
+        public bool TryTake(string templateId, int quantity, ItemInstanceSequence itemIds, out InventoryItem item)
+        {
+            item = null;
+            var existing = _items.FirstOrDefault(candidate => candidate.TemplateId == templateId);
+            if (quantity <= 0 || existing == null || existing.Quantity < quantity)
+                return false;
+
+            if (existing.Quantity == quantity)
+            {
+                _items.Remove(existing);
+                item = existing;
+                return true;
+            }
+
+            if (itemIds == null)
+                return false;
+
+            existing.RemoveQuantity(quantity);
+            item = new InventoryItem(itemIds.TakeNext(), existing.TemplateId, existing.DisplayName, quantity);
             return true;
         }
 

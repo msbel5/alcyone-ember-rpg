@@ -1,12 +1,13 @@
 // Design note:
 // SliceWorldFactory builds the smallest fully wired world state for the playable slice.
 // Inputs: room seed.
-// Outputs: deterministic room, actors, inventories, topics, and interaction state.
-// Bible reference: PRD Sprint 1 FR-01 through FR-07, Sprint 2 FR-02 through FR-05.
+// Outputs: deterministic room, actors, inventories, item ids, npc memories, and interaction state.
+// Bible reference: PRD Sprint 1 FR-01 through FR-07, Sprint 2 FR-02 through FR-05, Sprint 3 hardening.
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
@@ -34,10 +35,12 @@ namespace EmberCrpg.Simulation.World
             world.Enemy = _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, room.EnemySpawn);
             world.PlayerInventory = new InventoryState(10);
             world.MerchantInventory = new InventoryState(4);
-            world.MerchantInventory.TryAdd(SliceItemCatalog.CreateGateWrit());
+            world.ItemIds = new ItemInstanceSequence(roomSeed);
+            world.MerchantInventory.TryAdd(SliceItemCatalog.CreateGateWrit(world.ItemIds));
+            world.NpcMemories = new NpcMemoryStore(new[] { world.Talker.Id, world.Merchant.Id, world.Guard.Id });
             world.Pickups = new List<RoomPickup>
             {
-                new RoomPickup(SliceItemCatalog.CreateEmberShard(), room.PickupSpawn),
+                new RoomPickup(SliceItemCatalog.CreateEmberShard(world.ItemIds), room.PickupSpawn),
             };
             world.Topics = new List<AskAboutTopic>
             {

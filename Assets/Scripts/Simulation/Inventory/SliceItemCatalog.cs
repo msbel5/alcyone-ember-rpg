@@ -3,9 +3,9 @@ using EmberCrpg.Domain.Inventory;
 
 // Design note:
 // SliceItemCatalog centralizes the tiny deterministic item set used by the vertical slice.
-// Inputs: none beyond fixed ids/templates chosen for Sprint 1 and Sprint 2 interactions.
-// Outputs: reusable item factories for pickups, merchant stock, and trade costs.
-// Bible reference: ARCHITECTURE.md inventory kernel, PRD Sprint 1 FR-05, Sprint 2 FR-03.
+// Inputs: an item-id sequence plus fixed templates chosen for slice interactions.
+// Outputs: unique item instances for pickups, merchant stock, and trade flows.
+// Bible reference: ARCHITECTURE.md inventory kernel, PRD Sprint 1 FR-05, Sprint 2 FR-03, Sprint 3 hardening.
 namespace EmberCrpg.Simulation.Inventory
 {
     /// <summary>Static item factories for the slice inventory and merchant loop.</summary>
@@ -14,14 +14,14 @@ namespace EmberCrpg.Simulation.Inventory
         public const string EmberShardTemplateId = "ember_shard";
         public const string GateWritTemplateId = "gate_writ";
 
-        public static InventoryItem CreateEmberShard()
+        public static InventoryItem CreateEmberShard(ItemInstanceSequence itemIds)
         {
-            return new InventoryItem(new ItemId(1001), EmberShardTemplateId, "Ember Shard", 1);
+            return new InventoryItem(itemIds.TakeNext(), EmberShardTemplateId, "Ember Shard", 1);
         }
 
-        public static InventoryItem CreateGateWrit()
+        public static InventoryItem CreateGateWrit(ItemInstanceSequence itemIds)
         {
-            return new InventoryItem(new ItemId(2001), GateWritTemplateId, "Gate Writ", 1);
+            return new InventoryItem(itemIds.TakeNext(), GateWritTemplateId, "Gate Writ", 1);
         }
     }
 }
