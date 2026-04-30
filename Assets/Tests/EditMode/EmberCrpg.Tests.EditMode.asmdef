@@ -4,6 +4,7 @@
     "references": [
         "EmberCrpg.Domain",
         "EmberCrpg.Simulation",
+        "EmberCrpg.Data",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
