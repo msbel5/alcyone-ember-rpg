@@ -60,6 +60,37 @@ namespace EmberCrpg.Tests.EditMode.Inventory
             Assert.That(equipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(first.Id));
         }
 
+
+        [Test]
+        public void TryEquip_AlreadyEquippedWeapon_ReturnsDedicatedErrorCode()
+        {
+            var world = new SliceWorldFactory().Create(1337);
+            var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
+            var service = new EquipmentService();
+
+            service.TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
+            var result = service.TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(EquipmentActionError.AlreadyEquipped));
+            Assert.That(world.PlayerEquipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(weapon.Id));
+        }
+
+        [Test]
+        public void TryRemove_WithEquipmentState_RefusesToRemoveEquippedItem()
+        {
+            var world = new SliceWorldFactory().Create(1337);
+            var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
+            var service = new EquipmentService();
+            service.TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
+
+            var removed = world.PlayerInventory.TryRemove(weapon.TemplateId, weapon.Quantity, world.PlayerEquipment);
+
+            Assert.That(removed, Is.False);
+            Assert.That(world.PlayerInventory.FindById(weapon.Id), Is.Not.Null);
+            Assert.That(world.PlayerEquipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(weapon.Id));
+        }
+
         [Test]
         public void TryUnequip_EquippedWeapon_ClearsSlot()
         {
