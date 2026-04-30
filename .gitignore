@@ -37,3 +37,7 @@ Assets/Art/Prototype.meta
 
 # References (locally cloned/extracted, NOT pushed - too big)
 references/
+# Repo-local validation evidence/generated harness artifacts
+validation-output/
+!tools/validation/fallback/*.csproj
+

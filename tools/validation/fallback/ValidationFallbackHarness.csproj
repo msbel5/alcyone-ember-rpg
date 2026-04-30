@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <OutputPath>../../../validation-output/fallback-harness/bin/</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="NUnit" Version="4.3.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../Assets/Scripts/Domain/**/*.cs" />
+    <Compile Include="../../../Assets/Scripts/Simulation/**/*.cs" />
+    <Compile Include="../../../Assets/Scripts/Data/Save/**/*.cs" />
+    <Compile Include="../../../Assets/Tests/EditMode/**/*.cs" />
+    <Compile Include="UnityJsonUtilityStub.cs" />
+  </ItemGroup>
+</Project>
