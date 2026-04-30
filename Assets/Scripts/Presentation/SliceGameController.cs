@@ -35,11 +35,14 @@ namespace EmberCrpg.Presentation.Slice
 
         private void OnGUI()
         {
-            GUI.Box(new Rect(10f, 10f, 640f, 190f), SliceHudFormatter.Format(_session.World, _savePath, _session.Status, _session.DescribeNextActor()));
+            GUI.Box(new Rect(10f, 10f, 760f, 230f), SliceHudFormatter.Format(_session.World, _savePath, _session.Status, _session.DescribeNextActor()));
         }
 
         private void HandleInput()
         {
+            if (Input.GetKeyDown(KeyCode.I)) _session.InspectInventory();
+            if (Input.GetKeyDown(KeyCode.Z)) _session.EquipFirstWeapon();
+            if (Input.GetKeyDown(KeyCode.X)) _session.UnequipWeapon();
             if (Input.GetKeyDown(KeyCode.E)) _session.TryPickup();
             if (Input.GetKeyDown(KeyCode.M)) _session.TradeWithMerchant();
             if (Input.GetKeyDown(KeyCode.G)) _session.InteractWithGuard();
