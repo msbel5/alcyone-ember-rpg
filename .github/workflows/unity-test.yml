@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 env:
-  UNITY_VERSION: 2022.3.20f1  # Match ProjectSettings/ProjectVersion.txt
+  UNITY_VERSION: 6000.3.13f1  # Matches ProjectSettings/ProjectVersion.txt
 
 jobs:
   # 1. EditMode Tests — Pure C# logic, fast (~5 min)
