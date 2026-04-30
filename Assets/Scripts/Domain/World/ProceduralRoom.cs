@@ -1,8 +1,8 @@
 using EmberCrpg.Domain.Actors;
 
 // Design note:
-// ProceduralRoom is the deterministic one-room world snapshot for Sprint 1.
-// Inputs: room seed, dimensions, door cell, and spawn positions.
+// ProceduralRoom is the deterministic one-room world snapshot for Sprint 1 plus Sprint 3 templates.
+// Inputs: room seed, dimensions, layout id, door cell, and spawn positions.
 // Outputs: pure room geometry metadata for movement, bootstrap, and saves.
 // Bible reference: MASTER_MECHANICS_BIBLE.md §40/§41, PRD FR-03.
 namespace EmberCrpg.Domain.World
@@ -13,6 +13,7 @@ namespace EmberCrpg.Domain.World
         public int Seed;
         public int Width;
         public int Height;
+        public RoomLayoutId LayoutId;
         public GridPosition DoorCell;
         public GridPosition PlayerSpawn;
         public GridPosition TalkerSpawn;

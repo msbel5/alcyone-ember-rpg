@@ -5,6 +5,7 @@
 // Bible reference: PRD Sprint 1 FR-06, Sprint 2 FR-02 through FR-04, Sprint 3 persistence hardening.
 using System.Linq;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.World;
@@ -28,10 +29,14 @@ namespace EmberCrpg.Data.Save
                 guard = ActorSaveMapper.ToData(world.Guard),
                 enemy = ActorSaveMapper.ToData(world.Enemy),
                 inventory = ToInventoryData(world.PlayerInventory),
+                playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
                 pickups = world.Pickups.Select(ItemSaveMapper.ToData).ToArray(),
                 topics = world.Topics.Select(topic => new TopicSaveData { id = topic.Id, label = topic.Label, answer = topic.Answer }).ToArray(),
                 npcMemories = (world.NpcMemories == null ? new ActorMemory[0] : world.NpcMemories.Entries.ToArray()).Select(MemorySaveMapper.ToData).ToArray(),
+                reputations = (world.Reputations == null ? new FactionReputationEntry[0] : world.Reputations.Entries.ToArray())
+                    .Select(entry => new FactionReputationSaveData { factionId = entry.FactionId, score = entry.Score })
+                    .ToArray(),
                 doorOpen = world.DoorOpen,
                 guardDoorAccessGranted = world.GuardDoorAccessGranted,
                 guardWarningCount = world.GuardWarningCount,
@@ -51,9 +56,11 @@ namespace EmberCrpg.Data.Save
             world.Guard = ActorSaveMapper.ToActor(data.guard);
             world.Enemy = ActorSaveMapper.ToActor(data.enemy);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
+            world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
             world.Pickups = (data.pickups ?? new PickupSaveData[0]).Select(ItemSaveMapper.ToPickup).ToList();
             world.Topics = (data.topics ?? new TopicSaveData[0]).Select(topic => new AskAboutTopic(topic.id, topic.label, topic.answer)).ToList();
+            world.Reputations = ToReputationLedger(data.reputations);
             var memories = new NpcMemoryStore(new[] { world.Talker.Id, world.Merchant.Id, world.Guard.Id });
             memories.Replace((data.npcMemories ?? new NpcMemorySaveData[0]).Select(MemorySaveMapper.ToMemory));
             memories.RegisterRange(new[] { world.Talker.Id, world.Merchant.Id, world.Guard.Id });
@@ -66,7 +73,7 @@ namespace EmberCrpg.Data.Save
             return world;
         }
 
-        private static InventorySaveData ToInventoryData(EmberCrpg.Domain.Inventory.InventoryState inventory)
+        private static InventorySaveData ToInventoryData(InventoryState inventory)
         {
             return new InventorySaveData
             {
@@ -75,9 +82,35 @@ namespace EmberCrpg.Data.Save
             };
         }
 
-        private static EmberCrpg.Domain.Inventory.InventoryState ToInventoryState(InventorySaveData inventory, int fallbackCapacity)
+        private static EquipmentSaveData ToEquipmentData(EquipmentState equipment)
         {
-            var state = new EmberCrpg.Domain.Inventory.InventoryState(inventory?.capacity ?? fallbackCapacity);
+            return new EquipmentSaveData
+            {
+                weapon = equipment == null || equipment.Weapon == null ? null : ItemSaveMapper.ToData(equipment.Weapon),
+                armor = equipment == null || equipment.Armor == null ? null : ItemSaveMapper.ToData(equipment.Armor),
+            };
+        }
+
+        private static EquipmentState ToEquipmentState(EquipmentSaveData equipment)
+        {
+            var state = new EquipmentState();
+            if (equipment != null && equipment.weapon != null)
+                state.Set(ItemSaveMapper.ToItem(equipment.weapon));
+            if (equipment != null && equipment.armor != null)
+                state.Set(ItemSaveMapper.ToItem(equipment.armor));
+            return state;
+        }
+
+        private static FactionReputationLedger ToReputationLedger(FactionReputationSaveData[] reputations)
+        {
+            var ledger = new FactionReputationLedger();
+            ledger.Replace((reputations ?? new FactionReputationSaveData[0]).Select(entry => new FactionReputationEntry(entry.factionId, entry.score)));
+            return ledger;
+        }
+
+        private static InventoryState ToInventoryState(InventorySaveData inventory, int fallbackCapacity)
+        {
+            var state = new InventoryState(inventory?.capacity ?? fallbackCapacity);
             foreach (var item in inventory?.items ?? new ItemSaveData[0])
                 state.TryAdd(ItemSaveMapper.ToItem(item));
             return state;

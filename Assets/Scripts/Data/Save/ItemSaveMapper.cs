@@ -14,12 +14,20 @@ namespace EmberCrpg.Data.Save
     {
         public static ItemSaveData ToData(InventoryItem item)
         {
-            return new ItemSaveData { id = item.Id.Value, templateId = item.TemplateId, displayName = item.DisplayName, quantity = item.Quantity };
+            return new ItemSaveData
+            {
+                id = item.Id.Value,
+                templateId = item.TemplateId,
+                displayName = item.DisplayName,
+                quantity = item.Quantity,
+                isStackable = item.IsStackable,
+                equipSlot = (int)item.EquipSlot,
+            };
         }
 
         public static InventoryItem ToItem(ItemSaveData item)
         {
-            return new InventoryItem(new ItemId(item.id), item.templateId, item.displayName, item.quantity);
+            return new InventoryItem(new ItemId(item.id), item.templateId, item.displayName, item.quantity, item.isStackable, (EquipmentSlot)item.equipSlot);
         }
 
         public static PickupSaveData ToData(RoomPickup pickup)

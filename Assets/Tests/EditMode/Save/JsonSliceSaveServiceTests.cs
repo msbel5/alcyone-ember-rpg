@@ -1,6 +1,7 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Memory;
+using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Simulation.Inventory;
 using EmberCrpg.Simulation.Narrative;
 using EmberCrpg.Simulation.World;
@@ -15,7 +16,7 @@ namespace EmberCrpg.Tests.EditMode.Save
     public sealed class JsonSliceSaveServiceTests
     {
         [Test]
-        public void SaveAndLoad_RoundTripsDoorMerchantGuardEnemyMemoryAndNextItemId()
+        public void SaveAndLoad_RoundTripsDoorMerchantGuardEnemyMemoryEquipmentReputationAndNextItemId()
         {
             var world = new SliceWorldFactory().Create(1337);
             world.Player.MoveTo(world.Talker.Position.Translate(0, -1));
@@ -24,6 +25,9 @@ namespace EmberCrpg.Tests.EditMode.Save
             world.PlayerInventory.TryAdd(world.Pickups[0].Item);
             world.Pickups[0].Collect();
             new MerchantTradeService().TradeGateWrit(world);
+            var replacementArmor = new InventoryItem(new EmberCrpg.Domain.Core.ItemId(8001), "field_plate", "Field Plate", 1, false, EquipmentSlot.Armor);
+            world.PlayerInventory.TryAdd(replacementArmor);
+            new EquipmentService().Equip(world, replacementArmor.Id);
             world.Player.MoveTo(world.Guard.Position.Translate(0, -1));
             new GuardInteractionService().Interact(world);
             world.Player.MoveTo(new GridPosition(world.Room.DoorCell.X, 1));
@@ -45,6 +49,9 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(loaded.GuardDoorAccessGranted, Is.True);
             Assert.That(loaded.DoorOpen, Is.True);
             Assert.That(loaded.Enemy.Vitals.Health.Current, Is.EqualTo(world.Enemy.Vitals.Health.Current));
+            Assert.That(loaded.PlayerEquipment.Weapon.DisplayName, Is.EqualTo(world.PlayerEquipment.Weapon.DisplayName));
+            Assert.That(loaded.PlayerEquipment.Armor.DisplayName, Is.EqualTo("Field Plate"));
+            Assert.That(loaded.Reputations.Get(GuardInteractionService.CityWatchFactionId), Is.EqualTo(1));
             Assert.That(loadedNextId, Is.EqualTo(expectedNextId));
             Assert.That(loaded.NpcMemories.TryGet(loaded.Talker.Id, out talkerMemory), Is.True);
             Assert.That(loaded.NpcMemories.TryGet(loaded.Merchant.Id, out merchantMemory), Is.True);

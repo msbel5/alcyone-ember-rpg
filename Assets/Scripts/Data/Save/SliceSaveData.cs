@@ -19,10 +19,12 @@ namespace EmberCrpg.Data.Save
         public ActorSaveData guard;
         public ActorSaveData enemy;
         public InventorySaveData inventory;
+        public EquipmentSaveData playerEquipment;
         public InventorySaveData merchantInventory;
         public PickupSaveData[] pickups;
         public TopicSaveData[] topics;
         public NpcMemorySaveData[] npcMemories;
+        public FactionReputationSaveData[] reputations;
         public bool doorOpen;
         public bool guardDoorAccessGranted;
         public int guardWarningCount;
@@ -66,12 +68,21 @@ namespace EmberCrpg.Data.Save
     }
 
     [Serializable]
+    public sealed class EquipmentSaveData
+    {
+        public ItemSaveData weapon;
+        public ItemSaveData armor;
+    }
+
+    [Serializable]
     public sealed class ItemSaveData
     {
         public ulong id;
         public string templateId;
         public string displayName;
         public int quantity;
+        public bool isStackable;
+        public int equipSlot;
     }
 
     [Serializable]
@@ -97,6 +108,13 @@ namespace EmberCrpg.Data.Save
         public ulong ownerId;
         public string[] dialogueSeen;
         public ActorMemoryEventSaveData[] events;
+    }
+
+    [Serializable]
+    public sealed class FactionReputationSaveData
+    {
+        public string factionId;
+        public int score;
     }
 
     [Serializable]

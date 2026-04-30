@@ -3,13 +3,13 @@ using System.Linq;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// InventoryState owns the Sprint 1 ten-slot deterministic backpack.
+// InventoryState owns the Sprint 1 ten-slot deterministic backpack plus Sprint 3 exact-item transfers.
 // Inputs: item add/remove requests from pure simulation services.
-// Outputs: bounded inventory state suitable for combat, pickup, trade, and save/load tests.
+// Outputs: bounded inventory state suitable for combat, pickup, trade, equipment swaps, and save/load tests.
 // Bible reference: ARCHITECTURE.md inventory kernel, PRD FR-05.
 namespace EmberCrpg.Domain.Inventory
 {
-    /// <summary>Mutable inventory state with stack merge support and fixed capacity.</summary>
+    /// <summary>Mutable inventory state with fixed capacity and exact-item transfer support.</summary>
     public sealed class InventoryState
     {
         private readonly List<InventoryItem> _items = new List<InventoryItem>();
@@ -25,7 +25,10 @@ namespace EmberCrpg.Domain.Inventory
 
         public bool TryAdd(InventoryItem item)
         {
-            var existing = _items.FirstOrDefault(candidate => candidate.TemplateId == item.TemplateId);
+            var existing = _items.FirstOrDefault(candidate => candidate.IsStackable
+                && item.IsStackable
+                && candidate.TemplateId == item.TemplateId
+                && candidate.EquipSlot == item.EquipSlot);
             if (existing != null)
             {
                 existing.AddQuantity(item.Quantity);
@@ -66,17 +69,34 @@ namespace EmberCrpg.Domain.Inventory
                 return true;
             }
 
-            if (itemIds == null)
+            if (!existing.IsStackable || itemIds == null)
                 return false;
 
             existing.RemoveQuantity(quantity);
-            item = new InventoryItem(itemIds.TakeNext(), existing.TemplateId, existing.DisplayName, quantity);
+            item = new InventoryItem(itemIds.TakeNext(), existing.TemplateId, existing.DisplayName, quantity, true, existing.EquipSlot);
+            return true;
+        }
+
+        public bool TryTakeById(ItemId id, out InventoryItem item)
+        {
+            item = null;
+            var existing = _items.FirstOrDefault(candidate => candidate.Id == id);
+            if (existing == null || existing.Quantity != 1)
+                return false;
+
+            _items.Remove(existing);
+            item = existing;
             return true;
         }
 
         public bool Contains(string templateId)
         {
             return _items.Any(candidate => candidate.TemplateId == templateId);
+        }
+
+        public bool Contains(ItemId id)
+        {
+            return _items.Any(candidate => candidate.Id == id);
         }
 
         public InventoryState Clone()

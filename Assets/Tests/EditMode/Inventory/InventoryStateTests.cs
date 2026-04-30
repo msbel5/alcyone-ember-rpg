@@ -28,6 +28,17 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         }
 
         [Test]
+        public void TryAdd_NonStackableDuplicateTemplate_KeepsDistinctStableItems()
+        {
+            var inventory = new InventoryState(10);
+            inventory.TryAdd(new InventoryItem(new ItemId(10), "warden_blade", "Warden Blade", 1, false, EquipmentSlot.Weapon));
+            inventory.TryAdd(new InventoryItem(new ItemId(11), "warden_blade", "Warden Blade", 1, false, EquipmentSlot.Weapon));
+
+            Assert.That(inventory.Items.Count, Is.EqualTo(2));
+            Assert.That(inventory.Items[0].Id, Is.Not.EqualTo(inventory.Items[1].Id));
+        }
+
+        [Test]
         public void TryAdd_WhenFull_ReturnsFalse()
         {
             var inventory = new InventoryState(1);
@@ -59,6 +70,22 @@ namespace EmberCrpg.Tests.EditMode.Inventory
             Assert.That(success, Is.True);
             Assert.That(taken.Id, Is.EqualTo(expectedId));
             Assert.That(inventory.Items[0].Quantity, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TryTakeById_NonStackableItem_RemovesExactInstance()
+        {
+            var inventory = new InventoryState(10);
+            inventory.TryAdd(new InventoryItem(new ItemId(20), "warden_coat", "Warden Coat", 1, false, EquipmentSlot.Armor));
+            inventory.TryAdd(new InventoryItem(new ItemId(21), "warden_blade", "Warden Blade", 1, false, EquipmentSlot.Weapon));
+
+            InventoryItem taken;
+            var success = inventory.TryTakeById(new ItemId(21), out taken);
+
+            Assert.That(success, Is.True);
+            Assert.That(taken.TemplateId, Is.EqualTo("warden_blade"));
+            Assert.That(inventory.Contains(new ItemId(21)), Is.False);
+            Assert.That(inventory.Contains(new ItemId(20)), Is.True);
         }
     }
 }
