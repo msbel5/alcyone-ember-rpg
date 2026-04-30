@@ -60,14 +60,19 @@ Goal: prove this Unity rewrite can move, spawn, interact, fight, save, and test 
 - NUnit tests cover mechanics systems
 - `DOCS/sprint-1-summary.md` written
 
-## Sprint 2 — Architecture follow-through
+## Sprint 2 — Interaction refinement and presentation cleanup
 
-Status: planned
+Status: implemented on branch, pending Inspector review
 
-- decide whether the approved Sprint 1 encounter loop graduates into a broader Ember combat model or is adapted back into RTWP pause-step services
-- if RTWP wins long-term, keep Sprint 1's deterministic combat math and remap only the encounter orchestration layer
-- add richer item/equipment and dialogue state
-- replace prototype bootstrap with proper scene/prefab composition
+- split presentation seams so `SliceGameController` delegates to session/HUD/view helpers
+- make the south door deterministic, saveable, and guard-gated
+- add merchant stock plus a real Ember Shard → Gate Writ trade path
+- add Sentinel Rook warning/clearance state distinct from Talker Ask About
+- differentiate actor-role starting vitals/combat fields in pure Simulation
+- add EditMode coverage for door, merchant, guard, save/load, and role differentiation
+
+Output:
+- `DOCS/sprint-2-summary.md`
 
 ## Sprint 3 — Deeper simulation
 
