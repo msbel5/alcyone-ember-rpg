@@ -32,6 +32,7 @@ namespace EmberCrpg.Domain.World
         public ActorRecord Guard;
         public ActorRecord Enemy;
         public InventoryState PlayerInventory;
+        public EquipmentState PlayerEquipment = new EquipmentState();
         public InventoryState MerchantInventory;
         public List<RoomPickup> Pickups = new List<RoomPickup>();
         public List<DungeonRoomState> DungeonRoomStates = new List<DungeonRoomState>();
