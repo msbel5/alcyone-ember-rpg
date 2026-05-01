@@ -50,6 +50,7 @@ namespace EmberCrpg.Presentation.Sprint4
             player.AddComponent<Animator>();
             player.AddComponent<Sprint4AnimatorDriver>();
             player.AddComponent<Sprint4PlayerController>();
+            player.AddComponent<Sprint4CombatInputAdapter>();
 
             var visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             visual.name = "Placeholder Body";
