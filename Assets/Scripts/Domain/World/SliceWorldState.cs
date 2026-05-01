@@ -18,6 +18,14 @@ namespace EmberCrpg.Domain.World
         public GameTime Time;
         public int RoomSeed;
         public ProceduralRoom Room;
+        public GeneratedDungeonLayout Dungeon;
+        public int CurrentRoomId;
+        public int PlayerRoomId;
+        public int TalkerRoomId;
+        public int MerchantRoomId;
+        public int GuardRoomId;
+        public int EnemyRoomId;
+        public int PickupRoomId;
         public ActorRecord Player;
         public ActorRecord Talker;
         public ActorRecord Merchant;
@@ -26,6 +34,8 @@ namespace EmberCrpg.Domain.World
         public InventoryState PlayerInventory;
         public InventoryState MerchantInventory;
         public List<RoomPickup> Pickups = new List<RoomPickup>();
+        public List<DungeonRoomState> DungeonRoomStates = new List<DungeonRoomState>();
+        public List<DungeonDoorState> DungeonDoorStates = new List<DungeonDoorState>();
         public List<AskAboutTopic> Topics = new List<AskAboutTopic>();
         public NpcMemoryStore NpcMemory = new NpcMemoryStore();
         public bool DoorOpen;
