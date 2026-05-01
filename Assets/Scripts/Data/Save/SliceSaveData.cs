@@ -31,6 +31,7 @@ namespace EmberCrpg.Data.Save
         public ActorSaveData guard;
         public ActorSaveData enemy;
         public InventorySaveData inventory;
+        public EquipmentSaveData playerEquipment;
         public InventorySaveData merchantInventory;
         public PickupSaveData[] pickups;
         public TopicSaveData[] topics;
@@ -40,6 +41,19 @@ namespace EmberCrpg.Data.Save
         public int guardWarningCount;
         public bool encounterActive;
         public string lastNarrative;
+    }
+
+    [Serializable]
+    public sealed class EquipmentSaveData
+    {
+        public EquippedItemSaveData[] slots;
+    }
+
+    [Serializable]
+    public sealed class EquippedItemSaveData
+    {
+        public int slot;
+        public ulong itemId;
     }
 
     [Serializable]
@@ -134,6 +148,9 @@ namespace EmberCrpg.Data.Save
         public string templateId;
         public string displayName;
         public int quantity;
+        public int equipmentSlot;
+        public int accuracyBonus;
+        public int damageBonus;
     }
 
     [Serializable]
