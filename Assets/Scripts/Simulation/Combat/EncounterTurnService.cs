@@ -1,6 +1,7 @@
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Combat;
 using EmberCrpg.Simulation.Rng;
+using EmberCrpg.Simulation.Inventory;
 
 // Design note:
 // EncounterTurnService advances Sprint 1's explicit bounded turn loop.
@@ -16,9 +17,21 @@ namespace EmberCrpg.Simulation.Combat
 
         public CombatStrikeResult Advance(EncounterState encounter, ActorRecord player, ActorRecord enemy, IDeterministicRng rng)
         {
+            return Advance(encounter, player, enemy, rng, new EquipmentCombatStats(0, 0), new EquipmentCombatStats(0, 0));
+        }
+
+        public CombatStrikeResult Advance(
+            EncounterState encounter,
+            ActorRecord player,
+            ActorRecord enemy,
+            IDeterministicRng rng,
+            EquipmentCombatStats playerEquipment,
+            EquipmentCombatStats enemyEquipment)
+        {
             var attacker = encounter.PlayerActsNext ? player : enemy;
             var defender = encounter.PlayerActsNext ? enemy : player;
-            var strike = _combat.ResolveAttack(attacker, defender, rng);
+            var equipment = encounter.PlayerActsNext ? playerEquipment : enemyEquipment;
+            var strike = _combat.ResolveAttack(attacker, defender, rng, equipment.AccuracyBonus, equipment.DamageBonus);
             encounter.AddLog(strike.Summary);
 
             if (!defender.IsAlive)

@@ -13,6 +13,7 @@ namespace EmberCrpg.Simulation.Inventory
     {
         public const string EmberShardTemplateId = "ember_shard";
         public const string GateWritTemplateId = "gate_writ";
+        public const string AshTrainingBladeTemplateId = "ash_training_blade";
 
         public static InventoryItem CreateEmberShard()
         {
@@ -22,6 +23,11 @@ namespace EmberCrpg.Simulation.Inventory
         public static InventoryItem CreateGateWrit()
         {
             return new InventoryItem(new ItemId(2001), GateWritTemplateId, "Gate Writ", 1);
+        }
+
+        public static InventoryItem CreateAshTrainingBlade()
+        {
+            return new InventoryItem(new ItemId(3001), AshTrainingBladeTemplateId, "Ash Training Blade", 1, EquipmentSlot.Weapon, 5, 2);
         }
     }
 }

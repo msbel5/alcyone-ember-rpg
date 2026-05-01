@@ -52,6 +52,8 @@ namespace EmberCrpg.Simulation.World
             world.Guard = _actors.Create(new ActorId(4), "Sentinel Rook", ActorRole.Guard, guardSpawn.Position);
             world.Enemy = _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, enemySpawn.Position);
             world.PlayerInventory = new InventoryState(10);
+            world.PlayerEquipment = new EquipmentState();
+            world.PlayerInventory.TryAdd(SliceItemCatalog.CreateAshTrainingBlade());
             world.MerchantInventory = new InventoryState(4);
             world.MerchantInventory.TryAdd(SliceItemCatalog.CreateGateWrit());
             world.Pickups = new List<RoomPickup>
@@ -67,7 +69,7 @@ namespace EmberCrpg.Simulation.World
             world.DoorOpen = false;
             world.GuardDoorAccessGranted = false;
             world.GuardWarningCount = 0;
-            world.LastNarrative = "Pick up the Ember Shard, trade for a gate writ, speak to Sentinel Rook, then work the south door.";
+            world.LastNarrative = "Open inventory with I, equip the Ash Training Blade with Z, then pick up the Ember Shard and work the south door loop.";
             return world;
         }
     }

@@ -18,10 +18,10 @@ namespace EmberCrpg.Presentation.Slice
             var doorState = world.DoorOpen ? "open" : "closed";
             var clearance = world.GuardDoorAccessGranted ? "cleared" : $"blocked ({world.GuardWarningCount} warnings)";
 
-            return $@"Sprint 2 Slice
-WASD + mouse look | E pickup | M trade | G guard | T door | F encounter | 1/2/3 Ask About | Q Ask DM | R Think | F5 save | F9 load
+            return $@"Sprint 4 Slice
+WASD + mouse look | I inventory | Z equip weapon | X unequip | E pickup | M trade | G guard | T door | F encounter | 1/2/3 Ask About | Q Ask DM | R Think | F5/F9 save/load
 Player HP {world.Player.Vitals.Health.Current}/{world.Player.Vitals.Health.Max} | Enemy HP {world.Enemy.Vitals.Health.Current}/{world.Enemy.Vitals.Health.Max}
-Inventory {world.PlayerInventory.Items.Count}/{world.PlayerInventory.Capacity} | Gate writ: {hasWrit} | Merchant: {stock}
+Inventory {world.PlayerInventory.Items.Count}/{world.PlayerInventory.Capacity} | {InventoryEquipmentFormatter.FormatEquipmentLine(world)} | Gate writ: {hasWrit} | Merchant: {stock}
 Door: {doorState} | Guard clearance: {clearance} | Next actor: {nextActor}
 Save {savePath}
 
