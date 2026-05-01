@@ -37,6 +37,7 @@ namespace EmberCrpg.Presentation.Slice
 
         public SliceWorldState World { get; private set; }
         public string Status { get; private set; }
+        public SliceAtmosphereCueSet CurrentAtmosphere => SliceAtmosphereSelector.Select(World);
 
         public void StartNewWorld(int roomSeed)
         {

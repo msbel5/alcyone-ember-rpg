@@ -20,6 +20,8 @@
     <Compile Include="../../../Assets/Scripts/Simulation/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Data/Save/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/InventoryEquipmentFormatter.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/SliceAtmosphereCueSet.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/SliceAtmosphereSelector.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/SliceHudFormatter.cs" />
     <Compile Include="../../../Assets/Tests/EditMode/**/*.cs" />
     <Compile Include="UnityJsonUtilityStub.cs" />
