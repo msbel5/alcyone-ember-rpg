@@ -4,6 +4,7 @@
 // Outputs: deterministic room, actors, inventories, topics, and interaction state.
 // Bible reference: PRD Sprint 1 FR-01 through FR-07, Sprint 2 FR-02 through FR-05.
 using System.Collections.Generic;
+using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
@@ -17,27 +18,45 @@ namespace EmberCrpg.Simulation.World
     public sealed class SliceWorldFactory
     {
         private readonly ProceduralRoomGenerator _rooms = new ProceduralRoomGenerator();
+        private readonly MultiRoomDungeonGenerator _dungeons = new MultiRoomDungeonGenerator();
         private readonly SliceActorLoadoutFactory _actors = new SliceActorLoadoutFactory();
 
         public SliceWorldState Create(int roomSeed)
         {
             var room = _rooms.Generate(roomSeed);
+            var dungeon = _dungeons.Generate(roomSeed);
+            var playerSpawn = dungeon.FindSpawn(DungeonSpawnKind.Player);
+            var talkerSpawn = dungeon.FindSpawn(DungeonSpawnKind.Talker);
+            var merchantSpawn = dungeon.FindSpawn(DungeonSpawnKind.Merchant);
+            var guardSpawn = dungeon.FindSpawn(DungeonSpawnKind.Guard);
+            var enemySpawn = dungeon.FindSpawn(DungeonSpawnKind.Enemy);
+            var pickupSpawn = dungeon.FindSpawn(DungeonSpawnKind.Pickup);
             var talkTopics = new[] { "embers", "gate", "watch" };
             var world = new SliceWorldState();
             world.Time = new GameTime(8 * GameTime.MinutesPerHour);
             world.RoomSeed = roomSeed;
             world.Room = room;
-            world.Player = _actors.Create(new ActorId(1), "Warden", ActorRole.Player, room.PlayerSpawn);
-            world.Talker = _actors.Create(new ActorId(2), "Sage Nera", ActorRole.Talker, room.TalkerSpawn, talkTopics);
-            world.Merchant = _actors.Create(new ActorId(3), "Quartermaster Ivo", ActorRole.Merchant, room.MerchantSpawn);
-            world.Guard = _actors.Create(new ActorId(4), "Sentinel Rook", ActorRole.Guard, room.GuardSpawn);
-            world.Enemy = _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, room.EnemySpawn);
+            world.Dungeon = dungeon;
+            world.CurrentRoomId = dungeon.StartRoomId;
+            world.PlayerRoomId = playerSpawn.RoomId;
+            world.TalkerRoomId = talkerSpawn.RoomId;
+            world.MerchantRoomId = merchantSpawn.RoomId;
+            world.GuardRoomId = guardSpawn.RoomId;
+            world.EnemyRoomId = enemySpawn.RoomId;
+            world.PickupRoomId = pickupSpawn.RoomId;
+            world.DungeonRoomStates = dungeon.Rooms.Select(roomNode => new DungeonRoomState(roomNode.Id, roomNode.Id == dungeon.StartRoomId, false)).ToList();
+            world.DungeonDoorStates = dungeon.Doors.Select(door => new DungeonDoorState(door.Id, door.StartsOpen)).ToList();
+            world.Player = _actors.Create(new ActorId(1), "Warden", ActorRole.Player, playerSpawn.Position);
+            world.Talker = _actors.Create(new ActorId(2), "Sage Nera", ActorRole.Talker, talkerSpawn.Position, talkTopics);
+            world.Merchant = _actors.Create(new ActorId(3), "Quartermaster Ivo", ActorRole.Merchant, merchantSpawn.Position);
+            world.Guard = _actors.Create(new ActorId(4), "Sentinel Rook", ActorRole.Guard, guardSpawn.Position);
+            world.Enemy = _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, enemySpawn.Position);
             world.PlayerInventory = new InventoryState(10);
             world.MerchantInventory = new InventoryState(4);
             world.MerchantInventory.TryAdd(SliceItemCatalog.CreateGateWrit());
             world.Pickups = new List<RoomPickup>
             {
-                new RoomPickup(SliceItemCatalog.CreateEmberShard(), room.PickupSpawn),
+                new RoomPickup(SliceItemCatalog.CreateEmberShard(), pickupSpawn.Position),
             };
             world.Topics = new List<AskAboutTopic>
             {
