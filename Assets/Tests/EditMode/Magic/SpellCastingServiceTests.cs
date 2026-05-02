@@ -64,6 +64,49 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void TryCast_NullCaster_IsRejected()
+        {
+            var service = new SpellCastingService();
+
+            var result = service.TryCast(
+                null,
+                SliceSpellCatalog.FlameBoltTemplateId,
+                new[] { SliceSpellCatalog.FlameBoltTemplateId });
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellCastError.InvalidCaster));
+            Assert.That(result.Spell, Is.Null);
+        }
+
+        [Test]
+        public void TryCast_BlankSpellId_ReturnsSpellNotFound()
+        {
+            var caster = CreateCaster(mana: 20, health: 16);
+            var service = new SpellCastingService();
+
+            var result = service.TryCast(caster, " ", new[] { SliceSpellCatalog.FlameBoltTemplateId });
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellCastError.SpellNotFound));
+            Assert.That(result.Spell, Is.Null);
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
+        }
+
+        [Test]
+        public void TryCast_NullKnownSpellSet_ReturnsSpellNotKnownWithoutSpendingMana()
+        {
+            var caster = CreateCaster(mana: 20, health: 16);
+            var service = new SpellCastingService();
+
+            var result = service.TryCast(caster, SliceSpellCatalog.FlameBoltTemplateId, null);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellCastError.SpellNotKnown));
+            Assert.That(result.Spell.TemplateId, Is.EqualTo(SliceSpellCatalog.FlameBoltTemplateId));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
+        }
+
+        [Test]
         public void TryCast_UnknownSpell_ReturnsSpellNotFound()
         {
             var caster = CreateCaster(mana: 20, health: 16);
