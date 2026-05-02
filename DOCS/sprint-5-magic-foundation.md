@@ -27,7 +27,7 @@ Command:
 ./tools/validation/run-validation.sh --mode fallback
 ```
 
-Latest measured result for this increment: `Passed: 117, Failed: 0, Skipped: 0, Total: 117`.
+Latest measured result for this increment: `Passed: 120, Failed: 0, Skipped: 0, Total: 120`.
 
 ## Caveats
 
