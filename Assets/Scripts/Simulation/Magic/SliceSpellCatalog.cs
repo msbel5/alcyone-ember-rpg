@@ -34,6 +34,7 @@ namespace EmberCrpg.Simulation.Magic
                 FlameBoltTemplateId,
                 "Flame Bolt",
                 MagicSchool.Destruction,
+                SpellTargetKind.SingleTarget,
                 12,
                 new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
         }
@@ -44,6 +45,7 @@ namespace EmberCrpg.Simulation.Magic
                 MendingTouchTemplateId,
                 "Mending Touch",
                 MagicSchool.Restoration,
+                SpellTargetKind.Touch,
                 10,
                 new[] { new SpellEffectSpec(SpellEffectKind.RestoreHealth, 6, 0) });
         }
@@ -54,6 +56,7 @@ namespace EmberCrpg.Simulation.Magic
                 EmberWardTemplateId,
                 "Ember Ward",
                 MagicSchool.Alteration,
+                SpellTargetKind.CasterSelf,
                 15,
                 new[] { new SpellEffectSpec(SpellEffectKind.ShieldBuff, 4, 30) });
         }
