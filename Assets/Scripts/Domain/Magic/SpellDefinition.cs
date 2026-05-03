@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 // Design note:
 // SpellDefinition is the immutable catalog entry for one spell: stable template id,
-// display name, school tag, mana cost, and an ordered list of effect specs.
+// display name, school tag, target kind, mana cost, and an ordered list of effect specs.
 // Inputs: deterministic catalog data (no Unity types).
 // Outputs: read-only spell record consumed by casting/validation services.
 // Bible reference: MASTER_MECHANICS_BIBLE.md §14 (cost <= mana check, school taxonomy),
@@ -21,6 +21,17 @@ namespace EmberCrpg.Domain.Magic
             MagicSchool school,
             int manaCost,
             IEnumerable<SpellEffectSpec> effects)
+            : this(templateId, displayName, school, SpellTargetKind.SingleTarget, manaCost, effects)
+        {
+        }
+
+        public SpellDefinition(
+            string templateId,
+            string displayName,
+            MagicSchool school,
+            SpellTargetKind targetKind,
+            int manaCost,
+            IEnumerable<SpellEffectSpec> effects)
         {
             if (string.IsNullOrWhiteSpace(templateId))
                 throw new ArgumentException("Spell templateId must be a non-empty stable id.", nameof(templateId));
@@ -28,6 +39,8 @@ namespace EmberCrpg.Domain.Magic
                 throw new ArgumentException("Spell displayName must be a non-empty label.", nameof(displayName));
             if (school == MagicSchool.None)
                 throw new ArgumentOutOfRangeException(nameof(school), school, "Spell must declare a real school.");
+            if (targetKind == SpellTargetKind.None)
+                throw new ArgumentOutOfRangeException(nameof(targetKind), targetKind, "Spell must declare a real target kind.");
             if (manaCost < 0)
                 throw new ArgumentOutOfRangeException(nameof(manaCost), manaCost, "Mana cost must be zero or positive.");
             if (effects == null)
@@ -40,12 +53,14 @@ namespace EmberCrpg.Domain.Magic
             TemplateId = templateId;
             DisplayName = displayName;
             School = school;
+            TargetKind = targetKind;
             ManaCost = manaCost;
         }
 
         public string TemplateId { get; }
         public string DisplayName { get; }
         public MagicSchool School { get; }
+        public SpellTargetKind TargetKind { get; }
         public int ManaCost { get; }
         public IReadOnlyList<SpellEffectSpec> Effects => _effects;
 
