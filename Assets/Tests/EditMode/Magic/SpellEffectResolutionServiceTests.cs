@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 // Design note:
 // Pins the first Sprint 5 effect resolver slice: successful casts may apply only instantaneous
-// DirectDamage and RestoreHealth effects, with all refusal paths leaving target health untouched.
+// DirectDamage, RestoreHealth, and RestoreFatigue effects, with all refusal paths leaving target vitals untouched.
 namespace EmberCrpg.Tests.EditMode.Magic
 {
     /// <summary>Verifies deterministic instantaneous spell effect resolution.</summary>
@@ -31,6 +31,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.AppliedEffectCount, Is.EqualTo(1));
             Assert.That(result.TotalDamage, Is.EqualTo(8));
             Assert.That(result.TotalHealing, Is.EqualTo(0));
+            Assert.That(result.TotalRestoredFatigue, Is.EqualTo(0));
             Assert.That(target.Vitals.Health.Current, Is.EqualTo(6));
             Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(manaAfterCast));
         }
@@ -62,13 +63,58 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.AppliedEffectCount, Is.EqualTo(1));
             Assert.That(result.TotalDamage, Is.EqualTo(0));
             Assert.That(result.TotalHealing, Is.EqualTo(3));
+            Assert.That(result.TotalRestoredFatigue, Is.EqualTo(0));
             Assert.That(target.Vitals.Health.Current, Is.EqualTo(16));
+        }
+
+        [Test]
+        public void ResolveInstantaneousEffects_RestoreFatigue_RestoresTargetFatigue()
+        {
+            var target = CreateActor(601, "Runner", ActorRole.Guard, health: 16, mana: 4, fatigue: 6);
+            var spell = new SpellDefinition(
+                "restore_fatigue_test",
+                "Restore Fatigue Test",
+                MagicSchool.Restoration,
+                1,
+                new[] { new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 4, 0) });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(1));
+            Assert.That(result.TotalDamage, Is.EqualTo(0));
+            Assert.That(result.TotalHealing, Is.EqualTo(0));
+            Assert.That(result.TotalRestoredFatigue, Is.EqualTo(4));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(16));
+            Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(10));
+        }
+
+        [Test]
+        public void ResolveInstantaneousEffects_RestoreFatigue_ClampsAtMaxFatigue()
+        {
+            var target = CreateActor(601, "Runner", ActorRole.Guard, health: 16, mana: 4, fatigue: 10);
+            var spell = new SpellDefinition(
+                "restore_fatigue_clamp_test",
+                "Restore Fatigue Clamp Test",
+                MagicSchool.Restoration,
+                1,
+                new[] { new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 5, 0) });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.TotalRestoredFatigue, Is.EqualTo(2));
+            Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(12));
         }
 
         [Test]
         public void ResolveInstantaneousEffects_MultipleSupportedEffects_AppliesInDefinitionOrder()
         {
-            var target = CreateActor(601, "Guard", ActorRole.Guard, health: 16, mana: 4);
+            var target = CreateActor(601, "Guard", ActorRole.Guard, health: 16, mana: 4, fatigue: 9);
             var spell = new SpellDefinition(
                 "scorching_rebuke_test",
                 "Scorching Rebuke Test",
@@ -77,6 +123,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 new[]
                 {
                     new SpellEffectSpec(SpellEffectKind.DirectDamage, 5, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 4, 0),
                     new SpellEffectSpec(SpellEffectKind.RestoreHealth, 2, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
@@ -85,10 +132,12 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var result = service.ResolveInstantaneousEffects(cast, target);
 
             Assert.That(result.Success, Is.True);
-            Assert.That(result.AppliedEffectCount, Is.EqualTo(2));
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(3));
             Assert.That(result.TotalDamage, Is.EqualTo(5));
             Assert.That(result.TotalHealing, Is.EqualTo(2));
+            Assert.That(result.TotalRestoredFatigue, Is.EqualTo(3));
             Assert.That(target.Vitals.Health.Current, Is.EqualTo(13));
+            Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(12));
         }
 
         [Test]
@@ -152,15 +201,19 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
-        public void ResolveInstantaneousEffects_UnsupportedInstantaneousEffect_IsRejectedWithoutMutatingTarget()
+        public void ResolveInstantaneousEffects_UnsupportedInstantaneousShieldBuff_IsRejectedWithoutMutatingTarget()
         {
-            var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4);
+            var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4, fatigue: 7);
             var spell = new SpellDefinition(
-                "restore_fatigue_test",
-                "Restore Fatigue Test",
-                MagicSchool.Restoration,
+                "instant_shield_buff_test",
+                "Instant Shield Buff Test",
+                MagicSchool.Alteration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 2, 0) });
+                new[]
+                {
+                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0),
+                    new SpellEffectSpec(SpellEffectKind.ShieldBuff, 2, 0),
+                });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -168,17 +221,22 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellEffectResolutionError.UnsupportedEffect));
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(0));
+            Assert.That(result.TotalDamage, Is.EqualTo(0));
+            Assert.That(result.TotalHealing, Is.EqualTo(0));
+            Assert.That(result.TotalRestoredFatigue, Is.EqualTo(0));
             Assert.That(target.Vitals.Health.Current, Is.EqualTo(13));
+            Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(7));
         }
 
-        private static ActorRecord CreateActor(int id, string name, ActorRole role, int health, int mana)
+        private static ActorRecord CreateActor(int id, string name, ActorRole role, int health, int mana, int fatigue = 12)
         {
             return new ActorRecord(
                 new ActorId((ulong)id),
                 name,
                 role,
                 new EmberStatBlock(10, 11, 12, 14, 9, 8),
-                new ActorVitals(new VitalStat(health, 16), new VitalStat(12, 12), new VitalStat(mana, 20)),
+                new ActorVitals(new VitalStat(health, 16), new VitalStat(fatigue, 12), new VitalStat(mana, 20)),
                 new GridPosition(1, 1),
                 accuracy: 11,
                 dodge: 6,

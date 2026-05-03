@@ -4,7 +4,7 @@ using EmberCrpg.Domain.Magic;
 // Design note:
 // SpellEffectResolutionService applies the deterministic Sprint 5 instantaneous magic subset.
 // Inputs: a successful SpellCastResult and one target ActorRecord.
-// Outputs: target health mutations for DirectDamage/RestoreHealth only; no mana changes or Unity types.
+// Outputs: target vitality mutations for DirectDamage/RestoreHealth/RestoreFatigue only; no mana changes or Unity types.
 // Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3 + §8 Sprint 5 deterministic mechanics,
 // MASTER_MECHANICS_BIBLE.md §15 Magic effects/opcodes.
 namespace EmberCrpg.Simulation.Magic
@@ -26,11 +26,12 @@ namespace EmberCrpg.Simulation.Magic
                 if (!effect.IsInstantaneous)
                     return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.NonInstantaneousEffect, castResult.Spell, "Timed spell effects are not resolved by this service.");
                 if (!IsSupported(effect.Kind))
-                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.UnsupportedEffect, castResult.Spell, "Only direct damage and restore health are supported in this increment.");
+                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.UnsupportedEffect, castResult.Spell, "Only direct damage, restore health, and restore fatigue are supported in this increment.");
             }
 
             var totalDamage = 0;
             var totalHealing = 0;
+            var totalRestoredFatigue = 0;
             for (var i = 0; i < effects.Count; i++)
             {
                 var effect = effects[i];
@@ -45,6 +46,12 @@ namespace EmberCrpg.Simulation.Magic
                     target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Restore(effect.Magnitude)));
                     totalHealing += target.Vitals.Health.Current - before;
                 }
+                else if (effect.Kind == SpellEffectKind.RestoreFatigue)
+                {
+                    before = target.Vitals.Fatigue.Current;
+                    target.ApplyVitals(target.Vitals.WithFatigue(target.Vitals.Fatigue.Restore(effect.Magnitude)));
+                    totalRestoredFatigue += target.Vitals.Fatigue.Current - before;
+                }
             }
 
             return SpellEffectResolutionResult.Ok(
@@ -52,12 +59,13 @@ namespace EmberCrpg.Simulation.Magic
                 effects.Count,
                 totalDamage,
                 totalHealing,
+                totalRestoredFatigue,
                 $"Resolved {effects.Count} instantaneous effect(s) from {castResult.Spell.DisplayName}.");
         }
 
         private static bool IsSupported(SpellEffectKind kind)
         {
-            return kind == SpellEffectKind.DirectDamage || kind == SpellEffectKind.RestoreHealth;
+            return kind == SpellEffectKind.DirectDamage || kind == SpellEffectKind.RestoreHealth || kind == SpellEffectKind.RestoreFatigue;
         }
     }
 }

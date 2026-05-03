@@ -10,8 +10,9 @@ Sprint 5 starts the deterministic magic layer without adding any LLM dependency 
 - `MagicSchool`, `SpellEffectKind`, `SpellEffectSpec`, and `SpellDefinition` domain contracts.
 - `SliceSpellCatalog` with three deterministic starter spell definitions.
 - `SpellCastingService` with spell lookup, known-spell validation, incapacitated-caster rejection, mana affordability checks, and mana spend only on successful casts.
-- `SpellEffectResolutionService` with deterministic instantaneous DirectDamage and RestoreHealth resolution against a living target; invalid/failed casts, invalid targets, timed effects, and unsupported effect kinds are rejected without mutating target health or spending extra mana.
-- EditMode fallback tests covering catalog determinism, domain validation, mana spend success, insufficient mana, unknown spell, unlearned spell, invalid caster paths, damage/healing resolution, ordered multi-effect totals, clamp behavior, and resolver refusal paths.
+- `SpellEffectResolutionService` with deterministic instantaneous DirectDamage, RestoreHealth, and RestoreFatigue resolution against a living target; invalid/failed casts, invalid targets, timed effects, and unsupported effect kinds are rejected without mutating target vitals or spending extra mana.
+- `SpellEffectResolutionResult.TotalRestoredFatigue` as a narrow deterministic evidence field for fatigue restoration totals.
+- EditMode fallback tests covering catalog determinism, domain validation, mana spend success, insufficient mana, unknown spell, unlearned spell, invalid caster paths, damage/healing/fatigue resolution, ordered multi-effect totals involving fatigue, clamp behavior, and resolver refusal paths including instantaneous unsupported ShieldBuff atomic refusal.
 
 ## Bible Back-References
 
@@ -28,7 +29,7 @@ Command:
 ./tools/validation/run-validation.sh --mode fallback
 ```
 
-Latest measured result for this increment: `Passed: 129, Failed: 0, Skipped: 0, Total: 129`.
+Latest measured result for this increment (2026-05-03): `Passed: 131, Failed: 0, Skipped: 0, Total: 131`.
 
 ## Caveats
 
