@@ -32,11 +32,25 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
-        public void Definition_RejectsNoneSchoolAndNegativeManaCost()
+        public void Definition_RejectsNoneSchoolTargetKindAndNegativeManaCost()
         {
             var effect = new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 1, 0) };
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.None, 1, effect));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.Destruction, SpellTargetKind.None, 1, effect));
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.Destruction, -1, effect));
+        }
+
+        [Test]
+        public void Definition_ExistingConstructorDefaultsToSingleTarget()
+        {
+            var spell = new SpellDefinition(
+                "id",
+                "Name",
+                MagicSchool.Destruction,
+                5,
+                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) });
+
+            Assert.That(spell.TargetKind, Is.EqualTo(SpellTargetKind.SingleTarget));
         }
 
         [Test]
