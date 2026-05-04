@@ -12,5 +12,6 @@ namespace EmberCrpg.Simulation.Magic
         CastRejected = 1,
         TargetRejected = 2,
         ResolutionRejected = 3,
+        CastFizzled = 4,
     }
 }
