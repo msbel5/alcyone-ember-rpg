@@ -70,7 +70,7 @@ Measured result on this branch:
 
 - PR: `#23` — https://github.com/msbel5/alcyone-ember-rpg/pull/23
 - Cooldown seam commit already on PR: `723a75d` — `feat(magic): add deterministic spell cooldown seam`
-- Supplemental PlayMode evidence head commit: `fc187cf` — `test(playmode): capture spell flow screenshots`
+- Supplemental PlayMode evidence commit on branch: `fc187cf` — `test(playmode): capture spell flow screenshots`
 
 ## Caveats
 
