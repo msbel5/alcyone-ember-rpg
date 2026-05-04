@@ -12,7 +12,7 @@ castable, what success percentage should the game or future DM/roll layer use?**
 
 Implemented:
 
-- `SpellSuccessChanceService` in pure `Simulation/Magic`.
+- `SpellSuccessChanceService` in pure `Simulation/Magic`, now hardened to reject unsupported school/target enums and to apply range penalty only to `SingleTarget` spells.
 - `SpellSuccessChanceResult` with explicit numeric breakdown fields:
   - base chance
   - primary/secondary mental attribute bonuses
@@ -26,8 +26,8 @@ Implemented:
   baseline until per-school magic skills exist:
   - Destruction / Alteration / Conjuration favor `MND`
   - Restoration / Illusion / Mysticism favor `INS`
-- Focused EditMode fallback tests covering failure paths, school emphasis, explicit breakdown values,
-  harder area-at-range difficulty, and clamp behavior.
+- Focused EditMode fallback tests covering failure paths, invalid enum refusal, school emphasis, explicit breakdown values,
+  non-single-target zero-range-penalty behavior, and clamp behavior.
 
 ## Why this slice matters
 
@@ -61,5 +61,6 @@ Measured result on this branch:
 - This service does **not** mutate mana, gate spell execution, or roll RNG yet; it is a deterministic
   percentage seam only.
 - The formula is intentionally attribute-only until actor magic skills / school proficiencies land.
+- `RangeInTiles` contributes only for `SingleTarget` spells, matching the current deterministic target validator contract.
 - Resistances, saves, cooldowns, armor spell failure, and active timed effects remain later Sprint 5
   increments.
