@@ -96,10 +96,21 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          ALCYONE_SCREENSHOT_DIR: ${{ github.workspace }}/playmode-results/screenshots
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           testMode: playmode
           artifactsPath: playmode-results
+
+      - name: Verify PlayMode screenshots
+        if: always()
+        run: |
+          mkdir -p playmode-results/screenshots
+          count=$(find playmode-results/screenshots -type f -name '*.png' | wc -l)
+          bytes=$(du -sb playmode-results 2>/dev/null | cut -f1)
+          echo "screenshots=$count bytes=$bytes"
+          test "$count" -ge 3
+          test "$bytes" -ge 500000
 
       - name: Upload PlayMode Results + Screenshots
         uses: actions/upload-artifact@v4
@@ -108,6 +119,29 @@ jobs:
           name: playmode-test-results
           path: playmode-results
           retention-days: 30
+
+      - name: Comment PlayMode screenshots on PR
+        if: github.event_name == 'pull_request' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'playmode-results/screenshots';
+            const files = fs.existsSync(path) ? fs.readdirSync(path).filter((f) => f.endsWith('.png')) : [];
+            const link = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              '## PlayMode Screenshots',
+              '',
+              ...files.map((f) => `- ${f}`),
+              '',
+              `Artifact: [playmode-test-results](${link})`
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
 
   # 3. Linux64 Build — Headless build artifact for Pi to download (~10 min)
   build-linux:
