@@ -13,5 +13,6 @@ namespace EmberCrpg.Simulation.Magic
         SpellNotKnown = 2,
         InsufficientMana = 3,
         InvalidCaster = 4,
+        SpellOnCooldown = 5,
     }
 }

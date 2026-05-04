@@ -1,5 +1,6 @@
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Magic;
 using EmberCrpg.Simulation.Magic;
 using NUnit.Framework;
 
@@ -27,6 +28,48 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.Spell.TemplateId, Is.EqualTo(SliceSpellCatalog.FlameBoltTemplateId));
             Assert.That(result.ManaSpent, Is.EqualTo(12));
             Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(8));
+        }
+
+        [Test]
+        public void TryCast_CooldownSpellSuccess_StartsCooldown()
+        {
+            var caster = CreateCaster(mana: 20, health: 16);
+            var cooldownState = new SpellCooldownState();
+            var cooldownSpell = CreateCooldownSpell();
+            var service = new SpellCastingService(templateId => templateId == cooldownSpell.TemplateId ? cooldownSpell : null);
+
+            var result = service.TryCast(
+                caster,
+                cooldownSpell.TemplateId,
+                new[] { cooldownSpell.TemplateId },
+                cooldownState);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Error, Is.EqualTo(SpellCastError.None));
+            Assert.That(cooldownState.GetRemainingTicks(cooldownSpell.TemplateId), Is.EqualTo(cooldownSpell.CooldownTicks));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(8));
+        }
+
+        [Test]
+        public void TryCast_ActiveCooldown_IsRejectedWithoutSpendingMana()
+        {
+            var caster = CreateCaster(mana: 20, health: 16);
+            var cooldownState = new SpellCooldownState();
+            var cooldownSpell = CreateCooldownSpell();
+            cooldownState.SetRemainingTicks(cooldownSpell.TemplateId, 4);
+            var service = new SpellCastingService(templateId => templateId == cooldownSpell.TemplateId ? cooldownSpell : null);
+
+            var result = service.TryCast(
+                caster,
+                cooldownSpell.TemplateId,
+                new[] { cooldownSpell.TemplateId },
+                cooldownState);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellCastError.SpellOnCooldown));
+            Assert.That(result.ManaSpent, Is.EqualTo(0));
+            Assert.That(cooldownState.GetRemainingTicks(cooldownSpell.TemplateId), Is.EqualTo(4));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
         }
 
         [Test]
@@ -149,6 +192,19 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 dodge: 6,
                 armor: 1,
                 baseDamage: 3);
+        }
+
+        private static SpellDefinition CreateCooldownSpell()
+        {
+            return new SpellDefinition(
+                "cooldown_flame_bolt",
+                "Cooldown Flame Bolt",
+                MagicSchool.Destruction,
+                SpellTargetKind.SingleTarget,
+                manaCost: 12,
+                rangeInTiles: 8,
+                cooldownTicks: 5,
+                effects: new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
         }
     }
 }
