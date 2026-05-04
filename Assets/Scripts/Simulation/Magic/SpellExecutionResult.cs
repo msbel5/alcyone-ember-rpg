@@ -17,6 +17,7 @@ namespace EmberCrpg.Simulation.Magic
             SpellDefinition spell,
             ActorRecord routedTarget,
             SpellCastResult castResult,
+            SpellCastRollResult castRollResult,
             SpellTargetValidationResult targetValidationResult,
             SpellEffectResolutionResult effectResolutionResult,
             string message)
@@ -26,6 +27,7 @@ namespace EmberCrpg.Simulation.Magic
             Spell = spell;
             RoutedTarget = routedTarget;
             CastResult = castResult;
+            CastRollResult = castRollResult;
             TargetValidationResult = targetValidationResult;
             EffectResolutionResult = effectResolutionResult;
             Message = message;
@@ -36,10 +38,14 @@ namespace EmberCrpg.Simulation.Magic
         public SpellDefinition Spell { get; }
         public ActorRecord RoutedTarget { get; }
         public SpellCastResult CastResult { get; }
+        public SpellCastRollResult CastRollResult { get; }
         public SpellTargetValidationResult TargetValidationResult { get; }
         public SpellEffectResolutionResult EffectResolutionResult { get; }
         public string Message { get; }
 
+        public bool Rolled => CastRollResult != null;
+        public int RollValue => CastRollResult == null ? 0 : CastRollResult.Roll;
+        public int RollThreshold => CastRollResult == null ? 0 : CastRollResult.Threshold;
         public int ManaSpent => CastResult == null ? 0 : CastResult.ManaSpent;
         public int AppliedEffectCount => EffectResolutionResult == null ? 0 : EffectResolutionResult.AppliedEffectCount;
         public int TotalDamage => EffectResolutionResult == null ? 0 : EffectResolutionResult.TotalDamage;
@@ -48,6 +54,7 @@ namespace EmberCrpg.Simulation.Magic
 
         public static SpellExecutionResult Ok(
             SpellCastResult castResult,
+            SpellCastRollResult castRollResult,
             SpellTargetValidationResult targetValidationResult,
             SpellEffectResolutionResult effectResolutionResult,
             string message)
@@ -58,6 +65,7 @@ namespace EmberCrpg.Simulation.Magic
                 effectResolutionResult?.Spell ?? targetValidationResult?.Spell ?? castResult?.Spell,
                 targetValidationResult?.RoutedTarget,
                 castResult,
+                castRollResult,
                 targetValidationResult,
                 effectResolutionResult,
                 message);
@@ -68,6 +76,7 @@ namespace EmberCrpg.Simulation.Magic
             SpellDefinition spell,
             ActorRecord routedTarget,
             SpellCastResult castResult,
+            SpellCastRollResult castRollResult,
             SpellTargetValidationResult targetValidationResult,
             SpellEffectResolutionResult effectResolutionResult,
             string message)
@@ -78,6 +87,7 @@ namespace EmberCrpg.Simulation.Magic
                 spell ?? effectResolutionResult?.Spell ?? targetValidationResult?.Spell ?? castResult?.Spell,
                 routedTarget,
                 castResult,
+                castRollResult,
                 targetValidationResult,
                 effectResolutionResult,
                 message);
