@@ -5,9 +5,11 @@ using EmberCrpg.Simulation.Rng;
 
 // Design note:
 // SpellExecutionService is the deterministic Sprint 5 orchestration seam for one full spell request.
-// Inputs: caster, selected spell id, known-spell set, and optional requested target actor.
+// Inputs: caster, selected spell id, known-spell set, optional requested target actor, and optional
+// cooldown state.
 // Outputs: atomic execution where mana is committed only after cast prechecks, target routing, and
-// effect-resolution support all succeed; no Unity dependency.
+// effect-resolution support all succeed; cooldown starts only after a successful committed cast; no
+// Unity dependency.
 // Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3 and MASTER_MECHANICS_BIBLE.md §14-§15.
 namespace EmberCrpg.Simulation.Magic
 {
@@ -42,7 +44,17 @@ namespace EmberCrpg.Simulation.Magic
             IReadOnlyCollection<string> knownSpellIds,
             ActorRecord requestedTarget)
         {
-            return TryExecuteInternal(caster, spellTemplateId, knownSpellIds, requestedTarget, null, useRoll: false);
+            return TryExecute(caster, spellTemplateId, knownSpellIds, requestedTarget, null);
+        }
+
+        public SpellExecutionResult TryExecute(
+            ActorRecord caster,
+            string spellTemplateId,
+            IReadOnlyCollection<string> knownSpellIds,
+            ActorRecord requestedTarget,
+            SpellCooldownState cooldownState)
+        {
+            return TryExecuteInternal(caster, spellTemplateId, knownSpellIds, requestedTarget, cooldownState, null, useRoll: false);
         }
 
         public SpellExecutionResult TryExecuteWithRoll(
@@ -52,7 +64,18 @@ namespace EmberCrpg.Simulation.Magic
             ActorRecord requestedTarget,
             IDeterministicRng rng)
         {
-            return TryExecuteInternal(caster, spellTemplateId, knownSpellIds, requestedTarget, rng, useRoll: true);
+            return TryExecuteWithRoll(caster, spellTemplateId, knownSpellIds, requestedTarget, rng, null);
+        }
+
+        public SpellExecutionResult TryExecuteWithRoll(
+            ActorRecord caster,
+            string spellTemplateId,
+            IReadOnlyCollection<string> knownSpellIds,
+            ActorRecord requestedTarget,
+            IDeterministicRng rng,
+            SpellCooldownState cooldownState)
+        {
+            return TryExecuteInternal(caster, spellTemplateId, knownSpellIds, requestedTarget, cooldownState, rng, useRoll: true);
         }
 
         private SpellExecutionResult TryExecuteInternal(
@@ -60,10 +83,11 @@ namespace EmberCrpg.Simulation.Magic
             string spellTemplateId,
             IReadOnlyCollection<string> knownSpellIds,
             ActorRecord requestedTarget,
+            SpellCooldownState cooldownState,
             IDeterministicRng rng,
             bool useRoll)
         {
-            var preparedCast = _castingService.TryPrepareCast(caster, spellTemplateId, knownSpellIds);
+            var preparedCast = _castingService.TryPrepareCast(caster, spellTemplateId, knownSpellIds, cooldownState);
             if (!preparedCast.Success)
                 return SpellExecutionResult.Fail(
                     SpellExecutionError.CastRejected,
@@ -126,7 +150,7 @@ namespace EmberCrpg.Simulation.Magic
                         castRollResult.Message);
             }
 
-            var committedCast = _castingService.CommitPreparedCast(caster, preparedCast.Spell);
+            var committedCast = _castingService.CommitPreparedCast(caster, preparedCast.Spell, cooldownState);
             if (!committedCast.Success)
                 return SpellExecutionResult.Fail(
                     SpellExecutionError.CastRejected,
