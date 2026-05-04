@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 // Design note:
 // Pins the Sprint 5 spell target validator: deterministic refusal/routing for CasterSelf,
-// Touch (orthogonal adjacency), and SingleTarget shapes, plus explicit refusal of area kinds
+// Touch (orthogonal adjacency), SingleTarget range enforcement, and explicit refusal of area kinds
 // until area resolution lands.
 namespace EmberCrpg.Tests.EditMode.Magic
 {
@@ -130,7 +130,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
-        public void Validate_SingleTargetWithLivingTarget_RoutesToTarget()
+        public void Validate_SingleTargetWithLivingTargetInsideConfiguredRange_RoutesToTarget()
         {
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
             var enemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 5, y: 4);
@@ -141,6 +141,42 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.Success, Is.True);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.None));
             Assert.That(result.RoutedTarget, Is.SameAs(enemy));
+        }
+
+        [Test]
+        public void Validate_SingleTargetBeyondConfiguredRange_IsRefused()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
+            var farEnemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 7, y: 4);
+            var validator = new SpellTargetValidator();
+
+            var result = validator.Validate(SliceSpellCatalog.CreateFlameBolt(), caster, farEnemy);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.TargetOutOfRange));
+            Assert.That(result.RoutedTarget, Is.Null);
+        }
+
+        [Test]
+        public void Validate_SingleTargetWithUnboundedRangeZero_AllowsFarTarget()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
+            var farEnemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 20, y: 20);
+            var spell = new SpellDefinition(
+                "far_sight_test",
+                "Far Sight Test",
+                MagicSchool.Destruction,
+                SpellTargetKind.SingleTarget,
+                9,
+                0,
+                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) });
+            var validator = new SpellTargetValidator();
+
+            var result = validator.Validate(spell, caster, farEnemy);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.None));
+            Assert.That(result.RoutedTarget, Is.SameAs(farEnemy));
         }
 
         [Test]

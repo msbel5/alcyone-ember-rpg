@@ -28,6 +28,8 @@ namespace EmberCrpg.Simulation.Magic
             return _byId.TryGetValue(templateId, out var spell) ? spell : null;
         }
 
+        public const int FlameBoltRangeInTiles = 8;
+
         public static SpellDefinition CreateFlameBolt()
         {
             return new SpellDefinition(
@@ -36,6 +38,7 @@ namespace EmberCrpg.Simulation.Magic
                 MagicSchool.Destruction,
                 SpellTargetKind.SingleTarget,
                 12,
+                FlameBoltRangeInTiles,
                 new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
         }
 

@@ -32,7 +32,7 @@ namespace EmberCrpg.Simulation.Magic
                 case SpellTargetKind.Touch:
                     return ValidateTouch(spell, caster, requestedTarget);
                 case SpellTargetKind.SingleTarget:
-                    return ValidateSingleTarget(spell, requestedTarget);
+                    return ValidateSingleTarget(spell, caster, requestedTarget);
                 case SpellTargetKind.AreaAroundCaster:
                 case SpellTargetKind.AreaAtRange:
                     return SpellTargetValidationResult.Fail(
@@ -81,7 +81,7 @@ namespace EmberCrpg.Simulation.Magic
             return SpellTargetValidationResult.Ok(spell, requestedTarget, $"{spell.DisplayName} routed to touched {requestedTarget.Name}.");
         }
 
-        private static SpellTargetValidationResult ValidateSingleTarget(SpellDefinition spell, ActorRecord requestedTarget)
+        private static SpellTargetValidationResult ValidateSingleTarget(SpellDefinition spell, ActorRecord caster, ActorRecord requestedTarget)
         {
             if (requestedTarget == null)
                 return SpellTargetValidationResult.Fail(
@@ -93,6 +93,16 @@ namespace EmberCrpg.Simulation.Magic
                     SpellTargetValidationError.InvalidTarget,
                     spell,
                     $"{spell.DisplayName} cannot target {requestedTarget.Name} (incapacitated).");
+
+            if (spell.RangeInTiles > 0)
+            {
+                var distance = caster.Position.ManhattanDistanceTo(requestedTarget.Position);
+                if (distance > spell.RangeInTiles)
+                    return SpellTargetValidationResult.Fail(
+                        SpellTargetValidationError.TargetOutOfRange,
+                        spell,
+                        $"{spell.DisplayName} cannot reach {requestedTarget.Name} (distance={distance}, range={spell.RangeInTiles}).");
+            }
 
             return SpellTargetValidationResult.Ok(spell, requestedTarget, $"{spell.DisplayName} routed to {requestedTarget.Name}.");
         }

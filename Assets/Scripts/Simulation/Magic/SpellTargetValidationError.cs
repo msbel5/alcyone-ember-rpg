@@ -15,5 +15,6 @@ namespace EmberCrpg.Simulation.Magic
         TargetNotAdjacent = 4,
         WrongTargetForSelfSpell = 5,
         UnsupportedTargetKind = 6,
+        TargetOutOfRange = 7,
     }
 }
