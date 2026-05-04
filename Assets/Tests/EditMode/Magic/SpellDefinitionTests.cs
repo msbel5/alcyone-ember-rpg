@@ -32,16 +32,17 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
-        public void Definition_RejectsNoneSchoolTargetKindAndNegativeManaCost()
+        public void Definition_RejectsNoneSchoolTargetKindNegativeManaCostAndNegativeRange()
         {
             var effect = new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 1, 0) };
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.None, 1, effect));
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.Destruction, SpellTargetKind.None, 1, effect));
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.Destruction, -1, effect));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.Destruction, SpellTargetKind.SingleTarget, 1, -1, effect));
         }
 
         [Test]
-        public void Definition_ExistingConstructorDefaultsToSingleTarget()
+        public void Definition_ExistingConstructorDefaultsToSingleTargetAndUnboundedRange()
         {
             var spell = new SpellDefinition(
                 "id",
@@ -51,6 +52,23 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) });
 
             Assert.That(spell.TargetKind, Is.EqualTo(SpellTargetKind.SingleTarget));
+            Assert.That(spell.RangeInTiles, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Definition_RangeAwareConstructor_PersistsRange()
+        {
+            var spell = new SpellDefinition(
+                "id",
+                "Name",
+                MagicSchool.Destruction,
+                SpellTargetKind.SingleTarget,
+                5,
+                7,
+                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) });
+
+            Assert.That(spell.TargetKind, Is.EqualTo(SpellTargetKind.SingleTarget));
+            Assert.That(spell.RangeInTiles, Is.EqualTo(7));
         }
 
         [Test]

@@ -21,7 +21,7 @@ namespace EmberCrpg.Domain.Magic
             MagicSchool school,
             int manaCost,
             IEnumerable<SpellEffectSpec> effects)
-            : this(templateId, displayName, school, SpellTargetKind.SingleTarget, manaCost, effects)
+            : this(templateId, displayName, school, SpellTargetKind.SingleTarget, manaCost, 0, effects)
         {
         }
 
@@ -31,6 +31,18 @@ namespace EmberCrpg.Domain.Magic
             MagicSchool school,
             SpellTargetKind targetKind,
             int manaCost,
+            IEnumerable<SpellEffectSpec> effects)
+            : this(templateId, displayName, school, targetKind, manaCost, 0, effects)
+        {
+        }
+
+        public SpellDefinition(
+            string templateId,
+            string displayName,
+            MagicSchool school,
+            SpellTargetKind targetKind,
+            int manaCost,
+            int rangeInTiles,
             IEnumerable<SpellEffectSpec> effects)
         {
             if (string.IsNullOrWhiteSpace(templateId))
@@ -43,6 +55,8 @@ namespace EmberCrpg.Domain.Magic
                 throw new ArgumentOutOfRangeException(nameof(targetKind), targetKind, "Spell must declare a real target kind.");
             if (manaCost < 0)
                 throw new ArgumentOutOfRangeException(nameof(manaCost), manaCost, "Mana cost must be zero or positive.");
+            if (rangeInTiles < 0)
+                throw new ArgumentOutOfRangeException(nameof(rangeInTiles), rangeInTiles, "Range must be zero (unbounded) or positive tile count.");
             if (effects == null)
                 throw new ArgumentNullException(nameof(effects));
 
@@ -55,6 +69,7 @@ namespace EmberCrpg.Domain.Magic
             School = school;
             TargetKind = targetKind;
             ManaCost = manaCost;
+            RangeInTiles = rangeInTiles;
         }
 
         public string TemplateId { get; }
@@ -62,6 +77,8 @@ namespace EmberCrpg.Domain.Magic
         public MagicSchool School { get; }
         public SpellTargetKind TargetKind { get; }
         public int ManaCost { get; }
+        /// <summary>Maximum Manhattan distance in tiles for SingleTarget routing. Zero means unbounded at this layer.</summary>
+        public int RangeInTiles { get; }
         public IReadOnlyList<SpellEffectSpec> Effects => _effects;
 
         private static SpellEffectSpec[] ToArray(IEnumerable<SpellEffectSpec> effects)
