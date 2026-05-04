@@ -27,6 +27,10 @@ Implemented:
   - legacy callers that do not pass cooldown state keep prior behavior
 - `SpellExecutionService` overloads that optionally accept cooldown state for both plain and roll-aware
   execution paths
+- supplemental PlayMode screenshot evidence on the same branch head:
+  - dedicated `Assets/Tests/PlayMode` asmdef + screenshot utility for CI artifact capture
+  - `SpellCastFlowTests` covering success, fizzle, and out-of-range visual states
+  - GitHub workflow guard that fails if PlayMode screenshot artifacts are missing or too small
 - focused fallback tests covering:
   - default-zero compatibility and explicit cooldown persistence
   - cooldown state start/tick-down/expiry behavior
@@ -61,6 +65,12 @@ git diff --check
 Measured result on this branch:
 - `git diff --check` passed with no output.
 - Fallback validation passed: `Passed: 198, Failed: 0, Skipped: 0, Total: 198`.
+
+## Release Evidence
+
+- PR: `#23` — https://github.com/msbel5/alcyone-ember-rpg/pull/23
+- Cooldown seam commit already on PR: `723a75d` — `feat(magic): add deterministic spell cooldown seam`
+- Supplemental PlayMode evidence head commit: `fc187cf` — `test(playmode): capture spell flow screenshots`
 
 ## Caveats
 
