@@ -54,7 +54,7 @@ git diff --check
 
 Measured result on this branch:
 - `git diff --check` passed with no output.
-- Fallback validation passed: `Passed: 171, Failed: 0, Skipped: 0, Total: 171`.
+- Fallback validation passed: `Passed: 173, Failed: 0, Skipped: 0, Total: 173`.
 
 ## Caveats
 
