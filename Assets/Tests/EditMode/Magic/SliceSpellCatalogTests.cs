@@ -37,6 +37,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(spell.School, Is.EqualTo(MagicSchool.Destruction));
             Assert.That(spell.TargetKind, Is.EqualTo(SpellTargetKind.SingleTarget));
             Assert.That(spell.ManaCost, Is.EqualTo(12));
+            Assert.That(spell.RangeInTiles, Is.EqualTo(SliceSpellCatalog.FlameBoltRangeInTiles));
             Assert.That(spell.Effects.Count, Is.EqualTo(1));
             Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectKind.DirectDamage));
         }
