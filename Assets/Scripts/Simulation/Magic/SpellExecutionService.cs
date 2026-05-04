@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Simulation.Rng;
 
 // Design note:
 // SpellExecutionService is the deterministic Sprint 5 orchestration seam for one full spell request.
@@ -16,20 +17,23 @@ namespace EmberCrpg.Simulation.Magic
         private readonly SpellCastingService _castingService;
         private readonly SpellTargetValidator _targetValidator;
         private readonly SpellEffectResolutionService _effectResolutionService;
+        private readonly SpellCastRollService _castRollService;
 
         public SpellExecutionService()
-            : this(new SpellCastingService(), new SpellTargetValidator(), new SpellEffectResolutionService())
+            : this(new SpellCastingService(), new SpellTargetValidator(), new SpellEffectResolutionService(), new SpellCastRollService())
         {
         }
 
         public SpellExecutionService(
             SpellCastingService castingService,
             SpellTargetValidator targetValidator,
-            SpellEffectResolutionService effectResolutionService)
+            SpellEffectResolutionService effectResolutionService,
+            SpellCastRollService castRollService)
         {
             _castingService = castingService ?? throw new ArgumentNullException(nameof(castingService));
             _targetValidator = targetValidator ?? throw new ArgumentNullException(nameof(targetValidator));
             _effectResolutionService = effectResolutionService ?? throw new ArgumentNullException(nameof(effectResolutionService));
+            _castRollService = castRollService ?? throw new ArgumentNullException(nameof(castRollService));
         }
 
         public SpellExecutionResult TryExecute(
@@ -38,6 +42,27 @@ namespace EmberCrpg.Simulation.Magic
             IReadOnlyCollection<string> knownSpellIds,
             ActorRecord requestedTarget)
         {
+            return TryExecuteInternal(caster, spellTemplateId, knownSpellIds, requestedTarget, null, useRoll: false);
+        }
+
+        public SpellExecutionResult TryExecuteWithRoll(
+            ActorRecord caster,
+            string spellTemplateId,
+            IReadOnlyCollection<string> knownSpellIds,
+            ActorRecord requestedTarget,
+            IDeterministicRng rng)
+        {
+            return TryExecuteInternal(caster, spellTemplateId, knownSpellIds, requestedTarget, rng, useRoll: true);
+        }
+
+        private SpellExecutionResult TryExecuteInternal(
+            ActorRecord caster,
+            string spellTemplateId,
+            IReadOnlyCollection<string> knownSpellIds,
+            ActorRecord requestedTarget,
+            IDeterministicRng rng,
+            bool useRoll)
+        {
             var preparedCast = _castingService.TryPrepareCast(caster, spellTemplateId, knownSpellIds);
             if (!preparedCast.Success)
                 return SpellExecutionResult.Fail(
@@ -45,6 +70,7 @@ namespace EmberCrpg.Simulation.Magic
                     preparedCast.Spell,
                     null,
                     preparedCast,
+                    null,
                     null,
                     null,
                     preparedCast.Message);
@@ -56,6 +82,7 @@ namespace EmberCrpg.Simulation.Magic
                     preparedCast.Spell,
                     null,
                     preparedCast,
+                    null,
                     targetValidation,
                     null,
                     targetValidation.Message);
@@ -67,9 +94,37 @@ namespace EmberCrpg.Simulation.Magic
                     preparedCast.Spell,
                     targetValidation.RoutedTarget,
                     preparedCast,
+                    null,
                     targetValidation,
                     effectPreview,
                     effectPreview.Message);
+
+            SpellCastRollResult castRollResult = null;
+            if (useRoll)
+            {
+                castRollResult = _castRollService.Roll(caster, preparedCast.Spell, rng);
+                if (castRollResult.Error != SpellCastRollError.None)
+                    return SpellExecutionResult.Fail(
+                        SpellExecutionError.CastRejected,
+                        preparedCast.Spell,
+                        targetValidation.RoutedTarget,
+                        preparedCast,
+                        castRollResult,
+                        targetValidation,
+                        null,
+                        castRollResult.Message);
+
+                if (!castRollResult.Success)
+                    return SpellExecutionResult.Fail(
+                        SpellExecutionError.CastFizzled,
+                        preparedCast.Spell,
+                        targetValidation.RoutedTarget,
+                        preparedCast,
+                        castRollResult,
+                        targetValidation,
+                        null,
+                        castRollResult.Message);
+            }
 
             var committedCast = _castingService.CommitPreparedCast(caster, preparedCast.Spell);
             if (!committedCast.Success)
@@ -78,6 +133,7 @@ namespace EmberCrpg.Simulation.Magic
                     preparedCast.Spell,
                     targetValidation.RoutedTarget,
                     committedCast,
+                    castRollResult,
                     targetValidation,
                     null,
                     committedCast.Message);
@@ -89,15 +145,21 @@ namespace EmberCrpg.Simulation.Magic
                     preparedCast.Spell,
                     targetValidation.RoutedTarget,
                     committedCast,
+                    castRollResult,
                     targetValidation,
                     effectResolution,
                     effectResolution.Message);
 
+            var message = useRoll
+                ? $"{caster.Name} executes {preparedCast.Spell.DisplayName} after a successful cast roll ({castRollResult.Roll}<={castRollResult.Threshold})."
+                : $"{caster.Name} executes {preparedCast.Spell.DisplayName} successfully.";
+
             return SpellExecutionResult.Ok(
                 committedCast,
+                castRollResult,
                 targetValidation,
                 effectResolution,
-                $"{caster.Name} executes {preparedCast.Spell.DisplayName} successfully.");
+                message);
         }
     }
 }

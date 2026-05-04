@@ -1,6 +1,7 @@
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Simulation.Magic;
+using EmberCrpg.Simulation.Rng;
 using NUnit.Framework;
 
 // Design note:
@@ -92,6 +93,77 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.ManaSpent, Is.EqualTo(10));
             Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(10));
             Assert.That(ally.Vitals.Health.Current, Is.EqualTo(15));
+        }
+
+        [Test]
+        public void TryExecuteWithRoll_RollSuccess_SpendsManaAndDamagesTarget()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
+            var enemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 5, y: 4, health: 16, mana: 0);
+            var service = new SpellExecutionService();
+
+            var result = service.TryExecuteWithRoll(
+                caster,
+                SliceSpellCatalog.FlameBoltTemplateId,
+                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                enemy,
+                new XorShiftRng(3u));
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Error, Is.EqualTo(SpellExecutionError.None));
+            Assert.That(result.Rolled, Is.True);
+            Assert.That(result.RollValue, Is.EqualTo(8));
+            Assert.That(result.RollThreshold, Is.EqualTo(29));
+            Assert.That(result.ManaSpent, Is.EqualTo(12));
+            Assert.That(result.TotalDamage, Is.EqualTo(8));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(8));
+            Assert.That(enemy.Vitals.Health.Current, Is.EqualTo(8));
+        }
+
+        [Test]
+        public void TryExecuteWithRoll_RollFizzle_DoesNotSpendManaOrMutateTarget()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
+            var enemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 5, y: 4, health: 16, mana: 0);
+            var service = new SpellExecutionService();
+
+            var result = service.TryExecuteWithRoll(
+                caster,
+                SliceSpellCatalog.FlameBoltTemplateId,
+                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                enemy,
+                new XorShiftRng(1u));
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellExecutionError.CastFizzled));
+            Assert.That(result.Rolled, Is.True);
+            Assert.That(result.RollValue, Is.EqualTo(70));
+            Assert.That(result.RollThreshold, Is.EqualTo(29));
+            Assert.That(result.ManaSpent, Is.EqualTo(0));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
+            Assert.That(enemy.Vitals.Health.Current, Is.EqualTo(16));
+        }
+
+        [Test]
+        public void TryExecuteWithRoll_PrecheckRefusal_HappensBeforeAnyRollOrManaSpend()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
+            var farEnemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 10, y: 1, health: 16, mana: 0);
+            var service = new SpellExecutionService();
+
+            var result = service.TryExecuteWithRoll(
+                caster,
+                SliceSpellCatalog.FlameBoltTemplateId,
+                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                farEnemy,
+                new XorShiftRng(3u));
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellExecutionError.TargetRejected));
+            Assert.That(result.CastRollResult, Is.Null);
+            Assert.That(result.ManaSpent, Is.EqualTo(0));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
+            Assert.That(farEnemy.Vitals.Health.Current, Is.EqualTo(16));
         }
 
         [Test]
