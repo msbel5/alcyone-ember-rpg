@@ -1,5 +1,6 @@
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Magic;
 using EmberCrpg.Simulation.Magic;
 using EmberCrpg.Simulation.Rng;
 using NUnit.Framework;
@@ -32,6 +33,107 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.RoutedTarget, Is.SameAs(enemy));
             Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(8));
             Assert.That(enemy.Vitals.Health.Current, Is.EqualTo(8));
+        }
+
+        [Test]
+        public void TryExecute_CooldownSpellSuccess_StartsCooldownAfterCommittedCast()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
+            var enemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 5, y: 4, health: 16, mana: 0);
+            var cooldownState = new SpellCooldownState();
+            var cooldownSpell = CreateCooldownSpell();
+            var service = CreateCooldownExecutionService(cooldownSpell);
+
+            var result = service.TryExecute(
+                caster,
+                cooldownSpell.TemplateId,
+                new[] { cooldownSpell.TemplateId },
+                enemy,
+                cooldownState);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Error, Is.EqualTo(SpellExecutionError.None));
+            Assert.That(result.ManaSpent, Is.EqualTo(12));
+            Assert.That(result.TotalDamage, Is.EqualTo(8));
+            Assert.That(cooldownState.GetRemainingTicks(cooldownSpell.TemplateId), Is.EqualTo(cooldownSpell.CooldownTicks));
+        }
+
+        [Test]
+        public void TryExecute_ActiveCooldown_RejectsBeforeTargetValidationOrManaSpend()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
+            var enemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 5, y: 4, health: 16, mana: 0);
+            var cooldownState = new SpellCooldownState();
+            var cooldownSpell = CreateCooldownSpell();
+            cooldownState.SetRemainingTicks(cooldownSpell.TemplateId, 3);
+            var service = CreateCooldownExecutionService(cooldownSpell);
+
+            var result = service.TryExecute(
+                caster,
+                cooldownSpell.TemplateId,
+                new[] { cooldownSpell.TemplateId },
+                enemy,
+                cooldownState);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellExecutionError.CastRejected));
+            Assert.That(result.CastResult.Error, Is.EqualTo(SpellCastError.SpellOnCooldown));
+            Assert.That(result.TargetValidationResult, Is.Null);
+            Assert.That(result.ManaSpent, Is.EqualTo(0));
+            Assert.That(cooldownState.GetRemainingTicks(cooldownSpell.TemplateId), Is.EqualTo(3));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
+            Assert.That(enemy.Vitals.Health.Current, Is.EqualTo(16));
+        }
+
+        [Test]
+        public void TryExecute_TargetRejected_DoesNotStartCooldown()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
+            var farEnemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 20, y: 1, health: 16, mana: 0);
+            var cooldownState = new SpellCooldownState();
+            var cooldownSpell = CreateCooldownSpell();
+            var service = CreateCooldownExecutionService(cooldownSpell);
+
+            var result = service.TryExecute(
+                caster,
+                cooldownSpell.TemplateId,
+                new[] { cooldownSpell.TemplateId },
+                farEnemy,
+                cooldownState);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellExecutionError.TargetRejected));
+            Assert.That(result.TargetValidationResult.Error, Is.EqualTo(SpellTargetValidationError.TargetOutOfRange));
+            Assert.That(result.ManaSpent, Is.EqualTo(0));
+            Assert.That(cooldownState.GetRemainingTicks(cooldownSpell.TemplateId), Is.EqualTo(0));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
+            Assert.That(farEnemy.Vitals.Health.Current, Is.EqualTo(16));
+        }
+
+        [Test]
+        public void TryExecuteWithRoll_RollFizzle_DoesNotSpendManaMutateTargetOrStartCooldown()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
+            var enemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 5, y: 4, health: 16, mana: 0);
+            var cooldownState = new SpellCooldownState();
+            var cooldownSpell = CreateCooldownSpell();
+            var service = CreateCooldownExecutionService(cooldownSpell);
+
+            var result = service.TryExecuteWithRoll(
+                caster,
+                cooldownSpell.TemplateId,
+                new[] { cooldownSpell.TemplateId },
+                enemy,
+                new XorShiftRng(1u),
+                cooldownState);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellExecutionError.CastFizzled));
+            Assert.That(result.Rolled, Is.True);
+            Assert.That(result.ManaSpent, Is.EqualTo(0));
+            Assert.That(cooldownState.GetRemainingTicks(cooldownSpell.TemplateId), Is.EqualTo(0));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
+            Assert.That(enemy.Vitals.Health.Current, Is.EqualTo(16));
         }
 
         [Test]
@@ -221,6 +323,28 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 dodge: 6,
                 armor: 1,
                 baseDamage: 3);
+        }
+
+        private static SpellDefinition CreateCooldownSpell()
+        {
+            return new SpellDefinition(
+                "cooldown_flame_bolt",
+                "Cooldown Flame Bolt",
+                MagicSchool.Destruction,
+                SpellTargetKind.SingleTarget,
+                manaCost: 12,
+                rangeInTiles: 8,
+                cooldownTicks: 5,
+                effects: new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
+        }
+
+        private static SpellExecutionService CreateCooldownExecutionService(SpellDefinition cooldownSpell)
+        {
+            return new SpellExecutionService(
+                new SpellCastingService(templateId => templateId == cooldownSpell.TemplateId ? cooldownSpell : null),
+                new SpellTargetValidator(),
+                new SpellEffectResolutionService(),
+                new SpellCastRollService());
         }
     }
 }

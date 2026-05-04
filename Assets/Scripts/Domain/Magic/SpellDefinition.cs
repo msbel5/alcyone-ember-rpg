@@ -21,7 +21,7 @@ namespace EmberCrpg.Domain.Magic
             MagicSchool school,
             int manaCost,
             IEnumerable<SpellEffectSpec> effects)
-            : this(templateId, displayName, school, SpellTargetKind.SingleTarget, manaCost, 0, effects)
+            : this(templateId, displayName, school, SpellTargetKind.SingleTarget, manaCost, 0, 0, effects)
         {
         }
 
@@ -32,7 +32,7 @@ namespace EmberCrpg.Domain.Magic
             SpellTargetKind targetKind,
             int manaCost,
             IEnumerable<SpellEffectSpec> effects)
-            : this(templateId, displayName, school, targetKind, manaCost, 0, effects)
+            : this(templateId, displayName, school, targetKind, manaCost, 0, 0, effects)
         {
         }
 
@@ -43,6 +43,19 @@ namespace EmberCrpg.Domain.Magic
             SpellTargetKind targetKind,
             int manaCost,
             int rangeInTiles,
+            IEnumerable<SpellEffectSpec> effects)
+            : this(templateId, displayName, school, targetKind, manaCost, rangeInTiles, 0, effects)
+        {
+        }
+
+        public SpellDefinition(
+            string templateId,
+            string displayName,
+            MagicSchool school,
+            SpellTargetKind targetKind,
+            int manaCost,
+            int rangeInTiles,
+            int cooldownTicks,
             IEnumerable<SpellEffectSpec> effects)
         {
             if (string.IsNullOrWhiteSpace(templateId))
@@ -57,6 +70,8 @@ namespace EmberCrpg.Domain.Magic
                 throw new ArgumentOutOfRangeException(nameof(manaCost), manaCost, "Mana cost must be zero or positive.");
             if (rangeInTiles < 0)
                 throw new ArgumentOutOfRangeException(nameof(rangeInTiles), rangeInTiles, "Range must be zero (unbounded) or positive tile count.");
+            if (cooldownTicks < 0)
+                throw new ArgumentOutOfRangeException(nameof(cooldownTicks), cooldownTicks, "Cooldown must be zero or positive tick count.");
             if (effects == null)
                 throw new ArgumentNullException(nameof(effects));
 
@@ -70,6 +85,7 @@ namespace EmberCrpg.Domain.Magic
             TargetKind = targetKind;
             ManaCost = manaCost;
             RangeInTiles = rangeInTiles;
+            CooldownTicks = cooldownTicks;
         }
 
         public string TemplateId { get; }
@@ -79,6 +95,8 @@ namespace EmberCrpg.Domain.Magic
         public int ManaCost { get; }
         /// <summary>Maximum Manhattan distance in tiles for SingleTarget routing. Zero means unbounded at this layer.</summary>
         public int RangeInTiles { get; }
+        /// <summary>Cooldown applied after a successful cast. Zero means no cooldown at this layer.</summary>
+        public int CooldownTicks { get; }
         public IReadOnlyList<SpellEffectSpec> Effects => _effects;
 
         private static SpellEffectSpec[] ToArray(IEnumerable<SpellEffectSpec> effects)
