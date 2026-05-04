@@ -15,6 +15,12 @@ namespace EmberCrpg.Simulation.Magic
     public sealed class SpellSuccessChanceService
     {
         private const int BaseChance = 40;
+        private const int PrimaryAttributeDivisor = 2;
+        private const int SecondaryAttributeDivisor = 4;
+        private const int EffectComplexityPenaltyPerEffect = 3;
+        private const int RangePenaltyDivisor = 2;
+        private const int MinChancePercent = 5;
+        private const int MaxChancePercent = 95;
 
         public SpellSuccessChanceResult Calculate(ActorRecord caster, SpellDefinition spell)
         {
@@ -24,13 +30,17 @@ namespace EmberCrpg.Simulation.Magic
                 return SpellSuccessChanceResult.Fail(SpellSuccessChanceError.InvalidCaster, spell, $"{caster.Name} cannot calculate spell success chance while incapacitated.");
             if (spell == null)
                 return SpellSuccessChanceResult.Fail(SpellSuccessChanceError.InvalidSpell, null, "A spell definition is required to calculate spell success chance.");
+            if (!Enum.IsDefined(typeof(MagicSchool), spell.School) || spell.School == MagicSchool.None)
+                return SpellSuccessChanceResult.Fail(SpellSuccessChanceError.InvalidSpell, spell, $"{spell.DisplayName} declares an unsupported magic school for success chance calculation.");
+            if (!Enum.IsDefined(typeof(SpellTargetKind), spell.TargetKind) || spell.TargetKind == SpellTargetKind.None)
+                return SpellSuccessChanceResult.Fail(SpellSuccessChanceError.InvalidSpell, spell, $"{spell.DisplayName} declares an unsupported target kind for success chance calculation.");
 
-            var primaryAttributeBonus = GetPrimaryAttribute(caster.Stats, spell.School) / 2;
-            var secondaryAttributeBonus = GetSecondaryAttribute(caster.Stats, spell.School) / 4;
+            var primaryAttributeBonus = GetPrimaryAttribute(caster.Stats, spell.School) / PrimaryAttributeDivisor;
+            var secondaryAttributeBonus = GetSecondaryAttribute(caster.Stats, spell.School) / SecondaryAttributeDivisor;
             var manaCostPenalty = spell.ManaCost / 2;
-            var effectComplexityPenalty = spell.Effects.Count * 3;
+            var effectComplexityPenalty = spell.Effects.Count * EffectComplexityPenaltyPerEffect;
             var targetPenalty = GetTargetPenalty(spell.TargetKind);
-            var rangePenalty = spell.RangeInTiles <= 0 ? 0 : spell.RangeInTiles / 2;
+            var rangePenalty = GetRangePenalty(spell);
 
             var rawChance = BaseChance
                 + primaryAttributeBonus
@@ -65,8 +75,9 @@ namespace EmberCrpg.Simulation.Magic
                 case MagicSchool.Destruction:
                 case MagicSchool.Alteration:
                 case MagicSchool.Conjuration:
-                default:
                     return stats.Mnd;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(school), school, "Spell school must be a supported deterministic school.");
             }
         }
 
@@ -81,8 +92,9 @@ namespace EmberCrpg.Simulation.Magic
                 case MagicSchool.Destruction:
                 case MagicSchool.Alteration:
                 case MagicSchool.Conjuration:
-                default:
                     return stats.Ins;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(school), school, "Spell school must be a supported deterministic school.");
             }
         }
 
@@ -95,13 +107,22 @@ namespace EmberCrpg.Simulation.Magic
                 case SpellTargetKind.SingleTarget: return 7;
                 case SpellTargetKind.AreaAroundCaster: return 10;
                 case SpellTargetKind.AreaAtRange: return 14;
-                default: return 14;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(targetKind), targetKind, "Spell target kind must be a supported deterministic target shape.");
             }
+        }
+
+        private static int GetRangePenalty(SpellDefinition spell)
+        {
+            if (spell.TargetKind != SpellTargetKind.SingleTarget || spell.RangeInTiles <= 0)
+                return 0;
+
+            return spell.RangeInTiles / RangePenaltyDivisor;
         }
 
         private static int ClampPercent(int value)
         {
-            return Math.Max(5, Math.Min(95, value));
+            return Math.Max(MinChancePercent, Math.Min(MaxChancePercent, value));
         }
     }
 }

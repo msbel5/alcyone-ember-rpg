@@ -49,6 +49,46 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void Calculate_InvalidSchool_FailsWithStableError()
+        {
+            var service = new SpellSuccessChanceService();
+            var invalidSchoolSpell = new SpellDefinition(
+                "bad_school",
+                "Bad School",
+                (MagicSchool)999,
+                SpellTargetKind.SingleTarget,
+                5,
+                8,
+                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0) });
+
+            var result = service.Calculate(CreateActor("Acolyte", 40, 60), invalidSchoolSpell);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellSuccessChanceError.InvalidSpell));
+            Assert.That(result.ChancePercent, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Calculate_InvalidTargetKind_FailsWithStableError()
+        {
+            var service = new SpellSuccessChanceService();
+            var invalidTargetSpell = new SpellDefinition(
+                "bad_target",
+                "Bad Target",
+                MagicSchool.Destruction,
+                (SpellTargetKind)999,
+                5,
+                8,
+                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0) });
+
+            var result = service.Calculate(CreateActor("Acolyte", 40, 60), invalidTargetSpell);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(SpellSuccessChanceError.InvalidSpell));
+            Assert.That(result.ChancePercent, Is.EqualTo(0));
+        }
+
+        [Test]
         public void Calculate_DestructionSpell_UsesMindAsPrimaryAttribute()
         {
             var service = new SpellSuccessChanceService();
@@ -101,7 +141,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
-        public void Calculate_AreaAtRangeSpell_IsHarderThanTouchSpell()
+        public void Calculate_NonSingleTargetSpell_DoesNotPayRangePenalty()
         {
             var service = new SpellSuccessChanceService();
             var caster = CreateActor("Arcanist", mind: 70, insight: 70);
@@ -120,7 +160,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             Assert.That(areaResult.Success, Is.True);
             Assert.That(areaResult.TargetPenalty, Is.EqualTo(14));
-            Assert.That(areaResult.RangePenalty, Is.EqualTo(3));
+            Assert.That(areaResult.RangePenalty, Is.EqualTo(0));
             Assert.That(areaResult.ChancePercent, Is.LessThan(touchResult.ChancePercent));
         }
 
