@@ -3,6 +3,7 @@
 Date: 2026-05-04
 Branch: `agent/sprint-5-spell-roll-execution`
 Base: `e43e22a` — Sprint 5 spell success roll merged on `origin/main`
+Merged to `main`: PR #21, merge commit `14c7b06`
 
 ## Scope
 
@@ -60,6 +61,18 @@ git diff --check
 Measured result on this branch:
 - `git diff --check` passed with no output.
 - Fallback validation passed: `Passed: 187, Failed: 0, Skipped: 0, Total: 187`.
+
+## Release Evidence
+
+- PR: `#21` — https://github.com/msbel5/alcyone-ember-rpg/pull/21
+- Head commit: `06fbc48` — `feat(magic): wire cast roll into spell execution`
+- Merge commit: `14c7b06`
+- GitHub checks on the merged head commit:
+  - `EditMode Tests` — `SUCCESS`
+  - `PlayMode Tests + Screenshots` — `SUCCESS`
+  - `Test Summary` — `SUCCESS`
+  - `GitGuardian Security Checks` — `SUCCESS`
+  - `Build Linux64 (headless)` — `SKIPPED`
 
 ## Caveats
 
