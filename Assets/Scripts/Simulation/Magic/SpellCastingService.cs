@@ -4,9 +4,9 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Magic;
 
 // Design note:
-// SpellCastingService is the deterministic Sprint 5 cast/validation gate.
+// SpellCastingService is the deterministic Sprint 5 cast validation and mana-commit gate.
 // Inputs: caster ActorRecord, requested spell template id, known-spells set, and a catalog lookup.
-// Outputs: SpellCastResult with mana spend applied only on success; effect resolution is later sprints.
+// Outputs: preflight validation without mutation plus an explicit mana-spend commit step.
 // Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3 + §8 Sprint 5 (deterministic foundation, no AI),
 // MASTER_MECHANICS_BIBLE.md §14 (cost <= mana, school taxonomy),
 // EMBER_VISION_BIBLE.md §11 reference rule (read references/openmw-master/apps/openmw/mwmechanics/spells.cpp for shape only).
@@ -29,7 +29,7 @@ namespace EmberCrpg.Simulation.Magic
             _catalogLookup = catalogLookup;
         }
 
-        public SpellCastResult TryCast(ActorRecord caster, string spellTemplateId, IReadOnlyCollection<string> knownSpellIds)
+        public SpellCastResult TryPrepareCast(ActorRecord caster, string spellTemplateId, IReadOnlyCollection<string> knownSpellIds)
         {
             if (caster == null)
                 return SpellCastResult.Fail(SpellCastError.InvalidCaster, null, "No caster supplied.");
@@ -49,8 +49,33 @@ namespace EmberCrpg.Simulation.Magic
             if (currentMana < spell.ManaCost)
                 return SpellCastResult.Fail(SpellCastError.InsufficientMana, spell, $"{caster.Name} lacks mana for {spell.DisplayName} ({currentMana}<{spell.ManaCost}).");
 
+            return SpellCastResult.Ok(spell, 0, $"{caster.Name} is ready to cast {spell.DisplayName}.");
+        }
+
+        public SpellCastResult CommitPreparedCast(ActorRecord caster, SpellDefinition spell)
+        {
+            if (caster == null)
+                return SpellCastResult.Fail(SpellCastError.InvalidCaster, null, "No caster supplied.");
+            if (!caster.IsAlive)
+                return SpellCastResult.Fail(SpellCastError.InvalidCaster, spell, $"{caster.Name} cannot cast while incapacitated.");
+            if (spell == null)
+                return SpellCastResult.Fail(SpellCastError.SpellNotFound, null, "No prepared spell supplied.");
+
+            var currentMana = caster.Vitals.Mana.Current;
+            if (currentMana < spell.ManaCost)
+                return SpellCastResult.Fail(SpellCastError.InsufficientMana, spell, $"{caster.Name} lacks mana for {spell.DisplayName} ({currentMana}<{spell.ManaCost}).");
+
             caster.ApplyVitals(caster.Vitals.WithMana(caster.Vitals.Mana.Damage(spell.ManaCost)));
             return SpellCastResult.Ok(spell, spell.ManaCost, $"{caster.Name} casts {spell.DisplayName} (-{spell.ManaCost} mana).");
+        }
+
+        public SpellCastResult TryCast(ActorRecord caster, string spellTemplateId, IReadOnlyCollection<string> knownSpellIds)
+        {
+            var prepared = TryPrepareCast(caster, spellTemplateId, knownSpellIds);
+            if (!prepared.Success)
+                return prepared;
+
+            return CommitPreparedCast(caster, prepared.Spell);
         }
 
         private static bool ContainsKnown(IReadOnlyCollection<string> knownSpellIds, string templateId)
