@@ -12,23 +12,31 @@ namespace EmberCrpg.Simulation.Magic
     /// <summary>Pure deterministic resolver for immediate spell effects.</summary>
     public sealed class SpellEffectResolutionService
     {
+        public SpellEffectResolutionResult CanResolveInstantaneousEffects(SpellDefinition spell, ActorRecord target)
+        {
+            var validation = ValidateInstantaneousEffects(spell, target);
+            if (!validation.Success)
+                return validation;
+
+            return SpellEffectResolutionResult.Ok(
+                spell,
+                0,
+                0,
+                0,
+                0,
+                $"{spell.DisplayName} is ready for instantaneous resolution against {target.Name}.");
+        }
+
         public SpellEffectResolutionResult ResolveInstantaneousEffects(SpellCastResult castResult, ActorRecord target)
         {
             if (castResult == null || !castResult.Success || castResult.Spell == null)
                 return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.InvalidCast, null, "A successful cast is required before resolving effects.");
-            if (target == null || !target.IsAlive)
-                return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.InvalidTarget, castResult.Spell, "A living target is required for spell effect resolution.");
+
+            var validation = ValidateInstantaneousEffects(castResult.Spell, target);
+            if (!validation.Success)
+                return validation;
 
             var effects = castResult.Spell.Effects;
-            for (var i = 0; i < effects.Count; i++)
-            {
-                var effect = effects[i];
-                if (!effect.IsInstantaneous)
-                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.NonInstantaneousEffect, castResult.Spell, "Timed spell effects are not resolved by this service.");
-                if (!IsSupported(effect.Kind))
-                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.UnsupportedEffect, castResult.Spell, "Only direct damage, restore health, and restore fatigue are supported in this increment.");
-            }
-
             var totalDamage = 0;
             var totalHealing = 0;
             var totalRestoredFatigue = 0;
@@ -61,6 +69,26 @@ namespace EmberCrpg.Simulation.Magic
                 totalHealing,
                 totalRestoredFatigue,
                 $"Resolved {effects.Count} instantaneous effect(s) from {castResult.Spell.DisplayName}.");
+        }
+
+        private static SpellEffectResolutionResult ValidateInstantaneousEffects(SpellDefinition spell, ActorRecord target)
+        {
+            if (spell == null)
+                return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.InvalidCast, null, "A spell definition is required before resolving effects.");
+            if (target == null || !target.IsAlive)
+                return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.InvalidTarget, spell, "A living target is required for spell effect resolution.");
+
+            var effects = spell.Effects;
+            for (var i = 0; i < effects.Count; i++)
+            {
+                var effect = effects[i];
+                if (!effect.IsInstantaneous)
+                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.NonInstantaneousEffect, spell, "Timed spell effects are not resolved by this service.");
+                if (!IsSupported(effect.Kind))
+                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.UnsupportedEffect, spell, "Only direct damage, restore health, and restore fatigue are supported in this increment.");
+            }
+
+            return SpellEffectResolutionResult.Ok(spell, 0, 0, 0, 0, $"{spell.DisplayName} passed instantaneous effect validation.");
         }
 
         private static bool IsSupported(SpellEffectKind kind)
