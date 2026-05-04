@@ -25,6 +25,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+
 env:
   UNITY_VERSION: 6000.3.13f1  # Matches ProjectSettings/ProjectVersion.txt
 
@@ -121,6 +127,7 @@ jobs:
           retention-days: 30
 
       - name: Comment PlayMode screenshots on PR
+        continue-on-error: true
         if: github.event_name == 'pull_request' && success()
         uses: actions/github-script@v7
         with:
