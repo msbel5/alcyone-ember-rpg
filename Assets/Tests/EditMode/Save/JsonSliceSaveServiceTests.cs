@@ -1,6 +1,7 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Inventory;
+using EmberCrpg.Domain.Magic;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
@@ -33,6 +34,8 @@ namespace EmberCrpg.Tests.EditMode.Save
             world.Player.MoveTo(new GridPosition(world.Room.DoorCell.X, 1));
             new DoorInteractionService().Toggle(world);
             world.Enemy.ApplyVitals(world.Enemy.Vitals.WithHealth(world.Enemy.Vitals.Health.Damage(5)));
+            world.PlayerSpellCooldowns.SetRemainingTicks("ember.spark", 4);
+            world.PlayerSpellCooldowns.SetRemainingTicks("ash.bind", 2);
             var farRoomState = world.DungeonRoomStates.Last();
             farRoomState.Visited = true;
             farRoomState.Cleared = true;
@@ -68,6 +71,22 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(merchantMemory.Transactions.Single().ItemTemplateId, Is.EqualTo(SliceItemCatalog.GateWritTemplateId));
             Assert.That(loaded.NpcMemory.TryGet(loaded.Guard.Id, out var guardMemory), Is.True);
             Assert.That(guardMemory.CountEvents(ActorMemoryEventTypes.ClearanceGranted), Is.EqualTo(1));
+            Assert.That(loaded.PlayerSpellCooldowns, Is.Not.Null);
+            Assert.That(loaded.PlayerSpellCooldowns.GetRemainingTicks("ember.spark"), Is.EqualTo(4));
+            Assert.That(loaded.PlayerSpellCooldowns.GetRemainingTicks("ash.bind"), Is.EqualTo(2));
+            Assert.That(loaded.PlayerSpellCooldowns.GetTrackedSpellTemplateIds().Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void SaveAndLoad_FreshWorld_StartsWithNoSpellCooldowns()
+        {
+            var world = new SliceWorldFactory().Create(2027);
+
+            var service = new EmberCrpg.Data.Save.JsonSliceSaveService();
+            var loaded = service.LoadFromJson(service.SaveToJson(world));
+
+            Assert.That(loaded.PlayerSpellCooldowns, Is.Not.Null);
+            Assert.That(loaded.PlayerSpellCooldowns.GetTrackedSpellTemplateIds().Count, Is.EqualTo(0));
         }
     }
 }

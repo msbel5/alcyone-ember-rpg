@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
+using EmberCrpg.Domain.Magic;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 
@@ -39,6 +40,7 @@ namespace EmberCrpg.Domain.World
         public List<DungeonDoorState> DungeonDoorStates = new List<DungeonDoorState>();
         public List<AskAboutTopic> Topics = new List<AskAboutTopic>();
         public NpcMemoryStore NpcMemory = new NpcMemoryStore();
+        public SpellCooldownState PlayerSpellCooldowns = new SpellCooldownState();
         public bool DoorOpen;
         public bool GuardDoorAccessGranted;
         public int GuardWarningCount;
