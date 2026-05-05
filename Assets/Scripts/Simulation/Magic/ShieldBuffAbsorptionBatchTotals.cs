@@ -209,6 +209,30 @@ namespace EmberCrpg.Simulation.Magic
             IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
             Func<string, ShieldBuffAbsorptionResult, string> keyExtractor)
         {
+            return GroupBy(resultsByActorId, keyExtractor, includePredicate: null);
+        }
+
+        // Filtered group-by overload: walks the per-actor result map exactly once and routes
+        // each entry to a per-group ShieldBuffAbsorptionBatchTotals bucket keyed by the
+        // caller-supplied keyExtractor, but only after the entry passes the
+        // includePredicate. Combines the predicate-filter and N-way group-by surfaces in a
+        // single deterministic pass so a future combat damage-resolution pass or
+        // telemetry/UI surface can compute "side-by-side faction totals over a tagged
+        // subset" (e.g. allies vs enemies, only over actors that absorbed damage) from one
+        // batch absorption call without scanning the result map twice. Strict input
+        // contract is preserved: every entry is validated for non-empty actor key and
+        // non-null per-actor result before the predicate or keyExtractor is consulted, so
+        // the guard order matches the unfiltered GroupBy and the filtered From overloads.
+        // When includePredicate is null this overload behaves exactly like the unfiltered
+        // GroupBy(map, keyExtractor) factory. The union of all per-bucket totals equals
+        // the filtered ComputeBatchTotals(map, includePredicate) result, and each bucket
+        // matches the filtered ComputeBatchTotals(map, predicate) for the same key
+        // membership intersected with includePredicate.
+        public static IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupBy(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, string> keyExtractor,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate)
+        {
             if (resultsByActorId == null)
                 throw new ArgumentNullException(nameof(resultsByActorId));
             if (keyExtractor == null)
@@ -224,6 +248,9 @@ namespace EmberCrpg.Simulation.Magic
                 var actorResult = pair.Value;
                 if (actorResult == null)
                     throw new ArgumentException("Per-actor absorption result must not be null.", nameof(resultsByActorId));
+
+                if (includePredicate != null && !includePredicate(pair.Key, actorResult))
+                    continue;
 
                 var groupKey = keyExtractor(pair.Key, actorResult);
                 if (string.IsNullOrWhiteSpace(groupKey))
