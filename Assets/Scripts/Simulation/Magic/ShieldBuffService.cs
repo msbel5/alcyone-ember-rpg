@@ -254,5 +254,21 @@ namespace EmberCrpg.Simulation.Magic
         {
             return ShieldBuffAbsorptionBatchTotals.PartitionFrom(resultsByActorId, includePredicate);
         }
+
+        // Group-by batch totals seam: forwards a per-actor key-extractor to the underlying
+        // ShieldBuffAbsorptionBatchTotals.GroupBy factory so a future combat damage-resolution
+        // pass or telemetry/UI surface can compute N-way side/faction/region totals (e.g.
+        // allies vs neutrals vs enemies) from one batch absorption result map in a single
+        // deterministic pass instead of one filtered ComputeBatchTotals call per bucket.
+        // Pure delegation — no new aggregation rules, no registry read, no buff/tick mutation,
+        // no save coupling. The strict input contract is unchanged: every map entry is still
+        // validated before the keyExtractor is consulted, and keyExtractor must return a
+        // non-empty stable group key.
+        public IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupBatchTotals(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, string> keyExtractor)
+        {
+            return ShieldBuffAbsorptionBatchTotals.GroupBy(resultsByActorId, keyExtractor);
+        }
     }
 }
