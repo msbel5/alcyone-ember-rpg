@@ -131,5 +131,48 @@ namespace EmberCrpg.Simulation.Magic
                 consumedSpellTemplateIds: consumed,
                 expiredSpellTemplateIds: expired);
         }
+
+        // Actor-keyed absorption seam: routes incoming damage through one actor's shield bag in
+        // ShieldBuffStateRegistry by delegating to the single-bag AbsorbDamage. A future combat
+        // damage pipeline can call this once per damaged actor without enumerating the registry
+        // itself. Pure delegation — same per-buff consume order, same magnitude-exhaust expiry,
+        // same trace contract. The registry is read-only here: an untracked actor returns full
+        // RemainingDamage with an empty trace and the registry is not mutated, mirroring how
+        // AdvanceTicksForAllActors does not lazily create per-actor bags.
+        public ShieldBuffAbsorptionResult AbsorbDamageForActor(
+            ShieldBuffStateRegistry registry,
+            string actorId,
+            int incomingDamage)
+        {
+            if (registry == null)
+                throw new ArgumentNullException(nameof(registry));
+            if (string.IsNullOrWhiteSpace(actorId))
+                throw new ArgumentException("Actor id must be a non-empty stable id.", nameof(actorId));
+            if (incomingDamage < 0)
+                throw new ArgumentOutOfRangeException(nameof(incomingDamage), incomingDamage, "Incoming damage must be zero or positive.");
+
+            if (incomingDamage == 0)
+            {
+                return ShieldBuffAbsorptionResult.Create(
+                    incomingDamage: 0,
+                    absorbedDamage: 0,
+                    remainingDamage: 0,
+                    consumedSpellTemplateIds: Array.Empty<string>(),
+                    expiredSpellTemplateIds: Array.Empty<string>());
+            }
+
+            var shieldBuffState = registry.GetOrNull(actorId);
+            if (shieldBuffState == null)
+            {
+                return ShieldBuffAbsorptionResult.Create(
+                    incomingDamage: incomingDamage,
+                    absorbedDamage: 0,
+                    remainingDamage: incomingDamage,
+                    consumedSpellTemplateIds: Array.Empty<string>(),
+                    expiredSpellTemplateIds: Array.Empty<string>());
+            }
+
+            return AbsorbDamage(shieldBuffState, incomingDamage);
+        }
     }
 }
