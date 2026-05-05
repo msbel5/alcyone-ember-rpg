@@ -35,5 +35,28 @@ namespace EmberCrpg.Simulation.Magic
                 shieldBuffState.SetActiveBuff(spellTemplateId, updatedTicks > 0 ? updatedTicks : 0, magnitude);
             }
         }
+
+        // Actor-keyed sweep seam: forwards each tracked actor's bag to the single-bag AdvanceTicks
+        // so a future combat/world tick loop can advance every actor's shield buffs through one call
+        // without itself enumerating ShieldBuffStateRegistry. Pure delegation — no new decay rules,
+        // no application/save/absorption changes, parity per actor with single-bag AdvanceTicks.
+        public void AdvanceTicksForAllActors(ShieldBuffStateRegistry registry, int elapsedTicks)
+        {
+            if (registry == null)
+                throw new ArgumentNullException(nameof(registry));
+            if (elapsedTicks < 0)
+                throw new ArgumentOutOfRangeException(nameof(elapsedTicks), elapsedTicks, "Elapsed ticks must be zero or positive.");
+            if (elapsedTicks == 0)
+                return;
+
+            foreach (var actorId in registry.GetTrackedActorIds())
+            {
+                var shieldBuffState = registry.GetOrNull(actorId);
+                if (shieldBuffState == null)
+                    continue;
+
+                AdvanceTicks(shieldBuffState, elapsedTicks);
+            }
+        }
     }
 }
