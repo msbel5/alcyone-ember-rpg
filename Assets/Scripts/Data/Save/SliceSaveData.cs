@@ -36,6 +36,7 @@ namespace EmberCrpg.Data.Save
         public PickupSaveData[] pickups;
         public TopicSaveData[] topics;
         public NpcMemorySaveData[] npcMemories;
+        public SpellCooldownSaveData playerSpellCooldowns;
         public bool doorOpen;
         public bool guardDoorAccessGranted;
         public int guardWarningCount;
@@ -200,5 +201,18 @@ namespace EmberCrpg.Data.Save
         public string itemTemplateId;
         public int count;
         public int goldDelta;
+    }
+
+    [Serializable]
+    public sealed class SpellCooldownSaveData
+    {
+        public SpellCooldownEntrySaveData[] entries;
+    }
+
+    [Serializable]
+    public sealed class SpellCooldownEntrySaveData
+    {
+        public string spellTemplateId;
+        public int remainingTicks;
     }
 }
