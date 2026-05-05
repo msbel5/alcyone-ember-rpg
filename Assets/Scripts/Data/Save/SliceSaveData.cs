@@ -37,6 +37,7 @@ namespace EmberCrpg.Data.Save
         public TopicSaveData[] topics;
         public NpcMemorySaveData[] npcMemories;
         public SpellCooldownSaveData playerSpellCooldowns;
+        public ShieldBuffSaveData playerShieldBuffs;
         public bool doorOpen;
         public bool guardDoorAccessGranted;
         public int guardWarningCount;
@@ -214,5 +215,19 @@ namespace EmberCrpg.Data.Save
     {
         public string spellTemplateId;
         public int remainingTicks;
+    }
+
+    [Serializable]
+    public sealed class ShieldBuffSaveData
+    {
+        public ShieldBuffEntrySaveData[] entries;
+    }
+
+    [Serializable]
+    public sealed class ShieldBuffEntrySaveData
+    {
+        public string spellTemplateId;
+        public int remainingTicks;
+        public int magnitude;
     }
 }
