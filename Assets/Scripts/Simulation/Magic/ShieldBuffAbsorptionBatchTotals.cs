@@ -44,12 +44,28 @@ namespace EmberCrpg.Simulation.Magic
         public static ShieldBuffAbsorptionBatchTotals From(
             IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId)
         {
+            return From(resultsByActorId, includePredicate: null);
+        }
+
+        // Subset-aggregating overload: aggregates only the entries of the per-actor result map
+        // for which includePredicate returns true. The predicate is evaluated on every entry
+        // after the same actor-key and per-actor-result invariants From(map) enforces, so the
+        // strict input contract is preserved regardless of which subset the caller wants. The
+        // returned ActorCount is the count of included entries, not the size of the input map,
+        // because the totals describe the included subset. Order independence still holds
+        // because the predicate is a pure per-entry filter and the totals remain commutative
+        // sums and counts.
+        public static ShieldBuffAbsorptionBatchTotals From(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate)
+        {
             if (resultsByActorId == null)
                 throw new ArgumentNullException(nameof(resultsByActorId));
 
             var totalIncomingDamage = 0;
             var totalAbsorbedDamage = 0;
             var totalRemainingDamage = 0;
+            var includedActorCount = 0;
             var actorsWithAbsorption = 0;
             var totalConsumedBuffEntries = 0;
             var totalExpiredBuffEntries = 0;
@@ -63,6 +79,10 @@ namespace EmberCrpg.Simulation.Magic
                 if (actorResult == null)
                     throw new ArgumentException("Per-actor absorption result must not be null.", nameof(resultsByActorId));
 
+                if (includePredicate != null && !includePredicate(pair.Key, actorResult))
+                    continue;
+
+                includedActorCount++;
                 totalIncomingDamage += actorResult.IncomingDamage;
                 totalAbsorbedDamage += actorResult.AbsorbedDamage;
                 totalRemainingDamage += actorResult.RemainingDamage;
@@ -76,7 +96,7 @@ namespace EmberCrpg.Simulation.Magic
                 totalIncomingDamage,
                 totalAbsorbedDamage,
                 totalRemainingDamage,
-                resultsByActorId.Count,
+                includedActorCount,
                 actorsWithAbsorption,
                 totalConsumedBuffEntries,
                 totalExpiredBuffEntries);
