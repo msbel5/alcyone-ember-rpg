@@ -224,5 +224,19 @@ namespace EmberCrpg.Simulation.Magic
         {
             return ShieldBuffAbsorptionBatchTotals.From(resultsByActorId);
         }
+
+        // Subset batch totals seam: forwards a per-actor filter predicate to the underlying
+        // ShieldBuffAbsorptionBatchTotals.From overload so a future combat damage-resolution
+        // pass or telemetry/UI surface can summarize a side-specific or absorbed-only slice
+        // of the same per-actor result map without re-walking it. Pure delegation — no new
+        // aggregation rules, no registry read, no buff/tick mutation, no save coupling. The
+        // strict input contract is unchanged: every map entry is still validated even when
+        // the predicate would otherwise filter it out.
+        public ShieldBuffAbsorptionBatchTotals ComputeBatchTotals(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.From(resultsByActorId, includePredicate);
+        }
     }
 }
