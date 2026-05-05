@@ -42,7 +42,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var driver = NewDriver();
 
-            Assert.Throws<ArgumentNullException>(() => driver.AdvanceTicks(new SpellCooldownState(), null, 5));
+            Assert.Throws<ArgumentNullException>(() => driver.AdvanceTicks(new SpellCooldownState(), (ShieldBuffState)null, 5));
         }
 
         [Test]

@@ -38,5 +38,25 @@ namespace EmberCrpg.Simulation.Magic
             _spellCooldownService.AdvanceTicks(cooldownState, elapsedTicks);
             _shieldBuffService.AdvanceTicks(shieldBuffState, elapsedTicks);
         }
+
+        // Registry-aware overload: advances cooldown decay on the single shared cooldown bag and
+        // forwards the shield-buff side to ShieldBuffService.AdvanceTicksForAllActors so every
+        // actor's per-actor bag in the registry decays in the same call. Pure orchestration —
+        // no new decay rules, no application/save/absorption changes, parity per-side with the
+        // existing single-bag overload and with ShieldBuffService.AdvanceTicksForAllActors.
+        public void AdvanceTicks(SpellCooldownState cooldownState, ShieldBuffStateRegistry shieldBuffStateRegistry, int elapsedTicks)
+        {
+            if (cooldownState == null)
+                throw new ArgumentNullException(nameof(cooldownState));
+            if (shieldBuffStateRegistry == null)
+                throw new ArgumentNullException(nameof(shieldBuffStateRegistry));
+            if (elapsedTicks < 0)
+                throw new ArgumentOutOfRangeException(nameof(elapsedTicks), elapsedTicks, "Elapsed ticks must be zero or positive.");
+            if (elapsedTicks == 0)
+                return;
+
+            _spellCooldownService.AdvanceTicks(cooldownState, elapsedTicks);
+            _shieldBuffService.AdvanceTicksForAllActors(shieldBuffStateRegistry, elapsedTicks);
+        }
     }
 }
