@@ -38,6 +38,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(spell.TargetKind, Is.EqualTo(SpellTargetKind.SingleTarget));
             Assert.That(spell.ManaCost, Is.EqualTo(12));
             Assert.That(spell.RangeInTiles, Is.EqualTo(SliceSpellCatalog.FlameBoltRangeInTiles));
+            Assert.That(spell.CooldownTicks, Is.EqualTo(SliceSpellCatalog.FlameBoltCooldownTicks));
             Assert.That(spell.Effects.Count, Is.EqualTo(1));
             Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectKind.DirectDamage));
         }
@@ -59,6 +60,22 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectKind.ShieldBuff));
             Assert.That(spell.Effects[0].DurationTicks, Is.GreaterThan(0));
             Assert.That(spell.Effects[0].IsInstantaneous, Is.False);
+        }
+
+        [Test]
+        public void StarterSpells_ExposeDeterministicCooldownTicks()
+        {
+            var flameBolt = SliceSpellCatalog.Find(SliceSpellCatalog.FlameBoltTemplateId);
+            var mendingTouch = SliceSpellCatalog.Find(SliceSpellCatalog.MendingTouchTemplateId);
+            var emberWard = SliceSpellCatalog.Find(SliceSpellCatalog.EmberWardTemplateId);
+
+            Assert.That(flameBolt.CooldownTicks, Is.EqualTo(SliceSpellCatalog.FlameBoltCooldownTicks));
+            Assert.That(mendingTouch.CooldownTicks, Is.EqualTo(SliceSpellCatalog.MendingTouchCooldownTicks));
+            Assert.That(emberWard.CooldownTicks, Is.EqualTo(SliceSpellCatalog.EmberWardCooldownTicks));
+
+            Assert.That(SliceSpellCatalog.FlameBoltCooldownTicks, Is.GreaterThan(0));
+            Assert.That(SliceSpellCatalog.MendingTouchCooldownTicks, Is.GreaterThan(0));
+            Assert.That(SliceSpellCatalog.EmberWardCooldownTicks, Is.EqualTo(emberWard.Effects[0].DurationTicks));
         }
     }
 }
