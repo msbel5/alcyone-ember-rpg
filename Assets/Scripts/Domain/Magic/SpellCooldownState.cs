@@ -4,9 +4,11 @@ using System.Collections.Generic;
 // Design note:
 // SpellCooldownState is the deterministic per-caster cooldown bag for Sprint 5 magic.
 // Inputs: stable spell template ids mapped to remaining cooldown ticks.
-// Outputs: mutable pure-Simulation state with no Unity dependency.
-// Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3 and Sprint 5 cooldown foundation.
-namespace EmberCrpg.Simulation.Magic
+// Outputs: mutable pure-Domain state with no Unity dependency. Lives in Domain.Magic so
+// world-state aggregates and the JSON save layer can carry it without crossing into Simulation.
+// Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3, Sprint 5 cooldown foundation, and Sprint 5
+// cooldown persistence increment.
+namespace EmberCrpg.Domain.Magic
 {
     /// <summary>Mutable cooldown state keyed by stable spell template ids.</summary>
     public sealed class SpellCooldownState

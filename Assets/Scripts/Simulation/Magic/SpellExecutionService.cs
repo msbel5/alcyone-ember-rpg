@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Magic;
 using EmberCrpg.Simulation.Rng;
 
 // Design note:
