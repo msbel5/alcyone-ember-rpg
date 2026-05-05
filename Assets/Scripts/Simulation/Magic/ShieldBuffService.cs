@@ -212,5 +212,17 @@ namespace EmberCrpg.Simulation.Magic
 
             return results;
         }
+
+        // Batch totals seam: deterministically aggregates the per-actor result map returned by
+        // AbsorbDamageForActors into a single ShieldBuffAbsorptionBatchTotals snapshot. A future
+        // combat damage-resolution pass or telemetry/UI surface can summarize a batch absorption
+        // call without re-walking the result map. Pure delegation — no registry read, no buff
+        // mutation, no tick mutation, no save coupling. The aggregation order has no observable
+        // effect because the totals are commutative sums and counts.
+        public ShieldBuffAbsorptionBatchTotals ComputeBatchTotals(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId)
+        {
+            return ShieldBuffAbsorptionBatchTotals.From(resultsByActorId);
+        }
     }
 }
