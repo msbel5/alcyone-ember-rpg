@@ -30,6 +30,13 @@ namespace EmberCrpg.Simulation.Magic
 
         public const int FlameBoltRangeInTiles = 8;
 
+        // Catalog cooldowns wire the existing SpellCooldownService to the deterministic Sprint 5
+        // starter spells. EmberWard's cooldown matches its own buff duration so the buff cannot
+        // legally double-stack via back-to-back self-recast.
+        public const int FlameBoltCooldownTicks = 6;
+        public const int MendingTouchCooldownTicks = 4;
+        public const int EmberWardCooldownTicks = 30;
+
         public static SpellDefinition CreateFlameBolt()
         {
             return new SpellDefinition(
@@ -37,9 +44,10 @@ namespace EmberCrpg.Simulation.Magic
                 "Flame Bolt",
                 MagicSchool.Destruction,
                 SpellTargetKind.SingleTarget,
-                12,
-                FlameBoltRangeInTiles,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
+                manaCost: 12,
+                rangeInTiles: FlameBoltRangeInTiles,
+                cooldownTicks: FlameBoltCooldownTicks,
+                effects: new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
         }
 
         public static SpellDefinition CreateMendingTouch()
@@ -49,8 +57,10 @@ namespace EmberCrpg.Simulation.Magic
                 "Mending Touch",
                 MagicSchool.Restoration,
                 SpellTargetKind.Touch,
-                10,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreHealth, 6, 0) });
+                manaCost: 10,
+                rangeInTiles: 0,
+                cooldownTicks: MendingTouchCooldownTicks,
+                effects: new[] { new SpellEffectSpec(SpellEffectKind.RestoreHealth, 6, 0) });
         }
 
         public static SpellDefinition CreateEmberWard()
@@ -60,8 +70,10 @@ namespace EmberCrpg.Simulation.Magic
                 "Ember Ward",
                 MagicSchool.Alteration,
                 SpellTargetKind.CasterSelf,
-                15,
-                new[] { new SpellEffectSpec(SpellEffectKind.ShieldBuff, 4, 30) });
+                manaCost: 15,
+                rangeInTiles: 0,
+                cooldownTicks: EmberWardCooldownTicks,
+                effects: new[] { new SpellEffectSpec(SpellEffectKind.ShieldBuff, 4, 30) });
         }
 
         private static SpellDefinition[] BuildSpells()

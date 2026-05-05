@@ -36,6 +36,41 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void TryExecute_CatalogFlameBolt_WithCooldownState_StartsCatalogCooldownAndRejectsRecast()
+        {
+            var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
+            var enemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 5, y: 4, health: 16, mana: 0);
+            var cooldownState = new SpellCooldownState();
+            var service = new SpellExecutionService();
+
+            var first = service.TryExecute(
+                caster,
+                SliceSpellCatalog.FlameBoltTemplateId,
+                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                enemy,
+                cooldownState);
+
+            Assert.That(first.Success, Is.True);
+            Assert.That(first.Error, Is.EqualTo(SpellExecutionError.None));
+            Assert.That(cooldownState.GetRemainingTicks(SliceSpellCatalog.FlameBoltTemplateId),
+                Is.EqualTo(SliceSpellCatalog.FlameBoltCooldownTicks));
+
+            var second = service.TryExecute(
+                caster,
+                SliceSpellCatalog.FlameBoltTemplateId,
+                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                enemy,
+                cooldownState);
+
+            Assert.That(second.Success, Is.False);
+            Assert.That(second.Error, Is.EqualTo(SpellExecutionError.CastRejected));
+            Assert.That(second.CastResult.Error, Is.EqualTo(SpellCastError.SpellOnCooldown));
+            Assert.That(second.ManaSpent, Is.EqualTo(0));
+            Assert.That(cooldownState.GetRemainingTicks(SliceSpellCatalog.FlameBoltTemplateId),
+                Is.EqualTo(SliceSpellCatalog.FlameBoltCooldownTicks));
+        }
+
+        [Test]
         public void TryExecute_CooldownSpellSuccess_StartsCooldownAfterCommittedCast()
         {
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
