@@ -2,9 +2,13 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Magic;
 
 // Design note:
-// SpellEffectResolutionService applies the deterministic Sprint 5 instantaneous magic subset.
-// Inputs: a successful SpellCastResult and one target ActorRecord.
-// Outputs: target vitality mutations for DirectDamage/RestoreHealth/RestoreFatigue only; no mana changes or Unity types.
+// SpellEffectResolutionService applies the deterministic Sprint 5 instantaneous magic subset
+// and writes timed ShieldBuff effects from a successful cast into a ShieldBuffState container.
+// Inputs: a successful SpellCastResult, one optional target ActorRecord (instantaneous path),
+// and one optional ShieldBuffState (timed-buff path).
+// Outputs: target vitality mutations for DirectDamage/RestoreHealth/RestoreFatigue (instantaneous)
+// and ShieldBuffState entries keyed by spell.TemplateId (timed buffs); no mana changes, no
+// tick-down, no actor-keyed wiring, no Unity types.
 // Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3 + §8 Sprint 5 deterministic mechanics,
 // MASTER_MECHANICS_BIBLE.md §15 Magic effects/opcodes.
 namespace EmberCrpg.Simulation.Magic
@@ -69,6 +73,40 @@ namespace EmberCrpg.Simulation.Magic
                 totalHealing,
                 totalRestoredFatigue,
                 $"Resolved {effects.Count} instantaneous effect(s) from {castResult.Spell.DisplayName}.");
+        }
+
+        public ShieldBuffApplicationResult ApplyShieldBuffs(SpellCastResult castResult, ShieldBuffState shieldBuffState)
+        {
+            if (castResult == null || !castResult.Success || castResult.Spell == null)
+                return ShieldBuffApplicationResult.Fail(SpellEffectResolutionError.InvalidCast, null, "A successful cast is required before applying shield buffs.");
+            if (shieldBuffState == null)
+                return ShieldBuffApplicationResult.Fail(SpellEffectResolutionError.InvalidBuffState, castResult.Spell, "A shield buff state container is required to record timed buffs.");
+
+            var spell = castResult.Spell;
+            var effects = spell.Effects;
+            var appliedBuffCount = 0;
+            var totalAppliedMagnitude = 0;
+            var totalAppliedDurationTicks = 0;
+            for (var i = 0; i < effects.Count; i++)
+            {
+                var effect = effects[i];
+                if (effect.Kind != SpellEffectKind.ShieldBuff || effect.IsInstantaneous)
+                    continue;
+
+                shieldBuffState.SetActiveBuff(spell.TemplateId, effect.DurationTicks, effect.Magnitude);
+                appliedBuffCount++;
+                totalAppliedMagnitude += effect.Magnitude;
+                totalAppliedDurationTicks += effect.DurationTicks;
+            }
+
+            return ShieldBuffApplicationResult.Ok(
+                spell,
+                appliedBuffCount,
+                totalAppliedMagnitude,
+                totalAppliedDurationTicks,
+                appliedBuffCount == 0
+                    ? $"No timed shield buff effects to apply from {spell.DisplayName}."
+                    : $"Applied {appliedBuffCount} timed shield buff effect(s) from {spell.DisplayName}.");
         }
 
         private static SpellEffectResolutionResult ValidateInstantaneousEffects(SpellDefinition spell, ActorRecord target)

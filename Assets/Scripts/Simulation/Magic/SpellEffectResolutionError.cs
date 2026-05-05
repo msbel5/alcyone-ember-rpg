@@ -13,5 +13,6 @@ namespace EmberCrpg.Simulation.Magic
         InvalidTarget = 2,
         NonInstantaneousEffect = 3,
         UnsupportedEffect = 4,
+        InvalidBuffState = 5,
     }
 }
