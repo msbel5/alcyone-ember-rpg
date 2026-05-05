@@ -36,6 +36,8 @@ namespace EmberCrpg.Tests.EditMode.Save
             world.Enemy.ApplyVitals(world.Enemy.Vitals.WithHealth(world.Enemy.Vitals.Health.Damage(5)));
             world.PlayerSpellCooldowns.SetRemainingTicks("ember.spark", 4);
             world.PlayerSpellCooldowns.SetRemainingTicks("ash.bind", 2);
+            world.PlayerShieldBuffs.SetActiveBuff("ember_ward", 30, 4);
+            world.PlayerShieldBuffs.SetActiveBuff("ash.bind", 6, 1);
             var farRoomState = world.DungeonRoomStates.Last();
             farRoomState.Visited = true;
             farRoomState.Cleared = true;
@@ -75,6 +77,12 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(loaded.PlayerSpellCooldowns.GetRemainingTicks("ember.spark"), Is.EqualTo(4));
             Assert.That(loaded.PlayerSpellCooldowns.GetRemainingTicks("ash.bind"), Is.EqualTo(2));
             Assert.That(loaded.PlayerSpellCooldowns.GetTrackedSpellTemplateIds().Count, Is.EqualTo(2));
+            Assert.That(loaded.PlayerShieldBuffs, Is.Not.Null);
+            Assert.That(loaded.PlayerShieldBuffs.GetRemainingTicks("ember_ward"), Is.EqualTo(30));
+            Assert.That(loaded.PlayerShieldBuffs.GetMagnitude("ember_ward"), Is.EqualTo(4));
+            Assert.That(loaded.PlayerShieldBuffs.GetRemainingTicks("ash.bind"), Is.EqualTo(6));
+            Assert.That(loaded.PlayerShieldBuffs.GetMagnitude("ash.bind"), Is.EqualTo(1));
+            Assert.That(loaded.PlayerShieldBuffs.GetTrackedSpellTemplateIds().Count, Is.EqualTo(2));
         }
 
         [Test]
@@ -87,6 +95,18 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             Assert.That(loaded.PlayerSpellCooldowns, Is.Not.Null);
             Assert.That(loaded.PlayerSpellCooldowns.GetTrackedSpellTemplateIds().Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void SaveAndLoad_FreshWorld_StartsWithNoShieldBuffs()
+        {
+            var world = new SliceWorldFactory().Create(2027);
+
+            var service = new EmberCrpg.Data.Save.JsonSliceSaveService();
+            var loaded = service.LoadFromJson(service.SaveToJson(world));
+
+            Assert.That(loaded.PlayerShieldBuffs, Is.Not.Null);
+            Assert.That(loaded.PlayerShieldBuffs.GetTrackedSpellTemplateIds().Count, Is.EqualTo(0));
         }
     }
 }

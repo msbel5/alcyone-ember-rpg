@@ -48,6 +48,7 @@ namespace EmberCrpg.Data.Save
                 topics = world.Topics.Select(topic => new TopicSaveData { id = topic.Id, label = topic.Label, answer = topic.Answer }).ToArray(),
                 npcMemories = ToNpcMemoryData(world.NpcMemory),
                 playerSpellCooldowns = SpellCooldownSaveMapper.ToData(world.PlayerSpellCooldowns),
+                playerShieldBuffs = ShieldBuffSaveMapper.ToData(world.PlayerShieldBuffs),
                 doorOpen = world.DoorOpen,
                 guardDoorAccessGranted = world.GuardDoorAccessGranted,
                 guardWarningCount = world.GuardWarningCount,
@@ -85,6 +86,7 @@ namespace EmberCrpg.Data.Save
             world.Topics = (data.topics ?? new TopicSaveData[0]).Select(topic => new AskAboutTopic(topic.id, topic.label, topic.answer)).ToList();
             world.NpcMemory = ToNpcMemoryStore(data.npcMemories);
             world.PlayerSpellCooldowns = SpellCooldownSaveMapper.ToState(data.playerSpellCooldowns);
+            world.PlayerShieldBuffs = ShieldBuffSaveMapper.ToState(data.playerShieldBuffs);
             world.DoorOpen = data.doorOpen;
             world.GuardDoorAccessGranted = data.guardDoorAccessGranted;
             world.GuardWarningCount = data.guardWarningCount;

@@ -41,6 +41,7 @@ namespace EmberCrpg.Domain.World
         public List<AskAboutTopic> Topics = new List<AskAboutTopic>();
         public NpcMemoryStore NpcMemory = new NpcMemoryStore();
         public SpellCooldownState PlayerSpellCooldowns = new SpellCooldownState();
+        public ShieldBuffState PlayerShieldBuffs = new ShieldBuffState();
         public bool DoorOpen;
         public bool GuardDoorAccessGranted;
         public int GuardWarningCount;
