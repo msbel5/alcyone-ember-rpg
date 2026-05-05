@@ -1,3 +1,4 @@
+using System;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Magic;
 
@@ -107,6 +108,25 @@ namespace EmberCrpg.Simulation.Magic
                 appliedBuffCount == 0
                     ? $"No timed shield buff effects to apply from {spell.DisplayName}."
                     : $"Applied {appliedBuffCount} timed shield buff effect(s) from {spell.DisplayName}.");
+        }
+
+        // Actor-keyed application seam: routes a successful cast's timed shield-buff effects into the
+        // per-actor bag owned by ShieldBuffStateRegistry.GetOrCreate(actorId). Pure delegation to the
+        // existing single-bag overload — same rejection contracts (null/failed cast, no spell), same
+        // ApplyShieldBuffs result shape, no decay/save/absorption changes. Bag creation is lazy: a
+        // failed cast never materializes new actor state because the registry is only touched after
+        // the cast guard passes. Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3.
+        public ShieldBuffApplicationResult ApplyShieldBuffs(SpellCastResult castResult, ShieldBuffStateRegistry registry, string actorId)
+        {
+            if (castResult == null || !castResult.Success || castResult.Spell == null)
+                return ShieldBuffApplicationResult.Fail(SpellEffectResolutionError.InvalidCast, null, "A successful cast is required before applying shield buffs.");
+            if (registry == null)
+                throw new ArgumentNullException(nameof(registry));
+            if (string.IsNullOrWhiteSpace(actorId))
+                throw new ArgumentException("Actor id must be a non-empty stable id.", nameof(actorId));
+
+            var shieldBuffState = registry.GetOrCreate(actorId);
+            return ApplyShieldBuffs(castResult, shieldBuffState);
         }
 
         private static SpellEffectResolutionResult ValidateInstantaneousEffects(SpellDefinition spell, ActorRecord target)
