@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using EmberCrpg.Domain.Magic;
 
 // Design note:
@@ -57,6 +58,78 @@ namespace EmberCrpg.Simulation.Magic
 
                 AdvanceTicks(shieldBuffState, elapsedTicks);
             }
+        }
+
+        // Damage absorption seam: consumes magnitude across active shield buffs in a single
+        // ShieldBuffState in deterministic ascending ordinal order of spell template id, returning
+        // the absorbed and remaining damage totals plus the per-spell consume/expire trace. Buffs
+        // whose magnitude reaches zero are removed entirely even when their remaining ticks have
+        // not yet expired; otherwise the buff's remaining ticks are preserved unchanged. Buffs
+        // with zero magnitude are skipped without being marked consumed. Pure Simulation: no tick
+        // mutation, no save coupling, no actor-keyed dispatch (registry sweep is a future slice).
+        public ShieldBuffAbsorptionResult AbsorbDamage(ShieldBuffState shieldBuffState, int incomingDamage)
+        {
+            if (shieldBuffState == null)
+                throw new ArgumentNullException(nameof(shieldBuffState));
+            if (incomingDamage < 0)
+                throw new ArgumentOutOfRangeException(nameof(incomingDamage), incomingDamage, "Incoming damage must be zero or positive.");
+
+            if (incomingDamage == 0)
+            {
+                return ShieldBuffAbsorptionResult.Create(
+                    incomingDamage: 0,
+                    absorbedDamage: 0,
+                    remainingDamage: 0,
+                    consumedSpellTemplateIds: Array.Empty<string>(),
+                    expiredSpellTemplateIds: Array.Empty<string>());
+            }
+
+            var consumed = new List<string>();
+            var expired = new List<string>();
+            var remainingDamage = incomingDamage;
+            var absorbedDamage = 0;
+
+            var trackedSpellIds = shieldBuffState.GetTrackedSpellTemplateIds();
+            var orderedSpellIds = new List<string>(trackedSpellIds);
+            orderedSpellIds.Sort(StringComparer.Ordinal);
+
+            foreach (var spellTemplateId in orderedSpellIds)
+            {
+                if (remainingDamage <= 0)
+                    break;
+
+                var remainingTicks = shieldBuffState.GetRemainingTicks(spellTemplateId);
+                if (remainingTicks <= 0)
+                    continue;
+
+                var magnitude = shieldBuffState.GetMagnitude(spellTemplateId);
+                if (magnitude <= 0)
+                    continue;
+
+                var consumeAmount = magnitude < remainingDamage ? magnitude : remainingDamage;
+                absorbedDamage += consumeAmount;
+                remainingDamage -= consumeAmount;
+                var newMagnitude = magnitude - consumeAmount;
+
+                consumed.Add(spellTemplateId);
+
+                if (newMagnitude == 0)
+                {
+                    shieldBuffState.Clear(spellTemplateId);
+                    expired.Add(spellTemplateId);
+                }
+                else
+                {
+                    shieldBuffState.SetActiveBuff(spellTemplateId, remainingTicks, newMagnitude);
+                }
+            }
+
+            return ShieldBuffAbsorptionResult.Create(
+                incomingDamage: incomingDamage,
+                absorbedDamage: absorbedDamage,
+                remainingDamage: remainingDamage,
+                consumedSpellTemplateIds: consumed,
+                expiredSpellTemplateIds: expired);
         }
     }
 }
