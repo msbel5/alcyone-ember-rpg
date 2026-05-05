@@ -238,5 +238,21 @@ namespace EmberCrpg.Simulation.Magic
         {
             return ShieldBuffAbsorptionBatchTotals.From(resultsByActorId, includePredicate);
         }
+
+        // Partition batch totals seam: forwards a per-actor predicate to the underlying
+        // ShieldBuffAbsorptionBatchTotals.PartitionFrom factory so a future combat
+        // damage-resolution pass or telemetry/UI surface can compute the side-A vs side-B
+        // (e.g. allies vs enemies, absorbed vs untouched) totals of one batch absorption
+        // result map in a single deterministic pass instead of two separate filtered
+        // ComputeBatchTotals calls. Pure delegation — no new aggregation rules, no
+        // registry read, no buff/tick mutation, no save coupling. The strict input
+        // contract is unchanged: every map entry is still validated before the predicate
+        // is consulted.
+        public ShieldBuffAbsorptionBatchTotalsPartition ComputeBatchTotalsPartition(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.PartitionFrom(resultsByActorId, includePredicate);
+        }
     }
 }
