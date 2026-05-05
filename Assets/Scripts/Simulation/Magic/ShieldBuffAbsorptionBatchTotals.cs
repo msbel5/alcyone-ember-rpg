@@ -191,5 +191,89 @@ namespace EmberCrpg.Simulation.Magic
 
             return new ShieldBuffAbsorptionBatchTotalsPartition(included, excluded);
         }
+
+        // Group-by overload: walks the per-actor result map exactly once and routes each
+        // entry to a per-group ShieldBuffAbsorptionBatchTotals bucket keyed by a caller
+        // supplied keyExtractor. This generalizes PartitionFrom from a binary split to an
+        // N-way split, so a future combat damage-resolution pass or telemetry/UI surface
+        // can summarize totals broken down by faction, region, or buff family from a
+        // single deterministic pass instead of one filtered ComputeBatchTotals call per
+        // bucket. Strict input contract is preserved: every entry is validated for non
+        // empty actor key and non-null per-actor result before the keyExtractor is
+        // consulted, and the keyExtractor itself must return a non-empty stable group
+        // key. Group keys use ordinal string comparison for stable lookup independent
+        // of culture. The returned dictionary is independent of the input map order
+        // because the per-bucket totals are commutative sums and counts, and the union
+        // of all bucket totals equals the unfiltered From(map) result.
+        public static IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupBy(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, string> keyExtractor)
+        {
+            if (resultsByActorId == null)
+                throw new ArgumentNullException(nameof(resultsByActorId));
+            if (keyExtractor == null)
+                throw new ArgumentNullException(nameof(keyExtractor));
+
+            var accumulators = new Dictionary<string, GroupAccumulator>(StringComparer.Ordinal);
+
+            foreach (var pair in resultsByActorId)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Key))
+                    throw new ArgumentException("Actor id keys must be non-empty stable ids.", nameof(resultsByActorId));
+
+                var actorResult = pair.Value;
+                if (actorResult == null)
+                    throw new ArgumentException("Per-actor absorption result must not be null.", nameof(resultsByActorId));
+
+                var groupKey = keyExtractor(pair.Key, actorResult);
+                if (string.IsNullOrWhiteSpace(groupKey))
+                    throw new ArgumentException("Group keys returned by keyExtractor must be non-empty stable ids.", nameof(keyExtractor));
+
+                if (!accumulators.TryGetValue(groupKey, out var accumulator))
+                {
+                    accumulator = new GroupAccumulator();
+                    accumulators[groupKey] = accumulator;
+                }
+
+                accumulator.ActorCount++;
+                accumulator.TotalIncomingDamage += actorResult.IncomingDamage;
+                accumulator.TotalAbsorbedDamage += actorResult.AbsorbedDamage;
+                accumulator.TotalRemainingDamage += actorResult.RemainingDamage;
+                if (actorResult.AbsorbedDamage > 0)
+                    accumulator.ActorsWithAbsorption++;
+                accumulator.TotalConsumedBuffEntries += actorResult.ConsumedSpellTemplateIds.Count;
+                accumulator.TotalExpiredBuffEntries += actorResult.ExpiredSpellTemplateIds.Count;
+            }
+
+            var groups = new Dictionary<string, ShieldBuffAbsorptionBatchTotals>(
+                accumulators.Count,
+                StringComparer.Ordinal);
+
+            foreach (var pair in accumulators)
+            {
+                var a = pair.Value;
+                groups[pair.Key] = new ShieldBuffAbsorptionBatchTotals(
+                    a.TotalIncomingDamage,
+                    a.TotalAbsorbedDamage,
+                    a.TotalRemainingDamage,
+                    a.ActorCount,
+                    a.ActorsWithAbsorption,
+                    a.TotalConsumedBuffEntries,
+                    a.TotalExpiredBuffEntries);
+            }
+
+            return groups;
+        }
+
+        private sealed class GroupAccumulator
+        {
+            public int TotalIncomingDamage;
+            public int TotalAbsorbedDamage;
+            public int TotalRemainingDamage;
+            public int ActorCount;
+            public int ActorsWithAbsorption;
+            public int TotalConsumedBuffEntries;
+            public int TotalExpiredBuffEntries;
+        }
     }
 }
