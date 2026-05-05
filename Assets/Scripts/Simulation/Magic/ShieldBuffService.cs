@@ -174,5 +174,43 @@ namespace EmberCrpg.Simulation.Magic
 
             return AbsorbDamage(shieldBuffState, incomingDamage);
         }
+
+        // Batch actor-keyed absorption seam: routes a per-actor incoming-damage map through the
+        // single-actor AbsorbDamageForActor seam so a future combat damage-resolution pass can
+        // absorb shield buffs across multiple damaged actors in one deterministic call without
+        // itself enumerating ShieldBuffStateRegistry. Pure delegation — same per-buff consume
+        // order, same magnitude-exhaust expiry, same trace contract per actor. The registry is
+        // read-only here: an untracked actor in the input map yields a result with full
+        // RemainingDamage and an empty trace, and the actor is NOT lazily added to the registry.
+        // Result keys mirror the input keys exactly (including untracked actors), so callers can
+        // reason about the result map purely from their own input rather than registry contents.
+        public IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> AbsorbDamageForActors(
+            ShieldBuffStateRegistry registry,
+            IReadOnlyDictionary<string, int> incomingDamageByActorId)
+        {
+            if (registry == null)
+                throw new ArgumentNullException(nameof(registry));
+            if (incomingDamageByActorId == null)
+                throw new ArgumentNullException(nameof(incomingDamageByActorId));
+
+            var results = new Dictionary<string, ShieldBuffAbsorptionResult>(
+                incomingDamageByActorId.Count,
+                StringComparer.Ordinal);
+
+            foreach (var pair in incomingDamageByActorId)
+            {
+                var actorId = pair.Key;
+                if (string.IsNullOrWhiteSpace(actorId))
+                    throw new ArgumentException("Actor id keys must be non-empty stable ids.", nameof(incomingDamageByActorId));
+
+                var incomingDamage = pair.Value;
+                if (incomingDamage < 0)
+                    throw new ArgumentOutOfRangeException(nameof(incomingDamageByActorId), incomingDamage, "Incoming damage must be zero or positive.");
+
+                results[actorId] = AbsorbDamageForActor(registry, actorId, incomingDamage);
+            }
+
+            return results;
+        }
     }
 }
