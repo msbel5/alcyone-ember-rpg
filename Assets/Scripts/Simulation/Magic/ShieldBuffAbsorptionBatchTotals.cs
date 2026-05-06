@@ -278,6 +278,42 @@ namespace EmberCrpg.Simulation.Magic
             Func<ShieldBuffAbsorptionBatchTotals, string> keyExtractor,
             Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate)
         {
+            return GroupByMany(totals, keyExtractor, includePredicate, filterPredicate: null);
+        }
+
+        // Stacked-filter cross-batch group-by fold: walks an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots exactly once and routes each kept snapshot to a
+        // per-group bucket keyed by the caller-supplied keyExtractor, but only after the snapshot
+        // first survives filterPredicate (a pre-filter that drops elements outright) and then
+        // includePredicate (the existing per-group filter, retained so callers that already used
+        // the 3-arg overload keep its semantics). Mirrors the stacked-filter pattern already
+        // established on PartitionMany(seq, includePredicate, filterPredicate) and stacks it on
+        // top of the cross-batch group-by surface so a future combat damage-resolution pass or
+        // telemetry/UI surface can compute N-way per-group totals (e.g. by tick phase, by
+        // encounter id) over a tagged subset of cross-batch snapshots (e.g. only sub-passes
+        // flagged offensive that also registered any absorption) in a single deterministic walk
+        // without rebuilding the sequence first. Strict input contract is preserved: every
+        // element is validated for non-null with the same indexed message the unfiltered
+        // GroupByMany emits before either predicate or the keyExtractor is consulted, so the
+        // guard order matches the existing cross-batch overloads exactly. filterPredicate is
+        // consulted before includePredicate, and any snapshot it rejects contributes to no
+        // bucket. When filterPredicate is null this overload behaves exactly like
+        // GroupByMany(totals, keyExtractor, includePredicate); when both predicates are null it
+        // behaves like the unfiltered GroupByMany(totals, keyExtractor) factory. The keyExtractor
+        // itself must still return a non-empty stable group key, and group keys use ordinal
+        // string comparison. The union of all per-bucket totals (merged together) equals the
+        // pre-filtered MergeMany(totals, snap => (filterPredicate == null || filterPredicate(snap))
+        // && (includePredicate == null || includePredicate(snap))) result because each kept
+        // snapshot contributes to exactly one bucket. Pure aggregation: no Unity dependency, no
+        // presentation coupling, no registry read, no buff/tick mutation, no save coupling.
+        // Order independence still holds because both predicates and the keyExtractor are pure
+        // per-element functions and the per-bucket counters remain commutative integer sums.
+        public static IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupByMany(
+            IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            Func<ShieldBuffAbsorptionBatchTotals, string> keyExtractor,
+            Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate,
+            Func<ShieldBuffAbsorptionBatchTotals, bool> filterPredicate)
+        {
             if (totals == null)
                 throw new ArgumentNullException(nameof(totals));
             if (keyExtractor == null)
@@ -291,6 +327,12 @@ namespace EmberCrpg.Simulation.Magic
                     throw new ArgumentException(
                         $"Totals sequence element at index {index} must not be null.",
                         nameof(totals));
+
+                if (filterPredicate != null && !filterPredicate(snapshot))
+                {
+                    index++;
+                    continue;
+                }
 
                 if (includePredicate != null && !includePredicate(snapshot))
                 {
