@@ -383,6 +383,33 @@ namespace EmberCrpg.Simulation.Magic
             return ShieldBuffAbsorptionBatchTotals.MergeMany(totals, includePredicate);
         }
 
+        // Stacked-filter cross-batch fold seam: forwards an arbitrary sequence of
+        // already-computed ShieldBuffAbsorptionBatchTotals snapshots, a per-snapshot
+        // includePredicate that gates kept snapshots into the running Merge fold, and
+        // a per-snapshot filterPredicate that pre-filters the sequence to the underlying
+        // ShieldBuffAbsorptionBatchTotals.MergeMany(totals, includePredicate, filterPredicate)
+        // factory so a future combat damage-resolution pass or telemetry/UI surface can
+        // fold a tagged subset of a tagged subset of cross-batch snapshots (e.g. only
+        // sub-passes flagged offensive that also registered any absorption) in one
+        // deterministic walk without rebuilding the sequence first. Mirrors the
+        // stacked-filter seam already established on
+        // PartitionBatchTotalsMany(seq, includePredicate, filterPredicate),
+        // GroupBatchTotalsByMany(seq, keyExtractor, includePredicate, filterPredicate),
+        // GroupBatchTotals(map, keyExtractor, includePredicate, filterPredicate), and
+        // ComputeBatchTotalsPartition(map, includePredicate, filterPredicate). Pure
+        // delegation — no new aggregation rules, no registry read, no buff/tick mutation,
+        // no save coupling. The strict input contract is unchanged: every element is
+        // still validated for non-null before either predicate is consulted, and
+        // filterPredicate is consulted before includePredicate.
+        public ShieldBuffAbsorptionBatchTotals MergeBatchTotalsMany(
+            System.Collections.Generic.IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            System.Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate,
+            System.Func<ShieldBuffAbsorptionBatchTotals, bool> filterPredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.MergeMany(
+                totals, includePredicate, filterPredicate);
+        }
+
         // Cross-batch partition seam: forwards an arbitrary sequence of already-computed
         // ShieldBuffAbsorptionBatchTotals snapshots and a per-snapshot includePredicate to
         // the underlying ShieldBuffAbsorptionBatchTotals.PartitionMany factory so a future
