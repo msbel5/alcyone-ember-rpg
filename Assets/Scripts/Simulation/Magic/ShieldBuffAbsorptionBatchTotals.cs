@@ -144,6 +144,52 @@ namespace EmberCrpg.Simulation.Magic
             return accumulator;
         }
 
+        // Cross-batch partition fold: walks an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots exactly once and routes each snapshot
+        // to either the Included fold (predicate returns true) or the Excluded fold
+        // (predicate returns false), returning a ShieldBuffAbsorptionBatchTotalsPartition
+        // whose two buckets are themselves complete batch totals snapshots. Mirrors the
+        // map-level PartitionFrom(map, predicate) factory at the cross-batch level so a
+        // future combat damage-resolution pass or telemetry/UI surface can summarize a
+        // side-versus-side split (e.g. ticks where any actor absorbed damage versus
+        // ticks where none did, or sub-passes flagged offensive versus defensive) of an
+        // already-folded sequence without scanning it twice. Strict input contract is
+        // preserved: every snapshot is validated for non-null with the same indexed
+        // message MergeMany emits before the predicate is consulted, so the guard order
+        // matches MergeMany exactly. The Included-plus-Excluded sums equal the unfiltered
+        // MergeMany(totals) result because each snapshot contributes to exactly one
+        // bucket. Pure aggregation: no Unity dependency, no presentation coupling, no
+        // registry read, no buff/tick mutation, no save coupling.
+        public static ShieldBuffAbsorptionBatchTotalsPartition PartitionMany(
+            IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate)
+        {
+            if (totals == null)
+                throw new ArgumentNullException(nameof(totals));
+            if (includePredicate == null)
+                throw new ArgumentNullException(nameof(includePredicate));
+
+            var includedAccumulator = Empty;
+            var excludedAccumulator = Empty;
+            var index = 0;
+            foreach (var snapshot in totals)
+            {
+                if (snapshot == null)
+                    throw new ArgumentException(
+                        $"Totals sequence element at index {index} must not be null.",
+                        nameof(totals));
+                if (includePredicate(snapshot))
+                    includedAccumulator = Merge(includedAccumulator, snapshot);
+                else
+                    excludedAccumulator = Merge(excludedAccumulator, snapshot);
+                index++;
+            }
+
+            return new ShieldBuffAbsorptionBatchTotalsPartition(
+                includedAccumulator,
+                excludedAccumulator);
+        }
+
         // Subset-aggregating overload: aggregates only the entries of the per-actor result map
         // for which includePredicate returns true. The predicate is evaluated on every entry
         // after the same actor-key and per-actor-result invariants From(map) enforces, so the
