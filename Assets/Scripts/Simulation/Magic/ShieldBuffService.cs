@@ -239,6 +239,30 @@ namespace EmberCrpg.Simulation.Magic
             return ShieldBuffAbsorptionBatchTotals.From(resultsByActorId, includePredicate);
         }
 
+        // Stacked-filter map-level batch totals seam: forwards a per-actor includePredicate
+        // that gates kept entries into the running totals and a per-actor filterPredicate
+        // that pre-filters the result map outright to the underlying
+        // ShieldBuffAbsorptionBatchTotals.From(map, includePredicate, filterPredicate)
+        // overload so a future combat damage-resolution pass or telemetry/UI surface can fold a
+        // tagged subset of a tagged subset of one batch absorption result map (e.g. only
+        // allies that also absorbed damage) in a single deterministic walk without scanning
+        // the map twice. Mirrors the stacked-filter seam already established on
+        // ComputeBatchTotalsPartition(map, includePredicate, filterPredicate),
+        // GroupBatchTotals(map, keyExtractor, includePredicate, filterPredicate), and the
+        // cross-batch MergeBatchTotalsMany(seq, includePredicate, filterPredicate) overload.
+        // Pure delegation — no new aggregation rules, no registry read, no buff/tick mutation,
+        // no save coupling. The strict input contract is unchanged: every map entry is still
+        // validated before either predicate is consulted, and filterPredicate is consulted
+        // before includePredicate.
+        public ShieldBuffAbsorptionBatchTotals ComputeBatchTotals(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate,
+            Func<string, ShieldBuffAbsorptionResult, bool> filterPredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.From(
+                resultsByActorId, includePredicate, filterPredicate);
+        }
+
         // Partition batch totals seam: forwards a per-actor predicate to the underlying
         // ShieldBuffAbsorptionBatchTotals.PartitionFrom factory so a future combat
         // damage-resolution pass or telemetry/UI surface can compute the side-A vs side-B
