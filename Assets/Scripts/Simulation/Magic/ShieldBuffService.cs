@@ -400,5 +400,25 @@ namespace EmberCrpg.Simulation.Magic
         {
             return ShieldBuffAbsorptionBatchTotals.GroupByMany(totals, keyExtractor, includePredicate);
         }
+
+        // Stacked-filter cross-batch group-by seam: forwards an arbitrary sequence of
+        // already-computed ShieldBuffAbsorptionBatchTotals snapshots, a per-snapshot
+        // keyExtractor, a per-snapshot includePredicate, and a per-snapshot filterPredicate
+        // to the underlying ShieldBuffAbsorptionBatchTotals.GroupByMany(totals, keyExtractor,
+        // includePredicate, filterPredicate) factory so a future combat damage-resolution
+        // pass or telemetry/UI surface can compute N-way per-group totals (e.g. by tick
+        // phase, by encounter id) over a tagged subset of cross-batch snapshots (e.g. only
+        // sub-passes flagged offensive that also registered any absorption) in a single
+        // deterministic walk without rebuilding the sequence first. Pure delegation — no new
+        // aggregation rules, no registry read, no buff/tick mutation, no save coupling.
+        public System.Collections.Generic.IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupBatchTotalsByMany(
+            System.Collections.Generic.IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            System.Func<ShieldBuffAbsorptionBatchTotals, string> keyExtractor,
+            System.Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate,
+            System.Func<ShieldBuffAbsorptionBatchTotals, bool> filterPredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.GroupByMany(
+                totals, keyExtractor, includePredicate, filterPredicate);
+        }
     }
 }
