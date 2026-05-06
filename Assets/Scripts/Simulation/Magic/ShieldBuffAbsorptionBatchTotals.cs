@@ -543,6 +543,43 @@ namespace EmberCrpg.Simulation.Magic
             Func<string, ShieldBuffAbsorptionResult, string> keyExtractor,
             Func<string, ShieldBuffAbsorptionResult, bool> includePredicate)
         {
+            return GroupBy(resultsByActorId, keyExtractor, includePredicate, filterPredicate: null);
+        }
+
+        // Stacked-filter map-level group-by overload: walks the per-actor result map exactly
+        // once and routes each kept entry to a per-group ShieldBuffAbsorptionBatchTotals bucket
+        // keyed by the caller-supplied keyExtractor, but only after the entry first survives
+        // filterPredicate (a pre-filter that drops entries outright) and then includePredicate
+        // (the existing per-group filter, retained so callers that already used the 3-arg
+        // overload keep its semantics). Mirrors the stacked-filter pattern already established
+        // on PartitionMany(seq, includePredicate, filterPredicate) and the cross-batch
+        // GroupByMany(seq, keyExtractor, includePredicate, filterPredicate), and stacks it on
+        // top of the map-level group-by surface so a future combat damage-resolution pass or
+        // telemetry/UI surface can compute "side-by-side per-faction totals over a tagged
+        // subset of a tagged subset" (e.g. only allies that survived AND only actors that
+        // absorbed damage) from one batch absorption call without scanning the map twice.
+        // Strict input contract is preserved: every entry is validated for non-empty actor key
+        // and non-null per-actor result before either predicate or the keyExtractor is
+        // consulted, so the guard order matches the unfiltered GroupBy, the 3-arg filtered
+        // GroupBy, and the From overloads exactly. filterPredicate is consulted before
+        // includePredicate, and any entry it rejects contributes to no bucket. When
+        // filterPredicate is null this overload behaves exactly like
+        // GroupBy(map, keyExtractor, includePredicate); when both predicates are null it
+        // behaves like the unfiltered GroupBy(map, keyExtractor) factory. The keyExtractor
+        // itself must still return a non-empty stable group key, and group keys use ordinal
+        // string comparison. The union of all per-bucket totals equals the filtered
+        // From(map, entry => (filterPredicate == null || filterPredicate(entry)) &&
+        // (includePredicate == null || includePredicate(entry))) result because each kept entry
+        // contributes to exactly one bucket. Pure aggregation: no Unity dependency, no
+        // presentation coupling, no registry read, no buff/tick mutation, no save coupling.
+        // Order independence still holds because both predicates and the keyExtractor are pure
+        // per-entry functions and the per-bucket counters remain commutative integer sums.
+        public static IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupBy(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, string> keyExtractor,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate,
+            Func<string, ShieldBuffAbsorptionResult, bool> filterPredicate)
+        {
             if (resultsByActorId == null)
                 throw new ArgumentNullException(nameof(resultsByActorId));
             if (keyExtractor == null)
@@ -558,6 +595,9 @@ namespace EmberCrpg.Simulation.Magic
                 var actorResult = pair.Value;
                 if (actorResult == null)
                     throw new ArgumentException("Per-actor absorption result must not be null.", nameof(resultsByActorId));
+
+                if (filterPredicate != null && !filterPredicate(pair.Key, actorResult))
+                    continue;
 
                 if (includePredicate != null && !includePredicate(pair.Key, actorResult))
                     continue;
