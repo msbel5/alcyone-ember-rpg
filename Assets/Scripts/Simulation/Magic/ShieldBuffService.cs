@@ -367,5 +367,20 @@ namespace EmberCrpg.Simulation.Magic
         {
             return ShieldBuffAbsorptionBatchTotals.PartitionMany(totals, includePredicate, filterPredicate);
         }
+
+        // Cross-batch group-by seam: forwards an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots and a per-snapshot keyExtractor to the
+        // underlying ShieldBuffAbsorptionBatchTotals.GroupByMany factory so a future combat
+        // damage-resolution pass or telemetry/UI surface can bucket cross-batch snapshots
+        // by an N-way categorical tag (e.g. by tick phase, by encounter id, by faction
+        // label) in a single deterministic walk and read each bucket as a complete batch
+        // totals snapshot. Pure delegation — no new aggregation rules, no registry read,
+        // no buff/tick mutation, no save coupling.
+        public System.Collections.Generic.IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupBatchTotalsByMany(
+            System.Collections.Generic.IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            System.Func<ShieldBuffAbsorptionBatchTotals, string> keyExtractor)
+        {
+            return ShieldBuffAbsorptionBatchTotals.GroupByMany(totals, keyExtractor);
+        }
     }
 }

@@ -224,6 +224,59 @@ namespace EmberCrpg.Simulation.Magic
                 excludedAccumulator);
         }
 
+        // Cross-batch group-by fold: walks an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots exactly once and routes each snapshot to a
+        // per-group ShieldBuffAbsorptionBatchTotals bucket keyed by the caller-supplied
+        // keyExtractor. Generalizes the single-batch GroupBy(map, keyExtractor) factory from
+        // "one result map" to "an arbitrary sequence of snapshots", combining each bucket via
+        // the existing binary Merge so the per-bucket totals share the same Empty identity and
+        // commutative-sum semantics as Merge / MergeMany / PartitionMany / GroupBy. Strict
+        // input contract is preserved: every element is validated for non-null with the same
+        // indexed message MergeMany / PartitionMany emit before the keyExtractor is consulted,
+        // so the guard order matches the existing cross-batch overloads exactly. The
+        // keyExtractor itself must return a non-empty stable group key. Group keys use ordinal
+        // string comparison for stable lookup independent of culture. The union of all
+        // per-bucket totals (merged together) equals the unfiltered MergeMany(totals) result,
+        // because each snapshot contributes to exactly one bucket. Empty input sequence
+        // returns an empty dictionary. Pure aggregation: no Unity dependency, no presentation
+        // coupling, no registry read, no buff/tick mutation, no save coupling. Order
+        // independence still holds because the keyExtractor is a pure per-element function and
+        // the per-bucket counters remain commutative integer sums.
+        public static IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupByMany(
+            IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            Func<ShieldBuffAbsorptionBatchTotals, string> keyExtractor)
+        {
+            if (totals == null)
+                throw new ArgumentNullException(nameof(totals));
+            if (keyExtractor == null)
+                throw new ArgumentNullException(nameof(keyExtractor));
+
+            var groups = new Dictionary<string, ShieldBuffAbsorptionBatchTotals>(StringComparer.Ordinal);
+            var index = 0;
+            foreach (var snapshot in totals)
+            {
+                if (snapshot == null)
+                    throw new ArgumentException(
+                        $"Totals sequence element at index {index} must not be null.",
+                        nameof(totals));
+
+                var groupKey = keyExtractor(snapshot);
+                if (string.IsNullOrWhiteSpace(groupKey))
+                    throw new ArgumentException(
+                        "Group keys returned by keyExtractor must be non-empty stable ids.",
+                        nameof(keyExtractor));
+
+                if (groups.TryGetValue(groupKey, out var bucket))
+                    groups[groupKey] = Merge(bucket, snapshot);
+                else
+                    groups[groupKey] = snapshot;
+
+                index++;
+            }
+
+            return groups;
+        }
+
         // Subset-aggregating overload: aggregates only the entries of the per-actor result map
         // for which includePredicate returns true. The predicate is evaluated on every entry
         // after the same actor-key and per-actor-result invariants From(map) enforces, so the
