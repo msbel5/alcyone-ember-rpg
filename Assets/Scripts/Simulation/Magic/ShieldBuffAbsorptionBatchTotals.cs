@@ -87,6 +87,39 @@ namespace EmberCrpg.Simulation.Magic
                 left.TotalExpiredBuffEntries + right.TotalExpiredBuffEntries);
         }
 
+        // MergeMany overload: deterministic fold over an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots. Generalizes the binary Merge factory from
+        // "fold of two snapshots" to "fold of N snapshots" so a future combat damage-resolution
+        // pass or telemetry/UI surface can roll a whole list of AbsorbDamageForActors batches
+        // (e.g. every tick of an encounter, or every sub-pass of a multi-stage spell volley)
+        // into one deterministic snapshot in a single call. Implemented as a left fold seeded
+        // with Empty using the binary Merge as the combining operator, so the additive identity
+        // and the field-wise integer sums stay consistent with Merge / From / PartitionFrom /
+        // GroupBy. Pure aggregation: no Unity dependency, no presentation coupling, no registry
+        // read, no buff/tick mutation, no save coupling. Order independence still holds because
+        // every counter is a commutative integer sum, so the fold result is invariant under any
+        // permutation of the input sequence. An empty sequence returns Empty.
+        public static ShieldBuffAbsorptionBatchTotals MergeMany(
+            IEnumerable<ShieldBuffAbsorptionBatchTotals> totals)
+        {
+            if (totals == null)
+                throw new ArgumentNullException(nameof(totals));
+
+            var accumulator = Empty;
+            var index = 0;
+            foreach (var snapshot in totals)
+            {
+                if (snapshot == null)
+                    throw new ArgumentException(
+                        $"Totals sequence element at index {index} must not be null.",
+                        nameof(totals));
+                accumulator = Merge(accumulator, snapshot);
+                index++;
+            }
+
+            return accumulator;
+        }
+
         // Subset-aggregating overload: aggregates only the entries of the per-actor result map
         // for which includePredicate returns true. The predicate is evaluated on every entry
         // after the same actor-key and per-actor-result invariants From(map) enforces, so the
