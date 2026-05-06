@@ -427,6 +427,35 @@ namespace EmberCrpg.Simulation.Magic
             IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
             Func<string, ShieldBuffAbsorptionResult, bool> includePredicate)
         {
+            return PartitionFrom(resultsByActorId, includePredicate, filterPredicate: null);
+        }
+
+        // Stacked-filter map-level partition overload: walks the per-actor result map exactly
+        // once and routes each kept entry to either the Included (includePredicate returns true)
+        // or the Excluded (includePredicate returns false) bucket, but only after the entry first
+        // survives filterPredicate (a pre-filter that drops entries outright). Mirrors the
+        // stacked-filter pattern already established on the cross-batch
+        // PartitionMany(seq, includePredicate, filterPredicate) and the map-level
+        // GroupBy(map, keyExtractor, includePredicate, filterPredicate), and stacks it on top of
+        // the binary map-level partition surface so a future combat damage-resolution pass or
+        // telemetry/UI surface can summarize a side-versus-side split (e.g. allies vs enemies)
+        // over a tagged subset (e.g. only actors that absorbed damage) of one batch absorption
+        // call without scanning the result map twice. Strict input contract is preserved: every
+        // entry is validated for non-empty actor key and non-null per-actor result before either
+        // predicate is consulted, so the guard order matches the unfiltered PartitionFrom and
+        // From overloads exactly. filterPredicate is consulted before includePredicate, so any
+        // entry it rejects contributes to neither bucket. When filterPredicate is null this
+        // overload behaves exactly like the unfiltered PartitionFrom(map, includePredicate). The
+        // Included-plus-Excluded sums equal the pre-filtered From(map, filterPredicate) result
+        // because each kept entry still contributes to exactly one bucket. Pure aggregation: no
+        // Unity dependency, no presentation coupling, no registry read, no buff/tick mutation,
+        // no save coupling. Order independence still holds because both predicates are pure
+        // per-entry filters and the bucket counters remain commutative integer sums.
+        public static ShieldBuffAbsorptionBatchTotalsPartition PartitionFrom(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate,
+            Func<string, ShieldBuffAbsorptionResult, bool> filterPredicate)
+        {
             if (resultsByActorId == null)
                 throw new ArgumentNullException(nameof(resultsByActorId));
             if (includePredicate == null)
@@ -456,6 +485,9 @@ namespace EmberCrpg.Simulation.Magic
                 var actorResult = pair.Value;
                 if (actorResult == null)
                     throw new ArgumentException("Per-actor absorption result must not be null.", nameof(resultsByActorId));
+
+                if (filterPredicate != null && !filterPredicate(pair.Key, actorResult))
+                    continue;
 
                 if (includePredicate(pair.Key, actorResult))
                 {
