@@ -18,6 +18,7 @@ namespace EmberCrpg.Simulation.Magic
             int totalDamage,
             int totalHealing,
             int totalRestoredFatigue,
+            int totalRestoredMana,
             string message)
         {
             Success = success;
@@ -27,6 +28,7 @@ namespace EmberCrpg.Simulation.Magic
             TotalDamage = totalDamage;
             TotalHealing = totalHealing;
             TotalRestoredFatigue = totalRestoredFatigue;
+            TotalRestoredMana = totalRestoredMana;
             Message = message;
         }
 
@@ -37,6 +39,7 @@ namespace EmberCrpg.Simulation.Magic
         public int TotalDamage { get; }
         public int TotalHealing { get; }
         public int TotalRestoredFatigue { get; }
+        public int TotalRestoredMana { get; }
         public string Message { get; }
 
         public static SpellEffectResolutionResult Ok(
@@ -46,7 +49,7 @@ namespace EmberCrpg.Simulation.Magic
             int totalHealing,
             string message)
         {
-            return Ok(spell, appliedEffectCount, totalDamage, totalHealing, 0, message);
+            return Ok(spell, appliedEffectCount, totalDamage, totalHealing, 0, 0, message);
         }
 
         public static SpellEffectResolutionResult Ok(
@@ -57,6 +60,18 @@ namespace EmberCrpg.Simulation.Magic
             int totalRestoredFatigue,
             string message)
         {
+            return Ok(spell, appliedEffectCount, totalDamage, totalHealing, totalRestoredFatigue, 0, message);
+        }
+
+        public static SpellEffectResolutionResult Ok(
+            SpellDefinition spell,
+            int appliedEffectCount,
+            int totalDamage,
+            int totalHealing,
+            int totalRestoredFatigue,
+            int totalRestoredMana,
+            string message)
+        {
             return new SpellEffectResolutionResult(
                 true,
                 SpellEffectResolutionError.None,
@@ -65,12 +80,13 @@ namespace EmberCrpg.Simulation.Magic
                 totalDamage,
                 totalHealing,
                 totalRestoredFatigue,
+                totalRestoredMana,
                 message);
         }
 
         public static SpellEffectResolutionResult Fail(SpellEffectResolutionError error, SpellDefinition spell, string message)
         {
-            return new SpellEffectResolutionResult(false, error, spell, 0, 0, 0, 0, message);
+            return new SpellEffectResolutionResult(false, error, spell, 0, 0, 0, 0, 0, message);
         }
     }
 }
