@@ -289,6 +289,32 @@ namespace EmberCrpg.Simulation.Magic
             return ShieldBuffAbsorptionBatchTotals.GroupBy(resultsByActorId, keyExtractor, includePredicate);
         }
 
+        // Stacked-filter map-level group-by batch totals seam: forwards a per-actor key-extractor,
+        // a per-actor includePredicate, and a per-actor filterPredicate to the underlying
+        // ShieldBuffAbsorptionBatchTotals.GroupBy(map, keyExtractor, includePredicate,
+        // filterPredicate) overload so a future combat damage-resolution pass or telemetry/UI
+        // surface can compute N-way per-faction totals over a tagged subset of a tagged subset
+        // (e.g. only allies that survived AND only actors that absorbed damage) from one batch
+        // absorption result map in a single deterministic pass instead of one filtered
+        // ComputeBatchTotals call per bucket or two separate filter-then-group walks. Mirrors
+        // the stacked-filter seam already established on the cross-batch
+        // GroupBatchTotalsByMany(seq, keyExtractor, includePredicate, filterPredicate) overload
+        // and on PartitionBatchTotalsMany(seq, includePredicate, filterPredicate). Pure
+        // delegation — no new aggregation rules, no registry read, no buff/tick mutation, no
+        // save coupling. The strict input contract is unchanged: every map entry is still
+        // validated before either predicate or the keyExtractor is consulted, filterPredicate
+        // is consulted before includePredicate, and keyExtractor must return a non-empty stable
+        // group key.
+        public IReadOnlyDictionary<string, ShieldBuffAbsorptionBatchTotals> GroupBatchTotals(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, string> keyExtractor,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate,
+            Func<string, ShieldBuffAbsorptionResult, bool> filterPredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.GroupBy(
+                resultsByActorId, keyExtractor, includePredicate, filterPredicate);
+        }
+
         // Cross-batch merge seam: forwards two already-computed
         // ShieldBuffAbsorptionBatchTotals snapshots to the underlying
         // ShieldBuffAbsorptionBatchTotals.Merge factory so a future combat
