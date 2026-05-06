@@ -102,6 +102,29 @@ namespace EmberCrpg.Simulation.Magic
         public static ShieldBuffAbsorptionBatchTotals MergeMany(
             IEnumerable<ShieldBuffAbsorptionBatchTotals> totals)
         {
+            return MergeMany(totals, includePredicate: null);
+        }
+
+        // Filtered MergeMany overload: deterministic fold over an arbitrary sequence of
+        // already-computed ShieldBuffAbsorptionBatchTotals snapshots that skips any element
+        // for which includePredicate returns false. Mirrors the predicate-filter pattern
+        // already established on From(map, predicate) and GroupBy(map, keyExtractor,
+        // predicate), so a future combat damage-resolution pass or telemetry/UI surface can
+        // fold a tagged subset of cross-batch snapshots (e.g. only ticks where any actor
+        // absorbed damage, or only sub-passes flagged as offensive) without rebuilding the
+        // sequence first. Strict input contract is preserved: every element is validated for
+        // non-null with the same indexed message the unfiltered MergeMany emits before the
+        // predicate is consulted, so the guard order matches the unfiltered overload exactly.
+        // When includePredicate is null this overload behaves exactly like the unfiltered
+        // MergeMany(totals) factory. Pure aggregation: no Unity dependency, no presentation
+        // coupling, no registry read, no buff/tick mutation, no save coupling. Order
+        // independence still holds because the predicate is a pure per-element filter and
+        // the included counters remain commutative integer sums seeded with Empty. An empty
+        // sequence and a sequence whose every element is filtered out both return Empty.
+        public static ShieldBuffAbsorptionBatchTotals MergeMany(
+            IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate)
+        {
             if (totals == null)
                 throw new ArgumentNullException(nameof(totals));
 
@@ -113,7 +136,8 @@ namespace EmberCrpg.Simulation.Magic
                     throw new ArgumentException(
                         $"Totals sequence element at index {index} must not be null.",
                         nameof(totals));
-                accumulator = Merge(accumulator, snapshot);
+                if (includePredicate == null || includePredicate(snapshot))
+                    accumulator = Merge(accumulator, snapshot);
                 index++;
             }
 

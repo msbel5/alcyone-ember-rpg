@@ -319,5 +319,19 @@ namespace EmberCrpg.Simulation.Magic
         {
             return ShieldBuffAbsorptionBatchTotals.MergeMany(totals);
         }
+
+        // Filtered cross-batch fold seam: forwards an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots and a per-snapshot includePredicate to the
+        // underlying ShieldBuffAbsorptionBatchTotals.MergeMany(totals, predicate) factory so a
+        // future combat damage-resolution pass or telemetry/UI surface can fold a tagged
+        // subset of cross-batch snapshots (e.g. only ticks where any actor absorbed damage)
+        // without rebuilding the sequence first. Pure delegation — no new aggregation rules,
+        // no registry read, no buff/tick mutation, no save coupling.
+        public ShieldBuffAbsorptionBatchTotals MergeBatchTotalsMany(
+            System.Collections.Generic.IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            System.Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.MergeMany(totals, includePredicate);
+        }
     }
 }
