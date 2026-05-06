@@ -288,5 +288,22 @@ namespace EmberCrpg.Simulation.Magic
         {
             return ShieldBuffAbsorptionBatchTotals.GroupBy(resultsByActorId, keyExtractor, includePredicate);
         }
+
+        // Cross-batch merge seam: forwards two already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots to the underlying
+        // ShieldBuffAbsorptionBatchTotals.Merge factory so a future combat
+        // damage-resolution pass or telemetry/UI surface can fold the totals
+        // of multiple AbsorbDamageForActors batches (e.g. across ticks or across
+        // encounter sub-passes) into a single deterministic snapshot without
+        // re-walking any original per-actor result map. Pure delegation — no new
+        // aggregation rules, no registry read, no buff/tick mutation, no save
+        // coupling. Commutative and associative under Merge because every
+        // counter is a commutative integer sum.
+        public ShieldBuffAbsorptionBatchTotals MergeBatchTotals(
+            ShieldBuffAbsorptionBatchTotals left,
+            ShieldBuffAbsorptionBatchTotals right)
+        {
+            return ShieldBuffAbsorptionBatchTotals.Merge(left, right);
+        }
     }
 }

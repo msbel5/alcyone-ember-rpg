@@ -47,6 +47,46 @@ namespace EmberCrpg.Simulation.Magic
             return From(resultsByActorId, includePredicate: null);
         }
 
+        // Empty totals: the additive identity for Merge. ActorCount, ActorsWithAbsorption,
+        // and every damage/buff-entry counter are zero, so Merge(Empty, x) and Merge(x, Empty)
+        // both equal x for any totals x. Matches From over an empty result map. A future
+        // rolling cross-batch aggregator can seed a multi-tick fold with Empty without
+        // having to special-case the first iteration.
+        public static ShieldBuffAbsorptionBatchTotals Empty { get; } =
+            new ShieldBuffAbsorptionBatchTotals(0, 0, 0, 0, 0, 0, 0);
+
+        // Merge overload: deterministically combines two already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots into a single totals object whose
+        // counters are the field-wise sums of left and right. This generalizes the
+        // existing From/PartitionFrom/GroupBy aggregations from "one result map" to
+        // "many result maps" so a future combat damage-resolution pass or telemetry/UI
+        // surface can roll multiple AbsorbDamageForActors batches (e.g. across ticks
+        // or across encounter sub-passes) into a single deterministic snapshot without
+        // re-walking any original per-actor result map. Pure aggregation: no Unity
+        // dependency, no presentation coupling, no registry read, no buff/tick mutation,
+        // no save coupling. Order-independent: Merge is commutative and associative
+        // because every counter is a commutative integer sum, so Merge(a, b) equals
+        // Merge(b, a) and Merge(Merge(a, b), c) equals Merge(a, Merge(b, c)). Empty is
+        // the identity element under Merge.
+        public static ShieldBuffAbsorptionBatchTotals Merge(
+            ShieldBuffAbsorptionBatchTotals left,
+            ShieldBuffAbsorptionBatchTotals right)
+        {
+            if (left == null)
+                throw new ArgumentNullException(nameof(left));
+            if (right == null)
+                throw new ArgumentNullException(nameof(right));
+
+            return new ShieldBuffAbsorptionBatchTotals(
+                left.TotalIncomingDamage + right.TotalIncomingDamage,
+                left.TotalAbsorbedDamage + right.TotalAbsorbedDamage,
+                left.TotalRemainingDamage + right.TotalRemainingDamage,
+                left.ActorCount + right.ActorCount,
+                left.ActorsWithAbsorption + right.ActorsWithAbsorption,
+                left.TotalConsumedBuffEntries + right.TotalConsumedBuffEntries,
+                left.TotalExpiredBuffEntries + right.TotalExpiredBuffEntries);
+        }
+
         // Subset-aggregating overload: aggregates only the entries of the per-actor result map
         // for which includePredicate returns true. The predicate is evaluated on every entry
         // after the same actor-key and per-actor-result invariants From(map) enforces, so the
