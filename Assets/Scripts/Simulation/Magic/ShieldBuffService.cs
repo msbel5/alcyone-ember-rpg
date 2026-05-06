@@ -333,5 +333,20 @@ namespace EmberCrpg.Simulation.Magic
         {
             return ShieldBuffAbsorptionBatchTotals.MergeMany(totals, includePredicate);
         }
+
+        // Cross-batch partition seam: forwards an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots and a per-snapshot includePredicate to
+        // the underlying ShieldBuffAbsorptionBatchTotals.PartitionMany factory so a future
+        // combat damage-resolution pass or telemetry/UI surface can split a tagged subset
+        // versus its complement (e.g. ticks where any actor absorbed damage versus ticks
+        // where none did) in a single deterministic walk and read both buckets as complete
+        // batch totals snapshots. Pure delegation — no new aggregation rules, no registry
+        // read, no buff/tick mutation, no save coupling.
+        public ShieldBuffAbsorptionBatchTotalsPartition PartitionBatchTotalsMany(
+            System.Collections.Generic.IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            System.Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.PartitionMany(totals, includePredicate);
+        }
     }
 }
