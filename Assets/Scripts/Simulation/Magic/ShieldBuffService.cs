@@ -255,6 +255,29 @@ namespace EmberCrpg.Simulation.Magic
             return ShieldBuffAbsorptionBatchTotals.PartitionFrom(resultsByActorId, includePredicate);
         }
 
+        // Stacked-filter map-level partition seam: forwards a per-actor includePredicate that
+        // buckets kept entries into Included vs Excluded and a per-actor filterPredicate that
+        // pre-filters the result map outright to the underlying
+        // ShieldBuffAbsorptionBatchTotals.PartitionFrom(map, includePredicate, filterPredicate)
+        // overload so a future combat damage-resolution pass or telemetry/UI surface can split a
+        // side-versus-side bucket (e.g. allies vs enemies) over a tagged subset (e.g. only
+        // actors that absorbed damage) of one batch absorption result map in a single
+        // deterministic walk without scanning the map twice. Mirrors the stacked-filter seam
+        // already established on the cross-batch PartitionBatchTotalsMany(seq, includePredicate,
+        // filterPredicate) overload and on GroupBatchTotals(map, keyExtractor, includePredicate,
+        // filterPredicate). Pure delegation — no new aggregation rules, no registry read, no
+        // buff/tick mutation, no save coupling. The strict input contract is unchanged: every
+        // map entry is still validated before either predicate is consulted, and filterPredicate
+        // is consulted before includePredicate.
+        public ShieldBuffAbsorptionBatchTotalsPartition ComputeBatchTotalsPartition(
+            IReadOnlyDictionary<string, ShieldBuffAbsorptionResult> resultsByActorId,
+            Func<string, ShieldBuffAbsorptionResult, bool> includePredicate,
+            Func<string, ShieldBuffAbsorptionResult, bool> filterPredicate)
+        {
+            return ShieldBuffAbsorptionBatchTotals.PartitionFrom(
+                resultsByActorId, includePredicate, filterPredicate);
+        }
+
         // Group-by batch totals seam: forwards a per-actor key-extractor to the underlying
         // ShieldBuffAbsorptionBatchTotals.GroupBy factory so a future combat damage-resolution
         // pass or telemetry/UI surface can compute N-way side/faction/region totals (e.g.
