@@ -14,5 +14,6 @@ namespace EmberCrpg.Domain.Magic
         RestoreHealth = 2,
         RestoreFatigue = 3,
         ShieldBuff = 4,
+        RestoreMana = 5,
     }
 }
