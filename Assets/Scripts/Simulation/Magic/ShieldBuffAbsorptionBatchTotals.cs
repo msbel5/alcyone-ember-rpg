@@ -164,6 +164,37 @@ namespace EmberCrpg.Simulation.Magic
             IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
             Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate)
         {
+            return PartitionMany(totals, includePredicate, filterPredicate: null);
+        }
+
+        // Filtered cross-batch partition fold: walks an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots exactly once and routes each snapshot
+        // either into one of the two partition buckets (Included / Excluded) according to
+        // includePredicate or skips it entirely when filterPredicate returns false. Mirrors
+        // the predicate-filter pattern already established on MergeMany(seq, predicate) and
+        // GroupBy(map, keyExtractor, predicate) and stacks it on top of the binary
+        // partition surface so a future combat damage-resolution pass or telemetry/UI
+        // surface can summarize a side-versus-side split (e.g. offensive vs defensive
+        // sub-passes) over a pre-tagged subset (e.g. only sub-passes that actually saw any
+        // absorption) in a single deterministic walk without rebuilding the sequence
+        // first. Strict input contract is preserved: every element is validated for
+        // non-null with the same indexed message MergeMany / PartitionMany emit before any
+        // predicate is consulted, so the guard order matches the existing overloads
+        // exactly. When filterPredicate is null this overload behaves exactly like the
+        // unfiltered PartitionMany(totals, includePredicate). When filterPredicate is
+        // supplied it is consulted before includePredicate, so any snapshot it rejects
+        // contributes to neither bucket. The Included-plus-Excluded sums equal the
+        // pre-filtered MergeMany(totals, filterPredicate) result because each kept
+        // snapshot still contributes to exactly one bucket. Pure aggregation: no Unity
+        // dependency, no presentation coupling, no registry read, no buff/tick mutation,
+        // no save coupling. Order independence still holds because the predicates are
+        // pure per-element filters and the bucket counters remain commutative integer
+        // sums.
+        public static ShieldBuffAbsorptionBatchTotalsPartition PartitionMany(
+            IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate,
+            Func<ShieldBuffAbsorptionBatchTotals, bool> filterPredicate)
+        {
             if (totals == null)
                 throw new ArgumentNullException(nameof(totals));
             if (includePredicate == null)
@@ -178,10 +209,13 @@ namespace EmberCrpg.Simulation.Magic
                     throw new ArgumentException(
                         $"Totals sequence element at index {index} must not be null.",
                         nameof(totals));
-                if (includePredicate(snapshot))
-                    includedAccumulator = Merge(includedAccumulator, snapshot);
-                else
-                    excludedAccumulator = Merge(excludedAccumulator, snapshot);
+                if (filterPredicate == null || filterPredicate(snapshot))
+                {
+                    if (includePredicate(snapshot))
+                        includedAccumulator = Merge(includedAccumulator, snapshot);
+                    else
+                        excludedAccumulator = Merge(excludedAccumulator, snapshot);
+                }
                 index++;
             }
 
