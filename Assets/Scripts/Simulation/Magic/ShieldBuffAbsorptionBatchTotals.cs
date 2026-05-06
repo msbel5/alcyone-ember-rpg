@@ -125,6 +125,39 @@ namespace EmberCrpg.Simulation.Magic
             IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
             Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate)
         {
+            return MergeMany(totals, includePredicate, filterPredicate: null);
+        }
+
+        // Stacked-filter cross-batch fold: walks an arbitrary sequence of already-computed
+        // ShieldBuffAbsorptionBatchTotals snapshots exactly once and folds each kept snapshot
+        // into the running Merge accumulator, but only after the snapshot first survives
+        // filterPredicate (a pre-filter that drops elements outright) and then includePredicate
+        // (the existing semantic gate, retained so callers that already used the 2-arg overload
+        // keep its semantics). Mirrors the stacked-filter pattern already established on
+        // PartitionMany(seq, includePredicate, filterPredicate),
+        // GroupByMany(seq, keyExtractor, includePredicate, filterPredicate),
+        // GroupBy(map, keyExtractor, includePredicate, filterPredicate), and
+        // PartitionFrom(map, includePredicate, filterPredicate), so a future combat
+        // damage-resolution pass or telemetry/UI surface can fold a tagged subset of a tagged
+        // subset of cross-batch snapshots (e.g. only sub-passes flagged offensive that also
+        // registered any absorption) in a single deterministic walk without rebuilding the
+        // sequence first. Strict input contract is preserved: every element is validated for
+        // non-null with the same indexed message the unfiltered MergeMany emits before either
+        // predicate is consulted, so the guard order matches the existing overloads exactly.
+        // filterPredicate is consulted before includePredicate, and any snapshot it rejects
+        // contributes to no fold. When filterPredicate is null this overload behaves exactly
+        // like the predicate-filtered MergeMany(totals, includePredicate); when both predicates
+        // are null it behaves like the unfiltered MergeMany(totals) factory. Pure aggregation:
+        // no Unity dependency, no presentation coupling, no registry read, no buff/tick
+        // mutation, no save coupling. Order independence still holds because both predicates
+        // are pure per-element filters and the included counters remain commutative integer
+        // sums seeded with Empty. An empty sequence and a sequence whose every element is
+        // filtered out both return Empty.
+        public static ShieldBuffAbsorptionBatchTotals MergeMany(
+            IEnumerable<ShieldBuffAbsorptionBatchTotals> totals,
+            Func<ShieldBuffAbsorptionBatchTotals, bool> includePredicate,
+            Func<ShieldBuffAbsorptionBatchTotals, bool> filterPredicate)
+        {
             if (totals == null)
                 throw new ArgumentNullException(nameof(totals));
 
@@ -136,6 +169,13 @@ namespace EmberCrpg.Simulation.Magic
                     throw new ArgumentException(
                         $"Totals sequence element at index {index} must not be null.",
                         nameof(totals));
+
+                if (filterPredicate != null && !filterPredicate(snapshot))
+                {
+                    index++;
+                    continue;
+                }
+
                 if (includePredicate == null || includePredicate(snapshot))
                     accumulator = Merge(accumulator, snapshot);
                 index++;
