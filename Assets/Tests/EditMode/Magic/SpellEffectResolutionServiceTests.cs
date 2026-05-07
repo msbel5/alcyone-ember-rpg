@@ -500,6 +500,27 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_DirectFatigue_OvershootMagnitudeClampsAtZeroFatigue()
+        {
+            var target = CreateActor(601, "Runner", ActorRole.Guard, health: 16, mana: 4, fatigue: 2);
+            var spell = new SpellDefinition(
+                "direct_fatigue_overshoot_test",
+                "Direct Fatigue Overshoot Test",
+                MagicSchool.Destruction,
+                1,
+                new[] { new SpellEffectSpec(SpellEffectKind.DirectFatigue, 11, 0) });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(1));
+            Assert.That(result.TotalDirectFatigueDamage, Is.EqualTo(2));
+            Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(0));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_DirectFatigue_BundledWithRestoreFatigueAggregatesIndependently()
         {
             var target = CreateActor(601, "Runner", ActorRole.Guard, health: 16, mana: 4, fatigue: 10);
