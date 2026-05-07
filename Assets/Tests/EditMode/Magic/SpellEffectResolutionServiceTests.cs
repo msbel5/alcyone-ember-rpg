@@ -51,6 +51,27 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_DirectDamage_ZeroMagnitudeLeavesHealthUnchanged()
+        {
+            var target = CreateActor(601, "Ash Rat", ActorRole.Enemy, health: 9, mana: 4);
+            var spell = new SpellDefinition(
+                "direct_damage_zero_test",
+                "Direct Damage Zero Test",
+                MagicSchool.Destruction,
+                1,
+                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 0, 0) });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(1));
+            Assert.That(result.TotalDamage, Is.EqualTo(0));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(9));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_RestoreHealth_HealsTargetUpToMax()
         {
             var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4);
