@@ -7,10 +7,11 @@ using EmberCrpg.Domain.Magic;
 // and writes timed ShieldBuff effects from a successful cast into a ShieldBuffState container.
 // Inputs: a successful SpellCastResult, one optional target ActorRecord (instantaneous path),
 // and one optional ShieldBuffState (timed-buff path).
-// Outputs: target vitality mutations for DirectDamage/RestoreHealth/RestoreFatigue/RestoreMana
-// (instantaneous) and ShieldBuffState entries keyed by spell.TemplateId (timed buffs); the
-// caster's mana cost is paid by SpellCastingService before resolution — RestoreMana here only
-// restores the target's mana pool deterministically and does not refund the cast cost. No
+// Outputs: target vitality mutations for DirectDamage/RestoreHealth/RestoreFatigue/RestoreMana/
+// DirectMana (instantaneous) and ShieldBuffState entries keyed by spell.TemplateId (timed buffs);
+// the caster's mana cost is paid by SpellCastingService before resolution — RestoreMana here only
+// restores the target's mana pool deterministically and does not refund the cast cost, and
+// DirectMana drains the target's mana pool deterministically with no caster-side feedback. No
 // tick-down, no actor-keyed wiring, no Unity types.
 // Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3 + §8 Sprint 5 deterministic mechanics,
 // MASTER_MECHANICS_BIBLE.md §15 Magic effects/opcodes.
@@ -27,6 +28,8 @@ namespace EmberCrpg.Simulation.Magic
 
             return SpellEffectResolutionResult.Ok(
                 spell,
+                0,
+                0,
                 0,
                 0,
                 0,
@@ -48,6 +51,7 @@ namespace EmberCrpg.Simulation.Magic
             var totalHealing = 0;
             var totalRestoredFatigue = 0;
             var totalRestoredMana = 0;
+            var totalDirectManaDamage = 0;
             for (var i = 0; i < effects.Count; i++)
             {
                 var effect = effects[i];
@@ -74,6 +78,12 @@ namespace EmberCrpg.Simulation.Magic
                     target.ApplyVitals(target.Vitals.WithMana(target.Vitals.Mana.Restore(effect.Magnitude)));
                     totalRestoredMana += target.Vitals.Mana.Current - before;
                 }
+                else if (effect.Kind == SpellEffectKind.DirectMana)
+                {
+                    before = target.Vitals.Mana.Current;
+                    target.ApplyVitals(target.Vitals.WithMana(target.Vitals.Mana.Damage(effect.Magnitude)));
+                    totalDirectManaDamage += before - target.Vitals.Mana.Current;
+                }
             }
 
             return SpellEffectResolutionResult.Ok(
@@ -83,6 +93,7 @@ namespace EmberCrpg.Simulation.Magic
                 totalHealing,
                 totalRestoredFatigue,
                 totalRestoredMana,
+                totalDirectManaDamage,
                 $"Resolved {effects.Count} instantaneous effect(s) from {castResult.Spell.DisplayName}.");
         }
 
@@ -153,10 +164,10 @@ namespace EmberCrpg.Simulation.Magic
                 if (!effect.IsInstantaneous)
                     return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.NonInstantaneousEffect, spell, "Timed spell effects are not resolved by this service.");
                 if (!IsSupported(effect.Kind))
-                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.UnsupportedEffect, spell, "Only direct damage, restore health, restore fatigue, and restore mana are supported in this increment.");
+                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.UnsupportedEffect, spell, "Only direct damage, restore health, restore fatigue, restore mana, and direct mana are supported in this increment.");
             }
 
-            return SpellEffectResolutionResult.Ok(spell, 0, 0, 0, 0, $"{spell.DisplayName} passed instantaneous effect validation.");
+            return SpellEffectResolutionResult.Ok(spell, 0, 0, 0, 0, 0, 0, $"{spell.DisplayName} passed instantaneous effect validation.");
         }
 
         private static bool IsSupported(SpellEffectKind kind)
@@ -164,7 +175,8 @@ namespace EmberCrpg.Simulation.Magic
             return kind == SpellEffectKind.DirectDamage
                 || kind == SpellEffectKind.RestoreHealth
                 || kind == SpellEffectKind.RestoreFatigue
-                || kind == SpellEffectKind.RestoreMana;
+                || kind == SpellEffectKind.RestoreMana
+                || kind == SpellEffectKind.DirectMana;
         }
     }
 }
