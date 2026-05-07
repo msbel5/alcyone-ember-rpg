@@ -20,6 +20,7 @@ namespace EmberCrpg.Simulation.Magic
             int totalRestoredFatigue,
             int totalRestoredMana,
             int totalDirectManaDamage,
+            int totalDirectFatigueDamage,
             string message)
         {
             Success = success;
@@ -31,6 +32,7 @@ namespace EmberCrpg.Simulation.Magic
             TotalRestoredFatigue = totalRestoredFatigue;
             TotalRestoredMana = totalRestoredMana;
             TotalDirectManaDamage = totalDirectManaDamage;
+            TotalDirectFatigueDamage = totalDirectFatigueDamage;
             Message = message;
         }
 
@@ -43,6 +45,7 @@ namespace EmberCrpg.Simulation.Magic
         public int TotalRestoredFatigue { get; }
         public int TotalRestoredMana { get; }
         public int TotalDirectManaDamage { get; }
+        public int TotalDirectFatigueDamage { get; }
         public string Message { get; }
 
         public static SpellEffectResolutionResult Ok(
@@ -88,6 +91,20 @@ namespace EmberCrpg.Simulation.Magic
             int totalDirectManaDamage,
             string message)
         {
+            return Ok(spell, appliedEffectCount, totalDamage, totalHealing, totalRestoredFatigue, totalRestoredMana, totalDirectManaDamage, 0, message);
+        }
+
+        public static SpellEffectResolutionResult Ok(
+            SpellDefinition spell,
+            int appliedEffectCount,
+            int totalDamage,
+            int totalHealing,
+            int totalRestoredFatigue,
+            int totalRestoredMana,
+            int totalDirectManaDamage,
+            int totalDirectFatigueDamage,
+            string message)
+        {
             return new SpellEffectResolutionResult(
                 true,
                 SpellEffectResolutionError.None,
@@ -98,12 +115,13 @@ namespace EmberCrpg.Simulation.Magic
                 totalRestoredFatigue,
                 totalRestoredMana,
                 totalDirectManaDamage,
+                totalDirectFatigueDamage,
                 message);
         }
 
         public static SpellEffectResolutionResult Fail(SpellEffectResolutionError error, SpellDefinition spell, string message)
         {
-            return new SpellEffectResolutionResult(false, error, spell, 0, 0, 0, 0, 0, 0, message);
+            return new SpellEffectResolutionResult(false, error, spell, 0, 0, 0, 0, 0, 0, 0, message);
         }
     }
 }
