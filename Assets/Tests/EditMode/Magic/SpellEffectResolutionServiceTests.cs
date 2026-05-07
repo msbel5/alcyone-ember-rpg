@@ -513,6 +513,45 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(7));
         }
 
+        [Test]
+        public void ResolveInstantaneousEffects_AllSixSupportedKindsBundledAggregateIndependently()
+        {
+            // Pins compositional correctness once the instantaneous matrix is complete:
+            // DirectDamage/RestoreHealth, DirectFatigue/RestoreFatigue, DirectMana/RestoreMana
+            // applied in one spell preserve six independent counters and final pool states.
+            var target = CreateActor(601, "AllSixTarget", ActorRole.Guard, health: 10, mana: 10, fatigue: 8);
+            var spell = new SpellDefinition(
+                "all_six_instantaneous_bundle_test",
+                "All Six Instantaneous Bundle Test",
+                MagicSchool.Destruction,
+                1,
+                new[]
+                {
+                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 4, 0),
+                    new SpellEffectSpec(SpellEffectKind.DirectFatigue, 4, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 3, 0),
+                    new SpellEffectSpec(SpellEffectKind.DirectMana, 5, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 6, 0),
+                });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(6));
+            Assert.That(result.TotalDamage, Is.EqualTo(3));
+            Assert.That(result.TotalHealing, Is.EqualTo(4));
+            Assert.That(result.TotalDirectFatigueDamage, Is.EqualTo(4));
+            Assert.That(result.TotalRestoredFatigue, Is.EqualTo(3));
+            Assert.That(result.TotalDirectManaDamage, Is.EqualTo(5));
+            Assert.That(result.TotalRestoredMana, Is.EqualTo(6));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(11));
+            Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(7));
+            Assert.That(target.Vitals.Mana.Current, Is.EqualTo(11));
+        }
+
         private static ActorRecord CreateActor(int id, string name, ActorRole role, int health, int mana, int fatigue = 12)
         {
             return new ActorRecord(
