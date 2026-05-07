@@ -385,6 +385,27 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_DirectMana_OvershootMagnitudeClampsAtZeroMana()
+        {
+            var target = CreateActor(601, "Acolyte", ActorRole.Player, health: 16, mana: 2, fatigue: 12);
+            var spell = new SpellDefinition(
+                "direct_mana_overshoot_test",
+                "Direct Mana Overshoot Test",
+                MagicSchool.Destruction,
+                1,
+                new[] { new SpellEffectSpec(SpellEffectKind.DirectMana, 11, 0) });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(1));
+            Assert.That(result.TotalDirectManaDamage, Is.EqualTo(2));
+            Assert.That(target.Vitals.Mana.Current, Is.EqualTo(0));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_DirectMana_BundledWithRestoreManaAggregatesIndependently()
         {
             var target = CreateActor(601, "Acolyte", ActorRole.Player, health: 16, mana: 10, fatigue: 12);
