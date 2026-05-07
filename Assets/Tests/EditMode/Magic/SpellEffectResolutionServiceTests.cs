@@ -51,6 +51,32 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_DirectDamage_BundledWithRestoreHealthAggregatesIndependently()
+        {
+            var target = CreateActor(601, "Acolyte", ActorRole.Player, health: 10, mana: 4);
+            var spell = new SpellDefinition(
+                "damage_then_restore_test",
+                "Damage Then Restore Test",
+                MagicSchool.Destruction,
+                1,
+                new[]
+                {
+                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 6, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 3, 0),
+                });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(2));
+            Assert.That(result.TotalDamage, Is.EqualTo(6));
+            Assert.That(result.TotalHealing, Is.EqualTo(3));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(7));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_DirectDamage_ZeroMagnitudeLeavesHealthUnchanged()
         {
             var target = CreateActor(601, "Ash Rat", ActorRole.Enemy, health: 9, mana: 4);
