@@ -89,6 +89,27 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_RestoreHealth_ZeroMagnitudeLeavesHealthUnchanged()
+        {
+            var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4);
+            var spell = new SpellDefinition(
+                "restore_health_zero_test",
+                "Restore Health Zero Test",
+                MagicSchool.Restoration,
+                1,
+                new[] { new SpellEffectSpec(SpellEffectKind.RestoreHealth, 0, 0) });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(1));
+            Assert.That(result.TotalHealing, Is.EqualTo(0));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(13));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_RestoreFatigue_RestoresTargetFatigue()
         {
             var target = CreateActor(601, "Runner", ActorRole.Guard, health: 16, mana: 4, fatigue: 6);
