@@ -110,6 +110,26 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_RestoreHealth_ClampsAtMaxHealth()
+        {
+            var target = CreateActor(601, "Guard", ActorRole.Guard, health: 14, mana: 4);
+            var spell = new SpellDefinition(
+                "restore_health_clamp_test",
+                "Restore Health Clamp Test",
+                MagicSchool.Restoration,
+                1,
+                new[] { new SpellEffectSpec(SpellEffectKind.RestoreHealth, 5, 0) });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.TotalHealing, Is.EqualTo(2));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(16));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_RestoreFatigue_RestoresTargetFatigue()
         {
             var target = CreateActor(601, "Runner", ActorRole.Guard, health: 16, mana: 4, fatigue: 6);
