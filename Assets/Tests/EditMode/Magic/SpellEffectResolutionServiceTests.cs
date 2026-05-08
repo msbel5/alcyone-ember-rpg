@@ -97,6 +97,32 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_DirectDamage_BundledWithRestoreHealth_OvershootDamageClampsThenRestoreApplies()
+        {
+            var target = CreateActor(601, "Acolyte", ActorRole.Player, health: 4, mana: 4);
+            var spell = new SpellDefinition(
+                "damage_overshoot_then_restore_test",
+                "Damage Overshoot Then Restore Test",
+                MagicSchool.Destruction,
+                1,
+                new[]
+                {
+                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 11, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 5, 0),
+                });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(2));
+            Assert.That(result.TotalDamage, Is.EqualTo(4));
+            Assert.That(result.TotalHealing, Is.EqualTo(5));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(5));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_DirectDamage_ZeroMagnitudeLeavesHealthUnchanged()
         {
             var target = CreateActor(601, "Ash Rat", ActorRole.Enemy, health: 9, mana: 4);
