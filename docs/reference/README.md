@@ -58,4 +58,18 @@ directly at https://github.com/msbel5/ember-rpg.
 
 ## License
 
-Same as upstream (msbel5/ember-rpg) — open source / MIT-equivalent.
+Inherited from upstream
+[msbel5/ember-rpg](https://github.com/msbel5/ember-rpg). Per the
+upstream README (mirrored here as `UPSTREAM_README.md`):
+
+> Source code is open; shipped game assets remain proprietary unless
+> explicitly marked otherwise.
+
+This `docs/reference/` mirror contains only documentation files
+(Markdown PRDs, architecture notes, the upstream README). It does
+**not** include any upstream source code, assets, or LICENSE file. If
+you need a verifiable license for derivative work, fetch the upstream
+LICENSE (if present) from
+https://github.com/msbel5/ember-rpg directly. The Alcyone Unity
+rewrite (this repo, top-level `README.md`) is MIT and that license
+applies to all code originating in this repo.

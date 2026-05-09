@@ -1,5 +1,14 @@
 # Ember RPG
 
+> **Unedited verbatim upstream mirror.** This file is a snapshot of
+> `msbel5/ember-rpg/README.md` at `main` as of 2026-05-09. Spelling,
+> grammar, code-block language tags (`bash` blocks containing
+> Windows-style commands), and absolute Windows links
+> (`C:/Users/msbel/...`) are preserved as-they-appear-upstream so this
+> mirror can be diffed cleanly against the source. For in-repo
+> navigation, use [`docs/reference/README.md`](README.md) instead;
+> for the live upstream see https://github.com/msbel5/ember-rpg.
+
 Ember RPG is a Godot-first colony-command RPG built on a deterministic Python backend. The shipped player surface is the Godot client; terminal-first and legacy compatibility paths are deprecated.
 Ember is created by fully ai and this cause some problems, wordl tick and automation control tick syncs and everything correctly placed and moves but world stutters on every tick. Because ai can comprehend every tile and every object it passes every visual check but humans cannot percive or recall this much information.
 

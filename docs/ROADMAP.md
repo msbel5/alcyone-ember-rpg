@@ -29,7 +29,10 @@ Deliverables:
   from `msbel5/ember-rpg`
 - `README.md` rewritten
 - `docs/ROADMAP.md` rewritten (this file)
-- `CRON_CODES.md @EMSPR` updated with the five new rules
+- `CRON_CODES.md @EMSPR` cron routine updated with the five new rules
+  (out-of-repo: lives at `~/.openclaw/workspace/CRON_CODES.md` on the
+  captain machine; landed in a separate commit on the captain workspace,
+  not tracked in this repo)
 
 Acceptance: a fresh contributor opens the repo, reads `README.md`,
 `docs/ROADMAP.md`, `DOCS/mechanic-map-v1.md`, and within five minutes
