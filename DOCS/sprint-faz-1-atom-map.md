@@ -2,7 +2,8 @@
 
 _Date:_ 2026-05-09
 _Branch:_ `agent/sprint-faz-1-actor-store` (first PR of Faz 1)
-_Phase boxes:_ `[box=WORLD]`, `[box=LIVING]`, `[box=MATTER]`.
+_Primary Faz 1 boxes:_ `[box=WORLD]`, `[box=LIVING]`, `[box=MATTER]`.
+_Support / seed boxes used in this map:_ `[box=SOCIETY]` (FactionStore seed), `[box=PROCESS]` (WorldEventLog + ReasonTrace), `[box=TIME]` (save/load round-trip), `[box=PLAYABLE]` (acceptance proof).
 _Acceptance gate:_ `player can spawn a guard, talk to it, then walk to
 a second site and watch the same guard remembered across save/load`
 (from `docs/ROADMAP.md` Faz 1).
