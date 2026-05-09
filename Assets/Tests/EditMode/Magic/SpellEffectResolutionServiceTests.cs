@@ -833,6 +833,32 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_DirectFatigue_BundledWithRestoreFatigue_ZeroDrainLeavesRestoreApplied()
+        {
+            var target = CreateActor(601, "Runner", ActorRole.Guard, health: 16, mana: 4, fatigue: 6);
+            var spell = new SpellDefinition(
+                "direct_fatigue_restore_fatigue_zero_drain_bundle_test",
+                "Direct Fatigue Restore Fatigue Zero Drain Bundle Test",
+                MagicSchool.Destruction,
+                1,
+                new[]
+                {
+                    new SpellEffectSpec(SpellEffectKind.DirectFatigue, 0, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 4, 0),
+                });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(2));
+            Assert.That(result.TotalDirectFatigueDamage, Is.EqualTo(0));
+            Assert.That(result.TotalRestoredFatigue, Is.EqualTo(4));
+            Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(10));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_MultipleSupportedEffects_AppliesInDefinitionOrder()
         {
             var target = CreateActor(601, "Guard", ActorRole.Guard, health: 16, mana: 4, fatigue: 9);
