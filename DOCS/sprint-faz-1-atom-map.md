@@ -23,7 +23,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 - [ ] `Assets/Scripts/Domain/World/ActorStore.cs` :: `ActorStore` :: dictionary-backed registry over `ActorId -> ActorRecord` with Add/Get/TryGet/Remove/Contains/Count/Clear/Records, deterministic enumeration, default-id rejection [box=LIVING]
 - [ ] `Assets/Tests/EditMode/World/ActorStoreTests.cs` :: tests :: pin Add/Get/TryGet/Remove/Contains/Count/Clear/Records contracts and default-id rejection [box=LIVING]
-- [ ] `Assets/Scripts/Domain/World/ActorStore.cs` :: deprecated-view shims :: `Player`/`Talker`/`Merchant`/`Guard`/`Enemy` resolved from a `ActorRole`/role-tag lookup over the store (lands in a follow-up PR before SliceWorldState consumers migrate) [box=LIVING]
+- [x] `Assets/Scripts/Domain/World/ActorStore.cs` :: deprecated-view shims :: `Player`/`Talker`/`Merchant`/`Guard`/`Enemy` resolved from a `ActorRole`/role-tag lookup over the store (lands in a follow-up PR before SliceWorldState consumers migrate) [box=LIVING] — landed via `RecordsByRole`/`FirstByRole`/`TryFirstByRole` (sprint faz-1 role-shims PR)
 - [ ] `Assets/Scripts/Domain/World/SliceWorldState.cs` :: migrate consumers :: replace direct `Player`/`Talker`/`Merchant`/`Guard`/`Enemy` reads with store + view shim, mark fields `[Obsolete]` (follow-up PR) [box=LIVING]
 
 ## Sub-area: ItemStore (MATTER — primary)
