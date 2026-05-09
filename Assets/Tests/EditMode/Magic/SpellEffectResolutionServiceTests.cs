@@ -504,6 +504,34 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_DirectMana_BundledWithRestoreMana_ZeroMagnitudeLeavesManaUnchanged()
+        {
+            var target = CreateActor(601, "Acolyte", ActorRole.Player, health: 16, mana: 8, fatigue: 12);
+            var spell = new SpellDefinition(
+                "direct_mana_restore_mana_zero_bundle_test",
+                "Direct Mana Restore Mana Zero Bundle Test",
+                MagicSchool.Destruction,
+                1,
+                new[]
+                {
+                    new SpellEffectSpec(SpellEffectKind.DirectMana, 0, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 0, 0),
+                });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(2));
+            Assert.That(result.TotalDirectManaDamage, Is.EqualTo(0));
+            Assert.That(result.TotalRestoredMana, Is.EqualTo(0));
+            Assert.That(target.Vitals.Mana.Current, Is.EqualTo(8));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(16));
+            Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(12));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_DirectFatigue_DrainsTargetFatigue()
         {
             var target = CreateActor(601, "Runner", ActorRole.Guard, health: 16, mana: 4, fatigue: 12);
