@@ -172,6 +172,32 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
+        public void ResolveInstantaneousEffects_DirectDamage_BundledWithRestoreHealth_ZeroRestoreLeavesDamageApplied()
+        {
+            var target = CreateActor(601, "Acolyte", ActorRole.Player, health: 10, mana: 4);
+            var spell = new SpellDefinition(
+                "direct_damage_restore_health_zero_restore_bundle_test",
+                "Direct Damage Restore Health Zero Restore Bundle Test",
+                MagicSchool.Destruction,
+                1,
+                new[]
+                {
+                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0),
+                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 0, 0),
+                });
+            var cast = SpellCastResult.Ok(spell, 1, "cast");
+            var service = new SpellEffectResolutionService();
+
+            var result = service.ResolveInstantaneousEffects(cast, target);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(2));
+            Assert.That(result.TotalDamage, Is.EqualTo(4));
+            Assert.That(result.TotalHealing, Is.EqualTo(0));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(6));
+        }
+
+        [Test]
         public void ResolveInstantaneousEffects_RestoreHealth_HealsTargetUpToMax()
         {
             var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4);
