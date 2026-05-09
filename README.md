@@ -43,11 +43,15 @@ against the canonical mechanic list rather than the bare magic enum.
 
 - **Engine**: Unity. msbel knows C#, the repo is already configured for
   it, and Unity gives us the fastest visual iteration.
-- **Core**: Unity-independent `Ember.Core` library. Domain + Simulation
-  + Persistence + Tests live under `Assets/Ember/` with **no
-  `using UnityEngine`** anywhere in Core.
+- **Core**: Unity-independent `EmberCrpg.Domain` + `EmberCrpg.Simulation`
+  + `EmberCrpg.Data` assemblies. They live under `Assets/Scripts/` and
+  carry **no `using UnityEngine`**. Persistence does not yet have its
+  own assembly; save/load lands in Faz 1 alongside the Core Store reset
+  (planned name: `Ember.Core` umbrella, planned split:
+  `Domain / Simulation / Persistence / Tests`).
 - **Unity layer**: only Scene, Input, Camera, UI, ViewModels,
-  ActorView/ItemView, DebugVisualizer.
+  ActorView/ItemView, DebugVisualizer. Today this lives in
+  `Assets/Scripts/Presentation/` (asmdef `EmberCrpg.Presentation`).
 - **Composition over inheritance**: `EntityId` plus components
   (`PositionComponent`, `MaterialComponent`, `InventoryComponent`,
   `VitalsComponent`, ...).
@@ -57,6 +61,12 @@ against the canonical mechanic list rather than the bare magic enum.
   C# changes only when a new operation kind is required.
 
 ## How sprints work
+
+> The paths below under `/home/msbel/...` and `~/.openclaw/...` are
+> Captain-side configuration on Mami's Raspberry Pi 5; they are **not**
+> tracked files in this repo. Human contributors do not need them to
+> build, test, or play the game. They are listed for transparency about
+> how the agent crew schedules work.
 
 1. The **Captain** cron (`@EMSPR`) reads
    `/home/msbel/.openclaw/workspace/CRON_CODES.md` and decomposes the
@@ -77,23 +87,37 @@ against the canonical mechanic list rather than the bare magic enum.
 
 ## Repo layout
 
+Actual on-disk layout as of Faz 0:
+
 ```
 alcyone-ember-rpg/
-├─ Assets/Ember/
-│  ├─ Domain/        pure C# core types, no Unity
-│  ├─ Simulation/    systems, stores, tick loop
-│  ├─ Persistence/   save/load
-│  ├─ Tests/         deterministic unit + integration tests
-│  └─ Unity/         scene, view, input — only this references UnityEngine
-├─ DOCS/             sprint summaries, atom maps, audit, mechanic map,
-│                    agent rules
-└─ docs/
-   ├─ EMBER_VISION_BIBLE.md   the bible
-   ├─ ROADMAP.md              the 12-phase plan
-   ├─ architecture/           live architecture notes
-   ├─ mechanics/              live mechanic notes
-   └─ reference/              read-only snapshot from msbel5/ember-rpg
+├─ Assets/
+│  ├─ Scripts/
+│  │  ├─ Domain/         pure C# domain types — asmdef EmberCrpg.Domain
+│  │  ├─ Simulation/     systems, stores, tick loop — asmdef EmberCrpg.Simulation
+│  │  ├─ Data/           data-driven definitions + loaders — asmdef EmberCrpg.Data
+│  │  └─ Presentation/   Unity-only views, scene glue — asmdef EmberCrpg.Presentation
+│  ├─ Tests/
+│  │  ├─ EditMode/       deterministic unit tests — asmdef EmberCrpg.Tests.EditMode
+│  │  └─ PlayMode/       Unity playmode + screenshot tests — asmdef EmberCrpg.Tests.PlayMode
+│  ├─ Scenes/            Unity scenes
+│  └─ Art/               sprites, shaders, materials
+├─ DOCS/                 sprint summaries, atom maps, audit, mechanic map,
+│                        agent rules
+├─ docs/
+│  ├─ EMBER_VISION_BIBLE.md   the bible
+│  ├─ ROADMAP.md              the 12-phase plan
+│  ├─ architecture/           live architecture notes
+│  ├─ mechanics/              live mechanic notes
+│  └─ reference/              read-only snapshot from msbel5/ember-rpg
+└─ tools/validation/     run-validation.sh + supporting harness
 ```
+
+Planned (Faz 1, see `docs/ROADMAP.md`): split Persistence (save/load) and
+the deterministic test scaffolding into their own assemblies, and move
+the Core (`Domain` + `Simulation` + `Data` + `Persistence`) under an
+`Ember.Core` umbrella so it is portable outside Unity. Until that lands,
+the structure above is the source of truth.
 
 ## Five-minute orientation
 
