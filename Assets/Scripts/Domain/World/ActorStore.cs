@@ -116,13 +116,13 @@ namespace EmberCrpg.Domain.World
         /// <summary>
         /// Records carrying the requested role, in deterministic insertion
         /// order. Returns an empty sequence when no record matches; never
-        /// allocates a list eagerly.
+        /// allocates a list eagerly. Iterates over <see cref="Records"/> so
+        /// the canonical insertion-order walk has a single source of truth.
         /// </summary>
         public IEnumerable<ActorRecord> RecordsByRole(ActorRole role)
         {
-            foreach (var id in _order)
+            foreach (var record in Records)
             {
-                var record = _byId[id];
                 if (record.Role == role)
                     yield return record;
             }
@@ -130,18 +130,14 @@ namespace EmberCrpg.Domain.World
 
         /// <summary>
         /// First record carrying the requested role in insertion order.
-        /// Throws <see cref="InvalidOperationException"/> when no record
-        /// matches; mirrors the strictness of <see cref="Get"/>.
+        /// Throws <see cref="KeyNotFoundException"/> when no record matches;
+        /// mirrors the strictness of <see cref="Get"/>.
         /// </summary>
         public ActorRecord FirstByRole(ActorRole role)
         {
-            foreach (var id in _order)
-            {
-                var record = _byId[id];
-                if (record.Role == role)
-                    return record;
-            }
-            throw new InvalidOperationException($"ActorStore has no record with role {role}.");
+            foreach (var record in RecordsByRole(role))
+                return record;
+            throw new KeyNotFoundException($"ActorStore has no record with role {role}.");
         }
 
         /// <summary>
@@ -151,14 +147,10 @@ namespace EmberCrpg.Domain.World
         /// </summary>
         public bool TryFirstByRole(ActorRole role, out ActorRecord record)
         {
-            foreach (var id in _order)
+            foreach (var candidate in RecordsByRole(role))
             {
-                var candidate = _byId[id];
-                if (candidate.Role == role)
-                {
-                    record = candidate;
-                    return true;
-                }
+                record = candidate;
+                return true;
             }
             record = null;
             return false;

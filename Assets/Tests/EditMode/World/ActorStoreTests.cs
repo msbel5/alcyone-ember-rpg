@@ -240,7 +240,7 @@ namespace EmberCrpg.Tests.EditMode.World
             var store = new ActorStore();
             store.Add(MakeRecord(1, "Player", ActorRole.Player));
 
-            Assert.Throws<InvalidOperationException>(() => store.FirstByRole(ActorRole.Enemy));
+            Assert.Throws<KeyNotFoundException>(() => store.FirstByRole(ActorRole.Enemy));
         }
 
         [Test]

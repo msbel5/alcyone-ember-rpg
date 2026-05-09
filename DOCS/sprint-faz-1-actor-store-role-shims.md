@@ -25,8 +25,9 @@ domain primitives (not just tests), so it is **not** test-only.
     role; empty sequence when none match; lazy enumeration (no eager
     list allocation).
   - `ActorRecord FirstByRole(ActorRole role)` — strict variant that
-    throws `InvalidOperationException` when no record matches; mirrors
-    `Get(ActorId)`.
+    throws `KeyNotFoundException` when no record matches; mirrors
+    `Get(ActorId)` (same exception type as `Get`, per the Copilot
+    review follow-up).
   - `bool TryFirstByRole(ActorRole role, out ActorRecord record)` —
     safe variant that returns `false` and a `null` record when no
     record matches; mirrors `TryGet(ActorId, out)`.
@@ -46,7 +47,24 @@ domain primitives (not just tests), so it is **not** test-only.
 
 `./tools/validation/run-validation.sh --mode fallback` →
 `Passed! - Failed: 0, Passed: 640, Skipped: 0, Total: 640`
-(+8 over the post-PR-#79 baseline of 632).
+(+8 over the post-PR-#79 baseline of 632). Re-run after the Copilot
+review follow-up commit (DRY role-walk + `KeyNotFoundException`
+alignment) — same 640/640 result.
+
+## Bot review follow-up (PR #80)
+
+Two substantive Copilot comments addressed in a follow-up commit on
+the same branch:
+
+- _Comment 1 (DRY):_ `RecordsByRole`/`FirstByRole`/`TryFirstByRole` no
+  longer re-walk `_order`/`_byId` directly. They iterate over the
+  canonical `Records` property (and `RecordsByRole` for the two
+  first-match variants), keeping the insertion-order walk in one
+  place.
+- _Comment 2 (exception parity):_ `FirstByRole` now throws
+  `KeyNotFoundException` to match `Get`'s strictness, exactly as the
+  XML doc claimed. Test `FirstByRole_NoMatch_Throws` updated to
+  assert `KeyNotFoundException`.
 
 ## Thalamus
 
