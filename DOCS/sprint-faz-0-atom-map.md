@@ -60,7 +60,7 @@ the captain workspace and is not part of this repo's commit history.
 ## Promotion checklist
 
 - [x] every Faz 0 atom above is checked off
-- [ ] PR #78 is merged into `main` _(blocked on EditMode Tests pending and Mami's manual merge per agent rules; auto-merge intentionally not used)_
+- [ ] PR #78 is merged into `main` _(CI fully green as of 2026-05-09 17:15 UTC: EditMode + PlayMode + Test Summary + GitGuardian all SUCCESS; only blocker is Mami's manual merge per agent rules; auto-merge intentionally not used)_
 - [x] `tools/validation/run-validation.sh --mode fallback` passes on the active branch (verified on commit `38431ca`: 617/617 EditMode tests pass)
 - [x] sprint summary file recording final atom count + bundle count: this file, atom count = 16, bundle count = 4 (canonical doc set, upstream mirror, bot-review pins, out-of-repo)
 - [x] product-visible PR count for Faz 0 = 1 (PR #78 itself; the realignment is the visible deliverable for the meta box — fresh contributor orientation goes from "no map" to "five-minute orientation")
