@@ -182,6 +182,107 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(store.Count, Is.EqualTo(2));
         }
 
+        // Faz 1 role-view shims: lay the rail for migrating SliceWorldState's
+        // named slice fields (Player/Talker/Merchant/Guard/Enemy) onto
+        // ActorStore lookups by ActorRole. The concrete consumer is the next
+        // Faz 1 PR (SliceWorldState reads these shims and marks its named
+        // fields [Obsolete]).
+
+        [Test]
+        public void RecordsByRole_OnlyMatchingRoleInInsertionOrder()
+        {
+            var store = new ActorStore();
+            var player = MakeRecord(1, "Player", ActorRole.Player);
+            var firstGuard = MakeRecord(2, "GuardA", ActorRole.Guard);
+            var talker = MakeRecord(3, "Talker", ActorRole.Talker);
+            var secondGuard = MakeRecord(4, "GuardB", ActorRole.Guard);
+            store.Add(player);
+            store.Add(firstGuard);
+            store.Add(talker);
+            store.Add(secondGuard);
+
+            Assert.That(
+                store.RecordsByRole(ActorRole.Guard).ToList(),
+                Is.EqualTo(new[] { firstGuard, secondGuard }));
+        }
+
+        [Test]
+        public void RecordsByRole_NoMatch_ReturnsEmpty()
+        {
+            var store = new ActorStore();
+            store.Add(MakeRecord(1, "Player", ActorRole.Player));
+
+            Assert.That(store.RecordsByRole(ActorRole.Enemy).ToList(), Is.Empty);
+        }
+
+        [Test]
+        public void RecordsByRole_EmptyStore_ReturnsEmpty()
+        {
+            var store = new ActorStore();
+            Assert.That(store.RecordsByRole(ActorRole.Player).ToList(), Is.Empty);
+        }
+
+        [Test]
+        public void FirstByRole_ReturnsFirstInInsertionOrder()
+        {
+            var store = new ActorStore();
+            var firstMerchant = MakeRecord(1, "MerchantA", ActorRole.Merchant);
+            var secondMerchant = MakeRecord(2, "MerchantB", ActorRole.Merchant);
+            store.Add(firstMerchant);
+            store.Add(secondMerchant);
+
+            Assert.That(store.FirstByRole(ActorRole.Merchant), Is.SameAs(firstMerchant));
+        }
+
+        [Test]
+        public void FirstByRole_NoMatch_Throws()
+        {
+            var store = new ActorStore();
+            store.Add(MakeRecord(1, "Player", ActorRole.Player));
+
+            Assert.Throws<InvalidOperationException>(() => store.FirstByRole(ActorRole.Enemy));
+        }
+
+        [Test]
+        public void TryFirstByRole_KnownRole_ReturnsFirstAndTrue()
+        {
+            var store = new ActorStore();
+            var player = MakeRecord(1, "Player", ActorRole.Player);
+            var firstTalker = MakeRecord(2, "TalkerA", ActorRole.Talker);
+            var secondTalker = MakeRecord(3, "TalkerB", ActorRole.Talker);
+            store.Add(player);
+            store.Add(firstTalker);
+            store.Add(secondTalker);
+
+            var found = store.TryFirstByRole(ActorRole.Talker, out var record);
+
+            Assert.That(found, Is.True);
+            Assert.That(record, Is.SameAs(firstTalker));
+        }
+
+        [Test]
+        public void TryFirstByRole_NoMatch_ReturnsFalseAndNull()
+        {
+            var store = new ActorStore();
+            store.Add(MakeRecord(1, "Player", ActorRole.Player));
+
+            var found = store.TryFirstByRole(ActorRole.Enemy, out var record);
+
+            Assert.That(found, Is.False);
+            Assert.That(record, Is.Null);
+        }
+
+        [Test]
+        public void TryFirstByRole_EmptyStore_ReturnsFalseAndNull()
+        {
+            var store = new ActorStore();
+
+            var found = store.TryFirstByRole(ActorRole.Player, out var record);
+
+            Assert.That(found, Is.False);
+            Assert.That(record, Is.Null);
+        }
+
         private static ActorRecord MakeRecord(ulong id, string name, ActorRole role)
         {
             var stats = new EmberStatBlock(10, 10, 10, 10, 10, 10);

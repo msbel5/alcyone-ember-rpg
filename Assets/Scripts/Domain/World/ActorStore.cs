@@ -104,5 +104,64 @@ namespace EmberCrpg.Domain.World
                     yield return _byId[id];
             }
         }
+
+        // Role-view shims: lay the rail for migrating SliceWorldState's
+        // Player/Talker/Merchant/Guard/Enemy fields onto ActorStore. Concrete
+        // consumer arrives in the next Faz 1 PR (SliceWorldState reads these
+        // shims and then marks its named fields [Obsolete]). Per
+        // DOCS/agent-rules-v2.md rule 4 (world-store promotion), no new
+        // hard-coded slice fields may be added; these lookups are the
+        // replacement path.
+
+        /// <summary>
+        /// Records carrying the requested role, in deterministic insertion
+        /// order. Returns an empty sequence when no record matches; never
+        /// allocates a list eagerly.
+        /// </summary>
+        public IEnumerable<ActorRecord> RecordsByRole(ActorRole role)
+        {
+            foreach (var id in _order)
+            {
+                var record = _byId[id];
+                if (record.Role == role)
+                    yield return record;
+            }
+        }
+
+        /// <summary>
+        /// First record carrying the requested role in insertion order.
+        /// Throws <see cref="InvalidOperationException"/> when no record
+        /// matches; mirrors the strictness of <see cref="Get"/>.
+        /// </summary>
+        public ActorRecord FirstByRole(ActorRole role)
+        {
+            foreach (var id in _order)
+            {
+                var record = _byId[id];
+                if (record.Role == role)
+                    return record;
+            }
+            throw new InvalidOperationException($"ActorStore has no record with role {role}.");
+        }
+
+        /// <summary>
+        /// Tries to fetch the first record carrying the requested role in
+        /// insertion order. Returns false (and a null record) when no record
+        /// matches.
+        /// </summary>
+        public bool TryFirstByRole(ActorRole role, out ActorRecord record)
+        {
+            foreach (var id in _order)
+            {
+                var candidate = _byId[id];
+                if (candidate.Role == role)
+                {
+                    record = candidate;
+                    return true;
+                }
+            }
+            record = null;
+            return false;
+        }
     }
 }
