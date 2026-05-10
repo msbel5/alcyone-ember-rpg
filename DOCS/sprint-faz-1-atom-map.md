@@ -28,14 +28,14 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: ItemStore (MATTER — primary)
 
-- [ ] `Assets/Scripts/Domain/Inventory/ItemId.cs` :: `ItemId` :: readonly value handle (default = empty) [box=MATTER]
+- [x] `Assets/Scripts/Domain/Core/ItemId.cs` :: `ItemId` :: readonly value handle (default = empty) [box=MATTER] — pre-existing in Core/ (path corrected from Inventory/ to match ActorId convention); pinned by `Assets/Tests/EditMode/Core/ItemIdTests.cs`
 - [ ] `Assets/Scripts/Domain/Inventory/ItemRecord.cs` :: `ItemRecord` :: pure record carrying material + quality + slot kind [box=MATTER]
 - [ ] `Assets/Scripts/Domain/World/ItemStore.cs` :: `ItemStore` :: dictionary-backed registry over `ItemId -> ItemRecord` mirroring `ActorStore` shape [box=MATTER]
 - [ ] `Assets/Tests/EditMode/World/ItemStoreTests.cs` :: tests :: pin store contracts and default-id rejection [box=MATTER]
 
 ## Sub-area: SiteStore (WORLD — primary)
 
-- [ ] `Assets/Scripts/Domain/World/SiteId.cs` :: `SiteId` :: readonly value handle [box=WORLD]
+- [x] `Assets/Scripts/Domain/Core/SiteId.cs` :: `SiteId` :: readonly value handle [box=WORLD] — landed via `agent/sprint-faz-1-site-id` (path corrected from World/ to Core/ to match ActorId/ItemId convention); pinned by `Assets/Tests/EditMode/Core/SiteIdTests.cs`
 - [ ] `Assets/Scripts/Domain/World/SiteRecord.cs` :: `SiteRecord` :: pure record for region / settlement / dungeon (kind + name + grid bounds) [box=WORLD]
 - [ ] `Assets/Scripts/Domain/World/SiteStore.cs` :: `SiteStore` :: dictionary-backed registry over `SiteId -> SiteRecord` [box=WORLD]
 - [ ] `Assets/Tests/EditMode/World/SiteStoreTests.cs` :: tests :: pin store contracts and default-id rejection [box=WORLD]
