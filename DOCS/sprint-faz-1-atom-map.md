@@ -42,7 +42,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: FactionStore (SOCIETY-seed)
 
-- [ ] `Assets/Scripts/Domain/World/FactionId.cs` :: `FactionId` :: readonly value handle [box=SOCIETY]
+- [x] `Assets/Scripts/Domain/Core/FactionId.cs` :: `FactionId` :: readonly value handle [box=SOCIETY] — landed via `agent/sprint-faz-1-faction-id` (path corrected from World/ to Core/ to match ActorId/ItemId/SiteId convention); pinned by `Assets/Tests/EditMode/Core/FactionIdTests.cs`
 - [ ] `Assets/Scripts/Domain/World/FactionRecord.cs` :: `FactionRecord` :: pure record (name + tags); empty seed populated in Faz 6 [box=SOCIETY]
 - [ ] `Assets/Scripts/Domain/World/FactionStore.cs` :: `FactionStore` :: dictionary-backed registry [box=SOCIETY]
 - [ ] `Assets/Tests/EditMode/World/FactionStoreTests.cs` :: tests :: pin store contracts [box=SOCIETY]
@@ -86,12 +86,17 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (ItemRecord PR): `sha256:6024f95514fc0b2dc719ca79bc78baeecbd125766fc11ac895fc99ac92b30519`
 - packet_id (ItemStore PR): `pkt_20260510234148_8fc90621f4a4`
 - resolver_key (ItemStore PR): `sha256:5bf9c0606d5aa98ff18c8bb23bd5faff0e9f2bc81218695467adaaf004fc7b64`
+- packet_id (FactionId PR): `pkt_20260510234830_913d417ed6e7`
+- resolver_key (FactionId PR): `sha256:0db90954d88677a0dafaa3fc6aa0216dadbf5cfe8296260dffa40fea0d640940`
 
 ## Next increment after this PR
 
-With the MATTER-box `ItemStore` landed alongside `ItemRecord`,
-`ItemMaterial`, and `ItemQuality`, three of the four Faz 1 registries
-(`ActorStore`, `SiteStore`, `ItemStore`) now share one regression
-shape. The next Faz 1 atom is the SOCIETY-seed primitive
-`FactionId` (`Assets/Scripts/Domain/World/FactionId.cs`) so the
-FactionStore sub-area can begin under the same convention.
+With the SOCIETY-seed primitive `FactionId` landed in
+`Assets/Scripts/Domain/Core/` (matching the ActorId/ItemId/SiteId path
+convention), the FactionStore sub-area is now open alongside the
+three other Faz 1 registries (`ActorStore`, `SiteStore`, `ItemStore`)
+which now share one regression shape. The next Faz 1 atom is
+`FactionRecord` (`Assets/Scripts/Domain/World/FactionRecord.cs`) —
+a pure record carrying `name` + `tags`, mirroring the
+`SiteRecord` / `ItemRecord` shape so the eventual `FactionStore` can
+ride the registry contract used by the other three stores.
