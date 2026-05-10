@@ -29,7 +29,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 ## Sub-area: ItemStore (MATTER — primary)
 
 - [x] `Assets/Scripts/Domain/Core/ItemId.cs` :: `ItemId` :: readonly value handle (default = empty) [box=MATTER] — pre-existing in Core/ (path corrected from Inventory/ to match ActorId convention); pinned by `Assets/Tests/EditMode/Core/ItemIdTests.cs`
-- [ ] `Assets/Scripts/Domain/Inventory/ItemRecord.cs` :: `ItemRecord` :: pure record carrying material + quality + slot kind [box=MATTER]
+- [x] `Assets/Scripts/Domain/Inventory/ItemRecord.cs` :: `ItemRecord` :: pure record carrying material + quality + slot kind [box=MATTER] — landed via `agent/sprint-faz-1-item-record` together with `Assets/Scripts/Domain/Inventory/ItemMaterial.cs` (enum: Wood / Iron / Cloth) and `Assets/Scripts/Domain/Inventory/ItemQuality.cs` (enum: Common / Fine / Masterwork); pinned by `Assets/Tests/EditMode/Inventory/ItemRecordTests.cs` mirroring `SiteRecordTests`
 - [ ] `Assets/Scripts/Domain/World/ItemStore.cs` :: `ItemStore` :: dictionary-backed registry over `ItemId -> ItemRecord` mirroring `ActorStore` shape [box=MATTER]
 - [ ] `Assets/Tests/EditMode/World/ItemStoreTests.cs` :: tests :: pin store contracts and default-id rejection [box=MATTER]
 
@@ -82,10 +82,13 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key: `sha256:7cc6df815b0d6d4aedfad98eaf53ca7629a69148c393b941bb3517229f8e707c`
 - packet_id (SiteStore PR): `pkt_20260510225845_f00d001dd7e0`
 - resolver_key (SiteStore PR): `sha256:330b38f56b1931e0946787867ba8f3800d6ccf1425ddcd2eb519cfe958b14e2b`
+- packet_id (ItemRecord PR): `pkt_20260510231640_676878a28180`
+- resolver_key (ItemRecord PR): `sha256:6024f95514fc0b2dc719ca79bc78baeecbd125766fc11ac895fc99ac92b30519`
 
 ## Next increment after this PR
 
-With the WORLD-box `SiteStore` registry landed alongside `SiteId` /
-`SiteRecord`, the next Faz 1 atom is the MATTER-box `ItemRecord`
-(pure record carrying material + quality + slot kind) so the
-`ItemStore` registry can ride the same shape immediately after.
+With the MATTER-box `ItemRecord` primitive landed alongside
+`ItemMaterial` and `ItemQuality`, the next Faz 1 atom is the
+`ItemStore` registry (`Assets/Scripts/Domain/World/ItemStore.cs`) so
+the four Faz 1 stores can converge on one regression shape, mirroring
+`ActorStore` / `SiteStore`.
