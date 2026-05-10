@@ -37,8 +37,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 - [x] `Assets/Scripts/Domain/Core/SiteId.cs` :: `SiteId` :: readonly value handle [box=WORLD] — landed via `agent/sprint-faz-1-site-id` (path corrected from World/ to Core/ to match ActorId/ItemId convention); pinned by `Assets/Tests/EditMode/Core/SiteIdTests.cs`
 - [x] `Assets/Scripts/Domain/World/SiteRecord.cs` :: `SiteRecord` :: pure record for region / settlement / dungeon (kind + name + grid bounds) [box=WORLD] — landed via `agent/sprint-faz-1-site-record` together with `Assets/Scripts/Domain/World/SiteKind.cs` (enum: Region / Settlement / Dungeon); pinned by `Assets/Tests/EditMode/World/SiteRecordTests.cs`
-- [x] `Assets/Scripts/Domain/World/SiteStore.cs` :: `SiteStore` :: dictionary-backed registry over `SiteId -> SiteRecord` [box=WORLD] — landed via `agent/sprint-faz-1-site-store` mirroring ActorStore's contract
-- [x] `Assets/Tests/EditMode/World/SiteStoreTests.cs` :: tests :: pin store contracts and default-id rejection [box=WORLD] — landed in the same PR; mirrors `ActorStoreTests` regression shape
+- [x] `Assets/Scripts/Domain/World/SiteStore.cs` :: `SiteStore` :: dictionary-backed registry over `SiteId -> SiteRecord` [box=WORLD] — landed via `agent/sprint-faz-1-site-store` (PR #83, merge `227ed95`); mirrors `ActorStore` shape; insertion-order enumeration verified
+- [x] `Assets/Tests/EditMode/World/SiteStoreTests.cs` :: tests :: pin store contracts and default-id rejection [box=WORLD] — landed with PR #83 covering Add/Get/TryGet/Remove/Contains/Count/Clear/Records, default-id rejection, and bounds-check coverage
 
 ## Sub-area: FactionStore (SOCIETY-seed)
 
