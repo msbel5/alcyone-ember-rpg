@@ -3,6 +3,7 @@
 // Inputs: SliceWorldState or SliceSaveData snapshots.
 // Outputs: round-trippable save objects with no UnityEngine in Domain/Simulation.
 // Bible reference: PRD Sprint 1 FR-06, Sprint 2 FR-02 through FR-04.
+using System;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
@@ -79,13 +80,18 @@ namespace EmberCrpg.Data.Save
                 world.DungeonRoomStates = DungeonSaveMapper.ToRoomStates(data.dungeonRoomStates);
             if (data.dungeonDoorStates != null && data.dungeonDoorStates.Length > 0)
                 world.DungeonDoorStates = DungeonSaveMapper.ToDoorStates(data.dungeonDoorStates);
-            world.Player = ActorSaveMapper.ToActor(data.player);
-            world.Talker = ActorSaveMapper.ToActor(data.talker);
-            world.Merchant = ActorSaveMapper.ToActor(data.merchant);
-            world.Guard = ActorSaveMapper.ToActor(data.guard);
-            world.Enemy = ActorSaveMapper.ToActor(data.enemy);
-            if (data.actors != null && data.actors.Length > 0)
+            if (data.actors != null)
+            {
                 world.Actors = ToActorStore(data.actors);
+            }
+            else
+            {
+                world.Player = ActorSaveMapper.ToActor(data.player);
+                world.Talker = ActorSaveMapper.ToActor(data.talker);
+                world.Merchant = ActorSaveMapper.ToActor(data.merchant);
+                world.Guard = ActorSaveMapper.ToActor(data.guard);
+                world.Enemy = ActorSaveMapper.ToActor(data.enemy);
+            }
             world.Items = ToItemStore(data.itemRecords);
             world.Sites = ToSiteStore(data.sites);
             world.Factions = ToFactionStore(data.factions);
@@ -93,8 +99,8 @@ namespace EmberCrpg.Data.Save
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
-            world.Pickups = (data.pickups ?? new PickupSaveData[0]).Select(ItemSaveMapper.ToPickup).ToList();
-            world.Topics = (data.topics ?? new TopicSaveData[0]).Select(topic => new AskAboutTopic(topic.id, topic.label, topic.answer)).ToList();
+            world.Pickups = (data.pickups ?? Array.Empty<PickupSaveData>()).Select(ItemSaveMapper.ToPickup).ToList();
+            world.Topics = (data.topics ?? Array.Empty<TopicSaveData>()).Select(topic => new AskAboutTopic(topic.id, topic.label, topic.answer)).ToList();
             world.NpcMemory = ToNpcMemoryStore(data.npcMemories);
             world.PlayerSpellCooldowns = SpellCooldownSaveMapper.ToState(data.playerSpellCooldowns);
             world.PlayerShieldBuffs = ShieldBuffSaveMapper.ToState(data.playerShieldBuffs);
@@ -109,13 +115,13 @@ namespace EmberCrpg.Data.Save
 
         private static ActorSaveData[] ToActorStoreData(ActorStore store)
         {
-            return (store?.Records ?? new ActorRecord[0]).Select(ActorSaveMapper.ToData).ToArray();
+            return (store?.Records ?? Array.Empty<ActorRecord>()).Select(ActorSaveMapper.ToData).ToArray();
         }
 
         private static ActorStore ToActorStore(ActorSaveData[] data)
         {
             var store = new ActorStore();
-            foreach (var actor in data ?? new ActorSaveData[0])
+            foreach (var actor in data ?? Array.Empty<ActorSaveData>())
             {
                 if (actor != null)
                     store.Add(ActorSaveMapper.ToActor(actor));
@@ -125,7 +131,7 @@ namespace EmberCrpg.Data.Save
 
         private static ItemRecordSaveData[] ToItemStoreData(ItemStore store)
         {
-            return (store?.Records ?? new ItemRecord[0]).Select(ToItemRecordData).ToArray();
+            return (store?.Records ?? Array.Empty<ItemRecord>()).Select(ToItemRecordData).ToArray();
         }
 
         private static ItemRecordSaveData ToItemRecordData(ItemRecord record)
@@ -142,7 +148,7 @@ namespace EmberCrpg.Data.Save
         private static ItemStore ToItemStore(ItemRecordSaveData[] data)
         {
             var store = new ItemStore();
-            foreach (var record in data ?? new ItemRecordSaveData[0])
+            foreach (var record in data ?? Array.Empty<ItemRecordSaveData>())
             {
                 if (record != null)
                     store.Add(new ItemRecord(new ItemId(record.id), (ItemMaterial)record.material, (ItemQuality)record.quality, (EquipmentSlot)record.slot));
@@ -152,7 +158,7 @@ namespace EmberCrpg.Data.Save
 
         private static SiteRecordSaveData[] ToSiteStoreData(SiteStore store)
         {
-            return (store?.Records ?? new SiteRecord[0]).Select(ToSiteRecordData).ToArray();
+            return (store?.Records ?? Array.Empty<SiteRecord>()).Select(ToSiteRecordData).ToArray();
         }
 
         private static SiteRecordSaveData ToSiteRecordData(SiteRecord record)
@@ -172,7 +178,7 @@ namespace EmberCrpg.Data.Save
         private static SiteStore ToSiteStore(SiteRecordSaveData[] data)
         {
             var store = new SiteStore();
-            foreach (var record in data ?? new SiteRecordSaveData[0])
+            foreach (var record in data ?? Array.Empty<SiteRecordSaveData>())
             {
                 if (record != null)
                 {
@@ -189,7 +195,7 @@ namespace EmberCrpg.Data.Save
 
         private static FactionRecordSaveData[] ToFactionStoreData(FactionStore store)
         {
-            return (store?.Records ?? new FactionRecord[0]).Select(ToFactionRecordData).ToArray();
+            return (store?.Records ?? Array.Empty<FactionRecord>()).Select(ToFactionRecordData).ToArray();
         }
 
         private static FactionRecordSaveData ToFactionRecordData(FactionRecord record)
@@ -205,17 +211,17 @@ namespace EmberCrpg.Data.Save
         private static FactionStore ToFactionStore(FactionRecordSaveData[] data)
         {
             var store = new FactionStore();
-            foreach (var record in data ?? new FactionRecordSaveData[0])
+            foreach (var record in data ?? Array.Empty<FactionRecordSaveData>())
             {
                 if (record != null)
-                    store.Add(new FactionRecord(new FactionId(record.id), record.name, record.tags ?? new string[0]));
+                    store.Add(new FactionRecord(new FactionId(record.id), record.name, record.tags ?? Array.Empty<string>()));
             }
             return store;
         }
 
         private static WorldEventSaveData[] ToWorldEventLogData(WorldEventLog log)
         {
-            return (log?.Events ?? new WorldEvent[0]).Select(ToWorldEventData).ToArray();
+            return (log?.Events ?? Array.Empty<WorldEvent>()).Select(ToWorldEventData).ToArray();
         }
 
         private static WorldEventSaveData ToWorldEventData(WorldEvent worldEvent)
@@ -234,7 +240,7 @@ namespace EmberCrpg.Data.Save
         private static WorldEventLog ToWorldEventLog(WorldEventSaveData[] data)
         {
             var log = new WorldEventLog();
-            foreach (var worldEvent in data ?? new WorldEventSaveData[0])
+            foreach (var worldEvent in data ?? Array.Empty<WorldEventSaveData>())
             {
                 if (worldEvent != null)
                 {
@@ -269,7 +275,7 @@ namespace EmberCrpg.Data.Save
         private static EquipmentState ToEquipmentState(EquipmentSaveData data)
         {
             var equipment = new EquipmentState();
-            foreach (var slot in data?.slots ?? new EquippedItemSaveData[0])
+            foreach (var slot in data?.slots ?? Array.Empty<EquippedItemSaveData>())
                 equipment.Equip((EquipmentSlot)slot.slot, new ItemId(slot.itemId));
             return equipment;
         }
@@ -288,16 +294,16 @@ namespace EmberCrpg.Data.Save
         private static NpcMemoryStore ToNpcMemoryStore(NpcMemorySaveData[] data)
         {
             var store = new NpcMemoryStore();
-            store.ReplaceAll((data ?? new NpcMemorySaveData[0]).Select(ToActorMemory));
+            store.ReplaceAll((data ?? Array.Empty<NpcMemorySaveData>()).Select(ToActorMemory));
             return store;
         }
 
         private static ActorMemory ToActorMemory(NpcMemorySaveData data)
         {
             var memory = new ActorMemory(new ActorId(data.actorId));
-            memory.ReplaceEvents((data.events ?? new InteractionEventSaveData[0]).Select(ToInteractionEvent));
+            memory.ReplaceEvents((data.events ?? Array.Empty<InteractionEventSaveData>()).Select(ToInteractionEvent));
             memory.ReplaceDialogueSeen(data.dialogueSeen);
-            memory.ReplaceTransactions((data.transactions ?? new TransactionSaveData[0]).Select(ToTransaction));
+            memory.ReplaceTransactions((data.transactions ?? Array.Empty<TransactionSaveData>()).Select(ToTransaction));
             return memory;
         }
 
@@ -362,7 +368,7 @@ namespace EmberCrpg.Data.Save
         private static InventoryState ToInventoryState(InventorySaveData inventory, int fallbackCapacity)
         {
             var state = new InventoryState(inventory?.capacity ?? fallbackCapacity);
-            foreach (var item in inventory?.items ?? new ItemSaveData[0])
+            foreach (var item in inventory?.items ?? Array.Empty<ItemSaveData>())
                 state.TryAdd(ItemSaveMapper.ToItem(item));
             return state;
         }

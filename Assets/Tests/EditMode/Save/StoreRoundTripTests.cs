@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using EmberCrpg.Data.Save;
 using EmberCrpg.Domain.Actors;
@@ -88,6 +89,33 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(loaded.Guard.Id, Is.EqualTo(canonicalGuard.Id));
             Assert.That(loaded.Guard.Name, Is.EqualTo("Canonical Guard"));
             Assert.That(loaded.Guard.Position, Is.EqualTo(new GridPosition(3, 7)));
+        }
+
+        [Test]
+        public void Mapper_TreatsEmptyCanonicalActorStoreAsExplicitAndSkipsLegacyActors()
+        {
+            var world = new SliceWorldFactory().Create(23);
+            var data = SliceSaveMapper.ToData(world);
+            data.actors = Array.Empty<ActorSaveData>();
+
+            var loaded = SliceSaveMapper.ToWorld(data);
+
+            Assert.That(loaded.Actors.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Mapper_SkipsMalformedLegacyActorsWhenCanonicalActorStoreIsPresent()
+        {
+            var world = new SliceWorldFactory().Create(29);
+            var data = SliceSaveMapper.ToData(world);
+            var canonicalGuard = MakeRecord(505, "Canonical Guard", ActorRole.Guard, new GridPosition(6, 8));
+            data.actors = new[] { ActorSaveMapper.ToData(canonicalGuard) };
+            data.guard = new ActorSaveData();
+
+            var loaded = SliceSaveMapper.ToWorld(data);
+
+            Assert.That(loaded.Guard.Id, Is.EqualTo(canonicalGuard.Id));
+            Assert.That(loaded.Guard.Name, Is.EqualTo("Canonical Guard"));
         }
 
         private static ActorRecord MakeRecord(ulong id, string name, ActorRole role, GridPosition position)
