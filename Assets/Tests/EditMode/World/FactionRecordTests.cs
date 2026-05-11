@@ -108,6 +108,31 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(record.Tags, Is.EqualTo(new[] { "guard", "lawful" }));
         }
 
+        /// <summary>Tags projection is not a string[] under the hood, so callers cannot
+        /// cast back and mutate the internal tag bag.</summary>
+        [Test]
+        public void Tags_ProjectionIsNotBackingArray()
+        {
+            var record = MakeRecord();
+
+            Assert.That(record.Tags, Is.Not.InstanceOf<string[]>());
+        }
+
+        /// <summary>Even when the caller tries to mutate via a downcast, the projection
+        /// stays immutable and the original tag bag survives unchanged.</summary>
+        [Test]
+        public void Tags_ProjectionCannotBeMutatedViaDowncast()
+        {
+            var record = MakeRecord();
+            var projection = record.Tags;
+
+            var mutableArray = projection as string[];
+            Assert.That(mutableArray, Is.Null,
+                "Tags must not expose the backing string[] to callers.");
+
+            Assert.That(record.Tags, Is.EqualTo(new[] { "guard", "lawful" }));
+        }
+
         /// <summary>HasTag returns true only for an exact, case-sensitive match supplied at construction.</summary>
         [Test]
         public void HasTag_KnownTag_IsTrue()

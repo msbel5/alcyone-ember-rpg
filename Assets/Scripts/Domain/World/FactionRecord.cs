@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using EmberCrpg.Domain.Core;
 
 // Design note:
@@ -16,6 +17,9 @@ namespace EmberCrpg.Domain.World
     public sealed class FactionRecord
     {
         private readonly string[] _tags;
+        // ReadOnlyCollection wrapper prevents callers from casting Tags back to string[]
+        // and mutating the internal tag bag — IReadOnlyList<string> alone does not.
+        private readonly ReadOnlyCollection<string> _tagsView;
 
         public FactionRecord(FactionId id, string name, IEnumerable<string> tags)
         {
@@ -37,6 +41,7 @@ namespace EmberCrpg.Domain.World
             Id = id;
             Name = name;
             _tags = buffer.ToArray();
+            _tagsView = new ReadOnlyCollection<string>(_tags);
         }
 
         public FactionId Id { get; }
@@ -45,7 +50,7 @@ namespace EmberCrpg.Domain.World
         /// <summary>Insertion-ordered snapshot of the tags supplied at construction.</summary>
         public IReadOnlyList<string> Tags
         {
-            get { return _tags; }
+            get { return _tagsView; }
         }
 
         /// <summary>True when the supplied tag was provided at construction (case-sensitive match).</summary>
