@@ -49,8 +49,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: WorldEvent log + ReasonTrace (PROCESS — primary)
 
-- [x] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `WorldEvent` :: typed event payload (`tick`, `kind`, `actorId`, `siteId`, `reason`) [box=PROCESS] — landed via `agent/sprint-faz-1-world-event`; pinned by `Assets/Tests/EditMode/World/WorldEventTests.cs`; ships alongside `Assets/Scripts/Domain/World/WorldEventKind.cs` seed enum (None / ActorSpawned / ActorTalked / SiteEntered) covering the Faz 1 acceptance-gate event categories
-- [ ] `Assets/Scripts/Domain/World/ReasonTrace.cs` :: `ReasonTrace` :: causal-chain record attached to an event [box=PROCESS]
+- [x] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `WorldEvent` :: typed event payload (`tick`, `kind`, `actorId`, `siteId`, `reason`) [box=PROCESS] — landed via `agent/sprint-faz-1-world-event` (PR #89, merge `b659733`); pinned by `Assets/Tests/EditMode/World/WorldEventTests.cs`; ships alongside `Assets/Scripts/Domain/World/WorldEventKind.cs` seed enum (None / ActorSpawned / ActorTalked / SiteEntered) covering the Faz 1 acceptance-gate event categories
+- [x] `Assets/Scripts/Domain/World/ReasonTrace.cs` :: `ReasonTrace` :: causal-chain record attached to an event [box=PROCESS] — landed via `agent/sprint-faz-1-reason-trace`; ordered, root-first immutable cause chain with `Causes` / `Depth` / `RootCause` / `LeafCause` / `HasCause`, defensive copy + blank/empty rejection mirroring `FactionRecord` / `SiteRecord`; pinned by `Assets/Tests/EditMode/World/ReasonTraceTests.cs`
 - [ ] `Assets/Scripts/Domain/World/WorldEventLog.cs` :: `WorldEventLog` :: append-only log over `WorldEvent` with deterministic enumeration [box=PROCESS]
 - [ ] `Assets/Tests/EditMode/World/WorldEventLogTests.cs` :: tests :: pin append + deterministic enumeration + reason-trace round-trip [box=PROCESS]
 
@@ -92,15 +92,21 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (FactionRecord PR): `sha256:3a7e0d9766c3e410ec208832885407539df2b6f603b0ebff3b80f8a20601b3eb`
 - packet_id (WorldEvent PR): `pkt_20260511061314_b24015092ce0`
 - resolver_key (WorldEvent PR): `sha256:5d01905609fbe9d722d881387679daccfc861627ad1d18bdfd1590fdf2f395a8`
+- packet_id (ReasonTrace PR): `pkt_20260511062642_d1b0146ad836`
+- resolver_key (ReasonTrace PR): `sha256:5aaeab7ba3e5041ca669832ed854c75992c15df6f16d35c96b89d0ea28e30a2f`
+- packet_id (ReasonTrace merge-into-main reconcile): `pkt_20260511064710_ba637c1502d2`
+- resolver_key (ReasonTrace merge-into-main reconcile): `sha256:b4abd821178e14d46b98cbf1dc57ae4461a3b61f67837f5085796a5904c56e2e`
 
 ## Next increment after this PR
 
-With `WorldEvent` (the PROCESS-box typed event payload) landed
-alongside its seed `WorldEventKind` enum and pinned tests, the
-WorldEvent log sub-area now has its primitive in place. The next Faz 1
-atom is `ReasonTrace` (`Assets/Scripts/Domain/World/ReasonTrace.cs`)
-— a pure causal-chain record that can be attached to a `WorldEvent`.
-After `ReasonTrace`, `WorldEventLog`
-(`Assets/Scripts/Domain/World/WorldEventLog.cs`) lands the append-only
-log over `WorldEvent` with deterministic enumeration; tests follow in
-`Assets/Tests/EditMode/World/WorldEventLogTests.cs`.
+With both `WorldEvent` (PROCESS-box typed event payload + seed
+`WorldEventKind` enum, landed via PR #89) and `ReasonTrace` (ordered
+root-first immutable cause chain, landed on
+`agent/sprint-faz-1-reason-trace`) in place, the WorldEvent-log
+sub-area has both of its primitive payload pieces.
+
+The next Faz 1 atom is `WorldEventLog`
+(`Assets/Scripts/Domain/World/WorldEventLog.cs`) — an append-only log
+over `WorldEvent` with deterministic enumeration; tests follow in
+`Assets/Tests/EditMode/World/WorldEventLogTests.cs` pinning append +
+deterministic enumeration + reason-trace round-trip.
