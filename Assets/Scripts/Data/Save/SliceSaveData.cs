@@ -30,6 +30,11 @@ namespace EmberCrpg.Data.Save
         public ActorSaveData merchant;
         public ActorSaveData guard;
         public ActorSaveData enemy;
+        public ActorSaveData[] actors;
+        public ItemRecordSaveData[] itemRecords;
+        public SiteRecordSaveData[] sites;
+        public FactionRecordSaveData[] factions;
+        public WorldEventSaveData[] worldEvents;
         public InventorySaveData inventory;
         public EquipmentSaveData playerEquipment;
         public InventorySaveData merchantInventory;
@@ -43,6 +48,46 @@ namespace EmberCrpg.Data.Save
         public int guardWarningCount;
         public bool encounterActive;
         public string lastNarrative;
+    }
+
+    [Serializable]
+    public sealed class ItemRecordSaveData
+    {
+        public ulong id;
+        public int material;
+        public int quality;
+        public int slot;
+    }
+
+    [Serializable]
+    public sealed class SiteRecordSaveData
+    {
+        public ulong id;
+        public int kind;
+        public string name;
+        public int minX;
+        public int minY;
+        public int maxX;
+        public int maxY;
+    }
+
+    [Serializable]
+    public sealed class FactionRecordSaveData
+    {
+        public ulong id;
+        public string name;
+        public string[] tags;
+    }
+
+    [Serializable]
+    public sealed class WorldEventSaveData
+    {
+        public long tickMinutes;
+        public int kind;
+        public ulong actorId;
+        public ulong siteId;
+        public string reason;
+        public string[] reasonTrace;
     }
 
     [Serializable]

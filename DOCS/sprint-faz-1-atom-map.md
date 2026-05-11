@@ -63,8 +63,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: Save/load round-trip (TIME — primary)
 
-- [ ] `Assets/Scripts/Data/Save/SliceSaveMapper.cs` :: extend mapper :: serialize `ActorStore` / `ItemStore` / `SiteStore` / `FactionStore` / `WorldEventLog` alongside `SliceWorldState` (migration-friendly: write both, read both, prefer stores) [box=TIME]
-- [ ] `Assets/Tests/EditMode/Save/StoreRoundTripTests.cs` :: tests :: pin deterministic round-trip for the four stores + event log [box=TIME]
+- [x] `Assets/Scripts/Data/Save/SliceSaveMapper.cs` :: extend mapper :: serialize `ActorStore` / `ItemStore` / `SiteStore` / `FactionStore` / `WorldEventLog` alongside `SliceWorldState` (migration-friendly: write both, read both, prefer stores) [box=TIME] — landed via `agent/sprint-faz-1-store-save-roundtrip`; DTO arrays live in `SliceSaveData`, canonical actor-store data overrides legacy actor fields on load
+- [x] `Assets/Tests/EditMode/Save/StoreRoundTripTests.cs` :: tests :: pin deterministic round-trip for the four stores + event log [box=TIME] — landed with `agent/sprint-faz-1-store-save-roundtrip`; covers JSON round-trip for actors/items/sites/factions/events and canonical actor-store preference
 
 ## Sub-area: Acceptance proof (PLAYABLE — every fifth PR)
 
@@ -112,6 +112,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (SliceWorldState store-backed actor views PR): `sha256:527e964761013636e732d49f4d9979886c83eaee103289da50a3996366a9af6d`
 - packet_id (SliceWorldState store roots PR): `pkt_20260511184559_c138f4fe260d`
 - resolver_key (SliceWorldState store roots PR): `sha256:6c02d26981c9c2b5630150854c9f9ca669b2bc7e45a3131af67f56ff88c36a95`
+- packet_id (Store save round-trip PR): `pkt_20260511190607_d724944dd3fa`
+- resolver_key (Store save round-trip PR): `sha256:a8e560bbfe6f80911154a072cd4a71a10631da041ab333a1edf7a6317283ff77`
 
 ## Next increment after this PR
 
@@ -120,22 +122,20 @@ the WorldEvent-log sub-area now has all three primitive pieces:
 `WorldEvent` (PR #89), `ReasonTrace` (PR #90), and the append-only
 `WorldEventLog` chronicle.
 
-The remaining open Faz 1 atoms cluster around two next moves:
+The TIME-box save/load atom is now landed: canonical `Actors`,
+`Items`, `Sites`, `Factions`, and `Events` store roots write through
+`SliceSaveData`, load back through `SliceSaveMapper`, and prefer
+canonical actor-store payloads over legacy named actor fields.
 
-1. TIME-box save/load: extend `SliceSaveMapper` to serialize the runtime
-   store roots (`Actors`, `Items`, `Sites`, `Factions`, `Events`)
-   alongside the legacy slice fields (write both, read both, prefer
-   stores). Tests pin deterministic round-trip in `StoreRoundTripTests`.
-2. PLAYABLE-box acceptance proof: once save/load round-trip lands, add
-   the deterministic replay log or debug-HUD dump showing guard spawn,
-   talk, memory, and second-site continuity.
+The remaining open Faz 1 atom is the PLAYABLE-box acceptance proof:
+add `DOCS/sprint-faz-1-acceptance.md` with a deterministic replay log,
+debug-HUD dump, screenshot, or playtest note showing guard spawn, talk,
+memory, and second-site continuity across save/load.
 
 The LIVING-box `SliceWorldState` store-backed actor-view migration is
 now landed: legacy `Player`/`Talker`/... accessors are obsolete views
 over `ActorStore`, and new code should target `Actors` directly.
 
-Per the agent-rules-v2 product-visible cap, the next sprint factory
-run picks whichever of these three is the smallest, shippable, and
-truthfully testable. The PLAYABLE-box acceptance proof
-(`DOCS/sprint-faz-1-acceptance.md`) closes Faz 1 once the save/load
-round-trip lands.
+Per the agent-rules-v2 playable-proof rule, the next sprint factory run
+should close the `DOCS/sprint-faz-1-acceptance.md` atom instead of
+adding another pure infrastructure slice.
