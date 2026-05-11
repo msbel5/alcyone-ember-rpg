@@ -4,6 +4,7 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.Memory;
+using EmberCrpg.Simulation.Inventory;
 using EmberCrpg.Simulation.Narrative;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
@@ -23,7 +24,8 @@ namespace EmberCrpg.Tests.EditMode.World
             var startSiteId = new SiteId(1001);
             var secondSiteId = new SiteId(1002);
             var firstRoomId = world.CurrentRoomId;
-            var secondRoomId = world.Dungeon.Rooms.First(room => room.Id != firstRoomId).Id;
+            var guardedDoor = world.Dungeon.Doors.First(door => door.RequiresGuardClearance && (door.FromRoomId == firstRoomId || door.ToRoomId == firstRoomId));
+            var secondRoomId = guardedDoor.OtherRoom(firstRoomId);
 
             world.Sites.Add(new SiteRecord(startSiteId, SiteKind.Dungeon, "Ember Gatehouse", new GridPosition(0, 0), new GridPosition(12, 12)));
             world.Sites.Add(new SiteRecord(secondSiteId, SiteKind.Settlement, "Ashford Approach", new GridPosition(13, 0), new GridPosition(24, 12)));
@@ -48,12 +50,15 @@ namespace EmberCrpg.Tests.EditMode.World
             var save = new JsonSliceSaveService();
             var loaded = save.LoadFromJson(save.SaveToJson(world));
             var rememberedTalk = new GuardInteractionService().Interact(loaded);
-            loaded.CurrentRoomId = secondRoomId;
-            loaded.DungeonRoomStates.First(state => state.RoomId == secondRoomId).Visited = true;
+            Assert.That(loaded.PlayerInventory.TryAdd(SliceItemCatalog.CreateGateWrit()), Is.True);
+            var clearanceTalk = new GuardInteractionService().Interact(loaded);
+            loaded.Player.MoveTo(new GridPosition(loaded.Room.DoorCell.X, 1));
+            var doorToggle = new DoorInteractionService().Toggle(loaded);
+            var traversal = new DungeonTraversalService().Traverse(loaded, guardedDoor.Id);
             loaded.Events.Append(new WorldEvent(
                 loaded.Time.AddMinutes(10),
                 WorldEventKind.SiteEntered,
-                new ActorId(0),
+                loaded.Player.Id,
                 secondSiteId,
                 "faz1-acceptance-enter-second-site",
                 new ReasonTrace(new[] { "save-load", "guard-memory-confirmed", "walk-to-second-site" })));
@@ -62,9 +67,12 @@ namespace EmberCrpg.Tests.EditMode.World
 
             Assert.That(firstTalk, Does.Contain("No writ"));
             Assert.That(rememberedTalk, Does.Contain("remembers your first unwrit request"));
+            Assert.That(clearanceTalk, Does.Contain("grants clearance"));
+            Assert.That(doorToggle, Does.Contain("grinds open"));
+            Assert.That(traversal, Does.Contain($"room {secondRoomId}"));
             Assert.That(final.Guard.Id, Is.EqualTo(world.Guard.Id));
             Assert.That(final.NpcMemory.TryGet(final.Guard.Id, out var guardMemory), Is.True);
-            Assert.That(guardMemory.CountEvents(ActorMemoryEventTypes.PassageRequested), Is.EqualTo(2));
+            Assert.That(guardMemory.CountEvents(ActorMemoryEventTypes.PassageRequested), Is.EqualTo(3));
             Assert.That(final.CurrentRoomId, Is.EqualTo(secondRoomId));
             Assert.That(final.DungeonRoomStates.First(state => state.RoomId == secondRoomId).Visited, Is.True);
             Assert.That(final.Sites.Get(secondSiteId).Name, Is.EqualTo("Ashford Approach"));
