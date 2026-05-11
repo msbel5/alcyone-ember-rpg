@@ -184,9 +184,8 @@ namespace EmberCrpg.Tests.EditMode.World
 
         // Faz 1 role-view shims: lay the rail for migrating SliceWorldState's
         // named slice fields (Player/Talker/Merchant/Guard/Enemy) onto
-        // ActorStore lookups by ActorRole. The concrete consumer is the next
-        // Faz 1 PR (SliceWorldState reads these shims and marks its named
-        // fields [Obsolete]).
+        // ActorStore lookups by ActorRole. SliceWorldState now consumes these
+        // shims through deprecated named actor views during Faz 1 migration.
 
         [Test]
         public void RecordsByRole_OnlyMatchingRoleInInsertionOrder()
