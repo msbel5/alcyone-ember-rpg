@@ -100,7 +100,7 @@ alongside its seed `WorldEventKind` enum and pinned tests, the
 WorldEvent log sub-area now has its primitive in place. The next Faz 1
 atom is `ReasonTrace` (`Assets/Scripts/Domain/World/ReasonTrace.cs`)
 — a pure causal-chain record that can be attached to a `WorldEvent`.
-After `ReasonTrace`, `WorldEventLog` (`Assets/Scripts/Domain/World/
-WorldEventLog.cs`) lands the append-only log over `WorldEvent` with
-deterministic enumeration; tests follow in
+After `ReasonTrace`, `WorldEventLog`
+(`Assets/Scripts/Domain/World/WorldEventLog.cs`) lands the append-only
+log over `WorldEvent` with deterministic enumeration; tests follow in
 `Assets/Tests/EditMode/World/WorldEventLogTests.cs`.
