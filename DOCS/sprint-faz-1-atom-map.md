@@ -21,8 +21,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: ActorStore (LIVING — primary)
 
-- [ ] `Assets/Scripts/Domain/World/ActorStore.cs` :: `ActorStore` :: dictionary-backed registry over `ActorId -> ActorRecord` with Add/Get/TryGet/Remove/Contains/Count/Clear/Records, deterministic enumeration, default-id rejection [box=LIVING]
-- [ ] `Assets/Tests/EditMode/World/ActorStoreTests.cs` :: tests :: pin Add/Get/TryGet/Remove/Contains/Count/Clear/Records contracts and default-id rejection [box=LIVING]
+- [x] `Assets/Scripts/Domain/World/ActorStore.cs` :: `ActorStore` :: dictionary-backed registry over `ActorId -> ActorRecord` with Add/Get/TryGet/Remove/Contains/Count/Clear/Records, deterministic enumeration, default-id rejection [box=LIVING] — landed via `agent/sprint-faz-1-actor-store` (PR #79, merge `a347efe`)
+- [x] `Assets/Tests/EditMode/World/ActorStoreTests.cs` :: tests :: pin Add/Get/TryGet/Remove/Contains/Count/Clear/Records contracts and default-id rejection [box=LIVING] — landed alongside PR #79
 - [x] `Assets/Scripts/Domain/World/ActorStore.cs` :: deprecated-view shims :: `Player`/`Talker`/`Merchant`/`Guard`/`Enemy` resolved from a `ActorRole`/role-tag lookup over the store (lands in a follow-up PR before SliceWorldState consumers migrate) [box=LIVING] — landed via `RecordsByRole`/`FirstByRole`/`TryFirstByRole` (sprint faz-1 role-shims PR)
 - [ ] `Assets/Scripts/Domain/World/SliceWorldState.cs` :: migrate consumers :: replace direct `Player`/`Talker`/`Merchant`/`Guard`/`Enemy` reads with store + view shim, mark fields `[Obsolete]` (follow-up PR) [box=LIVING]
 
@@ -44,12 +44,12 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 - [x] `Assets/Scripts/Domain/Core/FactionId.cs` :: `FactionId` :: readonly value handle [box=SOCIETY] — landed via `agent/sprint-faz-1-faction-id` (path corrected from World/ to Core/ to match ActorId/ItemId/SiteId convention); pinned by `Assets/Tests/EditMode/Core/FactionIdTests.cs`
 - [x] `Assets/Scripts/Domain/World/FactionRecord.cs` :: `FactionRecord` :: pure record (name + tags); empty seed populated in Faz 6 [box=SOCIETY] — landed via `agent/sprint-faz-1-faction-record`; insertion-order tag bag with defensive copy + `HasTag` lookup, mirroring `SiteRecord`/`ItemRecord` shape; pinned by `Assets/Tests/EditMode/World/FactionRecordTests.cs`
-- [ ] `Assets/Scripts/Domain/World/FactionStore.cs` :: `FactionStore` :: dictionary-backed registry [box=SOCIETY]
-- [ ] `Assets/Tests/EditMode/World/FactionStoreTests.cs` :: tests :: pin store contracts [box=SOCIETY]
+- [x] `Assets/Scripts/Domain/World/FactionStore.cs` :: `FactionStore` :: dictionary-backed registry [box=SOCIETY] — landed via `agent/sprint-faz-1-faction-store` (PR #88, merge `6c164eb`); mirrors `ActorStore`/`SiteStore`/`ItemStore` shape with deterministic insertion-order enumeration
+- [x] `Assets/Tests/EditMode/World/FactionStoreTests.cs` :: tests :: pin store contracts [box=SOCIETY] — landed alongside PR #88 covering Add/Get/TryGet/Remove/Contains/Count/Clear/Records + default-id rejection
 
 ## Sub-area: WorldEvent log + ReasonTrace (PROCESS — primary)
 
-- [ ] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `WorldEvent` :: typed event payload (`tick`, `kind`, `actorId`, `siteId`, `reason`) [box=PROCESS]
+- [x] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `WorldEvent` :: typed event payload (`tick`, `kind`, `actorId`, `siteId`, `reason`) [box=PROCESS] — landed via `agent/sprint-faz-1-world-event`; pinned by `Assets/Tests/EditMode/World/WorldEventTests.cs`; ships alongside `Assets/Scripts/Domain/World/WorldEventKind.cs` seed enum (None / ActorSpawned / ActorTalked / SiteEntered) covering the Faz 1 acceptance-gate event categories
 - [ ] `Assets/Scripts/Domain/World/ReasonTrace.cs` :: `ReasonTrace` :: causal-chain record attached to an event [box=PROCESS]
 - [ ] `Assets/Scripts/Domain/World/WorldEventLog.cs` :: `WorldEventLog` :: append-only log over `WorldEvent` with deterministic enumeration [box=PROCESS]
 - [ ] `Assets/Tests/EditMode/World/WorldEventLogTests.cs` :: tests :: pin append + deterministic enumeration + reason-trace round-trip [box=PROCESS]
@@ -90,19 +90,17 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (FactionId PR): `sha256:0db90954d88677a0dafaa3fc6aa0216dadbf5cfe8296260dffa40fea0d640940`
 - packet_id (FactionRecord PR): `pkt_20260511001218_a215b9da9279`
 - resolver_key (FactionRecord PR): `sha256:3a7e0d9766c3e410ec208832885407539df2b6f603b0ebff3b80f8a20601b3eb`
+- packet_id (WorldEvent PR): `pkt_20260511061314_b24015092ce0`
+- resolver_key (WorldEvent PR): `sha256:5d01905609fbe9d722d881387679daccfc861627ad1d18bdfd1590fdf2f395a8`
 
 ## Next increment after this PR
 
-With the SOCIETY-seed payload `FactionRecord` landed in
-`Assets/Scripts/Domain/World/` (mirroring the
-`SiteRecord` / `ItemRecord` defensive-constructor shape), the
-FactionStore sub-area now has both primitives (`FactionId`,
-`FactionRecord`) in place. The next Faz 1 atom is `FactionStore`
-(`Assets/Scripts/Domain/World/FactionStore.cs`) — a dictionary-backed
-registry over `FactionId -> FactionRecord` mirroring the
-`ActorStore` / `SiteStore` / `ItemStore` contract
-(`Add` / `Get` / `TryGet` / `Remove` / `Contains` / `Count` / `Clear`
-/ `Records`, deterministic insertion-order enumeration, default-id
-rejection). Tests land alongside in
-`Assets/Tests/EditMode/World/FactionStoreTests.cs` matching the
-shape used by the other three stores.
+With `WorldEvent` (the PROCESS-box typed event payload) landed
+alongside its seed `WorldEventKind` enum and pinned tests, the
+WorldEvent log sub-area now has its primitive in place. The next Faz 1
+atom is `ReasonTrace` (`Assets/Scripts/Domain/World/ReasonTrace.cs`)
+— a pure causal-chain record that can be attached to a `WorldEvent`.
+After `ReasonTrace`, `WorldEventLog`
+(`Assets/Scripts/Domain/World/WorldEventLog.cs`) lands the append-only
+log over `WorldEvent` with deterministic enumeration; tests follow in
+`Assets/Tests/EditMode/World/WorldEventLogTests.cs`.
