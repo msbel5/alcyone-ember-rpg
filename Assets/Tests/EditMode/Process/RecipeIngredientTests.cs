@@ -53,8 +53,11 @@ namespace EmberCrpg.Tests.EditMode.Process
         [Test]
         public void Constructor_RejectsNonPositiveQuantity()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new RecipeIngredient("iron_ore", 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new RecipeIngredient("iron_ore", -1));
+            var zero = Assert.Throws<ArgumentOutOfRangeException>(() => new RecipeIngredient("iron_ore", 0));
+            var negative = Assert.Throws<ArgumentOutOfRangeException>(() => new RecipeIngredient("iron_ore", -1));
+
+            Assert.That(zero.ActualValue, Is.EqualTo(0));
+            Assert.That(negative.ActualValue, Is.EqualTo(-1));
         }
     }
 }

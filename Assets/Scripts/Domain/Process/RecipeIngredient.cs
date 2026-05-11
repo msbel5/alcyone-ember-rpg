@@ -18,7 +18,7 @@ namespace EmberCrpg.Domain.Process
             if (string.IsNullOrWhiteSpace(itemTag))
                 throw new ArgumentException("Recipe ingredient item tag is required.", nameof(itemTag));
             if (quantity <= 0)
-                throw new ArgumentOutOfRangeException(nameof(quantity), "Recipe ingredient quantity must be positive.");
+                throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Recipe ingredient quantity must be positive.");
 
             ItemTag = itemTag.Trim();
             Quantity = quantity;
