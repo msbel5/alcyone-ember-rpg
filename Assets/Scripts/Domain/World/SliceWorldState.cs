@@ -29,6 +29,10 @@ namespace EmberCrpg.Domain.World
         public int EnemyRoomId;
         public int PickupRoomId;
         public ActorStore Actors = new ActorStore();
+        public ItemStore Items = new ItemStore();
+        public SiteStore Sites = new SiteStore();
+        public FactionStore Factions = new FactionStore();
+        public WorldEventLog Events = new WorldEventLog();
 
         [Obsolete("Use Actors.FirstByRole(ActorRole.Player) or ActorStore role-view helpers. This named slice view is deprecated in Faz 1.", false)]
         public ActorRecord Player

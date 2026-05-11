@@ -55,6 +55,12 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [x] `Assets/Tests/EditMode/World/WorldEventLogTests.cs` :: tests :: pin append + deterministic enumeration [box=PROCESS] — landed alongside the log; covers empty-log state, single append, multi append insertion order, decreasing-tick insertion order, null rejection, live view tracking later appends, and `Events` view immutability. Reason-trace preservation is covered by the landed trace-attachment PR #92.
 - [x] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `ReasonTrace` attachment :: carry optional causal chain on each world event so `WorldEventLog` can preserve why the event happened [box=PROCESS] — landed via `agent/sprint-faz-1-world-event-reason-trace`; pinned by `WorldEventTests` and `WorldEventLogTests`
 
+
+## Sub-area: Runtime store roots (WORLD/LIVING/MATTER/SOCIETY/PROCESS prerequisite)
+
+- [x] `Assets/Scripts/Domain/World/SliceWorldState.cs` :: core store roots :: `Actors` / `Items` / `Sites` / `Factions` / `Events` are initialized as canonical runtime roots so Faz 1 save/load can serialize stores directly without adding new named slice fields [box=LIVING][box=MATTER][box=WORLD][box=SOCIETY][box=PROCESS] — landed via `agent/sprint-faz-1-store-roots`
+- [x] `Assets/Tests/EditMode/World/SliceWorldStateActorViewTests.cs` :: tests :: pin fresh `SliceWorldState` and factory-created worlds expose non-null empty Item/Site/Faction/Event roots while preserving existing store-backed actor views [box=LIVING][box=MATTER][box=WORLD][box=SOCIETY][box=PROCESS] — landed with `agent/sprint-faz-1-store-roots`
+
 ## Sub-area: Save/load round-trip (TIME — primary)
 
 - [ ] `Assets/Scripts/Data/Save/SliceSaveMapper.cs` :: extend mapper :: serialize `ActorStore` / `ItemStore` / `SiteStore` / `FactionStore` / `WorldEventLog` alongside `SliceWorldState` (migration-friendly: write both, read both, prefer stores) [box=TIME]
@@ -104,6 +110,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (WorldEvent ReasonTrace attachment PR): `sha256:78d30d0a1413c7305c41d3cc24d827b2fabd484ded4e023472adb5b0296b0355`
 - packet_id (SliceWorldState store-backed actor views PR): `pkt_20260511180152_36cf9ee4aad3`
 - resolver_key (SliceWorldState store-backed actor views PR): `sha256:527e964761013636e732d49f4d9979886c83eaee103289da50a3996366a9af6d`
+- packet_id (SliceWorldState store roots PR): `pkt_20260511184559_c138f4fe260d`
+- resolver_key (SliceWorldState store roots PR): `sha256:6c02d26981c9c2b5630150854c9f9ca669b2bc7e45a3131af67f56ff88c36a95`
 
 ## Next increment after this PR
 
@@ -114,10 +122,10 @@ the WorldEvent-log sub-area now has all three primitive pieces:
 
 The remaining open Faz 1 atoms cluster around two next moves:
 
-1. TIME-box save/load: extend `SliceSaveMapper` to serialize the four
-   Faz 1 stores plus the new log alongside `SliceWorldState` (write
-   both, read both, prefer stores). Tests pin deterministic round-trip
-   in `StoreRoundTripTests`.
+1. TIME-box save/load: extend `SliceSaveMapper` to serialize the runtime
+   store roots (`Actors`, `Items`, `Sites`, `Factions`, `Events`)
+   alongside the legacy slice fields (write both, read both, prefer
+   stores). Tests pin deterministic round-trip in `StoreRoundTripTests`.
 2. PLAYABLE-box acceptance proof: once save/load round-trip lands, add
    the deterministic replay log or debug-HUD dump showing guard spawn,
    talk, memory, and second-site continuity.
