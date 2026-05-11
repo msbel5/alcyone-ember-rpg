@@ -22,9 +22,9 @@ Open Faz 2 (`Recipe + Worksite`) truthfully after Faz 1 promotion by decomposing
 
 ## Sprint accounting
 
-- Initial atom count: 21 unchecked implementation/proof atoms + 1 checked atom-map row.
+- Initial atom count: 20 unchecked implementation/proof atoms + 1 checked atom-map row.
 - Bundle count so far: 0 landed bundles; 2 candidate bundles documented.
-- Product-visible PR count so far: 0. This kickoff is intentionally non-visible; the first visible target is the `RecipeSystem` EventLog / smelt proof slice.
+- Product-visible PR count so far: 0. This kickoff is intentionally non-visible; the first visible target is the `RecipeSystem` + EventLog smelt progress slice, with the PLAYABLE proof kept as its own later atom per bundling guidance.
 
 ## Next increment
 
