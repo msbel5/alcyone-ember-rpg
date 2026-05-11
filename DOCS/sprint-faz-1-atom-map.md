@@ -68,7 +68,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: Acceptance proof (PLAYABLE — every fifth PR)
 
-- [ ] `DOCS/sprint-faz-1-acceptance.md` :: `player can ...` :: scene screenshot OR deterministic replay log OR debug-HUD dump showing a guard spawned + talked to + remembered after save/load + walking to a second site (rule 5: playable proof) [box=PLAYABLE]
+- [x] `DOCS/sprint-faz-1-acceptance.md` :: `player can ...` :: deterministic replay log pins guard spawned + talked to + remembered after save/load + walking to a second site (rule 5: playable proof) [box=PLAYABLE] — landed via `agent/sprint-faz-1-acceptance-proof`; pinned by `Assets/Tests/EditMode/World/Faz1AcceptanceReplayTests.cs`
 
 ## Promotion checklist
 
@@ -76,13 +76,13 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [ ] every sub-area has at least one merged PR
 - [ ] `tools/validation/run-validation.sh --mode fallback` passes on the active branch
 - [ ] sprint summary file recording final atom count + bundle count
-- [ ] product-visible PR count for Faz 1 ≥ 1 (the playable-proof PR closes this)
+- [x] product-visible PR count for Faz 1 ≥ 1 (the playable-proof PR closes this) — closed by `agent/sprint-faz-1-acceptance-proof`
 - [ ] this PR (the first Faz 1 PR) does NOT count as test-only against rule 1's two-PR cap because it adds a new domain primitive (`ActorStore`); the next two PRs may be test-only before rule 1 forces a visible increment
-- [ ] This PR counts as product-visible foundation because the legacy slice actor accessors now read through `ActorStore`, exposing the LIVING store to existing gameplay code without adding new slice fields
+- [x] This PR counts as product-visible foundation because the legacy slice actor accessors now read through `ActorStore`, exposing the LIVING store to existing gameplay code without adding new slice fields
 
 ## This atom map
 
-- [ ] `DOCS/sprint-faz-1-atom-map.md` :: this file :: canonical Faz 1 decomposition required by sprint promotion hard rule
+- [x] `DOCS/sprint-faz-1-atom-map.md` :: this file :: canonical Faz 1 decomposition required by sprint promotion hard rule — maintained through acceptance-proof PR
 
 ## Thalamus packet
 
@@ -114,6 +114,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (SliceWorldState store roots PR): `sha256:6c02d26981c9c2b5630150854c9f9ca669b2bc7e45a3131af67f56ff88c36a95`
 - packet_id (Store save round-trip PR): `pkt_20260511190607_d724944dd3fa`
 - resolver_key (Store save round-trip PR): `sha256:a8e560bbfe6f80911154a072cd4a71a10631da041ab333a1edf7a6317283ff77`
+- packet_id (Faz 1 acceptance proof PR): `pkt_20260511195718_3b201e02afe2`
+- resolver_key (Faz 1 acceptance proof PR): `sha256:7b422f4dd607a04ac435e6b2eadffa47fec9ea21cd357eea509ca785a9368767`
 
 ## Next increment after this PR
 
@@ -127,15 +129,13 @@ The TIME-box save/load atom is now landed: canonical `Actors`,
 `SliceSaveData`, load back through `SliceSaveMapper`, and prefer
 canonical actor-store payloads over legacy named actor fields.
 
-The remaining open Faz 1 atom is the PLAYABLE-box acceptance proof:
-add `DOCS/sprint-faz-1-acceptance.md` with a deterministic replay log,
-debug-HUD dump, screenshot, or playtest note showing guard spawn, talk,
-memory, and second-site continuity across save/load.
+The PLAYABLE-box acceptance proof is now landed in
+`DOCS/sprint-faz-1-acceptance.md`, backed by
+`Assets/Tests/EditMode/World/Faz1AcceptanceReplayTests.cs`: guard spawn,
+guard talk memory, save/load persistence, second-site movement, and ordered
+WorldEventLog evidence are all pinned in one deterministic replay.
 
-The LIVING-box `SliceWorldState` store-backed actor-view migration is
-now landed: legacy `Player`/`Talker`/... accessors are obsolete views
-over `ActorStore`, and new code should target `Actors` directly.
-
-Per the agent-rules-v2 playable-proof rule, the next sprint factory run
-should close the `DOCS/sprint-faz-1-acceptance.md` atom instead of
-adding another pure infrastructure slice.
+The next sprint factory run should verify the final Faz 1 promotion checklist
+with fallback validation and PR review status. If everything is still green,
+Captain can promote Faz 1 and open Faz 2 (`Recipe + Worksite`) from
+`docs/ROADMAP.md`.
