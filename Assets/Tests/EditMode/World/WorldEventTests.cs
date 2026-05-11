@@ -37,6 +37,42 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(evt.ActorId, Is.EqualTo(SampleActor));
             Assert.That(evt.SiteId, Is.EqualTo(SampleSite));
             Assert.That(evt.Reason, Is.EqualTo("player_command"));
+            Assert.That(evt.ReasonTrace, Is.Null);
+        }
+
+
+        /// <summary>An optional ReasonTrace is stored without copying so the event can carry a causal chain.</summary>
+        [Test]
+        public void Constructor_StoresReasonTraceWhenProvided()
+        {
+            var trace = new ReasonTrace(new[] { "player_command", "guard_spawned" });
+
+            var evt = new WorldEvent(
+                SampleTick,
+                WorldEventKind.ActorSpawned,
+                SampleActor,
+                SampleSite,
+                "player_command",
+                trace);
+
+            Assert.That(evt.ReasonTrace, Is.SameAs(trace));
+            Assert.That(evt.ReasonTrace.RootCause, Is.EqualTo("player_command"));
+            Assert.That(evt.ReasonTrace.LeafCause, Is.EqualTo("guard_spawned"));
+        }
+
+        /// <summary>A null ReasonTrace remains valid because early Faz 1 events may not yet have a causal chain.</summary>
+        [Test]
+        public void Constructor_AcceptsNullReasonTrace()
+        {
+            var evt = new WorldEvent(
+                SampleTick,
+                WorldEventKind.ActorSpawned,
+                SampleActor,
+                SampleSite,
+                "player_command",
+                null);
+
+            Assert.That(evt.ReasonTrace, Is.Null);
         }
 
         /// <summary>The empty WorldEventKind sentinel cannot back an event.</summary>
