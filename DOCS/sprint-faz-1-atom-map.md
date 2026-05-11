@@ -52,7 +52,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [x] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `WorldEvent` :: typed event payload (`tick`, `kind`, `actorId`, `siteId`, `reason`) [box=PROCESS] — landed via `agent/sprint-faz-1-world-event` (PR #89, merge `b659733`); pinned by `Assets/Tests/EditMode/World/WorldEventTests.cs`; ships alongside `Assets/Scripts/Domain/World/WorldEventKind.cs` seed enum (None / ActorSpawned / ActorTalked / SiteEntered) covering the Faz 1 acceptance-gate event categories
 - [x] `Assets/Scripts/Domain/World/ReasonTrace.cs` :: `ReasonTrace` :: causal-chain record attached to an event [box=PROCESS] — landed via `agent/sprint-faz-1-reason-trace`; ordered, root-first immutable cause chain with `Causes` / `Depth` / `RootCause` / `LeafCause` / `HasCause`, defensive copy + blank/empty rejection mirroring `FactionRecord` / `SiteRecord`; pinned by `Assets/Tests/EditMode/World/ReasonTraceTests.cs`
 - [x] `Assets/Scripts/Domain/World/WorldEventLog.cs` :: `WorldEventLog` :: append-only log over `WorldEvent` with deterministic enumeration [box=PROCESS] — landed via `agent/sprint-faz-1-world-event-log`; List-backed chronicle with `Append` (null rejected), `Count`, `IsEmpty`, and a `ReadOnlyCollection`-wrapped `Events` view so callers cannot downcast back to a mutable list; insertion-order preserved even when ticks decrease (chronicle, not sorter)
-- [x] `Assets/Tests/EditMode/World/WorldEventLogTests.cs` :: tests :: pin append + deterministic enumeration [box=PROCESS] — landed alongside the log; covers empty-log state, single append, multi append insertion order, decreasing-tick insertion order, null rejection, live view tracking later appends, and `Events` view immutability. Reason-trace round-trip is deferred to the follow-up PR that extends `WorldEvent` with a `ReasonTrace` field (see "Next increment after this PR")
+- [x] `Assets/Tests/EditMode/World/WorldEventLogTests.cs` :: tests :: pin append + deterministic enumeration [box=PROCESS] — landed alongside the log; covers empty-log state, single append, multi append insertion order, decreasing-tick insertion order, null rejection, live view tracking later appends, and `Events` view immutability. Reason-trace preservation is covered by the landed trace-attachment PR #92.
+- [x] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `ReasonTrace` attachment :: carry optional causal chain on each world event so `WorldEventLog` can preserve why the event happened [box=PROCESS] — landed via `agent/sprint-faz-1-world-event-reason-trace`; pinned by `WorldEventTests` and `WorldEventLogTests`
 
 ## Sub-area: Save/load round-trip (TIME — primary)
 
@@ -98,6 +99,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (ReasonTrace merge-into-main reconcile): `sha256:b4abd821178e14d46b98cbf1dc57ae4461a3b61f67837f5085796a5904c56e2e`
 - packet_id (WorldEventLog PR): `pkt_20260511070129_dd3de05281dd`
 - resolver_key (WorldEventLog PR): `sha256:8f215f88ffe4d580619c5ef284ca9d66a01b2286a79c642c2c5bd8bc7e4a2826`
+- packet_id (WorldEvent ReasonTrace attachment PR): `pkt_20260511165159_ff7b1d23db09`
+- resolver_key (WorldEvent ReasonTrace attachment PR): `sha256:78d30d0a1413c7305c41d3cc24d827b2fabd484ded4e023472adb5b0296b0355`
 
 ## Next increment after this PR
 
@@ -108,14 +111,13 @@ the WorldEvent-log sub-area now has all three primitive pieces:
 
 The remaining open Faz 1 atoms cluster around two next moves:
 
-1. PROCESS-box closure: extend `WorldEvent` to carry an optional
-   `ReasonTrace` so the log can record causal chains end-to-end, then
-   add the round-trip test row to `WorldEventLogTests`. Small, scoped,
-   keeps invariants pinned at construction.
-2. TIME-box save/load: extend `SliceSaveMapper` to serialize the four
+1. TIME-box save/load: extend `SliceSaveMapper` to serialize the four
    Faz 1 stores plus the new log alongside `SliceWorldState` (write
    both, read both, prefer stores). Tests pin deterministic round-trip
    in `StoreRoundTripTests`.
+2. PLAYABLE-box acceptance proof: once save/load round-trip lands, add
+   the deterministic replay log or debug-HUD dump showing guard spawn,
+   talk, memory, and second-site continuity.
 
 The LIVING-box `SliceWorldState` consumer migration (replace direct
 `Player`/`Talker`/... reads with the role-shim resolver, mark fields
