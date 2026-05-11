@@ -45,8 +45,9 @@ silent gaps, deterministic insertion order, immutable public view.
 - `Events` is an `IReadOnlyList<WorldEvent>` backed by a
   `ReadOnlyCollection`; downcasting to `List<WorldEvent>` or
   `WorldEvent[]` is rejected by the type system.
-- `Events` is a live view: subsequent appends are visible through an
-  already-captured snapshot.
+- `Events` is a live view, not a point-in-time snapshot: a previously
+  captured reference reflects subsequent `Append` calls, so callers
+  MUST NOT cache it as an immutable copy.
 - `IsEmpty` matches `Count == 0`.
 
 ## Scope limits
