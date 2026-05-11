@@ -43,7 +43,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 ## Sub-area: FactionStore (SOCIETY-seed)
 
 - [x] `Assets/Scripts/Domain/Core/FactionId.cs` :: `FactionId` :: readonly value handle [box=SOCIETY] — landed via `agent/sprint-faz-1-faction-id` (path corrected from World/ to Core/ to match ActorId/ItemId/SiteId convention); pinned by `Assets/Tests/EditMode/Core/FactionIdTests.cs`
-- [ ] `Assets/Scripts/Domain/World/FactionRecord.cs` :: `FactionRecord` :: pure record (name + tags); empty seed populated in Faz 6 [box=SOCIETY]
+- [x] `Assets/Scripts/Domain/World/FactionRecord.cs` :: `FactionRecord` :: pure record (name + tags); empty seed populated in Faz 6 [box=SOCIETY] — landed via `agent/sprint-faz-1-faction-record`; insertion-order tag bag with defensive copy + `HasTag` lookup, mirroring `SiteRecord`/`ItemRecord` shape; pinned by `Assets/Tests/EditMode/World/FactionRecordTests.cs`
 - [ ] `Assets/Scripts/Domain/World/FactionStore.cs` :: `FactionStore` :: dictionary-backed registry [box=SOCIETY]
 - [ ] `Assets/Tests/EditMode/World/FactionStoreTests.cs` :: tests :: pin store contracts [box=SOCIETY]
 
@@ -88,15 +88,21 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (ItemStore PR): `sha256:5bf9c0606d5aa98ff18c8bb23bd5faff0e9f2bc81218695467adaaf004fc7b64`
 - packet_id (FactionId PR): `pkt_20260510234830_913d417ed6e7`
 - resolver_key (FactionId PR): `sha256:0db90954d88677a0dafaa3fc6aa0216dadbf5cfe8296260dffa40fea0d640940`
+- packet_id (FactionRecord PR): `pkt_20260511001218_a215b9da9279`
+- resolver_key (FactionRecord PR): `sha256:3a7e0d9766c3e410ec208832885407539df2b6f603b0ebff3b80f8a20601b3eb`
 
 ## Next increment after this PR
 
-With the SOCIETY-seed primitive `FactionId` landed in
-`Assets/Scripts/Domain/Core/` (matching the ActorId/ItemId/SiteId path
-convention), the FactionStore sub-area is now open alongside the
-three other Faz 1 registries (`ActorStore`, `SiteStore`, `ItemStore`)
-which now share one regression shape. The next Faz 1 atom is
-`FactionRecord` (`Assets/Scripts/Domain/World/FactionRecord.cs`) —
-a pure record carrying `name` + `tags`, mirroring the
-`SiteRecord` / `ItemRecord` shape so the eventual `FactionStore` can
-ride the registry contract used by the other three stores.
+With the SOCIETY-seed payload `FactionRecord` landed in
+`Assets/Scripts/Domain/World/` (mirroring the
+`SiteRecord` / `ItemRecord` defensive-constructor shape), the
+FactionStore sub-area now has both primitives (`FactionId`,
+`FactionRecord`) in place. The next Faz 1 atom is `FactionStore`
+(`Assets/Scripts/Domain/World/FactionStore.cs`) — a dictionary-backed
+registry over `FactionId -> FactionRecord` mirroring the
+`ActorStore` / `SiteStore` / `ItemStore` contract
+(`Add` / `Get` / `TryGet` / `Remove` / `Contains` / `Count` / `Clear`
+/ `Records`, deterministic insertion-order enumeration, default-id
+rejection). Tests land alongside in
+`Assets/Tests/EditMode/World/FactionStoreTests.cs` matching the
+shape used by the other three stores.
