@@ -68,11 +68,36 @@ namespace EmberCrpg.Tests.EditMode.World
         }
 
         [Test]
-        public void FactoryPopulatesStoreBackedNamedViews()
+        public void NewWorldStateStartsWithEmptyCoreStoreRoots()
+        {
+            var world = new SliceWorldState();
+
+            Assert.That(world.Actors, Is.Not.Null);
+            Assert.That(world.Items, Is.Not.Null);
+            Assert.That(world.Sites, Is.Not.Null);
+            Assert.That(world.Factions, Is.Not.Null);
+            Assert.That(world.Events, Is.Not.Null);
+            Assert.That(world.Actors.Count, Is.EqualTo(0));
+            Assert.That(world.Items.Count, Is.EqualTo(0));
+            Assert.That(world.Sites.Count, Is.EqualTo(0));
+            Assert.That(world.Factions.Count, Is.EqualTo(0));
+            Assert.That(world.Events.IsEmpty, Is.True);
+        }
+
+        [Test]
+        public void FactoryPopulatesStoreBackedNamedViewsAndKeepsOtherStoreRootsReady()
         {
             var world = new SliceWorldFactory().Create(17);
 
             Assert.That(world.Actors.Count, Is.EqualTo(5));
+            Assert.That(world.Items, Is.Not.Null);
+            Assert.That(world.Sites, Is.Not.Null);
+            Assert.That(world.Factions, Is.Not.Null);
+            Assert.That(world.Events, Is.Not.Null);
+            Assert.That(world.Items.Count, Is.EqualTo(0));
+            Assert.That(world.Sites.Count, Is.EqualTo(0));
+            Assert.That(world.Factions.Count, Is.EqualTo(0));
+            Assert.That(world.Events.IsEmpty, Is.True);
             Assert.That(world.Actors.FirstByRole(ActorRole.Player), Is.SameAs(world.Player));
             Assert.That(world.Actors.FirstByRole(ActorRole.Talker), Is.SameAs(world.Talker));
             Assert.That(world.Actors.FirstByRole(ActorRole.Merchant), Is.SameAs(world.Merchant));
