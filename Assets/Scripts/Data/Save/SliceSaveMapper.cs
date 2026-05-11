@@ -41,6 +41,11 @@ namespace EmberCrpg.Data.Save
                 merchant = ActorSaveMapper.ToData(world.Merchant),
                 guard = ActorSaveMapper.ToData(world.Guard),
                 enemy = ActorSaveMapper.ToData(world.Enemy),
+                actors = ToActorStoreData(world.Actors),
+                itemRecords = ToItemStoreData(world.Items),
+                sites = ToSiteStoreData(world.Sites),
+                factions = ToFactionStoreData(world.Factions),
+                worldEvents = ToWorldEventLogData(world.Events),
                 inventory = ToInventoryData(world.PlayerInventory),
                 playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
@@ -79,6 +84,12 @@ namespace EmberCrpg.Data.Save
             world.Merchant = ActorSaveMapper.ToActor(data.merchant);
             world.Guard = ActorSaveMapper.ToActor(data.guard);
             world.Enemy = ActorSaveMapper.ToActor(data.enemy);
+            if (data.actors != null && data.actors.Length > 0)
+                world.Actors = ToActorStore(data.actors);
+            world.Items = ToItemStore(data.itemRecords);
+            world.Sites = ToSiteStore(data.sites);
+            world.Factions = ToFactionStore(data.factions);
+            world.Events = ToWorldEventLog(data.worldEvents);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
@@ -93,6 +104,155 @@ namespace EmberCrpg.Data.Save
             world.EncounterActive = data.encounterActive;
             world.LastNarrative = data.lastNarrative;
             return world;
+        }
+
+
+        private static ActorSaveData[] ToActorStoreData(ActorStore store)
+        {
+            return (store?.Records ?? new ActorRecord[0]).Select(ActorSaveMapper.ToData).ToArray();
+        }
+
+        private static ActorStore ToActorStore(ActorSaveData[] data)
+        {
+            var store = new ActorStore();
+            foreach (var actor in data ?? new ActorSaveData[0])
+            {
+                if (actor != null)
+                    store.Add(ActorSaveMapper.ToActor(actor));
+            }
+            return store;
+        }
+
+        private static ItemRecordSaveData[] ToItemStoreData(ItemStore store)
+        {
+            return (store?.Records ?? new ItemRecord[0]).Select(ToItemRecordData).ToArray();
+        }
+
+        private static ItemRecordSaveData ToItemRecordData(ItemRecord record)
+        {
+            return new ItemRecordSaveData
+            {
+                id = record.Id.Value,
+                material = (int)record.Material,
+                quality = (int)record.Quality,
+                slot = (int)record.Slot,
+            };
+        }
+
+        private static ItemStore ToItemStore(ItemRecordSaveData[] data)
+        {
+            var store = new ItemStore();
+            foreach (var record in data ?? new ItemRecordSaveData[0])
+            {
+                if (record != null)
+                    store.Add(new ItemRecord(new ItemId(record.id), (ItemMaterial)record.material, (ItemQuality)record.quality, (EquipmentSlot)record.slot));
+            }
+            return store;
+        }
+
+        private static SiteRecordSaveData[] ToSiteStoreData(SiteStore store)
+        {
+            return (store?.Records ?? new SiteRecord[0]).Select(ToSiteRecordData).ToArray();
+        }
+
+        private static SiteRecordSaveData ToSiteRecordData(SiteRecord record)
+        {
+            return new SiteRecordSaveData
+            {
+                id = record.Id.Value,
+                kind = (int)record.Kind,
+                name = record.Name,
+                minX = record.MinBound.X,
+                minY = record.MinBound.Y,
+                maxX = record.MaxBound.X,
+                maxY = record.MaxBound.Y,
+            };
+        }
+
+        private static SiteStore ToSiteStore(SiteRecordSaveData[] data)
+        {
+            var store = new SiteStore();
+            foreach (var record in data ?? new SiteRecordSaveData[0])
+            {
+                if (record != null)
+                {
+                    store.Add(new SiteRecord(
+                        new SiteId(record.id),
+                        (SiteKind)record.kind,
+                        record.name,
+                        new GridPosition(record.minX, record.minY),
+                        new GridPosition(record.maxX, record.maxY)));
+                }
+            }
+            return store;
+        }
+
+        private static FactionRecordSaveData[] ToFactionStoreData(FactionStore store)
+        {
+            return (store?.Records ?? new FactionRecord[0]).Select(ToFactionRecordData).ToArray();
+        }
+
+        private static FactionRecordSaveData ToFactionRecordData(FactionRecord record)
+        {
+            return new FactionRecordSaveData
+            {
+                id = record.Id.Value,
+                name = record.Name,
+                tags = record.Tags.ToArray(),
+            };
+        }
+
+        private static FactionStore ToFactionStore(FactionRecordSaveData[] data)
+        {
+            var store = new FactionStore();
+            foreach (var record in data ?? new FactionRecordSaveData[0])
+            {
+                if (record != null)
+                    store.Add(new FactionRecord(new FactionId(record.id), record.name, record.tags ?? new string[0]));
+            }
+            return store;
+        }
+
+        private static WorldEventSaveData[] ToWorldEventLogData(WorldEventLog log)
+        {
+            return (log?.Events ?? new WorldEvent[0]).Select(ToWorldEventData).ToArray();
+        }
+
+        private static WorldEventSaveData ToWorldEventData(WorldEvent worldEvent)
+        {
+            return new WorldEventSaveData
+            {
+                tickMinutes = worldEvent.Tick.TotalMinutes,
+                kind = (int)worldEvent.Kind,
+                actorId = worldEvent.ActorId.Value,
+                siteId = worldEvent.SiteId.Value,
+                reason = worldEvent.Reason,
+                reasonTrace = worldEvent.ReasonTrace?.Causes.ToArray(),
+            };
+        }
+
+        private static WorldEventLog ToWorldEventLog(WorldEventSaveData[] data)
+        {
+            var log = new WorldEventLog();
+            foreach (var worldEvent in data ?? new WorldEventSaveData[0])
+            {
+                if (worldEvent != null)
+                {
+                    log.Append(new WorldEvent(
+                        new GameTime(worldEvent.tickMinutes),
+                        (WorldEventKind)worldEvent.kind,
+                        new ActorId(worldEvent.actorId),
+                        new SiteId(worldEvent.siteId),
+                        worldEvent.reason,
+                        ToReasonTrace(worldEvent.reasonTrace)));
+                }
+            }
+            return log;
+        }
+
+        private static ReasonTrace ToReasonTrace(string[] causes)
+        {
+            return causes == null || causes.Length == 0 ? null : new ReasonTrace(causes);
         }
 
         private static EquipmentSaveData ToEquipmentData(EquipmentState equipment)
