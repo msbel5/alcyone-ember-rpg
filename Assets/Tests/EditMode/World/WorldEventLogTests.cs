@@ -7,7 +7,7 @@ using NUnit.Framework;
 // These tests pin the WorldEventLog append-and-enumerate contract before any
 // runtime consumer (save/load mapper, replay HUD) exists. Coverage stays
 // scoped to the pure log: null rejection, deterministic insertion order,
-// snapshot stability across further appends, and the immutability of the
+// live Events-view reflection across further appends, the immutability of the
 // public Events view, plus carrying ReasonTrace through the append path.
 // Save/load round-trip remains scoped to the TIME-box follow-up PR.
 namespace EmberCrpg.Tests.EditMode.World

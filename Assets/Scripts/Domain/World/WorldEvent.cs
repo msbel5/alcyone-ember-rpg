@@ -8,8 +8,8 @@ using EmberCrpg.Domain.Core;
 // ReasonTrace causal chain. At least one of ActorId / SiteId must be non-empty
 // so every event carries a subject; the kind rejects WorldEventKind.None and
 // the reason rejects blank input.
-// Outputs: immutable record consumed by WorldEventLog in a follow-up Faz 1 PR;
-// no Unity, no I/O, no serialization concerns. Mirrors SiteRecord / FactionRecord
+// Outputs: immutable record consumed by WorldEventLog; no Unity, no I/O,
+// no serialization concerns. Mirrors SiteRecord / FactionRecord
 // defensive-constructor pattern so invariants are pinned at construction.
 // Atom-map ref: DOCS/sprint-faz-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
 namespace EmberCrpg.Domain.World
