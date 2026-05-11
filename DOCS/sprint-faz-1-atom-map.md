@@ -50,7 +50,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 ## Sub-area: WorldEvent log + ReasonTrace (PROCESS — primary)
 
 - [ ] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `WorldEvent` :: typed event payload (`tick`, `kind`, `actorId`, `siteId`, `reason`) [box=PROCESS]
-- [ ] `Assets/Scripts/Domain/World/ReasonTrace.cs` :: `ReasonTrace` :: causal-chain record attached to an event [box=PROCESS]
+- [x] `Assets/Scripts/Domain/World/ReasonTrace.cs` :: `ReasonTrace` :: causal-chain record attached to an event [box=PROCESS] — landed via `agent/sprint-faz-1-reason-trace`; ordered, root-first immutable cause chain with `Causes` / `Depth` / `RootCause` / `LeafCause` / `HasCause`, defensive copy + blank/empty rejection mirroring `FactionRecord` / `SiteRecord`; pinned by `Assets/Tests/EditMode/World/ReasonTraceTests.cs`
 - [ ] `Assets/Scripts/Domain/World/WorldEventLog.cs` :: `WorldEventLog` :: append-only log over `WorldEvent` with deterministic enumeration [box=PROCESS]
 - [ ] `Assets/Tests/EditMode/World/WorldEventLogTests.cs` :: tests :: pin append + deterministic enumeration + reason-trace round-trip [box=PROCESS]
 
@@ -90,6 +90,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (FactionId PR): `sha256:0db90954d88677a0dafaa3fc6aa0216dadbf5cfe8296260dffa40fea0d640940`
 - packet_id (FactionRecord PR): `pkt_20260511001218_a215b9da9279`
 - resolver_key (FactionRecord PR): `sha256:3a7e0d9766c3e410ec208832885407539df2b6f603b0ebff3b80f8a20601b3eb`
+- packet_id (ReasonTrace PR): `pkt_20260511062642_d1b0146ad836`
+- resolver_key (ReasonTrace PR): `sha256:5aaeab7ba3e5041ca669832ed854c75992c15df6f16d35c96b89d0ea28e30a2f`
 
 ## Next increment after this PR
 
