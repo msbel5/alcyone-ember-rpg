@@ -74,10 +74,10 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 - [x] every Faz 1 atom above is checked off — verified 27/27 atom rows in this file on `agent/sprint-faz-1-promotion`
 - [x] every sub-area has at least one merged PR — ActorStore, ItemStore, SiteStore, FactionStore, WorldEventLog/ReasonTrace, runtime store roots, save/load round-trip, and PLAYABLE acceptance all carry merged PR evidence above
-- [x] `tools/validation/run-validation.sh --mode fallback` passes on the active branch — PASS on 2026-05-11: `Passed!  - Failed:     0, Passed:   759, Skipped:     0, Total:   759`; log `validation-output/validation-20260511T210350Z.log`
-- [x] sprint summary file recording final atom count + bundle count — `DOCS/sprint-faz-1-promotion.md` records 27/27 atoms and bundle count 0
+- [x] `tools/validation/run-validation.sh --mode fallback` passes on the active branch — PASS on 2026-05-11: `Passed!  - Failed:     0, Passed:   759, Skipped:     0, Total:   759`; log `validation-output/validation-20260511T211332Z.log`
+- [x] sprint summary file recording final atom count + bundle count — `DOCS/sprint-faz-1-promotion.md` records 27/27 atoms and bundle count 1
 - [x] product-visible PR count for Faz 1 ≥ 1 (the playable-proof PR closes this) — closed by `agent/sprint-faz-1-acceptance-proof`
-- [x] this PR (the first Faz 1 PR) does NOT count as test-only against rule 1's two-PR cap because it adds a new domain primitive (`ActorStore`); Faz 1 subsequently landed visible store exposure and the playable proof
+- [x] PR #79 (`agent/sprint-faz-1-actor-store`, the first Faz 1 PR) does NOT count as test-only against rule 1's two-PR cap because it adds a new domain primitive (`ActorStore`); Faz 1 subsequently landed visible store exposure and the playable proof
 - [x] This PR counts as product-visible foundation because the legacy slice actor accessors now read through `ActorStore`, exposing the LIVING store to existing gameplay code without adding new slice fields
 
 ## This atom map
