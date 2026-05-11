@@ -51,8 +51,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 - [x] `Assets/Scripts/Domain/World/WorldEvent.cs` :: `WorldEvent` :: typed event payload (`tick`, `kind`, `actorId`, `siteId`, `reason`) [box=PROCESS] — landed via `agent/sprint-faz-1-world-event` (PR #89, merge `b659733`); pinned by `Assets/Tests/EditMode/World/WorldEventTests.cs`; ships alongside `Assets/Scripts/Domain/World/WorldEventKind.cs` seed enum (None / ActorSpawned / ActorTalked / SiteEntered) covering the Faz 1 acceptance-gate event categories
 - [x] `Assets/Scripts/Domain/World/ReasonTrace.cs` :: `ReasonTrace` :: causal-chain record attached to an event [box=PROCESS] — landed via `agent/sprint-faz-1-reason-trace`; ordered, root-first immutable cause chain with `Causes` / `Depth` / `RootCause` / `LeafCause` / `HasCause`, defensive copy + blank/empty rejection mirroring `FactionRecord` / `SiteRecord`; pinned by `Assets/Tests/EditMode/World/ReasonTraceTests.cs`
-- [ ] `Assets/Scripts/Domain/World/WorldEventLog.cs` :: `WorldEventLog` :: append-only log over `WorldEvent` with deterministic enumeration [box=PROCESS]
-- [ ] `Assets/Tests/EditMode/World/WorldEventLogTests.cs` :: tests :: pin append + deterministic enumeration + reason-trace round-trip [box=PROCESS]
+- [x] `Assets/Scripts/Domain/World/WorldEventLog.cs` :: `WorldEventLog` :: append-only log over `WorldEvent` with deterministic enumeration [box=PROCESS] — landed via `agent/sprint-faz-1-world-event-log`; List-backed chronicle with `Append` (null rejected), `Count`, `IsEmpty`, and a `ReadOnlyCollection`-wrapped `Events` view so callers cannot downcast back to a mutable list; insertion-order preserved even when ticks decrease (chronicle, not sorter)
+- [x] `Assets/Tests/EditMode/World/WorldEventLogTests.cs` :: tests :: pin append + deterministic enumeration [box=PROCESS] — landed alongside the log; covers empty-log state, single append, multi append insertion order, decreasing-tick insertion order, null rejection, live view tracking later appends, and `Events` view immutability. Reason-trace round-trip is deferred to the follow-up PR that extends `WorldEvent` with a `ReasonTrace` field (see "Next increment after this PR")
 
 ## Sub-area: Save/load round-trip (TIME — primary)
 
@@ -96,17 +96,34 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (ReasonTrace PR): `sha256:5aaeab7ba3e5041ca669832ed854c75992c15df6f16d35c96b89d0ea28e30a2f`
 - packet_id (ReasonTrace merge-into-main reconcile): `pkt_20260511064710_ba637c1502d2`
 - resolver_key (ReasonTrace merge-into-main reconcile): `sha256:b4abd821178e14d46b98cbf1dc57ae4461a3b61f67837f5085796a5904c56e2e`
+- packet_id (WorldEventLog PR): `pkt_20260511070129_dd3de05281dd`
+- resolver_key (WorldEventLog PR): `sha256:8f215f88ffe4d580619c5ef284ca9d66a01b2286a79c642c2c5bd8bc7e4a2826`
 
 ## Next increment after this PR
 
-With both `WorldEvent` (PROCESS-box typed event payload + seed
-`WorldEventKind` enum, landed via PR #89) and `ReasonTrace` (ordered
-root-first immutable cause chain, landed on
-`agent/sprint-faz-1-reason-trace`) in place, the WorldEvent-log
-sub-area has both of its primitive payload pieces.
+With `WorldEventLog` landed on `agent/sprint-faz-1-world-event-log`,
+the WorldEvent-log sub-area now has all three primitive pieces:
+`WorldEvent` (PR #89), `ReasonTrace` (PR #90), and the append-only
+`WorldEventLog` chronicle.
 
-The next Faz 1 atom is `WorldEventLog`
-(`Assets/Scripts/Domain/World/WorldEventLog.cs`) — an append-only log
-over `WorldEvent` with deterministic enumeration; tests follow in
-`Assets/Tests/EditMode/World/WorldEventLogTests.cs` pinning append +
-deterministic enumeration + reason-trace round-trip.
+The remaining open Faz 1 atoms cluster around two next moves:
+
+1. PROCESS-box closure: extend `WorldEvent` to carry an optional
+   `ReasonTrace` so the log can record causal chains end-to-end, then
+   add the round-trip test row to `WorldEventLogTests`. Small, scoped,
+   keeps invariants pinned at construction.
+2. TIME-box save/load: extend `SliceSaveMapper` to serialize the four
+   Faz 1 stores plus the new log alongside `SliceWorldState` (write
+   both, read both, prefer stores). Tests pin deterministic round-trip
+   in `StoreRoundTripTests`.
+
+The LIVING-box `SliceWorldState` consumer migration (replace direct
+`Player`/`Talker`/... reads with the role-shim resolver, mark fields
+`[Obsolete]`) is also still open and is the smallest LIVING-box
+follow-up atom available.
+
+Per the agent-rules-v2 product-visible cap, the next sprint factory
+run picks whichever of these three is the smallest, shippable, and
+truthfully testable. The PLAYABLE-box acceptance proof
+(`DOCS/sprint-faz-1-acceptance.md`) closes Faz 1 once the save/load
+round-trip lands.
