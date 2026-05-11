@@ -17,7 +17,7 @@ the roadmap acceptance sentence:
 ## Replay proof
 
 `Assets/Tests/EditMode/World/Faz1AcceptanceReplayTests.cs` performs this
-replay without Unity-only APIs:
+replay in the fallback validation harness without UnityEditor-only APIs:
 
 1. `SliceWorldFactory.Create(3110)` creates the store-backed guard
    `Sentinel Rook` and the initial dungeon room.
@@ -30,10 +30,12 @@ replay without Unity-only APIs:
    recorded.
 5. JSON save/load round-trips the world; a second guard interaction after
    load returns the remembered line: `remembers your first unwrit request`.
-6. The replay moves to a second dungeon room/site and appends a
-   `WorldEventKind.SiteEntered` event with reason trace
-   `save-load -> guard-memory-confirmed -> walk-to-second-site`.
-7. A final JSON save/load asserts the same guard id, two persisted guard
+6. The replay adds the gate writ, asks the same guard for clearance, opens
+   the guarded door via `DoorInteractionService`, and moves rooms through
+   `DungeonTraversalService.Traverse` instead of mutating room state directly.
+7. It appends a `WorldEventKind.SiteEntered` event for the player with reason
+   trace `save-load -> guard-memory-confirmed -> walk-to-second-site`.
+8. A final JSON save/load asserts the same guard id, three persisted guard
    passage-request memories, the second room visited flag, the second site,
    and the ordered event log: `ActorSpawned`, `ActorTalked`, `SiteEntered`.
 
@@ -50,7 +52,7 @@ replay without Unity-only APIs:
 ## Validation
 
 - `git diff --check`: PASS (no output).
-- `./tools/validation/run-validation.sh --mode fallback`: PASS — `Passed!  - Failed:     0, Passed:   759, Skipped:     0, Total:   759`; `fallback_exit_code=0`; log `validation-output/validation-20260511T200553Z.log`.
+- `./tools/validation/run-validation.sh --mode fallback`: PASS — `Passed!  - Failed:     0, Passed:   759, Skipped:     0, Total:   759`; `fallback_exit_code=0`; log `validation-output/validation-20260511T202552Z.log`.
 
 ## Sprint accounting
 
