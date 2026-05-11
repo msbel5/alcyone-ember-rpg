@@ -7,9 +7,9 @@ using NUnit.Framework;
 // These tests pin the WorldEventLog append-and-enumerate contract before any
 // runtime consumer (save/load mapper, replay HUD) exists. Coverage stays
 // scoped to the pure log: null rejection, deterministic insertion order,
-// snapshot stability across further appends, and the immutability of the
-// public Events view. Reason-trace chaining and save/load round-trip remain
-// scoped to follow-up Faz 1 PRs once WorldEvent carries a ReasonTrace.
+// live Events-view reflection across further appends, the immutability of the
+// public Events view, plus carrying ReasonTrace through the append path.
+// Save/load round-trip remains scoped to the TIME-box follow-up PR.
 namespace EmberCrpg.Tests.EditMode.World
 {
     /// <summary>Verifies the pure-Domain invariants required of WorldEventLog.</summary>
@@ -83,6 +83,27 @@ namespace EmberCrpg.Tests.EditMode.World
             log.Append(earlier);
 
             Assert.That(log.Events, Is.EqualTo(new[] { later, earlier }));
+        }
+
+
+        /// <summary>The log preserves a WorldEvent causal trace reference through append/enumeration.</summary>
+        [Test]
+        public void Append_PreservesReasonTraceOnEvent()
+        {
+            var log = new WorldEventLog();
+            var trace = new ReasonTrace(new[] { "player_command", "guard_talked" });
+            var evt = new WorldEvent(
+                new GameTime(13L),
+                WorldEventKind.ActorTalked,
+                SampleActor,
+                SampleSite,
+                "player_command",
+                trace);
+
+            log.Append(evt);
+
+            Assert.That(log.Events[0].ReasonTrace, Is.SameAs(trace));
+            Assert.That(log.Events[0].ReasonTrace.LeafCause, Is.EqualTo("guard_talked"));
         }
 
         /// <summary>A null event is rejected at append so the log never contains gaps.</summary>

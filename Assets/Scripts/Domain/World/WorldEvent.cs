@@ -4,19 +4,20 @@ using EmberCrpg.Domain.Core;
 // Design note:
 // WorldEvent is the Faz 1 PROCESS-box payload appended to WorldEventLog.
 // Inputs: deterministic GameTime tick, WorldEventKind category, optional ActorId
-// subject, optional SiteId locus, and a non-blank reason label. At least one of
-// ActorId / SiteId must be non-empty so every event carries a subject; the kind
-// rejects WorldEventKind.None and the reason rejects blank input.
-// Outputs: immutable record consumed by WorldEventLog in a follow-up Faz 1 PR;
-// no Unity, no I/O, no serialization concerns. Mirrors SiteRecord / FactionRecord
+// subject, optional SiteId locus, a non-blank reason label, and an optional
+// ReasonTrace causal chain. At least one of ActorId / SiteId must be non-empty
+// so every event carries a subject; the kind rejects WorldEventKind.None and
+// the reason rejects blank input.
+// Outputs: immutable record consumed by WorldEventLog; no Unity, no I/O,
+// no serialization concerns. Mirrors SiteRecord / FactionRecord
 // defensive-constructor pattern so invariants are pinned at construction.
 // Atom-map ref: DOCS/sprint-faz-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
 namespace EmberCrpg.Domain.World
 {
-    /// <summary>Pure record describing a Faz 1 world event by tick, kind, optional actor, optional site, and reason.</summary>
+    /// <summary>Pure record describing a Faz 1 world event by tick, kind, optional actor, optional site, reason, and optional causal trace.</summary>
     public sealed class WorldEvent
     {
-        public WorldEvent(GameTime tick, WorldEventKind kind, ActorId actorId, SiteId siteId, string reason)
+        public WorldEvent(GameTime tick, WorldEventKind kind, ActorId actorId, SiteId siteId, string reason, ReasonTrace reasonTrace = null)
         {
             if (kind == WorldEventKind.None)
                 throw new ArgumentException("WorldEventKind.None is reserved as the empty sentinel.", nameof(kind));
@@ -30,6 +31,7 @@ namespace EmberCrpg.Domain.World
             ActorId = actorId;
             SiteId = siteId;
             Reason = reason;
+            ReasonTrace = reasonTrace;
         }
 
         public GameTime Tick { get; }
@@ -37,5 +39,6 @@ namespace EmberCrpg.Domain.World
         public ActorId ActorId { get; }
         public SiteId SiteId { get; }
         public string Reason { get; }
+        public ReasonTrace ReasonTrace { get; }
     }
 }
