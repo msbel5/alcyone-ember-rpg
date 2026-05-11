@@ -12,10 +12,10 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: Recipe definitions (PROCESS/MATTER)
 
-- [ ] `Assets/Scripts/Domain/Process/RecipeId.cs` :: `RecipeId` :: readonly value handle for deterministic recipe lookup, default = empty [box=PROCESS]
-- [ ] `Assets/Tests/EditMode/Process/RecipeIdTests.cs` :: tests :: pin `RecipeId` value semantics and debug string behavior [box=PROCESS]
-- [ ] `Assets/Scripts/Domain/Process/RecipeIngredient.cs` :: `RecipeIngredient` :: pure input row describing item/material tag and quantity requirements [box=MATTER][box=PROCESS]
-- [ ] `Assets/Tests/EditMode/Process/RecipeIngredientTests.cs` :: tests :: reject blank item tags and non-positive quantities [box=MATTER][box=PROCESS]
+- [x] `Assets/Scripts/Domain/Process/RecipeId.cs` :: `RecipeId` :: readonly value handle for deterministic recipe lookup, default = empty [box=PROCESS] — landed on `agent/sprint-faz-2-recipe-primitives`
+- [x] `Assets/Tests/EditMode/Process/RecipeIdTests.cs` :: tests :: pin `RecipeId` value semantics and debug string behavior [box=PROCESS] — landed on `agent/sprint-faz-2-recipe-primitives`
+- [x] `Assets/Scripts/Domain/Process/RecipeIngredient.cs` :: `RecipeIngredient` :: pure input row describing item/material tag and quantity requirements [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-primitives`
+- [x] `Assets/Tests/EditMode/Process/RecipeIngredientTests.cs` :: tests :: reject blank item tags and non-positive quantities [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-primitives`
 - [ ] `Assets/Scripts/Domain/Process/RecipeOutput.cs` :: `RecipeOutput` :: pure output row describing produced item/material/quality/quantity [box=MATTER][box=PROCESS]
 - [ ] `Assets/Tests/EditMode/Process/RecipeOutputTests.cs` :: tests :: pin output quantity and material/quality storage [box=MATTER][box=PROCESS]
 - [ ] `Assets/Scripts/Domain/Process/RecipeDef.cs` :: `RecipeDef` :: pure definition for inputs, outputs, worksite kind, skill tag, and tick duration [box=PROCESS][box=MATTER]
@@ -67,4 +67,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment after this PR
 
-Start the first PROCESS/MATTER definition atom: add `RecipeId`, `RecipeIngredient`, and focused EditMode tests, or split to `RecipeId` only if validation scope grows. Do not touch `RecipeSystem` until the pure definition rows are pinned.
+Continue the pure definition rail with `RecipeOutput`, then `RecipeDef` + focused tests. Do not touch `RecipeSystem` until RecipeDef shape is pinned.
+
+- packet_id: `pkt_20260511222722_4531e566a532`
+- resolver_key: `sha256:aef062b231ad626b049d9166098ecef0131cad4633ea6727d52c0efaf3805b09`
