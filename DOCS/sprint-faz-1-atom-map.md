@@ -24,7 +24,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [x] `Assets/Scripts/Domain/World/ActorStore.cs` :: `ActorStore` :: dictionary-backed registry over `ActorId -> ActorRecord` with Add/Get/TryGet/Remove/Contains/Count/Clear/Records, deterministic enumeration, default-id rejection [box=LIVING] — landed via `agent/sprint-faz-1-actor-store` (PR #79, merge `a347efe`)
 - [x] `Assets/Tests/EditMode/World/ActorStoreTests.cs` :: tests :: pin Add/Get/TryGet/Remove/Contains/Count/Clear/Records contracts and default-id rejection [box=LIVING] — landed alongside PR #79
 - [x] `Assets/Scripts/Domain/World/ActorStore.cs` :: deprecated-view shims :: `Player`/`Talker`/`Merchant`/`Guard`/`Enemy` resolved from a `ActorRole`/role-tag lookup over the store (lands in a follow-up PR before SliceWorldState consumers migrate) [box=LIVING] — landed via `RecordsByRole`/`FirstByRole`/`TryFirstByRole` (sprint faz-1 role-shims PR)
-- [ ] `Assets/Scripts/Domain/World/SliceWorldState.cs` :: migrate consumers :: replace direct `Player`/`Talker`/`Merchant`/`Guard`/`Enemy` reads with store + view shim, mark fields `[Obsolete]` (follow-up PR) [box=LIVING]
+- [x] `Assets/Scripts/Domain/World/SliceWorldState.cs` :: store-backed named actor views :: `Player`/`Talker`/`Merchant`/`Guard`/`Enemy` are deprecated properties over `ActorStore.FirstByRole(...)`, so existing consumers read the store-backed shim while new work targets `Actors` directly [box=LIVING] — landed via `agent/sprint-faz-1-slice-actor-views`; pinned by `Assets/Tests/EditMode/World/SliceWorldStateActorViewTests.cs`
 
 ## Sub-area: ItemStore (MATTER — primary)
 
@@ -72,6 +72,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [ ] sprint summary file recording final atom count + bundle count
 - [ ] product-visible PR count for Faz 1 ≥ 1 (the playable-proof PR closes this)
 - [ ] this PR (the first Faz 1 PR) does NOT count as test-only against rule 1's two-PR cap because it adds a new domain primitive (`ActorStore`); the next two PRs may be test-only before rule 1 forces a visible increment
+- [ ] This PR counts as product-visible foundation because the legacy slice actor accessors now read through `ActorStore`, exposing the LIVING store to existing gameplay code without adding new slice fields
 
 ## This atom map
 
@@ -101,6 +102,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - resolver_key (WorldEventLog PR): `sha256:8f215f88ffe4d580619c5ef284ca9d66a01b2286a79c642c2c5bd8bc7e4a2826`
 - packet_id (WorldEvent ReasonTrace attachment PR): `pkt_20260511165159_ff7b1d23db09`
 - resolver_key (WorldEvent ReasonTrace attachment PR): `sha256:78d30d0a1413c7305c41d3cc24d827b2fabd484ded4e023472adb5b0296b0355`
+- packet_id (SliceWorldState store-backed actor views PR): `pkt_20260511180152_36cf9ee4aad3`
+- resolver_key (SliceWorldState store-backed actor views PR): `sha256:527e964761013636e732d49f4d9979886c83eaee103289da50a3996366a9af6d`
 
 ## Next increment after this PR
 
@@ -119,10 +122,9 @@ The remaining open Faz 1 atoms cluster around two next moves:
    the deterministic replay log or debug-HUD dump showing guard spawn,
    talk, memory, and second-site continuity.
 
-The LIVING-box `SliceWorldState` consumer migration (replace direct
-`Player`/`Talker`/... reads with the role-shim resolver, mark fields
-`[Obsolete]`) is also still open and is the smallest LIVING-box
-follow-up atom available.
+The LIVING-box `SliceWorldState` store-backed actor-view migration is
+now landed: legacy `Player`/`Talker`/... accessors are obsolete views
+over `ActorStore`, and new code should target `Actors` directly.
 
 Per the agent-rules-v2 product-visible cap, the next sprint factory
 run picks whichever of these three is the smallest, shippable, and
