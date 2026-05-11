@@ -94,10 +94,16 @@ namespace EmberCrpg.Domain.World
                 throw new ArgumentException($"Expected actor role {expectedRole}, got {record.Role}.", nameof(record));
 
             EnsureActorStore();
-            if (Actors.TryFirstByRole(expectedRole, out var previous))
-                Actors.Remove(previous.Id);
-            if (Actors.Contains(record.Id))
-                Actors.Remove(record.Id);
+
+            var actorIdsToRemove = new List<ActorId>();
+            foreach (var actor in Actors.Records)
+            {
+                if (actor.Role == expectedRole || actor.Id.Equals(record.Id))
+                    actorIdsToRemove.Add(actor.Id);
+            }
+
+            foreach (var actorId in actorIdsToRemove)
+                Actors.Remove(actorId);
 
             Actors.Add(record);
         }

@@ -72,7 +72,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [ ] sprint summary file recording final atom count + bundle count
 - [ ] product-visible PR count for Faz 1 ≥ 1 (the playable-proof PR closes this)
 - [ ] this PR (the first Faz 1 PR) does NOT count as test-only against rule 1's two-PR cap because it adds a new domain primitive (`ActorStore`); the next two PRs may be test-only before rule 1 forces a visible increment
-- [ ] store-backed named actor views PR count as product-visible foundation because the legacy slice actor accessors now read through `ActorStore`, exposing the LIVING store to existing gameplay code without adding new slice fields
+- [ ] This PR counts as product-visible foundation because the legacy slice actor accessors now read through `ActorStore`, exposing the LIVING store to existing gameplay code without adding new slice fields
 
 ## This atom map
 

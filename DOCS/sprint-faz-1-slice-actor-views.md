@@ -29,7 +29,7 @@ of adding or extending hard-coded slice actor fields.
 ## Validation
 
 - `git diff --check`: passed (no whitespace errors).
-- `./tools/validation/run-validation.sh --mode fallback`: passed; fallback harness 752/752 tests green; Unity editor blocked because not installed on this host.
+- `./tools/validation/run-validation.sh --mode fallback`: passed; fallback harness 753/753 tests green; Unity editor blocked because not installed on this host.
 - Compiler note: obsolete-view warnings are expected for legacy slice consumers until the next migration pass replaces them with direct `Actors` lookups.
 
 ## Player-visible note

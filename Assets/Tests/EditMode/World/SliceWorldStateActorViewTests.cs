@@ -50,6 +50,24 @@ namespace EmberCrpg.Tests.EditMode.World
         }
 
         [Test]
+        public void SettingNamedActorView_RemovesAllExistingRoleRecordsBeforeAddingNew()
+        {
+            var world = new SliceWorldState();
+            var firstGuard = MakeRecord(4, "Sentinel", ActorRole.Guard);
+            var secondGuard = MakeRecord(5, "Patrol", ActorRole.Guard);
+            var replacementGuard = MakeRecord(6, "Captain", ActorRole.Guard);
+            world.Actors.Add(firstGuard);
+            world.Actors.Add(secondGuard);
+
+            world.Guard = replacementGuard;
+
+            Assert.That(world.Guard, Is.SameAs(replacementGuard));
+            Assert.That(world.Actors.Contains(firstGuard.Id), Is.False);
+            Assert.That(world.Actors.Contains(secondGuard.Id), Is.False);
+            Assert.That(world.Actors.Count, Is.EqualTo(1));
+        }
+
+        [Test]
         public void FactoryPopulatesStoreBackedNamedViews()
         {
             var world = new SliceWorldFactory().Create(17);
