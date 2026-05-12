@@ -15,5 +15,6 @@ namespace EmberCrpg.Domain.World
         ActorSpawned = 1,
         ActorTalked = 2,
         SiteEntered = 3,
+        RecipeCompleted = 4,
     }
 }
