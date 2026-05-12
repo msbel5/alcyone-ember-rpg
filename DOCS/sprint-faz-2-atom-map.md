@@ -23,9 +23,9 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: Worksite state (WORLD/PROCESS)
 
-- [ ] `Assets/Scripts/Domain/Process/WorksiteKind.cs` :: `WorksiteKind` :: seed enum for none/furnace used by Faz 2 [box=WORLD][box=PROCESS]
-- [ ] `Assets/Scripts/Domain/Process/WorksiteRecord.cs` :: `WorksiteRecord` :: pure site-cell worksite component with kind, site id, grid position, and active flag [box=WORLD][box=PROCESS]
-- [ ] `Assets/Tests/EditMode/Process/WorksiteRecordTests.cs` :: tests :: pin constructor invariants and active/inactive state [box=WORLD][box=PROCESS]
+- [x] `Assets/Scripts/Domain/Process/WorksiteKind.cs` :: `WorksiteKind` :: seed enum for none/furnace used by Faz 2 [box=WORLD][box=PROCESS] — landed on `agent/sprint-faz-2-worksite-record`
+- [x] `Assets/Scripts/Domain/Process/WorksiteRecord.cs` :: `WorksiteRecord` :: pure site-cell worksite component with kind, site id, grid position, and active flag [box=WORLD][box=PROCESS] — landed on `agent/sprint-faz-2-worksite-record`
+- [x] `Assets/Tests/EditMode/Process/WorksiteRecordTests.cs` :: tests :: pin constructor invariants and active/inactive state [box=WORLD][box=PROCESS] — landed on `agent/sprint-faz-2-worksite-record`
 - [ ] `Assets/Scripts/Domain/Process/WorksiteStore.cs` :: `WorksiteStore` :: dictionary-backed registry over worksite ids or site-position keys, deterministic enumeration [box=WORLD][box=PROCESS]
 - [ ] `Assets/Tests/EditMode/Process/WorksiteStoreTests.cs` :: tests :: pin add/get/remove/enumeration/default-key rejection [box=WORLD][box=PROCESS]
 
