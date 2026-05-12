@@ -58,6 +58,8 @@ namespace EmberCrpg.Simulation.Process
         /// <summary>
         /// Advances an active work order by one deterministic tick. On the completion tick,
         /// outputs are added and exactly one RecipeCompleted event is appended.
+        /// The output factory must instantiate one item unit per call; RecipeOutput.Quantity
+        /// controls how many unit items this system adds.
         /// </summary>
         public bool Tick(
             RecipeWorkOrder order,
@@ -87,6 +89,10 @@ namespace EmberCrpg.Simulation.Process
                     var item = createOutput(output);
                     if (item == null)
                         throw new InvalidOperationException("Recipe output factory cannot return null.");
+                    if (item.Quantity != 1)
+                        throw new InvalidOperationException("Recipe output factory must create exactly one item unit per call.");
+                    if (!string.Equals(item.TemplateId, output.ItemTag, StringComparison.Ordinal))
+                        throw new InvalidOperationException($"Recipe output factory returned {item.TemplateId} for {output.ItemTag}.");
                     if (!inventory.TryAdd(item))
                         throw new InvalidOperationException($"Inventory rejected recipe output {output.ItemTag}.");
                 }
@@ -114,7 +120,7 @@ namespace EmberCrpg.Simulation.Process
                 var available = 0;
                 foreach (var item in inventory.Items)
                 {
-                    if (string.Equals(item.TemplateId, input.ItemTag, StringComparison.Ordinal))
+                    if (!item.IsEquipment && string.Equals(item.TemplateId, input.ItemTag, StringComparison.Ordinal))
                         available += item.Quantity;
                 }
 
@@ -129,7 +135,7 @@ namespace EmberCrpg.Simulation.Process
         {
             foreach (var input in recipe.Inputs)
             {
-                if (!inventory.TryRemove(input.ItemTag, input.Quantity))
+                if (!inventory.TryRemoveStackable(input.ItemTag, input.Quantity))
                     throw new InvalidOperationException($"Recipe input {input.ItemTag} passed availability check but could not be consumed.");
             }
         }

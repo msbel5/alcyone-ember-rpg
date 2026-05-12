@@ -53,6 +53,19 @@ namespace EmberCrpg.Domain.Inventory
             return true;
         }
 
+        public bool TryRemoveStackable(string templateId, int quantity)
+        {
+            var existing = _items.FirstOrDefault(candidate => !candidate.IsEquipment && candidate.TemplateId == templateId);
+            if (existing == null || existing.Quantity < quantity)
+                return false;
+
+            existing.RemoveQuantity(quantity);
+            if (existing.Quantity == 0)
+                _items.Remove(existing);
+
+            return true;
+        }
+
         public bool Contains(string templateId)
         {
             return _items.Any(candidate => candidate.TemplateId == templateId);
