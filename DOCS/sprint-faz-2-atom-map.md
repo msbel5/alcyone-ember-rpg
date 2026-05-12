@@ -16,8 +16,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [x] `Assets/Tests/EditMode/Process/RecipeIdTests.cs` :: tests :: pin `RecipeId` value semantics and debug string behavior [box=PROCESS] — landed on `agent/sprint-faz-2-recipe-primitives`
 - [x] `Assets/Scripts/Domain/Process/RecipeIngredient.cs` :: `RecipeIngredient` :: pure input row describing item/material tag and quantity requirements [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-primitives`
 - [x] `Assets/Tests/EditMode/Process/RecipeIngredientTests.cs` :: tests :: reject blank item tags and non-positive quantities [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-primitives`
-- [ ] `Assets/Scripts/Domain/Process/RecipeOutput.cs` :: `RecipeOutput` :: pure output row describing produced item/material/quality/quantity [box=MATTER][box=PROCESS]
-- [ ] `Assets/Tests/EditMode/Process/RecipeOutputTests.cs` :: tests :: pin output quantity and material/quality storage [box=MATTER][box=PROCESS]
+- [x] `Assets/Scripts/Domain/Process/RecipeOutput.cs` :: `RecipeOutput` :: pure output row describing produced item/material/quality/quantity [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-output`
+- [x] `Assets/Tests/EditMode/Process/RecipeOutputTests.cs` :: tests :: pin output quantity and material/quality storage [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-output`
 - [ ] `Assets/Scripts/Domain/Process/RecipeDef.cs` :: `RecipeDef` :: pure definition for inputs, outputs, worksite kind, skill tag, and tick duration [box=PROCESS][box=MATTER]
 - [ ] `Assets/Tests/EditMode/Process/RecipeDefTests.cs` :: tests :: pin constructor invariants, defensive copies, and `SmeltIronIngot` shape [box=PROCESS][box=MATTER]
 
@@ -67,7 +67,10 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment after this PR
 
-Continue the pure definition rail with `RecipeOutput`, then `RecipeDef` + focused tests. Do not touch `RecipeSystem` until RecipeDef shape is pinned.
+Continue the pure definition rail with `RecipeDef` + focused tests. Because Faz 2 still has zero product-visible PRs, the next implementation should widen toward the smallest visible RecipeSystem EventLog slice as soon as RecipeDef shape is pinned.
 
 - packet_id: `pkt_20260511222722_4531e566a532`
 - resolver_key: `sha256:aef062b231ad626b049d9166098ecef0131cad4633ea6727d52c0efaf3805b09`
+
+- packet_id: `pkt_20260512151432_3f3e838ea4f3`
+- resolver_key: `sha256:51368bad478cc9049ff6efb3539955fe2559a6f8a0186140c5a324b0adc2b0ce`
