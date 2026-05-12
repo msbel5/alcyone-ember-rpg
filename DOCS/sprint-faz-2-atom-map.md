@@ -40,7 +40,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 - [ ] `Assets/Scripts/Data/Save/SliceSaveMapper.cs` :: extend mapper :: serialize recipe/worksite progress only after runtime state exists [box=TIME]
 - [ ] `Assets/Tests/EditMode/Save/RecipeWorksiteRoundTripTests.cs` :: tests :: round-trip active worksite progress and produced stock [box=TIME][box=PROCESS]
-- [ ] `DOCS/sprint-faz-2-smelt-iron-acceptance.md` :: `player can ...` :: deterministic replay proof for crafting iron ingot from ore + fuel at furnace [box=PLAYABLE]
+- [x] `DOCS/sprint-faz-2-smelt-iron-acceptance.md` :: `player can ...` :: deterministic replay proof for crafting iron ingot from ore + fuel at furnace [box=PLAYABLE] — landed on `agent/sprint-faz-2-smelt-iron-acceptance`
 
 ## Bundling guidance
 
@@ -67,7 +67,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment after this PR
 
-RecipeSystem now emits the first product-visible Faz 2 EventLog slice. Next implementation should target the save/load and player-facing proof sub-area: serialize active recipe/worksite progress only after runtime state exists, then add a deterministic acceptance replay for crafting iron ingot from ore + fuel at a furnace.
+RecipeSystem now emits the first product-visible Faz 2 EventLog slice, and the deterministic player-facing smelt-iron acceptance proof is recorded. Next implementation should target the save/load runtime rail: serialize active recipe/worksite progress only after a safe world-root shape exists, then add a round-trip test for active progress and produced stock.
 
 - packet_id: `pkt_20260511222722_4531e566a532`
 - resolver_key: `sha256:aef062b231ad626b049d9166098ecef0131cad4633ea6727d52c0efaf3805b09`
@@ -82,3 +82,6 @@ RecipeSystem now emits the first product-visible Faz 2 EventLog slice. Next impl
 
 - packet_id: `pkt_20260512182245_50ced2e83e39`
 - resolver_key: `sha256:fb5f0604997918a5753c37c549c3b790e6abf8ab952a8da6d613eae21b3fc16a`
+
+- packet_id: `pkt_20260512190154_c849680f3a6f`
+- resolver_key: `sha256:d21feee1a9410aebe91a0853f9e2e3b093086c07a25ce6090b6b93180e840daf`
