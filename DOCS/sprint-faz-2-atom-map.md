@@ -26,8 +26,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [x] `Assets/Scripts/Domain/Process/WorksiteKind.cs` :: `WorksiteKind` :: seed enum for none/furnace used by Faz 2 [box=WORLD][box=PROCESS] — landed on `agent/sprint-faz-2-worksite-record`
 - [x] `Assets/Scripts/Domain/Process/WorksiteRecord.cs` :: `WorksiteRecord` :: pure site-cell worksite component with kind, site id, grid position, and active flag [box=WORLD][box=PROCESS] — landed on `agent/sprint-faz-2-worksite-record`
 - [x] `Assets/Tests/EditMode/Process/WorksiteRecordTests.cs` :: tests :: pin constructor invariants and active/inactive state [box=WORLD][box=PROCESS] — landed on `agent/sprint-faz-2-worksite-record`
-- [ ] `Assets/Scripts/Domain/Process/WorksiteStore.cs` :: `WorksiteStore` :: dictionary-backed registry over worksite ids or site-position keys, deterministic enumeration [box=WORLD][box=PROCESS]
-- [ ] `Assets/Tests/EditMode/Process/WorksiteStoreTests.cs` :: tests :: pin add/get/remove/enumeration/default-key rejection [box=WORLD][box=PROCESS]
+- [x] `Assets/Scripts/Domain/Process/WorksiteStore.cs` :: `WorksiteStore` :: dictionary-backed registry over site-position keys, deterministic enumeration [box=WORLD][box=PROCESS] — landed on `agent/sprint-faz-2-worksite-store`
+- [x] `Assets/Tests/EditMode/Process/WorksiteStoreTests.cs` :: tests :: pin add/get/remove/enumeration/default-key rejection [box=WORLD][box=PROCESS] — landed on `agent/sprint-faz-2-worksite-store`
 
 ## Sub-area: Recipe execution (PROCESS/MATTER/LIVING/TIME)
 
@@ -67,7 +67,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment after this PR
 
-RecipeDef is now pinned. Because Faz 2 still has zero product-visible PRs, the next implementation should stop pure-definition-only work and target the smallest visible RecipeSystem EventLog slice: validate a furnace + SmeltIronIngot definition, consume 2 iron_ore + 1 fuel, produce 1 iron_ingot after 40 ticks, and append an ordered WorldEventLog line.
+WorksiteStore is now pinned. Because Faz 2 still has zero product-visible PRs, the next implementation should target the smallest visible RecipeSystem EventLog slice: validate a furnace + SmeltIronIngot definition, consume 2 iron_ore + 1 fuel, produce 1 iron_ingot after 40 ticks, and append an ordered WorldEventLog line.
 
 - packet_id: `pkt_20260511222722_4531e566a532`
 - resolver_key: `sha256:aef062b231ad626b049d9166098ecef0131cad4633ea6727d52c0efaf3805b09`
@@ -77,3 +77,5 @@ RecipeDef is now pinned. Because Faz 2 still has zero product-visible PRs, the n
 
 - packet_id: `pkt_20260512155456_1e0b33ca071d`
 - resolver_key: `sha256:8412025a3dc3a147474a87cabd5502591a859a9356bbdd9114d87d9bc5255b5a`
+- packet_id: `pkt_20260512172605_70e9bd2bfe2e`
+- resolver_key: `sha256:27b28c9ecc4741edc2e79c1b1a200f96245e731fb218e152dd71df9d735e76a4`
