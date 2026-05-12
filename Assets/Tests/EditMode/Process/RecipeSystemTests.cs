@@ -128,6 +128,54 @@ namespace EmberCrpg.Tests.EditMode.Process
             Assert.That(Quantity(inventory, "iron_ingot"), Is.EqualTo(1));
         }
 
+        [Test]
+        public void Tick_RejectsFactoriesThatReturnBundledOutputQuantities()
+        {
+            var system = new RecipeSystem();
+            var inventory = CreateSmeltingInventory();
+            var eventLog = new WorldEventLog();
+            Assert.That(system.TryStart(
+                CreateDoubleIngotRecipe(),
+                CreateActiveFurnaceStore(),
+                FurnaceSite,
+                FurnacePosition,
+                inventory,
+                Worker,
+                out var order), Is.True);
+
+            for (var i = 0; i < 39; i++)
+                Assert.That(system.Tick(order, inventory, eventLog, CreateBundledOutputItem), Is.False);
+
+            var ex = Assert.Throws<InvalidOperationException>(() => system.Tick(order, inventory, eventLog, CreateBundledOutputItem));
+            Assert.That(ex.Message, Does.Contain("exactly one item unit"));
+        }
+
+        [Test]
+        public void TryStart_ConsumesOnlyStackableInputsWhenEquipmentSharesTemplate()
+        {
+            var system = new RecipeSystem();
+            var inventory = new InventoryState(8);
+            var equipmentOre = new InventoryItem(new ItemId(3001UL), "iron_ore", "Iron Ore Amulet", 1, EquipmentSlot.Weapon, 0, 0);
+            inventory.TryAdd(equipmentOre);
+            inventory.TryAdd(new InventoryItem(new ItemId(1UL), "iron_ore", "Iron Ore", 2));
+            inventory.TryAdd(new InventoryItem(new ItemId(2UL), "fuel", "Fuel", 1));
+
+            var started = system.TryStart(
+                CreateSmeltIronIngotRecipe(),
+                CreateActiveFurnaceStore(),
+                FurnaceSite,
+                FurnacePosition,
+                inventory,
+                Worker,
+                out var order);
+
+            Assert.That(started, Is.True);
+            Assert.That(order, Is.Not.Null);
+            Assert.That(inventory.FindById(equipmentOre.Id), Is.Not.Null);
+            Assert.That(StackableQuantity(inventory, "iron_ore"), Is.EqualTo(0));
+            Assert.That(StackableQuantity(inventory, "fuel"), Is.EqualTo(0));
+        }
+
         private static RecipeDef CreateSmeltIronIngotRecipe()
         {
             return new RecipeDef(
@@ -143,6 +191,24 @@ namespace EmberCrpg.Tests.EditMode.Process
                 new[]
                 {
                     new RecipeOutput("iron_ingot", ItemMaterial.Iron, ItemQuality.Common, 1),
+                });
+        }
+
+        private static RecipeDef CreateDoubleIngotRecipe()
+        {
+            return new RecipeDef(
+                new RecipeId(1002UL),
+                "furnace",
+                "smelting",
+                40,
+                new[]
+                {
+                    new RecipeIngredient("iron_ore", 2),
+                    new RecipeIngredient("fuel", 1),
+                },
+                new[]
+                {
+                    new RecipeOutput("iron_ingot", ItemMaterial.Iron, ItemQuality.Common, 2),
                 });
         }
 
@@ -164,6 +230,17 @@ namespace EmberCrpg.Tests.EditMode.Process
         private static InventoryItem CreateOutputItem(RecipeOutput output)
         {
             return new InventoryItem(new ItemId(9001UL), output.ItemTag, "Iron Ingot", 1);
+        }
+
+        private static InventoryItem CreateBundledOutputItem(RecipeOutput output)
+        {
+            return new InventoryItem(new ItemId(9002UL), output.ItemTag, "Iron Ingot", output.Quantity);
+        }
+
+        private static int StackableQuantity(InventoryState inventory, string templateId)
+        {
+            return inventory.Items.Where(item => !item.IsEquipment && string.Equals(item.TemplateId, templateId, StringComparison.Ordinal))
+                .Sum(item => item.Quantity);
         }
 
         private static int Quantity(InventoryState inventory, string templateId)
