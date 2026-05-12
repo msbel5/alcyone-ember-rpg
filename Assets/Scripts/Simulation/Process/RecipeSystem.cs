@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
@@ -78,26 +79,21 @@ namespace EmberCrpg.Simulation.Process
             if (order.IsComplete)
                 return false;
 
-            order.AdvanceOneTick();
-            if (!order.IsComplete)
-                return false;
-
-            foreach (var output in order.Recipe.Outputs)
+            if (order.ProgressTicks + 1 < order.Recipe.DurationTicks)
             {
-                for (var i = 0; i < output.Quantity; i++)
-                {
-                    var item = createOutput(output);
-                    if (item == null)
-                        throw new InvalidOperationException("Recipe output factory cannot return null.");
-                    if (item.Quantity != 1)
-                        throw new InvalidOperationException("Recipe output factory must create exactly one item unit per call.");
-                    if (!string.Equals(item.TemplateId, output.ItemTag, StringComparison.Ordinal))
-                        throw new InvalidOperationException($"Recipe output factory returned {item.TemplateId} for {output.ItemTag}.");
-                    if (!inventory.TryAdd(item))
-                        throw new InvalidOperationException($"Inventory rejected recipe output {output.ItemTag}.");
-                }
+                order.AdvanceOneTick();
+                return false;
             }
 
+            var outputItems = CreateOutputItems(order, createOutput);
+            PreflightOutputs(inventory, outputItems);
+            foreach (var item in outputItems)
+            {
+                if (!inventory.TryAdd(item))
+                    throw new InvalidOperationException($"Inventory rejected recipe output {item.TemplateId}.");
+            }
+
+            order.AdvanceOneTick();
             eventLog.Append(new WorldEvent(
                 new GameTime(order.ProgressTicks),
                 WorldEventKind.RecipeCompleted,
@@ -111,6 +107,38 @@ namespace EmberCrpg.Simulation.Process
                     $"duration_ticks:{order.Recipe.DurationTicks}",
                 })));
             return true;
+        }
+
+        private static IReadOnlyList<InventoryItem> CreateOutputItems(RecipeWorkOrder order, Func<RecipeOutput, InventoryItem> createOutput)
+        {
+            var outputItems = new List<InventoryItem>();
+            foreach (var output in order.Recipe.Outputs)
+            {
+                for (var i = 0; i < output.Quantity; i++)
+                {
+                    var item = createOutput(output);
+                    if (item == null)
+                        throw new InvalidOperationException("Recipe output factory cannot return null.");
+                    if (item.Quantity != 1)
+                        throw new InvalidOperationException("Recipe output factory must create exactly one item unit per call.");
+                    if (!string.Equals(item.TemplateId, output.ItemTag, StringComparison.Ordinal))
+                        throw new InvalidOperationException($"Recipe output factory returned {item.TemplateId} for {output.ItemTag}.");
+
+                    outputItems.Add(item);
+                }
+            }
+
+            return outputItems;
+        }
+
+        private static void PreflightOutputs(InventoryState inventory, IReadOnlyList<InventoryItem> outputItems)
+        {
+            var projected = inventory.Clone();
+            foreach (var item in outputItems)
+            {
+                if (!projected.TryAdd(item))
+                    throw new InvalidOperationException($"Inventory cannot accept recipe output {item.TemplateId}.");
+            }
         }
 
         private static bool HasInputs(RecipeDef recipe, InventoryState inventory)
