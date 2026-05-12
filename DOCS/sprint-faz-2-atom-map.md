@@ -18,8 +18,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [x] `Assets/Tests/EditMode/Process/RecipeIngredientTests.cs` :: tests :: reject blank item tags and non-positive quantities [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-primitives`
 - [x] `Assets/Scripts/Domain/Process/RecipeOutput.cs` :: `RecipeOutput` :: pure output row describing produced item/material/quality/quantity [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-output`
 - [x] `Assets/Tests/EditMode/Process/RecipeOutputTests.cs` :: tests :: pin output quantity and material/quality storage [box=MATTER][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-output`
-- [ ] `Assets/Scripts/Domain/Process/RecipeDef.cs` :: `RecipeDef` :: pure definition for inputs, outputs, worksite kind, skill tag, and tick duration [box=PROCESS][box=MATTER]
-- [ ] `Assets/Tests/EditMode/Process/RecipeDefTests.cs` :: tests :: pin constructor invariants, defensive copies, and `SmeltIronIngot` shape [box=PROCESS][box=MATTER]
+- [x] `Assets/Scripts/Domain/Process/RecipeDef.cs` :: `RecipeDef` :: pure definition for inputs, outputs, worksite kind, skill tag, and tick duration [box=PROCESS][box=MATTER] — landed on `agent/sprint-faz-2-recipe-def`
+- [x] `Assets/Tests/EditMode/Process/RecipeDefTests.cs` :: tests :: pin constructor invariants, defensive copies, and `SmeltIronIngot` shape [box=PROCESS][box=MATTER] — landed on `agent/sprint-faz-2-recipe-def`
 
 ## Sub-area: Worksite state (WORLD/PROCESS)
 
@@ -67,10 +67,13 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment after this PR
 
-Continue the pure definition rail with `RecipeDef` + focused tests. Because Faz 2 still has zero product-visible PRs, the next implementation should widen toward the smallest visible RecipeSystem EventLog slice as soon as RecipeDef shape is pinned.
+RecipeDef is now pinned. Because Faz 2 still has zero product-visible PRs, the next implementation should stop pure-definition-only work and target the smallest visible RecipeSystem EventLog slice: validate a furnace + SmeltIronIngot definition, consume 2 iron_ore + 1 fuel, produce 1 iron_ingot after 40 ticks, and append an ordered WorldEventLog line.
 
 - packet_id: `pkt_20260511222722_4531e566a532`
 - resolver_key: `sha256:aef062b231ad626b049d9166098ecef0131cad4633ea6727d52c0efaf3805b09`
 
 - packet_id: `pkt_20260512151432_3f3e838ea4f3`
 - resolver_key: `sha256:51368bad478cc9049ff6efb3539955fe2559a6f8a0186140c5a324b0adc2b0ce`
+
+- packet_id: `pkt_20260512155456_1e0b33ca071d`
+- resolver_key: `sha256:8412025a3dc3a147474a87cabd5502591a859a9356bbdd9114d87d9bc5255b5a`
