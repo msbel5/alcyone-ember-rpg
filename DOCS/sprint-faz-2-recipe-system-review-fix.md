@@ -13,15 +13,15 @@ Address Copilot review on PR #104 without widening the Faz 2 scope: make RecipeS
 
 ## Files changed
 
-- `Assets/Scripts/Simulation/Process/RecipeSystem.cs` — documents/enforces one-unit output factory results, validates output template ids, ignores equipment for recipe input availability, and consumes stackable inputs through a dedicated inventory method.
+- `Assets/Scripts/Simulation/Process/RecipeSystem.cs` — documents/enforces one-unit output factory results, validates output template ids, preflights output placement before completing the work order, ignores equipment for recipe input availability, and consumes stackable inputs through a dedicated inventory method.
 - `Assets/Scripts/Domain/Inventory/InventoryState.cs` — adds `TryRemoveStackable` for recipe consumers that must not remove equipment instances sharing a template id.
-- `Assets/Tests/EditMode/Process/RecipeSystemTests.cs` — pins rejection of bundled output factories and verifies same-template equipment survives input consumption.
+- `Assets/Tests/EditMode/Process/RecipeSystemTests.cs` — pins rejection of bundled output factories, verifies output-placement failures leave the order retryable, and verifies same-template equipment survives input consumption.
 - `DOCS/sprint-faz-2-recipe-system-review-fix.md` — records this review-fix increment.
 
 ## Validation
 
 - `git diff --check`: PASS.
-- `./tools/validation/run-validation.sh --mode fallback`: PASS (`Passed: 811, Failed: 0`, `fallback_exit_code=0`, `validation-output/fallback-test-results/fallback.trx`).
+- `./tools/validation/run-validation.sh --mode fallback`: PASS (`Passed: 812, Failed: 0`, `fallback_exit_code=0`, `validation-output/fallback-test-results/fallback.trx`).
 
 ## Product-visible proof
 

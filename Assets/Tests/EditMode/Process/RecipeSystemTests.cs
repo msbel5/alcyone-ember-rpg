@@ -151,6 +151,41 @@ namespace EmberCrpg.Tests.EditMode.Process
         }
 
         [Test]
+        public void Tick_WhenOutputPlacementFails_DoesNotCompleteWorkOrder()
+        {
+            var system = new RecipeSystem();
+            var inventory = CreateSmeltingInventory(capacity: 3);
+            var eventLog = new WorldEventLog();
+            Assert.That(system.TryStart(
+                CreateSmeltIronIngotRecipe(),
+                CreateActiveFurnaceStore(),
+                FurnaceSite,
+                FurnacePosition,
+                inventory,
+                Worker,
+                out var order), Is.True);
+
+            inventory.TryAdd(new InventoryItem(new ItemId(7001UL), "junk_a", "Junk A", 1));
+            inventory.TryAdd(new InventoryItem(new ItemId(7002UL), "junk_b", "Junk B", 1));
+            inventory.TryAdd(new InventoryItem(new ItemId(7003UL), "junk_c", "Junk C", 1));
+
+            for (var i = 0; i < 39; i++)
+                Assert.That(system.Tick(order, inventory, eventLog, CreateOutputItem), Is.False);
+
+            var ex = Assert.Throws<InvalidOperationException>(() => system.Tick(order, inventory, eventLog, CreateOutputItem));
+            Assert.That(ex.Message, Does.Contain("cannot accept recipe output"));
+            Assert.That(order.ProgressTicks, Is.EqualTo(39));
+            Assert.That(order.IsComplete, Is.False);
+            Assert.That(eventLog.Count, Is.EqualTo(0));
+
+            Assert.That(inventory.TryRemoveStackable("junk_c", 1), Is.True);
+            Assert.That(system.Tick(order, inventory, eventLog, CreateOutputItem), Is.True);
+            Assert.That(order.ProgressTicks, Is.EqualTo(40));
+            Assert.That(order.IsComplete, Is.True);
+            Assert.That(Quantity(inventory, "iron_ingot"), Is.EqualTo(1));
+        }
+
+        [Test]
         public void TryStart_ConsumesOnlyStackableInputsWhenEquipmentSharesTemplate()
         {
             var system = new RecipeSystem();
@@ -219,9 +254,9 @@ namespace EmberCrpg.Tests.EditMode.Process
             return store;
         }
 
-        private static InventoryState CreateSmeltingInventory()
+        private static InventoryState CreateSmeltingInventory(int capacity = 8)
         {
-            var inventory = new InventoryState(8);
+            var inventory = new InventoryState(capacity);
             inventory.TryAdd(new InventoryItem(new ItemId(1UL), "iron_ore", "Iron Ore", 2));
             inventory.TryAdd(new InventoryItem(new ItemId(2UL), "fuel", "Fuel", 1));
             return inventory;
