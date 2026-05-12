@@ -86,6 +86,29 @@ namespace EmberCrpg.Tests.EditMode.Process
             Assert.Throws<ArgumentException>(() => store.Get(default, new GridPosition(0, 0)));
         }
 
+        /// <summary>Strict Get throws for a non-empty site cell that has no worksite.</summary>
+        [Test]
+        public void Get_MissingSiteCell_ThrowsKeyNotFound()
+        {
+            var store = new WorksiteStore();
+
+            Assert.Throws<KeyNotFoundException>(() => store.Get(FirstSite, new GridPosition(9, 9)));
+        }
+
+        /// <summary>TryGet returns true and exposes the stored record for a registered worksite.</summary>
+        [Test]
+        public void TryGet_KnownSiteCell_ReturnsStoredRecord()
+        {
+            var store = new WorksiteStore();
+            var record = MakeRecord(FirstSite, 3, 4);
+            store.Add(record);
+
+            var found = store.TryGet(FirstSite, new GridPosition(3, 4), out var actual);
+
+            Assert.That(found, Is.True);
+            Assert.That(actual, Is.SameAs(record));
+        }
+
         /// <summary>TryGet returns false for empty or missing keys and clears the out value.</summary>
         [Test]
         public void TryGet_ReturnsFalseForEmptyOrMissingKey()
@@ -96,6 +119,31 @@ namespace EmberCrpg.Tests.EditMode.Process
             Assert.That(emptyRecord, Is.Null);
             Assert.That(store.TryGet(FirstSite, new GridPosition(9, 9), out var missingRecord), Is.False);
             Assert.That(missingRecord, Is.Null);
+        }
+
+        /// <summary>Contains returns false for empty or unregistered site cells.</summary>
+        [Test]
+        public void Contains_ReturnsFalseForEmptyOrMissingKey()
+        {
+            var store = new WorksiteStore();
+            store.Add(MakeRecord(FirstSite, 3, 4));
+
+            Assert.That(store.Contains(default, new GridPosition(3, 4)), Is.False);
+            Assert.That(store.Contains(FirstSite, new GridPosition(9, 9)), Is.False);
+        }
+
+        /// <summary>Remove returns false for empty or unregistered site cells without mutating state.</summary>
+        [Test]
+        public void Remove_ReturnsFalseForEmptyOrMissingKey()
+        {
+            var store = new WorksiteStore();
+            var record = MakeRecord(FirstSite, 3, 4);
+            store.Add(record);
+
+            Assert.That(store.Remove(default, new GridPosition(3, 4)), Is.False);
+            Assert.That(store.Remove(FirstSite, new GridPosition(9, 9)), Is.False);
+            Assert.That(store.Count, Is.EqualTo(1));
+            Assert.That(store.Get(FirstSite, new GridPosition(3, 4)), Is.SameAs(record));
         }
 
         /// <summary>Remove updates both lookup and deterministic enumeration order.</summary>
