@@ -31,10 +31,10 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: Recipe execution (PROCESS/MATTER/LIVING/TIME)
 
-- [ ] `Assets/Scripts/Simulation/Process/RecipeSystem.cs` :: `RecipeSystem` :: validate worksite + actor + inventory inputs, consume ore/fuel, advance progress, produce outputs [box=PROCESS][box=MATTER][box=LIVING][box=TIME]
-- [ ] `Assets/Tests/EditMode/Process/RecipeSystemTests.cs` :: tests :: deterministic 40-tick smelt consumes 2 iron ore + 1 fuel and produces 1 iron ingot [box=PROCESS][box=MATTER][box=TIME]
-- [ ] `Assets/Scripts/Domain/World/WorldEventKind.cs` :: `WorldEventKind` :: add a recipe/worksite event kind only when `RecipeSystem` emits it in the same PR [box=PROCESS]
-- [ ] `Assets/Tests/EditMode/Process/RecipeEventLogTests.cs` :: tests :: pin `RecipeSystem` writes an ordered `WorldEventLog` line with `ReasonTrace` [box=PROCESS][box=PLAYABLE]
+- [x] `Assets/Scripts/Simulation/Process/RecipeSystem.cs` :: `RecipeSystem` :: validate worksite + actor + inventory inputs, consume ore/fuel, advance progress, produce outputs [box=PROCESS][box=MATTER][box=LIVING][box=TIME] — landed on `agent/sprint-faz-2-recipe-system`
+- [x] `Assets/Tests/EditMode/Process/RecipeSystemTests.cs` :: tests :: deterministic 40-tick smelt consumes 2 iron ore + 1 fuel and produces 1 iron ingot [box=PROCESS][box=MATTER][box=TIME] — landed on `agent/sprint-faz-2-recipe-system`
+- [x] `Assets/Scripts/Domain/World/WorldEventKind.cs` :: `WorldEventKind` :: add a recipe/worksite event kind only when `RecipeSystem` emits it in the same PR [box=PROCESS] — landed on `agent/sprint-faz-2-recipe-system`
+- [x] `Assets/Tests/EditMode/Process/RecipeEventLogTests.cs` :: tests :: pin `RecipeSystem` writes an ordered `WorldEventLog` line with `ReasonTrace` [box=PROCESS][box=PLAYABLE] — landed on `agent/sprint-faz-2-recipe-system`
 
 ## Sub-area: Save/load and player-facing proof (TIME/PLAYABLE)
 
@@ -67,7 +67,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment after this PR
 
-WorksiteStore is now pinned. Because Faz 2 still has zero product-visible PRs, the next implementation should target the smallest visible RecipeSystem EventLog slice: validate a furnace + SmeltIronIngot definition, consume 2 iron_ore + 1 fuel, produce 1 iron_ingot after 40 ticks, and append an ordered WorldEventLog line.
+RecipeSystem now emits the first product-visible Faz 2 EventLog slice. Next implementation should target the save/load and player-facing proof sub-area: serialize active recipe/worksite progress only after runtime state exists, then add a deterministic acceptance replay for crafting iron ingot from ore + fuel at a furnace.
 
 - packet_id: `pkt_20260511222722_4531e566a532`
 - resolver_key: `sha256:aef062b231ad626b049d9166098ecef0131cad4633ea6727d52c0efaf3805b09`
@@ -79,3 +79,6 @@ WorksiteStore is now pinned. Because Faz 2 still has zero product-visible PRs, t
 - resolver_key: `sha256:8412025a3dc3a147474a87cabd5502591a859a9356bbdd9114d87d9bc5255b5a`
 - packet_id: `pkt_20260512172605_70e9bd2bfe2e`
 - resolver_key: `sha256:27b28c9ecc4741edc2e79c1b1a200f96245e731fb218e152dd71df9d735e76a4`
+
+- packet_id: `pkt_20260512182245_50ced2e83e39`
+- resolver_key: `sha256:fb5f0604997918a5753c37c549c3b790e6abf8ab952a8da6d613eae21b3fc16a`
