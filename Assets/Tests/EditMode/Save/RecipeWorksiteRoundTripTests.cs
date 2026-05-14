@@ -9,7 +9,6 @@ using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Process;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
-using UnityEngine;
 
 // Design note:
 // Pins the first Faz 2 TIME rail for process state: active furnace worksite
@@ -37,14 +36,16 @@ namespace EmberCrpg.Tests.EditMode.Save
             for (var i = 0; i < 17; i++)
                 Assert.That(system.Tick(order, world.PlayerInventory, world.Events, CreateOutputItem), Is.False);
 
-            var data = SliceSaveMapper.ToData(world);
-            data.worksites = SliceSaveMapper.ToWorksiteData(worksites);
-            data.recipeWorkOrders = new[] { SliceSaveMapper.ToRecipeWorkOrderData(order) };
+            var service = new JsonSliceSaveService(ResolveRecipe) { Worksites = worksites };
+            service.ReplaceRecipeWorkOrders(new[] { order });
 
-            var decoded = JsonUtility.FromJson<SliceSaveData>(JsonUtility.ToJson(data, false));
-            var loadedWorld = SliceSaveMapper.ToWorld(decoded);
-            var loadedWorksites = SliceSaveMapper.ToWorksiteStore(decoded.worksites);
-            var loadedOrder = SliceSaveMapper.ToRecipeWorkOrder(decoded.recipeWorkOrders.Single(), ResolveRecipe);
+            var json = service.SaveToJson(world);
+            Assert.That(json, Does.Contain("worksites"));
+            Assert.That(json, Does.Contain("recipeWorkOrders"));
+
+            var loadedWorld = service.LoadFromJson(json);
+            var loadedWorksites = service.Worksites;
+            var loadedOrder = service.RecipeWorkOrders.Single();
 
             Assert.That(loadedWorksites.Get(FurnaceSite, FurnacePosition).IsActive, Is.True);
             Assert.That(loadedOrder.Recipe.Id, Is.EqualTo(recipe.Id));
