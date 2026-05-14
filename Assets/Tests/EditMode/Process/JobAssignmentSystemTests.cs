@@ -252,6 +252,54 @@ namespace EmberCrpg.Tests.EditMode.Process
         }
 
         [Test]
+        public void StartRecipeForClaim_WithBatchMissingInputs_DoesNotStartOrMutateInventory()
+        {
+            var actors = new ActorStore();
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            actors.Add(actor);
+            var board = new JobBoard();
+            var job = MakeRequest(10UL, priority: 1, quantity: 2);
+            board.Add(job);
+            var worksites = ActiveFurnaceStore();
+            var inventory = InventoryWithInputs(ore: 2, fuel: 1);
+            var recipe = SmeltIronRecipe(job.RecipeId);
+            var system = new JobAssignmentSystem();
+
+            Assert.That(system.TryAssignNext(actors, board, worksites, out _), Is.True);
+            Assert.That(system.StartRecipeForClaim(actors, board, worksites, recipe, inventory, job.Id, out var result), Is.False);
+
+            Assert.That(result, Is.EqualTo(default(JobRecipeStartResult)));
+            Assert.That(system.TryGetActiveWorkOrder(job.Id, out _), Is.False);
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(2));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(1));
+            Assert.That(board.GetClaimedBy(job.Id), Is.EqualTo(actor.Id));
+        }
+
+        [Test]
+        public void StartRecipeForClaim_WithBatchInputs_PreflightsFullQuantityThenStartsOneWorkOrder()
+        {
+            var actors = new ActorStore();
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            actors.Add(actor);
+            var board = new JobBoard();
+            var job = MakeRequest(10UL, priority: 1, quantity: 2);
+            board.Add(job);
+            var worksites = ActiveFurnaceStore();
+            var inventory = InventoryWithInputs(ore: 4, fuel: 2);
+            var recipe = SmeltIronRecipe(job.RecipeId);
+            var system = new JobAssignmentSystem();
+
+            Assert.That(system.TryAssignNext(actors, board, worksites, out _), Is.True);
+            Assert.That(system.StartRecipeForClaim(actors, board, worksites, recipe, inventory, job.Id, out var result), Is.True);
+
+            Assert.That(result.JobId, Is.EqualTo(job.Id));
+            Assert.That(system.TryGetActiveWorkOrder(job.Id, out var activeOrder), Is.True);
+            Assert.That(activeOrder, Is.SameAs(result.WorkOrder));
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(2));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(1));
+        }
+
+        [Test]
         public void StartRecipeForClaim_RequiresClaimWithoutMutatingInventory()
         {
             var actors = new ActorStore();

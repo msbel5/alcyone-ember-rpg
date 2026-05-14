@@ -121,24 +121,8 @@ namespace EmberCrpg.Simulation.Process
             if (recipe.Id != request.RecipeId)
                 return false;
 
-            var inventoryPreflight = inventory.Clone();
             var recipeSystem = new RecipeSystem();
-            for (var execution = 0; execution < request.Quantity; execution++)
-            {
-                if (!recipeSystem.TryStart(
-                    recipe,
-                    worksites,
-                    request.SiteId,
-                    request.WorksitePosition,
-                    inventoryPreflight,
-                    actor.Id,
-                    out _))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return CanStartRequestedQuantity(recipeSystem, request, worksites, recipe, inventory, actor.Id);
         }
 
         /// <summary>
@@ -187,6 +171,9 @@ namespace EmberCrpg.Simulation.Process
                 return false;
 
             var recipeSystem = new RecipeSystem();
+            if (!CanStartRequestedQuantity(recipeSystem, request, worksites, recipe, inventory, actorId))
+                return false;
+
             if (!recipeSystem.TryStart(
                 recipe,
                 worksites,
@@ -261,6 +248,33 @@ namespace EmberCrpg.Simulation.Process
 
             preference = default;
             return false;
+        }
+
+        private static bool CanStartRequestedQuantity(
+            RecipeSystem recipeSystem,
+            JobRequest request,
+            WorksiteStore worksites,
+            RecipeDef recipe,
+            InventoryState inventory,
+            ActorId actorId)
+        {
+            var inventoryPreflight = inventory.Clone();
+            for (var execution = 0; execution < request.Quantity; execution++)
+            {
+                if (!recipeSystem.TryStart(
+                    recipe,
+                    worksites,
+                    request.SiteId,
+                    request.WorksitePosition,
+                    inventoryPreflight,
+                    actorId,
+                    out _))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool TryGetActiveMatchingWorksite(JobRequest request, WorksiteStore worksites, out WorksiteRecord worksite)
