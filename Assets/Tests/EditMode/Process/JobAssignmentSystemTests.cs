@@ -65,6 +65,33 @@ namespace EmberCrpg.Tests.EditMode.Process
             Assert.That(lowPreference.ScheduleState.IsIdle, Is.True);
         }
 
+
+        [Test]
+        public void TryAssignNext_SkipsIdleActorsThatAlreadyHoldPendingClaims()
+        {
+            var actors = new ActorStore();
+            var alreadyClaimed = CreateActor(1UL, "Claimed", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            var available = CreateActor(2UL, "Available", new ActorJobPreference(JobKind.Smith, JobPriority.Active(2)));
+            actors.Add(alreadyClaimed);
+            actors.Add(available);
+            var board = new JobBoard();
+            var firstJob = MakeRequest(10UL, priority: 1);
+            var secondJob = MakeRequest(11UL, priority: 1);
+            board.Add(firstJob);
+            board.Add(secondJob);
+            Assert.That(board.TryClaim(firstJob.Id, alreadyClaimed.Id, out _), Is.True);
+            var system = new JobAssignmentSystem();
+
+            Assert.That(system.TryAssignNext(actors, board, ActiveFurnaceStore(), out var result), Is.True);
+
+            Assert.That(result.ActorId, Is.EqualTo(available.Id));
+            Assert.That(result.JobId, Is.EqualTo(secondJob.Id));
+            Assert.That(board.GetClaimedBy(firstJob.Id), Is.EqualTo(alreadyClaimed.Id));
+            Assert.That(board.GetClaimedBy(secondJob.Id), Is.EqualTo(available.Id));
+            Assert.That(alreadyClaimed.ScheduleState.IsIdle, Is.True);
+            Assert.That(available.ScheduleState, Is.EqualTo(ActorScheduleState.Assigned(secondJob.Id, Site, FurnacePosition)));
+        }
+
         [Test]
         public void TryAssignNext_IgnoresDisabledOrUnavailableActors()
         {

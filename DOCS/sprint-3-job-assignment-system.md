@@ -24,12 +24,12 @@ save/load integration, and completion/cancel follow-up are later atoms.
   - Pins deterministic actor/job claiming order.
   - Pins actor preference priority over actor insertion order.
   - Pins disabled/no-preference rejection.
-  - Pins alive, idle, enabled-preference, and active-worksite eligibility.
+  - Pins alive, idle, enabled-preference, active-worksite eligibility, and skipping idle actors that already hold a pending claim.
 
 ## Validation
 
 - `./tools/validation/run-validation.sh --mode fallback`
-- Result: PASS, `858/858` tests.
+- Result: PASS, `859/859` tests after addressing Codex P2 feedback on pre-existing actor claims.
 - Unity editor status: BLOCKED locally, `unity_editor=not_found`; fallback is a
   pure C# NUnit harness, not a real Unity EditMode run.
 

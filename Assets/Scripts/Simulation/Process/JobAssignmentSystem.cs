@@ -37,6 +37,12 @@ namespace EmberCrpg.Simulation.Process
 
             foreach (var actor in actors.Records)
             {
+                if (ActorAlreadyHasPendingClaim(actor, board))
+                {
+                    actorOrder++;
+                    continue;
+                }
+
                 var jobOrder = 0;
                 foreach (var request in board.Requests)
                 {
@@ -86,6 +92,17 @@ namespace EmberCrpg.Simulation.Process
                 && actor.ScheduleState.IsIdle
                 && TryGetActivePreference(actor, request.Kind, out _)
                 && TryGetActiveMatchingWorksite(request, worksites, out _);
+        }
+
+        private static bool ActorAlreadyHasPendingClaim(ActorRecord actor, JobBoard board)
+        {
+            foreach (var request in board.Requests)
+            {
+                if (board.GetClaimedBy(request.Id) == actor.Id)
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool TryBuildCandidate(
