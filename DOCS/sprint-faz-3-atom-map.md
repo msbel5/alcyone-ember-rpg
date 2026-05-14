@@ -48,12 +48,12 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ### 3. Actor job preference and schedule rail
 
-- [ ] Assets/Scripts/Domain/Actors/ActorJobPreference.cs :: ActorJobPreference :: actor-local job kind + priority row [box=LIVING]
-- [ ] Assets/Scripts/Domain/Actors/ActorScheduleState.cs :: ActorScheduleState :: current job id, current worksite target, idle state [box=LIVING]
-- [ ] Assets/Scripts/Domain/Actors/ActorRecord.cs :: ActorRecord.ApplyJobPreferences :: replace deterministic actor job preferences without changing actor identity [box=LIVING]
-- [ ] Assets/Scripts/Domain/Actors/ActorRecord.cs :: ActorRecord.ApplyScheduleState :: update current job/schedule state through ActorStore records [box=LIVING]
-- [ ] Assets/Tests/EditMode/Actors/ActorJobPreferenceTests.cs :: ActorJobPreferenceTests :: pin preference normalization and disabled priority handling [box=LIVING]
-- [ ] Assets/Tests/EditMode/Actors/ActorScheduleStateTests.cs :: ActorScheduleStateTests :: pin idle/assigned transitions and empty job rejection [box=LIVING]
+- [x] Assets/Scripts/Domain/Actors/ActorJobPreference.cs :: ActorJobPreference :: actor-local job kind + priority row [box=LIVING]
+- [x] Assets/Scripts/Domain/Actors/ActorScheduleState.cs :: ActorScheduleState :: current job id, current worksite target, idle state [box=LIVING]
+- [x] Assets/Scripts/Domain/Actors/ActorRecord.cs :: ActorRecord.ApplyJobPreferences :: replace deterministic actor job preferences without changing actor identity [box=LIVING]
+- [x] Assets/Scripts/Domain/Actors/ActorRecord.cs :: ActorRecord.ApplyScheduleState :: update current job/schedule state through ActorStore records [box=LIVING]
+- [x] Assets/Tests/EditMode/Actors/ActorJobPreferenceTests.cs :: ActorJobPreferenceTests :: pin preference normalization and disabled priority handling [box=LIVING]
+- [x] Assets/Tests/EditMode/Actors/ActorScheduleStateTests.cs :: ActorScheduleStateTests :: pin idle/assigned transitions and empty job rejection [box=LIVING]
 
 ### 4. Assignment system
 
@@ -100,4 +100,4 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ## Next increment
 
-Continue with the `actor-job-state` bundle: add `ActorJobPreference`, `ActorScheduleState`, ActorRecord integration methods, and focused tests. Keep assignment, event kinds, and save/load mapping out until their concrete consumer atoms land.
+Continue with the `assignment-system` bundle: add the first `JobAssignmentSystem` pass that matches available actors to eligible `JobBoard` entries by actor preference priority. Keep event kinds, competition fixtures, and save/load mapping out until their concrete consumer atoms land.
