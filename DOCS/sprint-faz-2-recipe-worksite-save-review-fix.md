@@ -25,3 +25,8 @@ Wire the active worksite and recipe work-order DTOs through the production `Json
 ## Next increment
 
 After PR #106 is updated and bot feedback is marked addressed, wait for remote checks/bot review before merge; then update the Faz 2 atom map row if the PR lands.
+
+## Atom-map bookkeeping
+
+- `DOCS/sprint-faz-2-atom-map.md` now marks the save/load TIME rows for `SliceSaveMapper`/`RecipeWorksiteRoundTripTests` as landed on `agent/sprint-faz-2-recipe-worksite-save`.
+- Current cron packet: `pkt_20260514105821_bf14bff6ca68`; resolver: `sha256:62e3ced1a90e0ef1103cf7066036d2202562584822c0f076e7d11b86bdfcb3ee`.
