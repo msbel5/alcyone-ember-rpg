@@ -1,18 +1,22 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-11-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     PI[Player Intent<br/>set actor smith priority 1]
     PCS[ActorPriorityCommandService]
     AS[ActorStore]
     AR[ActorRecord]
-    SC[ScheduleComponent]
+    SC[ActorScheduleState]
 
     subgraph F3[Faz 3 - PROCESS + LIVING]
         JB[JobBoard]
-        JP[JobPosting / Job]
+        JP[JobRequest / Job]
         JM[JobMatcher]
-        JS[JobSystem tick]
+        JS[JobAssignmentSystem tick]
         JA[JobAssignment]
         PF[IPathfinder]
         PFS[PathfindingSystem tick]
@@ -86,7 +90,7 @@ classDiagram
         -Dictionary~JobId, Job~ _jobsById
         -List~JobId~ _order
         +int Count
-        +Add(JobPosting posting) Job
+        +Add(JobRequest posting) Job
         +TryGet(JobId id, out Job job) bool
         +TryPeekNext(JobMatcherContext context, out Job job) bool
         +TryAssign(JobId id, ActorId actorId, GameTime assignedAt, out JobAssignment assignment) bool
@@ -98,7 +102,7 @@ classDiagram
         +IEnumerable~Job~ Jobs
     }
 
-    class JobPosting {
+    class JobRequest {
         +JobId Id
         +RecipeId RecipeId
         +SiteId SiteId
@@ -112,7 +116,7 @@ classDiagram
 
     class Job {
         +JobId Id
-        +JobPosting Posting
+        +JobRequest Posting
         +JobStatus Status
         +JobAssignment Assignment
         +int RemainingQuantity
@@ -151,14 +155,14 @@ classDiagram
         +Blocked(string reason) JobStatus
     }
 
-    class ScheduleComponent {
+    class ActorScheduleState {
         -List~JobPrioritySetting~ _priorities
         +JobAssignment CurrentAssignment
         +IReadOnlyList~JobPrioritySetting~ Priorities
         +GetPriority(string jobTag) JobPriority
-        +WithPriority(string jobTag, JobPriority priority) ScheduleComponent
-        +WithAssignment(JobAssignment assignment) ScheduleComponent
-        +ClearAssignment() ScheduleComponent
+        +WithPriority(string jobTag, JobPriority priority) ActorScheduleState
+        +WithAssignment(JobAssignment assignment) ActorScheduleState
+        +ClearAssignment() ActorScheduleState
     }
 
     class JobPrioritySetting {
@@ -169,8 +173,8 @@ classDiagram
     class ActorRecord {
         +ActorId Id
         +GridPosition Position
-        +ScheduleComponent Schedule
-        +ApplySchedule(ScheduleComponent schedule) void
+        +ActorScheduleState Schedule
+        +ApplySchedule(ActorScheduleState schedule) void
     }
 
     class WorksiteSlot {
@@ -205,14 +209,14 @@ classDiagram
     }
 
     JobBoard "1" o-- "*" Job
-    Job "1" --> "1" JobPosting
+    Job "1" --> "1" JobRequest
     Job "1" --> "1" JobStatus
     Job "0..1" --> "1" JobAssignment
-    JobPosting --> JobPriority
+    JobRequest --> JobPriority
     JobAssignment --> WorksiteSlot
-    ActorRecord "1" o-- "1" ScheduleComponent
-    ScheduleComponent "1" o-- "*" JobPrioritySetting
-    ScheduleComponent --> JobAssignment
+    ActorRecord "1" o-- "1" ActorScheduleState
+    ActorScheduleState "1" o-- "*" JobPrioritySetting
+    ActorScheduleState --> JobAssignment
     JobPrioritySetting --> JobPriority
     WorksiteSlot ..> WorksiteStore : resolves existing worksite
     IPathfinder ..> PathRequest
@@ -231,7 +235,7 @@ sequenceDiagram
     participant Priority as ActorPriorityCommandService
     participant Actors as ActorStore
     participant Board as JobBoard
-    participant JobSys as JobSystem tick
+    participant JobSys as JobAssignmentSystem tick
     participant Matcher as JobMatcher
     participant PathSys as PathfindingSystem tick
     participant Path as IPathfinder
@@ -340,7 +344,7 @@ namespace EmberCrpg.Domain.Process
 }
 ```
 
-### `Assets/Scripts/Domain/Process/JobPosting.cs`
+### `Assets/Scripts/Domain/Process/JobRequest.cs`
 
 ```csharp
 using System;
@@ -352,10 +356,10 @@ namespace EmberCrpg.Domain.Process
     /// <summary>
     /// Immutable data row for requested work. It binds recipe, worksite, job tag, priority, and quantity without assigning actors.
     /// </summary>
-    public sealed class JobPosting
+    public sealed class JobRequest
     {
         /// <summary>Creates a deterministic job posting from validated row data.</summary>
-        public JobPosting(
+        public JobRequest(
             JobId id,
             RecipeId recipeId,
             SiteId siteId,
@@ -409,13 +413,13 @@ namespace EmberCrpg.Domain.Process
     public sealed class Job
     {
         /// <summary>Creates a runtime job from a posting and initial lifecycle state.</summary>
-        public Job(JobPosting posting, JobStatus status, JobAssignment assignment, int remainingQuantity);
+        public Job(JobRequest posting, JobStatus status, JobAssignment assignment, int remainingQuantity);
 
         /// <summary>Stable job handle copied from the posting.</summary>
         public JobId Id { get; }
 
         /// <summary>Immutable requested-work row.</summary>
-        public JobPosting Posting { get; }
+        public JobRequest Posting { get; }
 
         /// <summary>Current lifecycle status for matching, pathing, recipe work, and visual output.</summary>
         public JobStatus Status { get; }
@@ -499,7 +503,7 @@ namespace EmberCrpg.Domain.Process
         public int Count { get; }
 
         /// <summary>Adds a posting as a pending runtime job.</summary>
-        public Job Add(JobPosting posting);
+        public Job Add(JobRequest posting);
 
         /// <summary>Returns true when a non-terminal job exists for the id.</summary>
         public bool Contains(JobId id);
@@ -553,7 +557,7 @@ namespace EmberCrpg.Domain.Actors
         /// <summary>Creates one actor preference row.</summary>
         public JobPrioritySetting(string jobTag, JobPriority priority);
 
-        /// <summary>Data tag matched against JobPosting.JobTag.</summary>
+        /// <summary>Data tag matched against JobRequest.JobTag.</summary>
         public string JobTag { get; }
 
         /// <summary>Actor's priority for the tag; disabled means opt out.</summary>
@@ -562,7 +566,7 @@ namespace EmberCrpg.Domain.Actors
 }
 ```
 
-### `Assets/Scripts/Domain/Actors/ScheduleComponent.cs`
+### `Assets/Scripts/Domain/Actors/ActorScheduleState.cs`
 
 ```csharp
 using System;
@@ -575,7 +579,7 @@ namespace EmberCrpg.Domain.Actors
     /// <summary>
     /// Actor schedule component containing job priorities and the current assignment. It is actor state, not system behavior.
     /// </summary>
-    public sealed class ScheduleComponent
+    public sealed class ActorScheduleState
     {
         /// <summary>Deterministic copied list of actor job priority rows.</summary>
         private readonly List<JobPrioritySetting> _priorities;
@@ -584,7 +588,7 @@ namespace EmberCrpg.Domain.Actors
         private readonly ReadOnlyCollection<JobPrioritySetting> _priorityView;
 
         /// <summary>Creates a schedule component with optional priorities and assignment.</summary>
-        public ScheduleComponent(IEnumerable<JobPrioritySetting> priorities, JobAssignment currentAssignment = null);
+        public ActorScheduleState(IEnumerable<JobPrioritySetting> priorities, JobAssignment currentAssignment = null);
 
         /// <summary>Current job assignment, or null when idle.</summary>
         public JobAssignment CurrentAssignment { get; }
@@ -596,13 +600,13 @@ namespace EmberCrpg.Domain.Actors
         public JobPriority GetPriority(string jobTag);
 
         /// <summary>Returns a new schedule with the given priority row inserted or replaced.</summary>
-        public ScheduleComponent WithPriority(string jobTag, JobPriority priority);
+        public ActorScheduleState WithPriority(string jobTag, JobPriority priority);
 
         /// <summary>Returns a new schedule with the current assignment set.</summary>
-        public ScheduleComponent WithAssignment(JobAssignment assignment);
+        public ActorScheduleState WithAssignment(JobAssignment assignment);
 
         /// <summary>Returns a new schedule with no current assignment.</summary>
-        public ScheduleComponent ClearAssignment();
+        public ActorScheduleState ClearAssignment();
     }
 }
 ```
@@ -621,7 +625,7 @@ namespace EmberCrpg.Domain.Actors
     public sealed class ActorRecord
     {
         /// <summary>Actor's current job schedule and assignment component.</summary>
-        public ScheduleComponent Schedule { get; }
+        public ActorScheduleState Schedule { get; }
 
         /// <summary>Creates an actor record with optional schedule component.</summary>
         public ActorRecord(
@@ -636,10 +640,10 @@ namespace EmberCrpg.Domain.Actors
             int armor,
             int baseDamage,
             IEnumerable<string> topicIds = null,
-            ScheduleComponent schedule = null);
+            ActorScheduleState schedule = null);
 
         /// <summary>Applies a replacement schedule component without changing actor identity.</summary>
-        public void ApplySchedule(ScheduleComponent schedule);
+        public void ApplySchedule(ActorScheduleState schedule);
     }
 }
 ```
@@ -840,7 +844,7 @@ namespace EmberCrpg.Simulation.Process
 }
 ```
 
-### `Assets/Scripts/Simulation/Process/JobSystem.cs`
+### `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`
 
 ```csharp
 using System.Collections.Generic;
@@ -853,13 +857,13 @@ namespace EmberCrpg.Simulation.Process
     /// <summary>
     /// Orchestrates one deterministic job-assignment tick. It scans actors in store order and assigns matching pending jobs.
     /// </summary>
-    public sealed class JobSystem
+    public sealed class JobAssignmentSystem
     {
         /// <summary>Matcher used for actor/job eligibility checks.</summary>
         private readonly JobMatcher _matcher;
 
         /// <summary>Creates a job system with a deterministic matcher.</summary>
-        public JobSystem(JobMatcher matcher);
+        public JobAssignmentSystem(JobMatcher matcher);
 
         /// <summary>Runs one assignment tick and returns assignments created during the tick.</summary>
         public IReadOnlyList<JobAssignment> Tick(
@@ -992,16 +996,16 @@ namespace EmberCrpg.Presentation.VisualLayer
 | Atom | Dosya + sınıf | Tag | Kısa açıklama | Neyi açar |
 |---:|---|---|---|---|
 | Atom 1 | `Assets/Scripts/Domain/Process/JobStatus.cs` :: `JobStatus` | [box=PROCESS] | Enum yerine stable string status value object. | Queue/active/completed lifecycle dili. |
-| Atom 2 | `Assets/Scripts/Domain/Process/JobPosting.cs` :: `JobPosting` | [box=PROCESS] | `JobRequest` üstüne data-driven posting row; `JobTag` string. | Yeni recipe/job branch yazmadan iş açma. |
+| Atom 2 | `Assets/Scripts/Domain/Process/JobRequest.cs` :: `JobRequest` | [box=PROCESS] | `JobRequest` üstüne data-driven posting row; `JobTag` string. | Yeni recipe/job branch yazmadan iş açma. |
 | Atom 3 | `Assets/Scripts/Domain/Process/Job.cs` + `JobAssignment.cs` | [box=PROCESS] | Runtime job ve actor claim row. | Board lifecycle ve queue index. |
-| Atom 4 | `Assets/Scripts/Domain/Process/JobBoard.cs` :: lifecycle extension | [box=PROCESS] | Add/assign/status/complete akışı; eski JobBoard testleri kırılmadan genişletilir. | JobSystem için mutasyon noktası. |
-| Atom 5 | `Assets/Scripts/Domain/Actors/JobPrioritySetting.cs` + `ScheduleComponent.cs` | [box=LIVING] | Actor-local job priority rows. | Player can set smith priority. |
-| Atom 6 | `Assets/Scripts/Domain/Actors/ActorRecord.cs` :: `Schedule` integration | [box=LIVING] | ScheduleComponent ActorRecord’a eklenir. | ActorStore üzerinden schedule okunabilir. |
+| Atom 4 | `Assets/Scripts/Domain/Process/JobBoard.cs` :: lifecycle extension | [box=PROCESS] | Add/assign/status/complete akışı; eski JobBoard testleri kırılmadan genişletilir. | JobAssignmentSystem için mutasyon noktası. |
+| Atom 5 | `Assets/Scripts/Domain/Actors/JobPrioritySetting.cs` + `ActorScheduleState.cs` | [box=LIVING] | Actor-local job priority rows. | Player can set smith priority. |
+| Atom 6 | `Assets/Scripts/Domain/Actors/ActorRecord.cs` :: `Schedule` integration | [box=LIVING] | ActorScheduleState ActorRecord’a eklenir. | ActorStore üzerinden schedule okunabilir. |
 | Atom 7 | `Assets/Scripts/Simulation/Process/ActorPriorityCommandService.cs` | [box=LIVING] | Player intent -> actor priority -> EventLog/ReasonTrace. | İlk visible debug event. |
 | Atom 8 | `Assets/Scripts/Domain/Process/WorksiteSlot.cs` | [box=PROCESS] | Existing WorksiteStore’dan target + queue cell çözümü. | Pathing ve queue görselleştirme. |
 | Atom 9 | `Assets/Scripts/Domain/World/IPathfinder.cs` + `PathRequest/PathResult` | [box=PROCESS] | Class değil interface; deterministic path API. | PathfindingSystem izolasyonu. |
 | Atom 10 | `Assets/Scripts/Simulation/Process/JobMatcher.cs` | [box=PROCESS] | Actor schedule + pending job + worksite eligibility. | Assignment tick’in karar merkezi. |
-| Atom 11 | `Assets/Scripts/Simulation/Process/JobSystem.cs` | [box=PROCESS] | Eligible actors scan -> match -> assign. | İki smith actor aynı furnace queue’ya girebilir. |
+| Atom 11 | `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs` | [box=PROCESS] | Eligible actors scan -> match -> assign. | İki smith actor aynı furnace queue’ya girebilir. |
 | Atom 12 | `Assets/Scripts/Simulation/Process/PathfindingSystem.cs` | [box=PROCESS] | Compute path -> step actor -> queued/active status. | “Watch both queue” snapshot’ı. |
 | Atom 13 | `Assets/Scripts/Simulation/Process/RecipeJobSystem.cs` | [box=PROCESS] | Actor at worksite -> RecipeSystem.TryStart/Tick -> job completion. | 4 ingot üretim zinciri. |
 | Atom 14 | `Assets/Scripts/Presentation/VisualLayer/JobDebugSnapshot.cs` | [box=PROCESS] | Unity’nin okuyacağı saf snapshot rows. | Faz 11 screenshot/debug HUD kanıtı. |
@@ -1052,8 +1056,8 @@ Acceptance çevirisi:
 | Player sentence | Test karşılığı |
 |---|---|
 | player can set 2 actors to smith priority 1 | `ActorPriorityCommandService.SetPriority(a1, "smith", Active(1))` ve `a2` için aynı çağrı; schedule rows assert edilir. |
-| watch both queue at the furnace | `JobSystem.Tick` iki assignment üretir; `PathfindingSystem.Tick` sonrası iki `JobDebugRow` aynı `worksiteTag=furnace`, queue index `0,1`. |
-| produce 4 ingots | 4 adet `JobPosting` veya quantity 4 posting; `RecipeJobSystem` tick sonunda inventory `iron_ingot == 4`. |
+| watch both queue at the furnace | `JobAssignmentSystem.Tick` iki assignment üretir; `PathfindingSystem.Tick` sonrası iki `JobDebugRow` aynı `worksiteTag=furnace`, queue index `0,1`. |
+| produce 4 ingots | 4 adet `JobRequest` veya quantity 4 posting; `RecipeJobSystem` tick sonunda inventory `iron_ingot == 4`. |
 | in a deterministic day | Tick count `GameTime.MinutesPerDay` sınırını aşmaz; aynı seed ile replay log byte-equal. |
 
 Replay determinism check:
@@ -1080,7 +1084,7 @@ Test kurulumu:
 | Recipes | `SmeltIronIngot` data row: `2 iron_ore + 1 fuel -> 1 iron_ingot`, duration existing Faz 2 value. |
 | Inventory | 8 ore + 4 fuel, output capacity enough. |
 | Jobs | 4 unit job posting veya quantity 4 posting; tercih: 4 unit posting, daha küçük lifecycle testleri. |
-| Tick loop | `JobSystem`, `PathfindingSystem`, `RecipeJobSystem` fixed order, max `GameTime.MinutesPerDay`. |
+| Tick loop | `JobAssignmentSystem`, `PathfindingSystem`, `RecipeJobSystem` fixed order, max `GameTime.MinutesPerDay`. |
 | Pass condition | 4 ingots, both actors assigned/queued at least once, same seed replay byte-equal. |
 
 Hangi atom’lar acceptance’ı kapatır:
@@ -1098,7 +1102,7 @@ Risk matrisi:
 | Risk | Atom | Büyüklük | Neden | Mitigasyon |
 |---|---:|---|---|---|
 | `ActorRecord` constructor değişimi mevcut testleri kırar | 6 | Büyük | Çok sayıda test actor oluşturuyor. | `schedule = null` optional param; default empty schedule. |
-| Existing `JobBoard` API ile yeni lifecycle çakışır | 4 | Büyük | Mevcut `JobRequest` testleri var. | Backward-compatible overload veya ayrı `JobPosting` path; eski testler korunur. |
+| Existing `JobBoard` API ile yeni lifecycle çakışır | 4 | Büyük | Mevcut `JobRequest` testleri var. | Backward-compatible overload veya ayrı `JobRequest` path; eski testler korunur. |
 | Worksite queue capacity belirsizliği | 8, 12, 13 | Orta | Existing WorksiteStore yalnızca record lookup. | Queue index `JobAssignment` üzerinde tutulur; WorksiteStore değiştirilmez. |
 | Pathfinding gerçek map verisi yoksa acceptance bloke olur | 9, 12 | Orta | Interface var ama concrete pathfinder ayrı PR olabilir. | Acceptance testte deterministic grid pathfinder fake’i kullan; production concrete sonra. |
 | RecipeSystem tek work order varsayımı | 13 | Orta | Faz 2 dar slice. | `RecipeJobSystem` active orders’ı job id ile tutar; RecipeSystem saf executor kalır. |
@@ -1112,7 +1116,7 @@ Atom sırası nedeni:
 | 1-4 | Önce job lifecycle dili ve board state netleşir; assignment sistemi boşa yazılmaz. |
 | 5-7 | Player intent ve actor schedule görünür olur; üçüncü PR visible progress üretebilir. |
 | 8-9 | Worksite target ve path API netleşmeden queue/path sistemi yazılmaz. |
-| 10-11 | Matcher ayrı pinlenir, sonra JobSystem orchestration gelir. |
+| 10-11 | Matcher ayrı pinlenir, sonra JobAssignmentSystem orchestration gelir. |
 | 12-13 | Önce actor worksite’a gelir, sonra RecipeSystem bridge çalışır. |
 | 14-15 | Snapshot ve replay en sona gelir; acceptance tüm davranışı kapatır. |
 
@@ -1120,7 +1124,7 @@ Faz 4 Colony Needs hook’ları:
 
 | Hook | Nerede bırakılır | Faz 4’te kullanım |
 |---|---|---|
-| `ScheduleComponent.GetPriority(string jobTag)` | Actor schedule component | Hunger/fatigue priority düşürebilir veya disabled döndürebilir. |
+| `ActorScheduleState.GetPriority(string jobTag)` | Actor schedule component | Hunger/fatigue priority düşürebilir veya disabled döndürebilir. |
 | `JobMatcher.CanActorWorkJob(..., out rejectionReason)` | Matcher boundary | Needs threshold actor’u “too_hungry_to_work” reason ile reddeder. |
 | `ReasonTrace` cause labels | `job_assigned`, `job_blocked`, `actor_queued` events | Mood/needs kaynaklı refusal görünür ve replayable olur. |
 | `JobStatus.Blocked(string reason)` | Job lifecycle | Needs yüzünden geçici bloklar status olarak debug HUD’a düşer. |

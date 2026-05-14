@@ -1,5 +1,9 @@
 # Faz 12 — LLM / NPC fallback flavour
 
+> _Captain atom-map_: `DOCS/sprint-faz-12-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 Faz 12, Alcyone-Ember’in son katmanıdır. Bu faz yeni bir “LLM oyun motoru” eklemez; önceki 11 fazın deterministic çekirdeğini tek bir yaşayan dünya davranışına bağlar. NPC’ler önce kendi ihtiyaç, hafıza, moral, disposition, iş ve tool verileriyle karar verir. DM/LLM yalnızca deterministic sistemin takıldığı, düşük güvenli ve stale durumlarda 1-3 öneri üretir. Öneriler Store’a yazamaz; sadece NPC’nin kendi tool listesine karşı validate edilir ve deterministic command path üzerinden çalışır.
 
 ## 1. Sistem Haritası

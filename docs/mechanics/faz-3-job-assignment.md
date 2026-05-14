@@ -1,5 +1,9 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-3-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     subgraph TIME["TIME"]
@@ -10,15 +14,15 @@ graph TB
     subgraph LIVING["LIVING"]
         AS["ActorStore"]
         AR["ActorRecord"]
-        SC["ScheduleComponent<br/>currentJob + priorities"]
+        SC["ActorScheduleState<br/>currentJob + priorities"]
         IDLE["IdleBehaviourSystem"]
         PFS["PathfindingSystem"]
     end
 
     subgraph PROCESS["PROCESS"]
-        JS["JobSystem"]
+        JS["JobAssignmentSystem"]
         JB["JobBoard per Site"]
-        JP["JobPosting"]
+        JP["JobRequest"]
         J["Job"]
         JA["JobAssignment"]
         JM["JobMatcher"]
@@ -109,10 +113,10 @@ graph TB
 classDiagram
     class JobBoard {
         +SiteId SiteId
-        -Dictionary~JobPostingId, JobPosting~ postings
+        -Dictionary~JobRequestId, JobRequest~ postings
         -Dictionary~JobId, Job~ jobs
         -Dictionary~JobAssignmentId, JobAssignment~ assignments
-        +AddPosting(JobPosting posting) JobPostingId
+        +AddPosting(JobRequest posting) JobRequestId
         +TryReserve(JobId jobId, EntityId actorId) bool
         +Assign(JobAssignment assignment) Job
         +MarkActive(JobId jobId, WorldTick tick) Job
@@ -120,8 +124,8 @@ classDiagram
         +Cancel(JobId jobId, string reason) Job
     }
 
-    class JobPosting {
-        +JobPostingId PostingId
+    class JobRequest {
+        +JobRequestId PostingId
         +SiteId SiteId
         +RecipeId RecipeId
         +WorksiteSlot Slot
@@ -133,7 +137,7 @@ classDiagram
 
     class Job {
         +JobId JobId
-        +JobPostingId PostingId
+        +JobRequestId PostingId
         +RecipeId RecipeId
         +WorksiteSlot Slot
         +JobPriority Priority
@@ -164,7 +168,7 @@ classDiagram
         +string Code
     }
 
-    class ScheduleComponent {
+    class ActorScheduleState {
         +JobAssignmentId? CurrentJob
         +IReadOnlyDictionary~string, JobPriority~ Priorities
         +string IdleMode
@@ -186,18 +190,18 @@ classDiagram
         +TryStep(EntityId actorId, PathHandle path, WorldTick tick) PathStepResult
     }
 
-    JobBoard "1" o-- "*" JobPosting
+    JobBoard "1" o-- "*" JobRequest
     JobBoard "1" o-- "*" Job
     JobBoard "1" o-- "*" JobAssignment
-    JobPosting "1" --> "1" WorksiteSlot
-    JobPosting "1" --> "1" JobPriority
-    JobPosting "1" --> "1" JobStatus
+    JobRequest "1" --> "1" WorksiteSlot
+    JobRequest "1" --> "1" JobPriority
+    JobRequest "1" --> "1" JobStatus
     Job "1" --> "1" WorksiteSlot
     Job "1" --> "1" JobPriority
     Job "1" --> "1" JobStatus
     Job "0..1" --> "1" JobAssignment
     JobAssignment "1" --> "1" WorksiteSlot
-    ScheduleComponent "0..1" --> "1" JobAssignment
+    ActorScheduleState "0..1" --> "1" JobAssignment
     WorksiteSlot ..> WorksiteStore : existing reference
     IPathfinder ..> PathfindingSystem : API only
     IPathfinder ..> JobMatcher : distance/path eligibility
@@ -210,8 +214,8 @@ sequenceDiagram
     participant Player
     participant Command as Typed Command
     participant ActorStore
-    participant Schedule as ScheduleComponent
-    participant JobSystem
+    participant Schedule as ActorScheduleState
+    participant JobAssignmentSystem
     participant JobBoard
     participant JobMatcher
     participant WorksiteStore
@@ -225,15 +229,15 @@ sequenceDiagram
     ActorStore->>Schedule: Update priority map deterministically
     Schedule-->>Events: Emit ActorPriorityChanged reason
 
-    JobSystem->>ActorStore: Scan actors with ScheduleComponent.IsAvailableForWork
-    JobSystem->>JobBoard: Read queued jobs for site
-    JobSystem->>JobMatcher: Match actor/job by priority, skill, distance
+    JobAssignmentSystem->>ActorStore: Scan actors with ActorScheduleState.IsAvailableForWork
+    JobAssignmentSystem->>JobBoard: Read queued jobs for site
+    JobAssignmentSystem->>JobMatcher: Match actor/job by priority, skill, distance
     JobMatcher->>WorksiteStore: Resolve WorksiteSlot and queue capacity
     JobMatcher->>Pathfinder: Optional path feasibility / distance query
-    JobMatcher-->>JobSystem: Deterministic best match
-    JobSystem->>JobBoard: Reserve job and create JobAssignment
-    JobSystem->>ActorStore: Set ScheduleComponent.CurrentJob
-    JobSystem-->>Events: Emit JobAssigned with ReasonTrace
+    JobMatcher-->>JobAssignmentSystem: Deterministic best match
+    JobAssignmentSystem->>JobBoard: Reserve job and create JobAssignment
+    JobAssignmentSystem->>ActorStore: Set ActorScheduleState.CurrentJob
+    JobAssignmentSystem-->>Events: Emit JobAssigned with ReasonTrace
 
     PathSystem->>ActorStore: Read actors with currentJob
     PathSystem->>WorksiteStore: Resolve target cell for WorksiteSlot
@@ -290,7 +294,7 @@ public readonly record struct JobStatus(string Code);
 public readonly record struct JobStatusTransition(JobStatus From, JobStatus To, string ReasonCode);
 ```
 
-### `Assets/Scripts/Domain/Process/JobPosting.cs`
+### `Assets/Scripts/Domain/Process/JobRequest.cs`
 
 ```csharp
 using System;
@@ -303,8 +307,8 @@ namespace EmberCrpg.Domain.Process;
 /// JobBoard üzerindeki üretim talebidir.
 /// Recipe row, worksite slot, priority ve gerekli skill bilgisini birleştirir.
 /// </summary>
-public sealed record JobPosting(
-    JobPostingId PostingId,
+public sealed record JobRequest(
+    JobRequestId PostingId,
     SiteId SiteId,
     RecipeId RecipeId,
     WorksiteSlot Slot,
@@ -329,7 +333,7 @@ namespace EmberCrpg.Domain.Process;
 /// </summary>
 public sealed record Job(
     JobId JobId,
-    JobPostingId PostingId,
+    JobRequestId PostingId,
     RecipeId RecipeId,
     WorksiteSlot Slot,
     JobPriority Priority,
@@ -387,7 +391,7 @@ public sealed record WorksiteSlot(
     int Capacity);
 ```
 
-### `Assets/Scripts/Domain/Living/ScheduleComponent.cs`
+### `Assets/Scripts/Domain/Living/ActorScheduleState.cs`
 
 ```csharp
 using System.Collections.Generic;
@@ -400,7 +404,7 @@ namespace EmberCrpg.Domain.Living;
 /// ActorRecord üzerine eklenen composition component'idir.
 /// Aktörün mevcut işini, oyuncu/sistem önceliklerini ve idle davranış modunu taşır.
 /// </summary>
-public sealed record ScheduleComponent(
+public sealed record ActorScheduleState(
     JobAssignmentId? CurrentJob,
     IReadOnlyDictionary<string, JobPriority> Priorities,
     string IdleMode,
@@ -473,7 +477,7 @@ public sealed partial class JobBoard
     private readonly SiteId _siteId;
 
     /// <summary>Board üzerindeki üretim taleplerini posting id ile saklar.</summary>
-    private readonly Dictionary<JobPostingId, JobPosting> _postings;
+    private readonly Dictionary<JobRequestId, JobRequest> _postings;
 
     /// <summary>Tekil iş kayıtlarını job id ile saklar.</summary>
     private readonly Dictionary<JobId, Job> _jobs;
@@ -491,10 +495,10 @@ public sealed partial class JobBoard
     public SiteId SiteId { get; }
 
     /// <summary>Yeni posting ekler ve posting id döndürür.</summary>
-    public JobPostingId AddPosting(JobPosting posting);
+    public JobRequestId AddPosting(JobRequest posting);
 
     /// <summary>Posting üzerinden tekil job oluşturur.</summary>
-    public JobId CreateJobFromPosting(JobPostingId postingId, JobId jobId, WorldTick tick);
+    public JobId CreateJobFromPosting(JobRequestId postingId, JobId jobId, WorldTick tick);
 
     /// <summary>Duruma göre işleri deterministik sırada listeler.</summary>
     public IReadOnlyList<Job> GetJobs(JobStatus status);
@@ -581,7 +585,7 @@ public sealed partial class JobMatcher
     /// <summary>Tek aktör için en iyi queued job'u seçer.</summary>
     public JobMatchResult MatchBestJobForActor(
         ActorRecord actor,
-        ScheduleComponent schedule,
+        ActorScheduleState schedule,
         IReadOnlyList<Job> queuedJobs,
         WorksiteStore worksiteStore,
         WorldTick tick);
@@ -594,14 +598,14 @@ public sealed partial class JobMatcher
         WorldTick tick);
 
     /// <summary>Aktörün job için skill, status, schedule ve Faz 4 refusal hook'ları açısından uygunluğunu denetler.</summary>
-    public bool IsEligible(ActorRecord actor, ScheduleComponent schedule, Job job, WorldTick tick);
+    public bool IsEligible(ActorRecord actor, ActorScheduleState schedule, Job job, WorldTick tick);
 
     /// <summary>Priority, skill ve path distance birleşik skorunu hesaplar.</summary>
-    public int Score(ActorRecord actor, ScheduleComponent schedule, Job job, WorksiteSlot slot, WorldTick tick);
+    public int Score(ActorRecord actor, ActorScheduleState schedule, Job job, WorksiteSlot slot, WorldTick tick);
 }
 ```
 
-### `Assets/Scripts/Simulation/Process/JobSystem.cs`
+### `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`
 
 ```csharp
 using System.Collections.Generic;
@@ -615,7 +619,7 @@ namespace EmberCrpg.Simulation.Process;
 /// Her world tick'te uygun aktörleri queued job'larla eşleştirir.
 /// Dünya mutasyonunu ActorStore ve JobBoardStore üzerinden yapar, ReasonTrace üretir.
 /// </summary>
-public sealed partial class JobSystem
+public sealed partial class JobAssignmentSystem
 {
     /// <summary>Site bazlı job board otoritesidir.</summary>
     private readonly JobBoardStore _jobBoards;
@@ -635,8 +639,8 @@ public sealed partial class JobSystem
     /// <summary>WorldEvent ve ReasonTrace yazımı için kullanılır.</summary>
     private readonly JobEventWriter _events;
 
-    /// <summary>JobSystem bağımlılıklarını alır.</summary>
-    public JobSystem(
+    /// <summary>JobAssignmentSystem bağımlılıklarını alır.</summary>
+    public JobAssignmentSystem(
         JobBoardStore jobBoards,
         ActorStore actorStore,
         WorksiteStore worksiteStore,
@@ -651,7 +655,7 @@ public sealed partial class JobSystem
     public WorldEvent SetActorPriority(EntityId actorId, string laborId, JobPriority priority, WorldTick tick);
 
     /// <summary>Recipe row ve worksite slot'tan posting üretir; recipe branch yazmaz.</summary>
-    public JobPostingId PostRecipeJob(SiteId siteId, RecipeId recipeId, WorksiteId worksiteId, JobPriority priority, WorldTick tick);
+    public JobRequestId PostRecipeJob(SiteId siteId, RecipeId recipeId, WorksiteId worksiteId, JobPriority priority, WorldTick tick);
 }
 ```
 
@@ -695,7 +699,7 @@ public sealed partial class PathfindingSystem
     public IReadOnlyList<WorldEvent> Tick(SiteId siteId, WorldTick tick, DeterministicRng rng);
 
     /// <summary>Aktörün assigned job için path'e ihtiyacı olup olmadığını denetler.</summary>
-    public bool NeedsPath(ActorRecord actor, ScheduleComponent schedule, WorldTick tick);
+    public bool NeedsPath(ActorRecord actor, ActorScheduleState schedule, WorldTick tick);
 
     /// <summary>Aktör worksite target cell'e ulaştığında JobBoard üzerinde active geçişini tetikler.</summary>
     public WorldEvent MarkArrived(EntityId actorId, JobAssignmentId assignmentId, WorldTick tick);
@@ -775,7 +779,7 @@ public sealed partial class IdleBehaviourSystem
     public IReadOnlyList<WorldEvent> Tick(SiteId siteId, WorldTick tick, DeterministicRng rng);
 
     /// <summary>Aktör için idle mode'a göre deterministik idle aksiyon seçer.</summary>
-    public string SelectIdleAction(ActorRecord actor, ScheduleComponent schedule, WorldTick tick, DeterministicRng rng);
+    public string SelectIdleAction(ActorRecord actor, ActorScheduleState schedule, WorldTick tick, DeterministicRng rng);
 }
 ```
 
@@ -806,7 +810,7 @@ public sealed partial class JobEventWriter
     public WorldEvent ActorPriorityChanged(EntityId actorId, string laborId, JobPriority priority, WorldTick tick);
 
     /// <summary>Job posting yaratıldığında event ve trace üretir.</summary>
-    public WorldEvent JobPosted(JobPosting posting, WorldTick tick);
+    public WorldEvent JobPosted(JobRequest posting, WorldTick tick);
 
     /// <summary>Job aktöre atandığında event ve trace üretir.</summary>
     public WorldEvent JobAssigned(Job job, JobAssignment assignment, string reason, WorldTick tick);
@@ -830,14 +834,14 @@ public sealed partial class JobEventWriter
 | Atom | Tag | PR içeriği | Captain için net seçim kriteri | Görünürlük |
 |---:|---|---|---|---|
 | Atom 1 | [box=PROCESS] | `JobPriority`, `JobStatus`, `JobStatusTransition`, ID/value-object adaptörleri | Önce state vocabulary sabitlenir; enum switch yerine transition row hazırlanır. | Test-only olabilir |
-| Atom 2 | [box=PROCESS] | `JobPosting`, `Job`, `JobAssignment`, `WorksiteSlot` | Job data contract ve WorksiteStore referansı netleşir. | Store state görünür |
-| Atom 3 | [box=LIVING] | `ScheduleComponent` ActorRecord entegrasyonu | Actor composition genişler; `currentJob` ve priority map taşınır. | Store state görünür |
+| Atom 2 | [box=PROCESS] | `JobRequest`, `Job`, `JobAssignment`, `WorksiteSlot` | Job data contract ve WorksiteStore referansı netleşir. | Store state görünür |
+| Atom 3 | [box=LIVING] | `ActorScheduleState` ActorRecord entegrasyonu | Actor composition genişler; `currentJob` ve priority map taşınır. | Store state görünür |
 | Atom 4 | [box=PROCESS] | `JobBoard` state machine ve snapshot | Queued→assigned→active→completed/cancelled geçişleri pin'lenir. | Event olmadan test-visible |
 | Atom 5 | [box=PROCESS] | `JobBoardStore` site başına board | Per-site job authority kurulur; SliceWorldState named field eklenmez. | Store state görünür |
 | Atom 6 | [box=PROCESS] | `JobMatcher` priority + skill + distance scoring | İş seçimi deterministik olur; pathfinder distance query hook'u hazırdır. | Test-only olabilir |
 | Atom 7 | [box=LIVING] | `IPathfinder` integration + `PathfindingSystem` assigned actor movement | Aktör worksite'a yürür ve arrival event üretir. | Visible event |
 | Atom 8 | [box=PROCESS] | `JobEventWriter` WorldEvent + ReasonTrace | Debug overlay/replay log için event yüzeyi açılır. | Visible event |
-| Atom 9 | [box=PROCESS] | `JobSystem` tick: scan actors, match, assign | Oyuncu priority verdiğinde aktör job alır. | Visible event |
+| Atom 9 | [box=PROCESS] | `JobAssignmentSystem` tick: scan actors, match, assign | Oyuncu priority verdiğinde aktör job alır. | Visible event |
 | Atom 10 | [box=PROCESS] | `JobRecipeBridge` RecipeSystem tick entegrasyonu | Actor worksite'tayken recipe progress ve completion job'a bağlanır. | Visible production |
 | Atom 11 | [box=PROCESS] | `BakeBread` recipe data row | Smelt ve bake işleri rekabet eder; C# branch yoktur. | Visible competing jobs |
 | Atom 12 | [box=LIVING] | `IdleBehaviourSystem` no-job fallback | Job yoksa deterministik idle event üretilir. | Visible event |
@@ -850,7 +854,7 @@ public sealed partial class JobEventWriter
 |---|---|---|
 | Job status state machine | `JobBoard.Assign`, `MarkActive`, `Complete`, `Cancel` yalnızca izinli transition yapar | `Tests/Domain/Process/JobBoardStateMachineTests.cs` |
 | Posting → Job dönüşümü | `CreateJobFromPosting` recipe, slot, priority ve completion tick taşır | `Tests/Domain/Process/JobBoardPostingTests.cs` |
-| Schedule priority | `ScheduleComponent` ActorRecord üzerinde current job ve priority map taşır | `Tests/Domain/Living/ScheduleComponentTests.cs` |
+| Schedule priority | `ActorScheduleState` ActorRecord üzerinde current job ve priority map taşır | `Tests/Domain/Living/ActorScheduleStateTests.cs` |
 | Matcher eligibility | Skill yoksa elenir, priority 1 priority 5'i geçer | `Tests/Domain/Process/JobMatcherEligibilityTests.cs` |
 | Matcher tie-break | Eşit distance'ta yüksek skill; eşitse actor id/job id sırası | `Tests/Domain/Process/JobMatcherDeterminismTests.cs` |
 | Pathfinder integration | Assigned aktör target cell'e yürür ve arrival event üretir | `Tests/Simulation/Living/PathfindingSystemTests.cs` |
@@ -886,7 +890,7 @@ Acceptance çevirisi:
 
 | Oyuncu cümlesi | Test adımı |
 |---|---|
-| player can set 2 actors to smith priority 1 | `JobSystem.SetActorPriority(actorA, "smith", JobPriority(1, "player", "..."))` ve actorB için aynı komut |
+| player can set 2 actors to smith priority 1 | `JobAssignmentSystem.SetActorPriority(actorA, "smith", JobPriority(1, "player", "..."))` ve actorB için aynı komut |
 | watch both queue at the furnace | `JobAssigned` event'lerinde aynı `WorksiteId`, farklı `QueuePosition`, iki `CurrentJob` |
 | and produce 4 ingots | `JobRecipeBridge.Tick` sonrası WorksiteStore/ItemStore içinde `IronIngot` toplamı 4 |
 | in a deterministic day | Aynı seed + command log iki kez replay edilir, event hash ve final store snapshot eşit olur |
@@ -907,7 +911,7 @@ Replay determinism check:
 
 | Adım | Test edilen atomlar | Doğrulama |
 |---:|---|---|
-| 1 | Atom 1-3 | İki ActorRecord üzerinde `ScheduleComponent.Priorities["smith"].Value == 1` |
+| 1 | Atom 1-3 | İki ActorRecord üzerinde `ActorScheduleState.Priorities["smith"].Value == 1` |
 | 2 | Atom 4-6 | Furnace için iki queued smith job deterministik olarak iki aktöre atanır |
 | 3 | Atom 7-8 | İki aktör aynı furnace `WorksiteId` için path alır; biri queue position 0, diğeri 1 |
 | 4 | Atom 9 | `JobAssigned` event'leri ReasonTrace ile debug/replay yüzeyinde görünür |
@@ -930,7 +934,7 @@ Acceptance test fixture önerisi:
 
 | Risk | Seviye | Etkilenen atom | Neden | Azaltma |
 |---|---|---:|---|---|
-| ActorRecord'a `ScheduleComponent` eklemek mevcut save/load'u kırabilir | Yüksek | Atom 3 | Store serialization değişir | Backward-compatible default schedule factory |
+| ActorRecord'a `ActorScheduleState` eklemek mevcut save/load'u kırabilir | Yüksek | Atom 3 | Store serialization değişir | Backward-compatible default schedule factory |
 | RecipeSystem ile active job bağlamak refactor gerektirebilir | Yüksek | Atom 10 | Faz 2 recipe tick actor-aware olmayabilir | `JobRecipeBridge` adapter; RecipeSystem core'a minimum temas |
 | Pathfinding API mevcut değilse hareket entegrasyonu büyür | Orta/Yüksek | Atom 7 | Faz 2 pathfinding PRD tamamlanmamış olabilir | `IPathfinder` fake ile başlayıp gerçek adapter sonraki PR |
 | Matcher determinism bozulabilir | Orta | Atom 6 | Dictionary iteration sırası veya random tie-break | Canonical sort: priority, distance, skill desc, actor id, job id |
@@ -963,6 +967,6 @@ Faz 4 `Colony needs` entegrasyonu için bırakılacak hook'lar:
 | `JobMatcher.IsEligible(...)` | `JobMatcher` | `task_refusal`, desperate needs veya morale cascade aktörü eleyebilir |
 | `JobMatcher.Score(...)` | `JobMatcher` | NeedState açlık/uyku/craft ihtiyacı job skorunu değiştirebilir |
 | `JobRecipeBridge.Tick(...)` | `JobRecipeBridge` | `work_speed_mult` recipe progress hızını etkiler |
-| `ScheduleComponent.IdleMode` | `ScheduleComponent` | İş yoksa eat/sleep/socialize gibi Faz 4 need fulfillment idle task'larına yönlenir |
-| `JobPosting.Priority.Source` | `JobPosting` | ProductionLedger shortage job posting priority'sini yükseltir |
+| `ActorScheduleState.IdleMode` | `ActorScheduleState` | İş yoksa eat/sleep/socialize gibi Faz 4 need fulfillment idle task'larına yönlenir |
+| `JobRequest.Priority.Source` | `JobRequest` | ProductionLedger shortage job posting priority'sini yükseltir |
 | `ReasonTrace` fields | `JobEventWriter` | DM/AI sadece trace okur; world state'e doğrudan yazmaz |

@@ -1,5 +1,9 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-7-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     subgraph TIME["TIME"]
@@ -31,7 +35,7 @@ graph TB
     end
 
     subgraph PROCESS["PROCESS"]
-        JobSystem["JobSystem"]
+        JobAssignmentSystem["JobAssignmentSystem"]
         PathfindingSystem["PathfindingSystem"]
         RecipeSystem["RecipeSystem (existing Faz 2)"]
         WorksiteSlot["WorksiteSlot queue"]
@@ -55,7 +59,7 @@ graph TB
         DmNarration["DM reads events only"]
     end
 
-    Tick --> JobSystem
+    Tick --> JobAssignmentSystem
     Tick --> PathfindingSystem
     Tick --> RecipeSystem
     Tick --> CombatSystem
@@ -81,11 +85,11 @@ graph TB
     CombatResolver --> ArmorItem
     CombatResolver --> Durability
 
-    Priority --> JobSystem
-    NeedsPreview -. "score modifier hook, Faz 4" .-> JobSystem
-    JobSystem --> WorksiteStore
-    JobSystem --> WorksiteSlot
-    JobSystem --> PathfindingSystem
+    Priority --> JobAssignmentSystem
+    NeedsPreview -. "score modifier hook, Faz 4" .-> JobAssignmentSystem
+    JobAssignmentSystem --> WorksiteStore
+    JobAssignmentSystem --> WorksiteSlot
+    JobAssignmentSystem --> PathfindingSystem
     PathfindingSystem --> SiteStore
     PathfindingSystem --> ActorStore
     RecipeSystem --> WorksiteStore
@@ -95,7 +99,7 @@ graph TB
     DeathDrop --> LootFlow
     FactionStore -. "future ally death / witness event" .-> WitnessHook
 
-    JobSystem --> WorldEventLog
+    JobAssignmentSystem --> WorldEventLog
     PathfindingSystem --> WorldEventLog
     RecipeSystem --> WorldEventLog
     CombatSystem --> WorldEventLog
@@ -271,7 +275,7 @@ sequenceDiagram
     participant Player
     participant Intent as PlayerIntentService
     participant Actors as ActorStore
-    participant Jobs as JobSystem
+    participant Jobs as JobAssignmentSystem
     participant Worksites as WorksiteStore
     participant Paths as PathfindingSystem
     participant PF as IPathfinder
@@ -688,7 +692,7 @@ namespace EmberCrpg.Domain.Actors
         /// <summary>Actor equipment slots. Equipped item data lives in ItemStore.</summary>
         public EquipmentComponent Equipment { get; }
 
-        /// <summary>Actor job priorities used by JobSystem.</summary>
+        /// <summary>Actor job priorities used by JobAssignmentSystem.</summary>
         public ActorPriorityComponent Priorities { get; }
 
         /// <summary>Actor combat participation state used by CombatSystem.</summary>
@@ -1109,7 +1113,7 @@ using EmberCrpg.Domain.Core;
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>
-    /// Data row describing a job the JobSystem can assign. New jobs are rows, not switch branches.
+    /// Data row describing a job the JobAssignmentSystem can assign. New jobs are rows, not switch branches.
     /// </summary>
     public sealed class JobDefinition
     {
@@ -1158,7 +1162,7 @@ namespace EmberCrpg.Domain.Process
 }
 ```
 
-### `Assets/Scripts/Simulation/Process/JobSystem.cs`
+### `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`
 
 ```csharp
 using System.Collections.Generic;
@@ -1171,12 +1175,12 @@ namespace EmberCrpg.Simulation.Process
     /// <summary>
     /// Pure assignment system that scans actor priorities, matches data-driven jobs, and reserves worksites.
     /// </summary>
-    public sealed class JobSystem
+    public sealed class JobAssignmentSystem
     {
         private readonly List<JobAssignment> _assignments;
 
         /// <summary>Creates job system with no active assignments.</summary>
-        public JobSystem();
+        public JobAssignmentSystem();
 
         /// <summary>Active assignments in deterministic insertion order.</summary>
         public IReadOnlyList<JobAssignment> Assignments { get; }
@@ -1190,7 +1194,7 @@ namespace EmberCrpg.Simulation.Process
             GameTime tick);
     }
 
-    /// <summary>Summary of assignments created by one JobSystem tick.</summary>
+    /// <summary>Summary of assignments created by one JobAssignmentSystem tick.</summary>
     public sealed class JobSystemTickResult
     {
         /// <summary>Creates job tick result.</summary>
@@ -1341,7 +1345,7 @@ namespace EmberCrpg.Simulation.Process
 | 9 | `CombatSystem` | `[box=CRPG][box=MATTER]` | ActorStore + ItemStore + RNG + EventLog integration. | Combat event visible |
 | 10 | `DeathDropService` | `[box=CRPG][box=MATTER][box=WORLD]` | Ölümde inventory/equipment world drop olur. | Loot body mümkün |
 | 11 | `WorksiteSlot`, `JobDefinition`, `JobAssignment` | `[box=PROCESS][box=LIVING]` | Smithing queue ve worksite reservation modeli. | Assignment event |
-| 12 | `JobSystem` | `[box=PROCESS][box=LIVING]` | Priority scan, job match, queue reservation. | JobAssigned event |
+| 12 | `JobAssignmentSystem` | `[box=PROCESS][box=LIVING]` | Priority scan, job match, queue reservation. | JobAssigned event |
 | 13 | `IPathfinder`, `PathfindingSystem` | `[box=PROCESS][box=WORLD]` | Interface-only path API ve deterministic stepping. | ActorMoved event |
 | 14 | `RecipeSystem` assigned-work update | `[box=PROCESS][box=MATTER]` | Assignment üzerinden recipe progress ve output item rows. | RecipeCompleted event |
 | 15 | `tests/.../SmithFurnaceDeterministicDayTests.cs` | `[box=PROCESS][box=MATTER][box=TIME]` | 2 smith, furnace queue, 4 ingot deterministic day. | Acceptance replay |
@@ -1395,7 +1399,7 @@ Acceptance çevirisi:
 | `loot the body` | `DeathDropService` ran on death | bandit item locations are grounded/corpse and lootable |
 | `return to town` | path or room movement command after loot | final actor site/position is town, event trace stable |
 
-Replay determinism check: Her acceptance testi aynı command list ve seed ile iki ayrı world fixture kurar. Sonra `ActorStore` snapshot, `ItemStore` snapshot, `WorldEventLog` tuple listesi `(tick, kind, actorId, siteId, reason, trace causes)` byte-for-byte karşılaştırılır. RNG injection zorunlu: `CombatResolver`, `CombatSystem`, `JobSystem` tie-break gerektirirse `IDeterministicRng` alır.
+Replay determinism check: Her acceptance testi aynı command list ve seed ile iki ayrı world fixture kurar. Sonra `ActorStore` snapshot, `ItemStore` snapshot, `WorldEventLog` tuple listesi `(tick, kind, actorId, siteId, reason, trace causes)` byte-for-byte karşılaştırılır. RNG injection zorunlu: `CombatResolver`, `CombatSystem`, `JobAssignmentSystem` tie-break gerektirirse `IDeterministicRng` alır.
 
 ## 6. Risk + acceptance
 
@@ -1406,7 +1410,7 @@ Smith/furnace acceptance testi:
 | 1 | `ActorStore` içinde 2 smith actor, ikisinde `ActorPriorityComponent.SetPriority("smithing", 1)` | Atom 5 |
 | 2 | `WorksiteStore` içinde active furnace, `WorksiteSlot` capacity row olarak 2 slot | Atom 11 |
 | 3 | `ItemStore` içinde `8 iron_ore`, `4 fuel`; recipe row `SmeltIronIngot` = `2 ore + 1 fuel + 40 ticks -> 1 ingot` | Atom 14 |
-| 4 | `JobSystem.Tick` iki smith’i deterministic order ile furnace queue’ya atar | Atom 12 |
+| 4 | `JobAssignmentSystem.Tick` iki smith’i deterministic order ile furnace queue’ya atar | Atom 12 |
 | 5 | `PathfindingSystem.Tick` injected pathfinder ile iki smith’i furnace’a taşır | Atom 13 |
 | 6 | `RecipeSystem.TickAssigned` iki paralel slotta 2 dalga çalıştırır | Atom 14 |
 | 7 | Bir deterministic day = 80 active recipe tick veya data row’daki day budget; output toplam `4 iron_ingot` | Atom 15 |
@@ -1432,7 +1436,7 @@ Faz 4 Colony needs hook’ları:
 
 | Hook | Faz 7’de bırakılacak yüzey | Faz 4 kullanımı |
 |---|---|---|
-| Need pressure | `JobSystem.Tick` ileride opsiyonel `INeedPressureProvider` alabilir | Açlık/uyku job scoring’i etkiler |
+| Need pressure | `JobAssignmentSystem.Tick` ileride opsiyonel `INeedPressureProvider` alabilir | Açlık/uyku job scoring’i etkiler |
 | Work fatigue | `ReasonTrace` içinde `actor`, `job`, `duration_ticks` kalır | Needs sistemi çalışma yorgunluğunu okuyabilir |
 | Combat exertion | `CombatSystem` event reasonları `combat_attack`, `damage_taken`, `actor_died` olur | Health, fear, stress, hunger drain bağlanır |
 | Equipment comfort | `ArmorItem` data row `coverageTags`, `MaxAgiBonus`, future `comfortTag` için uygun | Ağır armor fatigue/heat ihtiyaçlarını etkiler |

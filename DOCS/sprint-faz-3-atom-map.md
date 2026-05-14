@@ -1,5 +1,7 @@
 # Faz 3 — Atom map (Job assignment)
 
+
+_Detailed Codex spec:_ `docs/mechanics/faz-3-job-assignment.md` (full architecture; this atom-map is the implementation-ordered subset).
 _Date:_ 2026-05-14
 _Branch:_ `agent/sprint-faz-3-job-assignment-atom-map`
 _Box:_ `[box=PROCESS]` / `[box=LIVING]` with `[box=MATTER]`, `[box=TIME]`, `[box=WORLD]`

@@ -1,5 +1,9 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-6-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     subgraph Previous["Önceki Faz bağlantıları"]
@@ -17,7 +21,7 @@ graph TB
     subgraph Bridge["Faz 3 bridge - job/path/recipe üretim akışı"]
         PI[Player Intent]
         LP[LaborPriorityStore]
-        JS[JobSystem]
+        JS[JobAssignmentSystem]
         JStore[JobStore]
         WSlot[WorksiteSlotStore]
         PF[IPathfinder]
@@ -213,7 +217,7 @@ sequenceDiagram
     participant Priority as LaborPriorityStore
     participant Actors as ActorStore
     participant Jobs as JobStore
-    participant JobSystem
+    participant JobAssignmentSystem
     participant Slots as WorksiteSlotStore
     participant PathSys as PathfindingSystem
     participant Pathfinder as IPathfinder
@@ -229,12 +233,12 @@ sequenceDiagram
     Intent->>Priority: SetPriority(actorId, "smith", 1, now)
 
     loop deterministic simulation tick
-        JobSystem->>Actors: Records in insertion order
-        JobSystem->>Priority: PriorityFor(actorId, "smith")
-        JobSystem->>Jobs: FindQueuedByLabor("smith")
-        JobSystem->>Slots: TryReserve(worksite, actorId)
-        JobSystem->>Jobs: Replace(job.WithAssigned(actorId))
-        JobSystem->>Events: Append JobAssigned
+        JobAssignmentSystem->>Actors: Records in insertion order
+        JobAssignmentSystem->>Priority: PriorityFor(actorId, "smith")
+        JobAssignmentSystem->>Jobs: FindQueuedByLabor("smith")
+        JobAssignmentSystem->>Slots: TryReserve(worksite, actorId)
+        JobAssignmentSystem->>Jobs: Replace(job.WithAssigned(actorId))
+        JobAssignmentSystem->>Events: Append JobAssigned
         Events->>Trace: ["player_intent", "labor_priority:smith", "job_assigned"]
 
         PathSys->>Jobs: Assigned jobs not at worksite
@@ -1073,13 +1077,13 @@ using EmberCrpg.Simulation.World;
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>Assigns eligible actors to queued jobs from labor priority, recipes, and worksite slots.</summary>
-    public sealed class JobSystem
+    public sealed class JobAssignmentSystem
     {
         /// <summary>Data rows binding labor tags to recipes.</summary>
         private readonly IReadOnlyList<LaborRecipeBindingRow> _bindings;
 
         /// <summary>Creates a job system from data-driven labor recipe bindings.</summary>
-        public JobSystem(IEnumerable<LaborRecipeBindingRow> bindings);
+        public JobAssignmentSystem(IEnumerable<LaborRecipeBindingRow> bindings);
 
         /// <summary>Scans eligible actors and queued jobs, reserves slots, assigns jobs, and emits events.</summary>
         public void Tick(GameTime now, ActorStore actors, LaborPriorityStore priorities, JobStore jobs, WorksiteStore worksites, WorksiteSlotStore slots, WorldEventLog eventLog);
@@ -1207,7 +1211,7 @@ namespace EmberCrpg.Simulation.Society
 | 2 | `JobModels.cs` - `LaborRecipeBindingRow` | `smith -> SmeltIronIngot` data row olsun, C# branch olmasın | `LaborRecipeBindingRowTests` | `[box=PROCESS]` |
 | 3 | `JobModels.cs` - `JobId`, `JobRecord`, `JobStore` | queued/assigned/active/completed state key’leri pinlensin | `JobStoreTests` | `[box=PROCESS]` |
 | 4 | `JobModels.cs` - `WorksiteSlot`, `WorksiteSlotStore` | existing `WorksiteStore` üstüne reservable slot gelsin | `WorksiteSlotStoreTests` | `[box=PROCESS][box=WORLD]` |
-| 5 | `JobAndRecipeSystems.cs` - `JobSystem` | eligible actor scan, job match, slot reserve, event emit | `JobSystemTests` | `[box=PROCESS][box=LIVING][box=TIME]` |
+| 5 | `JobAndRecipeSystems.cs` - `JobAssignmentSystem` | eligible actor scan, job match, slot reserve, event emit | `JobSystemTests` | `[box=PROCESS][box=LIVING][box=TIME]` |
 | 6 | `PathfindingContracts.cs` - `IPathfinder`, `PathRequest`, `PathResult` | pathfinder API interface olarak sabitlensin | `PathfindingContractsTests` | `[box=WORLD]` |
 | 7 | `PathAgentModels.cs`, `PathfindingSystem` | assigned actor worksite’a deterministic adımlarla gitsin | `PathfindingSystemTests` | `[box=WORLD][box=TIME]` |
 | 8 | `RecipeJobCoordinator` | actor worksite’da ise existing `RecipeSystem` job üzerinden tick alsın | `RecipeJobCoordinatorTests` | `[box=PROCESS][box=MATTER]` |
@@ -1231,7 +1235,7 @@ namespace EmberCrpg.Simulation.Society
 | Sınıf/davranış | Ne pin’lenir | xUnit dosya yolu |
 |---|---|---|
 | `LaborPriorityStore` | `SetPriority(actor, "smith", 1)` insert/replace ve deterministic order | `tests/EmberCrpg.Core.Tests/Actors/LaborPriorityStoreTests.cs` |
-| `JobSystem` | eligible actor scan, priority tie-break, slot reserve, `JobAssigned` event + trace | `tests/EmberCrpg.Core.Tests/Process/JobSystemTests.cs` |
+| `JobAssignmentSystem` | eligible actor scan, priority tie-break, slot reserve, `JobAssigned` event + trace | `tests/EmberCrpg.Core.Tests/Process/JobSystemTests.cs` |
 | `WorksiteSlotStore` | existing `WorksiteStore` referansı, capacity 2, duplicate reservation refusal | `tests/EmberCrpg.Core.Tests/Process/WorksiteSlotStoreTests.cs` |
 | `PathfindingSystem` | injected `IPathfinder`, one-step movement, completed path cleanup | `tests/EmberCrpg.Core.Tests/World/PathfindingSystemTests.cs` |
 | `RecipeJobCoordinator` | actor worksite’da ise recipe start/tick, inventory consume, stock delta | `tests/EmberCrpg.Core.Tests/Process/RecipeJobCoordinatorTests.cs` |
@@ -1272,7 +1276,7 @@ Acceptance test çevirisi:
 | Player sentence | Test fixture karşılığı |
 |---|---|
 | `player can set 2 actors to smith priority 1` | `LaborPriorityStore.SetPriority(actorA, "smith", 1, now)` ve actorB için aynı |
-| `watch both queue at the furnace` | `JobSystem.Tick` iki job’u iki actor’a assign eder, `WorksiteSlotStore` capacity 2 reservation üretir |
+| `watch both queue at the furnace` | `JobAssignmentSystem.Tick` iki job’u iki actor’a assign eder, `WorksiteSlotStore` capacity 2 reservation üretir |
 | `and produce 4 ingots` | 4 queued `SmeltIronIngot` job, 2 actor, 2 dalga completion |
 | `in a deterministic day` | `GameTime.MinutesPerDay` içindeki tick loop sonunda 4 `iron_ingot`, aynı `WorldEventLog` replay hash |
 

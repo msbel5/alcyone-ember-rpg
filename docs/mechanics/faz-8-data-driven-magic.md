@@ -1,5 +1,9 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-8-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     subgraph B0["8-kutu mekanik haritası"]
@@ -33,7 +37,7 @@ graph TB
         INTENT["Player/NPC Intent"]
         CMD["Typed Command\nSetActorPriority / CastSpell"]
         PRIORITY["ActorWorkPriorityComponent"]
-        JOBSYS["JobSystem tick\nscan eligible actors"]
+        JOBSYS["JobAssignmentSystem tick\nscan eligible actors"]
         JOBBOARD["JobBoard\npending requests"]
         PATHSYS["PathfindingSystem tick"]
         WSLOT["WorksiteSlot\nreferences WorksiteStore cell"]
@@ -274,7 +278,7 @@ sequenceDiagram
     participant Player as Player Intent
     participant Command as Typed Command
     participant ActorStore as ActorStore
-    participant JobSystem as JobSystem tick
+    participant JobAssignmentSystem as JobAssignmentSystem tick
     participant JobBoard as JobBoard
     participant Pathfinder as IPathfinder / PathfindingSystem tick
     participant Worksite as WorksiteStore + WorksiteSlot
@@ -288,12 +292,12 @@ sequenceDiagram
     ActorStore-->>Command: ActorRecord
     Command->>ActorStore: Replace ActorWorkPriorityComponent
 
-    JobSystem->>ActorStore: scan Records in deterministic insertion order
-    JobSystem->>JobBoard: match pending job by priority + insertion order
-    JobBoard-->>JobSystem: JobRequest(recipe=SmeltIronIngot, worksite=furnace)
-    JobSystem->>Worksite: TryReserveSlot(siteId, furnacePosition, actorId)
-    Worksite-->>JobSystem: WorksiteSlot reserved
-    JobSystem->>ActorStore: assign current job + worksite target
+    JobAssignmentSystem->>ActorStore: scan Records in deterministic insertion order
+    JobAssignmentSystem->>JobBoard: match pending job by priority + insertion order
+    JobBoard-->>JobAssignmentSystem: JobRequest(recipe=SmeltIronIngot, worksite=furnace)
+    JobAssignmentSystem->>Worksite: TryReserveSlot(siteId, furnacePosition, actorId)
+    Worksite-->>JobAssignmentSystem: WorksiteSlot reserved
+    JobAssignmentSystem->>ActorStore: assign current job + worksite target
 
     Pathfinder->>ActorStore: read actor Path/Position
     Pathfinder->>Worksite: read target worksite cell
@@ -1723,7 +1727,7 @@ namespace EmberCrpg.Simulation.Movement
 }
 ```
 
-**Assets/Scripts/Simulation/Process/JobSystem.cs**
+**Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs**
 
 ```csharp
 using EmberCrpg.Domain.Core;
@@ -1735,13 +1739,13 @@ using EmberCrpg.Simulation.Movement;
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>Coordinates actor job assignment, slot reservation, pathing, and recipe progress. It is the PROCESS/LIVING vertical slice for the smith acceptance.</summary>
-    public sealed class JobSystem
+    public sealed class JobAssignmentSystem
     {
         private readonly PathfindingSystem _pathfindingSystem;
         private readonly RecipeSystem _recipeSystem;
 
         /// <summary>Creates a job system from explicit simulation dependencies.</summary>
-        public JobSystem(PathfindingSystem pathfindingSystem, RecipeSystem recipeSystem);
+        public JobAssignmentSystem(PathfindingSystem pathfindingSystem, RecipeSystem recipeSystem);
 
         /// <summary>Scans eligible actors and assigns jobs by actor priority and board order.</summary>
         public int TickAssignment(
@@ -1779,7 +1783,7 @@ namespace EmberCrpg.Simulation.Process
 | 7 | [box=PROCESS] | `JobKey`, `JobDefinition`, `JobRequest`, `JobBoard` | Job matching rail’i data-driven job key ile kurulur. | Atom 6 |
 | 8 | [box=PROCESS] | `WorksiteSlot`, `WorksiteSlotStore` | Existing `WorksiteStore` korunur; furnace çevresinde deterministic queue slotları açılır. | Faz 2 |
 | 9 | [box=WORLD] | `IPathfinder`, `PathResult`, `PathfindingSystem` | Pathfinder API interface olarak sabitlenir; actor one-step movement tick edilir. | Atom 8 |
-| 10 | [box=PROCESS] | `JobSystem` | Assignment + pathing + recipe work orchestration bağlanır. | Atom 6-9 |
+| 10 | [box=PROCESS] | `JobAssignmentSystem` | Assignment + pathing + recipe work orchestration bağlanır. | Atom 6-9 |
 | 11 | [box=PLAYABLE] | xUnit acceptance replay + EventLog proof | 2 smith actor, furnace queue, 4 ingot deterministic day acceptance kapanır. | Atom 10 |
 | 12 | [box=LIVING] | `ActorNeedsComponent` hook + eligibility predicate | Faz 4 needs/refusal hook’ları eklenir; behavior Faz 4’e bırakılır. | Atom 10 |
 
@@ -1800,7 +1804,7 @@ namespace EmberCrpg.Simulation.Process
 | JobBoard | Add/peek/claim/complete/cancel order | `Tests/EmberCrpg.Domain.Tests/Process/JobBoardTests.cs` |
 | WorksiteSlot | Multiple actors reserve furnace slots deterministically | `Tests/EmberCrpg.Domain.Tests/Process/WorksiteSlotStoreTests.cs` |
 | PathfindingSystem | Injected fake `IPathfinder`; no Unity dependency; one step per tick | `Tests/EmberCrpg.Simulation.Tests/Movement/PathfindingSystemTests.cs` |
-| JobSystem acceptance | 2 smiths queue at furnace and produce 4 ingots | `Tests/EmberCrpg.Simulation.Tests/Process/SmithingDayAcceptanceTests.cs` |
+| JobAssignmentSystem acceptance | 2 smiths queue at furnace and produce 4 ingots | `Tests/EmberCrpg.Simulation.Tests/Process/SmithingDayAcceptanceTests.cs` |
 | Replay determinism | Same seed + same command trace -> identical EventLog + inventory | `Tests/EmberCrpg.Simulation.Tests/Replay/Faz8ReplayDeterminismTests.cs` |
 
 Deterministic test pattern:
@@ -1867,7 +1871,7 @@ Risk matrisi:
 | SpellEffectKind migration refactor | Yüksek | Mevcut magic testleri enum/spec üstüne kurulu | Atom 1 tek promotion PR; eski 7 davranış row-by-row pin’lenir | 1 |
 | Operation handlers fazla genişler | Orta | Handler listesi farklı store’lara dokunur | Önce ModifyResource + ApplyBuff davranışını çalıştır; kalan handler’ları dar context ile ekle | 1-2 |
 | ActorRecord component genişlemesi save/load kırar | Orta | Existing save mapper ActorSaveData kullanıyor | Component save DTO’ları atom 5’e kadar eklenmez; önce runtime ve tests | 4-5 |
-| JobSystem Faz 3 kapsamı büyür | Yüksek | Assignment + path + recipe aynı vertical slice | Priority, board, slot, path, orchestration ayrı PR; acceptance en son | 6-11 |
+| JobAssignmentSystem Faz 3 kapsamı büyür | Yüksek | Assignment + path + recipe aynı vertical slice | Priority, board, slot, path, orchestration ayrı PR; acceptance en son | 6-11 |
 | WorksiteSlot existing WorksiteStore ile çakışır | Orta | WorksiteRecord immutable ve tek cell temsil ediyor | Slot store sadece site+position referansı tutar; WorksiteStore source of truth kalır | 8 |
 | Pathfinder engine’e sızar | Orta | Unity navigation cazip olabilir | `IPathfinder` pure interface; xUnit fake pathfinder zorunlu | 9 |
 | Needs hook erken behavior’a dönüşür | Düşük | Faz 4 henüz gelmedi | Sadece `ActorNeedsComponent` + eligibility hook; hunger tick/refusal Faz 4’e bırakılır | 12 |
@@ -1878,8 +1882,8 @@ Atom sırası nedeni:
 |---|---|
 | Atom 1 önce | Agent rules v2 data-driven effect rule: yeni spell eklenmeden önce promotion şart. |
 | Atom 3 Atom 1’den sonra | Yeni spell C# branch olmadan sadece data row ile kanıtlanmalı. |
-| Atom 6-8 Atom 10’dan önce | JobSystem orchestration, priority/board/slot olmadan deterministik seçilemez. |
-| Atom 9 Atom 10’dan önce | Pathfinding API interface önce sabitlenirse JobSystem Unity veya concrete pathfinder’a bağlanmaz. |
+| Atom 6-8 Atom 10’dan önce | JobAssignmentSystem orchestration, priority/board/slot olmadan deterministik seçilemez. |
+| Atom 9 Atom 10’dan önce | Pathfinding API interface önce sabitlenirse JobAssignmentSystem Unity veya concrete pathfinder’a bağlanmaz. |
 | Atom 11 en son | Smithing-day acceptance, Faz 2 recipe + Faz 3 job/path rail tamamen bağlanınca anlamlıdır. |
 | Atom 12 ayrı | Faz 4 hook görünür davranış değildir; Faz 4’e zemin atar ama sprint acceptance’ı bloke etmez. |
 
@@ -1889,6 +1893,6 @@ Faz 4 Colony Needs hook’ları:
 |---|---|---|
 | `ActorNeedsComponent` | Hunger/thirst/fatigue/mood scalar state | `NeedsSystem` tick ile artış/azalış |
 | `ModifyResourceOperation` resource key | `hunger`, `thirst`, `mood` key’lerini kabul edecek extension point | Eat/sleep/rest recipes needs restore eder |
-| `JobSystem` eligibility predicate | `CanActorWork` içinde needs gate için tek predicate seam | Hunger threshold üstünde work refusal |
+| `JobAssignmentSystem` eligibility predicate | `CanActorWork` içinde needs gate için tek predicate seam | Hunger threshold üstünde work refusal |
 | `ReasonTrace` causes | `needs:hunger:blocked` gibi cause key’leri için alan | UI/AI neden çalışmadığını okuyabilir |
 | Data rows | Needs etkileri data row olarak eklenebilir | Yeni yemek/rest effectleri C# branch olmadan gelir |

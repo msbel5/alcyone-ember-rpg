@@ -1,10 +1,14 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-5-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     PI[Player Intent] --> CMD[Command validation]
     CMD --> AP[Actor priority component]
-    AP --> JS[JobSystem tick]
+    AP --> JS[JobAssignmentSystem tick]
     JS --> WS[WorksiteStore + WorksiteSlot]
     JS --> PF[PathfindingSystem + IPathfinder]
     PF --> RS[RecipeSystem tick]
@@ -148,7 +152,7 @@ classDiagram
     class ActorRecord {
         +ActorId Id
         +JobPriorityComponent JobPriorities
-        +ScheduleComponent Schedule
+        +ActorScheduleState Schedule
         +ActorPathComponent Pathing
         +NeedsComponent Needs
     }
@@ -157,7 +161,7 @@ classDiagram
         +GetPriority(string jobTag) int
     }
 
-    class ScheduleComponent {
+    class ActorScheduleState {
         +string CurrentJobId
         +WorksiteSlot CurrentWorksiteSlot
     }
@@ -197,10 +201,10 @@ classDiagram
     PlantSpeciesDef --> PlantGrowthStageDef
     WorldProcessInstance --> WorldProcessDef
     ActorRecord o-- JobPriorityComponent
-    ActorRecord o-- ScheduleComponent
+    ActorRecord o-- ActorScheduleState
     ActorRecord o-- ActorPathComponent
     ActorRecord o-- NeedsComponent
-    ScheduleComponent --> WorksiteSlot
+    ActorScheduleState --> WorksiteSlot
     WorksiteSlot --> WorksiteStore
     PathfindingSystem --> IPathfinder
 ```
@@ -215,7 +219,7 @@ sequenceDiagram
     actor Player
     participant Command as CommandService
     participant Actors as ActorStore
-    participant Jobs as JobSystem
+    participant Jobs as JobAssignmentSystem
     participant Worksites as WorksiteStore
     participant Path as PathfindingSystem
     participant Finder as IPathfinder
@@ -756,16 +760,16 @@ namespace EmberCrpg.Domain.Actors
     }
 }
 
-// File: Assets/Scripts/Domain/Actors/ScheduleComponent.cs
+// File: Assets/Scripts/Domain/Actors/ActorScheduleState.cs
 using EmberCrpg.Domain.Process;
 
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>Actor component holding the current job and resolved worksite slot.</summary>
-    public sealed class ScheduleComponent
+    public sealed class ActorScheduleState
     {
         /// <summary>Creates a schedule component snapshot.</summary>
-        public ScheduleComponent(string currentJobId, WorksiteSlot currentWorksiteSlot);
+        public ActorScheduleState(string currentJobId, WorksiteSlot currentWorksiteSlot);
 
         /// <summary>Current job id, or empty when idle.</summary>
         public string CurrentJobId { get; }
@@ -774,10 +778,10 @@ namespace EmberCrpg.Domain.Actors
         public WorksiteSlot CurrentWorksiteSlot { get; }
 
         /// <summary>Returns a copy assigned to a job and slot.</summary>
-        public ScheduleComponent WithJob(string jobId, WorksiteSlot slot);
+        public ActorScheduleState WithJob(string jobId, WorksiteSlot slot);
 
         /// <summary>Returns a copy with no current job.</summary>
-        public ScheduleComponent ClearJob();
+        public ActorScheduleState ClearJob();
     }
 }
 
@@ -1095,7 +1099,7 @@ Replay determinism check: aynı seed, aynı starting save DTO, aynı command lis
 
 ## 6. Risk + acceptance
 
-Smith senaryosu Faz 3 kabul kapısıdır, Faz 5’in plant lane’i aynı `ActorPriority -> JobSystem -> Pathfinding -> WorksiteSlot -> RecipeSystem/ProcessSystem -> EventLog` hattını yeniden kullanır.
+Smith senaryosu Faz 3 kabul kapısıdır, Faz 5’in plant lane’i aynı `ActorPriority -> JobAssignmentSystem -> Pathfinding -> WorksiteSlot -> RecipeSystem/ProcessSystem -> EventLog` hattını yeniden kullanır.
 
 | Senaryo testi | Kurulum | Beklenen sonuç | Kapatacak atomlar |
 |---|---|---|---|

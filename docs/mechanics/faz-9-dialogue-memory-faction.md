@@ -1,5 +1,9 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-9-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     subgraph Previous["Önceki Faz bağlantıları"]
@@ -7,7 +11,7 @@ graph TB
         F1Factions["Faz 1 FactionStore<br/>FactionId -> FactionRecord"]
         F1Events["Faz 1 WorldEventLog<br/>WorldEvent + ReasonTrace"]
         F2Recipe["Faz 2 RecipeSystem<br/>RecipeDef + WorksiteStore"]
-        F3Jobs["Faz 3 JobSystem<br/>priority + schedule + queue"]
+        F3Jobs["Faz 3 JobAssignmentSystem<br/>priority + schedule + queue"]
         F3Path["Faz 3 PathfindingSystem<br/>IPathfinder"]
     end
 
@@ -243,7 +247,7 @@ sequenceDiagram
     participant Player
     participant Command as PlayerIntentCommand
     participant ActorStore
-    participant JobSystem
+    participant JobAssignmentSystem
     participant Pathfinder as IPathfinder / PathfindingSystem
     participant RecipeSystem
     participant EventLog as WorldEventLog
@@ -257,13 +261,13 @@ sequenceDiagram
     ActorStore-->>Command: deterministic component update
 
     loop deterministic game tick
-        JobSystem->>ActorStore: scan eligible actors by insertion order
-        JobSystem->>JobSystem: match job by priority + skill + worksite
-        JobSystem->>ActorStore: assign current job / WorksiteSlot queue
-        JobSystem->>Pathfinder: TryFindPath(siteId, actor.Position, worksite.Position)
-        Pathfinder-->>JobSystem: path / next step
-        JobSystem->>ActorStore: step actor toward worksite
-        JobSystem->>RecipeSystem: actor at worksite -> TryStart/Tick recipe
+        JobAssignmentSystem->>ActorStore: scan eligible actors by insertion order
+        JobAssignmentSystem->>JobAssignmentSystem: match job by priority + skill + worksite
+        JobAssignmentSystem->>ActorStore: assign current job / WorksiteSlot queue
+        JobAssignmentSystem->>Pathfinder: TryFindPath(siteId, actor.Position, worksite.Position)
+        Pathfinder-->>JobAssignmentSystem: path / next step
+        JobAssignmentSystem->>ActorStore: step actor toward worksite
+        JobAssignmentSystem->>RecipeSystem: actor at worksite -> TryStart/Tick recipe
         RecipeSystem->>EventLog: Append RecipeCompleted WorldEvent
         RecipeSystem->>Trace: attach recipe/job/worksite causes
 
@@ -1037,12 +1041,12 @@ Not: repo şu anda Unity EditMode/NUnit kullanıyor. Faz 9 kısıtı xUnit dedi�
 Senaryo:
 `player can set 2 actors to smith priority 1, watch both queue at the furnace, and produce 4 ingots in a deterministic day`
 
-Faz 9 bu senaryoyu yeniden implement etmez; bu Faz 3 `JobSystem + PathfindingSystem + RecipeSystem` acceptance’ıdır. Faz 9’in görevi, bu EventLog akışını bozmayıp memory/dialogue/faction dinleyicilerinin determinism’i koruduğunu göstermektir.
+Faz 9 bu senaryoyu yeniden implement etmez; bu Faz 3 `JobAssignmentSystem + PathfindingSystem + RecipeSystem` acceptance’ıdır. Faz 9’in görevi, bu EventLog akışını bozmayıp memory/dialogue/faction dinleyicilerinin determinism’i koruduğunu göstermektir.
 
 Test akışı:
 1. Seed `9009`, iki actor, bir furnace `WorksiteRecord`, dört smelt job, yeterli ore/fuel.
 2. Player intent iki actor için `smith priority 1` yazar.
-3. `JobSystem` actor’ları insertion order + priority ile seçer.
+3. `JobAssignmentSystem` actor’ları insertion order + priority ile seçer.
 4. `IPathfinder` actor’ları furnace queue’ya taşır; `WorksiteSlot.QueueIndex` deterministik kalır.
 5. `RecipeSystem` dört `RecipeCompleted` event’i append eder.
 6. `MemorySystem` bu event’leri okur ama crime/trade memory üretmez; sadece rule match varsa memory yazar.

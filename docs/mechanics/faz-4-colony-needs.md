@@ -1,5 +1,9 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-4-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     subgraph TIME["TIME"]
@@ -28,7 +32,7 @@ graph TB
         PI["Player Intent"]
         APS["ActorPriorityService"]
         JB["JobBoard"]
-        JS["JobSystem"]
+        JS["JobAssignmentSystem"]
         PF["IPathfinder"]
         RSYS["RecipeSystem"]
         NRE["NeedRecipeEffectDef rows"]
@@ -247,7 +251,7 @@ sequenceDiagram
     participant Priority as ActorPriorityService
     participant Actors as ActorStore
     participant Needs as NeedsSystem + MoodSystem
-    participant Jobs as JobSystem
+    participant Jobs as JobAssignmentSystem
     participant Board as JobBoard
     participant Path as IPathfinder / PathfindingSystem
     participant Recipe as RecipeSystem
@@ -563,7 +567,7 @@ namespace EmberCrpg.Domain.Living
 // Assets/Scripts/Domain/Living/ActorJobPriority.cs
 namespace EmberCrpg.Domain.Living
 {
-    /// <summary>Per-actor labor priority row. Priority 1 is highest; disabled rows are ignored by JobSystem.</summary>
+    /// <summary>Per-actor labor priority row. Priority 1 is highest; disabled rows are ignored by JobAssignmentSystem.</summary>
     public sealed class ActorJobPriority
     {
         private readonly string _jobTag;
@@ -591,7 +595,7 @@ using System.Collections.Generic;
 
 namespace EmberCrpg.Domain.Living
 {
-    /// <summary>Actor component storing data-driven labor priorities. JobSystem reads this component during deterministic assignment.</summary>
+    /// <summary>Actor component storing data-driven labor priorities. JobAssignmentSystem reads this component during deterministic assignment.</summary>
     public sealed class LaborPriorityComponent
     {
         private readonly Dictionary<string, ActorJobPriority> _byJobTag;
@@ -635,7 +639,7 @@ namespace EmberCrpg.Domain.Actors
         /// <summary>Mood component derived from needs plus memory.</summary>
         public MoodComponent Mood { get; private set; }
 
-        /// <summary>Per-actor labor priority component used by JobSystem.</summary>
+        /// <summary>Per-actor labor priority component used by JobAssignmentSystem.</summary>
         public LaborPriorityComponent LaborPriorities { get; private set; }
 
         /// <summary>Replaces the actor's needs component after a deterministic system tick.</summary>
@@ -990,7 +994,7 @@ using EmberCrpg.Domain.Process;
 
 namespace EmberCrpg.Simulation.Process
 {
-    /// <summary>Pathfinder API consumed by JobSystem. Implementations may vary, but tests inject fakes for determinism.</summary>
+    /// <summary>Pathfinder API consumed by JobAssignmentSystem. Implementations may vary, but tests inject fakes for determinism.</summary>
     public interface IPathfinder
     {
         /// <summary>Computes a deterministic path for the request.</summary>
@@ -1094,7 +1098,7 @@ using EmberCrpg.Domain.Living;
 
 namespace EmberCrpg.Simulation.Living
 {
-    /// <summary>Determines whether needs and mood block an actor from a job. JobSystem calls this before assignment.</summary>
+    /// <summary>Determines whether needs and mood block an actor from a job. JobAssignmentSystem calls this before assignment.</summary>
     public sealed class NeedRefusalService
     {
         private readonly IReadOnlyList<NeedRefusalRule> _rules;
@@ -1128,7 +1132,7 @@ namespace EmberCrpg.Simulation.Living
 ```
 
 ```csharp
-// Assets/Scripts/Simulation/Process/JobSystem.cs
+// Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
@@ -1137,13 +1141,13 @@ using EmberCrpg.Simulation.Living;
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>Deterministic job assignment and active-job tick system. It reads needs/mood but does not compute them.</summary>
-    public sealed class JobSystem
+    public sealed class JobAssignmentSystem
     {
         private readonly IPathfinder _pathfinder;
         private readonly NeedRefusalService _refusalService;
 
         /// <summary>Creates the job system with pathfinding and refusal dependencies.</summary>
-        public JobSystem(IPathfinder pathfinder, NeedRefusalService refusalService);
+        public JobAssignmentSystem(IPathfinder pathfinder, NeedRefusalService refusalService);
 
         /// <summary>Scans eligible actors, matches jobs, assigns work, steps movement, and starts recipe work when at the worksite.</summary>
         public JobTickResult Tick(ActorStore actors, JobBoard jobs, WorksiteStore worksites, GameTime now, WorldEventLog eventLog);
@@ -1152,7 +1156,7 @@ namespace EmberCrpg.Simulation.Process
         public bool TryAssign(JobRecord job, ActorStore actors, out JobRecord assignedJob, out ActorId actorId);
     }
 
-    /// <summary>Summary of one JobSystem tick for deterministic tests.</summary>
+    /// <summary>Summary of one JobAssignmentSystem tick for deterministic tests.</summary>
     public sealed class JobTickResult
     {
         /// <summary>Creates a job tick result.</summary>
@@ -1245,8 +1249,8 @@ namespace EmberCrpg.Simulation.Living
 | Atom 4 | `[box=PROCESS]` | Worksite slot + path API | `WorksiteSlot`, `PathRequest`, `PathResult`, `ActorPathStep`, `IPathfinder` | Faz 3/4 entegrasyon sözleşmesi; path sınıfı değil interface. |
 | Atom 5 | `[box=PROCESS]` | Job board çekirdeği | `JobId`, `JobRecord`, `JobBoard`, tests | Status string data; enum branch yok. |
 | Atom 6 | `[box=LIVING]` | Actor labor priority | `ActorJobPriority`, `LaborPriorityComponent`, `ActorPriorityService`, tests | Player intent görünür state değiştirir. |
-| Atom 7 | `[box=PROCESS]` | Job assignment | `JobSystem.TryAssign`, fake path/refusal tests | Priority + skill + deterministic order pinlenir. |
-| Atom 8 | `[box=PROCESS]` | Job path tick | `JobSystem.Tick` path step integration | Actor worksite’a yürür; Faz 3 akışı açılır. |
+| Atom 7 | `[box=PROCESS]` | Job assignment | `JobAssignmentSystem.TryAssign`, fake path/refusal tests | Priority + skill + deterministic order pinlenir. |
+| Atom 8 | `[box=PROCESS]` | Job path tick | `JobAssignmentSystem.Tick` path step integration | Actor worksite’a yürür; Faz 3 akışı açılır. |
 | Atom 9 | `[box=PROCESS]` | Recipe completion hook | `IRecipeCompletionSink`, `RecipeCompletionContext`, `RecipeSystem` overload | Yeni recipe etkileri branchsiz bağlanır. |
 | Atom 10 | `[box=PROCESS]` | 2 actor furnace queue acceptance | Job + path + recipe replay test | Faz 3 kabulünü kapatır: 2 actor, 4 ingot, deterministic day. |
 | Atom 11 | `[box=PROCESS]` | Need recipe effect rows | `NeedAdjustment`, `NeedRecipeEffectDef`, `NeedRecipeEffectCatalog`, data rows `EatMeal`, `DrinkWater`, `SleepInBed` | Eat/sleep branch değil data row olur. |
@@ -1268,7 +1272,7 @@ namespace EmberCrpg.Simulation.Living
 | Refusal | `hunger > threshold` smith/haul blocks, eat/drink/sleep allows | `tests/EmberCrpg.Simulation.Tests/Living/NeedRefusalServiceTests.cs` |
 | Priority | Player can set actor `smith` priority 1 | `tests/EmberCrpg.Simulation.Tests/Process/ActorPriorityServiceTests.cs` |
 | Job assignment | priority + skill + insertion order tie-breaks | `tests/EmberCrpg.Simulation.Tests/Process/JobSystemAssignmentTests.cs` |
-| Path API | `JobSystem` uses `IPathfinder` fake; no Unity dependency | `tests/EmberCrpg.Simulation.Tests/Process/JobSystemPathingTests.cs` |
+| Path API | `JobAssignmentSystem` uses `IPathfinder` fake; no Unity dependency | `tests/EmberCrpg.Simulation.Tests/Process/JobSystemPathingTests.cs` |
 | Recipe completion | sink called once, `ReasonTrace` contains job/path/worksite/recipe | `tests/EmberCrpg.Simulation.Tests/Process/RecipeCompletionSinkTests.cs` |
 | Need fulfillment | `EatMeal` row reduces hunger; `SleepInBed` row reduces fatigue | `tests/EmberCrpg.Simulation.Tests/Living/NeedFulfillmentSystemTests.cs` |
 | Acceptance replay | no food 3 days -> mood falls -> refusal -> meal recovery | `tests/EmberCrpg.Acceptance.Tests/Faz4ColonyNeedsAcceptanceTests.cs` |
@@ -1317,7 +1321,7 @@ Faz 3 acceptance scenario:
 |---|---|---|---|
 | Set priorities | Two actors get `ActorJobPriority("smith", 1, true)` | ActorStore exposes both priority rows | Atom 6 |
 | Queue furnace jobs | Four smith jobs target same furnace `WorksiteSlot` and `SmeltIronIngot` | JobBoard preserves deterministic order | Atom 5 |
-| Assign actors | `JobSystem.Tick` scans actors and jobs | Two actors assigned, remaining jobs queued | Atom 7 |
+| Assign actors | `JobAssignmentSystem.Tick` scans actors and jobs | Two actors assigned, remaining jobs queued | Atom 7 |
 | Path to furnace | Fake or real `IPathfinder` steps both actors | Both reach furnace slot deterministically | Atom 8 |
 | Produce ingots | Recipe ticks enough for four completions | Inventory gains 4 `iron_ingot`; event log has 4 recipe completions | Atom 9-10 |
 | Replay | Run same setup twice | Replay digest identical | Atom 10 |
@@ -1332,7 +1336,7 @@ Risk matrix:
 | Job assignment + pathing | 7/8 | Büyük | Faz 3 pipeline henüz tam değilse çok modüle dokunur | `IPathfinder` fake ile API önce sabitlenir; gerçek path ayrı PR. |
 | Needs tick | 12 | Basit | Pure math + clamp | Tek sınıf, xUnit tablo testleri. |
 | Mood rules | 13 | Basit | Data range seçimi | Boundary test: 24.99, 25, 50, 75. |
-| Refusal | 14 | Orta | JobSystem ile davranış etkileşimi var | Önce pure service, sonra JobSystem tüketimi. |
+| Refusal | 14 | Orta | JobAssignmentSystem ile davranış etkileşimi var | Önce pure service, sonra JobAssignmentSystem tüketimi. |
 | Save/load | 17 | Orta | Mapper şeması etkilenir | Acceptance geçtikten sonra round-trip atomu. |
 
 Faz 4 entegrasyonu için bırakılacak hook’lar:

@@ -1,14 +1,18 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
+> _Captain atom-map_: `DOCS/sprint-faz-10-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
+> _Spec covers full architecture; Captain may implement subset and extend later.
+
 ```mermaid
 graph TB
     PlayerIntent["Player Intent<br/>set actor priority"]
     PriorityCommand["Typed Command<br/>SetActorJobPriority(actor, jobKind, priority)"]
     Validation["Validation<br/>actor alive, job kind row exists, priority valid"]
-    ActorStore["ActorStore<br/>ActorRecord + ScheduleComponent"]
-    Schedule["ScheduleComponent<br/>priorities, current job, current path target"]
+    ActorStore["ActorStore<br/>ActorRecord + ActorScheduleState"]
+    Schedule["ActorScheduleState<br/>priorities, current job, current path target"]
 
-    JobSystem["JobSystem tick<br/>scan eligible actors"]
+    JobAssignmentSystem["JobAssignmentSystem tick<br/>scan eligible actors"]
     JobBoard["JobBoard<br/>pending / claimed / active jobs"]
     JobMatcher["JobMatcher<br/>priority + skill + availability"]
     JobAssignment["JobAssignment<br/>actor + job + worksite slot"]
@@ -36,9 +40,9 @@ graph TB
 
     PlayerIntent --> PriorityCommand --> Validation --> ActorStore
     ActorStore --> Schedule
-    Schedule --> JobSystem
-    JobBoard --> JobSystem
-    JobSystem --> JobMatcher
+    Schedule --> JobAssignmentSystem
+    JobBoard --> JobAssignmentSystem
+    JobAssignmentSystem --> JobMatcher
     ActorStore --> JobMatcher
     WorksiteStore --> JobMatcher
     NeedsPreview -. "later pressure" .-> WorkEligibility
@@ -55,7 +59,7 @@ graph TB
     Inventory --> RecipeSystem
     RecipeSystem --> Inventory
     RecipeSystem --> WorldEventLog
-    JobSystem --> WorldEventLog
+    JobAssignmentSystem --> WorldEventLog
     PathfindingSystem --> WorldEventLog
     WorldEventLog --> WorldEvent --> ReasonTrace
     ActorStore --> DmQueryApi
@@ -75,7 +79,7 @@ classDiagram
         -List~JobId~ _order
         -ulong _nextJobValue
         +int Count
-        +JobId Add(JobPosting posting, JobPriority priority, GameTime createdAt)
+        +JobId Add(JobRequest posting, JobPriority priority, GameTime createdAt)
         +bool TryGet(JobId id, out Job job)
         +bool TryPeekNext(ActorRecord actor, GameTime now, out Job job)
         +bool TryClaim(JobId id, ActorId actorId, GameTime now, out JobAssignment assignment)
@@ -84,7 +88,7 @@ classDiagram
         +bool Cancel(JobId id, string reason, GameTime now)
     }
 
-    class JobPosting {
+    class JobRequest {
         +RecipeId RecipeId
         +JobKind Kind
         +SiteId SiteId
@@ -96,7 +100,7 @@ classDiagram
 
     class Job {
         +JobId Id
-        +JobPosting Posting
+        +JobRequest Posting
         +JobPriority BoardPriority
         +JobStatus Status
         +ActorId AssignedActorId
@@ -132,23 +136,23 @@ classDiagram
         +JobStatus Cancelled
     }
 
-    class ScheduleComponent {
+    class ActorScheduleState {
         -List~ActorJobPriorityRow~ _priorities
         +JobAssignment CurrentAssignment
         +WorksiteSlot TargetWorksite
         +PathRoute CurrentPath
         +IReadOnlyList~ActorJobPriorityRow~ Priorities
         +JobPriority GetPriority(JobKind kind)
-        +ScheduleComponent WithPriority(ActorJobPriorityRow row)
-        +ScheduleComponent WithAssignment(JobAssignment assignment)
-        +ScheduleComponent ClearAssignment()
+        +ActorScheduleState WithPriority(ActorJobPriorityRow row)
+        +ActorScheduleState WithAssignment(JobAssignment assignment)
+        +ActorScheduleState ClearAssignment()
     }
 
     class ActorRecord {
         +ActorId Id
         +GridPosition Position
-        +ScheduleComponent Schedule
-        +void ApplySchedule(ScheduleComponent schedule)
+        +ActorScheduleState Schedule
+        +void ApplySchedule(ActorScheduleState schedule)
     }
 
     class WorksiteSlot {
@@ -187,12 +191,12 @@ classDiagram
     }
 
     JobBoard "1" o-- "*" Job
-    Job "1" o-- "1" JobPosting
+    Job "1" o-- "1" JobRequest
     Job "0..1" o-- "1" JobAssignment
-    JobPosting "1" o-- "1" WorksiteSlot
-    ScheduleComponent "0..1" o-- "1" JobAssignment
-    ScheduleComponent "0..1" o-- "1" PathRoute
-    ActorRecord "1" o-- "1" ScheduleComponent
+    JobRequest "1" o-- "1" WorksiteSlot
+    ActorScheduleState "0..1" o-- "1" JobAssignment
+    ActorScheduleState "0..1" o-- "1" PathRoute
+    ActorRecord "1" o-- "1" ActorScheduleState
     WorksiteSlot ..> WorksiteStore : references existing store
     JobMatcher ..> IPathfinder : route cost optional
     DmWorldSnapshot o-- ActorView
@@ -206,7 +210,7 @@ sequenceDiagram
     participant Player
     participant Command as Typed Command
     participant ActorStore
-    participant JobSystem
+    participant JobAssignmentSystem
     participant JobBoard
     participant JobMatcher
     participant Pathfinder as IPathfinder
@@ -217,16 +221,16 @@ sequenceDiagram
     participant DM as DM Query API
 
     Player->>Command: SetActorJobPriority(actorId, Smith, priority 1)
-    Command->>ActorStore: Validate actor + apply ScheduleComponent priority
+    Command->>ActorStore: Validate actor + apply ActorScheduleState priority
     ActorStore-->>Command: ActorRecord updated through store
 
-    JobSystem->>ActorStore: scan eligible actors in deterministic order
-    JobSystem->>JobBoard: scan pending jobs in insertion order
-    JobSystem->>JobMatcher: match actor priority + job posting + worksite
-    JobMatcher-->>JobSystem: JobAssignment
-    JobSystem->>JobBoard: TryClaim(jobId, actorId)
-    JobSystem->>ActorStore: ApplySchedule(currentAssignment)
-    JobSystem->>Events: Append JobAssigned
+    JobAssignmentSystem->>ActorStore: scan eligible actors in deterministic order
+    JobAssignmentSystem->>JobBoard: scan pending jobs in insertion order
+    JobAssignmentSystem->>JobMatcher: match actor priority + job posting + worksite
+    JobMatcher-->>JobAssignmentSystem: JobAssignment
+    JobAssignmentSystem->>JobBoard: TryClaim(jobId, actorId)
+    JobAssignmentSystem->>ActorStore: ApplySchedule(currentAssignment)
+    JobAssignmentSystem->>Events: Append JobAssigned
     Events->>Trace: attach player_intent -> priority_match -> claim
 
     Pathing->>ActorStore: read assigned actor position
@@ -330,20 +334,20 @@ namespace EmberCrpg.Domain.Process
 ```
 
 ```csharp
-// Assets/Scripts/Domain/Process/JobPosting.cs
+// Assets/Scripts/Domain/Process/JobRequest.cs
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>Immutable request for work. New work enters the simulation as data rows, not branches.</summary>
-    public sealed class JobPosting
+    public sealed class JobRequest
     {
         /// <summary>Defensive copy of required actor/work tags used by JobMatcher.</summary>
         private readonly string[] _requiredTags;
 
         /// <summary>Creates a deterministic job posting for one recipe/process at one worksite.</summary>
-        public JobPosting(
+        public JobRequest(
             RecipeId recipeId,
             JobKind kind,
             SiteId siteId,
@@ -382,7 +386,7 @@ using EmberCrpg.Domain.Core;
 
 namespace EmberCrpg.Domain.Process
 {
-    /// <summary>Immutable binding between one actor and one claimed job. ScheduleComponent stores this, not a subclassed actor.</summary>
+    /// <summary>Immutable binding between one actor and one claimed job. ActorScheduleState stores this, not a subclassed actor.</summary>
     public sealed class JobAssignment
     {
         /// <summary>Creates an assignment after JobBoard successfully claims a job.</summary>
@@ -413,17 +417,17 @@ using EmberCrpg.Domain.World;
 
 namespace EmberCrpg.Domain.Process
 {
-    /// <summary>Runtime state for one JobPosting on a JobBoard. It owns lifecycle state but does not run recipes.</summary>
+    /// <summary>Runtime state for one JobRequest on a JobBoard. It owns lifecycle state but does not run recipes.</summary>
     public sealed class Job
     {
         /// <summary>Creates a board-owned job record in Pending status.</summary>
-        public Job(JobId id, JobPosting posting, JobPriority boardPriority, GameTime createdAt, long sequence);
+        public Job(JobId id, JobRequest posting, JobPriority boardPriority, GameTime createdAt, long sequence);
 
         /// <summary>Stable job handle.</summary>
         public JobId Id { get; }
 
         /// <summary>Immutable work request behind the job.</summary>
-        public JobPosting Posting { get; }
+        public JobRequest Posting { get; }
 
         /// <summary>Board-side priority used before actor priority tie-breakers.</summary>
         public JobPriority BoardPriority { get; }
@@ -489,7 +493,7 @@ namespace EmberCrpg.Domain.Process
         public IEnumerable<Job> Jobs { get; }
 
         /// <summary>Adds a pending job and returns its allocated id.</summary>
-        public JobId Add(JobPosting posting, JobPriority boardPriority, GameTime createdAt);
+        public JobId Add(JobRequest posting, JobPriority boardPriority, GameTime createdAt);
 
         /// <summary>Tries to fetch a job by id without mutating board state.</summary>
         public bool TryGet(JobId id, out Job job);
@@ -534,20 +538,20 @@ namespace EmberCrpg.Domain.Actors
 ```
 
 ```csharp
-// Assets/Scripts/Domain/Actors/ScheduleComponent.cs
+// Assets/Scripts/Domain/Actors/ActorScheduleState.cs
 using System.Collections.Generic;
 using EmberCrpg.Domain.Process;
 
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>Pure actor schedule component. It carries current work state and priorities without adding actor subclasses.</summary>
-    public sealed class ScheduleComponent
+    public sealed class ActorScheduleState
     {
         /// <summary>Defensive ordered priority rows for deterministic matching.</summary>
         private readonly List<ActorJobPriorityRow> _priorities;
 
         /// <summary>Creates schedule state with optional priorities and current assignment.</summary>
-        public ScheduleComponent(
+        public ActorScheduleState(
             IEnumerable<ActorJobPriorityRow> priorities,
             JobAssignment currentAssignment,
             WorksiteSlot targetWorksite,
@@ -572,16 +576,16 @@ namespace EmberCrpg.Domain.Actors
         public JobPriority GetPriority(JobKind kind);
 
         /// <summary>Returns a new schedule with one priority row added or replaced.</summary>
-        public ScheduleComponent WithPriority(ActorJobPriorityRow row);
+        public ActorScheduleState WithPriority(ActorJobPriorityRow row);
 
         /// <summary>Returns a new schedule carrying the current assignment and target worksite.</summary>
-        public ScheduleComponent WithAssignment(JobAssignment assignment);
+        public ActorScheduleState WithAssignment(JobAssignment assignment);
 
         /// <summary>Returns a new schedule carrying an updated path route.</summary>
-        public ScheduleComponent WithPath(PathRoute route);
+        public ActorScheduleState WithPath(PathRoute route);
 
         /// <summary>Returns a new idle schedule with priorities preserved.</summary>
-        public ScheduleComponent ClearAssignment();
+        public ActorScheduleState ClearAssignment();
     }
 }
 ```
@@ -595,10 +599,10 @@ namespace EmberCrpg.Domain.Actors
     public sealed partial class ActorRecord
     {
         /// <summary>Actor-local schedule and job priority component. Existing actors default to an idle component.</summary>
-        public ScheduleComponent Schedule { get; private set; }
+        public ActorScheduleState Schedule { get; private set; }
 
         /// <summary>Replaces actor schedule state through the store-owned actor record.</summary>
-        public void ApplySchedule(ScheduleComponent schedule);
+        public void ApplySchedule(ActorScheduleState schedule);
     }
 }
 ```
@@ -661,7 +665,7 @@ using EmberCrpg.Domain.Process;
 
 namespace EmberCrpg.Simulation.Process
 {
-    /// <summary>Pure result of matching one actor to one job. JobSystem applies it after validation succeeds.</summary>
+    /// <summary>Pure result of matching one actor to one job. JobAssignmentSystem applies it after validation succeeds.</summary>
     public sealed class JobMatch
     {
         /// <summary>Creates a match candidate.</summary>
@@ -722,7 +726,7 @@ namespace EmberCrpg.Simulation.Process
 ```
 
 ```csharp
-// Assets/Scripts/Simulation/Process/JobSystem.cs
+// Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Process;
@@ -731,7 +735,7 @@ using EmberCrpg.Domain.World;
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>Coordinates matching, claiming, and work-order startup. It routes all mutation through stores and existing RecipeSystem calls.</summary>
-    public sealed class JobSystem
+    public sealed class JobAssignmentSystem
     {
         /// <summary>Matcher used to find deterministic actor/job pairs.</summary>
         private readonly JobMatcher _matcher;
@@ -740,7 +744,7 @@ namespace EmberCrpg.Simulation.Process
         private readonly RecipeSystem _recipes;
 
         /// <summary>Creates the job system with explicit dependencies.</summary>
-        public JobSystem(JobMatcher matcher, RecipeSystem recipes);
+        public JobAssignmentSystem(JobMatcher matcher, RecipeSystem recipes);
 
         /// <summary>Scans actors and pending jobs, then claims at most one deterministic match for this tick.</summary>
         public bool TryAssignNext(
@@ -1383,18 +1387,18 @@ namespace EmberCrpg.Tests.Xunit.DM
 |---:|---|---|---|
 | 1 | `Assets/Scripts/Domain/Process/JobStatus.cs` :: `JobStatus` | Enum branch yerine validated lifecycle value object. | `[box=PROCESS]` |
 | 2 | `Assets/Scripts/Domain/Process/WorksiteSlot.cs` :: `WorksiteSlot` | Existing `WorksiteStore` için stable reference. | `[box=PROCESS][box=WORLD]` |
-| 3 | `Assets/Scripts/Domain/Process/JobPosting.cs` :: `JobPosting` | Recipe/worksite/quantity/requester data row. | `[box=PROCESS]` |
+| 3 | `Assets/Scripts/Domain/Process/JobRequest.cs` :: `JobRequest` | Recipe/worksite/quantity/requester data row. | `[box=PROCESS]` |
 | 4 | `Assets/Scripts/Domain/Process/JobAssignment.cs` :: `JobAssignment` | Actor + claimed job binding. | `[box=PROCESS][box=LIVING]` |
 | 5 | `Assets/Scripts/Domain/Process/Job.cs` :: `Job` | Runtime lifecycle state, no recipe execution. | `[box=PROCESS]` |
 | 6 | `Assets/Scripts/Domain/Process/JobBoard.cs` :: `JobBoard` | Add/peek/claim/complete/cancel deterministic ordering. | `[box=PROCESS]` |
 | 7 | `Assets/Scripts/Domain/Actors/ActorJobPriorityRow.cs` :: `ActorJobPriorityRow` | Actor-local priority row. | `[box=LIVING]` |
-| 8 | `Assets/Scripts/Domain/Actors/ScheduleComponent.cs` :: `ScheduleComponent` | Current job, target, route, priority rows. | `[box=LIVING]` |
+| 8 | `Assets/Scripts/Domain/Actors/ActorScheduleState.cs` :: `ActorScheduleState` | Current job, target, route, priority rows. | `[box=LIVING]` |
 | 9 | `Assets/Scripts/Domain/Actors/ActorRecord.cs` :: `Schedule` integration | Add component field + `ApplySchedule`. | `[box=LIVING]` |
 | 10 | `Assets/Scripts/Domain/Process/PathRoute.cs` :: `PathRoute` | Pure route value for pathing. | `[box=PROCESS][box=WORLD]` |
 | 11 | `Assets/Scripts/Simulation/World/IPathfinder.cs` :: `IPathfinder` | Interface-only pathfinder API, no Unity. | `[box=WORLD]` |
 | 12 | `Assets/Scripts/Simulation/Process/IActorWorkEligibility.cs` :: `IActorWorkEligibility` | Faz 4 needs refusal hook, allow-all consumer in same PR. | `[box=LIVING][box=PROCESS]` |
 | 13 | `Assets/Scripts/Simulation/Process/JobMatcher.cs` :: `JobMatcher` | Actor priority + job + worksite deterministic match. | `[box=PROCESS][box=LIVING]` |
-| 14 | `Assets/Scripts/Simulation/Process/JobSystem.cs` :: `JobSystem` | Claim + start recipe + complete job event rail. | `[box=PROCESS]` |
+| 14 | `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs` :: `JobAssignmentSystem` | Claim + start recipe + complete job event rail. | `[box=PROCESS]` |
 | 15 | `Assets/Scripts/Simulation/World/PathfindingSystem.cs` :: `PathfindingSystem` | Assigned actor moves toward worksite. | `[box=WORLD][box=LIVING]` |
 | 16 | `Assets/Tests/Xunit/Process/JobBoardTests.cs` | Pin order, duplicate claims, terminal status. | `[box=PROCESS]` |
 | 17 | `Assets/Tests/Xunit/Actors/ScheduleComponentTests.cs` | Pin priority and assignment transitions. | `[box=LIVING]` |
@@ -1415,9 +1419,9 @@ namespace EmberCrpg.Tests.Xunit.DM
 | Test alanı | Pin'lenen davranış | xunit dosya yolu |
 |---|---|---|
 | `JobStatus` | Status token equality, terminal/non-terminal expectations, no enum branch dependency. | `Assets/Tests/Xunit/Process/JobStatusTests.cs` |
-| `JobPosting` | Empty ids, invalid quantity, missing worksite, missing recipe rejected. | `Assets/Tests/Xunit/Process/JobPostingTests.cs` |
+| `JobRequest` | Empty ids, invalid quantity, missing worksite, missing recipe rejected. | `Assets/Tests/Xunit/Process/JobPostingTests.cs` |
 | `JobBoard` | Add order, priority ordering, actor priority tie-break, duplicate claim prevention, complete/cancel terminal state. | `Assets/Tests/Xunit/Process/JobBoardTests.cs` |
-| `ScheduleComponent` | Priority replacement, disabled priorities, assignment set/clear, path update. | `Assets/Tests/Xunit/Actors/ScheduleComponentTests.cs` |
+| `ActorScheduleState` | Priority replacement, disabled priorities, assignment set/clear, path update. | `Assets/Tests/Xunit/Actors/ScheduleComponentTests.cs` |
 | `JobMatcher` | Actor insertion order, lower priority wins, inactive worksite rejected, Faz 4 eligibility hook respected. | `Assets/Tests/Xunit/Process/JobMatcherTests.cs` |
 | `IPathfinder` consumer | `PathfindingSystem` uses interface, no Unity dependency, one step per tick. | `Assets/Tests/Xunit/World/PathfindingSystemTests.cs` |
 | Recipe integration | Actor at worksite starts `RecipeSystem.TryStart`; completion closes job and emits event. | `Assets/Tests/Xunit/Process/JobSystemRecipeIntegrationTests.cs` |
@@ -1445,8 +1449,8 @@ Acceptance test çevirisi:
 
 | Player sentence | Test düzeni |
 |---|---|
-| `player can set 2 actors to smith priority 1` | Two `ActorRecord` rows get `ScheduleComponent` rows with `JobKind.Smith` + `JobPriority.Active(1)`. |
-| `watch both queue at the furnace` | `JobBoard` contains two or more furnace `JobPosting` rows; `JobMatcher` assigns both actors in deterministic actor insertion order; `PathfindingSystem` steps both toward `WorksiteSlot`. |
+| `player can set 2 actors to smith priority 1` | Two `ActorRecord` rows get `ActorScheduleState` rows with `JobKind.Smith` + `JobPriority.Active(1)`. |
+| `watch both queue at the furnace` | `JobBoard` contains two or more furnace `JobRequest` rows; `JobMatcher` assigns both actors in deterministic actor insertion order; `PathfindingSystem` steps both toward `WorksiteSlot`. |
 | `and produce 4 ingots` | Four `SmeltIronIngot` completions are produced by `RecipeSystem`; inventory gains four `iron_ingot` units. |
 | `in a deterministic day` | Same seed and same command list replay to identical event kinds, actor positions, job states, inventory counts, and DM dump text. |
 
@@ -1467,10 +1471,10 @@ Test akışı:
 | Adım | Assertion | Kapatacak atomlar |
 |---|---|---|
 | İki actor yaratılır | `ActorStore.Records` deterministic order: smith A, smith B. | 7, 8, 9 |
-| Player priority verir | Her iki `ScheduleComponent.GetPriority(JobKind.Smith)` => `Active(1)`. | 7, 8, 9, 17 |
+| Player priority verir | Her iki `ActorScheduleState.GetPriority(JobKind.Smith)` => `Active(1)`. | 7, 8, 9, 17 |
 | Furnace ve recipe hazırlanır | `WorksiteSlot.TryResolve` active furnace döndürür; recipe row `SmeltIronIngot` data'dır. | 2, 3 |
 | Dört posting eklenir | `JobBoard.Count == 4`; ids insertion order ile artar. | 3, 5, 6, 16 |
-| JobSystem tick çalışır | İlk iki uygun actor iki farklı job claim eder; duplicate claim yok. | 13, 14, 18 |
+| JobAssignmentSystem tick çalışır | İlk iki uygun actor iki farklı job claim eder; duplicate claim yok. | 13, 14, 18 |
 | Pathfinding tick çalışır | Her actor furnace'a doğru deterministic step atar ve queue durumuna gelir. | 10, 11, 15 |
 | RecipeSystem tick çalışır | Dört completion sonrası inventory `iron_ingot == 4`. | 14, 18 |
 | Event + trace doğrulanır | `JobAssigned`, `ActorMoved`, `RecipeCompleted`; trace root `player_intent`. | 14, 18, 24 |
@@ -1480,8 +1484,8 @@ Risk matrisi:
 
 | Risk | Atomlar | Boyut | Neden | Mitigasyon |
 |---|---:|---|---|---|
-| `ActorRecord` constructor değişikliği geniş kırılım yaratır | 8-9 | Büyük | Mevcut test fixtures çok actor yaratıyor. | `ScheduleComponent` default idle overload veya migration helper aynı PR'da; eski constructor kırılmadan ilerlesin. |
-| `JobPosting` adı mevcut Faz 3 map'teki `JobRequest` ile çakışır | 3 | Orta | Eski atom map `JobRequest` demiş, bu spec `JobPosting` istiyor. | Captain tek isim seçsin: bu dosyada `JobPosting` canonical; varsa branch'te rename PR önce gelsin. |
+| `ActorRecord` constructor değişikliği geniş kırılım yaratır | 8-9 | Büyük | Mevcut test fixtures çok actor yaratıyor. | `ActorScheduleState` default idle overload veya migration helper aynı PR'da; eski constructor kırılmadan ilerlesin. |
+| `JobRequest` adı mevcut Faz 3 map'teki `JobRequest` ile çakışır | 3 | Orta | Eski atom map `JobRequest` demiş, bu spec `JobRequest` istiyor. | Captain tek isim seçsin: bu dosyada `JobRequest` canonical; varsa branch'te rename PR önce gelsin. |
 | xUnit rayı repo mevcut NUnit fallback harness ile çakışır | 16-18, 26-28 | Büyük | Repo şu an Unity EditMode/NUnit ağırlıklı. | Faz 10 için pure .NET xUnit test project ayrı atom olarak açılmalı; Unity testleri mirror olabilir ama canonical acceptance xUnit olsun. |
 | Pathfinding gerçek A* kapsamı büyür | 10-11, 15 | Orta | Faz 3 için sadece interface ve deterministic fixture path gerekir. | İlk PR interface + fake/grid fixture; gerçek A* sonraki WORLD atomu. |
 | Mutation router yanlışlıkla world'e doğrudan yazar | 24 | Büyük | Faz 10'un ana güvenlik sınırı bu. | Tests: rejected mutation world hash unchanged; accepted mutation only event/tick path ile değişir. |
@@ -1504,7 +1508,7 @@ Faz 4 `Colony needs` entegrasyonu için bırakılacak hook'lar:
 | Hook | Nerede | Faz 4 davranışı |
 |---|---|---|
 | `IActorWorkEligibility.CanWork(actor, job)` | `JobMatcher` | Hunger/fatigue threshold üstündeyse actor işi reddeder. |
-| `ScheduleComponent.PlanLabel` / `ScheduleView.PlanLabel` | LIVING + DM | Mood/needs etkisi HUD ve LLM snapshot'ta görünür: `refusing_work:hunger`. |
-| `ReasonTrace` cause labels | `JobSystem`, `RecipeSystem` | Refusal trace: `needs:hunger_high -> job_refused`. |
+| `ActorScheduleState.PlanLabel` / `ScheduleView.PlanLabel` | LIVING + DM | Mood/needs etkisi HUD ve LLM snapshot'ta görünür: `refusing_work:hunger`. |
+| `ReasonTrace` cause labels | `JobAssignmentSystem`, `RecipeSystem` | Refusal trace: `needs:hunger_high -> job_refused`. |
 | `DmWorldSnapshot` actor vitals extension | `ActorVitalsView` | Faz 4 `NeedsView` eklenebilir; mevcut snapshot contract bozulmaz. |
-| `JobPosting.RequiredTags` | PROCESS row | Food/rest jobs data row olarak eklenir; yeni branch değil, yeni recipe/process row. |
+| `JobRequest.RequiredTags` | PROCESS row | Food/rest jobs data row olarak eklenir; yeni branch değil, yeni recipe/process row. |
