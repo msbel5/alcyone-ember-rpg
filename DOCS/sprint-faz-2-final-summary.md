@@ -9,6 +9,8 @@ _Resolver:_ `sha256:e24087d59931ef7c67f7e636d00e72c66a81953b2eb9d660b1b9a7a2ba66
 _Thalamus status:_ resolved OK on 2026-05-14 final-summary pass
 _Current cron packet:_ `pkt_20260514114600_eafb54dba075`
 _Current cron resolver:_ `sha256:35f36551736cc6577958c7c0cb2341d71444189f0a548336827f11ab2c5633f3`
+_Merge-gate cron packet:_ `pkt_20260514120134_9bc0efc0f398`
+_Merge-gate cron resolver:_ `sha256:cc0b43a4c014d414ce2267a321c26c168226674f3aa7b9dcd51b76249ec46963`
 
 ## Increment goal
 
@@ -46,6 +48,7 @@ Faz 2 landed the first PROCESS/MATTER vertical slice:
 
 - Latest pre-summary Faz 2 validation: `./tools/validation/run-validation.sh --mode fallback` PASS on PR #106 (`fallback_exit_code=0`, `Passed: 813, Failed: 0`).
 - Final-summary validation: `./tools/validation/run-validation.sh --mode fallback` PASS on 2026-05-14T11:48:36Z (`fallback_exit_code=0`, `Passed: 813, Failed: 0, Skipped: 0`; TRX `validation-output/fallback-test-results/fallback.trx`).
+- Merge-gate validation: `./tools/validation/run-validation.sh --mode fallback` PASS on 2026-05-14T12:09:19Z (`fallback_exit_code=0`, `Passed: 813, Failed: 0, Skipped: 0`; TRX `validation-output/fallback-test-results/fallback.trx`).
 
 ## Promotion status
 
