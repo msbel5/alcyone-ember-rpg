@@ -50,11 +50,11 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Promotion checklist
 
-- [ ] every Faz 2 atom above is checked off
-- [ ] every sub-area has at least one merged PR: Recipe definitions, Worksite state, Recipe execution, Save/load/proof
-- [ ] `tools/validation/run-validation.sh --mode fallback` passes on the final Faz 2 branch
-- [ ] final sprint summary records atom count and bundle count
-- [ ] product-visible PR count for Faz 2 ≥ 1
+- [x] every Faz 2 atom above is checked off — 20 gameplay/proof rows checked, plus 1 meta atom-map row.
+- [x] every sub-area has at least one merged PR/main evidence: Recipe definitions (#99, #100, and `RecipeDef` commit `e217cc6` on `main`), Worksite state (#102, #103), Recipe execution (#104), Save/load/proof (#105, #106).
+- [x] `tools/validation/run-validation.sh --mode fallback` passes on the final Faz 2 branch — final-summary rerun passed with `fallback_exit_code=0`, `Passed: 813, Failed: 0, Skipped: 0`.
+- [x] final sprint summary records atom count and bundle count — see `DOCS/sprint-faz-2-final-summary.md`.
+- [x] product-visible PR count for Faz 2 ≥ 1 — count is 1 (`#104`, first EventLog-emitting RecipeSystem slice).
 
 ## This atom map
 
@@ -65,9 +65,29 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - packet_id: `pkt_20260511213524_1a8c556dd6e1`
 - resolver_key: `sha256:f03d726809ee9adaf77d58d3a2505c4575a3eb382bcdfd94b66a6e038050fee7`
 
-## Next increment after this PR
+## Final summary / promotion evidence
 
-RecipeSystem now emits the first product-visible Faz 2 EventLog slice, and the deterministic player-facing smelt-iron acceptance proof is recorded. Next implementation should target the save/load runtime rail: serialize active recipe/worksite progress only after a safe world-root shape exists, then add a round-trip test for active progress and produced stock.
+Faz 2 is closed by `DOCS/sprint-faz-2-final-summary.md`. The final pass records 20 gameplay/proof atom rows, 1 meta atom row, 7 non-review implementation bundles, 1 product-visible PR, and the player-can sentence from `docs/ROADMAP.md`.
+
+Thalamus final-summary packet resolved successfully:
+
+- packet_id: `pkt_20260514112422_03d44f0347f2`
+- resolver_key: `sha256:e24087d59931ef7c67f7e636d00e72c66a81953b2eb9d660b1b9a7a2ba66f4ce`
+
+Current cron packet for this final-summary commit:
+
+- packet_id: `pkt_20260514114600_eafb54dba075`
+- resolver_key: `sha256:35f36551736cc6577958c7c0cb2341d71444189f0a548336827f11ab2c5633f3`
+
+
+Current merge-gate cron packet resolved successfully:
+
+- packet_id: `pkt_20260514120134_9bc0efc0f398`
+- resolver_key: `sha256:cc0b43a4c014d414ce2267a321c26c168226674f3aa7b9dcd51b76249ec46963`
+
+## Prior Faz 2 packet trail
+
+These packet ids are retained as historical evidence for the Faz 2 increments that followed the initial atom-map packet.
 
 - packet_id: `pkt_20260511222722_4531e566a532`
 - resolver_key: `sha256:aef062b231ad626b049d9166098ecef0131cad4633ea6727d52c0efaf3805b09`
@@ -88,3 +108,7 @@ RecipeSystem now emits the first product-visible Faz 2 EventLog slice, and the d
 
 - packet_id: `pkt_20260514105821_bf14bff6ca68`
 - resolver_key: `sha256:62e3ced1a90e0ef1103cf7066036d2202562584822c0f076e7d11b86bdfcb3ee`
+
+## Next increment after Faz 2
+
+Start Faz 3 Job assignment only after Captain opens a new Faz 3 atom map. Target acceptance: `player can set 2 actors to "smith" priority 1, watch both queue at the furnace, and produce 4 ingots in a deterministic day`.
