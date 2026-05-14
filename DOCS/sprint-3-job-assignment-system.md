@@ -39,6 +39,10 @@ Product-visible PR count for this increment: 1. Player-facing acceptance
 sentence: world actors can now be assigned to real pending worksite jobs instead
 of job requests remaining passive board rows.
 
+## Atom-map updates
+
+Updated `DOCS/sprint-faz-3-atom-map.md` for the completed `TryAssignNext` and focused assignment-system tests. The broader `CanActorWorkJob` recipe-input atom remains open for the claimed-job lifecycle work.
+
 ## Next increment
 
 Start the claimed job lifecycle atom: connect claimed `JobBoard` entries to the
