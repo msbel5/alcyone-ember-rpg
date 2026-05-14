@@ -36,13 +36,13 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ### 2. Job board state
 
-- [ ] Assets/Scripts/Domain/Process/JobRequest.cs :: JobRequest :: immutable work request binding recipe/worksite/site/quantity/requester [box=PROCESS]
-- [ ] Assets/Tests/EditMode/Process/JobRequestTests.cs :: JobRequestTests :: reject empty ids, inactive quantity, missing worksite, and None job kind [box=PROCESS]
-- [ ] Assets/Scripts/Domain/Process/JobBoard.cs :: JobBoard.Add :: register deterministic pending jobs in insertion order [box=PROCESS]
-- [ ] Assets/Scripts/Domain/Process/JobBoard.cs :: JobBoard.TryPeekNext :: select next unclaimed job by priority then insertion order [box=PROCESS]
-- [ ] Assets/Scripts/Domain/Process/JobBoard.cs :: JobBoard.TryClaim :: mark one job claimed by one actor without duplicate claims [box=PROCESS]
-- [ ] Assets/Scripts/Domain/Process/JobBoard.cs :: JobBoard.Complete/Cancel :: remove terminal jobs and keep deterministic order stable [box=PROCESS]
-- [ ] Assets/Tests/EditMode/Process/JobBoardTests.cs :: JobBoardTests :: pin add/peek/claim/complete/cancel ordering and duplicate guards [box=PROCESS]
+- [x] Assets/Scripts/Domain/Process/JobRequest.cs :: JobRequest :: immutable work request binding recipe/worksite/site/quantity/requester [box=PROCESS]
+- [x] Assets/Tests/EditMode/Process/JobRequestTests.cs :: JobRequestTests :: reject empty ids, inactive quantity, missing worksite, and None job kind [box=PROCESS]
+- [x] Assets/Scripts/Domain/Process/JobBoard.cs :: JobBoard.Add :: register deterministic pending jobs in insertion order [box=PROCESS]
+- [x] Assets/Scripts/Domain/Process/JobBoard.cs :: JobBoard.TryPeekNext :: select next unclaimed job by priority then insertion order [box=PROCESS]
+- [x] Assets/Scripts/Domain/Process/JobBoard.cs :: JobBoard.TryClaim :: mark one job claimed by one actor without duplicate claims [box=PROCESS]
+- [x] Assets/Scripts/Domain/Process/JobBoard.cs :: JobBoard.Complete/Cancel :: remove terminal jobs and keep deterministic order stable [box=PROCESS]
+- [x] Assets/Tests/EditMode/Process/JobBoardTests.cs :: JobBoardTests :: pin add/peek/claim/complete/cancel ordering and duplicate guards [box=PROCESS]
 
 ### 3. Actor job preference and schedule rail
 
@@ -98,4 +98,4 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ## Next increment
 
-Continue with the `job-board` bundle: add `JobRequest`, `JobBoard.Add`, `TryPeekNext`, `TryClaim`, terminal removal, and focused ordering/duplicate-guard tests. Keep event kinds out until `JobAssignmentSystem` consumes them.
+Continue with the `actor-job-state` bundle: add `ActorJobPreference`, `ActorScheduleState`, ActorRecord integration methods, and focused tests. Keep assignment, event kinds, and save/load mapping out until their concrete consumer atoms land.
