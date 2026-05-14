@@ -2,7 +2,7 @@
 
 _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-smelt-iron-acceptance`
-_PR:_ pending
+_PR:_ https://github.com/msbel5/alcyone-ember-rpg/pull/105
 _Box:_ `[box=PLAYABLE]` / `[box=PROCESS]` / `[box=MATTER]` / `[box=TIME]`
 _Thalamus:_ `pkt_20260512190154_c849680f3a6f` / `sha256:d21feee1a9410aebe91a0853f9e2e3b093086c07a25ce6090b6b93180e840daf`
 _Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
@@ -27,7 +27,7 @@ Record the smallest player-facing Faz 2 proof now that the `RecipeSystem` visibl
 
 The replay is pinned by EditMode fallback tests already in the visible RecipeSystem slice:
 
-- `RecipeSystemTests.CompletingRecipeAfterDuration_ProducesOutputOnce`
+- `RecipeSystemTests.Tick_CompletesAfterFortyTicksAndProducesIronIngot`
 - `RecipeEventLogTests.CompletingRecipe_AppendsOrderedRecipeCompletedEventWithReasonTrace`
 
 These tests are the current deterministic stand-in for a Unity scene proof until the save/load and HUD-facing recipe state atoms land.
