@@ -180,11 +180,26 @@ namespace EmberCrpg.Simulation.Process
     public sealed class RecipeWorkOrder
     {
         internal RecipeWorkOrder(RecipeDef recipe, SiteId siteId, GridPosition position, ActorId actorId)
+            : this(recipe, siteId, position, actorId, progressTicks: 0)
+        {
+        }
+
+        private RecipeWorkOrder(RecipeDef recipe, SiteId siteId, GridPosition position, ActorId actorId, int progressTicks)
         {
             Recipe = recipe ?? throw new ArgumentNullException(nameof(recipe));
+            if (progressTicks < 0 || progressTicks > recipe.DurationTicks)
+                throw new ArgumentOutOfRangeException(nameof(progressTicks), progressTicks, "Recipe work order progress must fit inside the recipe duration.");
+
             SiteId = siteId;
             Position = position;
             ActorId = actorId;
+            ProgressTicks = progressTicks;
+        }
+
+        /// <summary>Rehydrates a saved work order without consuming inputs or emitting events.</summary>
+        public static RecipeWorkOrder Resume(RecipeDef recipe, SiteId siteId, GridPosition position, ActorId actorId, int progressTicks)
+        {
+            return new RecipeWorkOrder(recipe, siteId, position, actorId, progressTicks);
         }
 
         public RecipeDef Recipe { get; }

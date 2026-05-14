@@ -35,6 +35,8 @@ namespace EmberCrpg.Data.Save
         public SiteRecordSaveData[] sites;
         public FactionRecordSaveData[] factions;
         public WorldEventSaveData[] worldEvents;
+        public WorksiteSaveData[] worksites;
+        public RecipeWorkOrderSaveData[] recipeWorkOrders;
         public InventorySaveData inventory;
         public EquipmentSaveData playerEquipment;
         public InventorySaveData merchantInventory;
@@ -69,6 +71,27 @@ namespace EmberCrpg.Data.Save
         public int minY;
         public int maxX;
         public int maxY;
+    }
+
+    [Serializable]
+    public sealed class WorksiteSaveData
+    {
+        public ulong siteId;
+        public int positionX;
+        public int positionY;
+        public int kind;
+        public bool isActive;
+    }
+
+    [Serializable]
+    public sealed class RecipeWorkOrderSaveData
+    {
+        public ulong recipeId;
+        public ulong siteId;
+        public int positionX;
+        public int positionY;
+        public ulong actorId;
+        public int progressTicks;
     }
 
     [Serializable]
