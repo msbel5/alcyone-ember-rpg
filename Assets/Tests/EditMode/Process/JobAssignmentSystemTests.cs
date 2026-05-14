@@ -163,6 +163,36 @@ namespace EmberCrpg.Tests.EditMode.Process
         }
 
         [Test]
+        public void CanActorWorkJob_WithBatchRecipeInputs_RequiresInputsForEveryExecution()
+        {
+            var system = new JobAssignmentSystem();
+            var job = MakeRequest(10UL, priority: 1, quantity: 2);
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            var inventory = InventoryWithInputs(ore: 2, fuel: 1);
+            var recipe = SmeltIronRecipe(job.RecipeId);
+
+            Assert.That(system.CanActorWorkJob(actor, job, ActiveFurnaceStore(), recipe, inventory), Is.False);
+
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(2));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CanActorWorkJob_WithBatchRecipeInputs_ReturnsTrueWhenStockCoversEveryExecution()
+        {
+            var system = new JobAssignmentSystem();
+            var job = MakeRequest(10UL, priority: 1, quantity: 2);
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            var inventory = InventoryWithInputs(ore: 4, fuel: 2);
+            var recipe = SmeltIronRecipe(job.RecipeId);
+
+            Assert.That(system.CanActorWorkJob(actor, job, ActiveFurnaceStore(), recipe, inventory), Is.True);
+
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(4));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(2));
+        }
+
+        [Test]
         public void CanActorWorkJob_WithRecipeMismatch_ReturnsFalseWithoutMutatingInventory()
         {
             var system = new JobAssignmentSystem();
@@ -181,7 +211,7 @@ namespace EmberCrpg.Tests.EditMode.Process
             Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(1));
         }
 
-        private static JobRequest MakeRequest(ulong jobId, int priority)
+        private static JobRequest MakeRequest(ulong jobId, int priority, int quantity = 1)
         {
             return new JobRequest(
                 new JobId(jobId),
@@ -191,7 +221,7 @@ namespace EmberCrpg.Tests.EditMode.Process
                 WorksiteKind.Furnace,
                 JobKind.Smith,
                 JobPriority.Active(priority),
-                quantity: 1,
+                quantity: quantity,
                 requesterId: Requester);
         }
 

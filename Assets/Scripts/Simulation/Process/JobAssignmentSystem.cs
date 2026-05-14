@@ -120,14 +120,22 @@ namespace EmberCrpg.Simulation.Process
 
             var inventoryPreflight = inventory.Clone();
             var recipeSystem = new RecipeSystem();
-            return recipeSystem.TryStart(
-                recipe,
-                worksites,
-                request.SiteId,
-                request.WorksitePosition,
-                inventoryPreflight,
-                actor.Id,
-                out _);
+            for (var execution = 0; execution < request.Quantity; execution++)
+            {
+                if (!recipeSystem.TryStart(
+                    recipe,
+                    worksites,
+                    request.SiteId,
+                    request.WorksitePosition,
+                    inventoryPreflight,
+                    actor.Id,
+                    out _))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool ActorAlreadyHasPendingClaim(ActorRecord actor, JobBoard board)
