@@ -10,7 +10,9 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
+using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Simulation.Process;
 using EmberCrpg.Simulation.World;
 
 namespace EmberCrpg.Data.Save
@@ -113,6 +115,59 @@ namespace EmberCrpg.Data.Save
         }
 
 
+        public static WorksiteSaveData[] ToWorksiteData(WorksiteStore store)
+        {
+            return (store?.Records ?? Array.Empty<WorksiteRecord>()).Select(ToWorksiteData).ToArray();
+        }
+
+        public static WorksiteStore ToWorksiteStore(WorksiteSaveData[] data)
+        {
+            var store = new WorksiteStore();
+            foreach (var record in data ?? Array.Empty<WorksiteSaveData>())
+            {
+                if (record != null)
+                    store.Add(ToWorksiteRecord(record));
+            }
+
+            return store;
+        }
+
+        public static RecipeWorkOrderSaveData ToRecipeWorkOrderData(RecipeWorkOrder order)
+        {
+            if (order == null)
+                throw new ArgumentNullException(nameof(order));
+
+            return new RecipeWorkOrderSaveData
+            {
+                recipeId = order.Recipe.Id.Value,
+                siteId = order.SiteId.Value,
+                positionX = order.Position.X,
+                positionY = order.Position.Y,
+                actorId = order.ActorId.Value,
+                progressTicks = order.ProgressTicks,
+            };
+        }
+
+        public static RecipeWorkOrder ToRecipeWorkOrder(RecipeWorkOrderSaveData data, Func<RecipeId, RecipeDef> resolveRecipe)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (resolveRecipe == null)
+                throw new ArgumentNullException(nameof(resolveRecipe));
+
+            var recipeId = new RecipeId(data.recipeId);
+            var recipe = resolveRecipe(recipeId);
+            if (recipe == null)
+                throw new InvalidOperationException($"RecipeWorkOrder save data references unknown recipe {recipeId}.");
+
+            return RecipeWorkOrder.Resume(
+                recipe,
+                new SiteId(data.siteId),
+                new GridPosition(data.positionX, data.positionY),
+                new ActorId(data.actorId),
+                data.progressTicks);
+        }
+
         private static ActorSaveData[] ToActorStoreData(ActorStore store)
         {
             return (store?.Records ?? Array.Empty<ActorRecord>()).Select(ActorSaveMapper.ToData).ToArray();
@@ -191,6 +246,27 @@ namespace EmberCrpg.Data.Save
                 }
             }
             return store;
+        }
+
+        private static WorksiteSaveData ToWorksiteData(WorksiteRecord record)
+        {
+            return new WorksiteSaveData
+            {
+                siteId = record.SiteId.Value,
+                positionX = record.Position.X,
+                positionY = record.Position.Y,
+                kind = (int)record.Kind,
+                isActive = record.IsActive,
+            };
+        }
+
+        private static WorksiteRecord ToWorksiteRecord(WorksiteSaveData data)
+        {
+            return new WorksiteRecord(
+                new SiteId(data.siteId),
+                new GridPosition(data.positionX, data.positionY),
+                (WorksiteKind)data.kind,
+                data.isActive);
         }
 
         private static FactionRecordSaveData[] ToFactionStoreData(FactionStore store)
