@@ -96,17 +96,24 @@ namespace EmberCrpg.Domain.Actors
 
         public void ApplyJobPreferences(IEnumerable<ActorJobPreference> preferences)
         {
-            _jobPreferences.Clear();
             if (preferences == null)
+            {
+                _jobPreferences.Clear();
                 return;
+            }
+
+            var replacement = new List<ActorJobPreference>();
 
             foreach (var preference in preferences)
             {
-                if (_jobPreferences.Any(existing => existing.Kind == preference.Kind))
+                if (replacement.Any(existing => existing.Kind == preference.Kind))
                     throw new InvalidOperationException($"ActorRecord already has a preference for {preference.Kind}.");
 
-                _jobPreferences.Add(preference);
+                replacement.Add(preference);
             }
+
+            _jobPreferences.Clear();
+            _jobPreferences.AddRange(replacement);
         }
 
         public void ApplyScheduleState(ActorScheduleState scheduleState)
