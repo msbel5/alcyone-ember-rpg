@@ -28,11 +28,11 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ### 1. Pure job definition rail
 
-- [ ] Assets/Scripts/Domain/Process/JobId.cs :: JobId :: ulong-backed value handle with empty sentinel and debug string [box=PROCESS]
-- [ ] Assets/Tests/EditMode/Process/JobIdTests.cs :: JobIdTests :: pin equality, empty sentinel, hash, and ToString [box=PROCESS]
-- [ ] Assets/Scripts/Domain/Process/JobKind.cs :: JobKind :: typed job category seed (`None`, `Smith`) with no speculative extras [box=PROCESS]
-- [ ] Assets/Scripts/Domain/Process/JobPriority.cs :: JobPriority :: validated priority value where lower number wins and disabled priority is explicit [box=LIVING]
-- [ ] Assets/Tests/EditMode/Process/JobPriorityTests.cs :: JobPriorityTests :: pin disabled/active ordering and invalid values [box=LIVING]
+- [x] Assets/Scripts/Domain/Process/JobId.cs :: JobId :: ulong-backed value handle with empty sentinel and debug string [box=PROCESS]
+- [x] Assets/Tests/EditMode/Process/JobIdTests.cs :: JobIdTests :: pin equality, empty sentinel, hash, and ToString [box=PROCESS]
+- [x] Assets/Scripts/Domain/Process/JobKind.cs :: JobKind :: typed job category seed (`None`, `Smith`) with no speculative extras [box=PROCESS]
+- [x] Assets/Scripts/Domain/Process/JobPriority.cs :: JobPriority :: validated priority value where lower number wins and disabled priority is explicit [box=LIVING]
+- [x] Assets/Tests/EditMode/Process/JobPriorityTests.cs :: JobPriorityTests :: pin disabled/active ordering and invalid values [box=LIVING]
 
 ### 2. Job board state
 
@@ -98,4 +98,4 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ## Next increment
 
-Start with the `job-primitives` bundle: `JobId`, `JobKind`, `JobPriority`, and focused EditMode tests. Keep it pure Domain and avoid adding event kinds until the assignment system consumes them.
+Continue with the `job-board` bundle: add `JobRequest`, `JobBoard.Add`, `TryPeekNext`, `TryClaim`, terminal removal, and focused ordering/duplicate-guard tests. Keep event kinds out until `JobAssignmentSystem` consumes them.
