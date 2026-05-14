@@ -1,5 +1,6 @@
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Process;
 using NUnit.Framework;
 
 // Design note:
@@ -33,6 +34,57 @@ namespace EmberCrpg.Tests.EditMode.Actors
             actor.RecordTopic("embers");
             actor.RecordTopic("embers");
             Assert.That(actor.AskedTopicIds.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ApplyJobPreferences_ReplacesRowsWithoutChangingIdentity()
+        {
+            var actor = CreateActor();
+            var preference = new ActorJobPreference(JobKind.Smith, JobPriority.Active(1));
+
+            actor.ApplyJobPreferences(new[] { preference });
+
+            Assert.That(actor.Id, Is.EqualTo(new ActorId(7)));
+            Assert.That(actor.JobPreferences, Is.EqualTo(new[] { preference }));
+            actor.ApplyJobPreferences(null);
+            Assert.That(actor.JobPreferences, Is.Empty);
+        }
+
+        [Test]
+        public void ApplyJobPreferences_RejectsDuplicateKinds()
+        {
+            var actor = CreateActor();
+            var first = new ActorJobPreference(JobKind.Smith, JobPriority.Active(1));
+            var second = ActorJobPreference.Disabled(JobKind.Smith);
+
+            Assert.Throws<System.InvalidOperationException>(() => actor.ApplyJobPreferences(new[] { first, second }));
+        }
+
+        [Test]
+        public void ApplyJobPreferences_PreservesExistingRowsWhenReplacementIsInvalid()
+        {
+            var actor = CreateActor();
+            var existing = new ActorJobPreference(JobKind.Smith, JobPriority.Active(1));
+            var duplicate = ActorJobPreference.Disabled(JobKind.Smith);
+            actor.ApplyJobPreferences(new[] { existing });
+
+            Assert.Throws<System.InvalidOperationException>(() => actor.ApplyJobPreferences(new[] { duplicate, existing }));
+
+            Assert.That(actor.JobPreferences, Is.EqualTo(new[] { existing }));
+        }
+
+        [Test]
+        public void ApplyScheduleState_ReplacesCurrentJobState()
+        {
+            var actor = CreateActor();
+            var assigned = ActorScheduleState.Assigned(new JobId(5UL), new SiteId(3UL), new GridPosition(9, 2));
+
+            actor.ApplyScheduleState(assigned);
+
+            Assert.That(actor.ScheduleState, Is.EqualTo(assigned));
+            Assert.That(actor.Id, Is.EqualTo(new ActorId(7)));
+            actor.ApplyScheduleState(ActorScheduleState.Idle);
+            Assert.That(actor.ScheduleState.IsIdle, Is.True);
         }
 
         private static ActorRecord CreateActor()
