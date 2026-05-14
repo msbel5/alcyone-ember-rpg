@@ -38,8 +38,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: Save/load and player-facing proof (TIME/PLAYABLE)
 
-- [ ] `Assets/Scripts/Data/Save/SliceSaveMapper.cs` :: extend mapper :: serialize recipe/worksite progress only after runtime state exists [box=TIME]
-- [ ] `Assets/Tests/EditMode/Save/RecipeWorksiteRoundTripTests.cs` :: tests :: round-trip active worksite progress and produced stock [box=TIME][box=PROCESS]
+- [x] `Assets/Scripts/Data/Save/SliceSaveMapper.cs` :: extend mapper :: serialize recipe/worksite progress only after runtime state exists [box=TIME] — landed on `agent/sprint-faz-2-recipe-worksite-save`
+- [x] `Assets/Tests/EditMode/Save/RecipeWorksiteRoundTripTests.cs` :: tests :: round-trip active worksite progress and produced stock [box=TIME][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-worksite-save`
 - [x] `DOCS/sprint-faz-2-smelt-iron-acceptance.md` :: `player can ...` :: deterministic replay proof for crafting iron ingot from ore + fuel at furnace [box=PLAYABLE] — landed on `agent/sprint-faz-2-smelt-iron-acceptance`
 
 ## Bundling guidance
@@ -85,3 +85,6 @@ RecipeSystem now emits the first product-visible Faz 2 EventLog slice, and the d
 
 - packet_id: `pkt_20260512190154_c849680f3a6f`
 - resolver_key: `sha256:d21feee1a9410aebe91a0853f9e2e3b093086c07a25ce6090b6b93180e840daf`
+
+- packet_id: `pkt_20260514105821_bf14bff6ca68`
+- resolver_key: `sha256:62e3ced1a90e0ef1103cf7066036d2202562584822c0f076e7d11b86bdfcb3ee`
