@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Process;
 
 // Design note:
 // ActorRecord is Sprint 1's deterministic actor state bag for movement, combat, dialogue, and saves.
@@ -13,6 +16,7 @@ namespace EmberCrpg.Domain.Actors
     {
         private readonly List<string> _topicIds;
         private readonly List<string> _askedTopicIds;
+        private readonly List<ActorJobPreference> _jobPreferences;
 
         public ActorRecord(
             ActorId id,
@@ -25,7 +29,9 @@ namespace EmberCrpg.Domain.Actors
             int dodge,
             int armor,
             int baseDamage,
-            IEnumerable<string> topicIds = null)
+            IEnumerable<string> topicIds = null,
+            IEnumerable<ActorJobPreference> jobPreferences = null,
+            ActorScheduleState scheduleState = default)
         {
             Id = id;
             Name = name;
@@ -39,6 +45,9 @@ namespace EmberCrpg.Domain.Actors
             BaseDamage = baseDamage;
             _topicIds = topicIds == null ? new List<string>() : new List<string>(topicIds);
             _askedTopicIds = new List<string>();
+            _jobPreferences = new List<ActorJobPreference>();
+            ApplyJobPreferences(jobPreferences);
+            ScheduleState = scheduleState;
         }
 
         public ActorId Id { get; }
@@ -54,6 +63,8 @@ namespace EmberCrpg.Domain.Actors
         public bool IsAlive => !Vitals.IsDead;
         public IReadOnlyList<string> TopicIds => _topicIds;
         public IReadOnlyList<string> AskedTopicIds => _askedTopicIds;
+        public IReadOnlyList<ActorJobPreference> JobPreferences => _jobPreferences;
+        public ActorScheduleState ScheduleState { get; private set; }
 
         public void MoveTo(GridPosition position)
         {
@@ -81,6 +92,26 @@ namespace EmberCrpg.Domain.Actors
             {
                 RecordTopic(topicId);
             }
+        }
+
+        public void ApplyJobPreferences(IEnumerable<ActorJobPreference> preferences)
+        {
+            _jobPreferences.Clear();
+            if (preferences == null)
+                return;
+
+            foreach (var preference in preferences)
+            {
+                if (_jobPreferences.Any(existing => existing.Kind == preference.Kind))
+                    throw new InvalidOperationException($"ActorRecord already has a preference for {preference.Kind}.");
+
+                _jobPreferences.Add(preference);
+            }
+        }
+
+        public void ApplyScheduleState(ActorScheduleState scheduleState)
+        {
+            ScheduleState = scheduleState;
         }
     }
 }
