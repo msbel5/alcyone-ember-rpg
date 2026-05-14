@@ -1,8 +1,8 @@
 # Faz 12 — LLM / NPC fallback flavour
 
-> _Captain atom-map_: `DOCS/sprint-faz-12-atom-map.md` (Captain narrow vertical-slice decomposition).
-> _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
-> _Spec covers full architecture; Captain may implement subset and extend later.
+> _Captain atom-map_: `DOCS/sprint-faz-12-atom-map.md` (Captain narrow vertical-slice decomposition).  
+> _Naming_: aligned with Captain types (`JobRequest`, `ActorScheduleState`, `JobAssignmentSystem`).  
+> _Spec covers full architecture; Captain may implement subset and extend later._
 
 Faz 12, Alcyone-Ember’in son katmanıdır. Bu faz yeni bir “LLM oyun motoru” eklemez; önceki 11 fazın deterministic çekirdeğini tek bir yaşayan dünya davranışına bağlar. NPC’ler önce kendi ihtiyaç, hafıza, moral, disposition, iş ve tool verileriyle karar verir. DM/LLM yalnızca deterministic sistemin takıldığı, düşük güvenli ve stale durumlarda 1-3 öneri üretir. Öneriler Store’a yazamaz; sadece NPC’nin kendi tool listesine karşı validate edilir ve deterministic command path üzerinden çalışır.
 
@@ -11,17 +11,17 @@ Faz 12, Alcyone-Ember’in son katmanıdır. Bu faz yeni bir “LLM oyun motoru�
 ```mermaid
 graph TB
   subgraph Core["Faz 1-11 deterministic core"]
-    F1["Faz 1 TIME<br/>TickClock, CommandQueue, DeterministicRng"]
-    F2["Faz 2 WORLD<br/>WorldStore, SiteStore, CellGrid, terrain"]
-    F3["Faz 3 LIVING<br/>ActorStore, NeedState, Mood, MemoryComponent"]
-    F4["Faz 4 MATTER<br/>Thing, ItemStore, Inventory, UseObject alter"]
-    F5["Faz 5 PROCESS<br/>Jobs, schedules, production ledger"]
-    F6["Faz 6 SOCIETY<br/>FactionStore, reputation, law, disposition"]
-    F7["Faz 7 CRPG<br/>DialogDef, skill checks, combat, typed commands"]
-    F8["Faz 8 OPEN WORLD<br/>Travel graph, active-site hydration"]
-    F9["Faz 9 QUESTS<br/>Faction-driven quest seeds, pressure hooks"]
-    F10["Faz 10 DM QUERY<br/>ActorView, MemoryView, WorldEventView, ReasonTraceView"]
-    F11["Faz 11 UNITY VIEW<br/>debug overlay, chatter surface, player camera LOD"]
+    F1["Faz 1 CORE STORE<br/>ActorStore, ItemStore, SiteStore, FactionStore<br/>WorldEventLog, ReasonTrace, save/load<br/>boxes: WORLD+LIVING+MATTER"]
+    F2["Faz 2 RECIPE + WORKSITE<br/>RecipeDef, WorksiteStore, SmeltIronIngot row<br/>RecipeSystem tick<br/>boxes: PROCESS+MATTER"]
+    F3["Faz 3 JOB ASSIGNMENT<br/>JobRequest, JobBoard, JobKind, JobPriority<br/>ActorJobPreference, ActorScheduleState<br/>JobAssignmentSystem<br/>boxes: PROCESS+LIVING"]
+    F4["Faz 4 COLONY NEEDS<br/>NeedState hunger/fatigue/thirst<br/>Mood, MemoryComponent<br/>NeedRecipeEffectDef rows<br/>boxes: LIVING+PROCESS"]
+    F5["Faz 5 PLANT + SEASON<br/>GameTime, Season, Soil, Plant<br/>PlantGrowthSystem, WorldProcess<br/>boxes: TIME+PROCESS"]
+    F6["Faz 6 TRADE ROUTES + FACTION<br/>Settlement, Stock/Demand, TravelEdge<br/>TradeRouteSystem, Caravan, Price, FactionStore<br/>boxes: SOCIETY+TIME"]
+    F7["Faz 7 COMBAT + EQUIPMENT<br/>WeaponItem, ArmorItem, Equipment<br/>CombatResolver, durability<br/>boxes: CRPG+MATTER"]
+    F8["Faz 8 DATA-DRIVEN MAGIC<br/>EffectDefinition rows, EffectOperation handlers<br/>SpellDefinition rows; enum entries promoted to data<br/>boxes: CRPG"]
+    F9["Faz 9 DIALOGUE + MEMORY + FACTION REPUTATION<br/>DialogueDef, MemoryEventRule, Disposition per actor pair<br/>crime ledger, persuade/intimidate checks<br/>boxes: CRPG+LIVING+SOCIETY"]
+    F10["Faz 10 DM QUERY<br/>ActorView, MemoryView, WorldEventView, ReasonTraceView<br/>LLM tools Query/Chance/Roll/Mutation<br/>mutations always validated<br/>boxes: AI/DM"]
+    F11["Faz 11 UNITY VISUAL LAYER<br/>ActorView/ItemView/SiteView read-only Unity views<br/>DebugHUD; presentation only"]
   end
 
   subgraph F12["Faz 12 AI / DM final layer"]
@@ -48,15 +48,23 @@ graph TB
     Multiverse["WorldGenSeed + MultiverseConfig<br/>same seed same world<br/>different seed different population/factions/sites"]
   end
 
-  F1 --> Scheduler
-  F2 --> Spatial
-  F3 --> ReadSelf
-  F4 --> ToolKit
+  F1 --> ReadSelf
+  F1 --> Execute
+  F1 --> Trace
+  F2 --> ToolKit
+  F3 --> RuleScore
+  F3 --> ToolKit
+  F4 --> ReadSelf
+  F4 --> RuleScore
+  F5 --> Scheduler
   F5 --> RuleScore
   F6 --> RuleScore
+  F6 --> ToolKit
   F7 --> ToolKit
-  F8 --> Scheduler
+  F8 --> RuleScore
+  F9 --> ReadSelf
   F9 --> RuleScore
+  F9 --> ToolKit
   F10 --> DmGate
   F11 --> Scheduler
   F11 --> ChatterEvent
@@ -85,9 +93,10 @@ graph TB
   BarkBatch --> Trace
   BarkBatch --> ChatterEvent
 
-  Multiverse --> F2
-  Multiverse --> F3
+  Multiverse --> F1
+  Multiverse --> F5
   Multiverse --> F6
+  Multiverse --> F9
 ```
 
 Faz 10 ile Faz 12 ayrımı net kalır: Faz 10 DM Query API sadece typed read-only snapshot verir. Faz 12 `IDmEscalationAdapter` üzerinden yalnızca öneri ister. DM hiçbir zaman Store’a yazmaz, command üretmez, actor inventory veya city-wide state gibi NPC’nin tool scope’u dışındaki verilere müdahale edemez.
@@ -1038,7 +1047,7 @@ Dwarf Fortress ve RimWorld’den gelen unsur, idle halinde bile yaşayan nüfus 
 
 Baldur’s Gate 1/2 ve GemRB’den gelen unsur, command queue, actor script yaklaşımı ve replay-stable determinism’dir. Ember’de LLM önerisi bile `ReasonTrace` ve `LlmOutputRow` ile kayıt altına alınır. Replay modda provider yoktur; recorded proposal validate edilir ve aynı command path’ten geçer.
 
-Daggerfall ve Morrowind’den gelen unsur, lineer hikaye yerine açık sandbox’tır. Faz 6 society, Faz 9 quest seed ve Faz 8 travel/open world katmanları birleştiğinde oyuncu istediği yere gider; dünya faction, economy, memory ve site state ile cevap verir. Faz 12 bu cevaba son ses katmanını ekler.
+Daggerfall ve Morrowind’den gelen unsur, lineer hikaye yerine açık sandbox’tır. Ember’de bu etki yanlış bir “quest fazı” varsayımıyla değil; Faz 6 trade routes + faction state, Faz 8 data-driven magic, Faz 9 dialogue + memory + faction reputation ve Faz 10 read-only DM query katmanlarının birleşmesiyle kurulur. Oyuncu dünyaya temas ettiğinde cevap, LLM’in doğrudan yazdığı state’ten değil, settlement, faction, memory, dialogue, magic ve store projection’larından gelir. Faz 12 bu cevaba son ses katmanını ekler.
 
 | Oyun | Etkisi | Ember’de karşılığı |
 |---|---|---|
@@ -1049,6 +1058,6 @@ Daggerfall ve Morrowind’den gelen unsur, lineer hikaye yerine açık sandbox�
 | RimWorld | needs + mood + ambient idle | `NeedPriorityRow` + `MoralePressureRow` + `BackgroundChatterSystem` |
 | Baldur’s Gate 1/2 | determinism, command queue | `DeterministicRng`, `CommandQueue`, `ReasonTrace` |
 | GemRB | per-actor scripts, replay-stable rules | data-driven tool scoring and validation |
-| Daggerfall + Morrowind | open sandbox, no linear story | faction-driven quest system, travel graph, active site hydration |
+| Daggerfall + Morrowind | open sandbox, no linear story | trade routes + faction state, data-driven magic, dialogue/memory/reputation |
 
 Faz 12’nin ruhu şudur: Dünya LLM yüzünden yaşamaz; dünya zaten yaşadığı için LLM nadiren anlamlı bir DM sesi olabilir. NPC tool first, DM escalate last.
