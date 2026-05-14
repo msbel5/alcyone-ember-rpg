@@ -61,6 +61,19 @@ namespace EmberCrpg.Tests.EditMode.Actors
         }
 
         [Test]
+        public void ApplyJobPreferences_PreservesExistingRowsWhenReplacementIsInvalid()
+        {
+            var actor = CreateActor();
+            var existing = new ActorJobPreference(JobKind.Smith, JobPriority.Active(1));
+            var duplicate = ActorJobPreference.Disabled(JobKind.Smith);
+            actor.ApplyJobPreferences(new[] { existing });
+
+            Assert.Throws<System.InvalidOperationException>(() => actor.ApplyJobPreferences(new[] { duplicate, existing }));
+
+            Assert.That(actor.JobPreferences, Is.EqualTo(new[] { existing }));
+        }
+
+        [Test]
         public void ApplyScheduleState_ReplacesCurrentJobState()
         {
             var actor = CreateActor();
