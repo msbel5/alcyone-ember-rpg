@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
@@ -6,10 +7,10 @@ using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// JobAssignmentSystem is Faz 3's first PROCESS/LIVING bridge. This pass only
-// claims pending JobBoard entries and writes the actor schedule target. It does
-// not start recipes, tick work orders, emit EventLog rows, or persist jobs; those
-// are later atoms in DOCS/sprint-faz-3-atom-map.md.
+// JobAssignmentSystem is Faz 3's PROCESS/LIVING bridge. It claims pending
+// JobBoard entries, writes the actor schedule target, and starts the first
+// active RecipeWorkOrder for a claimed job. Ticking, EventLog rows, and job
+// persistence remain later atoms in DOCS/sprint-faz-3-atom-map.md.
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>
@@ -17,6 +18,8 @@ namespace EmberCrpg.Simulation.Process
     /// </summary>
     public sealed class JobAssignmentSystem
     {
+        private readonly Dictionary<JobId, RecipeWorkOrder> _activeOrders = new Dictionary<JobId, RecipeWorkOrder>();
+
         /// <summary>
         /// Claims at most one eligible job for the best available actor/job pair.
         /// Actor preference priority wins first, then request priority, actor order,
@@ -138,6 +141,81 @@ namespace EmberCrpg.Simulation.Process
             return true;
         }
 
+        /// <summary>
+        /// Starts the recipe for an already-claimed pending job and tracks the
+        /// resulting active work order by job id. Returns false without mutation
+        /// when the job is missing, unclaimed, already active, has no live actor,
+        /// mismatches the recipe, or cannot consume the recipe inputs.
+        /// </summary>
+        public bool StartRecipeForClaim(
+            ActorStore actors,
+            JobBoard board,
+            WorksiteStore worksites,
+            RecipeDef recipe,
+            InventoryState inventory,
+            JobId jobId,
+            out JobRecipeStartResult result)
+        {
+            if (actors == null)
+                throw new ArgumentNullException(nameof(actors));
+            if (board == null)
+                throw new ArgumentNullException(nameof(board));
+            if (worksites == null)
+                throw new ArgumentNullException(nameof(worksites));
+            if (recipe == null)
+                throw new ArgumentNullException(nameof(recipe));
+            if (inventory == null)
+                throw new ArgumentNullException(nameof(inventory));
+
+            result = default;
+
+            if (jobId.IsEmpty || _activeOrders.ContainsKey(jobId))
+                return false;
+            if (!board.TryGet(jobId, out var request))
+                return false;
+            if (request.RecipeId != recipe.Id)
+                return false;
+
+            var actorId = board.GetClaimedBy(jobId);
+            if (actorId.IsEmpty || !actors.TryGet(actorId, out var actor) || !actor.IsAlive)
+                return false;
+            if (!actor.ScheduleState.IsIdle && actor.ScheduleState.CurrentJobId != jobId)
+                return false;
+            if (!TryGetActivePreference(actor, request.Kind, out _))
+                return false;
+            if (!TryGetActiveMatchingWorksite(request, worksites, out _))
+                return false;
+
+            var recipeSystem = new RecipeSystem();
+            if (!recipeSystem.TryStart(
+                recipe,
+                worksites,
+                request.SiteId,
+                request.WorksitePosition,
+                inventory,
+                actorId,
+                out var order))
+            {
+                return false;
+            }
+
+            _activeOrders.Add(jobId, order);
+            result = new JobRecipeStartResult(actorId, jobId, request.SiteId, request.WorksitePosition, order);
+            return true;
+        }
+
+        /// <summary>Returns the active recipe work order for a claimed job.</summary>
+        public bool TryGetActiveWorkOrder(JobId jobId, out RecipeWorkOrder order)
+        {
+            if (jobId.IsEmpty)
+            {
+                order = null;
+                return false;
+            }
+
+            return _activeOrders.TryGetValue(jobId, out order);
+        }
+
         private static bool ActorAlreadyHasPendingClaim(ActorRecord actor, JobBoard board)
         {
             foreach (var request in board.Requests)
@@ -226,6 +304,61 @@ namespace EmberCrpg.Simulation.Process
 
                 return JobOrder.CompareTo(other.JobOrder);
             }
+        }
+    }
+
+    /// <summary>Small immutable result describing one started recipe claim.</summary>
+    public readonly struct JobRecipeStartResult : IEquatable<JobRecipeStartResult>
+    {
+        public JobRecipeStartResult(
+            ActorId actorId,
+            JobId jobId,
+            SiteId siteId,
+            GridPosition worksitePosition,
+            RecipeWorkOrder workOrder)
+        {
+            ActorId = actorId;
+            JobId = jobId;
+            SiteId = siteId;
+            WorksitePosition = worksitePosition;
+            WorkOrder = workOrder ?? throw new ArgumentNullException(nameof(workOrder));
+        }
+
+        /// <summary>Actor whose claim started the recipe.</summary>
+        public ActorId ActorId { get; }
+
+        /// <summary>Claimed pending job id now bound to the active work order.</summary>
+        public JobId JobId { get; }
+
+        /// <summary>Site containing the active worksite.</summary>
+        public SiteId SiteId { get; }
+
+        /// <summary>Grid cell of the active worksite.</summary>
+        public GridPosition WorksitePosition { get; }
+
+        /// <summary>Runtime recipe work order created by RecipeSystem.TryStart.</summary>
+        public RecipeWorkOrder WorkOrder { get; }
+
+        /// <summary>Returns true when the start result carries the same stable ids and work order reference.</summary>
+        public bool Equals(JobRecipeStartResult other)
+        {
+            return ActorId == other.ActorId
+                && JobId == other.JobId
+                && SiteId == other.SiteId
+                && WorksitePosition.Equals(other.WorksitePosition)
+                && ReferenceEquals(WorkOrder, other.WorkOrder);
+        }
+
+        /// <summary>Returns true when the object is a matching start result.</summary>
+        public override bool Equals(object obj)
+        {
+            return obj is JobRecipeStartResult other && Equals(other);
+        }
+
+        /// <summary>Returns a hash code derived from stable ids and work order reference.</summary>
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(ActorId, JobId, SiteId, WorksitePosition, WorkOrder);
         }
     }
 
