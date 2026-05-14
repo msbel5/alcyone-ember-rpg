@@ -1,5 +1,6 @@
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Process;
@@ -131,7 +132,86 @@ namespace EmberCrpg.Tests.EditMode.Process
             Assert.That(system.CanActorWorkJob(actor, job, InactiveFurnaceStore()), Is.False);
         }
 
-        private static JobRequest MakeRequest(ulong jobId, int priority)
+        [Test]
+        public void CanActorWorkJob_WithRecipeInputs_ReturnsTrueWithoutMutatingInventory()
+        {
+            var system = new JobAssignmentSystem();
+            var job = MakeRequest(10UL, priority: 1);
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            var inventory = InventoryWithInputs(ore: 2, fuel: 1);
+            var recipe = SmeltIronRecipe(job.RecipeId);
+
+            Assert.That(system.CanActorWorkJob(actor, job, ActiveFurnaceStore(), recipe, inventory), Is.True);
+
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(2));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CanActorWorkJob_WithMissingRecipeInputs_ReturnsFalseWithoutMutatingInventory()
+        {
+            var system = new JobAssignmentSystem();
+            var job = MakeRequest(10UL, priority: 1);
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            var inventory = InventoryWithInputs(ore: 2, fuel: 0);
+            var recipe = SmeltIronRecipe(job.RecipeId);
+
+            Assert.That(system.CanActorWorkJob(actor, job, ActiveFurnaceStore(), recipe, inventory), Is.False);
+
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(2));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CanActorWorkJob_WithBatchRecipeInputs_RequiresInputsForEveryExecution()
+        {
+            var system = new JobAssignmentSystem();
+            var job = MakeRequest(10UL, priority: 1, quantity: 2);
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            var inventory = InventoryWithInputs(ore: 2, fuel: 1);
+            var recipe = SmeltIronRecipe(job.RecipeId);
+
+            Assert.That(system.CanActorWorkJob(actor, job, ActiveFurnaceStore(), recipe, inventory), Is.False);
+
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(2));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CanActorWorkJob_WithBatchRecipeInputs_ReturnsTrueWhenStockCoversEveryExecution()
+        {
+            var system = new JobAssignmentSystem();
+            var job = MakeRequest(10UL, priority: 1, quantity: 2);
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            var inventory = InventoryWithInputs(ore: 4, fuel: 2);
+            var recipe = SmeltIronRecipe(job.RecipeId);
+
+            Assert.That(system.CanActorWorkJob(actor, job, ActiveFurnaceStore(), recipe, inventory), Is.True);
+
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(4));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(2));
+        }
+
+        [Test]
+        public void CanActorWorkJob_WithRecipeMismatch_ReturnsFalseWithoutMutatingInventory()
+        {
+            var system = new JobAssignmentSystem();
+            var job = MakeRequest(10UL, priority: 1);
+            var actor = CreateActor(1UL, "Smith", new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)));
+            var inventory = InventoryWithInputs(ore: 2, fuel: 1);
+
+            Assert.That(
+                system.CanActorWorkJob(actor, job, ActiveFurnaceStore(), SmeltIronRecipe(new RecipeId(999UL)), inventory),
+                Is.False);
+            Assert.That(
+                system.CanActorWorkJob(actor, job, ActiveFurnaceStore(), SmeltIronRecipe(job.RecipeId, worksiteKind: "oven"), inventory),
+                Is.False);
+
+            Assert.That(CountTemplate(inventory, "iron_ore"), Is.EqualTo(2));
+            Assert.That(CountTemplate(inventory, "fuel"), Is.EqualTo(1));
+        }
+
+        private static JobRequest MakeRequest(ulong jobId, int priority, int quantity = 1)
         {
             return new JobRequest(
                 new JobId(jobId),
@@ -141,7 +221,7 @@ namespace EmberCrpg.Tests.EditMode.Process
                 WorksiteKind.Furnace,
                 JobKind.Smith,
                 JobPriority.Active(priority),
-                quantity: 1,
+                quantity: quantity,
                 requesterId: Requester);
         }
 
@@ -157,6 +237,39 @@ namespace EmberCrpg.Tests.EditMode.Process
             var store = new WorksiteStore();
             store.Add(new WorksiteRecord(Site, FurnacePosition, WorksiteKind.Furnace, isActive: false));
             return store;
+        }
+
+        private static RecipeDef SmeltIronRecipe(RecipeId recipeId, string worksiteKind = "furnace")
+        {
+            return new RecipeDef(
+                recipeId,
+                worksiteKind,
+                "smithing",
+                durationTicks: 2,
+                new[] { new RecipeIngredient("iron_ore", 2), new RecipeIngredient("fuel", 1) },
+                new[] { new RecipeOutput("iron_ingot", ItemMaterial.Iron, ItemQuality.Common, 1) });
+        }
+
+        private static InventoryState InventoryWithInputs(int ore, int fuel)
+        {
+            var inventory = new InventoryState(8);
+            if (ore > 0)
+                inventory.TryAdd(new InventoryItem(new ItemId(501UL), "iron_ore", "Iron Ore", ore));
+            if (fuel > 0)
+                inventory.TryAdd(new InventoryItem(new ItemId(502UL), "fuel", "Fuel", fuel));
+            return inventory;
+        }
+
+        private static int CountTemplate(InventoryState inventory, string templateId)
+        {
+            var count = 0;
+            foreach (var item in inventory.Items)
+            {
+                if (item.TemplateId == templateId)
+                    count += item.Quantity;
+            }
+
+            return count;
         }
 
         private static ActorRecord CreateActor(ulong id, string name, ActorJobPreference preference = default, bool alive = true)
