@@ -1,6 +1,7 @@
 using System;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
@@ -76,8 +77,9 @@ namespace EmberCrpg.Simulation.Process
 
         /// <summary>
         /// Returns true when an actor is alive, idle, explicitly enabled for the job
-        /// kind, and the requested active worksite exists. Recipe input checks belong
-        /// to the later StartRecipeForClaim atom so this method stays mutation-free.
+        /// kind, and the requested active worksite exists. This legacy overload keeps
+        /// assignment-only callsites stable; recipe-aware callers should use the
+        /// overload that also receives a recipe and inventory.
         /// </summary>
         public bool CanActorWorkJob(ActorRecord actor, JobRequest request, WorksiteStore worksites)
         {
@@ -92,6 +94,40 @@ namespace EmberCrpg.Simulation.Process
                 && actor.ScheduleState.IsIdle
                 && TryGetActivePreference(actor, request.Kind, out _)
                 && TryGetActiveMatchingWorksite(request, worksites, out _);
+        }
+
+        /// <summary>
+        /// Returns true when the actor/job/worksite checks pass and the requested
+        /// recipe can start with the current inventory. The inventory is cloned for
+        /// the recipe preflight so eligibility checks never consume player stock.
+        /// </summary>
+        public bool CanActorWorkJob(
+            ActorRecord actor,
+            JobRequest request,
+            WorksiteStore worksites,
+            RecipeDef recipe,
+            InventoryState inventory)
+        {
+            if (recipe == null)
+                throw new ArgumentNullException(nameof(recipe));
+            if (inventory == null)
+                throw new ArgumentNullException(nameof(inventory));
+
+            if (!CanActorWorkJob(actor, request, worksites))
+                return false;
+            if (recipe.Id != request.RecipeId)
+                return false;
+
+            var inventoryPreflight = inventory.Clone();
+            var recipeSystem = new RecipeSystem();
+            return recipeSystem.TryStart(
+                recipe,
+                worksites,
+                request.SiteId,
+                request.WorksitePosition,
+                inventoryPreflight,
+                actor.Id,
+                out _);
         }
 
         private static bool ActorAlreadyHasPendingClaim(ActorRecord actor, JobBoard board)

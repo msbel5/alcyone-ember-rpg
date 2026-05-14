@@ -58,7 +58,7 @@ a 3-5 atom bundle when the atoms share the same shape.
 ### 4. Assignment system
 
 - [x] Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs :: TryAssignNext :: match available actors to eligible JobBoard entries by actor priority [box=PROCESS]
-- [ ] Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs :: CanActorWorkJob :: require living actor, matching preference, active worksite, and available recipe inputs [box=LIVING]
+- [x] Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs :: CanActorWorkJob :: require living actor, matching preference, active worksite, and available recipe inputs [box=LIVING]
 - [ ] Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs :: StartRecipeForClaim :: call RecipeSystem.TryStart after claim and store active RecipeWorkOrder [box=PROCESS]
 - [ ] Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs :: TickAssignedJobs :: advance active recipe orders and complete board entries when RecipeCompleted fires [box=PROCESS]
 - [x] Assets/Tests/EditMode/Process/JobAssignmentSystemTests.cs :: JobAssignmentSystemTests.AssignsTwoSmithsDeterministically :: two smith actors claim furnace jobs in stable order [box=LIVING]
