@@ -45,12 +45,12 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ### 2. Mood derivation rail
 
-- [ ] `Assets/Scripts/Domain/Actors/ActorMood.cs` :: `ActorMood` :: bounded 0-100 mood value where lower mood means less willing to work [box=LIVING]
-- [ ] `Assets/Tests/EditMode/Actors/ActorMoodTests.cs` :: tests :: pin clamp, neutral default, low-mood threshold, and equality [box=LIVING]
-- [ ] `Assets/Scripts/Simulation/Living/NeedMoodEvaluator.cs` :: `Evaluate` :: derive mood from needs plus existing memory pressure without mutating world state [box=LIVING]
-- [ ] `Assets/Tests/EditMode/Living/NeedMoodEvaluatorTests.cs` :: tests :: hunger/fatigue lower mood deterministically and neutral needs preserve baseline [box=LIVING]
-- [ ] `Assets/Scripts/Domain/Actors/ActorRecord.cs` :: `ActorRecord.ApplyMood` :: store derived mood on actor records without new `SliceWorldState` named fields [box=LIVING]
-- [ ] `Assets/Tests/EditMode/Actors/ActorRecordMoodTests.cs` :: tests :: pin mood update and identity preservation through ActorStore [box=LIVING]
+- [x] `Assets/Scripts/Domain/Actors/ActorMood.cs` :: `ActorMood` :: bounded 0-100 mood value where lower mood means less willing to work [box=LIVING]
+- [x] `Assets/Tests/EditMode/Actors/ActorMoodTests.cs` :: tests :: pin clamp, neutral default, low-mood threshold, and equality [box=LIVING]
+- [x] `Assets/Scripts/Simulation/Living/NeedMoodEvaluator.cs` :: `Evaluate` :: derive mood from needs plus existing memory pressure without mutating world state [box=LIVING]
+- [x] `Assets/Tests/EditMode/Living/NeedMoodEvaluatorTests.cs` :: tests :: hunger/fatigue lower mood deterministically and neutral needs preserve baseline [box=LIVING]
+- [x] `Assets/Scripts/Domain/Actors/ActorRecord.cs` :: `ActorRecord.ApplyMood` :: store derived mood on actor records without new `SliceWorldState` named fields [box=LIVING]
+- [x] `Assets/Tests/EditMode/Actors/ActorRecordMoodTests.cs` :: tests :: pin mood update and identity preservation through ActorStore [box=LIVING]
 
 ### 3. Needs tick rail
 
@@ -108,6 +108,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment
 
-Implement the `mood-evaluator` bundle next: `ActorMood`,
-`NeedMoodEvaluator`, `ActorRecord.ApplyMood`, and focused tests. Keep it
-pure Domain/Simulation and Unity-free.
+Implement the `needs-tick-event-log` bundle next: `NeedsSystem.TickNeeds`,
+`NeedsSystem.RecomputeMood`, `WorldEventKind.NeedChanged`, and focused
+tests. Keep it deterministic and add the event kind only with a concrete
+emitter in the same PR.
