@@ -37,6 +37,7 @@ namespace EmberCrpg.Data.Save
         public WorldEventSaveData[] worldEvents;
         public WorksiteSaveData[] worksites;
         public RecipeWorkOrderSaveData[] recipeWorkOrders;
+        public JobRequestSaveData[] jobs;
         public InventorySaveData inventory;
         public EquipmentSaveData playerEquipment;
         public InventorySaveData merchantInventory;
@@ -202,6 +203,34 @@ namespace EmberCrpg.Data.Save
         public int baseDamage;
         public string[] topicIds;
         public string[] askedTopicIds;
+        public ActorJobPreferenceSaveData[] jobPreferences;
+        public ulong currentJobId;
+        public ulong targetSiteId;
+        public int targetWorksitePositionX;
+        public int targetWorksitePositionY;
+    }
+
+    [Serializable]
+    public sealed class ActorJobPreferenceSaveData
+    {
+        public int kind;
+        public int priority;
+    }
+
+    [Serializable]
+    public sealed class JobRequestSaveData
+    {
+        public ulong id;
+        public ulong recipeId;
+        public ulong siteId;
+        public int positionX;
+        public int positionY;
+        public int worksiteKind;
+        public int kind;
+        public int priority;
+        public int quantity;
+        public ulong requesterId;
+        public ulong claimedByActorId;
     }
 
     [Serializable]

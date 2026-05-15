@@ -168,6 +168,57 @@ namespace EmberCrpg.Data.Save
                 data.progressTicks);
         }
 
+        public static JobRequestSaveData[] ToJobBoardData(JobBoard board)
+        {
+            return (board?.Requests ?? Array.Empty<JobRequest>()).Select(request => ToJobRequestData(request, board)).ToArray();
+        }
+
+        public static JobBoard ToJobBoard(JobRequestSaveData[] data)
+        {
+            var board = new JobBoard();
+            foreach (var saved in data ?? Array.Empty<JobRequestSaveData>())
+            {
+                if (saved == null)
+                    continue;
+
+                var request = new JobRequest(
+                    new JobId(saved.id),
+                    new RecipeId(saved.recipeId),
+                    new SiteId(saved.siteId),
+                    new GridPosition(saved.positionX, saved.positionY),
+                    (WorksiteKind)saved.worksiteKind,
+                    (JobKind)saved.kind,
+                    JobPriority.Active(saved.priority),
+                    saved.quantity,
+                    new ActorId(saved.requesterId));
+                board.Add(request);
+
+                var claimedBy = new ActorId(saved.claimedByActorId);
+                if (!claimedBy.IsEmpty && !board.TryClaim(request.Id, claimedBy, out _))
+                    throw new InvalidOperationException($"JobBoard save data could not restore claim for {request.Id}.");
+            }
+
+            return board;
+        }
+
+        private static JobRequestSaveData ToJobRequestData(JobRequest request, JobBoard board)
+        {
+            return new JobRequestSaveData
+            {
+                id = request.Id.Value,
+                recipeId = request.RecipeId.Value,
+                siteId = request.SiteId.Value,
+                positionX = request.WorksitePosition.X,
+                positionY = request.WorksitePosition.Y,
+                worksiteKind = (int)request.WorksiteKind,
+                kind = (int)request.Kind,
+                priority = request.Priority.Value,
+                quantity = request.Quantity,
+                requesterId = request.RequesterId.Value,
+                claimedByActorId = board.GetClaimedBy(request.Id).Value,
+            };
+        }
+
         private static ActorSaveData[] ToActorStoreData(ActorStore store)
         {
             return (store?.Records ?? Array.Empty<ActorRecord>()).Select(ActorSaveMapper.ToData).ToArray();

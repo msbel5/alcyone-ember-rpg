@@ -1,6 +1,7 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Process;
 
 // Design note:
 // ActorSaveMapper isolates actor save/load field translation for Sprint 1 JSON persistence.
@@ -39,6 +40,11 @@ namespace EmberCrpg.Data.Save
                 baseDamage = actor.BaseDamage,
                 topicIds = actor.TopicIds.ToArray(),
                 askedTopicIds = actor.AskedTopicIds.ToArray(),
+                jobPreferences = actor.JobPreferences.Select(ToPreferenceData).ToArray(),
+                currentJobId = actor.ScheduleState.CurrentJobId.Value,
+                targetSiteId = actor.ScheduleState.TargetSiteId.Value,
+                targetWorksitePositionX = actor.ScheduleState.TargetWorksitePosition.X,
+                targetWorksitePositionY = actor.ScheduleState.TargetWorksitePosition.Y,
             };
         }
 
@@ -60,9 +66,43 @@ namespace EmberCrpg.Data.Save
                 actor.dodge,
                 actor.armor,
                 actor.baseDamage,
-                actor.topicIds);
+                actor.topicIds,
+                ToJobPreferences(actor.jobPreferences),
+                ToScheduleState(actor));
             record.ReplaceAskedTopics(actor.askedTopicIds);
             return record;
+        }
+
+        private static ActorJobPreferenceSaveData ToPreferenceData(ActorJobPreference preference)
+        {
+            return new ActorJobPreferenceSaveData
+            {
+                kind = (int)preference.Kind,
+                priority = preference.Priority.Value,
+            };
+        }
+
+        private static ActorJobPreference[] ToJobPreferences(ActorJobPreferenceSaveData[] preferences)
+        {
+            return (preferences ?? System.Array.Empty<ActorJobPreferenceSaveData>())
+                .Select(preference => new ActorJobPreference((JobKind)preference.kind, JobPriorityFromRaw(preference.priority)))
+                .ToArray();
+        }
+
+        private static JobPriority JobPriorityFromRaw(int value)
+        {
+            return value > 0 ? JobPriority.Active(value) : JobPriority.Disabled;
+        }
+
+        private static ActorScheduleState ToScheduleState(ActorSaveData actor)
+        {
+            if (actor.currentJobId == 0UL)
+                return ActorScheduleState.Idle;
+
+            return ActorScheduleState.Assigned(
+                new JobId(actor.currentJobId),
+                new SiteId(actor.targetSiteId),
+                new GridPosition(actor.targetWorksitePositionX, actor.targetWorksitePositionY));
         }
     }
 }
