@@ -1,14 +1,19 @@
-# Unity Tests + Build CI for Alcyone-Ember-RPG
-# - EditMode tests (pure C# logic, no Unity rendering)
-# - PlayMode tests (in-engine, captures screenshots/coverage)
-# - Linux64 headless build artifact
-# - Test results + screenshots uploaded for Alcyone to review on Pi
+# Unity EditMode CI for Alcyone-Ember-RPG
 #
-# NOTE: unity-test-runner can optionally post a GitHub Check when given
-# githubToken/checkName. That post can fail with "Resource not accessible by
-# integration" after Unity has already passed, which incorrectly fails the job
-# and blocks PlayMode/screenshots. Keep test evidence in uploaded artifacts
-# instead so CI status reflects Unity's actual test exit code.
+# Pure C# logic tests. PlayMode + Linux build run on demand only.
+#
+# Removed (audit 2026-05-15):
+# - PlayMode tests: were synthetic gradient PNGs, not real visual testing.
+#   The 3 spell-cast "tests" generated a procedural Color.Lerp pattern in
+#   ScreenshotUtility.CaptureFrame instead of capturing actual rendered
+#   frames. They cost 10-15 min Unity CI per PR for no real signal.
+# - Build Linux64 on every main push: we don't distribute the build.
+# - Test Summary job: redundant with the EditMode job result.
+#
+# When real visual coverage is needed (e.g. an actual rendered-scene
+# regression test), reintroduce a PlayMode test that uses
+# ScreenCapture.CaptureScreenshotAsTexture inside a Unity scene, not
+# procedural pixel math.
 #
 # REQUIRES (one-time secrets setup):
 #   UNITY_EMAIL     - Unity ID email
@@ -21,9 +26,28 @@ name: Unity Tests
 on:
   push:
     branches: [main, dev/**]
+    paths:
+      - 'Assets/**'
+      - 'Packages/**'
+      - 'ProjectSettings/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [main]
+    paths:
+      - 'Assets/**'
+      - 'Packages/**'
+      - 'ProjectSettings/**'
+      - '.github/workflows/**'
   workflow_dispatch:
+    inputs:
+      run_playmode:
+        description: 'Also run PlayMode tests'
+        type: boolean
+        default: false
+      run_build:
+        description: 'Also build StandaloneLinux64 artifact'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -35,7 +59,7 @@ env:
   UNITY_VERSION: 6000.3.13f1  # Matches ProjectSettings/ProjectVersion.txt
 
 jobs:
-  # 1. EditMode Tests — Pure C# logic, fast (~5 min)
+  # EditMode Tests — Pure C# logic, ~5 min
   editmode-tests:
     name: EditMode Tests
     runs-on: ubuntu-latest
@@ -76,9 +100,10 @@ jobs:
           path: editmode-results
           retention-days: 30
 
-  # 2. PlayMode Tests — In-engine, captures screenshots (~10-15 min)
+  # PlayMode Tests — Opt-in via workflow_dispatch only
   playmode-tests:
-    name: PlayMode Tests + Screenshots
+    name: PlayMode Tests
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_playmode == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: editmode-tests
@@ -102,23 +127,12 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-          ALCYONE_SCREENSHOT_DIR: ${{ github.workspace }}/playmode-results/screenshots
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           testMode: playmode
           artifactsPath: playmode-results
 
-      - name: Verify PlayMode screenshots
-        if: always()
-        run: |
-          mkdir -p playmode-results/screenshots
-          count=$(find playmode-results/screenshots -type f -name '*.png' | wc -l)
-          bytes=$(du -sb playmode-results 2>/dev/null | cut -f1)
-          echo "screenshots=$count bytes=$bytes"
-          test "$count" -ge 3
-          test "$bytes" -ge 500000
-
-      - name: Upload PlayMode Results + Screenshots
+      - name: Upload PlayMode Results
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -126,37 +140,13 @@ jobs:
           path: playmode-results
           retention-days: 30
 
-      - name: Comment PlayMode screenshots on PR
-        continue-on-error: true
-        if: github.event_name == 'pull_request' && success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const path = 'playmode-results/screenshots';
-            const files = fs.existsSync(path) ? fs.readdirSync(path).filter((f) => f.endsWith('.png')) : [];
-            const link = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const body = [
-              '## PlayMode Screenshots',
-              '',
-              ...files.map((f) => `- ${f}`),
-              '',
-              `Artifact: [playmode-test-results](${link})`
-            ].join('\n');
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body
-            });
-
-  # 3. Linux64 Build — Headless build artifact for Pi to download (~10 min)
+  # Linux64 Build — Opt-in via workflow_dispatch or tag push only
   build-linux:
     name: Build Linux64 (headless)
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_build == true) || startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [editmode-tests, playmode-tests]
-    if: github.ref == 'refs/heads/main'
+    needs: editmode-tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -187,26 +177,3 @@ jobs:
           name: build-linux64
           path: build/StandaloneLinux64
           retention-days: 14
-
-  # 4. Summary — Posts test result summary to GitHub Actions UI
-  summary:
-    name: Test Summary
-    runs-on: ubuntu-latest
-    needs: [editmode-tests, playmode-tests]
-    if: always()
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: all-results
-
-      - name: Print summary
-        run: |
-          echo "=== Alcyone-Ember-RPG Test Run Summary ==="
-          echo "Commit: ${{ github.sha }}"
-          echo "Branch: ${{ github.ref }}"
-          echo
-          echo "EditMode result: ${{ needs.editmode-tests.result }}"
-          echo "PlayMode result: ${{ needs.playmode-tests.result }}"
-          echo
-          ls -la all-results/ 2>/dev/null || echo "No artifacts"
