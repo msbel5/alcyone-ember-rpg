@@ -34,14 +34,14 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ### 1. Pure needs component rail
 
-- [ ] `Assets/Scripts/Domain/Actors/NeedKind.cs` :: `NeedKind` :: seed hunger/fatigue/thirst categories with `None` sentinel and no speculative extras [box=LIVING]
-- [ ] `Assets/Tests/EditMode/Actors/NeedKindTests.cs` :: tests :: pin `NeedKind` sentinel and named seed values [box=LIVING]
-- [ ] `Assets/Scripts/Domain/Actors/NeedValue.cs` :: `NeedValue` :: bounded 0-100 scalar for pressure where higher means worse need [box=LIVING]
-- [ ] `Assets/Tests/EditMode/Actors/NeedValueTests.cs` :: tests :: pin clamp, threshold, and comparison semantics [box=LIVING]
-- [ ] `Assets/Scripts/Domain/Actors/ActorNeeds.cs` :: `ActorNeeds` :: actor component carrying hunger, fatigue, thirst, and immutable update helpers [box=LIVING]
-- [ ] `Assets/Tests/EditMode/Actors/ActorNeedsTests.cs` :: tests :: pin defaults, per-need updates, and defensive normalization [box=LIVING]
-- [ ] `Assets/Scripts/Domain/Actors/ActorRecord.cs` :: `ActorRecord.ApplyNeeds` :: update needs through actor records without changing identity or role shims [box=LIVING]
-- [ ] `Assets/Tests/EditMode/Actors/ActorRecordNeedsTests.cs` :: tests :: pin ActorStore-compatible needs replacement on records [box=LIVING]
+- [x] `Assets/Scripts/Domain/Actors/NeedKind.cs` :: `NeedKind` :: seed hunger/fatigue/thirst categories with `None` sentinel and no speculative extras [box=LIVING]
+- [x] `Assets/Tests/EditMode/Actors/NeedKindTests.cs` :: tests :: pin `NeedKind` sentinel and named seed values [box=LIVING]
+- [x] `Assets/Scripts/Domain/Actors/NeedValue.cs` :: `NeedValue` :: bounded 0-100 scalar for pressure where higher means worse need [box=LIVING]
+- [x] `Assets/Tests/EditMode/Actors/NeedValueTests.cs` :: tests :: pin clamp, threshold, and comparison semantics [box=LIVING]
+- [x] `Assets/Scripts/Domain/Actors/ActorNeeds.cs` :: `ActorNeeds` :: actor component carrying hunger, fatigue, thirst, and immutable update helpers [box=LIVING]
+- [x] `Assets/Tests/EditMode/Actors/ActorNeedsTests.cs` :: tests :: pin defaults, per-need updates, and defensive normalization [box=LIVING]
+- [x] `Assets/Scripts/Domain/Actors/ActorRecord.cs` :: `ActorRecord.ApplyNeeds` :: update needs through actor records without changing identity or role shims [box=LIVING]
+- [x] `Assets/Tests/EditMode/Actors/ActorRecordNeedsTests.cs` :: tests :: pin ActorStore-compatible needs replacement on records [box=LIVING]
 
 ### 2. Mood derivation rail
 
@@ -108,5 +108,6 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment
 
-Implement the `needs-primitives` bundle first: `NeedKind`, `NeedValue`,
-`ActorNeeds`, and focused tests. Keep it pure Domain and Unity-free.
+Implement the `mood-evaluator` bundle next: `ActorMood`,
+`NeedMoodEvaluator`, `ActorRecord.ApplyMood`, and focused tests. Keep it
+pure Domain/Simulation and Unity-free.
