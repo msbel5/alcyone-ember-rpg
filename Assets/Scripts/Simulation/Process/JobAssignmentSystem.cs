@@ -21,6 +21,7 @@ namespace EmberCrpg.Simulation.Process
     public sealed class JobAssignmentSystem
     {
         private readonly Dictionary<JobId, RecipeWorkOrder> _activeOrders = new Dictionary<JobId, RecipeWorkOrder>();
+        private readonly Dictionary<JobId, int> _completedExecutionCounts = new Dictionary<JobId, int>();
 
         /// <summary>
         /// Claims at most one eligible job for the best available actor/job pair.
@@ -189,6 +190,7 @@ namespace EmberCrpg.Simulation.Process
             }
 
             _activeOrders.Add(jobId, order);
+            _completedExecutionCounts[jobId] = 0;
             result = new JobRecipeStartResult(actorId, jobId, request.SiteId, request.WorksitePosition, order);
             return true;
         }
@@ -207,13 +209,14 @@ namespace EmberCrpg.Simulation.Process
 
         /// <summary>
         /// Advances every active recipe work order by one tick. When RecipeSystem
-        /// emits RecipeCompleted for an order, the matching pending JobBoard row
-        /// is completed, the tracked work order is removed, and the claimed actor
-        /// is returned to idle if it still points at that job.
+        /// emits RecipeCompleted for an order, multi-quantity jobs immediately
+        /// start their next execution and stay claimed; the JobBoard row is only
+        /// completed, removed, and idled after the requested quantity finishes.
         /// </summary>
         public int TickAssignedJobs(
             ActorStore actors,
             JobBoard board,
+            WorksiteStore worksites,
             InventoryState inventory,
             WorldEventLog eventLog,
             Func<RecipeOutput, InventoryItem> createOutput)
@@ -222,6 +225,8 @@ namespace EmberCrpg.Simulation.Process
                 throw new ArgumentNullException(nameof(actors));
             if (board == null)
                 throw new ArgumentNullException(nameof(board));
+            if (worksites == null)
+                throw new ArgumentNullException(nameof(worksites));
             if (inventory == null)
                 throw new ArgumentNullException(nameof(inventory));
             if (eventLog == null)
@@ -241,11 +246,45 @@ namespace EmberCrpg.Simulation.Process
                     completed.Add(pair.Key);
             }
 
+            var completedJobs = 0;
             foreach (var jobId in completed)
             {
+                if (!board.TryGet(jobId, out var request))
+                {
+                    _activeOrders.Remove(jobId);
+                    _completedExecutionCounts.Remove(jobId);
+                    continue;
+                }
+
                 var claimedBy = board.GetClaimedBy(jobId);
+                var completedExecutions = GetCompletedExecutionCount(jobId) + 1;
+                if (completedExecutions < request.Quantity)
+                {
+                    if (claimedBy.IsEmpty)
+                        throw new InvalidOperationException($"Cannot continue unclaimed batch job {jobId.Value}.");
+                    if (!_activeOrders.TryGetValue(jobId, out var finishedOrder))
+                        throw new InvalidOperationException($"Missing completed work order for batch job {jobId.Value}.");
+                    if (!recipeSystem.TryStart(
+                        finishedOrder.Recipe,
+                        worksites,
+                        request.SiteId,
+                        request.WorksitePosition,
+                        inventory,
+                        claimedBy,
+                        out var nextOrder))
+                    {
+                        throw new InvalidOperationException($"Cannot start next execution for batch job {jobId.Value}.");
+                    }
+
+                    _activeOrders[jobId] = nextOrder;
+                    _completedExecutionCounts[jobId] = completedExecutions;
+                    continue;
+                }
+
                 board.Complete(jobId);
                 _activeOrders.Remove(jobId);
+                _completedExecutionCounts.Remove(jobId);
+                completedJobs++;
 
                 if (!claimedBy.IsEmpty
                     && actors.TryGet(claimedBy, out var actor)
@@ -255,7 +294,32 @@ namespace EmberCrpg.Simulation.Process
                 }
             }
 
-            return completed.Count;
+            return completedJobs;
+        }
+
+        /// <summary>
+        /// Compatibility overload for single-execution jobs. Batch jobs should call
+        /// the WorksiteStore overload so the next execution can safely consume inputs.
+        /// </summary>
+        public int TickAssignedJobs(
+            ActorStore actors,
+            JobBoard board,
+            InventoryState inventory,
+            WorldEventLog eventLog,
+            Func<RecipeOutput, InventoryItem> createOutput)
+        {
+            foreach (var pair in _activeOrders)
+            {
+                if (board.TryGet(pair.Key, out var request) && GetCompletedExecutionCount(pair.Key) + 1 < request.Quantity)
+                    throw new InvalidOperationException("Batch jobs require the TickAssignedJobs overload that receives WorksiteStore.");
+            }
+
+            return TickAssignedJobs(actors, board, new WorksiteStore(), inventory, eventLog, createOutput);
+        }
+
+        private int GetCompletedExecutionCount(JobId jobId)
+        {
+            return _completedExecutionCounts.TryGetValue(jobId, out var count) ? count : 0;
         }
 
         private static bool ActorAlreadyHasPendingClaim(ActorRecord actor, JobBoard board)
