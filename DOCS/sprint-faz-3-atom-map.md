@@ -82,7 +82,7 @@ a 3-5 atom bundle when the atoms share the same shape.
 - [x] Assets/Scripts/Data/Save/SliceSaveData.cs :: SliceSaveData.jobs :: persist JobBoard entries and actor schedule job state [box=PROCESS]
 - [x] Assets/Scripts/Data/Save/SliceSaveMapper.cs :: SliceSaveMapper.ToData/ApplyJobs :: round-trip job board and actor schedule state without new SliceWorldState named fields [box=PROCESS]
 - [x] Assets/Tests/EditMode/Save/JobAssignmentRoundTripTests.cs :: JobAssignmentRoundTripTests :: save/load preserves pending and active jobs [box=PROCESS]
-- [ ] DOCS/sprint-faz-3-job-assignment-acceptance.md :: Faz3AcceptanceProof :: deterministic replay note with `player can ...` sentence [box=PLAYABLE]
+- [x] DOCS/sprint-faz-3-job-assignment-acceptance.md :: Faz3AcceptanceProof :: deterministic replay note with `player can ...` sentence [box=PLAYABLE]
 
 ## Suggested bundles
 
@@ -103,4 +103,6 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ## Next increment
 
-Finish the `job-save-proof` bundle with `DOCS/sprint-faz-3-job-assignment-acceptance.md`: record the deterministic replay/playable proof and the final `player can ...` sentence for Faz 3 promotion.
+After `agent/sprint-3-job-assignment-acceptance` merges, evaluate Faz 3
+promotion on `main`: run fallback validation, confirm every checklist item
+above is true, and write the final sprint summary only with merge evidence.
