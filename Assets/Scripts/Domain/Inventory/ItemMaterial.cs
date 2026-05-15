@@ -13,5 +13,6 @@ namespace EmberCrpg.Domain.Inventory
         Wood = 1,
         Iron = 2,
         Cloth = 3,
+        Food = 4,
     }
 }
