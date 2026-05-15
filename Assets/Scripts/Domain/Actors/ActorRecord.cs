@@ -31,7 +31,8 @@ namespace EmberCrpg.Domain.Actors
             int baseDamage,
             IEnumerable<string> topicIds = null,
             IEnumerable<ActorJobPreference> jobPreferences = null,
-            ActorScheduleState scheduleState = default)
+            ActorScheduleState scheduleState = default,
+            ActorNeeds needs = default)
         {
             Id = id;
             Name = name;
@@ -48,6 +49,7 @@ namespace EmberCrpg.Domain.Actors
             _jobPreferences = new List<ActorJobPreference>();
             ApplyJobPreferences(jobPreferences);
             ScheduleState = scheduleState;
+            Needs = needs;
         }
 
         public ActorId Id { get; }
@@ -65,6 +67,7 @@ namespace EmberCrpg.Domain.Actors
         public IReadOnlyList<string> AskedTopicIds => _askedTopicIds;
         public IReadOnlyList<ActorJobPreference> JobPreferences => _jobPreferences;
         public ActorScheduleState ScheduleState { get; private set; }
+        public ActorNeeds Needs { get; private set; }
 
         public void MoveTo(GridPosition position)
         {
@@ -119,6 +122,11 @@ namespace EmberCrpg.Domain.Actors
         public void ApplyScheduleState(ActorScheduleState scheduleState)
         {
             ScheduleState = scheduleState;
+        }
+
+        public void ApplyNeeds(ActorNeeds needs)
+        {
+            Needs = needs;
         }
     }
 }
