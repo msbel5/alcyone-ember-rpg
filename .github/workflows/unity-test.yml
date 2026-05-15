@@ -26,6 +26,7 @@ name: Unity Tests
 on:
   push:
     branches: [main, dev/**]
+    tags: ['v*']
     paths:
       - 'Assets/**'
       - 'Packages/**'
