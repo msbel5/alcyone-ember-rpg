@@ -95,14 +95,14 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ## Promotion checklist
 
-- [ ] Every atom row above is checked off.
-- [ ] Each sub-area has at least one merged PR: pure job rail, job board, actor job state, assignment system, competition proof, save/playable proof.
-- [ ] `./tools/validation/run-validation.sh --mode fallback` passes on the promotion branch.
-- [ ] Product-visible PR count is greater than zero; at least one PR emits a new EventLog line or produces the deterministic player-facing acceptance proof.
-- [ ] Final sprint summary records final atom count, bundle count, product-visible PR count, validation evidence, and the `player can ...` acceptance sentence.
+- [x] Every atom row above is checked off.
+- [x] Each sub-area has at least one merged PR: pure job rail, job board, actor job state, assignment system, competition proof, save/playable proof.
+- [x] `./tools/validation/run-validation.sh --mode fallback` passes on the promotion branch.
+- [x] Product-visible PR count is greater than zero; at least one PR emits a new EventLog line or produces the deterministic player-facing acceptance proof.
+- [x] Final sprint summary records final atom count, bundle count, product-visible PR count, validation evidence, and the `player can ...` acceptance sentence.
 
 ## Next increment
 
-After `agent/sprint-3-job-assignment-acceptance` merges, evaluate Faz 3
-promotion on `main`: run fallback validation, confirm every checklist item
-above is true, and write the final sprint summary only with merge evidence.
+Faz 3 is ready for promotion after the final promotion-summary PR merges.
+The next sprint increment should open Faz 4 colony-needs atom mapping against
+`DOCS/mechanic-map-v1.md`.
