@@ -54,12 +54,12 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ### 3. Needs tick rail
 
-- [ ] `Assets/Scripts/Simulation/Living/NeedsSystem.cs` :: `TickNeeds` :: advance hunger and fatigue by deterministic tick rates [box=TIME][box=LIVING]
-- [ ] `Assets/Tests/EditMode/Living/NeedsSystemTests.cs` :: tests :: repeated ticks raise hunger/fatigue and clamp at maximum [box=TIME][box=LIVING]
-- [ ] `Assets/Scripts/Simulation/Living/NeedsSystem.cs` :: `RecomputeMood` :: recalculate mood after needs changes through `NeedMoodEvaluator` [box=LIVING]
-- [ ] `Assets/Tests/EditMode/Living/NeedsSystemMoodTests.cs` :: tests :: three in-game days without food lowers mood under refusal threshold [box=TIME][box=LIVING]
-- [ ] `Assets/Scripts/Domain/World/WorldEventKind.cs` :: `WorldEventKind.NeedChanged` :: add only when `NeedsSystem` emits the event in the same PR [box=LIVING][box=PLAYABLE]
-- [ ] `Assets/Tests/EditMode/Living/NeedsEventLogTests.cs` :: tests :: pin need-change reason traces with actor id and tick anchors [box=LIVING][box=PLAYABLE]
+- [x] `Assets/Scripts/Simulation/Living/NeedsSystem.cs` :: `TickNeeds` :: advance hunger and fatigue by deterministic tick rates [box=TIME][box=LIVING]
+- [x] `Assets/Tests/EditMode/Living/NeedsSystemTests.cs` :: tests :: repeated ticks raise hunger/fatigue and clamp at maximum [box=TIME][box=LIVING]
+- [x] `Assets/Scripts/Simulation/Living/NeedsSystem.cs` :: `RecomputeMood` :: recalculate mood after needs changes through `NeedMoodEvaluator` [box=LIVING]
+- [x] `Assets/Tests/EditMode/Living/NeedsSystemMoodTests.cs` :: tests :: three in-game days without food lowers mood under refusal threshold [box=TIME][box=LIVING]
+- [x] `Assets/Scripts/Domain/World/WorldEventKind.cs` :: `WorldEventKind.NeedChanged` :: add only when `NeedsSystem` emits the event in the same PR [box=LIVING][box=PLAYABLE]
+- [x] `Assets/Tests/EditMode/Living/NeedsEventLogTests.cs` :: tests :: pin need-change reason traces with actor id and tick anchors [box=LIVING][box=PLAYABLE]
 
 ### 4. Eat / sleep recovery rail
 
@@ -108,7 +108,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment
 
-Implement the `needs-tick-event-log` bundle next: `NeedsSystem.TickNeeds`,
-`NeedsSystem.RecomputeMood`, `WorldEventKind.NeedChanged`, and focused
-tests. Keep it deterministic and add the event kind only with a concrete
-emitter in the same PR.
+Implement the `eat-sleep-recovery` bundle next: `NeedRecoveryRecipe`,
+`NeedRecoverySystem.EatMeal`, `NeedRecoverySystem.Sleep`, and focused tests.
+Keep recovery deterministic and emit recovery reason traces only with concrete
+eat/sleep consumers.
