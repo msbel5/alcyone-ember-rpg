@@ -69,16 +69,16 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ### 5. Second recipe and competition proof
 
-- [ ] Assets/Tests/EditMode/Process/RecipeFixtureCatalog.cs :: RecipeFixtureCatalog.SmeltIronIngot :: canonical smelting fixture for JobAssignment tests [box=MATTER]
-- [ ] Assets/Tests/EditMode/Process/RecipeFixtureCatalog.cs :: RecipeFixtureCatalog.BakeBread :: second recipe fixture so job priorities compete [box=MATTER]
-- [ ] Assets/Tests/EditMode/Process/JobAssignmentCompetitionTests.cs :: HigherPrioritySmithWinsFurnace :: Smith priority beats BakeBread when furnace/inputs match [box=PROCESS]
-- [ ] Assets/Tests/EditMode/Process/JobAssignmentCompetitionTests.cs :: BreadJobWaitsWithoutBakery :: mismatched worksite leaves bread job pending [box=PROCESS]
+- [x] Assets/Tests/EditMode/Process/RecipeFixtureCatalog.cs :: RecipeFixtureCatalog.SmeltIronIngot :: canonical smelting fixture for JobAssignment tests [box=MATTER]
+- [x] Assets/Tests/EditMode/Process/RecipeFixtureCatalog.cs :: RecipeFixtureCatalog.BakeBread :: second recipe fixture so job priorities compete [box=MATTER]
+- [x] Assets/Tests/EditMode/Process/JobAssignmentCompetitionTests.cs :: HigherPrioritySmithWinsFurnace :: Smith priority beats BakeBread when furnace/inputs match [box=PROCESS]
+- [x] Assets/Tests/EditMode/Process/JobAssignmentCompetitionTests.cs :: BreadJobWaitsWithoutBakery :: mismatched worksite leaves bread job pending [box=PROCESS]
 
 ### 6. Event log, save/load, playable proof
 
-- [ ] Assets/Scripts/Domain/World/WorldEventKind.cs :: WorldEventKind.JobAssigned :: concrete consumer emits assignment event; no speculative event kinds [box=WORLD]
-- [ ] Assets/Scripts/Domain/World/WorldEventKind.cs :: WorldEventKind.JobCompleted :: concrete consumer emits completion event linked to RecipeCompleted [box=WORLD]
-- [ ] Assets/Tests/EditMode/Process/JobEventLogTests.cs :: JobEventLogTests :: pin JobAssigned/JobCompleted reason traces and actor/site anchors [box=WORLD]
+- [x] Assets/Scripts/Domain/World/WorldEventKind.cs :: WorldEventKind.JobAssigned :: concrete consumer emits assignment event; no speculative event kinds [box=WORLD]
+- [x] Assets/Scripts/Domain/World/WorldEventKind.cs :: WorldEventKind.JobCompleted :: concrete consumer emits completion event linked to RecipeCompleted [box=WORLD]
+- [x] Assets/Tests/EditMode/Process/JobEventLogTests.cs :: JobEventLogTests :: pin JobAssigned/JobCompleted reason traces and actor/site anchors [box=WORLD]
 - [ ] Assets/Scripts/Data/Save/SliceSaveData.cs :: SliceSaveData.jobs :: persist JobBoard entries and actor schedule job state [box=PROCESS]
 - [ ] Assets/Scripts/Data/Save/SliceSaveMapper.cs :: SliceSaveMapper.ToData/ApplyJobs :: round-trip job board and actor schedule state without new SliceWorldState named fields [box=PROCESS]
 - [ ] Assets/Tests/EditMode/Save/JobAssignmentRoundTripTests.cs :: JobAssignmentRoundTripTests :: save/load preserves pending and active jobs [box=PROCESS]
@@ -103,4 +103,4 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ## Next increment
 
-Continue with the `assignment-system` bundle: add the first `JobAssignmentSystem` pass that matches available actors to eligible `JobBoard` entries by actor preference priority. Keep event kinds, competition fixtures, and save/load mapping out until their concrete consumer atoms land.
+Continue with the `job-save-proof` bundle: add concrete `JobAssigned` / `JobCompleted` event-log atoms first, then persist `JobBoard` entries and actor schedule job state without adding new `SliceWorldState` named fields.
