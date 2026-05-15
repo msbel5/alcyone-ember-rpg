@@ -18,5 +18,6 @@ namespace EmberCrpg.Domain.World
         RecipeCompleted = 4,
         JobAssigned = 5,
         JobCompleted = 6,
+        NeedChanged = 7,
     }
 }
