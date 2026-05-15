@@ -32,7 +32,8 @@ namespace EmberCrpg.Domain.Actors
             IEnumerable<string> topicIds = null,
             IEnumerable<ActorJobPreference> jobPreferences = null,
             ActorScheduleState scheduleState = default,
-            ActorNeeds needs = default)
+            ActorNeeds needs = default,
+            ActorMood mood = default)
         {
             Id = id;
             Name = name;
@@ -50,6 +51,7 @@ namespace EmberCrpg.Domain.Actors
             ApplyJobPreferences(jobPreferences);
             ScheduleState = scheduleState;
             Needs = needs;
+            Mood = mood;
         }
 
         public ActorId Id { get; }
@@ -68,6 +70,7 @@ namespace EmberCrpg.Domain.Actors
         public IReadOnlyList<ActorJobPreference> JobPreferences => _jobPreferences;
         public ActorScheduleState ScheduleState { get; private set; }
         public ActorNeeds Needs { get; private set; }
+        public ActorMood Mood { get; private set; }
 
         public void MoveTo(GridPosition position)
         {
@@ -127,6 +130,11 @@ namespace EmberCrpg.Domain.Actors
         public void ApplyNeeds(ActorNeeds needs)
         {
             Needs = needs;
+        }
+
+        public void ApplyMood(ActorMood mood)
+        {
+            Mood = mood;
         }
     }
 }
