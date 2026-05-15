@@ -85,6 +85,38 @@ against the canonical mechanic list rather than the bare magic enum.
    either a screenshot, replay log, debug HUD dump, or a playtest
    note.
 
+## Agent governance (must-read for Captain before every atom)
+
+These four documents form the control plane that keeps Captain on-track
+and prevents the Sprint-5 magic micro-loop from recurring. Captain reads
+all four before kicking off any atom and before opening any PR.
+
+- [DOCS/EMBER_VISION_NOTES_MAMI.md](DOCS/EMBER_VISION_NOTES_MAMI.md) —
+  operating constraints (Phase fences), 9-point Vision anchors, and
+  Mami's verbatim intent. Source of author intent. Mechanic docs remain
+  canonical for implementation; this file is consulted when atom-map
+  decomposition has ambiguity.
+- [DOCS/agent-rules-v2.md](DOCS/agent-rules-v2.md) — Rules 1-9.
+  Required reading. Rule 6 (hard fail paths) and Rule 8 (anti-drift
+  halt) are the hard tripwires. Rule 9 specifies the mandatory PR body
+  audit fields, enforced via `.github/PULL_REQUEST_TEMPLATE.md`.
+- [DOCS/inspector-audit-checklist.md](DOCS/inspector-audit-checklist.md) —
+  the checklist Inspector applies to every Captain PR. Captain
+  self-checks against this before opening a PR. Failure-escalation
+  table at the bottom tells Inspector when to revert versus when to
+  request changes.
+- [The active sprint atom map](DOCS/sprint-faz-4-atom-map.md) — top-of-
+  file **Debt ledger** is a gate, not a footnote. Before kicking off
+  the next atom, Captain takes one action against the ledger (close /
+  advance / defer) and records it in the kickoff doc.
+
+Mami territory: `Assets/Scenes/`, `Assets/Art/`, `Assets/Prefabs/`,
+`DOCS/screenshots/`, the Unity-bound parts of `Assets/Scripts/Presentation/`,
+and any binary asset. Captain ships in `agent/*` branches; Mami ships in
+`mami/*` branches. Visual proof of `player can ...` acceptance sentences
+is Mami's job, not Captain's — Captain proves with deterministic replay
+logs and event-log dumps in C# tests, never with screenshots.
+
 ## Repo layout
 
 Actual on-disk layout as of Faz 0:
