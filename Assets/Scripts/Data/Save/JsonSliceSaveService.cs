@@ -19,6 +19,7 @@ namespace EmberCrpg.Data.Save
         private readonly Func<RecipeId, RecipeDef> _resolveRecipe;
         private List<RecipeWorkOrder> _recipeWorkOrders = new List<RecipeWorkOrder>();
         private WorksiteStore _worksites = new WorksiteStore();
+        private JobBoard _jobs = new JobBoard();
 
         public JsonSliceSaveService(Func<RecipeId, RecipeDef> resolveRecipe = null)
         {
@@ -30,6 +31,13 @@ namespace EmberCrpg.Data.Save
         {
             get { return _worksites; }
             set { _worksites = value ?? throw new ArgumentNullException(nameof(value)); }
+        }
+
+        /// <summary>Pending and claimed process jobs carried by this save bridge until the full world-root process store lands.</summary>
+        public JobBoard Jobs
+        {
+            get { return _jobs; }
+            set { _jobs = value ?? throw new ArgumentNullException(nameof(value)); }
         }
 
         /// <summary>Active recipe work orders loaded by the latest JSON round-trip.</summary>
@@ -47,6 +55,7 @@ namespace EmberCrpg.Data.Save
             var data = SliceSaveMapper.ToData(world);
             data.worksites = SliceSaveMapper.ToWorksiteData(_worksites);
             data.recipeWorkOrders = _recipeWorkOrders.Select(SliceSaveMapper.ToRecipeWorkOrderData).ToArray();
+            data.jobs = SliceSaveMapper.ToJobBoardData(_jobs);
             return JsonUtility.ToJson(data, true);
         }
 
@@ -56,6 +65,7 @@ namespace EmberCrpg.Data.Save
             var world = SliceSaveMapper.ToWorld(data);
             _worksites = SliceSaveMapper.ToWorksiteStore(data.worksites);
             _recipeWorkOrders = ToRecipeWorkOrders(data.recipeWorkOrders);
+            _jobs = SliceSaveMapper.ToJobBoard(data.jobs);
             return world;
         }
 
