@@ -37,8 +37,8 @@ Acceptance target: `player can let an actor go three days without food, see mood
 
 - `git diff --check` - passed.
 - `./tools/validation/run-validation.sh --mode fallback` - passed at
-  2026-05-15T21:06Z with fallback harness result:
-  894 passed, 0 failed, 0 skipped.
+  2026-05-15T21:11Z with fallback harness result:
+  895 passed, 0 failed, 0 skipped.
 - Unity editor status: blocked on this machine (`not_found`), as expected for
   the fallback validation path.
 

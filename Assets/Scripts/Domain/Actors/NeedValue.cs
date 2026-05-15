@@ -37,7 +37,14 @@ namespace EmberCrpg.Domain.Actors
 
         public NeedValue Increase(int amount)
         {
-            return new NeedValue(Value + Math.Max(0, amount));
+            if (amount <= 0)
+                return this;
+
+            var headroom = Max - Value;
+            if (amount >= headroom)
+                return Critical;
+
+            return new NeedValue(Value + amount);
         }
 
         public NeedValue Decrease(int amount)

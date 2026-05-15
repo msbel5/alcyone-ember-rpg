@@ -24,6 +24,12 @@ namespace EmberCrpg.Tests.EditMode.Actors
         }
 
         [Test]
+        public void Increase_SaturatesLargePositiveDeltas()
+        {
+            Assert.That(new NeedValue(95).Increase(int.MaxValue), Is.EqualTo(NeedValue.Critical));
+        }
+
+        [Test]
         public void IsAtLeast_PinsThresholdSemantics()
         {
             Assert.That(new NeedValue(70).IsAtLeast(new NeedValue(70)), Is.True);
