@@ -41,3 +41,6 @@ references/
 validation-output/
 !tools/validation/fallback/*.csproj
 
+# Local scratch / draft / review artefacts (transient working dir)
+.tmp/
+

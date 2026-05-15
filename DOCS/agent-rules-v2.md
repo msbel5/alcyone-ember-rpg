@@ -4,6 +4,15 @@ These rules supplement the existing `@EMSPR` cron routine in
 `/home/msbel/.openclaw/workspace/CRON_CODES.md`. When in doubt these
 override the older "exactly one small shippable increment" wording.
 
+## Required reading (Captain consults before every atom kickoff)
+
+In addition to this file, Captain reads the following before every atom-map kickoff doc and before every PR:
+
+- `DOCS/mechanic-map-v1.md` — the 8-box living-world model. Every atom row carries exactly one `primary_box` from this list.
+- `DOCS/EMBER_VISION_NOTES_MAMI.md` — operating constraints (Phase fences), 9-point Vision anchors, and Mami's verbatim intent. Captain's kickoff doc cites which anchors the sprint serves and which fences it honors.
+- `DOCS/inspector-audit-checklist.md` — the checklist Inspector applies to every Captain PR. Captain self-checks against this before opening a PR.
+- The active sprint atom map (currently `DOCS/sprint-faz-4-atom-map.md`) — top-of-file **Debt ledger** is a gate, not a footnote. Before kicking off the next atom, Captain takes one action against the ledger (close / advance / defer) and records it in the kickoff doc.
+
 ## 1. Product-visible increment rule
 
 A sprint may have at most two test-only PRs. The third PR must
@@ -120,3 +129,85 @@ packet must be in the Builder spawn context.
 The Godot/Python repo at `msbel5/ember-rpg` is now read-only
 reference for this project. Captain may pull docs from there into
 `docs/reference/` of the active repo, but may not edit it.
+
+## 6. Hard fail paths (Captain forbidden touch)
+
+A Captain PR is automatically rejected by Inspector if any of the following hold:
+
+- The PR touches `Assets/Scenes/`, `Assets/Art/`, `Assets/Prefabs/`, `Assets/Resources/`, `Assets/Materials/`, `Assets/Textures/`, or any binary file (`.png`, `.jpg`, `.fbx`, `.wav`, `.mp3`, `.psd`, `.blend`, `.tga`, `.exr`).
+- The PR touches `DOCS/screenshots/`, `DOCS/images/`, or any non-text asset under `DOCS/`.
+- The PR touches `Assets/Scripts/Presentation/` except for pure-C# read-only snapshot row types that contain zero `using UnityEngine` AND name a Mami-side consumer (a pending or merged `mami/*` PR) in the PR body. This exception matches the Faz 11 carve-out in Rule 7 below.
+- The PR's acceptance criterion mentions a screenshot, prefab, scene capture, or visual asset that Captain is asked to produce.
+
+The visual layer is Mami territory. Captain may write atom maps and mechanic docs that PRESCRIBE visual outcomes, but Captain does not produce visual artifacts. Fake screenshots (transparent PNGs, placeholder images, empty stubs) are the worst possible outcome of an AI-managed loop and are explicit Rule 6 violations.
+
+## 7. Faz 11 visual layer carve-out
+
+Captain MAY:
+
+- write `DOCS/sprint-faz-11-atom-map.md`
+- write or extend `DOCS/mechanics/faz-11-unity-visual-layer.md`
+- write pure-C# snapshot row types under `Assets/Scripts/Presentation/VisualLayer/` provided the file contains zero `using UnityEngine` AND has at least one Mami-side consumer pending or merged (cite the consumer in the PR body)
+
+Captain MAY NOT:
+
+- create or modify `.unity` scene files
+- create or modify `.prefab` files
+- create or modify materials, textures, sprites, models
+- generate "evidence" screenshots
+- claim Faz 11 promotion proof
+
+Faz 11 promotion is proven by Mami's `mami/*` PR landing a real Unity scene with the targeted acceptance sentence demonstrable in the editor.
+
+## 8. Anti-drift halt rule
+
+If two consecutive Captain PRs satisfy BOTH of the following:
+
+- the PR body's `Visible proof artifact` field reads `none-this-is-foundational`, AND
+- the PR body's `Carry-over debt row advanced` field reads `none-ledger-empty` while the active Debt ledger still contains any row whose status is `open` (i.e. neither `closed` nor `deferred-to-faz-N`)
+
+then the active atom map's "Next increment" pointer is treated as stale. Inspector halts the cron loop, opens a `loop-halt` issue tagged with both PR numbers, and pings Mami. Mami rewrites the atom map's "Next increment" before Captain resumes.
+
+A row counted as `closed` by Inspector requires the row's **Exit proof** column to be satisfied by the PR diff, not Captain's self-report. A row counted as `advanced` requires partial-progress evidence in the diff. Captain may not bypass Rule 8 by re-phrasing a partial PR as `closed`.
+
+This rule exists to prevent the Sprint-5 magic micro-loop pattern from recurring in a different costume (struct-primitive matrix, helper proliferation, internal scaffolding without consumer).
+
+## 9. PR body audit fields (mandatory)
+
+Every Captain-authored PR MUST include this block verbatim in its body, with values filled in. Inspector rejects PRs missing the block or any field, per `DOCS/inspector-audit-checklist.md` checklist A.
+
+```
+Primary box: <one of TIME|WORLD|LIVING|MATTER|PROCESS|SOCIETY|CRPG|AI/DM>
+Visible proof artifact: <path to test / log / snapshot / event row in the diff, OR "none-this-is-foundational" + CO row ID from the active Debt ledger>
+New enum / helper / class added: <yes-with-same-PR-consumer-at-PATH | yes-deferred-to-PR#... | no>
+Carry-over debt row advanced: <CO-XX-closed | CO-XX-advanced | CO-XX-deferred-to-faz-N | none-ledger-empty>
+Why this is the next bundle: <one sentence tying to ledger + atom map>
+Phase fences honored: <yes | called-out-violation-because-...>
+```
+
+The block is enforced via `.github/PULL_REQUEST_TEMPLATE.md` so every new PR opens with the template pre-filled. Captain fills the values; Inspector reads the values and checks them against `DOCS/inspector-audit-checklist.md`.
+
+## Ownership boundaries
+
+| Path | Owner | Captain may write? | Mami writes |
+|---|---|---|---|
+| `Assets/Scripts/Domain/` | Captain | yes | no |
+| `Assets/Scripts/Simulation/` | Captain | yes | no |
+| `Assets/Scripts/Data/` | Captain | yes | no |
+| `Assets/Tests/EditMode/` | Captain | yes | no |
+| `Assets/Scripts/Presentation/VisualLayer/*.cs` (pure-C# rows, zero UnityEngine) | shared | yes, if zero `using UnityEngine` and Mami-side consumer cited | yes |
+| `Assets/Scripts/Presentation/` (Unity-bound views) | Mami | no | yes |
+| `Assets/Scenes/` | Mami | no — Rule 6 | yes |
+| `Assets/Art/`, `Assets/Prefabs/`, materials, textures, models | Mami | no — Rule 6 | yes |
+| `DOCS/` (text only) | shared | yes | yes |
+| `DOCS/screenshots/`, `DOCS/images/`, binaries under DOCS | Mami | no — Rule 6 | yes |
+
+Branch naming: Captain ships in `agent/*` branches. Mami ships in `mami/*` branches. Captain PRs that branch from `mami/*` are rejected on sight.
+
+## 8-box tag schema (clarification)
+
+Per `DOCS/mechanic-map-v1.md` "every gameplay system fits into exactly one box":
+
+- Every atom row carries exactly one `primary_box` from `{ TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM }`.
+- Cross-cutting concerns (`infra`, `meta`, `playable`) are NOT boxes. They appear as commentary fields, not in the `primary_box` column.
+- Multi-box syntax like `[box=PROCESS][box=LIVING]` is grandfathered in already-merged atom maps but is forbidden in new atom rows. New rows pick the dominant box.
