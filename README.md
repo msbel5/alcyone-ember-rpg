@@ -98,8 +98,7 @@ alcyone-ember-rpg/
 │  │  ├─ Data/           data-driven definitions + loaders — asmdef EmberCrpg.Data
 │  │  └─ Presentation/   Unity-only views, scene glue — asmdef EmberCrpg.Presentation
 │  ├─ Tests/
-│  │  ├─ EditMode/       deterministic unit tests — asmdef EmberCrpg.Tests.EditMode
-│  │  └─ PlayMode/       Unity playmode + screenshot tests — asmdef EmberCrpg.Tests.PlayMode
+│  │  └─ EditMode/       deterministic unit tests — asmdef EmberCrpg.Tests.EditMode
 │  ├─ Scenes/            Unity scenes
 │  └─ Art/               sprites, shaders, materials
 ├─ DOCS/                 sprint summaries, atom maps, audit, mechanic map,
