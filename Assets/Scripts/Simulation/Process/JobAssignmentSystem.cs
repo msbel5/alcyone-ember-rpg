@@ -9,8 +9,10 @@ using EmberCrpg.Domain.World;
 // Design note:
 // JobAssignmentSystem is Faz 3's PROCESS/LIVING bridge. It claims pending
 // JobBoard entries, writes the actor schedule target, and starts the first
-// active RecipeWorkOrder for a claimed job. Ticking, EventLog rows, and job
-// persistence remain later atoms in DOCS/sprint-faz-3-atom-map.md.
+// active RecipeWorkOrder for a claimed job. TickAssignedJobs advances active
+// recipe work, closes completed JobBoard entries, and idles the claimed actor.
+// Job-specific EventLog rows and persistence remain later atoms in
+// DOCS/sprint-faz-3-atom-map.md.
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>
@@ -201,6 +203,59 @@ namespace EmberCrpg.Simulation.Process
             }
 
             return _activeOrders.TryGetValue(jobId, out order);
+        }
+
+        /// <summary>
+        /// Advances every active recipe work order by one tick. When RecipeSystem
+        /// emits RecipeCompleted for an order, the matching pending JobBoard row
+        /// is completed, the tracked work order is removed, and the claimed actor
+        /// is returned to idle if it still points at that job.
+        /// </summary>
+        public int TickAssignedJobs(
+            ActorStore actors,
+            JobBoard board,
+            InventoryState inventory,
+            WorldEventLog eventLog,
+            Func<RecipeOutput, InventoryItem> createOutput)
+        {
+            if (actors == null)
+                throw new ArgumentNullException(nameof(actors));
+            if (board == null)
+                throw new ArgumentNullException(nameof(board));
+            if (inventory == null)
+                throw new ArgumentNullException(nameof(inventory));
+            if (eventLog == null)
+                throw new ArgumentNullException(nameof(eventLog));
+            if (createOutput == null)
+                throw new ArgumentNullException(nameof(createOutput));
+
+            if (_activeOrders.Count == 0)
+                return 0;
+
+            var recipeSystem = new RecipeSystem();
+            var completed = new List<JobId>();
+
+            foreach (var pair in _activeOrders)
+            {
+                if (recipeSystem.Tick(pair.Value, inventory, eventLog, createOutput))
+                    completed.Add(pair.Key);
+            }
+
+            foreach (var jobId in completed)
+            {
+                var claimedBy = board.GetClaimedBy(jobId);
+                board.Complete(jobId);
+                _activeOrders.Remove(jobId);
+
+                if (!claimedBy.IsEmpty
+                    && actors.TryGet(claimedBy, out var actor)
+                    && actor.ScheduleState.CurrentJobId == jobId)
+                {
+                    actor.ApplyScheduleState(ActorScheduleState.Idle);
+                }
+            }
+
+            return completed.Count;
         }
 
         private static bool ActorAlreadyHasPendingClaim(ActorRecord actor, JobBoard board)
