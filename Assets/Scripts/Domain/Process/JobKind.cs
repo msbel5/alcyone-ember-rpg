@@ -1,8 +1,9 @@
 // Design note:
 // JobKind is the first tiny category seed for Faz 3 job assignment. It names
 // concrete work only when an active sprint consumer needs it; today that means
-// the smithing lane for the furnace/SmeltIronIngot acceptance path. No bakery,
-// hauling, combat, or speculative extras belong here until their PR consumes them.
+// the smithing lane for the furnace/SmeltIronIngot acceptance path and the
+// baking lane for the BakeBread competition-proof fixture. No hauling, combat,
+// or speculative extras belong here until their PR consumes them.
 // Atom-map ref: DOCS/sprint-faz-3-atom-map.md Pure job definition rail.
 namespace EmberCrpg.Domain.Process
 {
@@ -15,6 +16,9 @@ namespace EmberCrpg.Domain.Process
         None = 0,
 
         /// <summary>Smithing work, initially consumed by furnace smelting jobs.</summary>
-        Smith = 1
+        Smith = 1,
+
+        /// <summary>Baking work, consumed by the BakeBread competition-proof fixture.</summary>
+        Baker = 2
     }
 }

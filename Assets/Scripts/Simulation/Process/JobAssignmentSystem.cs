@@ -10,8 +10,8 @@ using EmberCrpg.Domain.World;
 // JobAssignmentSystem is Faz 3's PROCESS/LIVING bridge. It claims pending
 // JobBoard entries, writes the actor schedule target, and starts the first
 // active RecipeWorkOrder for a claimed job. TickAssignedJobs advances active
-// recipe work, closes completed JobBoard entries, and idles the claimed actor.
-// Job-specific EventLog rows and persistence remain later atoms in
+// recipe work, emits job-specific EventLog rows, closes completed JobBoard
+// entries, and idles the claimed actor. Persistence remains a later atom in
 // DOCS/sprint-faz-3-atom-map.md.
 namespace EmberCrpg.Simulation.Process
 {
@@ -78,6 +78,41 @@ namespace EmberCrpg.Simulation.Process
                 claimedRequest.WorksitePosition);
             best.Actor.ApplyScheduleState(assigned);
             result = new JobAssignmentResult(best.Actor.Id, claimedRequest.Id, claimedRequest.SiteId, claimedRequest.WorksitePosition);
+            return true;
+        }
+
+        /// <summary>
+        /// Claims at most one eligible job and appends one JobAssigned event when
+        /// the claim succeeds. The caller supplies deterministic game time so the
+        /// log can line up with the simulation tick that performed assignment.
+        /// </summary>
+        public bool TryAssignNext(
+            ActorStore actors,
+            JobBoard board,
+            WorksiteStore worksites,
+            WorldEventLog eventLog,
+            GameTime now,
+            out JobAssignmentResult result)
+        {
+            if (eventLog == null)
+                throw new ArgumentNullException(nameof(eventLog));
+
+            if (!TryAssignNext(actors, board, worksites, out result))
+                return false;
+
+            eventLog.Append(new WorldEvent(
+                now,
+                WorldEventKind.JobAssigned,
+                result.ActorId,
+                result.SiteId,
+                $"job_assigned:{result.JobId.Value}",
+                new ReasonTrace(new[]
+                {
+                    $"job:{result.JobId.Value}",
+                    $"actor:{result.ActorId.Value}",
+                    $"site:{result.SiteId.Value}",
+                    $"worksite:{result.WorksitePosition.X},{result.WorksitePosition.Y}",
+                })));
             return true;
         }
 
@@ -221,6 +256,51 @@ namespace EmberCrpg.Simulation.Process
             WorldEventLog eventLog,
             Func<RecipeOutput, InventoryItem> createOutput)
         {
+            return TickAssignedJobs(
+                actors,
+                board,
+                worksites,
+                inventory,
+                eventLog,
+                default(GameTime),
+                emitJobEvents: false,
+                createOutput: createOutput);
+        }
+
+        /// <summary>
+        /// Advances active recipe work orders and appends JobCompleted rows for
+        /// board entries whose requested quantity has fully completed.
+        /// </summary>
+        public int TickAssignedJobs(
+            ActorStore actors,
+            JobBoard board,
+            WorksiteStore worksites,
+            InventoryState inventory,
+            WorldEventLog eventLog,
+            GameTime now,
+            Func<RecipeOutput, InventoryItem> createOutput)
+        {
+            return TickAssignedJobs(
+                actors,
+                board,
+                worksites,
+                inventory,
+                eventLog,
+                now,
+                emitJobEvents: true,
+                createOutput: createOutput);
+        }
+
+        private int TickAssignedJobs(
+            ActorStore actors,
+            JobBoard board,
+            WorksiteStore worksites,
+            InventoryState inventory,
+            WorldEventLog eventLog,
+            GameTime now,
+            bool emitJobEvents,
+            Func<RecipeOutput, InventoryItem> createOutput)
+        {
             if (actors == null)
                 throw new ArgumentNullException(nameof(actors));
             if (board == null)
@@ -282,6 +362,22 @@ namespace EmberCrpg.Simulation.Process
                 }
 
                 board.Complete(jobId);
+                if (emitJobEvents)
+                {
+                    eventLog.Append(new WorldEvent(
+                        now,
+                        WorldEventKind.JobCompleted,
+                        claimedBy,
+                        request.SiteId,
+                        $"job_completed:{request.Id.Value}",
+                        new ReasonTrace(new[]
+                        {
+                            $"job:{request.Id.Value}",
+                            $"recipe:{request.RecipeId.Value}",
+                            $"quantity:{request.Quantity}",
+                            $"worksite:{request.WorksiteKind}",
+                        })));
+                }
                 _activeOrders.Remove(jobId);
                 _completedExecutionCounts.Remove(jobId);
                 completedJobs++;
