@@ -8,6 +8,54 @@ _Thalamus packet:_ `pkt_20260515204915_e1c5ad32792f`
 _Resolver:_ `sha256:b288c6a454567c4784185bc4de8dd77d791ba3aae1593887763f9bd529de2e50`
 _Mechanic map:_ `DOCS/mechanic-map-v1.md`
 _Agent rules:_ `DOCS/agent-rules-v2.md`
+_Vision notes:_ `DOCS/EMBER_VISION_NOTES_MAMI.md`
+_Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
+
+## Debt ledger (Faz 1/2/3 — open carry-over)
+
+> **GATE.** Before kicking off the next atom in any rail below, Captain MUST take exactly one of the following actions against this ledger and record it in the kickoff doc:
+>
+> - **CLOSE** a row by landing a PR whose diff satisfies that row's **Exit proof**. Row status flips to `closed` after merge.
+> - **ADVANCE** a row by landing a PR that makes partial progress (test fixture, interface scaffold, refactor that unblocks the eventual close). Row status flips to `advanced`. A row may be `advanced` at most twice in a row before the next PR against it must `close`.
+> - **DEFER** a row to a specific later faz (`deferred-to-faz-N`) with a one-sentence reason tied to the current bundle. Captain may not defer the same row twice.
+>
+> An untouched ledger across two consecutive PRs (both PRs report `Carry-over debt row advanced: none-ledger-empty` while rows remain `open`) triggers `agent-rules-v2.md` Rule 8 halt.
+
+| ID | Owner file / class | Primary box | Status | One-line scope | Exit proof (what makes this row `closed`) | Faz origin |
+|---|---|---|---|---|---|---|
+| CO-01 | `Assets/Scripts/Domain/World/IPathfinder.cs` :: `IPathfinder` | PROCESS | open | Deterministic grid pathfinder interface. Actors currently teleport to `WorksitePosition`; Faz 3 deliverable "Pathing to the worksite" was logical-only. | PR adds the interface file + at least one xUnit contract test pinning `TryFindPath` determinism for one fixture map. | Faz 3 |
+| CO-02 | `Assets/Scripts/Simulation/World/GridPathfinder.cs` :: `GridPathfinder` | PROCESS | open | Deterministic A* impl over `GridPosition`. Depends on CO-01. | PR adds the concrete class + at least one xUnit test where the same `PathRequest` produces byte-equal `PathResult.Steps` across two seeded runs. | Faz 3 |
+| CO-03 | `Assets/Scripts/Simulation/Process/PathfindingSystem.cs` :: `Tick` | PROCESS | open | Steps assigned actors one cell per tick toward worksite queue position. | PR adds `Tick(ActorStore, JobBoard, WorldEventLog)` + a test where an actor's `Position` advances one cell per tick until `WorksiteSlot.QueuePosition` is reached, emitting `actor_stepped` events. | Faz 3 |
+| CO-04 | `Assets/Scripts/Domain/Process/JobAssignment.cs` :: `QueueIndex` | PROCESS | open | Deterministic queue order when multiple actors target the same worksite. | PR adds `QueueIndex` to `JobAssignment` + a test where two actors claim the same worksite and receive distinct `QueueIndex` values in deterministic order. | Faz 3 |
+| CO-05 | `Assets/Scripts/Domain/Process/JobStatus.cs` :: `JobStatus` | PROCESS | open | Stable-string lifecycle value object: `pending / assigned / traveling / queued / active / completed / canceled / blocked(reason)`. Replaces current binary claimed-flag. Faz 11 Atom 1 spec. | PR adds the value-object file + a test pinning string codes for all 8 lifecycle states + at least one existing `JobBoard` test migrated to use the new status without behavioral change. | Faz 11 spec |
+| CO-06 | `Assets/Scripts/Domain/Process/WorksiteSlot.cs` :: `WorksiteSlot` | PROCESS | open | `SiteId + Position + WorksiteTag + QueuePosition` value type. Faz 11 Atom 8. | PR adds the value type + factory `FromWorksite(WorksiteRecord, tag, queuePosition)` + a test pinning the factory output for one worksite fixture. | Faz 11 spec |
+| CO-07 | (data row) :: `BakeBread` production recipe | PROCESS | open | Promote `RecipeFixtureCatalog.BakeBread` (test-only) into a production data row. Faz 3 deliverable "A second recipe so jobs compete" landed as test fixture only. | PR ships a non-test `RecipeDef` data row for `BakeBread` registered in the production recipe registry + a test where a deterministic day produces both ingot and bread from competing jobs. | Faz 3 |
+| CO-08 | `Assets/Scripts/Simulation/Living/NeedMoodEvaluator.cs` :: `Evaluate(memoryPressure)` overload | LIVING | open | Remove the `memoryPressure` parameter OR delete the overload entirely. No in-sprint consumer; Memory is Faz 9 (Phase fence). | PR deletes the overload OR removes the parameter + all call sites updated + existing `NeedMoodEvaluatorTests` still green. | Faz 4 self-correction |
+| CO-09 | `Assets/Scripts/Domain/Narrative/AskAboutTopic.cs` + Simulation Narrative iskelet | AI/DM | deferred-to-faz-9 | `AskAboutTopic`, `AskAboutService`, `AskDmService`, `NpcMemoryQueryService`, `ThinkService` written in Sprint 1, untouched since. Faz 9 atom map MUST audit these for reuse before writing new dialog code. | Faz 9 atom map kickoff doc explicitly cites each of the 5 files with one of `reuse / refactor / deprecate` decisions per file. | Sprint 1 |
+
+> **Tagging schema** (per `DOCS/mechanic-map-v1.md` "exactly one box"): each row carries exactly one `primary_box` from `{ TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM }`. Optional cross-cutting tags (`infra`, `meta`, `playable`) live in row commentary, not in the `primary_box` column. **Note:** the rail sections of this file below were authored before this schema landed and contain legacy multi-box tags like `[box=TIME][box=LIVING]`; those rows are grandfathered. New rows added to this or any future atom map obey one-box.
+
+## PR audit fields (mandatory PR body section)
+
+Captain writes these six lines into the body of every Captain-authored PR. Inspector rejects any PR missing any line per `DOCS/inspector-audit-checklist.md` checklist A.
+
+```
+Primary box: <one of TIME|WORLD|LIVING|MATTER|PROCESS|SOCIETY|CRPG|AI/DM>
+Visible proof artifact: <path to test / log / snapshot / event row in the diff, OR "none-this-is-foundational" + CO row ID>
+New enum / helper / class added: <yes-with-same-PR-consumer-at-PATH | yes-deferred-to-PR#... | no>
+Carry-over debt row advanced: <CO-XX-closed | CO-XX-advanced | CO-XX-deferred-to-faz-N | none-ledger-empty>
+Why this is the next bundle: <one sentence tying to ledger + atom map>
+Phase fences honored: <yes | called-out-violation-because-...>
+```
+
+State vocabulary for `Carry-over debt row advanced`:
+
+- `CO-XX-closed` — the PR diff satisfies the row's Exit proof. Inspector verifies against the Debt ledger before merge.
+- `CO-XX-advanced` — partial progress made on the row (e.g. test only, interface scaffold). Limit two consecutive `advanced` reports per row; the third PR against that row must `close` it.
+- `CO-XX-deferred-to-faz-N` — moved to a specific later faz with one-sentence reason. Same row may not be deferred twice.
+- `none-ledger-empty` — only valid when every row in the active Debt ledger is `closed` or `deferred`. Misusing this value triggers Rule 8 immediately.
+
+If `Visible proof artifact` is `none-this-is-foundational`, the `Carry-over debt row advanced` field MUST be `closed` or `advanced`. Two consecutive PRs with `none-this-is-foundational` and `Carry-over debt row advanced: none-ledger-empty` triggers Rule 8 halt.
 
 ## Sprint goal
 
@@ -101,6 +149,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [ ] `./tools/validation/run-validation.sh --mode fallback` passes on the promotion branch.
 - [ ] Product-visible PR count is greater than zero; at least one PR emits a new EventLog line, replay log, debug HUD dump, or final acceptance proof.
 - [ ] Final sprint summary records final atom count, bundle count, product-visible PR count, validation evidence, and the `player can ...` acceptance sentence.
+- [ ] Faz 4 promotion summary reports **Debt ledger status**: which CO rows closed during Faz 4, which advanced, which were deferred-to-faz-5 (and why), which carry into Faz 5 atom map's debt ledger. An unaddressed `open` row in the ledger at promotion time is grounds for promotion rejection unless explicitly deferred.
 
 ## This atom map
 
@@ -112,3 +161,5 @@ Implement the `eat-sleep-recovery` bundle next: `NeedRecoveryRecipe`,
 `NeedRecoverySystem.EatMeal`, `NeedRecoverySystem.Sleep`, and focused tests.
 Keep recovery deterministic and emit recovery reason traces only with concrete
 eat/sleep consumers.
+
+> **Before kicking off this increment**, Captain reviews the **Debt ledger** at the top of this file and either (a) closes one CO row in the kickoff PR by satisfying its Exit proof, (b) advances one CO row with partial progress and notes the next required step, or (c) marks one CO row `deferred-to-faz-N` with a one-sentence reason. The kickoff doc records the action. The mandatory **PR audit fields** block is included in every PR body that lands as part of this bundle.
