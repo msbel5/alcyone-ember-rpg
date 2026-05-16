@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
 namespace EmberCrpg.Data.Save
