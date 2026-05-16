@@ -126,43 +126,14 @@ namespace EmberCrpg.Simulation.Process
                         continue;
                     }
 
-                    // Quick eligibility checks (pre-refusal)
-                    if (!TryGetActivePreference(actor, request.Kind, out var preference))
+                    // Try to build a candidate; the helper will emit JobRefused
+                    // events when the actor is refusing so we don't duplicate logic
+                    // across overloads.
+                    if (TryBuildCandidateWithRefusalLogging(actor, actorOrder, request, jobOrder, worksites, eventLog, now, out var candidate))
                     {
-                        jobOrder++;
-                        continue;
+                        if (best == null || candidate.CompareTo(best) < 0)
+                            best = candidate;
                     }
-
-                    if (!TryGetActiveMatchingWorksite(request, worksites, out _))
-                    {
-                        jobOrder++;
-                        continue;
-                    }
-
-                    // If actor meets structural eligibility but is refusing to work,
-                    // record a JobRefused event and skip candidate creation.
-                    if (IsRefusing(actor))
-                    {
-                        eventLog.Append(new WorldEvent(
-                            now,
-                            WorldEventKind.JobRefused,
-                            actor.Id,
-                            request.SiteId,
-                            $"job_refused:{request.Id.Value}",
-                            new ReasonTrace(new[]
-                            {
-                                $"job:{request.Id.Value}",
-                                $"actor:{actor.Id.Value}",
-                                $"reason:hunger_or_low_mood",
-                            })));
-
-                        jobOrder++;
-                        continue;
-                    }
-
-                    var candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
-                    if (best == null || candidate.CompareTo(best) < 0)
-                        best = candidate;
 
                     jobOrder++;
                 }
@@ -538,6 +509,50 @@ namespace EmberCrpg.Simulation.Process
             candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
             return true;
         }
+
+        private static bool TryBuildCandidateWithRefusalLogging(
+            ActorRecord actor,
+            int actorOrder,
+            JobRequest request,
+            int jobOrder,
+            WorksiteStore worksites,
+            WorldEventLog eventLog,
+            GameTime now,
+            out Candidate candidate)
+        {
+            candidate = null;
+
+            if (!actor.IsAlive || !actor.ScheduleState.IsIdle)
+                return false;
+            if (!TryGetActivePreference(actor, request.Kind, out var preference))
+                return false;
+            if (!TryGetActiveMatchingWorksite(request, worksites, out _))
+                return false;
+
+            // refusal check: hungry or low-mood actors do not become candidates;
+            // if refusing, emit a JobRefused event so callers don't duplicate it.
+            if (IsRefusing(actor))
+            {
+                eventLog.Append(new WorldEvent(
+                    now,
+                    WorldEventKind.JobRefused,
+                    actor.Id,
+                    request.SiteId,
+                    $"job_refused:{request.Id.Value}",
+                    new ReasonTrace(new[]
+                    {
+                        $"job:{request.Id.Value}",
+                        $"actor:{actor.Id.Value}",
+                        $"reason:hunger_or_low_mood",
+                    })));
+
+                return false;
+            }
+
+            candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
+            return true;
+        }
+
 
         private static bool TryGetActivePreference(ActorRecord actor, JobKind kind, out ActorJobPreference preference)
         {
