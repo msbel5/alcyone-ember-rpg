@@ -39,12 +39,12 @@ namespace EmberCrpg.Simulation.Living
                 .WithFatigue(needs.Fatigue.Increase(ScaleRate(FatigueIncreasePerTick, ticks)));
         }
 
-        public ActorMood RecomputeMood(ActorRecord actor, NeedValue memoryPressure = default)
+        public ActorMood RecomputeMood(ActorRecord actor)
         {
             if (actor == null)
                 throw new ArgumentNullException(nameof(actor));
 
-            var mood = _moodEvaluator.Evaluate(actor, memoryPressure);
+            var mood = _moodEvaluator.Evaluate(actor);
             actor.ApplyMood(mood);
             return mood;
         }
@@ -53,8 +53,7 @@ namespace EmberCrpg.Simulation.Living
             ActorRecord actor,
             WorldEventLog eventLog,
             GameTime now,
-            int ticks = 1,
-            NeedValue memoryPressure = default)
+            int ticks = 1)
         {
             if (actor == null)
                 throw new ArgumentNullException(nameof(actor));
@@ -66,7 +65,7 @@ namespace EmberCrpg.Simulation.Living
             var previousNeeds = actor.Needs;
             var nextNeeds = TickNeeds(previousNeeds, ticks);
             actor.ApplyNeeds(nextNeeds);
-            var nextMood = RecomputeMood(actor, memoryPressure);
+            var nextMood = RecomputeMood(actor);
 
             eventLog.Append(new WorldEvent(
                 now,

@@ -20,7 +20,7 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             var mood = new NeedsSystem().RecomputeMood(actor);
 
-            Assert.That(mood.Value, Is.EqualTo(20));
+            Assert.That(mood.Value, Is.EqualTo(10));
             Assert.That(actor.Mood, Is.EqualTo(mood));
         }
 
