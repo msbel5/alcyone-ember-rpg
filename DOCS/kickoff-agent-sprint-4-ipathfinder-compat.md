@@ -4,9 +4,9 @@ Branch: agent/sprint-4-ipathfinder-compat
 Primary box: PROCESS
 
 ## Vision anchors
-- Living-world over showroom
-- Deterministic-first, LLM-last
-- Systemic interaction
+- 1. Living-world over showroom
+- 2. Deterministic-first, LLM-last
+- 8. Systemic interaction
 
 ## Phase fences
 No fence crossed by this bundle. This closes a deterministic PROCESS contract and does not add Memory state, DM tool surface, LLM calls, procedural generation, multiverse scope, or free-text dialog parsing.
