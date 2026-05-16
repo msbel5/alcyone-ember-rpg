@@ -85,6 +85,8 @@ namespace EmberCrpg.Simulation.Process
         /// Claims at most one eligible job and appends one JobAssigned event when
         /// the claim succeeds. The caller supplies deterministic game time so the
         /// log can line up with the simulation tick that performed assignment.
+        /// This overload also emits JobRefused events when actors are eligible but
+        /// refuse to work due to needs/mood.
         /// </summary>
         public bool TryAssignNext(
             ActorStore actors,
@@ -94,11 +96,92 @@ namespace EmberCrpg.Simulation.Process
             GameTime now,
             out JobAssignmentResult result)
         {
+            if (actors == null)
+                throw new ArgumentNullException(nameof(actors));
+            if (board == null)
+                throw new ArgumentNullException(nameof(board));
+            if (worksites == null)
+                throw new ArgumentNullException(nameof(worksites));
             if (eventLog == null)
                 throw new ArgumentNullException(nameof(eventLog));
 
-            if (!TryAssignNext(actors, board, worksites, out result))
+            result = default;
+            Candidate best = null;
+            var actorOrder = 0;
+
+            foreach (var actor in actors.Records)
+            {
+                if (ActorAlreadyHasPendingClaim(actor, board))
+                {
+                    actorOrder++;
+                    continue;
+                }
+
+                var jobOrder = 0;
+                foreach (var request in board.Requests)
+                {
+                    if (board.IsClaimed(request.Id))
+                    {
+                        jobOrder++;
+                        continue;
+                    }
+
+                    // Quick eligibility checks (pre-refusal)
+                    if (!TryGetActivePreference(actor, request.Kind, out var preference))
+                    {
+                        jobOrder++;
+                        continue;
+                    }
+
+                    if (!TryGetActiveMatchingWorksite(request, worksites, out _))
+                    {
+                        jobOrder++;
+                        continue;
+                    }
+
+                    // If actor meets structural eligibility but is refusing to work,
+                    // record a JobRefused event and skip candidate creation.
+                    if (IsRefusing(actor))
+                    {
+                        eventLog.Append(new WorldEvent(
+                            now,
+                            WorldEventKind.JobRefused,
+                            actor.Id,
+                            request.SiteId,
+                            $"job_refused:{request.Id.Value}",
+                            new ReasonTrace(new[]
+                            {
+                                $"job:{request.Id.Value}",
+                                $"actor:{actor.Id.Value}",
+                                $"reason:hunger_or_low_mood",
+                            })));
+
+                        jobOrder++;
+                        continue;
+                    }
+
+                    var candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
+                    if (best == null || candidate.CompareTo(best) < 0)
+                        best = candidate;
+
+                    jobOrder++;
+                }
+
+                actorOrder++;
+            }
+
+            if (best == null)
                 return false;
+
+            if (!board.TryClaim(best.Request.Id, best.Actor.Id, out var claimedRequest))
+                return false;
+
+            var assigned = ActorScheduleState.Assigned(
+                claimedRequest.Id,
+                claimedRequest.SiteId,
+                claimedRequest.WorksitePosition);
+            best.Actor.ApplyScheduleState(assigned);
+            result = new JobAssignmentResult(best.Actor.Id, claimedRequest.Id, claimedRequest.SiteId, claimedRequest.WorksitePosition);
 
             eventLog.Append(new WorldEvent(
                 now,
@@ -113,6 +196,7 @@ namespace EmberCrpg.Simulation.Process
                     $"site:{result.SiteId.Value}",
                     $"worksite:{result.WorksitePosition.X},{result.WorksitePosition.Y}",
                 })));
+
             return true;
         }
 
@@ -134,7 +218,8 @@ namespace EmberCrpg.Simulation.Process
             return actor.IsAlive
                 && actor.ScheduleState.IsIdle
                 && TryGetActivePreference(actor, request.Kind, out _)
-                && TryGetActiveMatchingWorksite(request, worksites, out _);
+                && TryGetActiveMatchingWorksite(request, worksites, out _)
+                && !IsRefusing(actor);
         }
 
         /// <summary>
@@ -446,6 +531,10 @@ namespace EmberCrpg.Simulation.Process
             if (!TryGetActiveMatchingWorksite(request, worksites, out _))
                 return false;
 
+            // refusal check: hungry or low-mood actors do not become candidates
+            if (IsRefusing(actor))
+                return false;
+
             candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
             return true;
         }
@@ -498,6 +587,28 @@ namespace EmberCrpg.Simulation.Process
                 return false;
 
             return worksite.IsActive && worksite.Kind == request.WorksiteKind;
+        }
+
+        // Refusal policy: simple, deterministic guard used by both candidate selection
+        // and query-style public checks. This keeps the policy local to JobAssignment
+        // so later phase work (config rows or data-driven rules) can replace it.
+        private static bool IsRefusing(ActorRecord actor)
+        {
+            if (actor == null)
+                return false;
+
+            // Refuse when hunger is severe or mood is low. Thresholds are conservative
+            // for this atom; future faz may expose them as data rows.
+            const int hungerRefusalThreshold = 80;
+
+            var hunger = actor.Needs.Hunger;
+            if (hunger.Value >= hungerRefusalThreshold)
+                return true;
+
+            if (actor.Mood.IsLow)
+                return true;
+
+            return false;
         }
 
         private sealed class Candidate : IComparable<Candidate>
