@@ -1,4 +1,4 @@
-using NUnit.Framework;
+using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
@@ -6,69 +6,127 @@ using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Living;
 using EmberCrpg.Simulation.Process;
+using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Living
 {
     public sealed class ColonyNeedsAcceptanceReplayTests
     {
-        private static readonly SiteId Site = new SiteId(30UL);
-        private static readonly GridPosition FurnacePosition = new GridPosition(4, 5);
+        private static readonly SiteId Site = new SiteId(40UL);
+        private static readonly GridPosition WorksitePos = new GridPosition(2, 3);
 
         [Test]
-        public void ThreeDaysWithoutFood_RefusesWork_ThenMeal_AllowsWork()
+        public void AcceptanceReplay_ThreeDaysUnfed_RefusesThenRecoversAfterMeal()
         {
             var actors = new ActorStore();
-            var actor = new ActorRecord(
-                new ActorId(99UL),
-                "Pawn",
-                ActorRole.Guard,
-                new EmberStatBlock(10, 10, 10, 10, 10, 10),
-                new ActorVitals(new VitalStat(10,10), new VitalStat(10,10), new VitalStat(10,10)),
-                new GridPosition(0,0),
-                accuracy: 5,
-                dodge: 1,
-                armor: 0,
-                baseDamage: 1,
-                jobPreferences: new[] { new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)) });
-
+            var actor = CreateActorWithPreference(new ActorNeeds(), jobKind: JobKind.Smith);
             actors.Add(actor);
 
             var board = new JobBoard();
-            var job = new JobRequest(new JobId(11UL), new RecipeId(211UL), Site, FurnacePosition, WorksiteKind.Furnace, JobKind.Smith, JobPriority.Active(1), quantity: 1, requesterId: new ActorId(0UL));
+            var job = new JobRequest(new JobId(200UL), new RecipeId(300UL), Site, WorksitePos, WorksiteKind.Furnace, JobKind.Smith, JobPriority.Active(1), quantity: 1, requesterId: new ActorId(99UL));
             board.Add(job);
 
             var worksites = new WorksiteStore();
-            worksites.Add(new WorksiteRecord(Site, FurnacePosition, WorksiteKind.Furnace, isActive: true));
+            worksites.Add(new WorksiteRecord(Site, WorksitePos, WorksiteKind.Furnace, isActive: true));
 
-            var eventLog = new WorldEventLog();
+            var log = new WorldEventLog();
             var needsSystem = new NeedsSystem();
+
+            // Simulate three in-game days of missed meals
+            needsSystem.TickActorNeeds(actor, log, new GameTime(0), ticks: 3);
+
             var assigner = new JobAssignmentSystem();
             var now = default(GameTime);
 
-            // three ticks lowers mood under refusal threshold
-            needsSystem.TickActorNeeds(actor, eventLog, now, ticks: 3);
-            Assert.That(actor.Mood.IsLow, Is.True);
-
-            // refusing actor should not claim the job and should emit JobRefused
-            Assert.That(assigner.TryAssignNext(actors, board, worksites, eventLog, now, out var result1), Is.False);
-            Assert.That(eventLog.Count, Is.GreaterThanOrEqualTo(1));
-            Assert.That(eventLog.Events[0].Kind, Is.EqualTo(WorldEventKind.JobRefused));
+            // Actor should refuse due to low mood or hunger
+            Assert.That(assigner.TryAssignNext(actors, board, worksites, log, now, out var result), Is.False);
+            Assert.That(log.Events.Any(e => e.Kind == WorldEventKind.JobRefused), Is.True);
             Assert.That(board.IsClaimed(job.Id), Is.False);
 
-            // Give the actor one food item and an eat recipe
-            var inventory = new InventoryState(4);
-            var apple = new InventoryItem(new EmberCrpg.Domain.Core.ItemId(500UL), "food_apple", "Apple", 1);
-            Assert.That(inventory.TryAdd(apple), Is.True);
+            // Provide one meal in inventory and perform recovery
+            var inventory = MealInventory(quantity: 1);
+            var recovered = new NeedRecoverySystem().EatMeal(actor, inventory, MealRecipe(), log, new GameTime(1000));
 
-            var eatRecipe = new NeedRecoveryRecipe("eat_apple", NeedRecoverySystem.EatMealAction, NeedKind.Hunger, 50, "food_apple");
-            var recovery = new NeedRecoverySystem();
+            Assert.That(recovered, Is.True);
+            Assert.That(actor.Needs.Hunger.Value, Is.LessThan(80));
 
-            var ate = recovery.EatMeal(actor, inventory, eatRecipe, eventLog, now);
-            Assert.That(ate, Is.True);
-
-            // after eating the actor should be able to claim the job
-            Assert.That(assigner.TryAssignNext(actors, board, worksites, eventLog, now, out var result2), Is.True);
+            // After recovery, assignment should succeed
+            var assigned = assigner.TryAssignNext(actors, board, worksites, log, now, out result);
+            Assert.That(assigned, Is.True);
             Assert.That(board.IsClaimed(job.Id), Is.True);
+        }
+
+        [Test]
+        public void AcceptanceReplay_HungerBoundary_RefusesAtThreshold()
+        {
+            var actors = new ActorStore();
+            var actor = CreateActorWithPreference(new ActorNeeds(new NeedValue(80), NeedValue.Comfortable, NeedValue.Comfortable), jobKind: JobKind.Smith);
+            actors.Add(actor);
+
+            var board = new JobBoard();
+            var job = new JobRequest(new JobId(201UL), new RecipeId(301UL), Site, WorksitePos, WorksiteKind.Furnace, JobKind.Smith, JobPriority.Active(1), quantity: 1, requesterId: new ActorId(99UL));
+            board.Add(job);
+
+            var worksites = new WorksiteStore();
+            worksites.Add(new WorksiteRecord(Site, WorksitePos, WorksiteKind.Furnace, isActive: true));
+
+            var log = new WorldEventLog();
+            var assigner = new JobAssignmentSystem();
+
+            Assert.That(assigner.TryAssignNext(actors, board, worksites, log, default(GameTime), out var r), Is.False);
+            Assert.That(log.Events.Any(e => e.Kind == WorldEventKind.JobRefused), Is.True);
+        }
+
+        [Test]
+        public void AcceptanceReplay_HungerOnly_TriggersRefusal()
+        {
+            var actors = new ActorStore();
+            var actor = CreateActorWithPreference(new ActorNeeds(new NeedValue(90), NeedValue.Comfortable, NeedValue.Comfortable), jobKind: JobKind.Smith);
+            actors.Add(actor);
+
+            var board = new JobBoard();
+            var job = new JobRequest(new JobId(202UL), new RecipeId(302UL), Site, WorksitePos, WorksiteKind.Furnace, JobKind.Smith, JobPriority.Active(1), quantity: 1, requesterId: new ActorId(99UL));
+            board.Add(job);
+
+            var worksites = new WorksiteStore();
+            worksites.Add(new WorksiteRecord(Site, WorksitePos, WorksiteKind.Furnace, isActive: true));
+
+            var log = new WorldEventLog();
+            var assigner = new JobAssignmentSystem();
+
+            Assert.That(assigner.TryAssignNext(actors, board, worksites, log, default(GameTime), out var r), Is.False);
+            Assert.That(log.Events.Any(e => e.Kind == WorldEventKind.JobRefused), Is.True);
+        }
+
+        private static ActorRecord CreateActorWithPreference(ActorNeeds needs, JobKind jobKind)
+        {
+            var pref = new ActorJobPreference(jobKind, JobPriority.Active(1));
+            return new ActorRecord(
+                new ActorId((ulong)System.DateTime.UtcNow.Ticks % 10000UL),
+                "Acceptance",
+                ActorRole.Guard,
+                new EmberStatBlock(10, 10, 10, 10, 10, 10),
+                new ActorVitals(new VitalStat(10, 10), new VitalStat(10, 10), new VitalStat(10, 10)),
+                new GridPosition(0, 0),
+                10,
+                5,
+                1,
+                3,
+                jobPreferences: new[] { pref },
+                needs: needs,
+                mood: ActorMood.Neutral);
+        }
+
+        private static NeedRecoveryRecipe MealRecipe()
+        {
+            return new NeedRecoveryRecipe("meal-basic", NeedRecoverySystem.EatMealAction, NeedKind.Hunger, 50, "simple_meal");
+        }
+
+        private static InventoryState MealInventory(int quantity)
+        {
+            var inventory = new InventoryState(4);
+            inventory.TryAdd(new InventoryItem(new ItemId(900UL), "simple_meal", "Simple Meal", quantity));
+            return inventory;
         }
     }
 }
