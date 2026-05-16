@@ -21,7 +21,7 @@ namespace EmberCrpg.Tests.EditMode.Save
                 "Tester",
                 ActorRole.Guard,
                 new EmberStatBlock(10,10,10,10,10,10),
-                new ActorVitals(new VitalStat(10,10), new VitalStat(0,0), new VitalStat(0,0)),
+                new ActorVitals(new VitalStat(10,10), new VitalStat(10,10), new VitalStat(10,10)),
                 new GridPosition(0,0),
                 accuracy: 5,
                 dodge: 1,
