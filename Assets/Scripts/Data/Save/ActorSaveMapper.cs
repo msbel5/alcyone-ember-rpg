@@ -93,7 +93,9 @@ namespace EmberCrpg.Data.Save
                 baseDamage: save.baseDamage,
                 topicIds: topicIds,
                 jobPreferences: jobPrefs,
-                scheduleState: default,
+                scheduleState: (save.currentJobId == 0UL
+                    ? default(ActorScheduleState)
+                    : ActorScheduleState.Assigned(new JobId(save.currentJobId), new SiteId(save.targetSiteId), new GridPosition(save.targetWorksitePositionX, save.targetWorksitePositionY))),
                 needs: needs,
                 mood: mood);
 
