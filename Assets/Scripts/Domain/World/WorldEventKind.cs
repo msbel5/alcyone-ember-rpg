@@ -19,5 +19,6 @@ namespace EmberCrpg.Domain.World
         JobAssigned = 5,
         JobCompleted = 6,
         NeedChanged = 7,
+        JobRefused = 8,
     }
 }
