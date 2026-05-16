@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace EmberCrpg.Domain.World
 {
     // CO-01: Deterministic grid pathfinder interface (scaffold)
@@ -12,6 +14,6 @@ namespace EmberCrpg.Domain.World
 
     // Minimal supporting types (scaffolds) — real definitions live elsewhere; these are lightweight placeholders
     public readonly record struct PathfinderRequest(int ActorId, int StartX, int StartY, int GoalX, int GoalY, int ActorSize);
-    public readonly record struct PathfinderResult(bool Success, int[] Steps, int TotalCost);
+    public readonly record struct PathfinderResult(bool Success, IReadOnlyList<int> Steps, int TotalCost);
     public readonly record struct ActorPathStep(int NewX, int NewY, bool Arrived);
 }
