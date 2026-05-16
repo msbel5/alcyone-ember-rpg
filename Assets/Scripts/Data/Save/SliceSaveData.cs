@@ -204,10 +204,16 @@ namespace EmberCrpg.Data.Save
         public string[] topicIds;
         public string[] askedTopicIds;
         public ActorJobPreferenceSaveData[] jobPreferences;
+        // Persisted schedule targets (0/empty means idle)
         public ulong currentJobId;
         public ulong targetSiteId;
         public int targetWorksitePositionX;
         public int targetWorksitePositionY;
+        // Persisted needs and mood (integers 0-100)
+        public int hunger;
+        public int fatigue;
+        public int thirst;
+        public int mood;
     }
 
     [Serializable]

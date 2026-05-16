@@ -120,7 +120,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ### 5. Work refusal integration rail
 
-- [ ] `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs` :: `CanActorWorkJob` :: reject actors whose hunger or mood crosses refusal threshold [box=PROCESS][box=LIVING]
+- [x] `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs` :: `CanActorWorkJob` :: reject actors whose hunger or mood crosses refusal threshold [box=PROCESS][box=LIVING]
 - [ ] `Assets/Tests/EditMode/Process/JobNeedsRefusalTests.cs` :: tests :: hungry low-mood actor refuses a smith job without claiming the board row [box=PROCESS][box=LIVING]
 - [ ] `Assets/Scripts/Domain/World/WorldEventKind.cs` :: `WorldEventKind.JobRefused` :: add only with a concrete `JobAssignmentSystem` emitter [box=PROCESS][box=PLAYABLE]
 - [ ] `Assets/Tests/EditMode/Process/JobRefusalEventLogTests.cs` :: tests :: pin refusal event reason trace and preserved pending job state [box=PROCESS][box=PLAYABLE]
