@@ -51,7 +51,7 @@ Acceptance target:
 
 - `git diff --check` - passed.
 - `./tools/validation/run-validation.sh --mode fallback` - passed at
-  2026-05-16T02:47Z with fallback harness result:
+  2026-05-16T02:51Z with fallback harness result:
   926 passed, 0 failed, 0 skipped.
 - Unity editor status: blocked on this machine (`not_found`), as expected for
   the fallback validation path.
