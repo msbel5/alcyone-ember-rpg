@@ -126,10 +126,7 @@ namespace EmberCrpg.Simulation.Process
                         continue;
                     }
 
-                    // Try to build a candidate; the helper will emit JobRefused
-                    // events when the actor is refusing so we don't duplicate logic
-                    // across overloads.
-                    if (TryBuildCandidateWithRefusalLogging(actor, actorOrder, request, jobOrder, worksites, eventLog, now, out var candidate))
+                    if (TryBuildCandidate(actor, actorOrder, request, jobOrder, worksites, eventLog, now, out var candidate))
                     {
                         if (best == null || candidate.CompareTo(best) < 0)
                             best = candidate;
@@ -493,24 +490,10 @@ namespace EmberCrpg.Simulation.Process
             WorksiteStore worksites,
             out Candidate candidate)
         {
-            candidate = null;
-
-            if (!actor.IsAlive || !actor.ScheduleState.IsIdle)
-                return false;
-            if (!TryGetActivePreference(actor, request.Kind, out var preference))
-                return false;
-            if (!TryGetActiveMatchingWorksite(request, worksites, out _))
-                return false;
-
-            // refusal check: hungry or low-mood actors do not become candidates
-            if (IsRefusing(actor))
-                return false;
-
-            candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
-            return true;
+            return TryBuildCandidate(actor, actorOrder, request, jobOrder, worksites, null, default(GameTime), out candidate);
         }
 
-        private static bool TryBuildCandidateWithRefusalLogging(
+        private static bool TryBuildCandidate(
             ActorRecord actor,
             int actorOrder,
             JobRequest request,
@@ -529,28 +512,34 @@ namespace EmberCrpg.Simulation.Process
             if (!TryGetActiveMatchingWorksite(request, worksites, out _))
                 return false;
 
-            // refusal check: hungry or low-mood actors do not become candidates;
-            // if refusing, emit a JobRefused event so callers don't duplicate it.
             if (IsRefusing(actor))
             {
-                eventLog.Append(new WorldEvent(
-                    now,
-                    WorldEventKind.JobRefused,
-                    actor.Id,
-                    request.SiteId,
-                    $"job_refused:{request.Id.Value}",
-                    new ReasonTrace(new[]
-                    {
-                        $"job:{request.Id.Value}",
-                        $"actor:{actor.Id.Value}",
-                        $"reason:hunger_or_low_mood",
-                    })));
+                AppendJobRefused(eventLog, now, actor, request);
 
                 return false;
             }
 
             candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
             return true;
+        }
+
+        private static void AppendJobRefused(WorldEventLog eventLog, GameTime now, ActorRecord actor, JobRequest request)
+        {
+            if (eventLog == null)
+                return;
+
+            eventLog.Append(new WorldEvent(
+                now,
+                WorldEventKind.JobRefused,
+                actor.Id,
+                request.SiteId,
+                $"job_refused:{request.Id.Value}",
+                new ReasonTrace(new[]
+                {
+                    $"job:{request.Id.Value}",
+                    $"actor:{actor.Id.Value}",
+                    $"reason:hunger_or_low_mood",
+                })));
         }
 
 
