@@ -40,7 +40,7 @@ namespace EmberCrpg.Tests.EditMode.Living
                 $"time:{GameTime.MinutesPerDay}",
                 "hunger:0->40",
                 "fatigue:0->30",
-                "mood:33",
+                "mood:27",
             }));
         }
 
