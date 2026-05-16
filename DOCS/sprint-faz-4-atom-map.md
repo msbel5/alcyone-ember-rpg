@@ -127,9 +127,9 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ### 6. Save/load and replay proof rail
 
-- [ ] `Assets/Scripts/Data/Save/SliceSaveData.cs` :: actor needs/mood data :: persist needs and mood through canonical actor store data [box=TIME][box=LIVING]
-- [ ] `Assets/Scripts/Data/Save/ActorSaveMapper.cs` :: needs/mood mapper :: round-trip actor needs and mood without legacy named-field expansion [box=TIME][box=LIVING]
-- [ ] `Assets/Tests/EditMode/Save/ActorNeedsRoundTripTests.cs` :: tests :: save/load preserves hunger, fatigue, thirst, and mood [box=TIME][box=LIVING]
+- [x] `Assets/Scripts/Data/Save/SliceSaveData.cs` :: actor needs/mood data :: persist needs and mood through canonical actor store data [box=TIME][box=LIVING]
+- [x] `Assets/Scripts/Data/Save/ActorSaveMapper.cs` :: needs/mood mapper :: round-trip actor needs and mood without legacy named-field expansion [box=TIME][box=LIVING]
+- [x] `Assets/Tests/EditMode/Save/ActorNeedsRoundTripTests.cs` :: tests :: save/load preserves hunger, fatigue, thirst, and mood [box=TIME][box=LIVING]
 - [ ] `Assets/Tests/EditMode/Living/ColonyNeedsAcceptanceReplayTests.cs` :: acceptance replay :: three days unfed lowers mood, refuses work, meal recovery permits work again [box=PLAYABLE]
 - [ ] `DOCS/sprint-faz-4-colony-needs-acceptance.md` :: `Faz4AcceptanceProof` :: deterministic replay note with final `player can ...` sentence [box=PLAYABLE]
 
