@@ -10,6 +10,13 @@ namespace EmberCrpg.Data.Save
     // will expand the save packet and mapper.
     public static class ActorSaveMapper
     {
+        // Backwards-compatible method names used by the existing SliceSaveMapper
+        // and test harness. Keep ToSave/FromSave as explicit names and expose
+        // ToData/ToActor adapters so older callers continue to compile.
+        public static ActorSaveData ToData(ActorRecord actor) => ToSave(actor);
+
+        public static ActorRecord ToActor(ActorSaveData save) => FromSave(save);
+
         public static ActorSaveData ToSave(ActorRecord actor)
         {
             if (actor == null)
