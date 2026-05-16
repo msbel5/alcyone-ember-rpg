@@ -40,6 +40,8 @@ namespace EmberCrpg.Simulation.Living
         {
             if (inventory == null)
                 throw new ArgumentNullException(nameof(inventory));
+            if (eventLog == null)
+                throw new ArgumentNullException(nameof(eventLog));
 
             ValidateRecipe(recipe, EatMealAction, NeedKind.Hunger, requiresInventoryItem: true);
             if (!CanRecover(actor, recipe))
@@ -57,6 +59,9 @@ namespace EmberCrpg.Simulation.Living
             WorldEventLog eventLog,
             GameTime now)
         {
+            if (eventLog == null)
+                throw new ArgumentNullException(nameof(eventLog));
+
             ValidateRecipe(recipe, SleepAction, NeedKind.Fatigue, requiresInventoryItem: false);
             if (!CanRecover(actor, recipe))
                 return false;
@@ -80,9 +85,6 @@ namespace EmberCrpg.Simulation.Living
             GameTime now,
             string sourceCause)
         {
-            if (eventLog == null)
-                throw new ArgumentNullException(nameof(eventLog));
-
             var previousNeeds = actor.Needs;
             var previousValue = previousNeeds.Get(recipe.NeedKind);
             var nextValue = previousValue.Decrease(recipe.RecoveryAmount);

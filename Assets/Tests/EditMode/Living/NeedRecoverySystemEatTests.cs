@@ -77,6 +77,8 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.Throws<ArgumentNullException>(() => system.EatMeal(actor, inventory, null, log, new GameTime(0)));
             Assert.Throws<ArgumentNullException>(() => system.EatMeal(actor, inventory, MealRecipe(), null, new GameTime(0)));
             Assert.Throws<ArgumentException>(() => system.EatMeal(actor, inventory, SleepRecipe(), log, new GameTime(0)));
+            Assert.That(inventory.Items.Single().Quantity, Is.EqualTo(1));
+            Assert.That(actor.Needs.Hunger.Value, Is.EqualTo(80));
         }
 
         private static NeedRecoveryRecipe MealRecipe()
