@@ -21,7 +21,7 @@ namespace EmberCrpg.Tests.EditMode.Living
         }
 
         [Test]
-        public void HungerAndFatigue_LowerMoodDeterministically()
+        public void NeedPressure_LowersMoodDeterministically()
         {
             var needs = ActorNeeds.Comfortable
                 .With(NeedKind.Hunger, new NeedValue(80))
@@ -29,17 +29,17 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             var mood = new NeedMoodEvaluator().Evaluate(needs);
 
-            Assert.That(mood.Value, Is.EqualTo(20));
+            Assert.That(mood.Value, Is.EqualTo(10));
             Assert.That(mood.IsLow, Is.True);
         }
 
         [Test]
-        public void MemoryPressure_LowersMoodWithoutMutatingNeeds()
+        public void ThirstContributesWithoutMutatingNeeds()
         {
             var needs = new ActorNeeds(new NeedValue(10), new NeedValue(10), new NeedValue(10));
-            var mood = new NeedMoodEvaluator().Evaluate(needs, new NeedValue(50));
+            var mood = new NeedMoodEvaluator().Evaluate(needs);
 
-            Assert.That(mood.Value, Is.EqualTo(30));
+            Assert.That(mood.Value, Is.EqualTo(40));
             Assert.That(needs, Is.EqualTo(new ActorNeeds(new NeedValue(10), new NeedValue(10), new NeedValue(10))));
         }
 
@@ -49,7 +49,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             var actor = CreateActor(new ActorNeeds(new NeedValue(40), NeedValue.Comfortable, NeedValue.Comfortable));
             var evaluator = new NeedMoodEvaluator();
 
-            Assert.That(evaluator.Evaluate(actor).Value, Is.EqualTo(40));
+            Assert.That(evaluator.Evaluate(actor).Value, Is.EqualTo(37));
             Assert.Throws<ArgumentNullException>(() => evaluator.Evaluate((ActorRecord)null));
         }
 

@@ -30,7 +30,7 @@ _Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
 | CO-05 | `Assets/Scripts/Domain/Process/JobStatus.cs` :: `JobStatus` | PROCESS | open | Stable-string lifecycle value object: `pending / assigned / traveling / queued / active / completed / canceled / blocked(reason)`. Replaces current binary claimed-flag. Faz 11 Atom 1 spec. | PR adds the value-object file + a test pinning string codes for all 8 lifecycle states + at least one existing `JobBoard` test migrated to use the new status without behavioral change. | Faz 11 spec |
 | CO-06 | `Assets/Scripts/Domain/Process/WorksiteSlot.cs` :: `WorksiteSlot` | PROCESS | open | `SiteId + Position + WorksiteTag + QueuePosition` value type. Faz 11 Atom 8. | PR adds the value type + factory `FromWorksite(WorksiteRecord, tag, queuePosition)` + a test pinning the factory output for one worksite fixture. | Faz 11 spec |
 | CO-07 | (data row) :: `BakeBread` production recipe | PROCESS | open | Promote `RecipeFixtureCatalog.BakeBread` (test-only) into a production data row. Faz 3 deliverable "A second recipe so jobs compete" landed as test fixture only. | PR ships a non-test `RecipeDef` data row for `BakeBread` registered in the production recipe registry + a test where a deterministic day produces both ingot and bread from competing jobs. | Faz 3 |
-| CO-08 | `Assets/Scripts/Simulation/Living/NeedMoodEvaluator.cs` :: `Evaluate(memoryPressure)` overload | LIVING | open | Remove the `memoryPressure` parameter OR delete the overload entirely. No in-sprint consumer; Memory is Faz 9 (Phase fence). | PR deletes the overload OR removes the parameter + all call sites updated + existing `NeedMoodEvaluatorTests` still green. | Faz 4 self-correction |
+| CO-08 | `Assets/Scripts/Simulation/Living/NeedMoodEvaluator.cs` :: `Evaluate(memoryPressure)` overload | LIVING | closed | Removed the `memoryPressure` parameter from mood derivation. No in-sprint consumer; Memory is Faz 9 (Phase fence). | PR deletes the overload OR removes the parameter + all call sites updated + existing `NeedMoodEvaluatorTests` still green. | Faz 4 self-correction |
 | CO-09 | `Assets/Scripts/Domain/Narrative/AskAboutTopic.cs` + Simulation Narrative iskelet | AI/DM | deferred-to-faz-9 | `AskAboutTopic`, `AskAboutService`, `AskDmService`, `NpcMemoryQueryService`, `ThinkService` written in Sprint 1, untouched since. Faz 9 atom map MUST audit these for reuse before writing new dialog code. | Faz 9 atom map kickoff doc explicitly cites each of the 5 files with one of `reuse / refactor / deprecate` decisions per file. | Sprint 1 |
 
 > **Tagging schema** (per `DOCS/mechanic-map-v1.md` "exactly one box"): each row carries exactly one `primary_box` from `{ TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM }`. Optional cross-cutting tags (`infra`, `meta`, `playable`) live in row commentary, not in the `primary_box` column. **Note:** the rail sections of this file below were authored before this schema landed and contain legacy multi-box tags like `[box=TIME][box=LIVING]`; those rows are grandfathered. New rows added to this or any future atom map obey one-box.
@@ -111,12 +111,12 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ### 4. Eat / sleep recovery rail
 
-- [ ] `Assets/Scripts/Domain/Process/NeedRecoveryRecipe.cs` :: `NeedRecoveryRecipe` :: pure recovery definition for eat/sleep actions and need deltas [box=PROCESS][box=LIVING]
-- [ ] `Assets/Tests/EditMode/Process/NeedRecoveryRecipeTests.cs` :: tests :: reject empty ids, non-recovery deltas, and missing action kind [box=PROCESS][box=LIVING]
-- [ ] `Assets/Scripts/Simulation/Living/NeedRecoverySystem.cs` :: `EatMeal` :: consume one food item from inventory and reduce hunger [box=PROCESS][box=MATTER][box=LIVING]
-- [ ] `Assets/Tests/EditMode/Living/NeedRecoverySystemEatTests.cs` :: tests :: meal consumption lowers hunger, preserves inventory on failure, and logs reason trace [box=PROCESS][box=MATTER][box=LIVING]
-- [ ] `Assets/Scripts/Simulation/Living/NeedRecoverySystem.cs` :: `Sleep` :: reduce fatigue through a deterministic rest action without inventory mutation [box=PROCESS][box=LIVING]
-- [ ] `Assets/Tests/EditMode/Living/NeedRecoverySystemSleepTests.cs` :: tests :: sleep lowers fatigue and recomputes mood deterministically [box=PROCESS][box=LIVING]
+- [x] `Assets/Scripts/Domain/Process/NeedRecoveryRecipe.cs` :: `NeedRecoveryRecipe` :: pure recovery definition for eat/sleep actions and need deltas [box=PROCESS][box=LIVING]
+- [x] `Assets/Tests/EditMode/Process/NeedRecoveryRecipeTests.cs` :: tests :: reject empty ids, non-recovery deltas, and missing action kind [box=PROCESS][box=LIVING]
+- [x] `Assets/Scripts/Simulation/Living/NeedRecoverySystem.cs` :: `EatMeal` :: consume one food item from inventory and reduce hunger [box=PROCESS][box=MATTER][box=LIVING]
+- [x] `Assets/Tests/EditMode/Living/NeedRecoverySystemEatTests.cs` :: tests :: meal consumption lowers hunger, preserves inventory on failure, and logs reason trace [box=PROCESS][box=MATTER][box=LIVING]
+- [x] `Assets/Scripts/Simulation/Living/NeedRecoverySystem.cs` :: `Sleep` :: reduce fatigue through a deterministic rest action without inventory mutation [box=PROCESS][box=LIVING]
+- [x] `Assets/Tests/EditMode/Living/NeedRecoverySystemSleepTests.cs` :: tests :: sleep lowers fatigue and recomputes mood deterministically [box=PROCESS][box=LIVING]
 
 ### 5. Work refusal integration rail
 
@@ -157,9 +157,9 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Next increment
 
-Implement the `eat-sleep-recovery` bundle next: `NeedRecoveryRecipe`,
-`NeedRecoverySystem.EatMeal`, `NeedRecoverySystem.Sleep`, and focused tests.
-Keep recovery deterministic and emit recovery reason traces only with concrete
-eat/sleep consumers.
+Implement the `job-refusal` bundle next: add the refusal guard in
+`JobAssignmentSystem.CanActorWorkJob`, prove hungry/low-mood actors do not
+claim pending work, and emit a concrete refusal EventLog trace only with the
+guard consumer.
 
 > **Before kicking off this increment**, Captain reviews the **Debt ledger** at the top of this file and either (a) closes one CO row in the kickoff PR by satisfying its Exit proof, (b) advances one CO row with partial progress and notes the next required step, or (c) marks one CO row `deferred-to-faz-N` with a one-sentence reason. The kickoff doc records the action. The mandatory **PR audit fields** block is included in every PR body that lands as part of this bundle.
