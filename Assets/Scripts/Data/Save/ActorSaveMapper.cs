@@ -52,6 +52,11 @@ namespace EmberCrpg.Data.Save
                 targetSiteId = schedule.IsIdle ? 0UL : schedule.TargetSiteId.Value,
                 targetWorksitePositionX = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.X,
                 targetWorksitePositionY = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.Y,
+                // Persist needs and mood as 0-100 ints
+                hunger = actor.Needs.Hunger.Value,
+                fatigue = actor.Needs.Fatigue.Value,
+                thirst = actor.Needs.Thirst.Value,
+                mood = actor.Mood.Value,
             };
         }
 
@@ -70,9 +75,9 @@ namespace EmberCrpg.Data.Save
                 new VitalStat(save.manaCurrent, Math.Max(1, save.manaMax)));
             var position = new GridPosition(save.positionX, save.positionY);
 
-            // Save format does not currently carry needs/mood; use comfortable defaults.
-            var needs = ActorNeeds.Comfortable;
-            var mood = default(ActorMood);
+            // Save format carries needs/mood if present; default to comfortable/null-neutral
+            var needs = new ActorNeeds(new NeedValue(save.hunger), new NeedValue(save.fatigue), new NeedValue(save.thirst));
+            var mood = new ActorMood(save.mood);
 
             var topicIds = save.topicIds ?? Array.Empty<string>();
             var asked = save.askedTopicIds ?? Array.Empty<string>();
