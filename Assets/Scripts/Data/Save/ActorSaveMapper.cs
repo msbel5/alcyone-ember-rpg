@@ -1,20 +1,27 @@
+using System;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
+using EmberCrpg.Domain.World;
 
-// Design note:
-// ActorSaveMapper isolates actor save/load field translation for Sprint 1 JSON persistence.
-// Inputs: pure actor records or actor DTOs.
-// Outputs: round-trippable actor save snapshots with no behavior.
-// Bible reference: PRD FR-06.
 namespace EmberCrpg.Data.Save
 {
-    /// <summary>Field mapper between actor records and actor DTOs.</summary>
+    // Mapper between domain ActorRecord and Unity-serializable ActorSaveData.
+    // Keeps mapping minimal and defensive: missing fields use sane defaults so
+    // older save formats remain loadable.
     public static class ActorSaveMapper
     {
-        public static ActorSaveData ToData(ActorRecord actor)
+        public static ActorSaveData ToData(ActorRecord actor) => ToSave(actor);
+
+        public static ActorRecord ToActor(ActorSaveData data) => FromSave(data);
+
+        public static ActorSaveData ToSave(ActorRecord actor)
         {
+            if (actor == null)
+                return null;
+
+            var schedule = actor.ScheduleState;
             return new ActorSaveData
             {
                 id = actor.Id.Value,
@@ -38,71 +45,63 @@ namespace EmberCrpg.Data.Save
                 dodge = actor.Dodge,
                 armor = actor.Armor,
                 baseDamage = actor.BaseDamage,
-                topicIds = actor.TopicIds.ToArray(),
-                askedTopicIds = actor.AskedTopicIds.ToArray(),
-                jobPreferences = actor.JobPreferences.Select(ToPreferenceData).ToArray(),
-                currentJobId = actor.ScheduleState.CurrentJobId.Value,
-                targetSiteId = actor.ScheduleState.TargetSiteId.Value,
-                targetWorksitePositionX = actor.ScheduleState.TargetWorksitePosition.X,
-                targetWorksitePositionY = actor.ScheduleState.TargetWorksitePosition.Y,
+                topicIds = actor.TopicIds?.ToArray(),
+                askedTopicIds = actor.AskedTopicIds?.ToArray(),
+                jobPreferences = actor.JobPreferences?.Select(p => new ActorJobPreferenceSaveData { kind = (int)p.Kind, priority = p.Priority.Value }).ToArray(),
+                currentJobId = schedule.IsIdle ? 0UL : schedule.CurrentJobId.Value,
+                targetSiteId = schedule.IsIdle ? 0UL : schedule.TargetSiteId.Value,
+                targetWorksitePositionX = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.X,
+                targetWorksitePositionY = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.Y,
             };
         }
 
-        public static ActorRecord ToActor(ActorSaveData actor)
+        public static ActorRecord FromSave(ActorSaveData save)
         {
-            var stats = new EmberStatBlock(actor.mig, actor.agi, actor.end, actor.mnd, actor.ins, actor.pre);
+            if (save == null)
+                return null;
+
+            var id = new ActorId(save.id);
+            var name = string.IsNullOrEmpty(save.name) ? "restored" : save.name;
+            var role = (ActorRole)save.role;
+            var stats = new EmberStatBlock(save.mig, save.agi, save.end, save.mnd, save.ins, save.pre);
             var vitals = new ActorVitals(
-                new VitalStat(actor.healthCurrent, actor.healthMax),
-                new VitalStat(actor.fatigueCurrent, actor.fatigueMax),
-                new VitalStat(actor.manaCurrent, actor.manaMax));
+                new VitalStat(save.healthCurrent, Math.Max(1, save.healthMax)),
+                new VitalStat(save.fatigueCurrent, Math.Max(1, save.fatigueMax)),
+                new VitalStat(save.manaCurrent, Math.Max(1, save.manaMax)));
+            var position = new GridPosition(save.positionX, save.positionY);
+
+            // Save format does not currently carry needs/mood; use comfortable defaults.
+            var needs = ActorNeeds.Comfortable;
+            var mood = default(ActorMood);
+
+            var topicIds = save.topicIds ?? Array.Empty<string>();
+            var asked = save.askedTopicIds ?? Array.Empty<string>();
+            var jobPrefs = (save.jobPreferences ?? Array.Empty<ActorJobPreferenceSaveData>())
+                .Select(p => new ActorJobPreference((JobKind)p.kind, JobPriority.Active(p.priority)))
+                .ToArray();
+
             var record = new ActorRecord(
-                new ActorId(actor.id),
-                actor.name,
-                (ActorRole)actor.role,
+                id,
+                name,
+                role,
                 stats,
                 vitals,
-                new GridPosition(actor.positionX, actor.positionY),
-                actor.accuracy,
-                actor.dodge,
-                actor.armor,
-                actor.baseDamage,
-                actor.topicIds,
-                ToJobPreferences(actor.jobPreferences),
-                ToScheduleState(actor));
-            record.ReplaceAskedTopics(actor.askedTopicIds);
+                position,
+                accuracy: save.accuracy,
+                dodge: save.dodge,
+                armor: save.armor,
+                baseDamage: save.baseDamage,
+                topicIds: topicIds,
+                jobPreferences: jobPrefs,
+                scheduleState: (save.currentJobId == 0UL
+                    ? default(ActorScheduleState)
+                    : ActorScheduleState.Assigned(new JobId(save.currentJobId), new SiteId(save.targetSiteId), new GridPosition(save.targetWorksitePositionX, save.targetWorksitePositionY))),
+                needs: needs,
+                mood: mood);
+
+            record.ReplaceAskedTopics(asked);
+
             return record;
-        }
-
-        private static ActorJobPreferenceSaveData ToPreferenceData(ActorJobPreference preference)
-        {
-            return new ActorJobPreferenceSaveData
-            {
-                kind = (int)preference.Kind,
-                priority = preference.Priority.Value,
-            };
-        }
-
-        private static ActorJobPreference[] ToJobPreferences(ActorJobPreferenceSaveData[] preferences)
-        {
-            return (preferences ?? System.Array.Empty<ActorJobPreferenceSaveData>())
-                .Select(preference => new ActorJobPreference((JobKind)preference.kind, JobPriorityFromRaw(preference.priority)))
-                .ToArray();
-        }
-
-        private static JobPriority JobPriorityFromRaw(int value)
-        {
-            return value > 0 ? JobPriority.Active(value) : JobPriority.Disabled;
-        }
-
-        private static ActorScheduleState ToScheduleState(ActorSaveData actor)
-        {
-            if (actor.currentJobId == 0UL)
-                return ActorScheduleState.Idle;
-
-            return ActorScheduleState.Assigned(
-                new JobId(actor.currentJobId),
-                new SiteId(actor.targetSiteId),
-                new GridPosition(actor.targetWorksitePositionX, actor.targetWorksitePositionY));
         }
     }
 }
