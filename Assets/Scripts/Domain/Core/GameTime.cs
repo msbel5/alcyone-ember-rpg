@@ -16,6 +16,12 @@ namespace EmberCrpg.Domain.Core
         public const int MinutesPerMonth = 43200;
         /// <summary>Number of game minutes in one 360-day game year.</summary>
         public const int MinutesPerYear = 518400;
+        /// <summary>Number of game days in one deterministic game month.</summary>
+        public const int DaysPerMonth = 30;
+        /// <summary>Number of game months in one deterministic game year.</summary>
+        public const int MonthsPerYear = 12;
+        /// <summary>Number of game days in one deterministic game year.</summary>
+        public const int DaysPerYear = DaysPerMonth * MonthsPerYear;
 
         private readonly long _totalMinutes;
 
@@ -48,6 +54,8 @@ namespace EmberCrpg.Domain.Core
         public GameTime AddHours(long hours) { return AddMinutes(hours * MinutesPerHour); }
         /// <summary>Returns a new timestamp advanced by game days.</summary>
         public GameTime AddDays(long days) { return AddMinutes(days * MinutesPerDay); }
+        /// <summary>Returns a new timestamp advanced by 30-day game months.</summary>
+        public GameTime AddMonths(long months) { return AddMinutes(months * MinutesPerMonth); }
         /// <summary>Returns a new timestamp advanced by game years.</summary>
         public GameTime AddYears(long years) { return AddMinutes(years * MinutesPerYear); }
 

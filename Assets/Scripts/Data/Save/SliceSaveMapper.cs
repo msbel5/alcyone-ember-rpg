@@ -201,6 +201,90 @@ namespace EmberCrpg.Data.Save
             return board;
         }
 
+        public static SoilComponentSaveData[] ToSoilComponentData(ComponentStore<SoilComponent> soils)
+        {
+            return (soils?.Rows ?? Array.Empty<System.Collections.Generic.KeyValuePair<WorldComponentId, SoilComponent>>())
+                .Select(row => ToSoilComponentData(row.Value))
+                .ToArray();
+        }
+
+        public static ComponentStore<SoilComponent> ToSoilComponentStore(SoilComponentSaveData[] data)
+        {
+            var store = new ComponentStore<SoilComponent>();
+            foreach (var soil in data ?? Array.Empty<SoilComponentSaveData>())
+            {
+                if (soil == null)
+                    continue;
+
+                var component = new SoilComponent(
+                    new WorldComponentId(soil.id),
+                    new SiteId(soil.siteId),
+                    new GridPosition(soil.positionX, soil.positionY),
+                    soil.fertility,
+                    soil.moisture,
+                    new WorldComponentId(soil.plantId));
+                store.Add(component.Id, component);
+            }
+
+            return store;
+        }
+
+        public static PlantComponentSaveData[] ToPlantComponentData(ComponentStore<PlantComponent> plants)
+        {
+            return (plants?.Rows ?? Array.Empty<System.Collections.Generic.KeyValuePair<WorldComponentId, PlantComponent>>())
+                .Select(row => ToPlantComponentData(row.Value))
+                .ToArray();
+        }
+
+        public static ComponentStore<PlantComponent> ToPlantComponentStore(PlantComponentSaveData[] data)
+        {
+            var store = new ComponentStore<PlantComponent>();
+            foreach (var plant in data ?? Array.Empty<PlantComponentSaveData>())
+            {
+                if (plant == null)
+                    continue;
+
+                var component = new PlantComponent(
+                    new WorldComponentId(plant.id),
+                    new SiteId(plant.siteId),
+                    new GridPosition(plant.positionX, plant.positionY),
+                    plant.speciesId,
+                    new PlantStageId(plant.stageId),
+                    plant.daysInStage);
+                store.Add(component.Id, component);
+            }
+
+            return store;
+        }
+
+        private static SoilComponentSaveData ToSoilComponentData(SoilComponent soil)
+        {
+            return new SoilComponentSaveData
+            {
+                id = soil.Id.Value,
+                siteId = soil.SiteId.Value,
+                positionX = soil.Position.X,
+                positionY = soil.Position.Y,
+                fertility = soil.Fertility,
+                moisture = soil.Moisture,
+                plantId = soil.PlantId.Value,
+            };
+        }
+
+        private static PlantComponentSaveData ToPlantComponentData(PlantComponent plant)
+        {
+            return new PlantComponentSaveData
+            {
+                id = plant.Id.Value,
+                siteId = plant.SiteId.Value,
+                positionX = plant.Position.X,
+                positionY = plant.Position.Y,
+                speciesId = plant.SpeciesId,
+                stageId = plant.StageId.Value,
+                daysInStage = plant.DaysInStage,
+            };
+        }
+
         private static JobRequestSaveData ToJobRequestData(JobRequest request, JobBoard board)
         {
             return new JobRequestSaveData

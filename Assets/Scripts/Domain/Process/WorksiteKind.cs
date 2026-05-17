@@ -19,5 +19,8 @@ namespace EmberCrpg.Domain.Process
 
         /// <summary>Bakery worksite used by the BakeBread competition-proof fixture.</summary>
         Bakery = 2,
+
+        /// <summary>Field tile used by Faz 5 planting and harvest jobs.</summary>
+        Field = 3,
     }
 }
