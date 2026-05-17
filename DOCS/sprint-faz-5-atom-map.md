@@ -57,17 +57,18 @@ increase. Every new atom row carries exactly one `primary_box`.
 | 7 | PROCESS | `WorldProcessId`, `WorldProcessDef`, `WorldProcessInstance` | Non-crafting transformation shape for slow world processes. | `WorldProcessDefinitionTests` | implemented locally |
 | 8 | PROCESS | `PlantGrowthSystem` | Daily season/weather rule matching, growth advancement, harvestable-stage transition events. | `PlantGrowthSystemTests` | implemented locally |
 | 9 | PROCESS | `HarvestSystem` | Convert ripe wheat into stockpile output with deterministic item factory injection. | `HarvestSystemTests` | implemented locally |
-| 10 | TIME | `Data/Save` plant/season DTOs and mappers | Round-trip time/plant/process state without adding named `SliceWorldState` fields. | `PlantSeasonRoundTripTests` | queued |
+| 10 | TIME | `Data/Save` plant/season DTOs and mappers | Round-trip time/plant/process state without adding named `SliceWorldState` fields. | `PlantSeasonRoundTripTests` | implemented locally |
 | 11 | PROCESS | Farming job/path hook | Connect planting/harvest jobs to the existing job/path lane and close/advance relevant pathing debt. | `FarmingJobIntegrationTests` | queued |
 | 12 | PROCESS | `DOCS/sprint-faz-5-plant-season-acceptance.md` | Deterministic replay proof for spring planting through summer harvest and food stockpile increase. | `PlantSeasonAcceptanceTests` and replay note | queued |
 
 ## Next increment
 
-Wait for Atom 9 GitHub EditMode evidence, then implement Atom 10:
-plant/season save DTOs and mapper roundtrip. Keep
+Wait for Atom 10 GitHub EditMode evidence, then implement Atom 11:
+farming job/path hook. Keep
 Atom 1 proof tied to `SeasonCalendarTests`, Atom 2 to
 `GameTimeAdvanceSystemTests`, Atoms 3-4 to `WorldComponentIdTests`,
 `ComponentStoreTests`, and `SoilComponentTests`, Atom 5 to
 `PlantDefinitionTests`, Atom 6 to `PlantComponentTests` plus
 `PlantingSystemTests`, Atom 7 to `WorldProcessDefinitionTests`, and
-Atom 8 to `PlantGrowthSystemTests`, and Atom 9 to `HarvestSystemTests`.
+Atom 8 to `PlantGrowthSystemTests`, Atom 9 to `HarvestSystemTests`, and
+Atom 10 to `PlantSeasonRoundTripTests`.

@@ -26,7 +26,8 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 | Faz 5 slice 6 | PROCESS | World process shape | WorldProcessDef, WorldProcessInstance, deterministic day progress | Domain/Process world process primitives | implemented locally; needs validation/CI |
 | Faz 5 slice 7 | PROCESS | Plant growth loop | PlantGrowthSystem applies season/weather rules and emits stage events | Simulation/Process PlantGrowthSystem | implemented locally; needs validation/CI |
 | Faz 5 slice 8 | PROCESS | Harvest loop | HarvestSystem converts harvestable plants into stockpile output | Simulation/Process HarvestSystem, InventoryState bridge | implemented locally; needs validation/CI |
-| Faz 5 slice 9 | TIME/PROCESS | Save roundtrip | Save/load plant, soil, and season state | Data/Save DTOs and mapper tests | next |
+| Faz 5 slice 9 | TIME/PROCESS | Save roundtrip | Save/load plant, soil, and season state | Data/Save DTOs and mapper tests | implemented locally; needs validation/CI |
+| Faz 5 slice 10 | PROCESS | Farming job/path hook | Planting/harvest jobs connect to existing job/path lane | job/path integration tests | next |
 | Faz 6 slice 1 | SOCIETY | Settlement economy primitives | Settlement stock/demand + price quote | FactionStore, SiteStore, ItemStore plus new society records | queued after Faz 5 proof |
 | Faz 6 slice 2 | SOCIETY/TIME | Trade route tick | TravelEdge, Caravan state, TradeRouteSystem daily delivery event | new Domain/Society + Simulation/Society | queued |
 | Faz 7 slice 1 | CRPG/MATTER | Store-backed equipment combat | Weapon/Armor item data, EquipmentState integration, durability | EquipmentService, CombatMathService, RealtimeDamageService, ItemRecord | queued |
@@ -42,4 +43,4 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 
 ## Next exact action
 
-Validate and push Faz 5 slice 8, then wait for #136 GitHub EditMode evidence before adding save/load and acceptance replay.
+Validate and push Faz 5 slice 9, then wait for #136 GitHub EditMode evidence before adding farming job/path hook and acceptance replay.
