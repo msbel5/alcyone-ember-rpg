@@ -9,8 +9,8 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 - `Assets/Scripts/Domain`: 99 files, 105 types, 452 method/property rows
 - `Assets/Scripts/Simulation`: 72 files, 83 types, 287 method/property rows
-- `Assets/Scripts/Data`: 8 files, 35 types, 64 method/property rows
-- `Assets/Tests/EditMode`: 128 files, 135 types, 1097 method/property rows
+- `Assets/Scripts/Data`: 8 files, 37 types, 70 method/property rows
+- `Assets/Tests/EditMode`: 129 files, 136 types, 1100 method/property rows
 
 ## Phase keyword index
 
@@ -87,6 +87,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Process/PlantingSystemTests.cs`
 - `Assets/Tests/EditMode/Process/SoilComponentTests.cs`
 - `Assets/Tests/EditMode/Process/WorldProcessDefinitionTests.cs`
+- `Assets/Tests/EditMode/Save/PlantSeasonRoundTripTests.cs`
 - `Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs`
 - `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs`
 - `Assets/Tests/EditMode/World/ComponentStoreTests.cs`
@@ -422,10 +423,10 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - types:
   - L17: `class JsonSliceSaveService`
 - members:
-  - L46: `public void ReplaceRecipeWorkOrders(IEnumerable<RecipeWorkOrder> orders)`
-  - L53: `public string SaveToJson(SliceWorldState world)`
-  - L62: `public SliceWorldState LoadFromJson(string json)`
-  - L72: `private List<RecipeWorkOrder> ToRecipeWorkOrders(RecipeWorkOrderSaveData[] data)`
+  - L62: `public void ReplaceRecipeWorkOrders(IEnumerable<RecipeWorkOrder> orders)`
+  - L69: `public string SaveToJson(SliceWorldState world)`
+  - L80: `public SliceWorldState LoadFromJson(string json)`
+  - L92: `private List<RecipeWorkOrder> ToRecipeWorkOrders(RecipeWorkOrderSaveData[] data)`
 
 #### `ShieldBuffSaveMapper.cs`
 - namespace: `EmberCrpg.Data.Save`
@@ -443,29 +444,31 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L66: `class SiteRecordSaveData`
   - L78: `class WorksiteSaveData`
   - L88: `class RecipeWorkOrderSaveData`
-  - L99: `class FactionRecordSaveData`
-  - L107: `class WorldEventSaveData`
-  - L118: `class EquipmentSaveData`
-  - L124: `class EquippedItemSaveData`
-  - L131: `class DungeonRoomSaveData`
-  - L143: `class DungeonDoorSaveData`
-  - L157: `class DungeonSpawnSaveData`
-  - L166: `class DungeonRoomStateSaveData`
-  - L174: `class DungeonDoorStateSaveData`
-  - L181: `class ActorSaveData`
-  - L220: `class ActorJobPreferenceSaveData`
-  - L227: `class JobRequestSaveData`
-  - L243: `class InventorySaveData`
-  - L250: `class ItemSaveData`
-  - L262: `class PickupSaveData`
-  - L271: `class TopicSaveData`
-  - L279: `class NpcMemorySaveData`
-  - L288: `class InteractionEventSaveData`
-  - L301: `class TransactionSaveData`
-  - L311: `class SpellCooldownSaveData`
-  - L317: `class SpellCooldownEntrySaveData`
-  - L324: `class ShieldBuffSaveData`
-  - L330: `class ShieldBuffEntrySaveData`
+  - L101: `class SoilComponentSaveData`
+  - L113: `class PlantComponentSaveData`
+  - L125: `class FactionRecordSaveData`
+  - L133: `class WorldEventSaveData`
+  - L144: `class EquipmentSaveData`
+  - L150: `class EquippedItemSaveData`
+  - L157: `class DungeonRoomSaveData`
+  - L169: `class DungeonDoorSaveData`
+  - L183: `class DungeonSpawnSaveData`
+  - L192: `class DungeonRoomStateSaveData`
+  - L200: `class DungeonDoorStateSaveData`
+  - L207: `class ActorSaveData`
+  - L246: `class ActorJobPreferenceSaveData`
+  - L253: `class JobRequestSaveData`
+  - L269: `class InventorySaveData`
+  - L276: `class ItemSaveData`
+  - L288: `class PickupSaveData`
+  - L297: `class TopicSaveData`
+  - L305: `class NpcMemorySaveData`
+  - L314: `class InteractionEventSaveData`
+  - L327: `class TransactionSaveData`
+  - L337: `class SpellCooldownSaveData`
+  - L343: `class SpellCooldownEntrySaveData`
+  - L350: `class ShieldBuffSaveData`
+  - L356: `class ShieldBuffEntrySaveData`
 
 #### `SliceSaveMapper.cs`
 - namespace: `EmberCrpg.Data.Save`
@@ -480,7 +483,13 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L151: `public static RecipeWorkOrder ToRecipeWorkOrder(RecipeWorkOrderSaveData data, Func<RecipeId, RecipeDef> resolveRecipe)`
   - L171: `public static JobRequestSaveData[] ToJobBoardData(JobBoard board)`
   - L176: `public static JobBoard ToJobBoard(JobRequestSaveData[] data)`
-  - L204: `private static JobRequestSaveData ToJobRequestData(JobRequest request, JobBoard board)`
+  - L204: `public static SoilComponentSaveData[] ToSoilComponentData(ComponentStore<SoilComponent> soils)`
+  - L211: `public static ComponentStore<SoilComponent> ToSoilComponentStore(SoilComponentSaveData[] data)`
+  - L232: `public static PlantComponentSaveData[] ToPlantComponentData(ComponentStore<PlantComponent> plants)`
+  - L239: `public static ComponentStore<PlantComponent> ToPlantComponentStore(PlantComponentSaveData[] data)`
+  - L260: `private static SoilComponentSaveData ToSoilComponentData(SoilComponent soil)`
+  - L274: `private static PlantComponentSaveData ToPlantComponentData(PlantComponent plant)`
+  - L288: `private static JobRequestSaveData ToJobRequestData(JobRequest request, JobBoard board)`
   - L222: `private static ActorSaveData[] ToActorStoreData(ActorStore store)`
   - L227: `private static ActorStore ToActorStore(ActorSaveData[] data)`
   - L238: `private static ItemRecordSaveData[] ToItemStoreData(ItemStore store)`
@@ -3854,6 +3863,15 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L21: `public void SaveAndLoad_RoundTripsDoorMerchantGuardAndEnemyState()`
   - L89: `public void SaveAndLoad_FreshWorld_StartsWithNoSpellCooldowns()`
   - L101: `public void SaveAndLoad_FreshWorld_StartsWithNoShieldBuffs()`
+
+#### `PlantSeasonRoundTripTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Save`
+- types:
+  - L13: `class PlantSeasonRoundTripTests`
+- members:
+  - L16: `public void JsonDto_RoundTripsSoilAndPlantComponents()`
+  - L49: `private static ComponentStore<SoilComponent> CreateSoils()`
+  - L56: `private static ComponentStore<PlantComponent> CreatePlants()`
 
 #### `RecipeWorksiteRoundTripTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Save`

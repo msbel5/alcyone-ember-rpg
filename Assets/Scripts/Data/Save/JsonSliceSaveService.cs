@@ -20,6 +20,8 @@ namespace EmberCrpg.Data.Save
         private List<RecipeWorkOrder> _recipeWorkOrders = new List<RecipeWorkOrder>();
         private WorksiteStore _worksites = new WorksiteStore();
         private JobBoard _jobs = new JobBoard();
+        private ComponentStore<SoilComponent> _soils = new ComponentStore<SoilComponent>();
+        private ComponentStore<PlantComponent> _plants = new ComponentStore<PlantComponent>();
 
         public JsonSliceSaveService(Func<RecipeId, RecipeDef> resolveRecipe = null)
         {
@@ -40,6 +42,20 @@ namespace EmberCrpg.Data.Save
             set { _jobs = value ?? throw new ArgumentNullException(nameof(value)); }
         }
 
+        /// <summary>Soil components carried by this save bridge until they move onto the full world root.</summary>
+        public ComponentStore<SoilComponent> Soils
+        {
+            get { return _soils; }
+            set { _soils = value ?? throw new ArgumentNullException(nameof(value)); }
+        }
+
+        /// <summary>Plant components carried by this save bridge until they move onto the full world root.</summary>
+        public ComponentStore<PlantComponent> Plants
+        {
+            get { return _plants; }
+            set { _plants = value ?? throw new ArgumentNullException(nameof(value)); }
+        }
+
         /// <summary>Active recipe work orders loaded by the latest JSON round-trip.</summary>
         public IReadOnlyList<RecipeWorkOrder> RecipeWorkOrders => _recipeWorkOrders;
 
@@ -56,6 +72,8 @@ namespace EmberCrpg.Data.Save
             data.worksites = SliceSaveMapper.ToWorksiteData(_worksites);
             data.recipeWorkOrders = _recipeWorkOrders.Select(SliceSaveMapper.ToRecipeWorkOrderData).ToArray();
             data.jobs = SliceSaveMapper.ToJobBoardData(_jobs);
+            data.soils = SliceSaveMapper.ToSoilComponentData(_soils);
+            data.plants = SliceSaveMapper.ToPlantComponentData(_plants);
             return JsonUtility.ToJson(data, true);
         }
 
@@ -66,6 +84,8 @@ namespace EmberCrpg.Data.Save
             _worksites = SliceSaveMapper.ToWorksiteStore(data.worksites);
             _recipeWorkOrders = ToRecipeWorkOrders(data.recipeWorkOrders);
             _jobs = SliceSaveMapper.ToJobBoard(data.jobs);
+            _soils = SliceSaveMapper.ToSoilComponentStore(data.soils);
+            _plants = SliceSaveMapper.ToPlantComponentStore(data.plants);
             return world;
         }
 
