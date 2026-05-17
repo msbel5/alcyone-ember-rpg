@@ -7,10 +7,10 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ## Inventory summary
 
-- `Assets/Scripts/Domain`: 91 files, 97 types, 402 method/property rows
+- `Assets/Scripts/Domain`: 95 files, 101 types, 425 method/property rows
 - `Assets/Scripts/Simulation`: 69 files, 80 types, 285 method/property rows
 - `Assets/Scripts/Data`: 8 files, 35 types, 64 method/property rows
-- `Assets/Tests/EditMode`: 122 files, 129 types, 1063 method/property rows
+- `Assets/Tests/EditMode`: 123 files, 130 types, 1068 method/property rows
 
 ## Phase keyword index
 
@@ -48,6 +48,10 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Domain/Core/GameTime.cs`
 - `Assets/Scripts/Domain/Memory/InteractionEvent.cs`
 - `Assets/Scripts/Domain/Memory/TransactionRecord.cs`
+- `Assets/Scripts/Domain/Process/PlantGrowthRule.cs`
+- `Assets/Scripts/Domain/Process/PlantGrowthStageDef.cs`
+- `Assets/Scripts/Domain/Process/PlantSpeciesDef.cs`
+- `Assets/Scripts/Domain/Process/PlantStageId.cs`
 - `Assets/Scripts/Domain/Process/SoilComponent.cs`
 - `Assets/Scripts/Domain/Time/Season.cs`
 - `Assets/Scripts/Domain/Time/SeasonCalendar.cs`
@@ -69,6 +73,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Magic/ShieldBuffApplicationServiceTests.cs`
 - `Assets/Tests/EditMode/Magic/SpellExecutionServiceTests.cs`
 - `Assets/Tests/EditMode/Process/JobEventLogTests.cs`
+- `Assets/Tests/EditMode/Process/PlantDefinitionTests.cs`
 - `Assets/Tests/EditMode/Process/SoilComponentTests.cs`
 - `Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs`
 - `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs`
@@ -1118,6 +1123,53 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L37: `public NeedKind NeedKind { get; }`
   - L38: `public int RecoveryAmount { get; }`
   - L39: `public string ConsumedItemTemplateId { get; }`
+
+#### `PlantGrowthRule.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L6: `class PlantGrowthRule`
+- members:
+  - L15: `public Season Season { get; }`
+  - L16: `public bool AllowsGrowth { get; }`
+  - L17: `public bool BlockedBySnow { get; }`
+  - L19: `public bool Matches(Season season)`
+  - L24: `public bool CanGrow(bool isSnowing)`
+
+#### `PlantGrowthStageDef.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L6: `class PlantGrowthStageDef`
+- members:
+  - L23: `public PlantStageId Id { get; }`
+  - L24: `public string DisplayName { get; }`
+  - L25: `public int DaysToNextStage { get; }`
+  - L26: `public bool IsHarvestable { get; }`
+
+#### `PlantSpeciesDef.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L10: `class PlantSpeciesDef`
+- members:
+  - L54: `public string SpeciesId { get; }`
+  - L55: `public string SeedItemTag { get; }`
+  - L56: `public string HarvestItemTag { get; }`
+  - L57: `public IReadOnlyList<PlantGrowthStageDef> Stages { get { return _stages; } }`
+  - L58: `public IReadOnlyList<PlantGrowthRule> GrowthRules { get { return _growthRules; } }`
+  - L59: `public PlantGrowthStageDef FirstStage { get { return _stages[0]; } }`
+  - L61: `public bool TryGetStage(PlantStageId stageId, out PlantGrowthStageDef stage)`
+  - L76: `public bool TryGetNextStage(PlantStageId currentStageId, out PlantGrowthStageDef nextStage)`
+  - L91: `public bool CanGrow(Season season, bool isSnowing)`
+
+#### `PlantStageId.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L6: `struct PlantStageId`
+- members:
+  - L17: `public string Value { get { return _value ?? string.Empty; } }`
+  - L20: `public bool Equals(PlantStageId other)`
+  - L25: `public override bool Equals(object obj)`
+  - L30: `public override int GetHashCode()`
+  - L35: `public override string ToString()`
 
 #### `RecipeDef.cs`
 - namespace: `EmberCrpg.Domain.Process`
@@ -3490,6 +3542,17 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L37: `public void Constructor_RejectsEmptyIdsAndMissingActionKind()`
   - L46: `public void Constructor_RejectsNonRecoveryDeltasAndMissingNeed()`
   - L54: `public void Constructor_RejectsBlankConsumedItemTemplate()`
+
+#### `PlantDefinitionTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Process`
+- types:
+  - L9: `class PlantDefinitionTests`
+- members:
+  - L12: `public void WheatDefinition_ProvidesOrderedStagesAndItemTags()`
+  - L27: `public void GrowthRules_AllowSpringAndSummerButSnowBlocks()`
+  - L38: `public void Constructor_RejectsInvalidRows()`
+  - L48: `private static PlantSpeciesDef CreateWheat()`
+  - L69: `private static PlantGrowthStageDef Stage(string id, bool harvestable)`
 
 #### `RecipeDefTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Process`

@@ -21,8 +21,8 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 | Faz 5 slice 1 | TIME | Season calendar foundation | Season enum/definitions/calendar + GameTime constants + tests | Season, SeasonDefinition, SeasonCalendar, GameTime | implemented on #136; CI still failing |
 | Faz 5 slice 2 | TIME | GameTime advance events | GameTimeAdvanceSystem emits day/season events | new Simulation/Time/GameTimeAdvanceSystem, WorldEventKind day/season rows | implemented locally; needs validation/CI |
 | Faz 5 slice 3 | PROCESS | Component handles + soil | WorldComponentId, ComponentStore, SoilComponent | Domain/World component store + Domain/Process soil | implemented locally; needs validation/CI |
-| Faz 5 slice 4 | PROCESS | Plant data rows | Plant stage/species/growth rule definitions and wheat rows | new Domain/Process plant data types | next |
-| Faz 5 slice 5 | PROCESS | Planting/growth/harvest loop | PlantingSystem, PlantGrowthSystem, HarvestSystem, acceptance replay | new Simulation/Process farming systems, inventory/stockpile bridge | queued |
+| Faz 5 slice 4 | PROCESS | Plant data rows | Plant stage/species/growth rule definitions and wheat rows | new Domain/Process plant data types | implemented locally; needs validation/CI |
+| Faz 5 slice 5 | PROCESS | Planting/growth/harvest loop | PlantComponent, PlantingSystem, PlantGrowthSystem, HarvestSystem, acceptance replay | new Simulation/Process farming systems, inventory/stockpile bridge | next |
 | Faz 6 slice 1 | SOCIETY | Settlement economy primitives | Settlement stock/demand + price quote | FactionStore, SiteStore, ItemStore plus new society records | queued after Faz 5 proof |
 | Faz 6 slice 2 | SOCIETY/TIME | Trade route tick | TravelEdge, Caravan state, TradeRouteSystem daily delivery event | new Domain/Society + Simulation/Society | queued |
 | Faz 7 slice 1 | CRPG/MATTER | Store-backed equipment combat | Weapon/Armor item data, EquipmentState integration, durability | EquipmentService, CombatMathService, RealtimeDamageService, ItemRecord | queued |
@@ -38,4 +38,4 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 
 ## Next exact action
 
-Validate and push Faz 5 slices 2-3, then wait for #136 GitHub EditMode evidence before adding plant data and growth systems.
+Validate and push Faz 5 slices 2-4, then wait for #136 GitHub EditMode evidence before adding planting/growth systems.
