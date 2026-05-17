@@ -7,10 +7,10 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ## Inventory summary
 
-- `Assets/Scripts/Domain`: 96 files, 102 types, 434 method/property rows
+- `Assets/Scripts/Domain`: 99 files, 105 types, 452 method/property rows
 - `Assets/Scripts/Simulation`: 70 files, 81 types, 285 method/property rows
 - `Assets/Scripts/Data`: 8 files, 35 types, 64 method/property rows
-- `Assets/Tests/EditMode`: 125 files, 132 types, 1079 method/property rows
+- `Assets/Tests/EditMode`: 126 files, 133 types, 1083 method/property rows
 
 ## Phase keyword index
 
@@ -54,6 +54,9 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Domain/Process/PlantSpeciesDef.cs`
 - `Assets/Scripts/Domain/Process/PlantStageId.cs`
 - `Assets/Scripts/Domain/Process/SoilComponent.cs`
+- `Assets/Scripts/Domain/Process/WorldProcessDef.cs`
+- `Assets/Scripts/Domain/Process/WorldProcessId.cs`
+- `Assets/Scripts/Domain/Process/WorldProcessInstance.cs`
 - `Assets/Scripts/Domain/Time/Season.cs`
 - `Assets/Scripts/Domain/Time/SeasonCalendar.cs`
 - `Assets/Scripts/Domain/Time/SeasonDefinition.cs`
@@ -79,6 +82,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Process/PlantDefinitionTests.cs`
 - `Assets/Tests/EditMode/Process/PlantingSystemTests.cs`
 - `Assets/Tests/EditMode/Process/SoilComponentTests.cs`
+- `Assets/Tests/EditMode/Process/WorldProcessDefinitionTests.cs`
 - `Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs`
 - `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs`
 - `Assets/Tests/EditMode/World/ComponentStoreTests.cs`
@@ -1245,6 +1249,42 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L49: `public SoilComponent WithPlant(WorldComponentId plantId)`
   - L56: `public SoilComponent WithoutPlant()`
   - L61: `private static int ClampPercent(int value)`
+
+#### `WorldProcessDef.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L6: `class WorldProcessDef`
+- members:
+  - L25: `public WorldProcessId Id { get; }`
+  - L26: `public string DisplayName { get; }`
+  - L27: `public int DurationDays { get; }`
+  - L28: `public string OutputEventReason { get; }`
+
+#### `WorldProcessId.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L6: `struct WorldProcessId`
+- members:
+  - L17: `public string Value { get { return _value ?? string.Empty; } }`
+  - L18: `public bool IsEmpty { get { return string.IsNullOrEmpty(Value); } }`
+  - L20: `public bool Equals(WorldProcessId other)`
+  - L25: `public override bool Equals(object obj)`
+  - L30: `public override int GetHashCode()`
+  - L35: `public override string ToString()`
+
+#### `WorldProcessInstance.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L8: `class WorldProcessInstance`
+- members:
+  - L31: `public WorldComponentId Id { get; }`
+  - L32: `public WorldProcessDef Definition { get; }`
+  - L33: `public SiteId SiteId { get; }`
+  - L34: `public WorldComponentId SubjectId { get; }`
+  - L35: `public int ElapsedDays { get; }`
+  - L36: `public int RemainingDays { get { return Definition.DurationDays - ElapsedDays; } }`
+  - L37: `public bool IsComplete { get { return ElapsedDays >= Definition.DurationDays; } }`
+  - L39: `public WorldProcessInstance AdvanceOneDay()`
 
 #### `WorksiteKind.cs`
 - namespace: `EmberCrpg.Domain.Process`
@@ -3603,6 +3643,16 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L117: `private static int Quantity(InventoryState inventory, string templateId)`
   - L122: `private static PlantSpeciesDef CreateWheat()`
 
+#### `WorldProcessDefinitionTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Process`
+- types:
+  - L11: `class WorldProcessDefinitionTests`
+- members:
+  - L14: `public void Definition_StoresProcessData()`
+  - L25: `public void Instance_AdvancesUntilCompleteWithoutOvershoot()`
+  - L42: `public void Constructors_RejectInvalidRows()`
+  - L57: `private static WorldProcessDef CreateDef()`
+
 #### `RecipeDefTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Process`
 - types:
@@ -4108,4 +4158,3 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L119: `public void Constructor_AcceptsEmptyActorWhenSitePresent()`
   - L134: `public void Constructor_RejectsBlankReason()`
   - L146: `public void Constructor_RejectsNullReason()`
-

@@ -23,7 +23,8 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 | Faz 5 slice 3 | PROCESS | Component handles + soil | WorldComponentId, ComponentStore, SoilComponent | Domain/World component store + Domain/Process soil | implemented locally; needs validation/CI |
 | Faz 5 slice 4 | PROCESS | Plant data rows | Plant stage/species/growth rule definitions and wheat rows | new Domain/Process plant data types | implemented locally; needs validation/CI |
 | Faz 5 slice 5 | PROCESS | Planting loop | PlantComponent and PlantingSystem consume seed and attach plant to soil | Domain/Process PlantComponent + Simulation/Process PlantingSystem | implemented locally; needs validation/CI |
-| Faz 5 slice 6 | PROCESS | World process + growth/harvest loop | WorldProcessDef, PlantGrowthSystem, HarvestSystem, acceptance replay | new Simulation/Process farming systems, inventory/stockpile bridge | next |
+| Faz 5 slice 6 | PROCESS | World process shape | WorldProcessDef, WorldProcessInstance, deterministic day progress | Domain/Process world process primitives | implemented locally; needs validation/CI |
+| Faz 5 slice 7 | PROCESS | Growth/harvest loop | PlantGrowthSystem, HarvestSystem, acceptance replay | new Simulation/Process farming systems, inventory/stockpile bridge | next |
 | Faz 6 slice 1 | SOCIETY | Settlement economy primitives | Settlement stock/demand + price quote | FactionStore, SiteStore, ItemStore plus new society records | queued after Faz 5 proof |
 | Faz 6 slice 2 | SOCIETY/TIME | Trade route tick | TravelEdge, Caravan state, TradeRouteSystem daily delivery event | new Domain/Society + Simulation/Society | queued |
 | Faz 7 slice 1 | CRPG/MATTER | Store-backed equipment combat | Weapon/Armor item data, EquipmentState integration, durability | EquipmentService, CombatMathService, RealtimeDamageService, ItemRecord | queued |
@@ -39,4 +40,4 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 
 ## Next exact action
 
-Validate and push Faz 5 slices 2-5, then wait for #136 GitHub EditMode evidence before adding world-process/growth systems.
+Validate and push Faz 5 slices 2-6, then wait for #136 GitHub EditMode evidence before adding growth/harvest systems.

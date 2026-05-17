@@ -54,7 +54,7 @@ increase. Every new atom row carries exactly one `primary_box`.
 | 4 | PROCESS | `Assets/Scripts/Domain/Process/SoilComponent.cs` | Tilled soil tile component with site/position/fertility/moisture and optional plant reference. | `SoilComponentTests` | implemented locally |
 | 5 | PROCESS | `PlantStageId`, `PlantGrowthStageDef`, `PlantSpeciesDef`, `PlantGrowthRule` | Data rows for wheat stages and snow-blocked growth; no species branch. | `PlantDefinitionTests` | implemented locally |
 | 6 | PROCESS | `PlantComponent`, `PlantingSystem` | Consume a wheat seed from inventory and attach a plant entity to tilled soil. | `PlantComponentTests`, `PlantingSystemTests` | implemented locally |
-| 7 | PROCESS | `WorldProcessId`, `WorldProcessDef`, `WorldProcessInstance` | Non-crafting transformation shape for slow world processes. | `WorldProcessDefinitionTests` | queued |
+| 7 | PROCESS | `WorldProcessId`, `WorldProcessDef`, `WorldProcessInstance` | Non-crafting transformation shape for slow world processes. | `WorldProcessDefinitionTests` | implemented locally |
 | 8 | PROCESS | `PlantGrowthSystem` | Daily season/weather rule matching, growth advancement, harvestable-stage transition events. | `PlantGrowthSystemTests` | queued |
 | 9 | PROCESS | `HarvestSystem` | Convert ripe wheat into stockpile output with deterministic RNG injection. | `HarvestSystemTests` | queued |
 | 10 | TIME | `Data/Save` plant/season DTOs and mappers | Round-trip time/plant/process state without adding named `SliceWorldState` fields. | `PlantSeasonRoundTripTests` | queued |
@@ -63,10 +63,10 @@ increase. Every new atom row carries exactly one `primary_box`.
 
 ## Next increment
 
-Close Atoms 2-6 with local and GitHub EditMode evidence, then implement Atom 7:
-the shared `WorldProcess` shape for slow non-crafting transformations. Keep
+Close Atoms 2-7 with local and GitHub EditMode evidence, then implement Atom 8:
+`PlantGrowthSystem` over season/weather rules. Keep
 Atom 1 proof tied to `SeasonCalendarTests`, Atom 2 to
 `GameTimeAdvanceSystemTests`, Atoms 3-4 to `WorldComponentIdTests`,
 `ComponentStoreTests`, and `SoilComponentTests`, Atom 5 to
-`PlantDefinitionTests`, and Atom 6 to `PlantComponentTests` plus
-`PlantingSystemTests`.
+`PlantDefinitionTests`, Atom 6 to `PlantComponentTests` plus
+`PlantingSystemTests`, and Atom 7 to `WorldProcessDefinitionTests`.
