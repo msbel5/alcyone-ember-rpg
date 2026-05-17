@@ -22,5 +22,6 @@ namespace EmberCrpg.Domain.World
         JobRefused = 8,
         DayAdvanced = 9,
         SeasonChanged = 10,
+        PlantPlanted = 11,
     }
 }

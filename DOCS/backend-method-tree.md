@@ -1,16 +1,16 @@
 # Backend method tree
 
-_Generated:_ 2026-05-17
+_Generated:_ 2026-05-18
 _Branch:_ agent/faz-5-season-ledger
 
 Purpose: make the backend visible as a class/method inventory before continuing Faz 4-12 implementation. This is a control-plane artifact for slicing GPT-5-mini/Codex work into small bounded files and tests.
 
 ## Inventory summary
 
-- `Assets/Scripts/Domain`: 95 files, 101 types, 425 method/property rows
-- `Assets/Scripts/Simulation`: 69 files, 80 types, 285 method/property rows
+- `Assets/Scripts/Domain`: 96 files, 102 types, 434 method/property rows
+- `Assets/Scripts/Simulation`: 70 files, 81 types, 285 method/property rows
 - `Assets/Scripts/Data`: 8 files, 35 types, 64 method/property rows
-- `Assets/Tests/EditMode`: 123 files, 130 types, 1068 method/property rows
+- `Assets/Tests/EditMode`: 125 files, 132 types, 1079 method/property rows
 
 ## Phase keyword index
 
@@ -48,6 +48,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Domain/Core/GameTime.cs`
 - `Assets/Scripts/Domain/Memory/InteractionEvent.cs`
 - `Assets/Scripts/Domain/Memory/TransactionRecord.cs`
+- `Assets/Scripts/Domain/Process/PlantComponent.cs`
 - `Assets/Scripts/Domain/Process/PlantGrowthRule.cs`
 - `Assets/Scripts/Domain/Process/PlantGrowthStageDef.cs`
 - `Assets/Scripts/Domain/Process/PlantSpeciesDef.cs`
@@ -65,6 +66,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Simulation/Combat/RealtimeDamageService.cs`
 - `Assets/Scripts/Simulation/Magic/SpellCostCalculator.cs`
 - `Assets/Scripts/Simulation/Movement/Sprint4KinematicMotor.cs`
+- `Assets/Scripts/Simulation/Process/PlantingSystem.cs`
 - `Assets/Scripts/Simulation/Time/GameTimeAdvanceSystem.cs`
 - `Assets/Tests/EditMode/Combat/RealtimeCombatActionSchedulerTests.cs`
 - `Assets/Tests/EditMode/Combat/RealtimeDamageServiceTests.cs`
@@ -73,7 +75,9 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Magic/ShieldBuffApplicationServiceTests.cs`
 - `Assets/Tests/EditMode/Magic/SpellExecutionServiceTests.cs`
 - `Assets/Tests/EditMode/Process/JobEventLogTests.cs`
+- `Assets/Tests/EditMode/Process/PlantComponentTests.cs`
 - `Assets/Tests/EditMode/Process/PlantDefinitionTests.cs`
+- `Assets/Tests/EditMode/Process/PlantingSystemTests.cs`
 - `Assets/Tests/EditMode/Process/SoilComponentTests.cs`
 - `Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs`
 - `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs`
@@ -169,6 +173,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Process/JobAssignmentSystemTests.cs`
 - `Assets/Tests/EditMode/Process/JobEventLogTests.cs`
 - `Assets/Tests/EditMode/Process/NeedRecoveryRecipeTests.cs`
+- `Assets/Tests/EditMode/Process/PlantingSystemTests.cs`
 - `Assets/Tests/EditMode/Process/RecipeSystemTests.cs`
 - `Assets/Tests/EditMode/Save/RecipeWorksiteRoundTripTests.cs`
 - `Assets/Tests/EditMode/World/ItemStoreTests.cs`
@@ -360,6 +365,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Narrative/NpcMemoryQueryServiceTests.cs`
 - `Assets/Tests/EditMode/Narrative/PersistentNpcMemoryTests.cs`
 - `Assets/Tests/EditMode/Process/NeedRecoveryRecipeTests.cs`
+- `Assets/Tests/EditMode/Process/PlantingSystemTests.cs`
 - `Assets/Tests/EditMode/Save/ActorNeedsRoundTripTests.cs`
 
 ## File tree
@@ -1124,6 +1130,20 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L38: `public int RecoveryAmount { get; }`
   - L39: `public string ConsumedItemTemplateId { get; }`
 
+#### `PlantComponent.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L9: `class PlantComponent`
+- members:
+  - L38: `public WorldComponentId Id { get; }`
+  - L39: `public SiteId SiteId { get; }`
+  - L40: `public GridPosition Position { get; }`
+  - L41: `public string SpeciesId { get; }`
+  - L42: `public PlantStageId StageId { get; }`
+  - L43: `public int DaysInStage { get; }`
+  - L45: `public PlantComponent WithStage(PlantStageId stageId)`
+  - L50: `public PlantComponent WithDaysInStage(int daysInStage)`
+
 #### `PlantGrowthRule.cs`
 - namespace: `EmberCrpg.Domain.Process`
 - types:
@@ -1314,8 +1334,9 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L18: `public void Add(WorldComponentId id, T component)`
   - L31: `public T Get(WorldComponentId id)`
   - L40: `public bool TryGet(WorldComponentId id, out T component)`
-  - L51: `public bool Replace(WorldComponentId id, T component)`
-  - L60: `public bool Remove(WorldComponentId id)`
+  - L51: `public bool Contains(WorldComponentId id)`
+  - L56: `public bool Replace(WorldComponentId id, T component)`
+  - L65: `public bool Remove(WorldComponentId id)`
 
 #### `DungeonDoor.cs`
 - namespace: `EmberCrpg.Domain.World`
@@ -2114,6 +2135,11 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L729: `public bool Equals(JobAssignmentResult other)`
   - L738: `public override bool Equals(object obj)`
   - L744: `public override int GetHashCode()`
+
+#### `PlantingSystem.cs`
+- namespace: `EmberCrpg.Simulation.Process`
+- types:
+  - L13: `class PlantingSystem`
 
 #### `RecipeSystem.cs`
 - namespace: `EmberCrpg.Simulation.Process`
@@ -3543,6 +3569,16 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L46: `public void Constructor_RejectsNonRecoveryDeltasAndMissingNeed()`
   - L54: `public void Constructor_RejectsBlankConsumedItemTemplate()`
 
+#### `PlantComponentTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Process`
+- types:
+  - L11: `class PlantComponentTests`
+- members:
+  - L14: `public void Constructor_StoresPlantState()`
+  - L27: `public void WithStage_ChangesStageAndResetsAge()`
+  - L39: `public void Constructor_RejectsInvalidValues()`
+  - L48: `private static PlantComponent CreatePlant()`
+
 #### `PlantDefinitionTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Process`
 - types:
@@ -3553,6 +3589,19 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L38: `public void Constructor_RejectsInvalidRows()`
   - L48: `private static PlantSpeciesDef CreateWheat()`
   - L69: `private static PlantGrowthStageDef Stage(string id, bool harvestable)`
+
+#### `PlantingSystemTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Process`
+- types:
+  - L15: `class PlantingSystemTests`
+- members:
+  - L18: `public void TryPlant_ConsumesSeedAddsPlantUpdatesSoilAndLogsEvent()`
+  - L60: `public void TryPlant_ReturnsFalseWithoutMutatingWhenSeedMissingOrSoilOccupied()`
+  - L84: `public void TryPlant_RejectsNullInputs()`
+  - L102: `private static ComponentStore<SoilComponent> CreateSoils()`
+  - L109: `private static InventoryState CreateInventory(int seedQuantity)`
+  - L117: `private static int Quantity(InventoryState inventory, string templateId)`
+  - L122: `private static PlantSpeciesDef CreateWheat()`
 
 #### `RecipeDefTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Process`
