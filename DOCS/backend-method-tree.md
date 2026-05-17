@@ -8,9 +8,9 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 ## Inventory summary
 
 - `Assets/Scripts/Domain`: 99 files, 105 types, 452 method/property rows
-- `Assets/Scripts/Simulation`: 71 files, 82 types, 286 method/property rows
+- `Assets/Scripts/Simulation`: 72 files, 83 types, 287 method/property rows
 - `Assets/Scripts/Data`: 8 files, 35 types, 64 method/property rows
-- `Assets/Tests/EditMode`: 127 files, 134 types, 1088 method/property rows
+- `Assets/Tests/EditMode`: 128 files, 135 types, 1097 method/property rows
 
 ## Phase keyword index
 
@@ -69,6 +69,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Simulation/Combat/RealtimeDamageService.cs`
 - `Assets/Scripts/Simulation/Magic/SpellCostCalculator.cs`
 - `Assets/Scripts/Simulation/Movement/Sprint4KinematicMotor.cs`
+- `Assets/Scripts/Simulation/Process/HarvestSystem.cs`
 - `Assets/Scripts/Simulation/Process/PlantGrowthSystem.cs`
 - `Assets/Scripts/Simulation/Process/PlantingSystem.cs`
 - `Assets/Scripts/Simulation/Time/GameTimeAdvanceSystem.cs`
@@ -79,6 +80,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Magic/ShieldBuffApplicationServiceTests.cs`
 - `Assets/Tests/EditMode/Magic/SpellExecutionServiceTests.cs`
 - `Assets/Tests/EditMode/Process/JobEventLogTests.cs`
+- `Assets/Tests/EditMode/Process/HarvestSystemTests.cs`
 - `Assets/Tests/EditMode/Process/PlantComponentTests.cs`
 - `Assets/Tests/EditMode/Process/PlantDefinitionTests.cs`
 - `Assets/Tests/EditMode/Process/PlantGrowthSystemTests.cs`
@@ -2140,6 +2142,13 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### `Assets/Scripts/Simulation/Process`
 
+#### `HarvestSystem.cs`
+- namespace: `EmberCrpg.Simulation.Process`
+- types:
+  - L15: `class HarvestSystem`
+- members:
+  - L17: `public bool TryHarvest(PlantSpeciesDef species, ComponentStore<PlantComponent> plants, ComponentStore<SoilComponent> soils, WorldComponentId plantId, InventoryState stockpile, WorldEventLog eventLog, GameTime now, Func<string, InventoryItem> createHarvestItem)`
+
 #### `JobAssignmentSystem.cs`
 - namespace: `EmberCrpg.Simulation.Process`
 - types:
@@ -3627,6 +3636,21 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L27: `public void WithStage_ChangesStageAndResetsAge()`
   - L39: `public void Constructor_RejectsInvalidValues()`
   - L48: `private static PlantComponent CreatePlant()`
+
+#### `HarvestSystemTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Process`
+- types:
+  - L15: `class HarvestSystemTests`
+- members:
+  - L18: `public void TryHarvest_ConvertsRipePlantToStockpileOutputAndClearsSoil()`
+  - L57: `public void TryHarvest_ReturnsFalseForUnripePlantWithoutMutation()`
+  - L72: `public void TryHarvest_ReturnsFalseWhenStockpileCannotAcceptOutputWithoutMutation()`
+  - L88: `public void TryHarvest_RejectsNullInputsAndBadFactoryOutput()`
+  - L108: `private static ComponentStore<PlantComponent> CreatePlants(PlantStageId stageId)`
+  - L115: `private static ComponentStore<SoilComponent> CreateSoils()`
+  - L122: `private static InventoryItem CreateHarvestItem(string templateId)`
+  - L127: `private static int Quantity(InventoryState inventory, string templateId)`
+  - L132: `private static PlantSpeciesDef CreateWheat()`
 
 #### `PlantDefinitionTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Process`
