@@ -8,9 +8,9 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 ## Inventory summary
 
 - `Assets/Scripts/Domain`: 99 files, 105 types, 452 method/property rows
-- `Assets/Scripts/Simulation`: 72 files, 83 types, 287 method/property rows
+- `Assets/Scripts/Simulation`: 73 files, 84 types, 290 method/property rows
 - `Assets/Scripts/Data`: 8 files, 37 types, 70 method/property rows
-- `Assets/Tests/EditMode`: 129 files, 136 types, 1100 method/property rows
+- `Assets/Tests/EditMode`: 130 files, 137 types, 1105 method/property rows
 
 ## Phase keyword index
 
@@ -69,6 +69,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Simulation/Combat/RealtimeDamageService.cs`
 - `Assets/Scripts/Simulation/Magic/SpellCostCalculator.cs`
 - `Assets/Scripts/Simulation/Movement/Sprint4KinematicMotor.cs`
+- `Assets/Scripts/Simulation/Process/FarmingJobRequestFactory.cs`
 - `Assets/Scripts/Simulation/Process/HarvestSystem.cs`
 - `Assets/Scripts/Simulation/Process/PlantGrowthSystem.cs`
 - `Assets/Scripts/Simulation/Process/PlantingSystem.cs`
@@ -79,6 +80,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Magic/ShieldBuffActorKeyedApplicationServiceTests.cs`
 - `Assets/Tests/EditMode/Magic/ShieldBuffApplicationServiceTests.cs`
 - `Assets/Tests/EditMode/Magic/SpellExecutionServiceTests.cs`
+- `Assets/Tests/EditMode/Process/FarmingJobIntegrationTests.cs`
 - `Assets/Tests/EditMode/Process/JobEventLogTests.cs`
 - `Assets/Tests/EditMode/Process/HarvestSystemTests.cs`
 - `Assets/Tests/EditMode/Process/PlantComponentTests.cs`
@@ -2151,6 +2153,15 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### `Assets/Scripts/Simulation/Process`
 
+#### `FarmingJobRequestFactory.cs`
+- namespace: `EmberCrpg.Simulation.Process`
+- types:
+  - L14: `class FarmingJobRequestFactory`
+- members:
+  - L19: `public static JobRequest CreatePlantingJob(JobId jobId, SiteId siteId, GridPosition fieldPosition, ActorId requesterId, JobPriority priority, int quantity = 1)`
+  - L30: `public static JobRequest CreateHarvestJob(JobId jobId, SiteId siteId, GridPosition fieldPosition, ActorId requesterId, JobPriority priority, int quantity = 1)`
+  - L41: `private static JobRequest Create(JobId jobId, RecipeId recipeId, SiteId siteId, GridPosition fieldPosition, ActorId requesterId, JobPriority priority, int quantity)`
+
 #### `HarvestSystem.cs`
 - namespace: `EmberCrpg.Simulation.Process`
 - types:
@@ -3645,6 +3656,17 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L27: `public void WithStage_ChangesStageAndResetsAge()`
   - L39: `public void Constructor_RejectsInvalidValues()`
   - L48: `private static PlantComponent CreatePlant()`
+
+#### `FarmingJobIntegrationTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Process`
+- types:
+  - L11: `class FarmingJobIntegrationTests`
+- members:
+  - L18: `public void PlantingJob_AssignsFarmerToFieldWorksite()`
+  - L35: `public void HarvestJob_WaitsWithoutActiveFieldWorksite()`
+  - L50: `public void Factory_CreatesDistinctPlantAndHarvestRequests()`
+  - L62: `private static ActorRecord CreateFarmer()`
+  - L78: `private static WorksiteStore ActiveFieldStore()`
 
 #### `HarvestSystemTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Process`
