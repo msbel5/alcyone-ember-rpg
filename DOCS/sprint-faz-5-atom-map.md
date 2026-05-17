@@ -52,7 +52,7 @@ increase. Every new atom row carries exactly one `primary_box`.
 | 2 | TIME | `Assets/Scripts/Simulation/Time/GameTimeAdvanceSystem.cs` | Advance minutes/days and emit deterministic day/season transition events. | `GameTimeAdvanceSystemTests` | implemented on this branch |
 | 3 | WORLD | `Assets/Scripts/Domain/World/WorldComponentId.cs`, `Assets/Scripts/Domain/World/ComponentStore.cs` | Stable component handles and deterministic component enumeration; shipped with same-PR soil consumer. | `WorldComponentIdTests`, `ComponentStoreTests` | implemented locally |
 | 4 | PROCESS | `Assets/Scripts/Domain/Process/SoilComponent.cs` | Tilled soil tile component with site/position/fertility/moisture and optional plant reference. | `SoilComponentTests` | implemented locally |
-| 5 | PROCESS | `PlantStageId`, `PlantGrowthStageDef`, `PlantSpeciesDef`, `PlantGrowthRule` | Data rows for wheat stages and snow-blocked growth; no species branch. | `PlantDefinitionTests` | queued |
+| 5 | PROCESS | `PlantStageId`, `PlantGrowthStageDef`, `PlantSpeciesDef`, `PlantGrowthRule` | Data rows for wheat stages and snow-blocked growth; no species branch. | `PlantDefinitionTests` | implemented locally |
 | 6 | PROCESS | `PlantComponent`, `PlantingSystem` | Consume a wheat seed from inventory and attach a plant entity to tilled soil. | `PlantingSystemTests` | queued |
 | 7 | PROCESS | `WorldProcessId`, `WorldProcessDef`, `WorldProcessInstance` | Non-crafting transformation shape for slow world processes. | `WorldProcessDefinitionTests` | queued |
 | 8 | PROCESS | `PlantGrowthSystem` | Daily season/weather rule matching, growth advancement, harvestable-stage transition events. | `PlantGrowthSystemTests` | queued |
@@ -63,8 +63,9 @@ increase. Every new atom row carries exactly one `primary_box`.
 
 ## Next increment
 
-Close Atoms 2-4 with local and GitHub EditMode evidence, then implement Atom 5:
-data rows for wheat plant stages and snow-blocked growth rules. Keep Atom 1
-proof tied to `SeasonCalendarTests`, Atom 2 to `GameTimeAdvanceSystemTests`,
-and Atoms 3-4 to `WorldComponentIdTests`, `ComponentStoreTests`, and
-`SoilComponentTests`.
+Close Atoms 2-5 with local and GitHub EditMode evidence, then implement Atom 6:
+`PlantComponent` plus `PlantingSystem` that consumes one wheat seed and
+attaches a plant to soil. Keep Atom 1 proof tied to `SeasonCalendarTests`,
+Atom 2 to `GameTimeAdvanceSystemTests`, Atoms 3-4 to `WorldComponentIdTests`,
+`ComponentStoreTests`, and `SoilComponentTests`, and Atom 5 to
+`PlantDefinitionTests`.
