@@ -7,10 +7,10 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ## Inventory summary
 
-- `Assets/Scripts/Domain`: 88 files, 91 types, 371 method/property rows
-- `Assets/Scripts/Simulation`: 68 files, 79 types, 284 method/property rows
+- `Assets/Scripts/Domain`: 91 files, 97 types, 402 method/property rows
+- `Assets/Scripts/Simulation`: 69 files, 80 types, 285 method/property rows
 - `Assets/Scripts/Data`: 8 files, 35 types, 64 method/property rows
-- `Assets/Tests/EditMode`: 117 files, 123 types, 1042 method/property rows
+- `Assets/Tests/EditMode`: 122 files, 129 types, 1063 method/property rows
 
 ## Phase keyword index
 
@@ -48,15 +48,20 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Domain/Core/GameTime.cs`
 - `Assets/Scripts/Domain/Memory/InteractionEvent.cs`
 - `Assets/Scripts/Domain/Memory/TransactionRecord.cs`
+- `Assets/Scripts/Domain/Process/SoilComponent.cs`
 - `Assets/Scripts/Domain/Time/Season.cs`
 - `Assets/Scripts/Domain/Time/SeasonCalendar.cs`
 - `Assets/Scripts/Domain/Time/SeasonDefinition.cs`
+- `Assets/Scripts/Domain/World/ComponentStore.cs`
+- `Assets/Scripts/Domain/World/WorldComponentId.cs`
 - `Assets/Scripts/Domain/World/WorldEvent.cs`
 - `Assets/Scripts/Simulation/Combat/RealtimeCombatActionScheduler.cs`
 - `Assets/Scripts/Simulation/Combat/RealtimeCombatState.cs`
 - `Assets/Scripts/Simulation/Combat/RealtimeCombatTickResult.cs`
 - `Assets/Scripts/Simulation/Combat/RealtimeDamageService.cs`
+- `Assets/Scripts/Simulation/Magic/SpellCostCalculator.cs`
 - `Assets/Scripts/Simulation/Movement/Sprint4KinematicMotor.cs`
+- `Assets/Scripts/Simulation/Time/GameTimeAdvanceSystem.cs`
 - `Assets/Tests/EditMode/Combat/RealtimeCombatActionSchedulerTests.cs`
 - `Assets/Tests/EditMode/Combat/RealtimeDamageServiceTests.cs`
 - `Assets/Tests/EditMode/Core/GameTimeTests.cs`
@@ -64,7 +69,11 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Magic/ShieldBuffApplicationServiceTests.cs`
 - `Assets/Tests/EditMode/Magic/SpellExecutionServiceTests.cs`
 - `Assets/Tests/EditMode/Process/JobEventLogTests.cs`
+- `Assets/Tests/EditMode/Process/SoilComponentTests.cs`
+- `Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs`
 - `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs`
+- `Assets/Tests/EditMode/World/ComponentStoreTests.cs`
+- `Assets/Tests/EditMode/World/WorldComponentIdTests.cs`
 
 ### Faz 6 Trade routes + Faction
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
@@ -239,6 +248,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Save/JsonSliceSaveServiceTests.cs`
 - `Assets/Tests/EditMode/Save/ShieldBuffSaveMapperTests.cs`
 - `Assets/Tests/EditMode/Save/SpellCooldownSaveMapperTests.cs`
+- `Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs`
 
 ### Faz 9 Dialogue + Memory + Faction reputation
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
@@ -1147,6 +1157,23 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L48: `public ItemQuality Quality { get; }`
   - L53: `public int Quantity { get; }`
 
+#### `SoilComponent.cs`
+- namespace: `EmberCrpg.Domain.Process`
+- types:
+  - L13: `class SoilComponent`
+- members:
+  - L36: `public WorldComponentId Id { get; }`
+  - L37: `public SiteId SiteId { get; }`
+  - L38: `public GridPosition Position { get; }`
+  - L39: `public int Fertility { get; }`
+  - L40: `public int Moisture { get; }`
+  - L41: `public WorldComponentId PlantId { get; }`
+  - L42: `public bool HasPlant { get { return !PlantId.IsEmpty; } }`
+  - L44: `public SoilComponent WithMoisture(int moisture)`
+  - L49: `public SoilComponent WithPlant(WorldComponentId plantId)`
+  - L56: `public SoilComponent WithoutPlant()`
+  - L61: `private static int ClampPercent(int value)`
+
 #### `WorksiteKind.cs`
 - namespace: `EmberCrpg.Domain.Process`
 - types:
@@ -1226,6 +1253,18 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L136: `public ActorRecord FirstByRole(ActorRole role)`
   - L148: `public bool TryFirstByRole(ActorRole role, out ActorRecord record)`
 
+#### `ComponentStore.cs`
+- namespace: `EmberCrpg.Domain.World`
+- types:
+  - L11: `class ComponentStore`
+- members:
+  - L16: `public int Count { get { return _byId.Count; } }`
+  - L18: `public void Add(WorldComponentId id, T component)`
+  - L31: `public T Get(WorldComponentId id)`
+  - L40: `public bool TryGet(WorldComponentId id, out T component)`
+  - L51: `public bool Replace(WorldComponentId id, T component)`
+  - L60: `public bool Remove(WorldComponentId id)`
+
 #### `DungeonDoor.cs`
 - namespace: `EmberCrpg.Domain.World`
 - types:
@@ -1292,11 +1331,22 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 #### `IPathfinder.cs`
 - namespace: `EmberCrpg.Domain.World`
 - types:
-  - L6: `interface IPathfinder`
+  - L8: `interface IPathfinder`
+  - L18: `struct PathfinderRequest`
+  - L39: `struct PathfinderResult`
+  - L61: `struct ActorPathStep`
 - members:
-  - L16: `public readonly record struct PathfinderRequest(int ActorId, int StartX, int StartY, int GoalX, int GoalY, int ActorSize);`
-  - L17: `public readonly record struct PathfinderResult(bool Success, IReadOnlyList<int> Steps, int TotalCost);`
-  - L18: `public readonly record struct ActorPathStep(int NewX, int NewY, bool Arrived);`
+  - L30: `public int ActorId { get; }`
+  - L31: `public int StartX { get; }`
+  - L32: `public int StartY { get; }`
+  - L33: `public int GoalX { get; }`
+  - L34: `public int GoalY { get; }`
+  - L35: `public int ActorSize { get; }`
+  - L50: `public bool Success { get; }`
+  - L57: `public int TotalCost { get; }`
+  - L70: `public int NewX { get; }`
+  - L71: `public int NewY { get; }`
+  - L72: `public bool Arrived { get; }`
 
 #### `ItemStore.cs`
 - namespace: `EmberCrpg.Domain.World`
@@ -1361,6 +1411,18 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L87: `private ActorRecord GetActorView(ActorRole role)`
   - L93: `private void SetActorView(ActorRole expectedRole, ActorRecord record)`
   - L115: `private void EnsureActorStore()`
+
+#### `WorldComponentId.cs`
+- namespace: `EmberCrpg.Domain.World`
+- types:
+  - L10: `struct WorldComponentId`
+- members:
+  - L19: `public ulong Value { get { return _value; } }`
+  - L20: `public bool IsEmpty { get { return _value == 0UL; } }`
+  - L22: `public bool Equals(WorldComponentId other)`
+  - L27: `public override bool Equals(object obj)`
+  - L32: `public override int GetHashCode()`
+  - L37: `public override string ToString()`
 
 #### `WorldEvent.cs`
 - namespace: `EmberCrpg.Domain.World`
@@ -2036,6 +2098,15 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L20: `public int NextInt(int exclusiveMax)`
   - L27: `public int RollPercent()`
   - L32: `private uint NextUInt()`
+
+### `Assets/Scripts/Simulation/Time`
+
+#### `GameTimeAdvanceSystem.cs`
+- namespace: `EmberCrpg.Simulation.Time`
+- types:
+  - L13: `class GameTimeAdvanceSystem`
+- members:
+  - L22: `public GameTime Advance(GameTime current, long minutes)`
 
 ### `Assets/Scripts/Simulation/World`
 
@@ -3507,6 +3578,16 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L275: `private static int StackableQuantity(InventoryState inventory, string templateId)`
   - L281: `private static int Quantity(InventoryState inventory, string templateId)`
 
+#### `SoilComponentTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Process`
+- types:
+  - L11: `class SoilComponentTests`
+- members:
+  - L14: `public void Constructor_StoresSitePositionAndClampedSoilValues()`
+  - L33: `public void WithPlantAndWithoutPlant_UpdatePlantHandleImmutably()`
+  - L47: `public void Constructor_RejectsEmptyIdentityOrSite()`
+  - L54: `private static SoilComponent CreateSoil()`
+
 #### `WorksiteRecordTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Process`
 - types:
@@ -3622,6 +3703,18 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### `Assets/Tests/EditMode/Time`
 
+#### `GameTimeAdvanceSystemTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Time`
+- types:
+  - L16: `class GameTimeAdvanceSystemTests`
+- members:
+  - L19: `public void Advance_ReturnsTimeAdvancedByMinutesWithoutSideEffects()`
+  - L32: `public void Advance_AppendsDayAdvancedEventWhenDayChanges()`
+  - L61: `public void Advance_AppendsSeasonChangedAfterDayEventWhenBoundaryCrosses()`
+  - L86: `public void Advance_DoesNotAppendEventsWhenStillSameDayAndSeason()`
+  - L97: `public void Advance_RejectsInvalidInputs()`
+  - L107: `private static SeasonCalendar CreateCalendar()`
+
 #### `SeasonCalendarTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Time`
 - types:
@@ -3664,6 +3757,16 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L263: `public void TryFirstByRole_NoMatch_ReturnsFalseAndNull()`
   - L275: `public void TryFirstByRole_EmptyStore_ReturnsFalseAndNull()`
   - L285: `private static ActorRecord MakeRecord(ulong id, string name, ActorRole role)`
+
+#### `ComponentStoreTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.World`
+- types:
+  - L13: `class ComponentStoreTests`
+- members:
+  - L16: `public void AddGetAndRows_PreserveInsertionOrderForSoilComponents()`
+  - L34: `public void Replace_UpdatesComponentWithoutChangingOrder()`
+  - L48: `public void RejectsInvalidRows()`
+  - L60: `private static SoilComponent CreateSoil(ulong id, int x)`
 
 #### `DoorInteractionServiceTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.World`
@@ -3720,6 +3823,18 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L18: `class Faz1AcceptanceReplayTests`
 - members:
   - L21: `public void Replay_GuardTalkMemoryAndSecondSiteSurviveSaveLoad()`
+
+#### `IPathfinderTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.World`
+- types:
+  - L10: `class IPathfinderTests`
+  - L53: `class FixturePathfinder`
+- members:
+  - L13: `public void TryFindPath_ForFixtureMap_ReturnsDeterministicSteps()`
+  - L30: `public void PathfinderResult_Steps_AreReadOnlyAndCopied()`
+  - L48: `private static int Pack(int x, int y)`
+  - L55: `public bool TryFindPath(PathfinderRequest request, out PathfinderResult result)`
+  - L68: `public ActorPathStep StepActor(int actorId, PathfinderResult path)`
 
 #### `ItemStoreTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.World`
@@ -3842,6 +3957,14 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L71: `public void NewWorldStateStartsWithEmptyCoreStoreRoots()`
   - L88: `public void FactoryPopulatesStoreBackedNamedViewsAndKeepsOtherStoreRootsReady()`
   - L108: `private static ActorRecord MakeRecord(ulong id, string name, ActorRole role)`
+
+#### `WorldComponentIdTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.World`
+- types:
+  - L7: `class WorldComponentIdTests`
+- members:
+  - L10: `public void DefaultId_IsEmptySentinel()`
+  - L17: `public void Equality_UsesRawValue()`
 
 #### `WorldEventLogTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.World`
