@@ -19,8 +19,8 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 |---|---|---|---|---|---|
 | Faz 4 closeout | LIVING/PROCESS | Colony needs acceptance replay and cleanup | Keep #133/#134/#135 green, close/supersede #132, record final Faz 4 proof | JobAssignmentSystem, NeedsSystem, NeedRecoverySystem, ActorNeeds, ActorMood, WorldEventLog | Faz 4 not promoted until PR noise is resolved |
 | Faz 5 slice 1 | TIME | Season calendar foundation | Season enum/definitions/calendar + GameTime constants + tests | Season, SeasonDefinition, SeasonCalendar, GameTime | implemented on #136; CI still failing |
-| Faz 5 slice 2 | TIME | GameTime advance events | GameTimeAdvanceSystem emits day/season events | new Simulation/Time/GameTimeAdvanceSystem, WorldEventKind day/season rows | next |
-| Faz 5 slice 3 | PROCESS | Plant data + soil | SoilComponent + Plant definitions + wheat rows | new Domain/Process plant/soil types | queued |
+| Faz 5 slice 2 | TIME | GameTime advance events | GameTimeAdvanceSystem emits day/season events | new Simulation/Time/GameTimeAdvanceSystem, WorldEventKind day/season rows | implemented locally; needs validation/CI |
+| Faz 5 slice 3 | PROCESS | Plant data + soil | SoilComponent + Plant definitions + wheat rows | new Domain/Process plant/soil types | next after CI |
 | Faz 5 slice 4 | PROCESS | Planting/growth/harvest loop | PlantingSystem, PlantGrowthSystem, HarvestSystem, acceptance replay | new Simulation/Process farming systems, inventory/stockpile bridge | queued |
 | Faz 6 slice 1 | SOCIETY | Settlement economy primitives | Settlement stock/demand + price quote | FactionStore, SiteStore, ItemStore plus new society records | queued after Faz 5 proof |
 | Faz 6 slice 2 | SOCIETY/TIME | Trade route tick | TravelEdge, Caravan state, TradeRouteSystem daily delivery event | new Domain/Society + Simulation/Society | queued |
@@ -37,4 +37,4 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 
 ## Next exact action
 
-Fix #136 Unity import/check failure, then implement Faz 5 slice 2 on the same branch or a stacked agent/faz-5-time-advance branch only after CI is green.
+Validate and push Faz 5 slice 2, then wait for #136 GitHub EditMode evidence before adding soil/plant PROCESS atoms.

@@ -49,7 +49,7 @@ increase. Every new atom row carries exactly one `primary_box`.
 | Atom | Primary box | File / class | Responsibility | Closing proof | Status |
 |---:|---|---|---|---|---|
 | 1 | TIME | `Assets/Scripts/Domain/Time/Season.cs`, `SeasonDefinition.cs`, `SeasonCalendar.cs` | Resolve `GameTime.DayOfYear` to data-defined seasons without Unity or wall-clock time. | `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs` | implemented on this branch |
-| 2 | TIME | `Assets/Scripts/Simulation/Time/GameTimeAdvanceSystem.cs` | Advance minutes/days and emit deterministic day/season transition events. | `GameTimeAdvanceSystemTests` | queued |
+| 2 | TIME | `Assets/Scripts/Simulation/Time/GameTimeAdvanceSystem.cs` | Advance minutes/days and emit deterministic day/season transition events. | `GameTimeAdvanceSystemTests` | implemented on this branch |
 | 3 | WORLD | `Assets/Scripts/Domain/Core/EntityId.cs`, `Assets/Scripts/Domain/World/ComponentStore.cs` | Stable component handles and deterministic component enumeration; must ship with a same-PR component consumer. | `ComponentStoreTests` plus Soil consumer | queued |
 | 4 | PROCESS | `Assets/Scripts/Domain/Process/SoilComponent.cs` | Tilled soil tile component with site/position/fertility/moisture and optional plant reference. | `SoilComponentTests` | queued |
 | 5 | PROCESS | `PlantStageId`, `PlantGrowthStageDef`, `PlantSpeciesDef`, `PlantGrowthRule` | Data rows for wheat stages and snow-blocked growth; no species branch. | `PlantDefinitionTests` | queued |
@@ -63,7 +63,7 @@ increase. Every new atom row carries exactly one `primary_box`.
 
 ## Next increment
 
-Implement Atom 2: `GameTimeAdvanceSystem` should advance minutes/days and
-emit deterministic day/season transition events through `WorldEventLog`.
-Keep this Atom 1 proof tied to `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs`
-and move the next proof to `GameTimeAdvanceSystemTests`.
+Close Atom 2 with GitHub EditMode evidence, then implement Atom 3:
+stable component handles plus a same-PR soil consumer. Keep Atom 1 proof tied
+to `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs` and Atom 2 proof tied
+to `Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs`.
