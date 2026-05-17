@@ -8,9 +8,9 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 ## Inventory summary
 
 - `Assets/Scripts/Domain`: 99 files, 105 types, 452 method/property rows
-- `Assets/Scripts/Simulation`: 70 files, 81 types, 285 method/property rows
+- `Assets/Scripts/Simulation`: 71 files, 82 types, 286 method/property rows
 - `Assets/Scripts/Data`: 8 files, 35 types, 64 method/property rows
-- `Assets/Tests/EditMode`: 126 files, 133 types, 1083 method/property rows
+- `Assets/Tests/EditMode`: 127 files, 134 types, 1088 method/property rows
 
 ## Phase keyword index
 
@@ -69,6 +69,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Simulation/Combat/RealtimeDamageService.cs`
 - `Assets/Scripts/Simulation/Magic/SpellCostCalculator.cs`
 - `Assets/Scripts/Simulation/Movement/Sprint4KinematicMotor.cs`
+- `Assets/Scripts/Simulation/Process/PlantGrowthSystem.cs`
 - `Assets/Scripts/Simulation/Process/PlantingSystem.cs`
 - `Assets/Scripts/Simulation/Time/GameTimeAdvanceSystem.cs`
 - `Assets/Tests/EditMode/Combat/RealtimeCombatActionSchedulerTests.cs`
@@ -80,6 +81,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Tests/EditMode/Process/JobEventLogTests.cs`
 - `Assets/Tests/EditMode/Process/PlantComponentTests.cs`
 - `Assets/Tests/EditMode/Process/PlantDefinitionTests.cs`
+- `Assets/Tests/EditMode/Process/PlantGrowthSystemTests.cs`
 - `Assets/Tests/EditMode/Process/PlantingSystemTests.cs`
 - `Assets/Tests/EditMode/Process/SoilComponentTests.cs`
 - `Assets/Tests/EditMode/Process/WorldProcessDefinitionTests.cs`
@@ -2181,6 +2183,13 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - types:
   - L13: `class PlantingSystem`
 
+#### `PlantGrowthSystem.cs`
+- namespace: `EmberCrpg.Simulation.Process`
+- types:
+  - L15: `class PlantGrowthSystem`
+- members:
+  - L17: `public int AdvanceOneDay(PlantSpeciesDef species, ComponentStore<PlantComponent> plants, WorldEventLog eventLog, GameTime now, Season season, bool isSnowing)`
+
 #### `RecipeSystem.cs`
 - namespace: `EmberCrpg.Simulation.Process`
 - types:
@@ -3642,6 +3651,18 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L109: `private static InventoryState CreateInventory(int seedQuantity)`
   - L117: `private static int Quantity(InventoryState inventory, string templateId)`
   - L122: `private static PlantSpeciesDef CreateWheat()`
+
+#### `PlantGrowthSystemTests.cs`
+- namespace: `EmberCrpg.Tests.EditMode.Process`
+- types:
+  - L14: `class PlantGrowthSystemTests`
+- members:
+  - L17: `public void AdvanceOneDay_IncrementsAgeUntilStageBoundaryThenLogsAdvance()`
+  - L51: `public void AdvanceOneDay_BlocksGrowthWhenSeasonOrSnowRuleDisallowsIt()`
+  - L67: `public void AdvanceOneDay_SkipsOtherSpeciesAndHarvestableFinalStage()`
+  - L82: `public void AdvanceOneDay_RejectsNullInputsAndUnknownStage()`
+  - L98: `private static ComponentStore<PlantComponent> CreatePlants(int daysInStage)`
+  - L105: `private static PlantSpeciesDef CreateWheat()`
 
 #### `WorldProcessDefinitionTests.cs`
 - namespace: `EmberCrpg.Tests.EditMode.Process`
