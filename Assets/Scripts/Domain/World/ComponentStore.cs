@@ -48,6 +48,11 @@ namespace EmberCrpg.Domain.World
             return _byId.TryGetValue(id, out component);
         }
 
+        public bool Contains(WorldComponentId id)
+        {
+            return !id.IsEmpty && _byId.ContainsKey(id);
+        }
+
         public bool Replace(WorldComponentId id, T component)
         {
             if (id.IsEmpty || component == null || !_byId.ContainsKey(id))
