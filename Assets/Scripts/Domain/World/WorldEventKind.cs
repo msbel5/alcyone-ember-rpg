@@ -24,5 +24,6 @@ namespace EmberCrpg.Domain.World
         SeasonChanged = 10,
         PlantPlanted = 11,
         PlantStageAdvanced = 12,
+        PlantHarvested = 13,
     }
 }
