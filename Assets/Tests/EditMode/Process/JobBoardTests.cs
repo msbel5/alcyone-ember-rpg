@@ -109,6 +109,8 @@ namespace EmberCrpg.Tests.EditMode.Process
 
             Assert.That(claimed, Is.True);
             Assert.That(actual, Is.SameAs(first));
+            // CO-05 migration: use the JobStatus value object instead of the binary IsClaimed flag.
+            Assert.That(board.GetStatus(first.Id), Is.EqualTo(JobStatus.Assigned));
             Assert.That(board.IsClaimed(first.Id), Is.True);
             Assert.That(board.GetClaimedBy(first.Id), Is.EqualTo(FirstActor));
             Assert.That(board.TryPeekNext(out var next), Is.True);
