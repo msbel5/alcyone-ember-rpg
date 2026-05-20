@@ -25,5 +25,6 @@ namespace EmberCrpg.Domain.World
         PlantPlanted = 11,
         PlantStageAdvanced = 12,
         PlantHarvested = 13,
+        ActorStepped = 14,
     }
 }
