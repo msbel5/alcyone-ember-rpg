@@ -1,0 +1,86 @@
+using System;
+using System.Collections.Generic;
+using EmberCrpg.Domain.Core;
+
+namespace EmberCrpg.Domain.Process
+{
+    /// <summary>
+    /// Per-site, per-item price ledger. Maintains a positive-integer scalar for
+    /// each (SiteId, itemTag) cell with deterministic adjustment helpers.
+    /// Faz 6 Atom 5.
+    /// </summary>
+    public sealed class PriceLedger
+    {
+        private readonly Dictionary<PriceKey, int> _prices = new Dictionary<PriceKey, int>();
+
+        /// <summary>Sets the current price for an item at a site. Throws on blank tag.</summary>
+        public void SetPrice(SiteId siteId, string itemTag, int price)
+        {
+            ValidateInputs(siteId, itemTag);
+            if (price < 0)
+                throw new ArgumentOutOfRangeException(nameof(price), "Price must be non-negative.");
+
+            _prices[new PriceKey(siteId, itemTag.Trim())] = price;
+        }
+
+        /// <summary>Returns the current price; 0 when the item is not listed at this site.</summary>
+        public int GetPrice(SiteId siteId, string itemTag)
+        {
+            if (siteId.IsEmpty || string.IsNullOrWhiteSpace(itemTag))
+                return 0;
+            return _prices.TryGetValue(new PriceKey(siteId, itemTag.Trim()), out var price) ? price : 0;
+        }
+
+        /// <summary>
+        /// Adjusts the price by a signed delta, clamping at zero. Returns the new
+        /// price. No-op when site/itemTag is blank.
+        /// </summary>
+        public int AdjustPrice(SiteId siteId, string itemTag, int delta)
+        {
+            if (siteId.IsEmpty || string.IsNullOrWhiteSpace(itemTag))
+                return 0;
+            var key = new PriceKey(siteId, itemTag.Trim());
+            var current = _prices.TryGetValue(key, out var value) ? value : 0;
+            var next = current + delta;
+            if (next < 0) next = 0;
+            _prices[key] = next;
+            return next;
+        }
+
+        /// <summary>True when this ledger has a row for the site/item pair.</summary>
+        public bool Contains(SiteId siteId, string itemTag)
+        {
+            if (siteId.IsEmpty || string.IsNullOrWhiteSpace(itemTag))
+                return false;
+            return _prices.ContainsKey(new PriceKey(siteId, itemTag.Trim()));
+        }
+
+        /// <summary>Total number of (site, item) cells tracked.</summary>
+        public int Count => _prices.Count;
+
+        private static void ValidateInputs(SiteId siteId, string itemTag)
+        {
+            if (siteId.IsEmpty)
+                throw new ArgumentException("SiteId.Empty cannot back a price row.", nameof(siteId));
+            if (string.IsNullOrWhiteSpace(itemTag))
+                throw new ArgumentException("Item tag must be non-blank.", nameof(itemTag));
+        }
+
+        /// <summary>Composite key for (site, itemTag).</summary>
+        private readonly struct PriceKey : IEquatable<PriceKey>
+        {
+            public PriceKey(SiteId siteId, string itemTag)
+            {
+                SiteId = siteId;
+                ItemTag = itemTag;
+            }
+
+            public SiteId SiteId { get; }
+            public string ItemTag { get; }
+
+            public bool Equals(PriceKey other) => SiteId.Equals(other.SiteId) && string.Equals(ItemTag, other.ItemTag, StringComparison.Ordinal);
+            public override bool Equals(object obj) => obj is PriceKey other && Equals(other);
+            public override int GetHashCode() => unchecked((SiteId.GetHashCode() * 397) ^ (ItemTag?.GetHashCode() ?? 0));
+        }
+    }
+}
