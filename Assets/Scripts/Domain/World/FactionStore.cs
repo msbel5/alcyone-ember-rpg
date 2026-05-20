@@ -20,6 +20,7 @@ namespace EmberCrpg.Domain.World
     {
         private readonly Dictionary<FactionId, FactionRecord> _byId = new Dictionary<FactionId, FactionRecord>();
         private readonly List<FactionId> _order = new List<FactionId>();
+        private readonly Dictionary<FactionPair, FactionReputation> _reputation = new Dictionary<FactionPair, FactionReputation>();
 
         /// <summary>Number of faction records currently held.</summary>
         public int Count => _byId.Count;
@@ -103,6 +104,56 @@ namespace EmberCrpg.Domain.World
                 foreach (var id in _order)
                     yield return _byId[id];
             }
+        }
+
+        /// <summary>
+        /// Sets the reputation between two factions. Symmetric: setting (a, b)
+        /// also serves (b, a). Returns the store for chaining. Faz 6 Atom 3.
+        /// </summary>
+        public FactionStore WithReputation(FactionId a, FactionId b, FactionReputation reputation)
+        {
+            if (a.IsEmpty || b.IsEmpty)
+                throw new ArgumentException("FactionId.Empty cannot participate in reputation.");
+            if (a.Equals(b))
+                throw new ArgumentException("Reputation must be between two distinct factions.");
+
+            _reputation[FactionPair.Of(a, b)] = reputation;
+            return this;
+        }
+
+        /// <summary>
+        /// Returns the reputation between two factions, or <see cref="FactionReputation.Neutral"/>
+        /// when no row exists. Symmetric lookup. Faz 6 Atom 3.
+        /// </summary>
+        public FactionReputation GetReputation(FactionId a, FactionId b)
+        {
+            if (a.IsEmpty || b.IsEmpty || a.Equals(b))
+                return FactionReputation.Neutral;
+            return _reputation.TryGetValue(FactionPair.Of(a, b), out var value)
+                ? value
+                : FactionReputation.Neutral;
+        }
+
+        /// <summary>Ordered pair key for symmetric reputation lookup.</summary>
+        private readonly struct FactionPair : IEquatable<FactionPair>
+        {
+            private readonly FactionId _low;
+            private readonly FactionId _high;
+
+            private FactionPair(FactionId low, FactionId high)
+            {
+                _low = low;
+                _high = high;
+            }
+
+            public static FactionPair Of(FactionId a, FactionId b)
+            {
+                return a.Value <= b.Value ? new FactionPair(a, b) : new FactionPair(b, a);
+            }
+
+            public bool Equals(FactionPair other) => _low.Equals(other._low) && _high.Equals(other._high);
+            public override bool Equals(object obj) => obj is FactionPair other && Equals(other);
+            public override int GetHashCode() => unchecked((_low.GetHashCode() * 397) ^ _high.GetHashCode());
         }
     }
 }
