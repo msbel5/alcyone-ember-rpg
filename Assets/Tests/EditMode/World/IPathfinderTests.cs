@@ -15,11 +15,11 @@ namespace EmberCrpg.Tests.EditMode.World
             var pathfinder = new FixturePathfinder();
             var request = new PathfinderRequest(42, 0, 0, 2, 1, 1);
 
-            var firstFound = pathfinder.TryFindPath(request, out var first);
-            var secondFound = pathfinder.TryFindPath(request, out var second);
+            var first = pathfinder.FindPath(request);
+            var second = pathfinder.FindPath(request);
 
-            Assert.That(firstFound, Is.True);
-            Assert.That(secondFound, Is.True);
+            Assert.That(first.Success, Is.True);
+            Assert.That(second.Success, Is.True);
             Assert.That(second.Success, Is.EqualTo(first.Success));
             Assert.That(second.TotalCost, Is.EqualTo(first.TotalCost));
             Assert.That(second.Steps, Is.EqualTo(first.Steps));
@@ -52,17 +52,15 @@ namespace EmberCrpg.Tests.EditMode.World
 
         private sealed class FixturePathfinder : IPathfinder
         {
-            public bool TryFindPath(PathfinderRequest request, out PathfinderResult result)
+            public PathfinderResult FindPath(PathfinderRequest request)
             {
                 if (request.StartX != 0 || request.StartY != 0 || request.GoalX != 2 || request.GoalY != 1)
                 {
-                    result = new PathfinderResult(false, new int[0], 0);
-                    return false;
+                    return new PathfinderResult(false, new int[0], 0);
                 }
 
                 var steps = new[] { Pack(0, 1), Pack(1, 1), Pack(2, 1) };
-                result = new PathfinderResult(true, steps, steps.Length);
-                return true;
+                return new PathfinderResult(true, steps, steps.Length);
             }
 
             public ActorPathStep StepActor(int actorId, PathfinderResult path)
