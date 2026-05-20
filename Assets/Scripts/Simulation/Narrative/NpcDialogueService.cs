@@ -58,7 +58,8 @@ namespace EmberCrpg.Simulation.Narrative
                 { "askee", askee.Name ?? string.Empty },
             };
 
-            if (askeeMemory != null && _recall.HasRecentFact(askeeMemory, topic.Id, memoryHorizon))
+            var memory = askeeMemory ?? askee.Memory;
+            if (memory != null && _recall.HasRecentFact(memory, topic.Id, memoryHorizon))
             {
                 var template = _templates.Get(topic.DefaultAnswerTemplateId + "_remembered")
                     ?? _templates.Get(topic.DefaultAnswerTemplateId);

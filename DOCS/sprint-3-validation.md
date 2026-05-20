@@ -18,7 +18,7 @@ The script writes evidence logs and test artifacts under `validation-output/` (g
 
 ## Fallback meaning
 
-Fallback PASS means the pure domain/simulation/save EditMode test corpus passed under .NET 9. It is not a real Unity EditMode run and does not validate Unity assembly definitions, editor import/serialization quirks, scenes, input, rendering, or PlayMode behavior.
+Fallback PASS means the pure domain/simulation/save/pure-presentation EditMode test corpus passed under .NET 8. It is not a real Unity EditMode run and does not validate Unity assembly definitions, editor import/serialization quirks, scenes, input, rendering, or PlayMode behavior.
 
 Use explicit modes when needed:
 

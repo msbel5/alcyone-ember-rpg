@@ -45,7 +45,7 @@ prior 706).
 - Rule 2 (no speculative utility): no new helpers, no fluent
   builders. Single internal field plus one-line constructor
   assignment.
-- Rules 3-4: not applicable (no `SpellEffectKind`, no
+- Rules 3-4: not applicable (no `SpellEffectCode`, no
   `SliceWorldState`).
 - Rule 5 (playable proof): not the playable-proof slot.
 

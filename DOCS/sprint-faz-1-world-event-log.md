@@ -69,7 +69,7 @@ silent gaps, deterministic insertion order, immutable public view.
   `IsEmpty`, `Append`, `Events`. Each member has a concrete consumer
   in this PR's tests; the followup `SliceSaveMapper` PR will be the
   next concrete consumer in production code.
-- Rule 3 (data-driven effect): N/A — no new `SpellEffectKind` entry.
+- Rule 3 (data-driven effect): N/A — no new `SpellEffectCode` entry.
 - Rule 4 (world-store promotion): adds new world state via a Faz 1
   store-shape primitive, not a `SliceWorldState` field.
 - Rule 5 (playable proof): not the fifth PR slot; playable proof

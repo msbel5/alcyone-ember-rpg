@@ -46,7 +46,7 @@ Test / Acceptance / Risk).
 - 5 ajan kuralı (alcyone-ember-rpg/DOCS/agent-rules-v2.md):
   1. product-visible (max 2 test-only PR/sprint)
   2. no speculative utility
-  3. data-driven effect (no new SpellEffectKind enum)
+  3. data-driven effect (no new SpellEffectCode enum)
   4. world-store promotion (no new SliceWorldState named fields)
   5. playable proof (every 5th PR: screenshot/replay/HUD/playtest +
      "player can ..." cümlesi)

@@ -6,7 +6,7 @@ namespace EmberCrpg.Simulation.Magic
 {
     /// <summary>
     /// Deterministic registry of EffectDefinition rows. Faz 8 Atom 4.
-    /// Replaces the Sprint 5 SpellEffectKind switch matrix.
+    /// Replaces the Sprint 5 SpellEffectCode switch matrix.
     /// </summary>
     public sealed class EffectRegistry
     {

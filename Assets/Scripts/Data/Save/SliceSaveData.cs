@@ -34,7 +34,14 @@ namespace EmberCrpg.Data.Save
         public ItemRecordSaveData[] itemRecords;
         public SiteRecordSaveData[] sites;
         public FactionRecordSaveData[] factions;
+        public FactionReputationSaveData[] factionReputations;
+        public PriceLedgerSaveData[] prices;
+        public StockpileSaveData[] stockpiles;
+        public TradeRouteSaveData[] tradeRoutes;
+        public CaravanSaveData[] caravans;
         public WorldEventSaveData[] worldEvents;
+        public ToolCallTraceSaveData[] toolCallTrace;
+        public LlmProposalLogSaveData[] llmProposalLog;
         public WorksiteSaveData[] worksites;
         public RecipeWorkOrderSaveData[] recipeWorkOrders;
         public JobRequestSaveData[] jobs;
@@ -62,6 +69,7 @@ namespace EmberCrpg.Data.Save
         public int material;
         public int quality;
         public int slot;
+        public string slotCode;
     }
 
     [Serializable]
@@ -130,6 +138,58 @@ namespace EmberCrpg.Data.Save
     }
 
     [Serializable]
+    public sealed class FactionReputationSaveData
+    {
+        public ulong a;
+        public ulong b;
+        public int reputation;
+    }
+
+    [Serializable]
+    public sealed class PriceLedgerSaveData
+    {
+        public ulong siteId;
+        public string itemTag;
+        public int price;
+    }
+
+    [Serializable]
+    public sealed class StockpileSaveData
+    {
+        public ulong siteId;
+        public StockpileEntrySaveData[] entries;
+    }
+
+    [Serializable]
+    public sealed class StockpileEntrySaveData
+    {
+        public string itemTag;
+        public int count;
+    }
+
+    [Serializable]
+    public sealed class TradeRouteSaveData
+    {
+        public ulong id;
+        public ulong originSiteId;
+        public ulong destinationSiteId;
+        public string itemTag;
+        public int quantityPerCaravan;
+        public int cadenceDays;
+    }
+
+    [Serializable]
+    public sealed class CaravanSaveData
+    {
+        public ulong id;
+        public ulong routeId;
+        public ulong currentSiteId;
+        public int payloadRemaining;
+        public int stepsSinceDeparture;
+        public string stateCode;
+    }
+
+    [Serializable]
     public sealed class WorldEventSaveData
     {
         public long tickMinutes;
@@ -138,6 +198,44 @@ namespace EmberCrpg.Data.Save
         public ulong siteId;
         public string reason;
         public string[] reasonTrace;
+    }
+
+    [Serializable]
+    public sealed class ToolCallTraceSaveData
+    {
+        public long tickMinutes;
+        public ulong siteId;
+        public string surfaceCode;
+        public string toolCode;
+        public ToolCallParameterSaveData[] parameters;
+        public bool accepted;
+        public string payload;
+        public string rejectionReason;
+    }
+
+    [Serializable]
+    public sealed class ToolCallParameterSaveData
+    {
+        public string name;
+        public string value;
+    }
+
+    [Serializable]
+    public sealed class LlmProposalLogSaveData
+    {
+        public long tickMinutes;
+        public string providerCode;
+        public string conversationId;
+        public string responseText;
+        public ToolCallTraceSaveData[] acceptedToolCalls;
+        public LlmRejectedToolCallSaveData[] rejectedToolCalls;
+    }
+
+    [Serializable]
+    public sealed class LlmRejectedToolCallSaveData
+    {
+        public ToolCallTraceSaveData request;
+        public string reason;
     }
 
     [Serializable]
@@ -150,6 +248,7 @@ namespace EmberCrpg.Data.Save
     public sealed class EquippedItemSaveData
     {
         public int slot;
+        public string slotCode;
         public ulong itemId;
     }
 
@@ -230,6 +329,7 @@ namespace EmberCrpg.Data.Save
         public string[] topicIds;
         public string[] askedTopicIds;
         public ActorJobPreferenceSaveData[] jobPreferences;
+        public MemoryFactSaveData[] memoryFacts;
         // Persisted schedule targets (0/empty means idle)
         public ulong currentJobId;
         public ulong targetSiteId;
@@ -247,6 +347,16 @@ namespace EmberCrpg.Data.Save
     {
         public int kind;
         public int priority;
+    }
+
+    [Serializable]
+    public sealed class MemoryFactSaveData
+    {
+        public ulong remembererId;
+        public string topicCode;
+        public ulong aboutActorId;
+        public long recordedAtMinutes;
+        public string detail;
     }
 
     [Serializable]
@@ -280,6 +390,7 @@ namespace EmberCrpg.Data.Save
         public string displayName;
         public int quantity;
         public int equipmentSlot;
+        public string equipmentSlotCode;
         public int accuracyBonus;
         public int damageBonus;
     }

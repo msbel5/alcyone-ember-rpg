@@ -71,7 +71,7 @@ of `open` rows at hand-off.
 - **Faz 5** — foundation merged (#136). Atom 12 (acceptance replay) still queued for a later Captain bundle.
 - **Faz 6** — atom map merged (#140); Atoms 1-7 merged (#143 primitives + #148 reputation system + #152 price ledger + #153 stockpile + #154 trade route). Atoms 8-14 (caravan runtime + price update + trade service + save + acceptance) queued.
 - **Faz 7** — atom map merged (#140); no implementation yet.
-- **Faz 8** — atom map merged (#140); no implementation yet. Sprint 5 SpellEffectKind enum still present, awaits the promotion bundle.
+- **Faz 8** — atom map merged (#140); no implementation yet. Sprint 5 SpellEffectCode enum still present, awaits the promotion bundle.
 - **Faz 9** — atom map merged (#140); CO-09 audit landed (#151); Atoms 2-3 merged (#155); Atoms 4-5 in flight (#156). Atoms 6-13 queued.
 - **Faz 10** — atom map merged (#140); Atoms 1-4 merged (#146). Atoms 5-15 queued.
 - **Faz 11** — atom map merged (#140); Captain-side Atoms 1-6 merged (#142, #147, #150). Atom 7 (ToolCallTraceSnapshot) queued. Mami-side scenes 8-16 untouched.
@@ -118,7 +118,7 @@ All `.cs` files ship with paired tests and `.meta` files for Unity.
 1. Merge #156 (Faz 9 memory primitives) once green.
 2. Open the first Mami-side Faz 11 scene PR — e.g. `Assets/Scenes/Faz3SmithingOverworld.unity` consuming `JobDebugSnapshot`.
 3. Captain can begin Faz 6 caravan-runtime bundle (Atoms 8-9) on top of TradeRouteDef + StockpileComponent + PriceLedger.
-4. Faz 8 magic promotion bundle (delete `SpellEffectKind` enum) is the biggest remaining backend yak-shave — schedule a dedicated sprint.
+4. Faz 8 magic promotion bundle (delete `SpellEffectCode` enum) is the biggest remaining backend yak-shave — schedule a dedicated sprint.
 
 ## Acknowledgement
 

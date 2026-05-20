@@ -199,7 +199,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 - `Assets/Scripts/Domain/Magic/ShieldBuffStateRegistry.cs`
 - `Assets/Scripts/Domain/Magic/SpellCooldownState.cs`
 - `Assets/Scripts/Domain/Magic/SpellDefinition.cs`
-- `Assets/Scripts/Domain/Magic/SpellEffectKind.cs`
+- `Assets/Scripts/Domain/Magic/SpellEffectCode.cs`
 - `Assets/Scripts/Domain/Magic/SpellEffectSpec.cs`
 - `Assets/Scripts/Domain/Magic/SpellTargetKind.cs`
 - `Assets/Scripts/Simulation/Magic/MagicTickDriver.cs`
@@ -988,17 +988,17 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L99: `public int CooldownTicks { get; }`
   - L102: `private static SpellEffectSpec[] ToArray(IEnumerable<SpellEffectSpec> effects)`
 
-#### `SpellEffectKind.cs`
+#### `SpellEffectCode.cs`
 - namespace: `EmberCrpg.Domain.Magic`
 - types:
-  - L10: `enum SpellEffectKind`
+  - L10: `enum SpellEffectCode`
 
 #### `SpellEffectSpec.cs`
 - namespace: `EmberCrpg.Domain.Magic`
 - types:
   - L12: `struct SpellEffectSpec`
 - members:
-  - L28: `public SpellEffectKind Kind { get; }`
+  - L28: `public SpellEffectCode Kind { get; }`
   - L29: `public int Magnitude { get; }`
   - L30: `public int DurationTicks { get; }`
 
@@ -1935,7 +1935,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L110: `public ShieldBuffApplicationResult ApplyShieldBuffs(SpellCastResult castResult, ShieldBuffState shieldBuffState)`
   - L150: `public ShieldBuffApplicationResult ApplyShieldBuffs(SpellCastResult castResult, ShieldBuffStateRegistry registry, string actorId)`
   - L163: `private static SpellEffectResolutionResult ValidateInstantaneousEffects(SpellDefinition spell, ActorRecord target)`
-  - L183: `private static bool IsSupported(SpellEffectKind kind)`
+  - L183: `private static bool IsSupported(SpellEffectCode kind)`
 
 #### `SpellExecutionError.cs`
 - namespace: `EmberCrpg.Simulation.Magic`

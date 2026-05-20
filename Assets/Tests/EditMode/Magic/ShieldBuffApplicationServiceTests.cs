@@ -62,8 +62,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 cooldownTicks: 0,
                 effects: new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.ShieldBuff, 3, 12),
-                    new SpellEffectSpec(SpellEffectKind.ShieldBuff, 5, 18),
+                    new SpellEffectSpec(SpellEffectCode.ShieldBuff, 3, 12),
+                    new SpellEffectSpec(SpellEffectCode.ShieldBuff, 5, 18),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var state = new ShieldBuffState();
@@ -92,9 +92,9 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 cooldownTicks: 0,
                 effects: new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 6, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 4, 0),
-                    new SpellEffectSpec(SpellEffectKind.ShieldBuff, 4, 30),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 6, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.ShieldBuff, 4, 30),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var state = new ShieldBuffState();
@@ -121,7 +121,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 manaCost: 1,
                 rangeInTiles: 0,
                 cooldownTicks: 0,
-                effects: new[] { new SpellEffectSpec(SpellEffectKind.ShieldBuff, 5, 0) });
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.ShieldBuff, 5, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var state = new ShieldBuffState();
             var service = new SpellEffectResolutionService();

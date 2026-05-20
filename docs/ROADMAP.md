@@ -176,7 +176,7 @@ loot the body, return to town`.
 
 **Boxes**: CRPG. **Status**: queued, unlocks the magic micro-loop.
 
-Goal: promote magic from the `SpellEffectKind` enum to data rows.
+Goal: promote magic from hard-coded effect branches to data rows.
 
 Deliverables:
 
@@ -186,7 +186,7 @@ Deliverables:
   `ApplyBuffOperation`, `SpawnLightOperation`,
   `ModifyDispositionOperation`, `ApplyConditionOperation`,
   `MoveItemOperation`, `StartWorldProcessOperation`
-- Re-express the existing 7 enum entries as data rows
+- Re-express the existing 7 legacy effect codes as data rows
 - One new spell shipped purely as data (no C# change) to prove the
   pipeline
 - The existing test matrix migrates row-by-row

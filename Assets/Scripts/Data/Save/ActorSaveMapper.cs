@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Memory;
+using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
@@ -48,6 +50,7 @@ namespace EmberCrpg.Data.Save
                 topicIds = actor.TopicIds?.ToArray(),
                 askedTopicIds = actor.AskedTopicIds?.ToArray(),
                 jobPreferences = actor.JobPreferences?.Select(p => new ActorJobPreferenceSaveData { kind = (int)p.Kind, priority = p.Priority.Value }).ToArray(),
+                memoryFacts = actor.Memory?.Facts.Select(ToMemoryFactData).ToArray(),
                 currentJobId = schedule.IsIdle ? 0UL : schedule.CurrentJobId.Value,
                 targetSiteId = schedule.IsIdle ? 0UL : schedule.TargetSiteId.Value,
                 targetWorksitePositionX = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.X,
@@ -84,6 +87,18 @@ namespace EmberCrpg.Data.Save
             var jobPrefs = (save.jobPreferences ?? Array.Empty<ActorJobPreferenceSaveData>())
                 .Select(p => new ActorJobPreference((JobKind)p.kind, JobPriority.Active(p.priority)))
                 .ToArray();
+            var memory = id.IsEmpty ? null : new MemoryComponent(id);
+            foreach (var fact in save.memoryFacts ?? Array.Empty<MemoryFactSaveData>())
+            {
+                if (fact == null || string.IsNullOrWhiteSpace(fact.topicCode))
+                    continue;
+                memory.Add(new MemoryFact(
+                    new ActorId(fact.remembererId == 0UL ? id.Value : fact.remembererId),
+                    new TopicId(fact.topicCode),
+                    new ActorId(fact.aboutActorId),
+                    new GameTime(fact.recordedAtMinutes < 0 ? 0 : fact.recordedAtMinutes),
+                    fact.detail));
+            }
 
             var record = new ActorRecord(
                 id,
@@ -102,11 +117,24 @@ namespace EmberCrpg.Data.Save
                     ? default(ActorScheduleState)
                     : ActorScheduleState.Assigned(new JobId(save.currentJobId), new SiteId(save.targetSiteId), new GridPosition(save.targetWorksitePositionX, save.targetWorksitePositionY))),
                 needs: needs,
-                mood: mood);
+                mood: mood,
+                memory: memory);
 
             record.ReplaceAskedTopics(asked);
 
             return record;
+        }
+
+        private static MemoryFactSaveData ToMemoryFactData(MemoryFact fact)
+        {
+            return new MemoryFactSaveData
+            {
+                remembererId = fact.Rememberer.Value,
+                topicCode = fact.Topic.Code,
+                aboutActorId = fact.AboutActor.Value,
+                recordedAtMinutes = fact.RecordedAt.TotalMinutes,
+                detail = fact.Detail,
+            };
         }
     }
 }

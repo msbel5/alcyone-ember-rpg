@@ -47,7 +47,7 @@ namespace EmberCrpg.Simulation.Magic
                 manaCost: 12,
                 rangeInTiles: FlameBoltRangeInTiles,
                 cooldownTicks: FlameBoltCooldownTicks,
-                effects: new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 8, 0) });
         }
 
         public static SpellDefinition CreateMendingTouch()
@@ -60,7 +60,7 @@ namespace EmberCrpg.Simulation.Magic
                 manaCost: 10,
                 rangeInTiles: 0,
                 cooldownTicks: MendingTouchCooldownTicks,
-                effects: new[] { new SpellEffectSpec(SpellEffectKind.RestoreHealth, 6, 0) });
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.RestoreHealth, 6, 0) });
         }
 
         public static SpellDefinition CreateEmberWard()
@@ -73,7 +73,7 @@ namespace EmberCrpg.Simulation.Magic
                 manaCost: 15,
                 rangeInTiles: 0,
                 cooldownTicks: EmberWardCooldownTicks,
-                effects: new[] { new SpellEffectSpec(SpellEffectKind.ShieldBuff, 4, 30) });
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.ShieldBuff, 4, 30) });
         }
 
         private static SpellDefinition[] BuildSpells()

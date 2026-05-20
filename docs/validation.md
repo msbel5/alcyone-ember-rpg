@@ -29,17 +29,19 @@ The script writes evidence logs and test artifacts under `validation-output/` (g
 
 ## Fallback meaning
 
-The fallback harness compiles and runs:
+The fallback harness currently targets `net8.0` and compiles/runs:
 
 - `Assets/Scripts/Domain/**/*.cs`
 - `Assets/Scripts/Simulation/**/*.cs`
-- `Assets/Scripts/Data/Save/**/*.cs`
+- `Assets/Scripts/Data/**/*.cs`
+- selected pure presentation files
+- `Assets/Scripts/Presentation/VisualLayer/**/*.cs`
 - `Assets/Tests/EditMode/**/*.cs`
 - `tools/validation/fallback/UnityJsonUtilityStub.cs`
 
 It intentionally excludes Unity presentation/runtime `MonoBehaviour` code. It includes a minimal `UnityEngine.JsonUtility` stub backed by `System.Text.Json` so save/load tests can execute without the Unity editor.
 
-**Important:** fallback PASS means the pure domain/simulation/save EditMode test corpus passed under .NET 9. It is not a real Unity EditMode run and does not validate Unity assembly definitions, editor import/serialization quirks, scenes, input, rendering, or PlayMode behavior.
+**Important:** fallback PASS means the pure domain/simulation/save/pure-presentation EditMode test corpus passed under .NET 8. It is not a real Unity EditMode run and does not validate Unity assembly definitions, editor import/serialization quirks, scenes, input, rendering, or PlayMode behavior.
 
 Use explicit modes when needed:
 

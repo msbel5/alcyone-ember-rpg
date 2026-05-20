@@ -35,7 +35,7 @@ These are awaiting CI green and merge in the next half hour.
 
 - **Faz 6** — Atoms 1-11 + 13 live on main. Atom 12 (save mappers) + Atom 14 (acceptance replay) remain.
 - **Faz 7** — Atoms 4-7 live (action def + hit/damage/resolver). Atoms 1-3 (equipment slot/component/profile) still rely on Sprint 4 enum; refactor remains.
-- **Faz 8** — Atoms 1-6 live (primitives + handlers + resolver). Atom 7 seed effects + Atom 8 enum removal + Atoms 9-12 still remain.
+- **Faz 8** — Atoms 1-6 live (primitives + handlers + resolver). Reality-fix pass removed `SpellEffectCode` enum shape; seed effect rows + terrain/area save polish still remain.
 - **Faz 9** — Atoms 2-5 + 7 + 10 + 11 live; Atoms 8-9 pending (#168). Atoms 6 (ActorRecord.Memory), 12-13 still remain.
 - **Faz 10** — Atoms 1-10 live or pending. Atoms 11-15 (escalation, mock LLM, tracer, save, acceptance) still remain.
 - **Faz 11** — Captain-side Atoms 1-7 complete. Mami-side Atoms 8-16 remain Mami territory.
@@ -91,7 +91,7 @@ These are awaiting CI green and merge in the next half hour.
 
 - Save/load mappers for Faz 6/7/8/9/10/12 state
 - Acceptance replay tests per Faz (Faz 5/6/7/8/9/10/12)
-- Faz 8 SpellEffectKind enum removal (deletes legacy magic switch)
+- Faz 8 seed effect row polish and remaining terrain/area magic work
 - Faz 12 real LLM clients (local Qwen HTTP, cloud Anthropic/OpenAI HTTP)
 - Faz 12 NpcFlavourService + DmNarrationService + StorytellerCheckpointSystem + ConsultFateService
 - Faz 11 Mami-side Unity scenes consuming the Captain snapshot rows

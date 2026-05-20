@@ -40,7 +40,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(spell.RangeInTiles, Is.EqualTo(SliceSpellCatalog.FlameBoltRangeInTiles));
             Assert.That(spell.CooldownTicks, Is.EqualTo(SliceSpellCatalog.FlameBoltCooldownTicks));
             Assert.That(spell.Effects.Count, Is.EqualTo(1));
-            Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectKind.DirectDamage));
+            Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectCode.DirectDamage));
         }
 
         [Test]
@@ -57,7 +57,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var spell = SliceSpellCatalog.Find(SliceSpellCatalog.EmberWardTemplateId);
             Assert.That(spell.School, Is.EqualTo(MagicSchool.Alteration));
             Assert.That(spell.TargetKind, Is.EqualTo(SpellTargetKind.CasterSelf));
-            Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectKind.ShieldBuff));
+            Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectCode.ShieldBuff));
             Assert.That(spell.Effects[0].DurationTicks, Is.GreaterThan(0));
             Assert.That(spell.Effects[0].IsInstantaneous, Is.False);
         }

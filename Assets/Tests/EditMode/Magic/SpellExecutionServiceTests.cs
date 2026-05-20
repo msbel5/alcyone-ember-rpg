@@ -370,7 +370,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 manaCost: 12,
                 rangeInTiles: 8,
                 cooldownTicks: 5,
-                effects: new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 8, 0) });
         }
 
         private static SpellExecutionService CreateCooldownExecutionService(SpellDefinition cooldownSpell)

@@ -21,6 +21,17 @@ namespace EmberCrpg.Domain.AiDm
         public static ToolSurfaceKind Party { get; } = new ToolSurfaceKind("party");
         public static ToolSurfaceKind Dm { get; } = new ToolSurfaceKind("dm");
 
+        public static ToolSurfaceKind FromCode(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+                return default;
+            var normalized = code.Trim();
+            if (normalized == Npc.Code) return Npc;
+            if (normalized == Party.Code) return Party;
+            if (normalized == Dm.Code) return Dm;
+            return new ToolSurfaceKind(normalized);
+        }
+
         public string Code => _code ?? string.Empty;
         public bool IsEmpty => string.IsNullOrEmpty(_code);
 

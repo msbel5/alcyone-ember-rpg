@@ -34,5 +34,9 @@ namespace EmberCrpg.Domain.World
         CombatResolved = 20,
         SpellResolved = 21,
         ToolInvoked = 22,
+        TradeRefused = 23,
+        LlmProposalValidated = 24,
+        DmConsultFate = 25,
+        StorytellerCheckpoint = 26,
     }
 }
