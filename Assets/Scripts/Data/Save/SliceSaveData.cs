@@ -38,6 +38,8 @@ namespace EmberCrpg.Data.Save
         public WorksiteSaveData[] worksites;
         public RecipeWorkOrderSaveData[] recipeWorkOrders;
         public JobRequestSaveData[] jobs;
+        public SoilComponentSaveData[] soils;
+        public PlantComponentSaveData[] plants;
         public InventorySaveData inventory;
         public EquipmentSaveData playerEquipment;
         public InventorySaveData merchantInventory;
@@ -93,6 +95,30 @@ namespace EmberCrpg.Data.Save
         public int positionY;
         public ulong actorId;
         public int progressTicks;
+    }
+
+    [Serializable]
+    public sealed class SoilComponentSaveData
+    {
+        public ulong id;
+        public ulong siteId;
+        public int positionX;
+        public int positionY;
+        public int fertility;
+        public int moisture;
+        public ulong plantId;
+    }
+
+    [Serializable]
+    public sealed class PlantComponentSaveData
+    {
+        public ulong id;
+        public ulong siteId;
+        public int positionX;
+        public int positionY;
+        public string speciesId;
+        public string stageId;
+        public int daysInStage;
     }
 
     [Serializable]

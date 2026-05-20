@@ -62,6 +62,11 @@ namespace EmberCrpg.Tests.EditMode.Core
         public void AddDays_Uses1440MinuteDays() =>
             Assert.That(new GameTime(0).AddDays(2).TotalMinutes, Is.EqualTo(2880));
 
+        /// <summary>AddMonths uses thirty-day game months.</summary>
+        [Test]
+        public void AddMonths_UsesThirtyDayMonths() =>
+            Assert.That(new GameTime(0).AddMonths(2).TotalMinutes, Is.EqualTo(86400));
+
         /// <summary>AddYears uses 518400-minute years.</summary>
         [Test]
         public void AddYears_Uses518400MinuteYears() =>
