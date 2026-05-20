@@ -192,11 +192,15 @@ namespace EmberCrpg.Data.Save
         public static JobBoard ToJobBoard(JobRequestSaveData[] data)
         {
             var board = new JobBoard();
-            foreach (var saved in data ?? Array.Empty<JobRequestSaveData>())
-            {
-                if (saved == null)
-                    continue;
+            // PR#138 bot review fix: add jobs in insertion order first, then restore
+            // claims in original claim-sequence order using the explicit accessor so
+            // GetQueueIndex returns the same value after a roundtrip.
+            var sorted = (data ?? Array.Empty<JobRequestSaveData>())
+                .Where(d => d != null)
+                .ToArray();
 
+            foreach (var saved in sorted)
+            {
                 var request = new JobRequest(
                     new JobId(saved.id),
                     new RecipeId(saved.recipeId),
@@ -208,10 +212,18 @@ namespace EmberCrpg.Data.Save
                     saved.quantity,
                     new ActorId(saved.requesterId));
                 board.Add(request);
+            }
 
+            foreach (var saved in sorted.OrderBy(d => d.claimSequence))
+            {
                 var claimedBy = new ActorId(saved.claimedByActorId);
-                if (!claimedBy.IsEmpty && !board.TryClaim(request.Id, claimedBy, out _))
-                    throw new InvalidOperationException($"JobBoard save data could not restore claim for {request.Id}.");
+                if (claimedBy.IsEmpty) continue;
+
+                var restored = saved.claimSequence > 0
+                    ? board.TryRestoreClaim(new JobId(saved.id), claimedBy, saved.claimSequence)
+                    : board.TryClaim(new JobId(saved.id), claimedBy, out _);
+                if (!restored)
+                    throw new InvalidOperationException($"JobBoard save data could not restore claim for {saved.id}.");
             }
 
             return board;
@@ -316,6 +328,7 @@ namespace EmberCrpg.Data.Save
                 quantity = request.Quantity,
                 requesterId = request.RequesterId.Value,
                 claimedByActorId = board.GetClaimedBy(request.Id).Value,
+                claimSequence = board.GetClaimSequence(request.Id),
             };
         }
 

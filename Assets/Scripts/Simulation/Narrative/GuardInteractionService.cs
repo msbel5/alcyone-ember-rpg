@@ -33,9 +33,20 @@ namespace EmberCrpg.Simulation.Narrative
                 world.Guard.Position));
 
             if (world.GuardDoorAccessGranted || context.ClearanceGranted)
+            {
+                // PR#4 bot review fix: when context.ClearanceGranted is true but
+                // world.GuardDoorAccessGranted is false (exactly the
+                // persisted-memory-but-lost-flag scenario this path is meant to
+                // recover), narrate AND mirror the memory back onto the world
+                // flag so subsequent ticks treat the guard as already cleared
+                // instead of re-walking the gate-writ branch.
+                if (context.ClearanceGranted && !world.GuardDoorAccessGranted)
+                    world.GuardDoorAccessGranted = true;
+
                 return world.DoorOpen
                     ? "Sentinel Rook keeps his spear low. The south door is already clear."
                     : "Sentinel Rook nods once. Your clearance still stands for the south door.";
+            }
             if (world.PlayerInventory.Contains(SliceItemCatalog.GateWritTemplateId))
             {
                 world.GuardDoorAccessGranted = true;

@@ -79,6 +79,27 @@ namespace EmberCrpg.Domain.Magic
             if (_effects.Length == 0)
                 throw new ArgumentException("Spell must declare at least one effect spec.", nameof(effects));
 
+            // PR#13 bot review fix: SpellEffectSpec is a struct, so callers can slip
+            // a default-initialized entry past the type system. Validate each effect
+            // kind, magnitude, and duration here so a malformed row is rejected
+            // before it reaches casting/resolution.
+            for (int i = 0; i < _effects.Length; i++)
+            {
+                var spec = _effects[i];
+                if (spec.Kind.IsEmpty)
+                    throw new ArgumentException(
+                        $"Spell effect spec at index {i} has no SpellEffectCode (default-initialized).",
+                        nameof(effects));
+                if (spec.Magnitude < 0)
+                    throw new ArgumentException(
+                        $"Spell effect spec at index {i} has negative magnitude {spec.Magnitude}.",
+                        nameof(effects));
+                if (spec.DurationTicks < 0)
+                    throw new ArgumentException(
+                        $"Spell effect spec at index {i} has negative duration {spec.DurationTicks}.",
+                        nameof(effects));
+            }
+
             TemplateId = templateId;
             DisplayName = displayName;
             School = school;
