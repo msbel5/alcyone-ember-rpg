@@ -49,17 +49,17 @@ namespace EmberCrpg.Presentation.Slice
 
         public void SyncPlayerPosition(GridPosition desired)
         {
-            var current = World.Player.Position;
+            var current = World.Actors.FirstByRole(ActorRole.Player).Position;
             var deltaX = Math.Max(-1, Math.Min(1, desired.X - current.X));
             var deltaY = Math.Max(-1, Math.Min(1, desired.Y - current.Y));
             if (deltaX == 0 && deltaY == 0)
                 return;
-            World.Player.MoveTo(_movement.Move(World, current, deltaX, deltaY));
+            World.Actors.FirstByRole(ActorRole.Player).MoveTo(_movement.Move(World, current, deltaX, deltaY));
         }
 
         public void TryPickup()
         {
-            var pickup = World.Pickups.Find(candidate => !candidate.IsCollected && candidate.Position.ManhattanDistanceTo(World.Player.Position) <= 1);
+            var pickup = World.Pickups.Find(candidate => !candidate.IsCollected && candidate.Position.ManhattanDistanceTo(World.Actors.FirstByRole(ActorRole.Player).Position) <= 1);
             SetStatus(pickup != null && _pickups.TryCollect(pickup, World.PlayerInventory)
                 ? $"Picked up {pickup.Item.DisplayName}."
                 : "No pickup within reach or inventory is full.");
@@ -67,25 +67,25 @@ namespace EmberCrpg.Presentation.Slice
 
         public void AdvanceEncounter()
         {
-            if (World.Enemy.Vitals.Health.IsDepleted)
+            if (World.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.IsDepleted)
             {
                 SetStatus("Ash Rat is already down.");
                 return;
             }
-            if (World.Enemy.Position.ManhattanDistanceTo(World.Player.Position) > 1 && _encounter == null)
+            if (World.Actors.FirstByRole(ActorRole.Enemy).Position.ManhattanDistanceTo(World.Actors.FirstByRole(ActorRole.Player).Position) > 1 && _encounter == null)
             {
                 SetStatus("Move next to Ash Rat and press F to start the approved Sprint 1 encounter loop.");
                 return;
             }
-            _encounter ??= new EncounterState(World.Player.Id, World.Enemy.Id);
+            _encounter ??= new EncounterState(World.Actors.FirstByRole(ActorRole.Player).Id, World.Actors.FirstByRole(ActorRole.Enemy).Id);
             World.EncounterActive = true;
             var playerEquipment = _equipment.GetCombatStats(World.PlayerInventory, World.PlayerEquipment);
-            SetStatus(_turns.Advance(_encounter, World.Player, World.Enemy, _rng, playerEquipment, new EquipmentCombatStats(0, 0)).Summary);
+            SetStatus(_turns.Advance(_encounter, World.Actors.FirstByRole(ActorRole.Player), World.Actors.FirstByRole(ActorRole.Enemy), _rng, playerEquipment, new EquipmentCombatStats(0, 0)).Summary);
             if (_encounter.IsFinished)
                 World.EncounterActive = false;
         }
 
-        public void AskAbout(string topicId) => SetStatus(World.Talker.Position.ManhattanDistanceTo(World.Player.Position) <= 2 ? _askAbout.Ask(World, topicId) : "Stand closer to Sage Nera before asking about a topic.");
+        public void AskAbout(string topicId) => SetStatus(World.Actors.FirstByRole(ActorRole.Talker).Position.ManhattanDistanceTo(World.Actors.FirstByRole(ActorRole.Player).Position) <= 2 ? _askAbout.Ask(World, topicId) : "Stand closer to Sage Nera before asking about a topic.");
         public void AskDm() => SetStatus(_askDm.Ask(World, "What matters right now?"));
         public void Think() => SetStatus(_think.Think(World));
         public void TradeWithMerchant() => SetStatus(_merchant.TradeGateWrit(World));
@@ -121,7 +121,7 @@ namespace EmberCrpg.Presentation.Slice
         {
             if (_encounter == null || _encounter.IsFinished)
                 return "none";
-            return _encounter.PlayerActsNext ? World.Player.Name : World.Enemy.Name;
+            return _encounter.PlayerActsNext ? World.Actors.FirstByRole(ActorRole.Player).Name : World.Actors.FirstByRole(ActorRole.Enemy).Name;
         }
 
         private void SetStatus(string status)

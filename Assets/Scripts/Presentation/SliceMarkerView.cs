@@ -21,20 +21,20 @@ namespace EmberCrpg.Presentation.Slice
         {
             _actors.Clear();
             _pickups.Clear();
-            BuildActor(parent, world.Talker, Color.cyan);
-            BuildActor(parent, world.Merchant, Color.yellow);
-            BuildActor(parent, world.Guard, Color.green);
-            BuildActor(parent, world.Enemy, Color.red);
+            BuildActor(parent, world.Actors.FirstByRole(ActorRole.Talker), Color.cyan);
+            BuildActor(parent, world.Actors.FirstByRole(ActorRole.Merchant), Color.yellow);
+            BuildActor(parent, world.Actors.FirstByRole(ActorRole.Guard), Color.green);
+            BuildActor(parent, world.Actors.FirstByRole(ActorRole.Enemy), Color.red);
             foreach (var pickup in world.Pickups)
                 BuildPickup(parent, pickup);
         }
 
         public void Sync(SliceWorldState world)
         {
-            SyncActor(world.Talker);
-            SyncActor(world.Merchant);
-            SyncActor(world.Guard);
-            SyncActor(world.Enemy);
+            SyncActor(world.Actors.FirstByRole(ActorRole.Talker));
+            SyncActor(world.Actors.FirstByRole(ActorRole.Merchant));
+            SyncActor(world.Actors.FirstByRole(ActorRole.Guard));
+            SyncActor(world.Actors.FirstByRole(ActorRole.Enemy));
             foreach (var pickup in world.Pickups)
                 if (_pickups.TryGetValue(pickup.Item.Id.Value, out var marker))
                     marker.SetActive(!pickup.IsCollected);

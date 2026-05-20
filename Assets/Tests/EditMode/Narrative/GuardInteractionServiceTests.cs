@@ -3,6 +3,7 @@ using EmberCrpg.Simulation.Inventory;
 using EmberCrpg.Simulation.Narrative;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // These tests pin Sentinel Rook's deterministic Sprint 2 checkpoint behavior.
@@ -37,7 +38,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         private static SliceWorldState CreateGuardReadyWorld()
         {
             var world = new SliceWorldFactory().Create(1337);
-            world.Player.MoveTo(world.Guard.Position.Translate(0, -1));
+            world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Guard).Position.Translate(0, -1));
             return world;
         }
     }

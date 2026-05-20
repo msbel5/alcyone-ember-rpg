@@ -3,6 +3,7 @@ using EmberCrpg.Domain.Memory;
 using EmberCrpg.Simulation.Narrative;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // These tests pin Sprint 3's deterministic persistent NPC memory surface.
@@ -19,13 +20,13 @@ namespace EmberCrpg.Tests.EditMode.Narrative
 
             new AskAboutService().Ask(world, "embers");
 
-            Assert.That(world.NpcMemory.TryGet(world.Talker.Id, out var memory), Is.True);
+            Assert.That(world.NpcMemory.TryGet(world.Actors.FirstByRole(ActorRole.Talker).Id, out var memory), Is.True);
             Assert.That(memory.HasDialogueSeen("embers"), Is.True);
             Assert.That(memory.CountEvents(ActorMemoryEventTypes.DialogueTopic), Is.EqualTo(1));
             var interactionEvent = memory.Events.Single();
-            Assert.That(interactionEvent.ActorSeen, Is.EqualTo(world.Player.Id));
+            Assert.That(interactionEvent.ActorSeen, Is.EqualTo(world.Actors.FirstByRole(ActorRole.Player).Id));
             Assert.That(interactionEvent.SubjectId, Is.EqualTo("embers"));
-            Assert.That(interactionEvent.Location, Is.EqualTo(world.Talker.Position));
+            Assert.That(interactionEvent.Location, Is.EqualTo(world.Actors.FirstByRole(ActorRole.Talker).Position));
         }
 
         [Test]
@@ -40,7 +41,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             Assert.That(firstReply, Does.Contain("says"));
             Assert.That(secondReply, Does.Contain("repeats"));
             Assert.That(secondReply, Is.Not.EqualTo(firstReply));
-            Assert.That(world.NpcMemory.TryGet(world.Talker.Id, out var memory), Is.True);
+            Assert.That(world.NpcMemory.TryGet(world.Actors.FirstByRole(ActorRole.Talker).Id, out var memory), Is.True);
             Assert.That(memory.CountEvents(ActorMemoryEventTypes.DialogueTopic), Is.EqualTo(2));
         }
     }

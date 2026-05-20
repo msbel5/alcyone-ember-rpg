@@ -93,6 +93,18 @@ namespace EmberCrpg.Domain.World
         public bool EncounterActive;
         public string LastNarrative;
 
+        /// <summary>
+        /// Non-obsolete role-keyed write site for callers that previously assigned to
+        /// the deprecated <c>Player</c>/<c>Talker</c>/<c>Merchant</c>/<c>Guard</c>/<c>Enemy</c>
+        /// properties. New code should prefer <see cref="ActorStore.Add"/> /
+        /// <see cref="ActorStore.Remove"/> on <see cref="Actors"/> directly; this helper
+        /// exists to keep the slice-era assignment sites readable during the Faz 1 sweep.
+        /// </summary>
+        public void ReplaceActorView(ActorRole role, ActorRecord record)
+        {
+            SetActorView(role, record);
+        }
+
         private ActorRecord GetActorView(ActorRole role)
         {
             EnsureActorStore();

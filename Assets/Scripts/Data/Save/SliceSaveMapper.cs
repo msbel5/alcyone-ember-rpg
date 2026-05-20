@@ -41,11 +41,11 @@ namespace EmberCrpg.Data.Save
                 dungeonSpawns = DungeonSaveMapper.ToSpawnData(world.Dungeon),
                 dungeonRoomStates = DungeonSaveMapper.ToRoomStateData(world.DungeonRoomStates),
                 dungeonDoorStates = DungeonSaveMapper.ToDoorStateData(world.DungeonDoorStates),
-                player = ActorSaveMapper.ToData(world.Player),
-                talker = ActorSaveMapper.ToData(world.Talker),
-                merchant = ActorSaveMapper.ToData(world.Merchant),
-                guard = ActorSaveMapper.ToData(world.Guard),
-                enemy = ActorSaveMapper.ToData(world.Enemy),
+                player = ActorSaveMapper.ToData(world.Actors.FirstByRole(ActorRole.Player)),
+                talker = ActorSaveMapper.ToData(world.Actors.FirstByRole(ActorRole.Talker)),
+                merchant = ActorSaveMapper.ToData(world.Actors.FirstByRole(ActorRole.Merchant)),
+                guard = ActorSaveMapper.ToData(world.Actors.FirstByRole(ActorRole.Guard)),
+                enemy = ActorSaveMapper.ToData(world.Actors.FirstByRole(ActorRole.Enemy)),
                 actors = ToActorStoreData(world.Actors),
                 itemRecords = ToItemStoreData(world.Items),
                 sites = ToSiteStoreData(world.Sites),
@@ -97,11 +97,11 @@ namespace EmberCrpg.Data.Save
             }
             else
             {
-                world.Player = ActorSaveMapper.ToActor(data.player);
-                world.Talker = ActorSaveMapper.ToActor(data.talker);
-                world.Merchant = ActorSaveMapper.ToActor(data.merchant);
-                world.Guard = ActorSaveMapper.ToActor(data.guard);
-                world.Enemy = ActorSaveMapper.ToActor(data.enemy);
+                world.ReplaceActorView(ActorRole.Player, ActorSaveMapper.ToActor(data.player));
+                world.ReplaceActorView(ActorRole.Talker, ActorSaveMapper.ToActor(data.talker));
+                world.ReplaceActorView(ActorRole.Merchant, ActorSaveMapper.ToActor(data.merchant));
+                world.ReplaceActorView(ActorRole.Guard, ActorSaveMapper.ToActor(data.guard));
+                world.ReplaceActorView(ActorRole.Enemy, ActorSaveMapper.ToActor(data.enemy));
             }
             world.Items = ToItemStore(data.itemRecords);
             world.Sites = ToSiteStore(data.sites);
