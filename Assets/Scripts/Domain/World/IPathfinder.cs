@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace EmberCrpg.Domain.World
 {
@@ -47,11 +49,13 @@ namespace EmberCrpg.Domain.World
     /// <summary>Immutable pathfinding result with deterministic step data.</summary>
     public readonly struct PathfinderResult
     {
+        private static readonly IReadOnlyList<int> EmptySteps = new ReadOnlyCollection<int>(new int[0]);
+
         public PathfinderResult(bool success, IReadOnlyList<int> steps, int totalCost)
         {
             Success = success;
-            Steps = steps;
             TotalCost = totalCost;
+            Steps = steps == null ? EmptySteps : new ReadOnlyCollection<int>(steps.ToArray());
         }
 
         /// <summary>Whether a path was found.</summary>
