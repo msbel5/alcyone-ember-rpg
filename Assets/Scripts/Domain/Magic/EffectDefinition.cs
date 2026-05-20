@@ -20,7 +20,34 @@ namespace EmberCrpg.Domain.Magic
             SchoolTag = schoolTag.Trim();
             Cost = cost;
             CooldownTicks = cooldownTicks;
-            Operations = operations == null ? new EffectOperation[0] : new List<EffectOperation>(operations).AsReadOnly();
+            // PR#164 bot review fix: EffectOperation is a struct so callers can
+            // slip default-initialized rows past the constructor type check.
+            // Validate each row's kind/magnitude/cost before storing.
+            if (operations == null)
+            {
+                Operations = new EffectOperation[0];
+            }
+            else
+            {
+                var list = new List<EffectOperation>(operations);
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var op = list[i];
+                    if (op.Kind.IsEmpty)
+                        throw new ArgumentException(
+                            $"EffectDefinition operation at index {i} has no EffectOperationKind (default-initialized).",
+                            nameof(operations));
+                    if (op.Magnitude < 0)
+                        throw new ArgumentException(
+                            $"EffectDefinition operation at index {i} has negative magnitude {op.Magnitude}.",
+                            nameof(operations));
+                    if (op.Cost < 0)
+                        throw new ArgumentException(
+                            $"EffectDefinition operation at index {i} has negative cost {op.Cost}.",
+                            nameof(operations));
+                }
+                Operations = list.AsReadOnly();
+            }
         }
 
         public EffectId Id { get; }
