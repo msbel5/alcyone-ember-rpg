@@ -61,7 +61,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             var response = new NpcDialogueService(new MemoryRecallService(), templates)
                 .Ask(asker, askee, memory, WeatherDef(), new FactionId(1UL), new FactionId(2UL), factions, default, default);
 
-            Assert.That(response.Refused, Is.True);
+            Assert.That(response.IsRefused, Is.True);
             Assert.That(response.RefusalReason, Is.EqualTo("hostility"));
         }
 
@@ -76,7 +76,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             var response = new NpcDialogueService(new MemoryRecallService(), templates)
                 .Ask(asker, askee, null, WeatherDef(), default, default, null, default, default);
 
-            Assert.That(response.Refused, Is.True);
+            Assert.That(response.IsRefused, Is.True);
             Assert.That(response.RefusalReason, Is.EqualTo("mood_too_low"));
         }
 
@@ -91,7 +91,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             var response = new NpcDialogueService(new MemoryRecallService(), templates)
                 .Ask(asker, askee, null, WeatherDef(), default, default, null, default, default);
 
-            Assert.That(response.Refused, Is.False);
+            Assert.That(response.IsRefused, Is.False);
             Assert.That(response.Text, Is.EqualTo("Greetings about weather"));
         }
     }
