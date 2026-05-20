@@ -14,7 +14,19 @@ namespace EmberCrpg.Presentation.VisualLayer
 
         public InventoryStockpileSnapshot(IReadOnlyList<StockpileRow> rows)
         {
-            _rows = rows ?? new StockpileRow[0];
+            // PR#150 bot review fix: defensively copy so a caller that keeps and
+            // mutates the original list cannot retroactively change the
+            // snapshot's contents (e.g. a recycled buffer reused on the next
+            // tick). Snapshots are immutable view models by contract.
+            if (rows == null)
+            {
+                _rows = new StockpileRow[0];
+                return;
+            }
+            var copy = new StockpileRow[rows.Count];
+            for (int i = 0; i < rows.Count; i++)
+                copy[i] = rows[i];
+            _rows = copy;
         }
 
         public IReadOnlyList<StockpileRow> Rows => _rows;
