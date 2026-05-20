@@ -42,7 +42,7 @@ namespace EmberCrpg.Tests.EditMode.Process
                 Site,
                 Bakery,
                 WorksiteKind.Bakery,
-                JobKind.Bake,
+                JobKind.Baker,
                 JobPriority.Active(1),
                 quantity: 1,
                 requesterId: Requester);
