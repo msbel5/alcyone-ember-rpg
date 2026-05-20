@@ -87,7 +87,13 @@ public IReadOnlyList<JobQueueRow> JobQueueRows => _jobRows;
 
         public string ConsultFate()
         {
-            int roll = Random.Range(1, 101);
+            // Codex review (2026-05-21): the placeholder advertises itself as
+            // "deterministic" but Random.Range made the roll wall-clock dependent,
+            // breaking replay. Derive from the running tick with a fixed salt so
+            // the same tick yields the same bucket. 33/33/34 distribution matches
+            // the original thresholds.
+            int salted = unchecked(_tick * (int)2654435761);
+            int roll = (salted & 0x7fffffff) % 100 + 1;
             if (roll <= 33) return "SETBACK: The stars align against you. A cold wind blows.";
             if (roll <= 66) return "NEUTRAL: The path is unclear. The DM watches in silence.";
             return "FAVOURABLE: Fortune smiles upon your endeavor.";
