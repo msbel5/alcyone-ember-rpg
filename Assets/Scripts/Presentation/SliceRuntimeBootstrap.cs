@@ -15,8 +15,27 @@ namespace EmberCrpg.Presentation.Slice
         private static void CreateController()
         {
             var activeScene = SceneManager.GetActiveScene();
-            if (activeScene.name.Contains("Sprint4") || Object.FindFirstObjectByType<SliceGameController>() != null)
+            var sceneName = activeScene.name ?? string.Empty;
+
+            // Bail when an existing slice controller is already present.
+            if (Object.FindFirstObjectByType<SliceGameController>() != null) return;
+
+            // Codex review (2026-05-21): the previous name/path heuristic
+            // ("Faz*", "MainMenu", "/Scenes/Ember/") was brittle — any
+            // out-of-convention scene name silently re-enabled the slice
+            // controller next to the host. Detect intent instead: look for
+            // EmberWorldHost via reflection so this Sprint 1/2 file does
+            // not take an assembly-level dependency on the newer Ember
+            // bootstrap layer. The reflective lookup is allocation-free and
+            // happens once per scene load.
+            var emberHostType = System.Type.GetType(
+                "EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost, EmberCrpg.Presentation");
+            if (emberHostType != null
+                && Object.FindFirstObjectByType(emberHostType, FindObjectsInactive.Include) != null)
                 return;
+
+            // Fallback for the original Sprint 4 combat foundation scenes.
+            if (sceneName.Contains("Sprint4")) return;
 
             var controller = new GameObject("Sprint2SliceController");
             Object.DontDestroyOnLoad(controller);
