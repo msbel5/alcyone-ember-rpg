@@ -46,7 +46,10 @@ namespace EmberCrpg.Simulation.Narrative
                 }
             }
 
-            if (sellerMemory != null && _recall.HasRecentFact(sellerMemory, new TopicId("crime"), crimeMemoryHorizon))
+            // PR#171 bot review fix: bound the recent-crime check to facts at
+            // or before `now`. Previously a future-dated crime fact (e.g. from
+            // a drifted clock across save/load) would falsely trigger refusal.
+            if (sellerMemory != null && _recall.HasRecentFact(sellerMemory, new TopicId("crime"), crimeMemoryHorizon, now))
             {
                 reason = "memory_recent_crime";
                 return true;
