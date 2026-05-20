@@ -30,15 +30,21 @@ namespace EmberCrpg.Presentation.Ember.UI
             string json = PlayerPrefs.GetString("ember.save.v1");
             if (!string.IsNullOrEmpty(json))
             {
-                // The EmberSaveService in the target scene will handle the pending load
-                // if we set the static flag. But we need to load the scene first.
+                // Codex audit Batch 2 / Finding 4: the previous version loaded the
+                // saved scene but never pushed the deserialized SaveData into the
+                // next-scene EmberSaveService, so player transform and domain
+                // state both reset on Continue. PreparePendingLoad stashes the
+                // payload statically; the EmberSaveService.Start() in the target
+                // scene picks it up and calls RestorePosition + RestoreStateJson.
                 var data = JsonUtility.FromJson<EmberCrpg.Presentation.Ember.Save.SaveData>(json);
-                SceneManager.LoadScene(data.sceneName);
+                if (data != null && !string.IsNullOrEmpty(data.sceneName))
+                {
+                    EmberCrpg.Presentation.Ember.Save.EmberSaveService.PreparePendingLoad(data);
+                    SceneManager.LoadScene(data.sceneName);
+                    return;
+                }
             }
-            else
-            {
-                NewGame();
-            }
+            NewGame();
         }
 
         public void Quit()

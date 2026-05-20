@@ -35,6 +35,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         void TakePlayerDamage(int amount);
 
         string ConsultFate();
+
+        // Codex audit Batch 2 / Finding 3: The Ember save service previously
+        // persisted only player rig transform + tick index, dropping every bit of
+        // deterministic simulation state (actors, inventories, NPC memory, world
+        // events, etc.). Expose an opaque round-trippable JSON envelope on the
+        // adapter so the save service can bundle the full domain snapshot without
+        // importing any Domain.* type. Placeholder adapters return null/empty and
+        // accept null/empty without complaint — the bridge is best-effort until
+        // Captain's domain adapter lands.
+        string ExportStateJson();
+        void RestoreStateJson(string json);
     }
 
     /// <summary>
