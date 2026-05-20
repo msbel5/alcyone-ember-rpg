@@ -1,5 +1,6 @@
 using System.Linq;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // ThinkService offers deterministic inner-monologue guidance based on current slice state.
@@ -13,11 +14,11 @@ namespace EmberCrpg.Simulation.Narrative
     {
         public string Think(SliceWorldState world)
         {
-            if (world.Player.Vitals.Health.Current <= world.Player.Vitals.Health.Max / 2)
+            if (world.Actors.FirstByRole(ActorRole.Player).Vitals.Health.Current <= world.Actors.FirstByRole(ActorRole.Player).Vitals.Health.Max / 2)
                 return "Think: I'm hurt. Save or finish the rat before pushing deeper.";
             if (world.Pickups.Any(pickup => !pickup.IsCollected) && !world.PlayerInventory.IsFull)
                 return "Think: The Ember Shard is still on the floor; grab it before leaving.";
-            if (world.Enemy.IsAlive)
+            if (world.Actors.FirstByRole(ActorRole.Enemy).IsAlive)
                 return "Think: The rat is the only live threat left in this room.";
             return "Think: The room is stable enough to save and move on.";
         }

@@ -1,5 +1,6 @@
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // SliceHudFormatter turns the current slice state into one compact on-screen HUD string.
@@ -21,7 +22,7 @@ namespace EmberCrpg.Presentation.Slice
 
             return $@"Sprint 4 Slice
 WASD + mouse look | I inventory | Z equip weapon | X unequip | E pickup | M trade | G guard | T door | F encounter | 1/2/3 Ask About | Q Ask DM | R Think | F5/F9 save/load
-Player HP {world.Player.Vitals.Health.Current}/{world.Player.Vitals.Health.Max} | Enemy HP {world.Enemy.Vitals.Health.Current}/{world.Enemy.Vitals.Health.Max}
+Player HP {world.Actors.FirstByRole(ActorRole.Player).Vitals.Health.Current}/{world.Actors.FirstByRole(ActorRole.Player).Vitals.Health.Max} | Enemy HP {world.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.Current}/{world.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.Max}
 Inventory {world.PlayerInventory.Items.Count}/{world.PlayerInventory.Capacity} | {InventoryEquipmentFormatter.FormatEquipmentLine(world)} | Gate writ: {hasWrit} | Merchant: {stock}
 Door: {doorState} | Guard clearance: {clearance} | Next actor: {nextActor}
 Atmosphere: {cues.AmbienceId} | Music: {cues.MusicId} | SFX: {cues.SfxId}

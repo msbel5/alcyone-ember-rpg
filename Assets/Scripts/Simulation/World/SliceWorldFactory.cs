@@ -46,11 +46,11 @@ namespace EmberCrpg.Simulation.World
             world.PickupRoomId = pickupSpawn.RoomId;
             world.DungeonRoomStates = dungeon.Rooms.Select(roomNode => new DungeonRoomState(roomNode.Id, roomNode.Id == dungeon.StartRoomId, false)).ToList();
             world.DungeonDoorStates = dungeon.Doors.Select(door => new DungeonDoorState(door.Id, door.StartsOpen)).ToList();
-            world.Player = _actors.Create(new ActorId(1), "Warden", ActorRole.Player, playerSpawn.Position);
-            world.Talker = _actors.Create(new ActorId(2), "Sage Nera", ActorRole.Talker, talkerSpawn.Position, talkTopics);
-            world.Merchant = _actors.Create(new ActorId(3), "Quartermaster Ivo", ActorRole.Merchant, merchantSpawn.Position);
-            world.Guard = _actors.Create(new ActorId(4), "Sentinel Rook", ActorRole.Guard, guardSpawn.Position);
-            world.Enemy = _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, enemySpawn.Position);
+            world.ReplaceActorView(ActorRole.Player, _actors.Create(new ActorId(1), "Warden", ActorRole.Player, playerSpawn.Position));
+            world.ReplaceActorView(ActorRole.Talker, _actors.Create(new ActorId(2), "Sage Nera", ActorRole.Talker, talkerSpawn.Position, talkTopics));
+            world.ReplaceActorView(ActorRole.Merchant, _actors.Create(new ActorId(3), "Quartermaster Ivo", ActorRole.Merchant, merchantSpawn.Position));
+            world.ReplaceActorView(ActorRole.Guard, _actors.Create(new ActorId(4), "Sentinel Rook", ActorRole.Guard, guardSpawn.Position));
+            world.ReplaceActorView(ActorRole.Enemy, _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, enemySpawn.Position));
             world.PlayerInventory = new InventoryState(10);
             world.PlayerEquipment = new EquipmentState();
             world.PlayerInventory.TryAdd(SliceItemCatalog.CreateAshTrainingBlade());

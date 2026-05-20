@@ -21,7 +21,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         public void SaveAndLoad_RoundTripsDoorMerchantGuardAndEnemyState()
         {
             var world = new SliceWorldFactory().Create(1337);
-            world.Player.MoveTo(world.Merchant.Position.Translate(0, 1));
+            world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Merchant).Position.Translate(0, 1));
             var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
             new EquipmentService().TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
             world.PlayerInventory.TryAdd(world.Pickups[0].Item);
@@ -29,11 +29,11 @@ namespace EmberCrpg.Tests.EditMode.Save
             new MerchantTradeService().TradeGateWrit(world);
             new AskAboutService().Ask(world, "embers");
             new AskAboutService().Ask(world, "embers");
-            world.Player.MoveTo(world.Guard.Position.Translate(0, -1));
+            world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Guard).Position.Translate(0, -1));
             new GuardInteractionService().Interact(world);
-            world.Player.MoveTo(new GridPosition(world.Room.DoorCell.X, 1));
+            world.Actors.FirstByRole(ActorRole.Player).MoveTo(new GridPosition(world.Room.DoorCell.X, 1));
             new DoorInteractionService().Toggle(world);
-            world.Enemy.ApplyVitals(world.Enemy.Vitals.WithHealth(world.Enemy.Vitals.Health.Damage(5)));
+            world.Actors.FirstByRole(ActorRole.Enemy).ApplyVitals(world.Actors.FirstByRole(ActorRole.Enemy).Vitals.WithHealth(world.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.Damage(5)));
             world.PlayerSpellCooldowns.SetRemainingTicks("ember.spark", 4);
             world.PlayerSpellCooldowns.SetRemainingTicks("ash.bind", 2);
             world.PlayerShieldBuffs.SetActiveBuff("ember_ward", 30, 4);
@@ -56,7 +56,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(loaded.MerchantInventory.Contains(SliceItemCatalog.EmberShardTemplateId), Is.True);
             Assert.That(loaded.GuardDoorAccessGranted, Is.True);
             Assert.That(loaded.DoorOpen, Is.True);
-            Assert.That(loaded.Enemy.Vitals.Health.Current, Is.EqualTo(world.Enemy.Vitals.Health.Current));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.Current, Is.EqualTo(world.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.Current));
             Assert.That(loaded.Dungeon.Rooms.Count, Is.EqualTo(world.Dungeon.Rooms.Count));
             Assert.That(loaded.Dungeon.Doors.Select(door => door.Id), Is.EqualTo(world.Dungeon.Doors.Select(door => door.Id)));
             Assert.That(loaded.CurrentRoomId, Is.EqualTo(world.CurrentRoomId));
@@ -66,12 +66,12 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(loaded.Dungeon.FindSpawn(DungeonSpawnKind.Enemy).RoomId, Is.EqualTo(world.EnemyRoomId));
             Assert.That(loaded.DungeonRoomStates.Last().Cleared, Is.True);
             Assert.That(loaded.DungeonDoorStates.Last().Open, Is.False);
-            Assert.That(loaded.NpcMemory.TryGet(loaded.Talker.Id, out var talkerMemory), Is.True);
+            Assert.That(loaded.NpcMemory.TryGet(loaded.Actors.FirstByRole(ActorRole.Talker).Id, out var talkerMemory), Is.True);
             Assert.That(talkerMemory.HasDialogueSeen("embers"), Is.True);
             Assert.That(talkerMemory.CountEvents(ActorMemoryEventTypes.DialogueTopic), Is.EqualTo(2));
-            Assert.That(loaded.NpcMemory.TryGet(loaded.Merchant.Id, out var merchantMemory), Is.True);
+            Assert.That(loaded.NpcMemory.TryGet(loaded.Actors.FirstByRole(ActorRole.Merchant).Id, out var merchantMemory), Is.True);
             Assert.That(merchantMemory.Transactions.Single().ItemTemplateId, Is.EqualTo(SliceItemCatalog.GateWritTemplateId));
-            Assert.That(loaded.NpcMemory.TryGet(loaded.Guard.Id, out var guardMemory), Is.True);
+            Assert.That(loaded.NpcMemory.TryGet(loaded.Actors.FirstByRole(ActorRole.Guard).Id, out var guardMemory), Is.True);
             Assert.That(guardMemory.CountEvents(ActorMemoryEventTypes.ClearanceGranted), Is.EqualTo(1));
             Assert.That(loaded.PlayerSpellCooldowns, Is.Not.Null);
             Assert.That(loaded.PlayerSpellCooldowns.GetRemainingTicks("ember.spark"), Is.EqualTo(4));

@@ -19,10 +19,10 @@ namespace EmberCrpg.Tests.EditMode.World
             var world = new SliceWorldState();
             var player = MakeRecord(1, "Warden", ActorRole.Player);
 
-            world.Player = player;
+            world.ReplaceActorView(ActorRole.Player, player);
 
             Assert.That(world.Actors.FirstByRole(ActorRole.Player), Is.SameAs(player));
-            Assert.That(world.Player, Is.SameAs(player));
+            Assert.That(world.Actors.FirstByRole(ActorRole.Player), Is.SameAs(player));
         }
 
         [Test]
@@ -32,10 +32,10 @@ namespace EmberCrpg.Tests.EditMode.World
             var first = MakeRecord(1, "Warden", ActorRole.Player);
             var second = MakeRecord(11, "New Warden", ActorRole.Player);
 
-            world.Player = first;
-            world.Player = second;
+            world.ReplaceActorView(ActorRole.Player, first);
+            world.ReplaceActorView(ActorRole.Player, second);
 
-            Assert.That(world.Player, Is.SameAs(second));
+            Assert.That(world.Actors.FirstByRole(ActorRole.Player), Is.SameAs(second));
             Assert.That(world.Actors.Contains(first.Id), Is.False);
             Assert.That(world.Actors.Count, Is.EqualTo(1));
         }
@@ -46,7 +46,7 @@ namespace EmberCrpg.Tests.EditMode.World
             var world = new SliceWorldState();
             var guard = MakeRecord(4, "Sentinel", ActorRole.Guard);
 
-            Assert.Throws<ArgumentException>(() => world.Player = guard);
+            Assert.Throws<ArgumentException>(() => world.ReplaceActorView(ActorRole.Player, guard));
         }
 
         [Test]
@@ -59,9 +59,9 @@ namespace EmberCrpg.Tests.EditMode.World
             world.Actors.Add(firstGuard);
             world.Actors.Add(secondGuard);
 
-            world.Guard = replacementGuard;
+            world.ReplaceActorView(ActorRole.Guard, replacementGuard);
 
-            Assert.That(world.Guard, Is.SameAs(replacementGuard));
+            Assert.That(world.Actors.FirstByRole(ActorRole.Guard), Is.SameAs(replacementGuard));
             Assert.That(world.Actors.Contains(firstGuard.Id), Is.False);
             Assert.That(world.Actors.Contains(secondGuard.Id), Is.False);
             Assert.That(world.Actors.Count, Is.EqualTo(1));
@@ -98,11 +98,11 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(world.Sites.Count, Is.EqualTo(0));
             Assert.That(world.Factions.Count, Is.EqualTo(0));
             Assert.That(world.Events.IsEmpty, Is.True);
-            Assert.That(world.Actors.FirstByRole(ActorRole.Player), Is.SameAs(world.Player));
-            Assert.That(world.Actors.FirstByRole(ActorRole.Talker), Is.SameAs(world.Talker));
-            Assert.That(world.Actors.FirstByRole(ActorRole.Merchant), Is.SameAs(world.Merchant));
-            Assert.That(world.Actors.FirstByRole(ActorRole.Guard), Is.SameAs(world.Guard));
-            Assert.That(world.Actors.FirstByRole(ActorRole.Enemy), Is.SameAs(world.Enemy));
+            Assert.That(world.Actors.FirstByRole(ActorRole.Player), Is.SameAs(world.Actors.FirstByRole(ActorRole.Player)));
+            Assert.That(world.Actors.FirstByRole(ActorRole.Talker), Is.SameAs(world.Actors.FirstByRole(ActorRole.Talker)));
+            Assert.That(world.Actors.FirstByRole(ActorRole.Merchant), Is.SameAs(world.Actors.FirstByRole(ActorRole.Merchant)));
+            Assert.That(world.Actors.FirstByRole(ActorRole.Guard), Is.SameAs(world.Actors.FirstByRole(ActorRole.Guard)));
+            Assert.That(world.Actors.FirstByRole(ActorRole.Enemy), Is.SameAs(world.Actors.FirstByRole(ActorRole.Enemy)));
         }
 
         private static ActorRecord MakeRecord(ulong id, string name, ActorRole role)

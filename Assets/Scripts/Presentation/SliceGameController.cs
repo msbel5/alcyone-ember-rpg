@@ -1,5 +1,6 @@
 using System.IO;
 using UnityEngine;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // SliceGameController wires the slice session, player rig, HUD, and world view into one MonoBehaviour.
@@ -31,7 +32,7 @@ namespace EmberCrpg.Presentation.Slice
         {
             _session.SyncPlayerPosition(_player.ReadGridPosition());
             HandleInput();
-            _player.SnapToGrid(_session.World.Player.Position);
+            _player.SnapToGrid(_session.World.Actors.FirstByRole(ActorRole.Player).Position);
             _view.Sync(_session.World);
             _audio.Apply(_session.CurrentAtmosphere);
         }
@@ -66,7 +67,7 @@ namespace EmberCrpg.Presentation.Slice
 
         private void RebuildView()
         {
-            _player.SnapToGrid(_session.World.Player.Position);
+            _player.SnapToGrid(_session.World.Actors.FirstByRole(ActorRole.Player).Position);
             _view.Rebuild(_session.World);
         }
     }

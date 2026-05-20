@@ -1,4 +1,5 @@
 using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // AskDmService is Sprint 1's deterministic narrator shell, not a live LLM integration.
@@ -12,7 +13,7 @@ namespace EmberCrpg.Simulation.Narrative
     {
         public string Ask(SliceWorldState world, string question)
         {
-            var enemyState = world.Enemy.IsAlive ? "still stalking the north-east corner" : "already down";
+            var enemyState = world.Actors.FirstByRole(ActorRole.Enemy).IsAlive ? "still stalking the north-east corner" : "already down";
             return $"DM shell: room seed {world.RoomSeed}, enemy is {enemyState}, inventory {world.PlayerInventory.Items.Count}/{world.PlayerInventory.Capacity}, question='{question}'.";
         }
     }

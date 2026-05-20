@@ -1,6 +1,7 @@
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Narrative;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // MerchantTradeService owns the deterministic Sprint 2 merchant exchange.
@@ -16,10 +17,10 @@ namespace EmberCrpg.Simulation.Inventory
 
         public string TradeGateWrit(SliceWorldState world)
         {
-            if (world.Player.Position.ManhattanDistanceTo(world.Merchant.Position) > 2)
+            if (world.Actors.FirstByRole(ActorRole.Player).Position.ManhattanDistanceTo(world.Actors.FirstByRole(ActorRole.Merchant).Position) > 2)
                 return "Stand closer to Quartermaster Ivo before trying to trade.";
 
-            var context = _memoryQueries.GetMerchantContext(world.NpcMemory, world.Merchant.Id);
+            var context = _memoryQueries.GetMerchantContext(world.NpcMemory, world.Actors.FirstByRole(ActorRole.Merchant).Id);
             if (!world.MerchantInventory.Contains(SliceItemCatalog.GateWritTemplateId))
                 return context.Familiarity == MerchantFamiliarity.Stranger
                     ? "Quartermaster Ivo has no gate writs left to issue."
@@ -44,15 +45,15 @@ namespace EmberCrpg.Simulation.Inventory
             }
 
             world.MerchantInventory.TryAdd(SliceItemCatalog.CreateEmberShard());
-            var memory = world.NpcMemory.GetOrCreate(world.Merchant.Id);
+            var memory = world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Merchant).Id);
             memory.RecordEvent(new InteractionEvent(
                 world.Time,
                 ActorMemoryEventTypes.TradedWith,
-                world.Player.Id,
+                world.Actors.FirstByRole(ActorRole.Player).Id,
                 "gate_writ_trade",
                 SliceItemCatalog.GateWritTemplateId,
                 1,
-                world.Merchant.Position));
+                world.Actors.FirstByRole(ActorRole.Merchant).Position));
             memory.RecordTransaction(new TransactionRecord(
                 world.Time,
                 "IssueGateWrit",

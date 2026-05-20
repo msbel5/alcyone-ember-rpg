@@ -2,6 +2,7 @@ using System;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // GuardInteractionService gives Sentinel Rook a distinct deterministic checkpoint surface.
@@ -18,19 +19,19 @@ namespace EmberCrpg.Simulation.Narrative
 
         public string Interact(SliceWorldState world)
         {
-            if (world.Player.Position.ManhattanDistanceTo(world.Guard.Position) > 2)
+            if (world.Actors.FirstByRole(ActorRole.Player).Position.ManhattanDistanceTo(world.Actors.FirstByRole(ActorRole.Guard).Position) > 2)
                 return "Stand closer to Sentinel Rook before asking for passage.";
 
-            var context = _memoryQueries.GetGuardContext(world.NpcMemory, world.Guard.Id, SouthDoorPassageId);
-            var memory = world.NpcMemory.GetOrCreate(world.Guard.Id);
+            var context = _memoryQueries.GetGuardContext(world.NpcMemory, world.Actors.FirstByRole(ActorRole.Guard).Id, SouthDoorPassageId);
+            var memory = world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Guard).Id);
             memory.RecordEvent(new InteractionEvent(
                 world.Time,
                 ActorMemoryEventTypes.PassageRequested,
-                world.Player.Id,
+                world.Actors.FirstByRole(ActorRole.Player).Id,
                 SouthDoorPassageId,
                 string.Empty,
                 context.PassageRequestCount,
-                world.Guard.Position));
+                world.Actors.FirstByRole(ActorRole.Guard).Position));
 
             if (world.GuardDoorAccessGranted || context.ClearanceGranted)
             {
@@ -53,11 +54,11 @@ namespace EmberCrpg.Simulation.Narrative
                 memory.RecordEvent(new InteractionEvent(
                     world.Time,
                     ActorMemoryEventTypes.ClearanceGranted,
-                    world.Player.Id,
+                    world.Actors.FirstByRole(ActorRole.Player).Id,
                     SouthDoorPassageId,
                     SliceItemCatalog.GateWritTemplateId,
                     1,
-                    world.Guard.Position));
+                    world.Actors.FirstByRole(ActorRole.Guard).Position));
                 return "Sentinel Rook checks the gate writ, marks your face, and grants clearance for the south door.";
             }
 

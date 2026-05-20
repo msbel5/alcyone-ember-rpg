@@ -5,6 +5,7 @@ using EmberCrpg.Simulation.Inventory;
 using EmberCrpg.Simulation.Rng;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // These tests pin Sprint 4 Faz 4 equipment rules and the first mechanic affected by gear.
@@ -115,9 +116,9 @@ namespace EmberCrpg.Tests.EditMode.Inventory
             service.TryEquip(geared.PlayerInventory, geared.PlayerEquipment, weapon.Id);
             var turn = new EncounterTurnService();
 
-            var plainStrike = turn.Advance(new EmberCrpg.Domain.Combat.EncounterState(plain.Player.Id, plain.Enemy.Id), plain.Player, plain.Enemy, new FixedRng(1));
+            var plainStrike = turn.Advance(new EmberCrpg.Domain.Combat.EncounterState(plain.Actors.FirstByRole(ActorRole.Player).Id, plain.Actors.FirstByRole(ActorRole.Enemy).Id), plain.Actors.FirstByRole(ActorRole.Player), plain.Actors.FirstByRole(ActorRole.Enemy), new FixedRng(1));
             var gearStats = service.GetCombatStats(geared.PlayerInventory, geared.PlayerEquipment);
-            var gearedStrike = turn.Advance(new EmberCrpg.Domain.Combat.EncounterState(geared.Player.Id, geared.Enemy.Id), geared.Player, geared.Enemy, new FixedRng(1), gearStats, new EquipmentCombatStats(0, 0));
+            var gearedStrike = turn.Advance(new EmberCrpg.Domain.Combat.EncounterState(geared.Actors.FirstByRole(ActorRole.Player).Id, geared.Actors.FirstByRole(ActorRole.Enemy).Id), geared.Actors.FirstByRole(ActorRole.Player), geared.Actors.FirstByRole(ActorRole.Enemy), new FixedRng(1), gearStats, new EquipmentCombatStats(0, 0));
 
             Assert.That(gearedStrike.Hit, Is.True);
             Assert.That(gearedStrike.RawDamage, Is.GreaterThan(plainStrike.RawDamage));
