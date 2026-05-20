@@ -273,6 +273,10 @@ public IReadOnlyList<JobQueueRow> JobQueueRows => EmptyJobs;
             public void LogCombat(string message) { }
             public void TakePlayerDamage(int amount) { }
             public string ConsultFate() => string.Empty;
+            // Codex audit Batch 2 / Finding 3 — fallback adapter has nothing to
+            // round-trip. Return empty / no-op so save/load lifecycle still runs.
+            public string ExportStateJson() => string.Empty;
+            public void RestoreStateJson(string json) { }
         }
     }
 }
