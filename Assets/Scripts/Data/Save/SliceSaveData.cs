@@ -373,6 +373,11 @@ namespace EmberCrpg.Data.Save
         public int quantity;
         public ulong requesterId;
         public ulong claimedByActorId;
+        // PR#138 bot review fix: persist the original ClaimSequence so the
+        // load path can restore the same queue order (otherwise re-claiming in
+        // insertion-order assigns fresh sequences that no longer match the
+        // pre-save queue index used by GetQueueIndex).
+        public int claimSequence;
     }
 
     [Serializable]

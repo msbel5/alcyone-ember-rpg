@@ -41,8 +41,15 @@ namespace EmberCrpg.Domain.Process
                 return 0;
             var key = new PriceKey(siteId, itemTag.Trim());
             var current = _prices.TryGetValue(key, out var value) ? value : 0;
-            var next = current + delta;
-            if (next < 0) next = 0;
+            // PR#152 bot review fix: `current + delta` in default unchecked
+            // context wraps on int overflow, then the lower-bound clamp runs
+            // *after* the wrap so a wrapped-negative value gets clamped to 0
+            // even though the intended sum was huge positive. Promote to long
+            // for the add, then clamp into the int range.
+            var nextLong = (long)current + delta;
+            if (nextLong < 0L) nextLong = 0L;
+            if (nextLong > int.MaxValue) nextLong = int.MaxValue;
+            var next = (int)nextLong;
             _prices[key] = next;
             return next;
         }

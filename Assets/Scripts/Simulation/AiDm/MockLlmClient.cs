@@ -32,7 +32,13 @@ namespace EmberCrpg.Simulation.AiDm
 
         private static string Key(string sysId, string convId, ulong seed)
         {
-            return (sysId ?? string.Empty) + "|" + (convId ?? string.Empty) + "|" + seed;
+            // PR#170 bot review fix: joining unescaped strings with "|" lets
+            // distinct request tuples collide whenever an id contains the
+            // separator (e.g. ("a|b","c",1) and ("a","b|c",1) collapse to the
+            // same key). Length-prefix each field so the encoding is injective.
+            var s = sysId ?? string.Empty;
+            var c = convId ?? string.Empty;
+            return s.Length.ToString() + ":" + s + "|" + c.Length.ToString() + ":" + c + "|" + seed;
         }
     }
 }

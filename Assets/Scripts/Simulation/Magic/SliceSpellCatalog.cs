@@ -18,8 +18,13 @@ namespace EmberCrpg.Simulation.Magic
 
         private static readonly SpellDefinition[] _spells = BuildSpells();
         private static readonly Dictionary<string, SpellDefinition> _byId = BuildLookup(_spells);
+        // PR#13 bot review fix: wrap the raw array in ReadOnlyCollection so a
+        // caller can't downcast All back to SpellDefinition[] and mutate the
+        // shared catalog (e.g. swap or null out a slot).
+        private static readonly System.Collections.ObjectModel.ReadOnlyCollection<SpellDefinition> _allView =
+            new System.Collections.ObjectModel.ReadOnlyCollection<SpellDefinition>(_spells);
 
-        public static IReadOnlyList<SpellDefinition> All => _spells;
+        public static IReadOnlyList<SpellDefinition> All => _allView;
 
         public static SpellDefinition Find(string templateId)
         {
