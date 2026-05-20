@@ -114,6 +114,20 @@ namespace EmberCrpg.Domain.Process
             return !id.IsEmpty && _byId.TryGetValue(id, out var entry) && entry.IsClaimed;
         }
 
+        /// <summary>
+        /// Returns the deterministic lifecycle status for a tracked job.
+        /// Pending when present but unclaimed, Assigned when an actor holds the claim.
+        /// Terminal states (Completed/Canceled) are removed from the board, so an
+        /// unknown id resolves to Pending as the safe non-terminal default for callers.
+        /// Closes CO-05 in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+        /// </summary>
+        public JobStatus GetStatus(JobId id)
+        {
+            if (id.IsEmpty || !_byId.TryGetValue(id, out var entry))
+                return JobStatus.Pending;
+            return entry.IsClaimed ? JobStatus.Assigned : JobStatus.Pending;
+        }
+
         /// <summary>Returns the actor holding a pending job claim, or ActorId.Empty.</summary>
         public ActorId GetClaimedBy(JobId id)
         {
