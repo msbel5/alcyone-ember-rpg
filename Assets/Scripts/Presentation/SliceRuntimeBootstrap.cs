@@ -17,17 +17,25 @@ namespace EmberCrpg.Presentation.Slice
             var activeScene = SceneManager.GetActiveScene();
             var sceneName = activeScene.name ?? string.Empty;
 
-            // Skip when an existing controller is present, or when the active
-            // scene belongs to a non-slice surface: Sprint 4 combat foundation,
-            // any Faz acceptance scene (Faz3..Faz12), the Ember Main Menu, or
-            // any scene saved under Assets/Scenes/Ember/. The slice runtime is
-            // a legacy Sprint 1/2 entry point and must not steal control of
-            // the new EmberWorldHost-driven scenes.
+            // Bail when an existing slice controller is already present.
             if (Object.FindFirstObjectByType<SliceGameController>() != null) return;
+
+            // Codex review (2026-05-21): the previous name/path heuristic
+            // ("Faz*", "MainMenu", "/Scenes/Ember/") was brittle — any
+            // out-of-convention scene name silently re-enabled the slice
+            // controller next to the host. Detect intent instead: look for
+            // EmberWorldHost via reflection so this Sprint 1/2 file does
+            // not take an assembly-level dependency on the newer Ember
+            // bootstrap layer. The reflective lookup is allocation-free and
+            // happens once per scene load.
+            var emberHostType = System.Type.GetType(
+                "EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost, EmberCrpg.Presentation");
+            if (emberHostType != null
+                && Object.FindFirstObjectByType(emberHostType, FindObjectsInactive.Include) != null)
+                return;
+
+            // Fallback for the original Sprint 4 combat foundation scenes.
             if (sceneName.Contains("Sprint4")) return;
-            if (sceneName.StartsWith("Faz")) return;
-            if (sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase)) return;
-            if (activeScene.path != null && activeScene.path.Contains("/Scenes/Ember/")) return;
 
             var controller = new GameObject("Sprint2SliceController");
             Object.DontDestroyOnLoad(controller);
