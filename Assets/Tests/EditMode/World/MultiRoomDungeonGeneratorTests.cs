@@ -3,6 +3,7 @@ using System.Linq;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // These tests pin deterministic Sprint 4 multi-room dungeon generation.
@@ -52,7 +53,7 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(traversal.Traverse(world, guardedDoor.Id), Does.Contain("closed"));
 
             world.GuardDoorAccessGranted = true;
-            world.Player.MoveTo(new EmberCrpg.Domain.Actors.GridPosition(world.Room.DoorCell.X, 1));
+            world.Actors.FirstByRole(ActorRole.Player).MoveTo(new EmberCrpg.Domain.Actors.GridPosition(world.Room.DoorCell.X, 1));
             new DoorInteractionService().Toggle(world);
             Assert.That(traversal.Traverse(world, guardedDoor.Id), Does.Contain($"room {world.CurrentRoomId}"));
             Assert.That(world.DungeonRoomStates.First(state => state.RoomId == world.CurrentRoomId).Visited, Is.True);

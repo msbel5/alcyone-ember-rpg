@@ -1,5 +1,6 @@
 using System.Linq;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // SliceAtmosphereSelector maps deterministic dungeon state into audio cue ids for presentation hooks.
@@ -47,7 +48,7 @@ namespace EmberCrpg.Presentation.Slice
         {
             if (IsCombatThreat(world))
                 return "music.combat.low";
-            if (!world.Enemy.Vitals.Health.IsDepleted && world.CurrentRoomId == world.EnemyRoomId)
+            if (!world.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.IsDepleted && world.CurrentRoomId == world.EnemyRoomId)
                 return "music.tension.enemy-near";
             if (roomState != null && roomState.Cleared)
                 return "music.dungeon.resolved";
@@ -71,7 +72,7 @@ namespace EmberCrpg.Presentation.Slice
 
         private static bool IsCombatThreat(SliceWorldState world)
         {
-            return world.EncounterActive && !world.Enemy.Vitals.Health.IsDepleted && world.CurrentRoomId == world.EnemyRoomId;
+            return world.EncounterActive && !world.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.IsDepleted && world.CurrentRoomId == world.EnemyRoomId;
         }
 
         private static bool HasClosedDoor(SliceWorldState world, DungeonRoom room)

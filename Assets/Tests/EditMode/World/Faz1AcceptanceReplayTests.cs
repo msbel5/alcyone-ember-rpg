@@ -32,17 +32,17 @@ namespace EmberCrpg.Tests.EditMode.World
             world.Events.Append(new WorldEvent(
                 world.Time,
                 WorldEventKind.ActorSpawned,
-                world.Guard.Id,
+                world.Actors.FirstByRole(ActorRole.Guard).Id,
                 startSiteId,
                 "faz1-acceptance-spawn-guard",
                 new ReasonTrace(new[] { "factory-seed-3110", "store-backed-guard" })));
 
-            world.Player.MoveTo(world.Guard.Position.Translate(0, -1));
+            world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Guard).Position.Translate(0, -1));
             var firstTalk = new GuardInteractionService().Interact(world);
             world.Events.Append(new WorldEvent(
                 world.Time,
                 WorldEventKind.ActorTalked,
-                world.Guard.Id,
+                world.Actors.FirstByRole(ActorRole.Guard).Id,
                 startSiteId,
                 "faz1-acceptance-first-guard-talk",
                 new ReasonTrace(new[] { "player-command", "guard-memory-passage-request" })));
@@ -52,13 +52,13 @@ namespace EmberCrpg.Tests.EditMode.World
             var rememberedTalk = new GuardInteractionService().Interact(loaded);
             Assert.That(loaded.PlayerInventory.TryAdd(SliceItemCatalog.CreateGateWrit()), Is.True);
             var clearanceTalk = new GuardInteractionService().Interact(loaded);
-            loaded.Player.MoveTo(new GridPosition(loaded.Room.DoorCell.X, 1));
+            loaded.Actors.FirstByRole(ActorRole.Player).MoveTo(new GridPosition(loaded.Room.DoorCell.X, 1));
             var doorToggle = new DoorInteractionService().Toggle(loaded);
             var traversal = new DungeonTraversalService().Traverse(loaded, guardedDoor.Id);
             loaded.Events.Append(new WorldEvent(
                 loaded.Time.AddMinutes(10),
                 WorldEventKind.SiteEntered,
-                loaded.Player.Id,
+                loaded.Actors.FirstByRole(ActorRole.Player).Id,
                 secondSiteId,
                 "faz1-acceptance-enter-second-site",
                 new ReasonTrace(new[] { "save-load", "guard-memory-confirmed", "walk-to-second-site" })));
@@ -70,8 +70,8 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(clearanceTalk, Does.Contain("grants clearance"));
             Assert.That(doorToggle, Does.Contain("grinds open"));
             Assert.That(traversal, Does.Contain($"room {secondRoomId}"));
-            Assert.That(final.Guard.Id, Is.EqualTo(world.Guard.Id));
-            Assert.That(final.NpcMemory.TryGet(final.Guard.Id, out var guardMemory), Is.True);
+            Assert.That(final.Actors.FirstByRole(ActorRole.Guard).Id, Is.EqualTo(world.Actors.FirstByRole(ActorRole.Guard).Id));
+            Assert.That(final.NpcMemory.TryGet(final.Actors.FirstByRole(ActorRole.Guard).Id, out var guardMemory), Is.True);
             Assert.That(guardMemory.CountEvents(ActorMemoryEventTypes.PassageRequested), Is.EqualTo(3));
             Assert.That(final.CurrentRoomId, Is.EqualTo(secondRoomId));
             Assert.That(final.DungeonRoomStates.First(state => state.RoomId == secondRoomId).Visited, Is.True);

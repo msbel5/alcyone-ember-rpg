@@ -26,7 +26,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         public void JsonDto_RoundTripsClaimedJobBoardAndActorScheduleState()
         {
             var world = new SliceWorldFactory().Create(303);
-            var actor = world.Player;
+            var actor = world.Actors.FirstByRole(ActorRole.Player);
             actor.ApplyJobPreferences(new[] { new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)) });
             actor.ApplyScheduleState(ActorScheduleState.Assigned(Job, FurnaceSite, FurnacePosition));
 

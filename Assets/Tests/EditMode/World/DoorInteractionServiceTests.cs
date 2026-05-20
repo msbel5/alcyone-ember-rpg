@@ -34,7 +34,7 @@ namespace EmberCrpg.Tests.EditMode.World
         private static SliceWorldState CreateDoorReadyWorld()
         {
             var world = new SliceWorldFactory().Create(1337);
-            world.Player.MoveTo(new GridPosition(world.Room.DoorCell.X, 1));
+            world.Actors.FirstByRole(ActorRole.Player).MoveTo(new GridPosition(world.Room.DoorCell.X, 1));
             return world;
         }
     }

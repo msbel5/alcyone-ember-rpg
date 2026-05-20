@@ -111,7 +111,7 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             terrain.Add("oil", 1);
             world.Stockpiles.Add(terrain);
 
-            var target = world.Enemy;
+            var target = world.Actors.FirstByRole(ActorRole.Enemy);
             var before = target.Vitals.Health.Current;
             var handlers = new EffectOperationHandlers();
             handlers.Register(EffectOperationKind.TerrainApply, op => op.Magnitude);
@@ -136,7 +136,7 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             Assert.That(terrain.Get("fire"), Is.EqualTo(1));
 
             var restored = RoundTrip(world);
-            Assert.That(restored.Enemy.Vitals.Health.Current, Is.EqualTo(before - 4));
+            Assert.That(restored.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.Current, Is.EqualTo(before - 4));
             Assert.That(restored.FindStockpile(terrain.SiteId).Get("fire"), Is.EqualTo(1));
         }
 
@@ -146,7 +146,7 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             var thief = Actor("Thief", new ActorId(41), ActorRole.Player, 20, 10, 5, 40, 5, 0, 2);
             var theft = new WorldEvent(new GameTime(0), WorldEventKind.ActorTalked, thief.Id, new SiteId(7), "theft item:coin");
             var world = NewWorld();
-            var merchant = world.Merchant;
+            var merchant = world.Actors.FirstByRole(ActorRole.Merchant);
 
             var writer = new MemoryWriteSystem();
             Assert.That(writer.RecordFromWorldEvent(merchant.Memory, theft), Is.True);
@@ -164,7 +164,7 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             Assert.That(reason, Is.EqualTo("memory_recent_crime"));
 
             var restored = RoundTrip(world);
-            Assert.That(restored.Merchant.Memory.Facts.Single().Detail, Does.Contain("theft"));
+            Assert.That(restored.Actors.FirstByRole(ActorRole.Merchant).Memory.Facts.Single().Detail, Does.Contain("theft"));
         }
 
         [Test]
@@ -209,7 +209,7 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             var router = new ToolCallRouter(new ToolCallValidator());
             router.RegisterHandler(ToolSurfaceKind.Dm, new ToolId("propose_event"), request =>
             {
-                world.Events.Append(new WorldEvent(world.Time, WorldEventKind.ActorTalked, world.Player.Id, new SiteId(9), "approved_tool_call"));
+                world.Events.Append(new WorldEvent(world.Time, WorldEventKind.ActorTalked, world.Actors.FirstByRole(ActorRole.Player).Id, new SiteId(9), "approved_tool_call"));
                 return ToolCallResult.AcceptedWith("event:approved");
             });
             var tracer = new ToolCallTracer();

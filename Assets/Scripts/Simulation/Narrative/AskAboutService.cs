@@ -1,6 +1,7 @@
 using System.Linq;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // AskAboutService provides Sprint 1's deterministic talk-NPC topic replies.
@@ -20,18 +21,18 @@ namespace EmberCrpg.Simulation.Narrative
             if (topic == null)
                 return "Sage Nera tilts her head. That topic is still a blank.";
 
-            var context = _memoryQueries.GetDialogueContext(world.NpcMemory, world.Talker.Id, topicId);
-            var memory = world.NpcMemory.GetOrCreate(world.Talker.Id);
-            world.Talker.RecordTopic(topicId);
+            var context = _memoryQueries.GetDialogueContext(world.NpcMemory, world.Actors.FirstByRole(ActorRole.Talker).Id, topicId);
+            var memory = world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Talker).Id);
+            world.Actors.FirstByRole(ActorRole.Talker).RecordTopic(topicId);
             memory.MarkDialogueSeen(topicId);
             memory.RecordEvent(new InteractionEvent(
                 world.Time,
                 ActorMemoryEventTypes.DialogueTopic,
-                world.Player.Id,
+                world.Actors.FirstByRole(ActorRole.Player).Id,
                 topicId,
                 string.Empty,
                 0,
-                world.Talker.Position));
+                world.Actors.FirstByRole(ActorRole.Talker).Position));
 
             switch (context.State)
             {

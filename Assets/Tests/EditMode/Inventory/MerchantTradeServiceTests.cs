@@ -4,6 +4,7 @@ using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // These tests pin the deterministic Sprint 2 merchant exchange.
@@ -45,7 +46,7 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         private static SliceWorldState CreateMerchantReadyWorld()
         {
             var world = new SliceWorldFactory().Create(1337);
-            world.Player.MoveTo(world.Merchant.Position.Translate(0, 1));
+            world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Merchant).Position.Translate(0, 1));
             return world;
         }
     }

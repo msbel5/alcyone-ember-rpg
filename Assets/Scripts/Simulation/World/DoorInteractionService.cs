@@ -1,5 +1,6 @@
 using System.Linq;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Actors;
 
 // Design note:
 // DoorInteractionService owns the deterministic Sprint 2 south-door toggle rules.
@@ -13,7 +14,7 @@ namespace EmberCrpg.Simulation.World
     {
         public string Toggle(SliceWorldState world)
         {
-            if (world.Player.Position.ManhattanDistanceTo(world.Room.DoorCell) > 1)
+            if (world.Actors.FirstByRole(ActorRole.Player).Position.ManhattanDistanceTo(world.Room.DoorCell) > 1)
                 return "Stand at the south threshold before working the door.";
             if (!world.DoorOpen && !world.GuardDoorAccessGranted)
                 return "The sealed south door refuses to move without Sentinel Rook's clearance.";

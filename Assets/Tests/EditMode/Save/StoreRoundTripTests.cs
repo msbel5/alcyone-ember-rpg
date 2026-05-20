@@ -26,7 +26,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             var itemId = new ItemId(700);
             var factionId = new FactionId(30);
 
-            world.Guard = guard;
+            world.ReplaceActorView(ActorRole.Guard, guard);
             world.Items.Add(new ItemRecord(itemId, ItemMaterial.Iron, ItemQuality.Fine, EquipmentSlot.Weapon));
             world.Sites.Add(new SiteRecord(siteId, SiteKind.Settlement, "Ashford", new GridPosition(5, 2), new GridPosition(12, 8)));
             world.Factions.Add(new FactionRecord(factionId, "Ash Guild", new[] { "guild", "ember" }));
@@ -42,9 +42,9 @@ namespace EmberCrpg.Tests.EditMode.Save
             var loaded = service.LoadFromJson(service.SaveToJson(world));
 
             Assert.That(loaded.Actors.Count, Is.EqualTo(world.Actors.Count));
-            Assert.That(loaded.Guard.Id, Is.EqualTo(guard.Id));
-            Assert.That(loaded.Guard.Name, Is.EqualTo("Bridge Guard"));
-            Assert.That(loaded.Guard.Position, Is.EqualTo(new GridPosition(9, 4)));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Id, Is.EqualTo(guard.Id));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Name, Is.EqualTo("Bridge Guard"));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Position, Is.EqualTo(new GridPosition(9, 4)));
 
             Assert.That(loaded.Items.Count, Is.EqualTo(1));
             var item = loaded.Items.Get(itemId);
@@ -86,9 +86,9 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             var loaded = SliceSaveMapper.ToWorld(data);
 
-            Assert.That(loaded.Guard.Id, Is.EqualTo(canonicalGuard.Id));
-            Assert.That(loaded.Guard.Name, Is.EqualTo("Canonical Guard"));
-            Assert.That(loaded.Guard.Position, Is.EqualTo(new GridPosition(3, 7)));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Id, Is.EqualTo(canonicalGuard.Id));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Name, Is.EqualTo("Canonical Guard"));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Position, Is.EqualTo(new GridPosition(3, 7)));
         }
 
         [Test]
@@ -114,8 +114,8 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             var loaded = SliceSaveMapper.ToWorld(data);
 
-            Assert.That(loaded.Guard.Id, Is.EqualTo(canonicalGuard.Id));
-            Assert.That(loaded.Guard.Name, Is.EqualTo("Canonical Guard"));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Id, Is.EqualTo(canonicalGuard.Id));
+            Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Name, Is.EqualTo("Canonical Guard"));
         }
 
         private static ActorRecord MakeRecord(ulong id, string name, ActorRole role, GridPosition position)
