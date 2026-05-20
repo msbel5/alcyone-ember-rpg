@@ -2,7 +2,16 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DOTNET_CLI="${DOTNET_CLI:-/home/msbel/.dotnet/dotnet}"
+# PR#3 bot review fix: prefer DOTNET_CLI env, otherwise resolve `dotnet` from
+# PATH so the harness runs on any developer machine. Falls back to the
+# Pi-side hard-coded path only when neither env nor PATH have it.
+if [[ -n "${DOTNET_CLI:-}" ]]; then
+  :
+elif command -v dotnet >/dev/null 2>&1; then
+  DOTNET_CLI="$(command -v dotnet)"
+else
+  DOTNET_CLI="/home/msbel/.dotnet/dotnet"
+fi
 MODE="auto"
 UNITY_OVERRIDE=""
 OUTPUT_DIR="${VALIDATION_OUTPUT_DIR:-$ROOT_DIR/validation-output}"

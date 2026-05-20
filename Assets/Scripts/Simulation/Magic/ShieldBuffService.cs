@@ -197,17 +197,22 @@ namespace EmberCrpg.Simulation.Magic
                 incomingDamageByActorId.Count,
                 StringComparer.Ordinal);
 
+            // PR#37 bot review fix: validate the ENTIRE input map before mutating
+            // any shield state. Previously validation and AbsorbDamageForActor
+            // dispatch were interleaved, so a malformed entry midway through the
+            // dictionary left earlier actors partially absorbed while the later
+            // ones threw and never ran — leaking partial state into the registry.
             foreach (var pair in incomingDamageByActorId)
             {
-                var actorId = pair.Key;
-                if (string.IsNullOrWhiteSpace(actorId))
+                if (string.IsNullOrWhiteSpace(pair.Key))
                     throw new ArgumentException("Actor id keys must be non-empty stable ids.", nameof(incomingDamageByActorId));
+                if (pair.Value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(incomingDamageByActorId), pair.Value, "Incoming damage must be zero or positive.");
+            }
 
-                var incomingDamage = pair.Value;
-                if (incomingDamage < 0)
-                    throw new ArgumentOutOfRangeException(nameof(incomingDamageByActorId), incomingDamage, "Incoming damage must be zero or positive.");
-
-                results[actorId] = AbsorbDamageForActor(registry, actorId, incomingDamage);
+            foreach (var pair in incomingDamageByActorId)
+            {
+                results[pair.Key] = AbsorbDamageForActor(registry, pair.Key, pair.Value);
             }
 
             return results;
