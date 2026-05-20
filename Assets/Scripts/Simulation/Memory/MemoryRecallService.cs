@@ -37,5 +37,26 @@ namespace EmberCrpg.Simulation.Memory
             }
             return false;
         }
+
+        /// <summary>
+        /// PR#171 bot review fix: caller-side guarded variant. Restricts the
+        /// "recent" check to facts whose RecordedAt lies inside the
+        /// [since, now] window so future-dated facts (e.g. drifted clocks
+        /// across load) don't trigger refusal copy for events that have not
+        /// occurred yet.
+        /// </summary>
+        public bool HasRecentFact(MemoryComponent component, TopicId topic, GameTime since, GameTime now)
+        {
+            if (component == null || topic.IsEmpty) return false;
+            foreach (var fact in component.Facts)
+            {
+                if (!fact.Topic.Equals(topic)) continue;
+                var recorded = fact.RecordedAt.TotalMinutes;
+                if (recorded < since.TotalMinutes) continue;
+                if (recorded > now.TotalMinutes) continue;
+                return true;
+            }
+            return false;
+        }
     }
 }
