@@ -85,6 +85,35 @@ public IReadOnlyList<JobQueueRow> JobQueueRows => _jobRows;
                 $"You take {amount} damage!");
         }
 
+        // Codex audit Batch 2 / Finding 3 — placeholder bridge.
+        // The placeholder has no real domain state to round-trip. Stash only the
+        // tick + HUD line so the save service still observes save/load lifecycle
+        // events; a real adapter will overwrite both methods with a full domain
+        // snapshot. The format is intentionally version-stamped so a future
+        // domain adapter can detect placeholder envelopes and discard them.
+        public string ExportStateJson()
+        {
+            return "{\"version\":\"placeholder-v1\",\"tick\":" + _tick + ",\"hud\":\"" + (_hudText ?? string.Empty).Replace("\"", "\\\"") + "\"}";
+        }
+
+        public void RestoreStateJson(string json)
+        {
+            if (string.IsNullOrEmpty(json)) return;
+            // Extract the tick number with a deterministic substring scan; we
+            // intentionally avoid JsonUtility here because the placeholder
+            // envelope must survive without a Unity dependency.
+            const string key = "\"tick\":";
+            var idx = json.IndexOf(key, System.StringComparison.Ordinal);
+            if (idx < 0) return;
+            var start = idx + key.Length;
+            var end = start;
+            while (end < json.Length && (char.IsDigit(json[end]) || json[end] == '-'))
+                end++;
+            if (end <= start) return;
+            if (int.TryParse(json.Substring(start, end - start), out var restoredTick))
+                AdvanceTick(restoredTick);
+        }
+
         public string ConsultFate()
         {
             // Codex review (2026-05-21): the placeholder advertises itself as

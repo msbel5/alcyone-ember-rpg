@@ -77,8 +77,13 @@ namespace EmberCrpg.Simulation.AiDm
                     applied++;
             }
 
+            // Codex audit Batch 2 / Finding 1: `seed % 100` yields 0..99, but
+            // `FromRoll` requires 1..100 and throws on 0. The off-by-one made any
+            // seed that was a multiple of 100 (including the obvious initial `0`)
+            // crash deterministic narration. Add 1 to land in the canonical 1..100
+            // bucket window without changing the 35/35/30 distribution.
             return new ConsultFateResult(
-                ConsultFateOutcomeBucket.FromRoll((int)(seed % 100UL)),
+                ConsultFateOutcomeBucket.FromRoll((int)(seed % 100UL) + 1),
                 validation.Accepted.Count,
                 validation.Rejected.Count,
                 applied);
