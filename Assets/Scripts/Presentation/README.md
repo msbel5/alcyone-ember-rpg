@@ -35,9 +35,12 @@ If you are adding a new gameplay-visible feature, it lives here.
 Pure read-model rows that Captain's domain produces and Unity consumes.
 Methods like `JobDebugSnapshot.FromStores(...)`,
 `ColonyNeedsSnapshot.FromActors(...)`, `WorldEventTailSnapshot.FromLog(...)`
-translate live simulation state into immutable snapshots. Used by Ember UI
-panels (currently bridged via `PlaceholderSimulationAdapter`, with a real
-domain bridge planned).
+translate live simulation state into immutable snapshots. They are **not**
+yet consumed by `PlaceholderSimulationAdapter` (which fabricates its own
+rows directly in the `Ember.UI` DTO shape). Today these snapshots ship for
+Editor tooling and unit tests only — a domain-backed adapter that reads
+them and forwards into the `Ember.UI` source interfaces is the planned
+follow-up.
 
 DO NOT add MonoBehaviour scripts here — these are pure C# DTOs.
 

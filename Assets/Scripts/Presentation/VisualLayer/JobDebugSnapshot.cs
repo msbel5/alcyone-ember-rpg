@@ -54,9 +54,16 @@ namespace EmberCrpg.Presentation.VisualLayer
 
         private static string WorksiteTagFor(JobRequest request, WorksiteStore worksites)
         {
-            if (worksites == null)
-                return request.WorksiteKind.ToString();
-            return request.WorksiteKind.ToString();
+            // Codex review (2026-05-21): previously the worksites parameter was
+            // ignored in both branches — dead abstraction. Resolve the actual
+            // worksite at the request's coordinates so the debug HUD can
+            // distinguish "no worksite there" from "worksite exists but is
+            // inactive" instead of always echoing the raw WorksiteKind.
+            var baseLabel = request.WorksiteKind.ToString();
+            if (worksites == null) return baseLabel;
+            if (!worksites.TryGet(request.SiteId, request.WorksitePosition, out var record))
+                return baseLabel + "(missing)";
+            return record.IsActive ? baseLabel : baseLabel + "(inactive)";
         }
     }
 
