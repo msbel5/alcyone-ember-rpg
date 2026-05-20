@@ -27,5 +27,12 @@ namespace EmberCrpg.Domain.World
         PlantHarvested = 13,
         ActorStepped = 14,
         FactionReputationChanged = 15,
+        CaravanArrived = 16,
+        PriceChanged = 17,
+        TradeCompleted = 18,
+        ShortageDetected = 19,
+        CombatResolved = 20,
+        SpellResolved = 21,
+        ToolInvoked = 22,
     }
 }
