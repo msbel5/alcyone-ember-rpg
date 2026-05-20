@@ -44,7 +44,7 @@ namespace EmberCrpg.Presentation.VisualLayer
                     actorId,
                     request.Id,
                     actorName,
-                    request.JobKind.ToString(),
+                    request.Kind.ToString(),
                     status.Code,
                     worksiteTag,
                     queueIndex));
