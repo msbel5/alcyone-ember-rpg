@@ -21,6 +21,7 @@ namespace EmberCrpg.Data.Save
                 displayName = item.DisplayName,
                 quantity = item.Quantity,
                 equipmentSlot = (int)item.EquipmentSlot,
+                equipmentSlotCode = item.EquipmentSlot.Code,
                 accuracyBonus = item.AccuracyBonus,
                 damageBonus = item.DamageBonus,
             };
@@ -28,7 +29,10 @@ namespace EmberCrpg.Data.Save
 
         public static InventoryItem ToItem(ItemSaveData item)
         {
-            return new InventoryItem(new ItemId(item.id), item.templateId, item.displayName, item.quantity, (EquipmentSlot)item.equipmentSlot, item.accuracyBonus, item.damageBonus);
+            var slot = string.IsNullOrWhiteSpace(item.equipmentSlotCode)
+                ? EquipmentSlot.FromLegacyValue(item.equipmentSlot)
+                : EquipmentSlot.FromCode(item.equipmentSlotCode);
+            return new InventoryItem(new ItemId(item.id), item.templateId, item.displayName, item.quantity, slot, item.accuracyBonus, item.damageBonus);
         }
 
         public static PickupSaveData ToData(RoomPickup pickup)

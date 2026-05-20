@@ -55,7 +55,7 @@ on the Pi sprint factory host, so the fallback harness is the floor).
   `LeafCause`, `HasCause`) plus the defensive-constructor invariants. No
   builder, no batch helper, no fluent API.
 - Rule 3 (data-driven effects): N/A — this atom does not touch
-  `SpellEffectKind` / `EffectDefinition`.
+  `SpellEffectCode` / `EffectDefinition`.
 - Rule 4 (world-store promotion): N/A — `SliceWorldState` is not touched.
 - Rule 5 (playable proof): cumulative Faz 1 PR count is well under the
   every-fifth-PR threshold; playable proof remains scheduled for the

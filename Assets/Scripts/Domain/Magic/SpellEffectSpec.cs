@@ -11,9 +11,9 @@ namespace EmberCrpg.Domain.Magic
     /// <summary>Immutable per-effect descriptor inside a spell definition.</summary>
     public readonly struct SpellEffectSpec
     {
-        public SpellEffectSpec(SpellEffectKind kind, int magnitude, int durationTicks)
+        public SpellEffectSpec(SpellEffectCode kind, int magnitude, int durationTicks)
         {
-            if (kind == SpellEffectKind.None)
+            if (kind == SpellEffectCode.None)
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "Spell effects must specify a real kind.");
             if (magnitude < 0)
                 throw new ArgumentOutOfRangeException(nameof(magnitude), magnitude, "Magnitude must be zero or positive.");
@@ -25,7 +25,7 @@ namespace EmberCrpg.Domain.Magic
             DurationTicks = durationTicks;
         }
 
-        public SpellEffectKind Kind { get; }
+        public SpellEffectCode Kind { get; }
         public int Magnitude { get; }
         public int DurationTicks { get; }
         public bool IsInstantaneous => DurationTicks == 0;

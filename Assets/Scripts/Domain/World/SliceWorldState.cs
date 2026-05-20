@@ -5,12 +5,15 @@
 // Bible reference: PRD Sprint 1 FR-03 through FR-07, Sprint 2 FR-02 through FR-05.
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Magic;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
+using EmberCrpg.Domain.Process;
 
 namespace EmberCrpg.Domain.World
 {
@@ -33,6 +36,12 @@ namespace EmberCrpg.Domain.World
         public SiteStore Sites = new SiteStore();
         public FactionStore Factions = new FactionStore();
         public WorldEventLog Events = new WorldEventLog();
+        public PriceLedger Prices = new PriceLedger();
+        public List<StockpileComponent> Stockpiles = new List<StockpileComponent>();
+        public List<TradeRouteDef> TradeRoutes = new List<TradeRouteDef>();
+        public List<CaravanInstance> Caravans = new List<CaravanInstance>();
+        public List<ToolCallTraceRecord> ToolCallTrace = new List<ToolCallTraceRecord>();
+        public List<LlmProposalLogEntry> LlmProposalLog = new List<LlmProposalLogEntry>();
 
         [Obsolete("Use Actors.FirstByRole(ActorRole.Player) or ActorStore role-view helpers. This named slice view is deprecated in Faz 1.", false)]
         public ActorRecord Player
@@ -116,6 +125,16 @@ namespace EmberCrpg.Domain.World
         {
             if (Actors == null)
                 Actors = new ActorStore();
+        }
+
+        public StockpileComponent FindStockpile(SiteId siteId)
+        {
+            return Stockpiles?.FirstOrDefault(stockpile => stockpile != null && stockpile.SiteId.Equals(siteId));
+        }
+
+        public TradeRouteDef FindTradeRoute(TradeRouteId routeId)
+        {
+            return TradeRoutes?.FirstOrDefault(route => route != null && route.Id.Equals(routeId));
         }
     }
 }

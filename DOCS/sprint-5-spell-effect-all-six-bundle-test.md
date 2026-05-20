@@ -71,7 +71,7 @@ the GitHub PR check matrix.
 
 ## Out of scope
 
-- No new SpellEffectKind, no new counter on the result object, no
+- No new SpellEffectCode, no new counter on the result object, no
   new validator branch. The six verbs are already wired.
 - No spell catalog template — this is a coverage increment, not a
   content addition.

@@ -52,7 +52,7 @@ description (`Assets/Scripts/{Domain,Simulation,Data,Presentation}` +
   open doc-only PR. It counts as PR-administration on Faz 0, not as
   a sprint test-only PR.
 - Speculative utility? None added.
-- New `SpellEffectKind` entries? None.
+- New `SpellEffectCode` entries? None.
 - New `SliceWorldState` named fields? None.
 - Playable-proof PR cadence? Faz 0 is meta; the playable-proof rule
   starts firing in Faz 1 (Core Store reset).

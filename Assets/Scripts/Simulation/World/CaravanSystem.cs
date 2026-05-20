@@ -39,15 +39,38 @@ namespace EmberCrpg.Simulation.World
                 if (caravan.StepsSinceDeparture < route.CadenceDays)
                     continue;
 
-                caravan.Arrive(route.DestinationSiteId);
-                var destination = resolveStockpile(route.DestinationSiteId);
                 var delivered = 0;
-                if (destination != null)
+                if (caravan.PayloadRemaining == 0)
                 {
-                    destination.Add(route.ItemTag, caravan.PayloadRemaining);
-                    delivered = caravan.PayloadRemaining;
-                    caravan.Unload(caravan.PayloadRemaining);
+                    var origin = resolveStockpile(route.OriginSiteId);
+                    var loaded = origin?.Remove(route.ItemTag, route.QuantityPerCaravan) ?? 0;
+                    caravan.Load(loaded);
                 }
+
+                // PR#161 bot review fix: previously the caravan was marked Arrived
+                // before checking if the destination stockpile resolved. When the
+                // destination returned null the payload was never unloaded yet the
+                // state was Arrived, so the next tick skipped the caravan and the
+                // goods sat in limbo forever. Resolve the destination first; only
+                // commit Arrive when delivery actually happens. Otherwise emit a
+                // stuck event and leave the caravan in its current state so the
+                // next tick can retry.
+                var destination = resolveStockpile(route.DestinationSiteId);
+                if (destination == null)
+                {
+                    events.Append(new WorldEvent(
+                        now,
+                        WorldEventKind.CaravanArrived,
+                        default,
+                        route.DestinationSiteId,
+                        $"caravan_stuck id:{caravan.Id} route:{caravan.RouteId} item:{route.ItemTag} reason:destination_unavailable"));
+                    continue;
+                }
+
+                caravan.Arrive(route.DestinationSiteId);
+                destination.Add(route.ItemTag, caravan.PayloadRemaining);
+                delivered = caravan.PayloadRemaining;
+                caravan.Unload(caravan.PayloadRemaining);
 
                 events.Append(new WorldEvent(
                     now,

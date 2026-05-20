@@ -4,7 +4,9 @@
 // Outputs: round-trippable save objects with no UnityEngine in Domain/Simulation.
 // Bible reference: PRD Sprint 1 FR-06, Sprint 2 FR-02 through FR-04.
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
@@ -48,7 +50,14 @@ namespace EmberCrpg.Data.Save
                 itemRecords = ToItemStoreData(world.Items),
                 sites = ToSiteStoreData(world.Sites),
                 factions = ToFactionStoreData(world.Factions),
+                factionReputations = ToFactionReputationData(world.Factions),
+                prices = ToPriceLedgerData(world.Prices),
+                stockpiles = ToStockpileData(world.Stockpiles),
+                tradeRoutes = ToTradeRouteData(world.TradeRoutes),
+                caravans = ToCaravanData(world.Caravans),
                 worldEvents = ToWorldEventLogData(world.Events),
+                toolCallTrace = ToToolCallTraceData(world.ToolCallTrace),
+                llmProposalLog = ToLlmProposalLogData(world.LlmProposalLog),
                 inventory = ToInventoryData(world.PlayerInventory),
                 playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
@@ -97,7 +106,14 @@ namespace EmberCrpg.Data.Save
             world.Items = ToItemStore(data.itemRecords);
             world.Sites = ToSiteStore(data.sites);
             world.Factions = ToFactionStore(data.factions);
+            ApplyFactionReputations(world.Factions, data.factionReputations);
+            world.Prices = ToPriceLedger(data.prices);
+            world.Stockpiles = ToStockpiles(data.stockpiles);
+            world.TradeRoutes = ToTradeRoutes(data.tradeRoutes);
+            world.Caravans = ToCaravans(data.caravans);
             world.Events = ToWorldEventLog(data.worldEvents);
+            world.ToolCallTrace = ToToolCallTrace(data.toolCallTrace);
+            world.LlmProposalLog = ToLlmProposalLog(data.llmProposalLog);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
@@ -332,6 +348,7 @@ namespace EmberCrpg.Data.Save
                 material = (int)record.Material,
                 quality = (int)record.Quality,
                 slot = (int)record.Slot,
+                slotCode = record.Slot.Code,
             };
         }
 
@@ -341,7 +358,7 @@ namespace EmberCrpg.Data.Save
             foreach (var record in data ?? Array.Empty<ItemRecordSaveData>())
             {
                 if (record != null)
-                    store.Add(new ItemRecord(new ItemId(record.id), (ItemMaterial)record.material, (ItemQuality)record.quality, (EquipmentSlot)record.slot));
+                    store.Add(new ItemRecord(new ItemId(record.id), (ItemMaterial)record.material, (ItemQuality)record.quality, ToEquipmentSlot(record.slotCode, record.slot)));
             }
             return store;
         }
@@ -430,6 +447,152 @@ namespace EmberCrpg.Data.Save
             return store;
         }
 
+        private static FactionReputationSaveData[] ToFactionReputationData(FactionStore store)
+        {
+            return (store?.ReputationRows ?? Array.Empty<FactionReputationRow>())
+                .Select(row => new FactionReputationSaveData
+                {
+                    a = row.A.Value,
+                    b = row.B.Value,
+                    reputation = row.Reputation.Value,
+                })
+                .ToArray();
+        }
+
+        private static void ApplyFactionReputations(FactionStore store, FactionReputationSaveData[] data)
+        {
+            if (store == null)
+                return;
+
+            foreach (var row in data ?? Array.Empty<FactionReputationSaveData>())
+            {
+                if (row == null || row.a == 0UL || row.b == 0UL || row.a == row.b)
+                    continue;
+                store.WithReputation(new FactionId(row.a), new FactionId(row.b), new FactionReputation(row.reputation));
+            }
+        }
+
+        private static PriceLedgerSaveData[] ToPriceLedgerData(PriceLedger ledger)
+        {
+            return (ledger?.Entries ?? Array.Empty<PriceLedgerEntry>())
+                .Select(row => new PriceLedgerSaveData
+                {
+                    siteId = row.SiteId.Value,
+                    itemTag = row.ItemTag,
+                    price = row.Price,
+                })
+                .ToArray();
+        }
+
+        private static PriceLedger ToPriceLedger(PriceLedgerSaveData[] data)
+        {
+            var ledger = new PriceLedger();
+            foreach (var row in data ?? Array.Empty<PriceLedgerSaveData>())
+            {
+                if (row == null || row.siteId == 0UL || string.IsNullOrWhiteSpace(row.itemTag))
+                    continue;
+                ledger.SetPrice(new SiteId(row.siteId), row.itemTag, row.price);
+            }
+
+            return ledger;
+        }
+
+        private static StockpileSaveData[] ToStockpileData(IEnumerable<StockpileComponent> stockpiles)
+        {
+            return (stockpiles ?? Array.Empty<StockpileComponent>())
+                .Where(stockpile => stockpile != null)
+                .Select(stockpile => new StockpileSaveData
+                {
+                    siteId = stockpile.SiteId.Value,
+                    entries = stockpile.Entries.Select(entry => new StockpileEntrySaveData
+                    {
+                        itemTag = entry.Key,
+                        count = entry.Value,
+                    }).ToArray(),
+                })
+                .ToArray();
+        }
+
+        private static List<StockpileComponent> ToStockpiles(StockpileSaveData[] data)
+        {
+            var stockpiles = new List<StockpileComponent>();
+            foreach (var row in data ?? Array.Empty<StockpileSaveData>())
+            {
+                if (row == null || row.siteId == 0UL)
+                    continue;
+                var stockpile = new StockpileComponent(new SiteId(row.siteId));
+                foreach (var entry in row.entries ?? Array.Empty<StockpileEntrySaveData>())
+                {
+                    if (entry == null || string.IsNullOrWhiteSpace(entry.itemTag) || entry.count <= 0)
+                        continue;
+                    stockpile.Add(entry.itemTag, entry.count);
+                }
+                stockpiles.Add(stockpile);
+            }
+
+            return stockpiles;
+        }
+
+        private static TradeRouteSaveData[] ToTradeRouteData(IEnumerable<TradeRouteDef> routes)
+        {
+            return (routes ?? Array.Empty<TradeRouteDef>())
+                .Where(route => route != null)
+                .Select(route => new TradeRouteSaveData
+                {
+                    id = route.Id.Value,
+                    originSiteId = route.OriginSiteId.Value,
+                    destinationSiteId = route.DestinationSiteId.Value,
+                    itemTag = route.ItemTag,
+                    quantityPerCaravan = route.QuantityPerCaravan,
+                    cadenceDays = route.CadenceDays,
+                })
+                .ToArray();
+        }
+
+        private static List<TradeRouteDef> ToTradeRoutes(TradeRouteSaveData[] data)
+        {
+            return (data ?? Array.Empty<TradeRouteSaveData>())
+                .Where(row => row != null && row.id != 0UL)
+                .Select(row => new TradeRouteDef(
+                    new TradeRouteId(row.id),
+                    new SiteId(row.originSiteId),
+                    new SiteId(row.destinationSiteId),
+                    row.itemTag,
+                    row.quantityPerCaravan,
+                    row.cadenceDays))
+                .ToList();
+        }
+
+        private static CaravanSaveData[] ToCaravanData(IEnumerable<CaravanInstance> caravans)
+        {
+            return (caravans ?? Array.Empty<CaravanInstance>())
+                .Where(caravan => caravan != null)
+                .Select(caravan => new CaravanSaveData
+                {
+                    id = caravan.Id.Value,
+                    routeId = caravan.RouteId.Value,
+                    currentSiteId = caravan.CurrentSiteId.Value,
+                    payloadRemaining = caravan.PayloadRemaining,
+                    stepsSinceDeparture = caravan.StepsSinceDeparture,
+                    stateCode = caravan.State.Code,
+                })
+                .ToArray();
+        }
+
+        private static List<CaravanInstance> ToCaravans(CaravanSaveData[] data)
+        {
+            return (data ?? Array.Empty<CaravanSaveData>())
+                .Where(row => row != null && row.id != 0UL)
+                .Select(row => new CaravanInstance(
+                    new CaravanId(row.id),
+                    new TradeRouteId(row.routeId),
+                    new SiteId(row.currentSiteId),
+                    row.payloadRemaining,
+                    row.stepsSinceDeparture,
+                    CaravanState.FromCode(row.stateCode)))
+                .ToList();
+        }
+
         private static WorldEventSaveData[] ToWorldEventLogData(WorldEventLog log)
         {
             return (log?.Events ?? Array.Empty<WorldEvent>()).Select(ToWorldEventData).ToArray();
@@ -472,12 +635,115 @@ namespace EmberCrpg.Data.Save
             return causes == null || causes.Length == 0 ? null : new ReasonTrace(causes);
         }
 
+        private static ToolCallTraceSaveData[] ToToolCallTraceData(IEnumerable<ToolCallTraceRecord> entries)
+        {
+            return (entries ?? Array.Empty<ToolCallTraceRecord>())
+                .Where(entry => entry != null)
+                .Select(entry => ToToolCallTraceData(entry.Tick, entry.SiteId, entry.Request, entry.Result))
+                .ToArray();
+        }
+
+        private static ToolCallTraceSaveData ToToolCallTraceData(GameTime tick, SiteId siteId, ToolCallRequest request, ToolCallResult result)
+        {
+            return new ToolCallTraceSaveData
+            {
+                tickMinutes = tick.TotalMinutes,
+                siteId = siteId.Value,
+                surfaceCode = request?.Surface.Code,
+                toolCode = request?.ToolId.Code,
+                parameters = ToToolCallParameterData(request?.Parameters),
+                accepted = result?.Accepted ?? false,
+                payload = result?.Payload,
+                rejectionReason = result?.RejectionReason,
+            };
+        }
+
+        private static ToolCallParameterSaveData[] ToToolCallParameterData(IReadOnlyDictionary<string, string> parameters)
+        {
+            return (parameters ?? new Dictionary<string, string>())
+                .Select(parameter => new ToolCallParameterSaveData { name = parameter.Key, value = parameter.Value })
+                .ToArray();
+        }
+
+        private static List<ToolCallTraceRecord> ToToolCallTrace(ToolCallTraceSaveData[] data)
+        {
+            return (data ?? Array.Empty<ToolCallTraceSaveData>())
+                .Where(row => row != null)
+                .Select(row => new ToolCallTraceRecord(
+                    new GameTime(row.tickMinutes < 0 ? 0 : row.tickMinutes),
+                    new SiteId(row.siteId),
+                    ToToolCallRequest(row),
+                    new ToolCallResult(row.accepted, row.payload, row.rejectionReason)))
+                .ToList();
+        }
+
+        private static ToolCallRequest ToToolCallRequest(ToolCallTraceSaveData row)
+        {
+            return new ToolCallRequest(
+                new ToolId(string.IsNullOrWhiteSpace(row.toolCode) ? "unknown" : row.toolCode),
+                ToolSurfaceKind.FromCode(row.surfaceCode),
+                ToToolCallParameterDictionary(row.parameters));
+        }
+
+        private static Dictionary<string, string> ToToolCallParameterDictionary(ToolCallParameterSaveData[] parameters)
+        {
+            var dictionary = new Dictionary<string, string>();
+            foreach (var parameter in parameters ?? Array.Empty<ToolCallParameterSaveData>())
+            {
+                if (parameter == null || string.IsNullOrWhiteSpace(parameter.name))
+                    continue;
+                dictionary[parameter.name] = parameter.value ?? string.Empty;
+            }
+
+            return dictionary;
+        }
+
+        private static LlmProposalLogSaveData[] ToLlmProposalLogData(IEnumerable<LlmProposalLogEntry> entries)
+        {
+            return (entries ?? Array.Empty<LlmProposalLogEntry>())
+                .Where(entry => entry != null)
+                .Select(entry => new LlmProposalLogSaveData
+                {
+                    tickMinutes = entry.Tick.TotalMinutes,
+                    providerCode = entry.Provider.Code,
+                    conversationId = entry.ConversationId,
+                    responseText = entry.ResponseText,
+                    acceptedToolCalls = entry.AcceptedToolCalls
+                        .Select(call => ToToolCallTraceData(entry.Tick, default, call, ToolCallResult.AcceptedWith("accepted")))
+                        .ToArray(),
+                    rejectedToolCalls = entry.RejectedToolCalls
+                        .Select(rejection => new LlmRejectedToolCallSaveData
+                        {
+                            request = ToToolCallTraceData(entry.Tick, default, rejection.Request, ToolCallResult.Rejected(rejection.Reason)),
+                            reason = rejection.Reason,
+                        })
+                        .ToArray(),
+                })
+                .ToArray();
+        }
+
+        private static List<LlmProposalLogEntry> ToLlmProposalLog(LlmProposalLogSaveData[] data)
+        {
+            return (data ?? Array.Empty<LlmProposalLogSaveData>())
+                .Where(row => row != null)
+                .Select(row => new LlmProposalLogEntry(
+                    new GameTime(row.tickMinutes < 0 ? 0 : row.tickMinutes),
+                    LlmProviderKind.FromCode(row.providerCode),
+                    row.conversationId,
+                    row.responseText,
+                    (row.acceptedToolCalls ?? Array.Empty<ToolCallTraceSaveData>()).Select(ToToolCallRequest),
+                    (row.rejectedToolCalls ?? Array.Empty<LlmRejectedToolCallSaveData>())
+                        .Where(rejection => rejection != null && rejection.request != null)
+                        .Select(rejection => new ToolCallRejection(ToToolCallRequest(rejection.request), rejection.reason))))
+                .ToList();
+        }
+
         private static EquipmentSaveData ToEquipmentData(EquipmentState equipment)
         {
             return new EquipmentSaveData
             {
                 slots = new[] { EquipmentSlot.Weapon }
-                    .Select(slot => new EquippedItemSaveData { slot = (int)slot, itemId = equipment.GetEquippedItemId(slot).Value })
+                    .Select(slot => new EquippedItemSaveData { slot = (int)slot, slotCode = slot.Code, itemId = equipment.GetEquippedItemId(slot).Value })
                     .Where(slot => slot.itemId != 0UL)
                     .ToArray(),
             };
@@ -487,8 +753,15 @@ namespace EmberCrpg.Data.Save
         {
             var equipment = new EquipmentState();
             foreach (var slot in data?.slots ?? Array.Empty<EquippedItemSaveData>())
-                equipment.Equip((EquipmentSlot)slot.slot, new ItemId(slot.itemId));
+                equipment.Equip(ToEquipmentSlot(slot.slotCode, slot.slot), new ItemId(slot.itemId));
             return equipment;
+        }
+
+        private static EquipmentSlot ToEquipmentSlot(string code, int legacyValue)
+        {
+            return string.IsNullOrWhiteSpace(code)
+                ? EquipmentSlot.FromLegacyValue(legacyValue)
+                : EquipmentSlot.FromCode(code);
         }
 
         private static NpcMemorySaveData[] ToNpcMemoryData(NpcMemoryStore store)

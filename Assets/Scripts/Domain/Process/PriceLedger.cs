@@ -58,6 +58,16 @@ namespace EmberCrpg.Domain.Process
         /// <summary>Total number of (site, item) cells tracked.</summary>
         public int Count => _prices.Count;
 
+        /// <summary>All tracked price rows in deterministic insertion order.</summary>
+        public IEnumerable<PriceLedgerEntry> Entries
+        {
+            get
+            {
+                foreach (var row in _prices)
+                    yield return new PriceLedgerEntry(row.Key.SiteId, row.Key.ItemTag, row.Value);
+            }
+        }
+
         private static void ValidateInputs(SiteId siteId, string itemTag)
         {
             if (siteId.IsEmpty)
@@ -82,5 +92,24 @@ namespace EmberCrpg.Domain.Process
             public override bool Equals(object obj) => obj is PriceKey other && Equals(other);
             public override int GetHashCode() => unchecked((SiteId.GetHashCode() * 397) ^ (ItemTag?.GetHashCode() ?? 0));
         }
+    }
+
+    /// <summary>Serializable view of one price ledger cell.</summary>
+    public readonly struct PriceLedgerEntry : IEquatable<PriceLedgerEntry>
+    {
+        public PriceLedgerEntry(SiteId siteId, string itemTag, int price)
+        {
+            SiteId = siteId;
+            ItemTag = itemTag ?? string.Empty;
+            Price = price;
+        }
+
+        public SiteId SiteId { get; }
+        public string ItemTag { get; }
+        public int Price { get; }
+
+        public bool Equals(PriceLedgerEntry other) => SiteId.Equals(other.SiteId) && ItemTag == other.ItemTag && Price == other.Price;
+        public override bool Equals(object obj) => obj is PriceLedgerEntry other && Equals(other);
+        public override int GetHashCode() => unchecked((SiteId.GetHashCode() * 397) ^ ((ItemTag?.GetHashCode() ?? 0) * 31) ^ Price);
     }
 }

@@ -83,7 +83,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 SpellTargetKind.SingleTarget,
                 5,
                 8,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 3, 0) });
 
             var result = service.Roll(caster, invalidSchoolSpell, new XorShiftRng(1u));
 
@@ -126,7 +126,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 MagicSchool.Alteration,
                 SpellTargetKind.CasterSelf,
                 0,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 1, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 1, 0) });
 
             var result = service.Roll(legendaryCaster, gentleSpell, new XorShiftRng(1u));
 
@@ -151,9 +151,9 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 20,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 20, 0),
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 20, 0),
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 20, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 20, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 20, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 20, 0),
                 });
 
             // At threshold 5, almost any seeded percent roll fails. Pin a known seed.

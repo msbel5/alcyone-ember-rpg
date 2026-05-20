@@ -46,13 +46,13 @@ in the sprint summary.
 
 ## 3. Data-driven effect rule
 
-Do not add new entries to `SpellEffectKind`. The current enum is the
-last enum-driven generation of magic.
+Do not add new hard-coded `SpellEffectCode` branches. Magic has moved
+off enum-driven expansion.
 
 Before any new effect ships:
 
 1. Promote magic to `EffectDefinition` + `EffectOperation` registry.
-2. Re-express the existing 7 enum entries as data rows backed by
+2. Re-express the existing 7 legacy effect codes as data rows backed by
    2-3 operation handlers.
 3. Land that promotion as one PR.
 4. From that point on, new effects ship as data only. C# changes

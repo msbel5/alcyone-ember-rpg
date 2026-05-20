@@ -29,7 +29,7 @@ trace contracts, and does not introduce any Unity dependency.
 
 Implemented:
 
-- `SpellEffectKind.RestoreMana = 5` — new enum member appended after
+- `SpellEffectCode.RestoreMana = 5` — new enum member appended after
   `ShieldBuff`. Stable numeric value, additive change.
 - `SpellEffectResolutionResult.TotalRestoredMana` — new int counter on the
   result object. New 7-arg `Ok` factory plus a 6-arg `Ok` overload that
@@ -116,7 +116,7 @@ adds the four `RestoreMana` tests above. `git diff --check` is clean.
 
 ## Files
 
-- `Assets/Scripts/Domain/Magic/SpellEffectKind.cs`
+- `Assets/Scripts/Domain/Magic/SpellEffectCode.cs`
 - `Assets/Scripts/Simulation/Magic/SpellEffectResolutionResult.cs`
 - `Assets/Scripts/Simulation/Magic/SpellEffectResolutionService.cs`
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`

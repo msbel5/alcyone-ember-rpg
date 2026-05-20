@@ -7,7 +7,7 @@ Branch: `agent/sprint-5-magic-effect-resolution`
 
 Sprint 5 starts the deterministic magic layer without adding any LLM dependency to game runtime code. This increment adds:
 
-- `MagicSchool`, `SpellEffectKind`, `SpellEffectSpec`, and `SpellDefinition` domain contracts.
+- `MagicSchool`, `SpellEffectCode`, `SpellEffectSpec`, and `SpellDefinition` domain contracts.
 - `SliceSpellCatalog` with three deterministic starter spell definitions.
 - `SpellCastingService` with spell lookup, known-spell validation, incapacitated-caster rejection, mana affordability checks, and mana spend only on successful casts.
 - `SpellEffectResolutionService` with deterministic instantaneous DirectDamage, RestoreHealth, and RestoreFatigue resolution against a living target; invalid/failed casts, invalid targets, timed effects, and unsupported effect kinds are rejected without mutating target vitals or spending extra mana.

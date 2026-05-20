@@ -83,6 +83,16 @@ namespace EmberCrpg.Domain.World
             if (!_byId.Remove(id))
                 return false;
             _order.Remove(id);
+            var toRemove = new List<FactionPair>();
+            foreach (var pair in _reputation.Keys)
+            {
+                if (pair.Contains(id))
+                    toRemove.Add(pair);
+            }
+
+            foreach (var pair in toRemove)
+                _reputation.Remove(pair);
+
             return true;
         }
 
@@ -91,6 +101,7 @@ namespace EmberCrpg.Domain.World
         {
             _byId.Clear();
             _order.Clear();
+            _reputation.Clear();
         }
 
         /// <summary>
@@ -134,6 +145,16 @@ namespace EmberCrpg.Domain.World
                 : FactionReputation.Neutral;
         }
 
+        /// <summary>Persistable reputation rows in deterministic key order.</summary>
+        public IEnumerable<FactionReputationRow> ReputationRows
+        {
+            get
+            {
+                foreach (var row in _reputation)
+                    yield return new FactionReputationRow(row.Key.Low, row.Key.High, row.Value);
+            }
+        }
+
         /// <summary>Ordered pair key for symmetric reputation lookup.</summary>
         private readonly struct FactionPair : IEquatable<FactionPair>
         {
@@ -154,6 +175,28 @@ namespace EmberCrpg.Domain.World
             public bool Equals(FactionPair other) => _low.Equals(other._low) && _high.Equals(other._high);
             public override bool Equals(object obj) => obj is FactionPair other && Equals(other);
             public override int GetHashCode() => unchecked((_low.GetHashCode() * 397) ^ _high.GetHashCode());
+            public FactionId Low => _low;
+            public FactionId High => _high;
+            public bool Contains(FactionId id) => _low.Equals(id) || _high.Equals(id);
         }
+    }
+
+    /// <summary>Serializable view of one symmetric faction reputation row.</summary>
+    public readonly struct FactionReputationRow : IEquatable<FactionReputationRow>
+    {
+        public FactionReputationRow(FactionId a, FactionId b, FactionReputation reputation)
+        {
+            A = a;
+            B = b;
+            Reputation = reputation;
+        }
+
+        public FactionId A { get; }
+        public FactionId B { get; }
+        public FactionReputation Reputation { get; }
+
+        public bool Equals(FactionReputationRow other) => A.Equals(other.A) && B.Equals(other.B) && Reputation.Equals(other.Reputation);
+        public override bool Equals(object obj) => obj is FactionReputationRow other && Equals(other);
+        public override int GetHashCode() => unchecked((A.GetHashCode() * 397) ^ (B.GetHashCode() * 31) ^ Reputation.GetHashCode());
     }
 }

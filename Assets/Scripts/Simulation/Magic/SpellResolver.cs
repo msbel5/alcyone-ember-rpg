@@ -1,6 +1,8 @@
 using System;
+using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Magic;
+using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
 namespace EmberCrpg.Simulation.Magic
@@ -23,7 +25,8 @@ namespace EmberCrpg.Simulation.Magic
             int casterMana,
             GameTime now,
             SiteId siteContext,
-            WorldEventLog events)
+            WorldEventLog events,
+            SpellResolverContext context = null)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
             if (events == null) throw new ArgumentNullException(nameof(events));
@@ -33,25 +36,98 @@ namespace EmberCrpg.Simulation.Magic
 
             int totalMagnitude = 0;
             int operationsApplied = 0;
+            int operationsUnhandled = 0;
             foreach (var operation in definition.Operations)
             {
                 if (_handlers.TryHandle(operation, out var magnitude))
                 {
                     totalMagnitude += magnitude;
                     operationsApplied++;
+                    ApplyOperationToContext(operation, context);
+                }
+                else
+                {
+                    operationsUnhandled++;
                 }
             }
 
-            var site = siteContext.IsEmpty ? new SiteId(1UL) : siteContext;
-            events.Append(new WorldEvent(
-                now,
-                WorldEventKind.SpellResolved,
-                default,
-                site,
-                $"spell_resolved id:{definition.Id} ops:{operationsApplied} total:{totalMagnitude}"));
+            // PR#176 bot review fix: when any operation row has no registered handler
+            // the cast partially mutates state but the loop used to fall through and
+            // emit SpellResolved as success. Fail fast with a stable reason so callers
+            // and telemetry agree the spell did not fully execute.
+            if (operationsUnhandled > 0)
+            {
+                if (!siteContext.IsEmpty)
+                {
+                    events.Append(new WorldEvent(
+                        now,
+                        WorldEventKind.SpellResolved,
+                        default,
+                        siteContext,
+                        $"spell_resolved id:{definition.Id} ops:{operationsApplied} unhandled:{operationsUnhandled} status:failed"));
+                }
+                return SpellResolutionResult.Failed($"unhandled_operations:{operationsUnhandled}");
+            }
+
+            if (!siteContext.IsEmpty)
+            {
+                events.Append(new WorldEvent(
+                    now,
+                    WorldEventKind.SpellResolved,
+                    default,
+                    siteContext,
+                    $"spell_resolved id:{definition.Id} ops:{operationsApplied} total:{totalMagnitude}"));
+            }
 
             return SpellResolutionResult.Success(totalMagnitude, operationsApplied);
         }
+
+        private static void ApplyOperationToContext(EffectOperation operation, SpellResolverContext context)
+        {
+            if (context == null)
+                return;
+
+            if (operation.Kind.Equals(EffectOperationKind.DirectDamage) && context.TargetActor != null)
+            {
+                context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Damage(operation.Magnitude)));
+                return;
+            }
+
+            if (operation.Kind.Equals(EffectOperationKind.DirectRestore) && context.TargetActor != null)
+            {
+                context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Restore(operation.Magnitude)));
+                return;
+            }
+
+            if (operation.Kind.Equals(EffectOperationKind.TerrainApply) && context.TerrainStockpile != null)
+            {
+                var requiredTag = string.IsNullOrWhiteSpace(operation.TargetRule) ? context.RequiredTerrainTag : operation.TargetRule;
+                if (!string.IsNullOrWhiteSpace(requiredTag) && !context.TerrainStockpile.Contains(requiredTag))
+                    return;
+
+                if (!string.IsNullOrWhiteSpace(requiredTag))
+                    context.TerrainStockpile.Remove(requiredTag, 1);
+                context.TerrainStockpile.Add(context.ResultTerrainTag, 1);
+                if (context.TargetActor != null)
+                    context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Damage(operation.Magnitude)));
+            }
+        }
+    }
+
+    public sealed class SpellResolverContext
+    {
+        public SpellResolverContext(ActorRecord targetActor, StockpileComponent terrainStockpile, string requiredTerrainTag, string resultTerrainTag)
+        {
+            TargetActor = targetActor;
+            TerrainStockpile = terrainStockpile;
+            RequiredTerrainTag = requiredTerrainTag ?? string.Empty;
+            ResultTerrainTag = string.IsNullOrWhiteSpace(resultTerrainTag) ? "terrain_effect" : resultTerrainTag.Trim();
+        }
+
+        public ActorRecord TargetActor { get; }
+        public StockpileComponent TerrainStockpile { get; }
+        public string RequiredTerrainTag { get; }
+        public string ResultTerrainTag { get; }
     }
 
     public sealed class SpellResolutionResult

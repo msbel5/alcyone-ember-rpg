@@ -169,7 +169,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 SpellTargetKind.SingleTarget,
                 9,
                 0,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 4, 0) });
             var validator = new SpellTargetValidator();
 
             var result = validator.Validate(spell, caster, farEnemy);
@@ -214,7 +214,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 MagicSchool.Destruction,
                 SpellTargetKind.AreaAroundCaster,
                 10,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 4, 0) });
             var validator = new SpellTargetValidator();
 
             var result = validator.Validate(spell, caster, requestedTarget: null);
@@ -234,7 +234,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 MagicSchool.Destruction,
                 SpellTargetKind.AreaAtRange,
                 12,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 5, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 5, 0) });
             var validator = new SpellTargetValidator();
 
             var result = validator.Validate(spell, caster, requestedTarget: null);

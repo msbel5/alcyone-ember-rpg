@@ -26,7 +26,7 @@ caster, or trace contracts, and adds no Unity dependency.
 
 Implemented:
 
-- `SpellEffectKind.DirectFatigue = 7` — new enum member appended after
+- `SpellEffectCode.DirectFatigue = 7` — new enum member appended after
   `DirectMana`. Stable numeric value, additive change.
 - `SpellEffectResolutionResult.TotalDirectFatigueDamage` — new int counter
   on the result object. New 9-arg `Ok` factory plus an 8-arg `Ok` overload

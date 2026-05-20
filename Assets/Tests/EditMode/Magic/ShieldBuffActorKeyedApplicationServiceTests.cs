@@ -93,9 +93,9 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 cooldownTicks: 0,
                 effects: new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 6, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 4, 0),
-                    new SpellEffectSpec(SpellEffectKind.ShieldBuff, 4, 30),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 6, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.ShieldBuff, 4, 30),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var registry = new ShieldBuffStateRegistry();

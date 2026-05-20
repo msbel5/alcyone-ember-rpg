@@ -18,12 +18,17 @@ namespace EmberCrpg.Domain.AiDm
         public string Code => _code ?? string.Empty;
         public bool IsEmpty => string.IsNullOrEmpty(_code);
 
-        public static ConsultFateOutcomeBucket FromRoll(int roll0To99)
+        // PR#173 bot review fix: the project's deterministic RNG returns 1..100
+        // (XorShiftRng.RollPercent does NextInt(100) + 1), so an in-range top-end
+        // roll of 100 used to throw and the 0-based thresholds were inconsistent
+        // with the rest of the codebase. Accept 1..100 and use inclusive upper bounds
+        // that preserve the original 35/35/30 distribution.
+        public static ConsultFateOutcomeBucket FromRoll(int roll1To100)
         {
-            if (roll0To99 < 0 || roll0To99 > 99)
-                throw new ArgumentOutOfRangeException(nameof(roll0To99), "Roll must be 0..99.");
-            if (roll0To99 < 35) return Setback;
-            if (roll0To99 < 70) return Neutral;
+            if (roll1To100 < 1 || roll1To100 > 100)
+                throw new ArgumentOutOfRangeException(nameof(roll1To100), "Roll must be 1..100.");
+            if (roll1To100 <= 35) return Setback;
+            if (roll1To100 <= 70) return Neutral;
             return Favourable;
         }
 

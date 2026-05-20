@@ -53,7 +53,7 @@ PASS fallback_harness
   shape already shared by `ActorStore` / `SiteStore`. No new
   fluent builders, no batch overloads.
 - Rule 3 (data-driven effect): not touched. No new
-  `SpellEffectKind` entries.
+  `SpellEffectCode` entries.
 - Rule 4 (world-store promotion): this PR moves Faz 1 forward by
   shipping the MATTER store; `SliceWorldState` is not touched, no
   hard-coded slice fields added.
