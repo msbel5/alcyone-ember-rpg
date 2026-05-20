@@ -35,11 +35,15 @@ namespace EmberCrpg.Simulation.World
 
             factions.WithReputation(a, b, after);
 
+            // WorldEvent requires at least one non-empty (actorId, siteId). Reputation
+            // shifts are between factions and don't always have an actor or site
+            // context; we encode FactionId-A as the SiteId sentinel so the event log
+            // shape stays consistent without inventing a fake actor.
             events.Append(new WorldEvent(
                 now,
                 WorldEventKind.FactionReputationChanged,
                 default,
-                default,
+                new SiteId(a.Value),
                 BuildReason(a, b, before.Value, after.Value, reasonCode)));
         }
 
