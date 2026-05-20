@@ -15,8 +15,19 @@ namespace EmberCrpg.Presentation.Slice
         private static void CreateController()
         {
             var activeScene = SceneManager.GetActiveScene();
-            if (activeScene.name.Contains("Sprint4") || Object.FindFirstObjectByType<SliceGameController>() != null)
-                return;
+            var sceneName = activeScene.name ?? string.Empty;
+
+            // Skip when an existing controller is present, or when the active
+            // scene belongs to a non-slice surface: Sprint 4 combat foundation,
+            // any Faz acceptance scene (Faz3..Faz12), the Ember Main Menu, or
+            // any scene saved under Assets/Scenes/Ember/. The slice runtime is
+            // a legacy Sprint 1/2 entry point and must not steal control of
+            // the new EmberWorldHost-driven scenes.
+            if (Object.FindFirstObjectByType<SliceGameController>() != null) return;
+            if (sceneName.Contains("Sprint4")) return;
+            if (sceneName.StartsWith("Faz")) return;
+            if (sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase)) return;
+            if (activeScene.path != null && activeScene.path.Contains("/Scenes/Ember/")) return;
 
             var controller = new GameObject("Sprint2SliceController");
             Object.DontDestroyOnLoad(controller);
