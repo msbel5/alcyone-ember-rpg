@@ -19,6 +19,9 @@ namespace EmberCrpg.Domain.Process
         Smith = 1,
 
         /// <summary>Baking work, consumed by the BakeBread competition-proof fixture.</summary>
-        Baker = 2
+        Baker = 2,
+
+        /// <summary>Farming work, consumed by Faz 5 planting and harvest jobs.</summary>
+        Farmer = 3
     }
 }
