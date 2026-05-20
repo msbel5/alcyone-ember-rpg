@@ -19,6 +19,7 @@ namespace EmberCrpg.Domain.Process
     {
         private readonly Dictionary<JobId, Entry> _byId = new Dictionary<JobId, Entry>();
         private readonly List<JobId> _order = new List<JobId>();
+        private int _nextClaimSequence;
 
         /// <summary>Number of pending jobs held by the board.</summary>
         public int Count => _byId.Count;
@@ -104,8 +105,38 @@ namespace EmberCrpg.Domain.Process
                 return false;
 
             entry.ClaimedBy = actorId;
+            entry.ClaimSequence = _nextClaimSequence++;
             request = entry.Request;
             return true;
+        }
+
+        /// <summary>
+        /// Returns the deterministic queue index for a claimed job among all claimed
+        /// jobs sharing the same worksite (SiteId + WorksitePosition). Ordering follows
+        /// claim sequence: the first actor to claim at that worksite gets index 0.
+        /// Returns -1 for empty ids, unknown ids, or unclaimed jobs.
+        /// Closes CO-04 in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+        /// </summary>
+        public int GetQueueIndex(JobId id)
+        {
+            if (id.IsEmpty || !_byId.TryGetValue(id, out var entry) || !entry.IsClaimed)
+                return -1;
+
+            var queueIndex = 0;
+            foreach (var candidate in _byId.Values)
+            {
+                if (!candidate.IsClaimed)
+                    continue;
+                if (candidate.Request.Id.Equals(entry.Request.Id))
+                    continue;
+                if (!candidate.Request.SiteId.Equals(entry.Request.SiteId))
+                    continue;
+                if (!candidate.Request.WorksitePosition.Equals(entry.Request.WorksitePosition))
+                    continue;
+                if (candidate.ClaimSequence < entry.ClaimSequence)
+                    queueIndex++;
+            }
+            return queueIndex;
         }
 
         /// <summary>Returns true when a pending job has been claimed.</summary>
@@ -182,6 +213,8 @@ namespace EmberCrpg.Domain.Process
             public JobRequest Request { get; }
 
             public ActorId ClaimedBy { get; set; }
+
+            public int ClaimSequence { get; set; }
 
             public bool IsClaimed => !ClaimedBy.IsEmpty;
         }
