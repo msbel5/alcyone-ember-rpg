@@ -131,6 +131,20 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         private void HandleQuitInput()
         {
+            // Codex audit Batch 3 / Finding D-2: the previous structure
+            //   if (GetKey(Escape)) { hold }
+            //   else { if (GetKeyDown(Escape)) toggleCursor; reset; }
+            // wrapped the GetKeyDown check inside the !GetKey else-branch, but on
+            // the very frame Escape is first pressed BOTH GetKey and GetKeyDown
+            // are true — so the toggle branch was unreachable forever. Move the
+            // GetKeyDown check OUT of the else so a tap toggles the cursor lock,
+            // and a >1s hold still quits.
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                Cursor.lockState = (Cursor.lockState == CursorLockMode.Locked) ? CursorLockMode.None : CursorLockMode.Locked;
+                Cursor.visible = (Cursor.lockState != CursorLockMode.Locked);
+            }
+
             if (Input.GetKey(KeyCode.Escape))
             {
                 _escHoldTimer += Time.unscaledDeltaTime;
@@ -145,11 +159,6 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             }
             else
             {
-                if (Input.GetKeyDown(KeyCode.Escape))
-                {
-                    Cursor.lockState = (Cursor.lockState == CursorLockMode.Locked) ? CursorLockMode.None : CursorLockMode.Locked;
-                    Cursor.visible = (Cursor.lockState != CursorLockMode.Locked);
-                }
                 _escHoldTimer = 0f;
             }
         }
