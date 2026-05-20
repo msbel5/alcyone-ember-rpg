@@ -89,8 +89,16 @@ namespace EmberCrpg.Data.Save
 
             var topicIds = save.topicIds ?? Array.Empty<string>();
             var asked = save.askedTopicIds ?? Array.Empty<string>();
+            // PR#129 bot review fix: JobPriority.Disabled.Value is 0, so saved
+            // priority==0 entries used to disappear when re-loaded as
+            // JobPriority.Active(0) (Active requires a positive int and would
+            // either throw or be silently coerced). Detect the sentinel and
+            // restore Disabled explicitly so disabled actor preferences survive
+            // a save/load roundtrip.
             var jobPrefs = (save.jobPreferences ?? Array.Empty<ActorJobPreferenceSaveData>())
-                .Select(p => new ActorJobPreference((JobKind)p.kind, JobPriority.Active(p.priority)))
+                .Select(p => new ActorJobPreference(
+                    (JobKind)p.kind,
+                    p.priority <= 0 ? JobPriority.Disabled : JobPriority.Active(p.priority)))
                 .ToArray();
             var memory = id.IsEmpty ? null : new MemoryComponent(id);
             foreach (var fact in save.memoryFacts ?? Array.Empty<MemoryFactSaveData>())

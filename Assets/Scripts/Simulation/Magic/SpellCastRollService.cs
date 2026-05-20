@@ -41,9 +41,17 @@ namespace EmberCrpg.Simulation.Magic
             var chance = _chanceService.Calculate(caster, spell);
             if (!chance.Success)
             {
-                var failError = chance.Error == SpellSuccessChanceError.InvalidCaster
-                    ? SpellCastRollError.InvalidCaster
-                    : SpellCastRollError.ChanceCalculationFailed;
+                // PR#20 bot review fix: previously only InvalidCaster was
+                // mapped, so an InvalidSpell error from the chance service
+                // was collapsed into the generic ChanceCalculationFailed and
+                // callers lost the specific error type for telemetry/replay.
+                SpellCastRollError failError;
+                if (chance.Error == SpellSuccessChanceError.InvalidCaster)
+                    failError = SpellCastRollError.InvalidCaster;
+                else if (chance.Error == SpellSuccessChanceError.InvalidSpell)
+                    failError = SpellCastRollError.InvalidSpell;
+                else
+                    failError = SpellCastRollError.ChanceCalculationFailed;
                 return SpellCastRollResult.Fail(failError, spell, chance, chance.Message);
             }
 
