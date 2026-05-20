@@ -26,5 +26,6 @@ namespace EmberCrpg.Domain.World
         PlantStageAdvanced = 12,
         PlantHarvested = 13,
         ActorStepped = 14,
+        FactionReputationChanged = 15,
     }
 }
