@@ -69,16 +69,7 @@ namespace EmberCrpg.Simulation.Process
             if (best == null)
                 return false;
 
-            if (!board.TryClaim(best.Request.Id, best.Actor.Id, out var claimedRequest))
-                return false;
-
-            var assigned = ActorScheduleState.Assigned(
-                claimedRequest.Id,
-                claimedRequest.SiteId,
-                claimedRequest.WorksitePosition);
-            best.Actor.ApplyScheduleState(assigned);
-            result = new JobAssignmentResult(best.Actor.Id, claimedRequest.Id, claimedRequest.SiteId, claimedRequest.WorksitePosition);
-            return true;
+            return TryClaimCandidate(board, best, out result);
         }
 
         /// <summary>
@@ -120,49 +111,20 @@ namespace EmberCrpg.Simulation.Process
                 var jobOrder = 0;
                 foreach (var request in board.Requests)
                 {
-                    if (board.IsClaimed(request.Id))
-                    {
-                        jobOrder++;
-                        continue;
-                    }
-
-                    // Quick eligibility checks (pre-refusal)
-                    if (!TryGetActivePreference(actor, request.Kind, out var preference))
-                    {
-                        jobOrder++;
-                        continue;
-                    }
-
-                    if (!TryGetActiveMatchingWorksite(request, worksites, out _))
-                    {
-                        jobOrder++;
-                        continue;
-                    }
-
-                    // If actor meets structural eligibility but is refusing to work,
-                    // record a JobRefused event and skip candidate creation.
-                    if (IsRefusing(actor))
-                    {
-                        eventLog.Append(new WorldEvent(
+                    if (!board.IsClaimed(request.Id)
+                        && TryBuildCandidate(
+                            actor,
+                            actorOrder,
+                            request,
+                            jobOrder,
+                            worksites,
+                            eventLog,
                             now,
-                            WorldEventKind.JobRefused,
-                            actor.Id,
-                            request.SiteId,
-                            $"job_refused:{request.Id.Value}",
-                            new ReasonTrace(new[]
-                            {
-                                $"job:{request.Id.Value}",
-                                $"actor:{actor.Id.Value}",
-                                $"reason:hunger_or_low_mood",
-                            })));
-
-                        jobOrder++;
-                        continue;
-                    }
-
-                    var candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
-                    if (best == null || candidate.CompareTo(best) < 0)
+                            out var candidate)
+                        && (best == null || candidate.CompareTo(best) < 0))
+                    {
                         best = candidate;
+                    }
 
                     jobOrder++;
                 }
@@ -173,30 +135,10 @@ namespace EmberCrpg.Simulation.Process
             if (best == null)
                 return false;
 
-            if (!board.TryClaim(best.Request.Id, best.Actor.Id, out var claimedRequest))
+            if (!TryClaimCandidate(board, best, out result))
                 return false;
 
-            var assigned = ActorScheduleState.Assigned(
-                claimedRequest.Id,
-                claimedRequest.SiteId,
-                claimedRequest.WorksitePosition);
-            best.Actor.ApplyScheduleState(assigned);
-            result = new JobAssignmentResult(best.Actor.Id, claimedRequest.Id, claimedRequest.SiteId, claimedRequest.WorksitePosition);
-
-            eventLog.Append(new WorldEvent(
-                now,
-                WorldEventKind.JobAssigned,
-                result.ActorId,
-                result.SiteId,
-                $"job_assigned:{result.JobId.Value}",
-                new ReasonTrace(new[]
-                {
-                    $"job:{result.JobId.Value}",
-                    $"actor:{result.ActorId.Value}",
-                    $"site:{result.SiteId.Value}",
-                    $"worksite:{result.WorksitePosition.X},{result.WorksitePosition.Y}",
-                })));
-
+            AppendJobAssignedEvent(eventLog, now, result);
             return true;
         }
 
@@ -522,6 +464,27 @@ namespace EmberCrpg.Simulation.Process
             WorksiteStore worksites,
             out Candidate candidate)
         {
+            return TryBuildCandidate(
+                actor,
+                actorOrder,
+                request,
+                jobOrder,
+                worksites,
+                null,
+                default(GameTime),
+                out candidate);
+        }
+
+        private static bool TryBuildCandidate(
+            ActorRecord actor,
+            int actorOrder,
+            JobRequest request,
+            int jobOrder,
+            WorksiteStore worksites,
+            WorldEventLog eventLog,
+            GameTime now,
+            out Candidate candidate)
+        {
             candidate = null;
 
             if (!actor.IsAlive || !actor.ScheduleState.IsIdle)
@@ -533,10 +496,74 @@ namespace EmberCrpg.Simulation.Process
 
             // refusal check: hungry or low-mood actors do not become candidates
             if (IsRefusing(actor))
+            {
+                if (eventLog != null)
+                    AppendJobRefusedEvent(eventLog, now, actor, request);
+
                 return false;
+            }
 
             candidate = new Candidate(actor, request, preference.Priority, actorOrder, jobOrder);
             return true;
+        }
+
+        private static bool TryClaimCandidate(JobBoard board, Candidate candidate, out JobAssignmentResult result)
+        {
+            result = default;
+            if (!board.TryClaim(candidate.Request.Id, candidate.Actor.Id, out var claimedRequest))
+                return false;
+
+            var assigned = ActorScheduleState.Assigned(
+                claimedRequest.Id,
+                claimedRequest.SiteId,
+                claimedRequest.WorksitePosition);
+            candidate.Actor.ApplyScheduleState(assigned);
+            result = new JobAssignmentResult(
+                candidate.Actor.Id,
+                claimedRequest.Id,
+                claimedRequest.SiteId,
+                claimedRequest.WorksitePosition);
+            return true;
+        }
+
+        private static void AppendJobAssignedEvent(
+            WorldEventLog eventLog,
+            GameTime now,
+            JobAssignmentResult result)
+        {
+            eventLog.Append(new WorldEvent(
+                now,
+                WorldEventKind.JobAssigned,
+                result.ActorId,
+                result.SiteId,
+                $"job_assigned:{result.JobId.Value}",
+                new ReasonTrace(new[]
+                {
+                    $"job:{result.JobId.Value}",
+                    $"actor:{result.ActorId.Value}",
+                    $"site:{result.SiteId.Value}",
+                    $"worksite:{result.WorksitePosition.X},{result.WorksitePosition.Y}",
+                })));
+        }
+
+        private static void AppendJobRefusedEvent(
+            WorldEventLog eventLog,
+            GameTime now,
+            ActorRecord actor,
+            JobRequest request)
+        {
+            eventLog.Append(new WorldEvent(
+                now,
+                WorldEventKind.JobRefused,
+                actor.Id,
+                request.SiteId,
+                $"job_refused:{request.Id.Value}",
+                new ReasonTrace(new[]
+                {
+                    $"job:{request.Id.Value}",
+                    $"actor:{actor.Id.Value}",
+                    $"reason:hunger_or_low_mood",
+                })));
         }
 
         private static bool TryGetActivePreference(ActorRecord actor, JobKind kind, out ActorJobPreference preference)

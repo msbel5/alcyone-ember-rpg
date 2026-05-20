@@ -1,20 +1,18 @@
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace EmberCrpg.Domain.World
 {
-    /// <summary>Provides deterministic grid path queries for world and process systems.</summary>
+    /// <summary>Deterministic grid pathfinder interface scaffold for PROCESS pathing.</summary>
     public interface IPathfinder
     {
-        /// <summary>Attempts to find a path for the supplied request.</summary>
-        bool TryFindPath(PathfinderRequest request, out PathfinderResult result);
+        /// <summary>Finds a deterministic path for the supplied request.</summary>
+        PathfinderResult FindPath(PathfinderRequest request);
 
-        /// <summary>Returns the next actor movement step for an existing path result.</summary>
+        /// <summary>Advances an actor one deterministic step along a path result.</summary>
         ActorPathStep StepActor(int actorId, PathfinderResult path);
     }
 
-    /// <summary>Describes a deterministic grid path request.</summary>
+    /// <summary>Immutable request describing actor size and start/goal cells.</summary>
     public readonly struct PathfinderRequest
     {
         public PathfinderRequest(int actorId, int startX, int startY, int goalX, int goalY, int actorSize)
@@ -27,37 +25,46 @@ namespace EmberCrpg.Domain.World
             ActorSize = actorSize;
         }
 
+        /// <summary>Actor requesting the path.</summary>
         public int ActorId { get; }
+
+        /// <summary>Starting X coordinate.</summary>
         public int StartX { get; }
+
+        /// <summary>Starting Y coordinate.</summary>
         public int StartY { get; }
+
+        /// <summary>Goal X coordinate.</summary>
         public int GoalX { get; }
+
+        /// <summary>Goal Y coordinate.</summary>
         public int GoalY { get; }
+
+        /// <summary>Actor footprint size for pathing constraints.</summary>
         public int ActorSize { get; }
     }
 
-    /// <summary>Contains the outcome of a deterministic grid path query.</summary>
+    /// <summary>Immutable pathfinding result with deterministic step data.</summary>
     public readonly struct PathfinderResult
     {
-        private readonly int[] _steps;
-
-        public PathfinderResult(bool success, IEnumerable<int> steps, int totalCost)
+        public PathfinderResult(bool success, IReadOnlyList<int> steps, int totalCost)
         {
             Success = success;
-            _steps = steps == null ? new int[0] : steps.ToArray();
+            Steps = steps;
             TotalCost = totalCost;
         }
 
+        /// <summary>Whether a path was found.</summary>
         public bool Success { get; }
 
-        public IReadOnlyList<int> Steps
-        {
-            get { return new ReadOnlyCollection<int>(_steps ?? new int[0]); }
-        }
+        /// <summary>Deterministic encoded path steps.</summary>
+        public IReadOnlyList<int> Steps { get; }
 
+        /// <summary>Total traversal cost.</summary>
         public int TotalCost { get; }
     }
 
-    /// <summary>Describes one deterministic movement step for an actor.</summary>
+    /// <summary>Immutable one-step actor movement result.</summary>
     public readonly struct ActorPathStep
     {
         public ActorPathStep(int newX, int newY, bool arrived)
@@ -67,8 +74,13 @@ namespace EmberCrpg.Domain.World
             Arrived = arrived;
         }
 
+        /// <summary>New X coordinate after stepping.</summary>
         public int NewX { get; }
+
+        /// <summary>New Y coordinate after stepping.</summary>
         public int NewY { get; }
+
+        /// <summary>Whether the actor reached the path goal.</summary>
         public bool Arrived { get; }
     }
 }
