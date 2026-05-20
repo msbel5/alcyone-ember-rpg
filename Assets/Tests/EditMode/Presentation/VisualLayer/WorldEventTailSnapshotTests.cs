@@ -19,7 +19,7 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
         public void NonPositiveMaxRows_ProducesEmpty()
         {
             var log = new WorldEventLog();
-            log.Append(new WorldEvent(default, WorldEventKind.ActorSpawned, default, default, "spawn"));
+            log.Append(new WorldEvent(default, WorldEventKind.ActorSpawned, default, new SiteId(1UL), "spawn"));
 
             Assert.That(WorldEventTailSnapshot.FromLog(log, 0).Rows, Is.Empty);
             Assert.That(WorldEventTailSnapshot.FromLog(log, -5).Rows, Is.Empty);
@@ -29,8 +29,8 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
         public void SmallerThanMax_ReturnsAllEvents_InOrder()
         {
             var log = new WorldEventLog();
-            log.Append(new WorldEvent(default, WorldEventKind.ActorSpawned, default, default, "spawn"));
-            log.Append(new WorldEvent(default, WorldEventKind.SiteEntered, default, default, "entered"));
+            log.Append(new WorldEvent(default, WorldEventKind.ActorSpawned, default, new SiteId(1UL), "spawn"));
+            log.Append(new WorldEvent(default, WorldEventKind.SiteEntered, default, new SiteId(1UL), "entered"));
 
             var snapshot = WorldEventTailSnapshot.FromLog(log, 10);
 
@@ -43,9 +43,9 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
         public void LargerThanMax_TrimsToLatestTail()
         {
             var log = new WorldEventLog();
-            log.Append(new WorldEvent(default, WorldEventKind.ActorSpawned, default, default, "first"));
-            log.Append(new WorldEvent(default, WorldEventKind.SiteEntered, default, default, "second"));
-            log.Append(new WorldEvent(default, WorldEventKind.RecipeCompleted, default, default, "third"));
+            log.Append(new WorldEvent(default, WorldEventKind.ActorSpawned, default, new SiteId(1UL), "first"));
+            log.Append(new WorldEvent(default, WorldEventKind.SiteEntered, default, new SiteId(1UL), "second"));
+            log.Append(new WorldEvent(default, WorldEventKind.RecipeCompleted, default, new SiteId(1UL), "third"));
 
             var snapshot = WorldEventTailSnapshot.FromLog(log, 2);
 
