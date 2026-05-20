@@ -59,35 +59,35 @@ namespace EmberCrpg.Simulation.Magic
             {
                 var effect = effects[i];
                 var before = target.Vitals.Health.Current;
-                if (effect.Kind == SpellEffectKind.DirectDamage)
+                if (effect.Kind == SpellEffectCode.DirectDamage)
                 {
                     target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Damage(effect.Magnitude)));
                     totalDamage += before - target.Vitals.Health.Current;
                 }
-                else if (effect.Kind == SpellEffectKind.RestoreHealth)
+                else if (effect.Kind == SpellEffectCode.RestoreHealth)
                 {
                     target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Restore(effect.Magnitude)));
                     totalHealing += target.Vitals.Health.Current - before;
                 }
-                else if (effect.Kind == SpellEffectKind.RestoreFatigue)
+                else if (effect.Kind == SpellEffectCode.RestoreFatigue)
                 {
                     before = target.Vitals.Fatigue.Current;
                     target.ApplyVitals(target.Vitals.WithFatigue(target.Vitals.Fatigue.Restore(effect.Magnitude)));
                     totalRestoredFatigue += target.Vitals.Fatigue.Current - before;
                 }
-                else if (effect.Kind == SpellEffectKind.RestoreMana)
+                else if (effect.Kind == SpellEffectCode.RestoreMana)
                 {
                     before = target.Vitals.Mana.Current;
                     target.ApplyVitals(target.Vitals.WithMana(target.Vitals.Mana.Restore(effect.Magnitude)));
                     totalRestoredMana += target.Vitals.Mana.Current - before;
                 }
-                else if (effect.Kind == SpellEffectKind.DirectMana)
+                else if (effect.Kind == SpellEffectCode.DirectMana)
                 {
                     before = target.Vitals.Mana.Current;
                     target.ApplyVitals(target.Vitals.WithMana(target.Vitals.Mana.Damage(effect.Magnitude)));
                     totalDirectManaDamage += before - target.Vitals.Mana.Current;
                 }
-                else if (effect.Kind == SpellEffectKind.DirectFatigue)
+                else if (effect.Kind == SpellEffectCode.DirectFatigue)
                 {
                     before = target.Vitals.Fatigue.Current;
                     target.ApplyVitals(target.Vitals.WithFatigue(target.Vitals.Fatigue.Damage(effect.Magnitude)));
@@ -122,7 +122,7 @@ namespace EmberCrpg.Simulation.Magic
             for (var i = 0; i < effects.Count; i++)
             {
                 var effect = effects[i];
-                if (effect.Kind != SpellEffectKind.ShieldBuff || effect.IsInstantaneous)
+                if (effect.Kind != SpellEffectCode.ShieldBuff || effect.IsInstantaneous)
                     continue;
 
                 shieldBuffState.SetActiveBuff(spell.TemplateId, effect.DurationTicks, effect.Magnitude);
@@ -180,14 +180,14 @@ namespace EmberCrpg.Simulation.Magic
             return SpellEffectResolutionResult.Ok(spell, 0, 0, 0, 0, 0, 0, 0, $"{spell.DisplayName} passed instantaneous effect validation.");
         }
 
-        private static bool IsSupported(SpellEffectKind kind)
+        private static bool IsSupported(SpellEffectCode kind)
         {
-            return kind == SpellEffectKind.DirectDamage
-                || kind == SpellEffectKind.RestoreHealth
-                || kind == SpellEffectKind.RestoreFatigue
-                || kind == SpellEffectKind.RestoreMana
-                || kind == SpellEffectKind.DirectMana
-                || kind == SpellEffectKind.DirectFatigue;
+            return kind == SpellEffectCode.DirectDamage
+                || kind == SpellEffectCode.RestoreHealth
+                || kind == SpellEffectCode.RestoreFatigue
+                || kind == SpellEffectCode.RestoreMana
+                || kind == SpellEffectCode.DirectMana
+                || kind == SpellEffectCode.DirectFatigue;
         }
     }
 }

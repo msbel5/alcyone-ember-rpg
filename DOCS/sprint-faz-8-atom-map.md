@@ -13,7 +13,7 @@ _Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
 ## Vision anchors
 
 1. Living-world over showroom: magic is one more system that touches matter, time, and society — not a bespoke pipeline.
-5. Data-driven extension: every new effect is a data row + operation handler, never a new `SpellEffectKind` enum branch.
+5. Data-driven extension: every new effect is a data row + operation handler, never a hard-coded effect branch.
 8. Systemic interaction: fire effect ignites oil tile, ice effect freezes water, healing effect closes wounds from Faz 7 — all via shared operation handlers.
 
 ## Phase fences
@@ -27,7 +27,7 @@ _Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
 
 ## Anti-pattern reminder (from Sprint 5 audit)
 
-Sprint 5 burned weeks expanding `SpellEffectKind` enum branches. The `agent-rules-v2.md` Rule 3 hard-blocks new enum entries. This sprint promotes the existing seven enum entries to data rows backed by 2-3 operation handlers, then ships every subsequent effect as a row.
+Sprint 5 burned weeks expanding hard-coded spell-effect branches. The `agent-rules-v2.md` Rule 3 hard-blocks new branch entries. This sprint promotes the existing seven legacy effect codes to data rows backed by 2-3 operation handlers, then ships every subsequent effect as a row.
 
 ## Debt ledger action
 
@@ -50,9 +50,9 @@ Faz 8 makes magic a typed, data-driven verb: `EffectDefinition` rows declare whi
 | 3 | CRPG | `Assets/Scripts/Domain/Magic/EffectDefinition.cs` | Data row: id, name, school tag, list of `EffectOperation`, cost, cooldown. | `EffectDefinitionTests` | queued |
 | 4 | CRPG | `Assets/Scripts/Simulation/Magic/EffectRegistry.cs` | Loads `EffectDefinition` rows; deterministic lookup by id. | `EffectRegistryTests` | queued |
 | 5 | CRPG | `Assets/Scripts/Simulation/Magic/EffectOperationHandlers.cs` | One C# handler per `EffectOperationKind`; deterministic, side-effect routed through stores + event log. | `EffectOperationHandlersTests` | queued |
-| 6 | CRPG | `Assets/Scripts/Simulation/Magic/SpellResolver.cs` | Orchestrate: validate cost, run each op, emit `SpellResolved`. Replaces the old `SpellEffectKind` switch. | `SpellResolverTests` | queued |
-| 7 | CRPG | `Assets/Scripts/Data/Magic/SeedEffectDefinitions.json` (or registry) | Re-express the seven legacy `SpellEffectKind` entries as data rows; deprecate the enum in the same PR. | `SeedEffectDefinitionsTests` | queued |
-| 8 | CRPG | Legacy enum removal | Delete `SpellEffectKind` and all branches; route call sites through `SpellResolver`. | full test suite stays green | queued |
+| 6 | CRPG | `Assets/Scripts/Simulation/Magic/SpellResolver.cs` | Orchestrate: validate cost, run each op, emit `SpellResolved`. Replaces the old `SpellEffectCode` switch. | `SpellResolverTests` | queued |
+| 7 | CRPG | `Assets/Scripts/Data/Magic/SeedEffectDefinitions.json` (or registry) | Re-express the seven legacy `SpellEffectCode` values as data rows; keep only migration adapters. | `SeedEffectDefinitionsTests` | queued |
+| 8 | CRPG | Legacy branch removal | Delete legacy branch-based routing; route call sites through `SpellResolver`. | full test suite stays green | queued |
 | 9 | WORLD | `Assets/Scripts/Domain/World/TerrainComponent.cs`, `TerrainEffectDef` | Tile-level effect data row (oil, water, snow). Required for the fire-on-oil acceptance. | `TerrainComponentTests` | queued |
 | 10 | CRPG | `Assets/Scripts/Simulation/Magic/AreaEffectSystem.cs` | Tick area-of-effect operations on terrain + actors; deterministic spread. | `AreaEffectSystemTests` | queued |
 | 11 | TIME | `Assets/Scripts/Data/Save` effect/spell/terrain mappers | Round-trip active effects, terrain state, cooldowns. | `MagicTerrainRoundTripTests` | queued |
@@ -70,12 +70,12 @@ Faz 8 makes magic a typed, data-driven verb: `EffectDefinition` rows declare whi
 ## Promotion checklist
 
 - [ ] Every Faz 8 atom row above is checked off.
-- [ ] `SpellEffectKind` enum is deleted from the codebase.
-- [ ] All new effects ship as `EffectDefinition` rows + operation handlers — zero new enum branches.
+- [x] `SpellEffectCode` is a stable value object, not an enum.
+- [ ] All new effects ship as `EffectDefinition` rows + operation handlers — zero new hard-coded branches.
 - [ ] `./tools/validation/run-validation.sh --mode fallback` passes on the promotion branch.
 - [ ] Product-visible PR count is greater than zero (fire-on-oil replay or equivalent).
 - [ ] Faz 8 promotion summary reports Debt ledger status.
 
 ## Next increment
 
-Implement the `effect-primitives` bundle first: Atoms 1, 2, 3. Hard rule from `agent-rules-v2.md` Rule 3: no new `SpellEffectKind` branches accepted.
+Implement the `effect-primitives` bundle first: Atoms 1, 2, 3. Hard rule from `agent-rules-v2.md` Rule 3: no new `SpellEffectCode` branches accepted.

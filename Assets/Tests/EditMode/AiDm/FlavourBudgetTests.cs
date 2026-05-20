@@ -53,19 +53,21 @@ namespace EmberCrpg.Tests.EditMode.AiDm
         [Test]
         public void FromRoll_BucketsByRange()
         {
-            Assert.That(ConsultFateOutcomeBucket.FromRoll(0), Is.EqualTo(ConsultFateOutcomeBucket.Setback));
-            Assert.That(ConsultFateOutcomeBucket.FromRoll(34), Is.EqualTo(ConsultFateOutcomeBucket.Setback));
-            Assert.That(ConsultFateOutcomeBucket.FromRoll(35), Is.EqualTo(ConsultFateOutcomeBucket.Neutral));
-            Assert.That(ConsultFateOutcomeBucket.FromRoll(69), Is.EqualTo(ConsultFateOutcomeBucket.Neutral));
-            Assert.That(ConsultFateOutcomeBucket.FromRoll(70), Is.EqualTo(ConsultFateOutcomeBucket.Favourable));
-            Assert.That(ConsultFateOutcomeBucket.FromRoll(99), Is.EqualTo(ConsultFateOutcomeBucket.Favourable));
+            // PR#173 bot review fix: rolls are 1..100 (XorShiftRng.RollPercent
+            // contract), thresholds use inclusive upper bounds <=35 / <=70.
+            Assert.That(ConsultFateOutcomeBucket.FromRoll(1), Is.EqualTo(ConsultFateOutcomeBucket.Setback));
+            Assert.That(ConsultFateOutcomeBucket.FromRoll(35), Is.EqualTo(ConsultFateOutcomeBucket.Setback));
+            Assert.That(ConsultFateOutcomeBucket.FromRoll(36), Is.EqualTo(ConsultFateOutcomeBucket.Neutral));
+            Assert.That(ConsultFateOutcomeBucket.FromRoll(70), Is.EqualTo(ConsultFateOutcomeBucket.Neutral));
+            Assert.That(ConsultFateOutcomeBucket.FromRoll(71), Is.EqualTo(ConsultFateOutcomeBucket.Favourable));
+            Assert.That(ConsultFateOutcomeBucket.FromRoll(100), Is.EqualTo(ConsultFateOutcomeBucket.Favourable));
         }
 
         [Test]
         public void FromRoll_RejectsOutOfRange()
         {
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => ConsultFateOutcomeBucket.FromRoll(-1));
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => ConsultFateOutcomeBucket.FromRoll(100));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => ConsultFateOutcomeBucket.FromRoll(0));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => ConsultFateOutcomeBucket.FromRoll(101));
         }
     }
 }

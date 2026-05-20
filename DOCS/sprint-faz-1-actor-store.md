@@ -43,7 +43,7 @@ matches the new `ActorStoreTests` cases.)
 - Rule 2 (no speculative utility): `ActorStore` has a concrete consumer
   in this PR (`ActorStoreTests`). The next PR will land deprecated-view
   shims and start migrating `SliceWorldState`.
-- Rule 3 (data-driven effect rule): not applicable; no `SpellEffectKind` change.
+- Rule 3 (data-driven effect rule): not applicable; no `SpellEffectCode` change.
 - Rule 4 (world-store promotion rule): this PR is the rail. Future PRs
   may not add hard-coded slice fields; they must land in `ActorStore`,
   `ItemStore`, `SiteStore`, or `FactionStore`.

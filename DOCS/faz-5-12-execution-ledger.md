@@ -27,9 +27,9 @@ binary assets stay Mami-owned per Rule 6.
 
 - Active implementation starts at Faz 5 because `origin/main` contains Faz 4 through PR #131; PRs #132-#135 remain cleanup/compat and are not used as a base for this branch.
 - First Faz 5 PR is foundational but test-backed: `Assets/Tests/EditMode/Time/SeasonCalendarTests.cs` is the visible proof artifact.
-- Local validation on 2026-05-17: `git diff --check` passed; `./tools/validation/run-validation.sh --mode fallback` passed with 933 passed, 0 failed, 0 skipped. Unity editor was blocked locally (`reason=not_found`).
+- Current local backend validation on 2026-05-20: `dotnet test tools/validation/fallback/ValidationFallbackHarness.csproj --configuration Release --nologo` passed with 1190 passed, 0 failed, 0 skipped on .NET 8. Unity editor remains outside this fallback proof.
 - Carry-over Faz 3 pathing debt remains relevant to Faz 5 farming jobs. This branch defers `CO-03` to the Faz 5 path/farming hook atom because SeasonCalendar does not depend on actor movement.
-- No `SliceWorldState` named fields, `SpellEffectKind` entries, Unity scenes, art, prefabs, screenshots, binary files, LLM clients, memory state, or free-text dialogue surfaces are introduced here.
+- This ledger has been superseded by backend reality-fix work: `SliceWorldState` now carries saveable Faz 6-12 backend rows, legacy spell effects use `SpellEffectCode`, and LLM clients are explicit-config surfaces with cloud disabled unless configured. Unity scenes, art, prefabs, screenshots, and binary files remain out of scope.
 
 ## Commands expected for each Captain atom
 

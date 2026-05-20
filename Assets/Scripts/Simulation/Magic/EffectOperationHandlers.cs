@@ -8,7 +8,7 @@ namespace EmberCrpg.Simulation.Magic
 
     /// <summary>
     /// Dispatch table from EffectOperationKind to a deterministic handler.
-    /// Replaces the Sprint 5 SpellEffectKind switch. Faz 8 Atom 5.
+    /// Replaces the Sprint 5 SpellEffectCode switch. Faz 8 Atom 5.
     /// </summary>
     public sealed class EffectOperationHandlers
     {

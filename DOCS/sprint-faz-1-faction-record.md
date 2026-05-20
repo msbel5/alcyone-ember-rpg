@@ -45,7 +45,7 @@ fallback harness is the contract-pinning surface here).
 - Rule 2 (no speculative utility): the type only exposes what
   `FactionStore` needs in the next PR (`Id`, `Name`, `Tags`, `HasTag`).
   No fluent builders, no batch helpers, no group-by overloads.
-- Rule 3 (data-driven effect): not applicable; no `SpellEffectKind`
+- Rule 3 (data-driven effect): not applicable; no `SpellEffectCode`
   change.
 - Rule 4 (world-store promotion): not applicable; no
   `SliceWorldState` field added. This PR adds Domain payload for the

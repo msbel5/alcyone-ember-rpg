@@ -68,7 +68,7 @@ and the null-reason guard.
   `WorldEventKind` seed enum carries only the three kinds the
   Faz 1 acceptance gate names.
 - Rule 3 (data-driven effect): not applicable; no change to
-  `SpellEffectKind` or magic.
+  `SpellEffectCode` or magic.
 - Rule 4 (world-store promotion): not applicable; no new
   `SliceWorldState` field.
 - Rule 5 (playable proof): not applicable for this PR (next
