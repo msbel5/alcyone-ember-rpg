@@ -24,7 +24,11 @@ namespace EmberCrpg.Presentation.Sprint4
         [SerializeField] private Vector3 firstPersonLocalOffset = new Vector3(0f, 1.58f, 0.08f);
 
         [Header("Collision")]
-        [SerializeField] private LayerMask collisionMask = ~0;
+        // PR#8 bot review fix: ~0 includes layer 2 (Ignore Raycast) which is the
+        // reserved layer for objects the camera should NOT collide with (player
+        // rig, trigger volumes, etc.). Mask out bit 2 so the camera doesn't get
+        // yanked forward by its own capsule or invisible trigger geometry.
+        [SerializeField] private LayerMask collisionMask = ~(1 << 2);
         [SerializeField] private float collisionRadius = 0.28f;
         [SerializeField] private float collisionBuffer = 0.12f;
 

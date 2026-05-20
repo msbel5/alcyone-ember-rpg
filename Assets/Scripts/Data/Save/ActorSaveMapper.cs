@@ -78,9 +78,14 @@ namespace EmberCrpg.Data.Save
                 new VitalStat(save.manaCurrent, Math.Max(1, save.manaMax)));
             var position = new GridPosition(save.positionX, save.positionY);
 
-            // Save format carries needs/mood if present; default to comfortable/null-neutral
+            // Save format carries needs/mood if present; default to comfortable/null-neutral.
+            // PR#130 bot review fix: pre-Faz-4 saves have no mood field, so Unity reads
+            // save.mood as 0 and `new ActorMood(0)` returns the worst mood (the
+            // ActorMood storage uses 0 internally as the "unset / neutral" sentinel).
+            // Treat a literal 0 read from JSON as missing field and fall back to
+            // Neutral, which matches actor state pre-Faz-4 by definition.
             var needs = new ActorNeeds(new NeedValue(save.hunger), new NeedValue(save.fatigue), new NeedValue(save.thirst));
-            var mood = new ActorMood(save.mood);
+            var mood = save.mood <= 0 ? ActorMood.Neutral : new ActorMood(save.mood);
 
             var topicIds = save.topicIds ?? Array.Empty<string>();
             var asked = save.askedTopicIds ?? Array.Empty<string>();

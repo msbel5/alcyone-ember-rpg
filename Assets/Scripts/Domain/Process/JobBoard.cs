@@ -165,6 +165,35 @@ namespace EmberCrpg.Domain.Process
             return !id.IsEmpty && _byId.TryGetValue(id, out var entry) ? entry.ClaimedBy : default;
         }
 
+        /// <summary>
+        /// Returns the deterministic claim sequence for a claimed job, or 0 when unclaimed
+        /// or unknown. Persisted by SliceSaveMapper so the load path can preserve original
+        /// queue order across save/load (PR#138 bot review fix).
+        /// </summary>
+        public int GetClaimSequence(JobId id)
+        {
+            return !id.IsEmpty && _byId.TryGetValue(id, out var entry) ? entry.ClaimSequence : 0;
+        }
+
+        /// <summary>
+        /// Restores a claim with the exact sequence number recorded by a prior save.
+        /// Behaves like <see cref="TryClaim"/> but does not increment _nextClaimSequence
+        /// off the wire — instead it bumps the high-water mark so subsequent live
+        /// claims keep producing monotonically-growing sequence values.
+        /// </summary>
+        public bool TryRestoreClaim(JobId id, ActorId actorId, int claimSequence)
+        {
+            if (id.IsEmpty || actorId.IsEmpty)
+                return false;
+            if (!_byId.TryGetValue(id, out var entry) || entry.IsClaimed)
+                return false;
+            entry.ClaimedBy = actorId;
+            entry.ClaimSequence = claimSequence;
+            if (claimSequence >= _nextClaimSequence)
+                _nextClaimSequence = claimSequence + 1;
+            return true;
+        }
+
         /// <summary>Removes a completed pending job.</summary>
         public bool Complete(JobId id)
         {

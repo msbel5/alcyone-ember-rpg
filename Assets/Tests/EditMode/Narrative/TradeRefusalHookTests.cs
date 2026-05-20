@@ -35,8 +35,12 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             var memory = new MemoryComponent(SellerId);
             memory.Add(new MemoryFact(SellerId, new TopicId("crime"), BuyerId, new GameTime(200), "stole"));
 
+            // PR#171 bot review fix: now must be >= fact's RecordedAt so the
+            // recent-crime check considers the fact "already happened". Old
+            // default(now=0) silently ignored the bound check, making the
+            // test pass on a future-dated fact — exactly the bug the bot flagged.
             var refuse = new TradeRefusalHook(new MemoryRecallService())
-                .ShouldRefuse(memory, default, default, null, default, new GameTime(100), out var reason);
+                .ShouldRefuse(memory, default, default, null, new GameTime(300), new GameTime(100), out var reason);
 
             Assert.That(refuse, Is.True);
             Assert.That(reason, Is.EqualTo("memory_recent_crime"));

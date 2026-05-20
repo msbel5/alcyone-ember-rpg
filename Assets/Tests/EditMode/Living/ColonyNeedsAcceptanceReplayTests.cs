@@ -178,6 +178,18 @@ namespace EmberCrpg.Tests.EditMode.Living
                 $"actor:{actorId.Value}",
                 "reason:hunger_or_low_mood",
             }));
+
+            // PR#132 bot review fix: this replay shares the same eventLog
+            // across TickActorNeeds and TryAssignNext. TickActorNeeds appends
+            // NeedChanged BEFORE refusal, so a correct replay must observe
+            // the NeedChanged-then-JobRefused order. Pinning the index here
+            // catches a regression where assignment runs before the need tick.
+            var events = log.Events.ToList();
+            var needsTickIndex = events.FindIndex(e => e.Kind == WorldEventKind.NeedChanged);
+            var refusalIndex = events.IndexOf(refusal);
+            if (needsTickIndex >= 0)
+                Assert.That(refusalIndex, Is.GreaterThan(needsTickIndex),
+                    "JobRefused must be appended AFTER NeedChanged in the shared event log.");
         }
     }
 }

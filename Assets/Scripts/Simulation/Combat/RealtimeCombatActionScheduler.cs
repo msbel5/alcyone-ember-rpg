@@ -55,20 +55,36 @@ namespace EmberCrpg.Simulation.Combat
             state.Advance(deltaSeconds);
             var now = state.ElapsedSeconds;
 
+            // PR#9 bot review fix: previously events were appended in queue
+            // iteration order, so action A's Completed at t=1.5 showed up
+            // before action B's Activated at t=1.2 whenever both fired in the
+            // same tick. Collect events then sort by their timestamp before
+            // adding so consumers and replay logs see chronological order.
+            var fired = new System.Collections.Generic.List<CombatActionEvent>();
             foreach (var action in state.Queue)
             {
                 if (!action.IsActivated && action.ActivateAtSeconds > previous && action.ActivateAtSeconds <= now)
                 {
                     action.MarkActivated();
-                    result.Add(new CombatActionEvent(action, CombatActionEventKind.Activated, action.ActivateAtSeconds));
+                    fired.Add(new CombatActionEvent(action, CombatActionEventKind.Activated, action.ActivateAtSeconds));
                 }
 
                 if (!action.IsCompleted && action.CompleteAtSeconds > previous && action.CompleteAtSeconds <= now)
                 {
                     action.MarkCompleted();
-                    result.Add(new CombatActionEvent(action, CombatActionEventKind.Completed, action.CompleteAtSeconds));
+                    fired.Add(new CombatActionEvent(action, CombatActionEventKind.Completed, action.CompleteAtSeconds));
                 }
             }
+
+            fired.Sort((a, b) =>
+            {
+                var primary = a.ElapsedSeconds.CompareTo(b.ElapsedSeconds);
+                if (primary != 0) return primary;
+                return a.Action.Sequence.CompareTo(b.Action.Sequence);
+            });
+
+            for (int i = 0; i < fired.Count; i++)
+                result.Add(fired[i]);
 
             return result;
         }

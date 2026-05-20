@@ -18,7 +18,11 @@ namespace EmberCrpg.Simulation.AiDm
                 return ToolCallResult.Rejected("unknown_tool");
 
             if (!descriptor.Surface.Equals(request.Surface))
-                return ToolCallResult.Rejected("surface_mismatch");
+                // PR#166 bot review fix: preserve both surfaces in the
+                // rejection reason so the trace log can diagnose why the
+                // validator refused (descriptor came from one surface,
+                // request claimed another).
+                return ToolCallResult.Rejected($"surface_mismatch:expected={descriptor.Surface} got={request.Surface}");
 
             foreach (var parameter in descriptor.Parameters)
             {
