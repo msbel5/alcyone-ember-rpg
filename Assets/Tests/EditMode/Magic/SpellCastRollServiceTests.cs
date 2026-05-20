@@ -88,7 +88,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var result = service.Roll(caster, invalidSchoolSpell, new XorShiftRng(1u));
 
             Assert.That(result.Success, Is.False);
-            Assert.That(result.Error, Is.EqualTo(SpellCastRollError.ChanceCalculationFailed));
+            Assert.That(result.Error, Is.EqualTo(SpellCastRollError.InvalidSpell));
             Assert.That(result.Chance, Is.Not.Null);
             Assert.That(result.Chance.Error, Is.EqualTo(SpellSuccessChanceError.InvalidSpell));
         }
