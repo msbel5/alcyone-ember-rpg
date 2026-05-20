@@ -12,6 +12,11 @@ namespace EmberCrpg.Presentation.Ember.Save
         public Vector3 playerPosition;
         public float playerYaw;
         public int tickIndex;
+        // Codex audit Batch 2 / Finding 3: opaque round-trippable JSON envelope
+        // produced by IDomainSimulationAdapter.ExportStateJson(). Holds the full
+        // deterministic simulation state so save/load is not limited to player
+        // transform. Empty string means "no domain adapter wired" (placeholder).
+        public string domainStateJson;
     }
 
     public sealed class EmberSaveService : MonoBehaviour
@@ -51,15 +56,25 @@ namespace EmberCrpg.Presentation.Ember.Save
             if (player == null) return;
 
             int ticks = 0;
+            string domainJson = string.Empty;
             var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current;
-            if (adapter != null) ticks = adapter.TickIndex;
+            if (adapter != null)
+            {
+                ticks = adapter.TickIndex;
+                // Codex audit Batch 2 / Finding 3: bundle the full deterministic
+                // simulation state so F9 / Continue restores more than the player
+                // rig transform.
+                try { domainJson = adapter.ExportStateJson() ?? string.Empty; }
+                catch (System.Exception) { domainJson = string.Empty; }
+            }
 
             var data = new SaveData
             {
                 sceneName = SceneManager.GetActiveScene().name,
                 playerPosition = player.transform.position,
                 playerYaw = player.transform.eulerAngles.y,
-                tickIndex = ticks
+                tickIndex = ticks,
+                domainStateJson = domainJson,
             };
 
             PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(data));
@@ -83,20 +98,44 @@ namespace EmberCrpg.Presentation.Ember.Save
             else
             {
                 RestorePosition(data);
+                ApplyDomainRestore(data);
                 ShowStatus("Loaded.");
             }
         }
 
         private static SaveData _pendingLoad;
 
+        /// <summary>
+        /// Codex audit Batch 2 / Finding 4: the main-menu Continue() button used
+        /// to LoadScene(name) but had no way to push the deserialized SaveData
+        /// into the next-scene EmberSaveService — `_pendingLoad` was private.
+        /// Now Continue() calls this hook before LoadScene; the new scene's
+        /// EmberSaveService picks the payload up in Start() and restores both
+        /// the player rig transform and the domain adapter state.
+        /// </summary>
+        public static void PreparePendingLoad(SaveData data)
+        {
+            _pendingLoad = data;
+        }
+
         private void Start()
         {
             if (_pendingLoad != null && _pendingLoad.sceneName == SceneManager.GetActiveScene().name)
             {
                 RestorePosition(_pendingLoad);
+                ApplyDomainRestore(_pendingLoad);
                 _pendingLoad = null;
                 ShowStatus("Loaded.");
             }
+        }
+
+        private static void ApplyDomainRestore(SaveData data)
+        {
+            if (data == null || string.IsNullOrEmpty(data.domainStateJson)) return;
+            var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current;
+            if (adapter == null) return;
+            try { adapter.RestoreStateJson(data.domainStateJson); }
+            catch (System.Exception) { /* placeholder envelope mismatch is best-effort */ }
         }
 
         private void RestorePosition(SaveData data)

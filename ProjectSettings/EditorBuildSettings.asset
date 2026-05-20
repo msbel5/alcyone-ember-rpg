@@ -6,6 +6,39 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Ember/MainMenu.unity
+    guid: 9ef86c3e6107db341a85e5818a35fb5f
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz3SmithingOverworld.unity
+    guid: ba941c4cc7e59564ab17d752e8bb9ea9
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz4ColonyNeeds.unity
+    guid: 4f1093911ecb5af438ef330bc1c7172f
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz5SeasonFarm.unity
+    guid: 882ba75b6784ece4aafe69f33da1ec4c
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz6TradeMarket.unity
+    guid: 809fb3c232e6904419ef17b0fad56856
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz7CombatDungeon.unity
+    guid: 21455d8acc67fc842ac093afc3fb137c
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz8RitualHall.unity
+    guid: 0e69636bcdd6a88458f18aab8fab3b54
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz9TavernDialog.unity
+    guid: 180624683c8afdf47831c2870c58fb04
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz10OracleShrine.unity
+    guid: 7f158263783ded04db12051cf52370b5
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz11ShowroomOverview.unity
+    guid: 0a3fc057da189134bb6ce1182640b104
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz12TavernFlavour.unity
+    guid: 76666ec3e61e6e440941c26e4496fc81
+  - enabled: 1
     path: Assets/Scenes/Sprint4Foundation.unity
     guid: 92b2f977c6bb4e4ebc6c7ace4f8484a7
   m_configObjects: {}

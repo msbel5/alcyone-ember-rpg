@@ -34,27 +34,19 @@ namespace EmberCrpg.Simulation.Magic
             if (casterMana < definition.Cost)
                 return SpellResolutionResult.Failed("insufficient_mana");
 
-            int totalMagnitude = 0;
-            int operationsApplied = 0;
+            // Codex audit Batch 2 / Finding 2: PR#176's original fix DID emit a Failed
+            // result when any op lacked a handler, but it did so AFTER the loop had
+            // already mutated state via ApplyOperationToContext for every handled op
+            // ahead of the unhandled one. That meant a partially-mutated world AND a
+            // `Failed` telemetry message — the worst of both. Pre-validate every
+            // operation against the handler registry first; if any are missing, fail
+            // before touching context state.
             int operationsUnhandled = 0;
             foreach (var operation in definition.Operations)
             {
-                if (_handlers.TryHandle(operation, out var magnitude))
-                {
-                    totalMagnitude += magnitude;
-                    operationsApplied++;
-                    ApplyOperationToContext(operation, context);
-                }
-                else
-                {
+                if (!_handlers.HasHandler(operation.Kind))
                     operationsUnhandled++;
-                }
             }
-
-            // PR#176 bot review fix: when any operation row has no registered handler
-            // the cast partially mutates state but the loop used to fall through and
-            // emit SpellResolved as success. Fail fast with a stable reason so callers
-            // and telemetry agree the spell did not fully execute.
             if (operationsUnhandled > 0)
             {
                 if (!siteContext.IsEmpty)
@@ -64,9 +56,21 @@ namespace EmberCrpg.Simulation.Magic
                         WorldEventKind.SpellResolved,
                         default,
                         siteContext,
-                        $"spell_resolved id:{definition.Id} ops:{operationsApplied} unhandled:{operationsUnhandled} status:failed"));
+                        $"spell_resolved id:{definition.Id} ops:0 unhandled:{operationsUnhandled} status:failed"));
                 }
                 return SpellResolutionResult.Failed($"unhandled_operations:{operationsUnhandled}");
+            }
+
+            int totalMagnitude = 0;
+            int operationsApplied = 0;
+            foreach (var operation in definition.Operations)
+            {
+                if (_handlers.TryHandle(operation, out var magnitude))
+                {
+                    totalMagnitude += magnitude;
+                    operationsApplied++;
+                    ApplyOperationToContext(operation, context);
+                }
             }
 
             if (!siteContext.IsEmpty)
