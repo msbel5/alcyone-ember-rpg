@@ -48,7 +48,12 @@ namespace EmberCrpg.Simulation.Narrative
                     return DialogueResponse.Refused("hostility");
             }
 
-            if (askee.Mood.Value <= 20)
+            // PR#168 bot review fix: use the ActorMood.LowMoodThreshold constant
+            // instead of the magic number 20. The previous value diverged from
+            // every other refusal gate by 5, so a dialog with mood=22 succeeded
+            // here while a job refusal at mood=22 (using IsLow) refused — a
+            // semantic mismatch the refusal copy doesn't expose.
+            if (askee.Mood.Value <= ActorMood.LowMoodThreshold)
                 return DialogueResponse.Refused("mood_too_low");
 
             var substitutions = new Dictionary<string, string>
