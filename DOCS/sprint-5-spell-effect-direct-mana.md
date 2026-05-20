@@ -27,7 +27,7 @@ caster, or trace contracts, and adds no Unity dependency.
 
 Implemented:
 
-- `SpellEffectKind.DirectMana = 6` — new enum member appended after
+- `SpellEffectCode.DirectMana = 6` — new enum member appended after
   `RestoreMana`. Stable numeric value, additive change.
 - `SpellEffectResolutionResult.TotalDirectManaDamage` — new int counter on
   the result object. New 8-arg `Ok` factory plus a 7-arg `Ok` overload that

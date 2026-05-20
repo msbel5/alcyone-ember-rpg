@@ -163,13 +163,20 @@ run_fallback_harness() {
 
   "$DOTNET_CLI" --info | sed -n '1,40p'
   echo
-  echo "command: '$DOTNET_CLI' test '$project' --configuration Release --nologo --results-directory '$result_dir' --logger 'trx;LogFileName=fallback.trx'"
+  local dotnet_project="$project"
+  local dotnet_result_dir="$result_dir"
+  if [[ "$DOTNET_CLI" == *.exe && -n "${WSL_DISTRO_NAME:-}" ]] && command -v wslpath >/dev/null 2>&1; then
+    dotnet_project="$(wslpath -w "$project")"
+    dotnet_result_dir="$(wslpath -w "$result_dir")"
+  fi
+
+  echo "command: '$DOTNET_CLI' test '$dotnet_project' --configuration Release --nologo --results-directory '$dotnet_result_dir' --logger 'trx;LogFileName=fallback.trx'"
 
   set +e
-  "$DOTNET_CLI" test "$project" \
+  "$DOTNET_CLI" test "$dotnet_project" \
     --configuration Release \
     --nologo \
-    --results-directory "$result_dir" \
+    --results-directory "$dotnet_result_dir" \
     --logger "trx;LogFileName=fallback.trx"
   local exit_code=$?
   set -e

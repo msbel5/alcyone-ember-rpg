@@ -33,7 +33,7 @@ This file is the missing execution bridge: roadmap acceptance -> backend method 
 | Faz 6 slice 2 | SOCIETY/TIME | Trade route tick | TravelEdge, Caravan state, TradeRouteSystem daily delivery event | new Domain/Society + Simulation/Society | queued |
 | Faz 7 slice 1 | CRPG/MATTER | Store-backed equipment combat | Weapon/Armor item data, EquipmentState integration, durability | EquipmentService, CombatMathService, RealtimeDamageService, ItemRecord | queued |
 | Faz 7 slice 2 | CRPG/MATTER | Death drops inventory | Combat death result writes item drops/event log | Combat services, InventoryState, WorldEventLog | queued |
-| Faz 8 slice 1 | CRPG | EffectDefinition registry | Data-driven effect rows and handler registry without new SpellEffectKind | SpellEffectResolutionService, SliceSpellCatalog, new EffectDefinition | queued |
+| Faz 8 slice 1 | CRPG | EffectDefinition registry | Data-driven effect rows and handler registry without new SpellEffectCode | SpellEffectResolutionService, SliceSpellCatalog, new EffectDefinition | queued |
 | Faz 8 slice 2 | CRPG | Data-only new spell proof | Add a spell row with no C# branch and event-log proof | Magic services/catalog/tests | queued |
 | Faz 9 slice 1 | LIVING/SOCIETY/CRPG | Memory/disposition audit | Audit Sprint 1 narrative files reuse/refactor/deprecate decisions | ActorMemory, NpcMemoryStore, AskAboutService, ThinkService | queued |
 | Faz 9 slice 2 | LIVING/SOCIETY/CRPG | Crime memory affects trade/dialogue | MemoryComponent, Disposition, crime ledger, dialogue gate tests | Narrative + Memory + Faction files | queued |

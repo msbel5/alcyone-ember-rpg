@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace EmberCrpg.Domain.Magic
 {
     /// <summary>
-    /// Immutable data row for an effect (spell). Replaces SpellEffectKind enum.
+    /// Immutable data row for an effect (spell). Replaces SpellEffectCode enum.
     /// Faz 8 Atom 3.
     /// </summary>
     public sealed class EffectDefinition : IEquatable<EffectDefinition>

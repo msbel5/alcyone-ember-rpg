@@ -21,7 +21,7 @@ graph TB
         F1["Faz 1 Core Store reset\nActorStore / ItemStore / SiteStore / FactionStore"]
         F2["Faz 2 Recipe + Worksite\nRecipeDef / WorksiteStore / RecipeSystem"]
         F3["Faz 3 Job assignment target\npriority -> job -> path -> worksite -> recipe"]
-        LEGACY["Sprint 5 legacy magic\nSpellEffectKind enum + SpellEffectSpec"]
+        LEGACY["Sprint 5 legacy magic\nSpellEffectCode enum + SpellEffectSpec"]
     end
 
     subgraph F8["Faz 8 ana sistemleri: Data-driven magic unblock"]
@@ -1015,7 +1015,7 @@ using System.Collections.Generic;
 
 namespace EmberCrpg.Simulation.Magic
 {
-    /// <summary>Deterministic registry mapping operation keys to handlers. It replaces SpellEffectKind branching.</summary>
+    /// <summary>Deterministic registry mapping operation keys to handlers. It replaces SpellEffectCode branching.</summary>
     public sealed class EffectOperationRegistry
     {
         private readonly Dictionary<string, IEffectOperation> _operationsByKey;
@@ -1321,7 +1321,7 @@ using System.Collections.Generic;
 
 namespace EmberCrpg.Domain.Magic
 {
-    /// <summary>Existing spell definition promoted to reference effect ids instead of SpellEffectKind rows. Legacy constructors remain only as migration adapters until tests move row-by-row.</summary>
+    /// <summary>Existing spell definition promoted to reference effect ids instead of SpellEffectCode rows. Legacy constructors remain only as migration adapters until tests move row-by-row.</summary>
     public sealed class SpellDefinition
     {
         private readonly EffectId[] _effectIds;
@@ -1404,7 +1404,7 @@ namespace EmberCrpg.Simulation.Magic
         /// <summary>Returns the seven legacy effect rows expressed as EffectDefinition data.</summary>
         public static IEnumerable<EffectDefinition> LegacyEffectDefinitions();
 
-        /// <summary>Returns existing starter spell rows using effect ids instead of SpellEffectKind.</summary>
+        /// <summary>Returns existing starter spell rows using effect ids instead of SpellEffectCode.</summary>
         public static IEnumerable<SpellDefinition> StarterSpells();
 
         /// <summary>Returns one new spell row that proves data-only spell shipping.</summary>
@@ -1774,7 +1774,7 @@ namespace EmberCrpg.Simulation.Process
 
 | Atom | Tag | Dosya/sınıf ana kapsamı | Kısa açıklama | Bağımlılık |
 |---:|---|---|---|---|
-| 1 | [box=CRPG] | `EffectId`, `EffectDefinition`, `EffectDefinitionCatalog`, `ModifyResourceOperation`, `ApplyBuffOperation`, `DataDrivenSpellRows`, `SpellExecutionServiceV2` | Büyük “promotion PR”: mevcut 7 `SpellEffectKind` davranışı data row olarak çalışır; enum’a yeni entry eklenmez. | Başlangıç |
+| 1 | [box=CRPG] | `EffectId`, `EffectDefinition`, `EffectDefinitionCatalog`, `ModifyResourceOperation`, `ApplyBuffOperation`, `DataDrivenSpellRows`, `SpellExecutionServiceV2` | Büyük “promotion PR”: mevcut 7 `SpellEffectCode` davranışı data row olarak çalışır; enum’a yeni entry eklenmez. | Başlangıç |
 | 2 | [box=CRPG] | `EffectOperationRegistry`, kalan operation handler imzaları | `spawn_light`, `modify_disposition`, `apply_condition`, `move_item`, `start_world_process` handler rail’i eklenir. | Atom 1 |
 | 3 | [box=CRPG] | `DataDrivenSpellRows.NewDataOnlySpell`, `DataDrivenSpellCatalog` | Yeni spell sadece data row olarak eklenir; C# branch yok; EventLog’a yazar. | Atom 1 |
 | 4 | [box=LIVING] | `ActorMagicComponent`, `ActorEffectQueueComponent`, `ActorConditionComponent` | ActorRecord composition rail’i magic/effect state için eklenir. | Atom 1 |
@@ -1868,7 +1868,7 @@ Risk matrisi:
 
 | Risk | Seviye | Neden | Mitigasyon | İlgili atom |
 |---|---:|---|---|---|
-| SpellEffectKind migration refactor | Yüksek | Mevcut magic testleri enum/spec üstüne kurulu | Atom 1 tek promotion PR; eski 7 davranış row-by-row pin’lenir | 1 |
+| SpellEffectCode migration refactor | Yüksek | Mevcut magic testleri enum/spec üstüne kurulu | Atom 1 tek promotion PR; eski 7 davranış row-by-row pin’lenir | 1 |
 | Operation handlers fazla genişler | Orta | Handler listesi farklı store’lara dokunur | Önce ModifyResource + ApplyBuff davranışını çalıştır; kalan handler’ları dar context ile ekle | 1-2 |
 | ActorRecord component genişlemesi save/load kırar | Orta | Existing save mapper ActorSaveData kullanıyor | Component save DTO’ları atom 5’e kadar eklenmez; önce runtime ve tests | 4-5 |
 | JobAssignmentSystem Faz 3 kapsamı büyür | Yüksek | Assignment + path + recipe aynı vertical slice | Priority, board, slot, path, orchestration ayrı PR; acceptance en son | 6-11 |

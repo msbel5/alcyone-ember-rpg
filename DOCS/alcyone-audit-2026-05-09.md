@@ -79,7 +79,7 @@ Effective immediately, by `agent-rules-v2`:
    gameplay or world-state extension.
 2. No new utility overloads (`MergeMany`, `PartitionMany`,
    `GroupByMany`, etc.) without a same-PR or next-PR consumer.
-3. No new `SpellEffectKind` enum entries without first promoting
+3. No new `SpellEffectCode` enum entries without first promoting
    to `EffectDefinition` + `EffectOperation` data path.
 4. No new world-state field added directly to `SliceWorldState`.
    New world state goes through `ActorStore` / `ItemStore` /

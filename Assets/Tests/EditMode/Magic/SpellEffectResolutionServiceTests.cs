@@ -59,7 +59,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Damage Clamp Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 9, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 9, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -81,8 +81,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 6, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 3, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 6, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 3, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -107,8 +107,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 11, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 5, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 11, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 5, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -131,7 +131,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Damage Zero Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 0, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 0, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -154,8 +154,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 0, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 0, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -182,8 +182,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 0, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -208,8 +208,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 0, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 4, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -249,7 +249,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Restore Health Zero Test",
                 MagicSchool.Restoration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreHealth, 0, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreHealth, 0, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -270,7 +270,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Restore Health Clamp Test",
                 MagicSchool.Restoration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreHealth, 5, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreHealth, 5, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -290,7 +290,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Restore Fatigue Test",
                 MagicSchool.Restoration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 4, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 4, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -314,7 +314,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Restore Fatigue Clamp Test",
                 MagicSchool.Restoration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 5, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 5, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -334,7 +334,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Restore Fatigue Zero Test",
                 MagicSchool.Restoration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 0, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 0, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -355,7 +355,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Restore Mana Test",
                 MagicSchool.Restoration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreMana, 7, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreMana, 7, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -381,7 +381,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Restore Mana Clamp Test",
                 MagicSchool.Restoration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreMana, 8, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreMana, 8, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -403,9 +403,9 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 6, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 2, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 3, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreMana, 6, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 2, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 3, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -432,7 +432,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Restore Mana Zero Test",
                 MagicSchool.Restoration,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreMana, 0, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreMana, 0, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -452,7 +452,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Mana Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectMana, 5, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectMana, 5, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -479,7 +479,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Mana Clamp Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectMana, 9, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectMana, 9, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -499,7 +499,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Mana Overshoot Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectMana, 11, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectMana, 11, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -522,8 +522,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectMana, 6, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 3, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectMana, 6, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreMana, 3, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -548,8 +548,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectMana, 11, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 5, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectMana, 11, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreMana, 5, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -572,7 +572,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Mana Zero Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectMana, 0, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectMana, 0, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -594,8 +594,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectMana, 0, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectMana, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreMana, 0, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -622,8 +622,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectMana, 4, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectMana, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreMana, 0, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -648,8 +648,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectMana, 0, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectMana, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreMana, 4, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -672,7 +672,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Fatigue Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectFatigue, 5, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectFatigue, 5, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -700,7 +700,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Fatigue Clamp Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectFatigue, 9, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectFatigue, 9, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -720,7 +720,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Fatigue Overshoot Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectFatigue, 11, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectFatigue, 11, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -743,8 +743,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectFatigue, 6, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 3, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectFatigue, 6, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 3, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -769,8 +769,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectFatigue, 11, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 5, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectFatigue, 11, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 5, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -793,7 +793,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Direct Fatigue Zero Test",
                 MagicSchool.Destruction,
                 1,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectFatigue, 0, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectFatigue, 0, 0) });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
 
@@ -815,8 +815,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectFatigue, 0, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectFatigue, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 0, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -843,8 +843,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectFatigue, 0, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectFatigue, 0, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 4, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -869,9 +869,9 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 5, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 4, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 2, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 5, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 2, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -958,8 +958,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0),
-                    new SpellEffectSpec(SpellEffectKind.ShieldBuff, 2, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 3, 0),
+                    new SpellEffectSpec(SpellEffectCode.ShieldBuff, 2, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();
@@ -990,12 +990,12 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 1,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreHealth, 4, 0),
-                    new SpellEffectSpec(SpellEffectKind.DirectFatigue, 4, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 3, 0),
-                    new SpellEffectSpec(SpellEffectKind.DirectMana, 5, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreMana, 6, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 3, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreHealth, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectFatigue, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 3, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectMana, 5, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreMana, 6, 0),
                 });
             var cast = SpellCastResult.Ok(spell, 1, "cast");
             var service = new SpellEffectResolutionService();

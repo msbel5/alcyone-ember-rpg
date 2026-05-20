@@ -34,7 +34,8 @@ namespace EmberCrpg.Simulation.AiDm
             ToolRegistry registry,
             GameTime now,
             SiteId siteContext,
-            WorldEventLog events)
+            WorldEventLog events,
+            ToolCallTracer tracer = null)
         {
             if (events == null) throw new ArgumentNullException(nameof(events));
 
@@ -42,6 +43,7 @@ namespace EmberCrpg.Simulation.AiDm
             if (!validation.Accepted)
             {
                 EmitInvoked(events, now, siteContext, request, accepted: false, reason: validation.RejectionReason);
+                tracer?.Record(now, siteContext, request, validation);
                 return validation;
             }
 
@@ -49,17 +51,20 @@ namespace EmberCrpg.Simulation.AiDm
             {
                 var miss = ToolCallResult.Rejected("no_handler");
                 EmitInvoked(events, now, siteContext, request, accepted: false, reason: miss.RejectionReason);
+                tracer?.Record(now, siteContext, request, miss);
                 return miss;
             }
 
             var result = handler(request) ?? ToolCallResult.Rejected("handler_returned_null");
             EmitInvoked(events, now, siteContext, request, result.Accepted, result.Accepted ? "ok" : result.RejectionReason);
+            tracer?.Record(now, siteContext, request, result);
             return result;
         }
 
         private static void EmitInvoked(WorldEventLog events, GameTime now, SiteId siteContext, ToolCallRequest request, bool accepted, string reason)
         {
-            var site = siteContext.IsEmpty ? new SiteId(1UL) : siteContext;
+            if (siteContext.IsEmpty)
+                return;
             var verdict = accepted ? "accepted" : "rejected:" + (reason ?? "");
             var toolCode = request?.ToolId.Code ?? "(null)";
             var surfaceCode = request?.Surface.Code ?? "(null)";
@@ -67,7 +72,7 @@ namespace EmberCrpg.Simulation.AiDm
                 now,
                 WorldEventKind.ToolInvoked,
                 default,
-                site,
+                siteContext,
                 $"tool_invoked surface:{surfaceCode} tool:{toolCode} {verdict}"));
         }
 

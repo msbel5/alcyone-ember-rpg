@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Process;
 
 // Design note:
@@ -33,7 +34,8 @@ namespace EmberCrpg.Domain.Actors
             IEnumerable<ActorJobPreference> jobPreferences = null,
             ActorScheduleState scheduleState = default,
             ActorNeeds needs = default,
-            ActorMood mood = default)
+            ActorMood mood = default,
+            MemoryComponent memory = null)
         {
             Id = id;
             Name = name;
@@ -52,6 +54,9 @@ namespace EmberCrpg.Domain.Actors
             ScheduleState = scheduleState;
             Needs = needs;
             Mood = mood;
+            Memory = memory ?? (id.IsEmpty ? null : new MemoryComponent(id));
+            if (Memory != null && !Memory.OwnerId.Equals(id))
+                throw new ArgumentException("Actor memory owner must match the actor id.", nameof(memory));
         }
 
         public ActorId Id { get; }
@@ -71,6 +76,7 @@ namespace EmberCrpg.Domain.Actors
         public ActorScheduleState ScheduleState { get; private set; }
         public ActorNeeds Needs { get; private set; }
         public ActorMood Mood { get; private set; }
+        public MemoryComponent Memory { get; private set; }
 
         public void MoveTo(GridPosition position)
         {
@@ -135,6 +141,16 @@ namespace EmberCrpg.Domain.Actors
         public void ApplyMood(ActorMood mood)
         {
             Mood = mood;
+        }
+
+        public void ApplyMemory(MemoryComponent memory)
+        {
+            if (memory == null)
+                throw new ArgumentNullException(nameof(memory));
+            if (!memory.OwnerId.Equals(Id))
+                throw new ArgumentException("Actor memory owner must match the actor id.", nameof(memory));
+
+            Memory = memory;
         }
     }
 }

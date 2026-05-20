@@ -13,6 +13,18 @@ namespace EmberCrpg.Domain.AiDm
         public static LlmProviderKind CloudOpenAi { get; } = new LlmProviderKind("cloud_openai");
         public static LlmProviderKind Mock { get; } = new LlmProviderKind("mock");
 
+        public static LlmProviderKind FromCode(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+                return default;
+            var normalized = code.Trim();
+            if (normalized == LocalQwen.Code) return LocalQwen;
+            if (normalized == CloudAnthropic.Code) return CloudAnthropic;
+            if (normalized == CloudOpenAi.Code) return CloudOpenAi;
+            if (normalized == Mock.Code) return Mock;
+            return new LlmProviderKind(normalized);
+        }
+
         public string Code => _code ?? string.Empty;
         public bool IsEmpty => string.IsNullOrEmpty(_code);
 

@@ -59,7 +59,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 SpellTargetKind.SingleTarget,
                 5,
                 8,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 3, 0) });
 
             var result = service.Calculate(CreateActor("Acolyte", 40, 60), invalidSchoolSpell);
 
@@ -79,7 +79,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 (SpellTargetKind)999,
                 5,
                 8,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 3, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 3, 0) });
 
             var result = service.Calculate(CreateActor("Acolyte", 40, 60), invalidTargetSpell);
 
@@ -152,7 +152,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 SpellTargetKind.AreaAtRange,
                 18,
                 6,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 8, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 8, 0) });
             var touchSpell = SliceSpellCatalog.CreateMendingTouch();
 
             var areaResult = service.Calculate(caster, areaSpell);
@@ -179,9 +179,9 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 20,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 20, 0),
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 20, 0),
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 20, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 20, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 20, 0),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 20, 0),
                 });
             var gentleSpell = new SpellDefinition(
                 "inner_spark",
@@ -189,7 +189,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 MagicSchool.Alteration,
                 SpellTargetKind.CasterSelf,
                 0,
-                new[] { new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 1, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 1, 0) });
 
             var minimum = service.Calculate(fragileCaster, punishingSpell);
             var maximum = service.Calculate(legendaryCaster, gentleSpell);

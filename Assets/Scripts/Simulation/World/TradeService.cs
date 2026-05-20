@@ -20,7 +20,15 @@ namespace EmberCrpg.Simulation.World
             string itemTag,
             int quantity,
             GameTime now,
-            WorldEventLog events)
+            WorldEventLog events,
+            string currencyTag = null,
+            StockpileComponent buyerCurrencyStockpile = null,
+            StockpileComponent sellerCurrencyStockpile = null,
+            FactionStore factions = null,
+            FactionId buyerFaction = default,
+            FactionId sellerFaction = default,
+            int reputationDelta = 0,
+            FactionReputationSystem reputationSystem = null)
         {
             if (ledger == null) throw new ArgumentNullException(nameof(ledger));
             if (buyerStockpile == null) throw new ArgumentNullException(nameof(buyerStockpile));
@@ -36,8 +44,30 @@ namespace EmberCrpg.Simulation.World
                 return false;
 
             var unitPrice = ledger.GetPrice(sellerStockpile.SiteId, itemTag);
+            var normalizedCurrency = string.IsNullOrWhiteSpace(currencyTag) ? null : currencyTag.Trim();
+            var totalPrice = unitPrice * quantity;
+            if (normalizedCurrency != null)
+            {
+                var sourceCurrency = buyerCurrencyStockpile ?? buyerStockpile;
+                if (totalPrice > 0 && sourceCurrency.Get(normalizedCurrency) < totalPrice)
+                    return false;
+            }
+
             sellerStockpile.Remove(itemTag, quantity);
             buyerStockpile.Add(itemTag, quantity);
+            if (normalizedCurrency != null && totalPrice > 0)
+            {
+                var sourceCurrency = buyerCurrencyStockpile ?? buyerStockpile;
+                var destinationCurrency = sellerCurrencyStockpile ?? sellerStockpile;
+                sourceCurrency.Remove(normalizedCurrency, totalPrice);
+                destinationCurrency.Add(normalizedCurrency, totalPrice);
+            }
+
+            if (factions != null && reputationDelta != 0 && !buyerFaction.IsEmpty && !sellerFaction.IsEmpty)
+            {
+                var system = reputationSystem ?? new FactionReputationSystem();
+                system.ApplyDelta(factions, buyerFaction, sellerFaction, reputationDelta, "trade_completed", now, events);
+            }
 
             events.Append(new WorldEvent(
                 now,

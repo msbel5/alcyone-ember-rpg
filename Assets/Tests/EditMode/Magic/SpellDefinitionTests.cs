@@ -13,20 +13,20 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void EffectSpec_RejectsNoneKind()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new SpellEffectSpec(SpellEffectKind.None, 1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SpellEffectSpec(SpellEffectCode.None, 1, 0));
         }
 
         [Test]
         public void EffectSpec_RejectsNegativeMagnitudeOrDuration()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new SpellEffectSpec(SpellEffectKind.DirectDamage, -1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new SpellEffectSpec(SpellEffectKind.DirectDamage, 1, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SpellEffectSpec(SpellEffectCode.DirectDamage, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SpellEffectSpec(SpellEffectCode.DirectDamage, 1, -1));
         }
 
         [Test]
         public void Definition_RejectsEmptyTemplateIdOrDisplayName()
         {
-            var effect = new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 1, 0) };
+            var effect = new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 1, 0) };
             Assert.Throws<ArgumentException>(() => new SpellDefinition("", "Name", MagicSchool.Destruction, 1, effect));
             Assert.Throws<ArgumentException>(() => new SpellDefinition("id", " ", MagicSchool.Destruction, 1, effect));
         }
@@ -34,7 +34,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void Definition_RejectsNoneSchoolTargetKindNegativeManaCostNegativeRangeAndNegativeCooldown()
         {
-            var effect = new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 1, 0) };
+            var effect = new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 1, 0) };
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.None, 1, effect));
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.Destruction, SpellTargetKind.None, 1, effect));
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpellDefinition("id", "Name", MagicSchool.Destruction, -1, effect));
@@ -50,7 +50,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 "Name",
                 MagicSchool.Destruction,
                 5,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 4, 0) });
 
             Assert.That(spell.TargetKind, Is.EqualTo(SpellTargetKind.SingleTarget));
             Assert.That(spell.RangeInTiles, Is.EqualTo(0));
@@ -68,7 +68,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 5,
                 7,
                 9,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 4, 0) });
 
             Assert.That(spell.TargetKind, Is.EqualTo(SpellTargetKind.SingleTarget));
             Assert.That(spell.RangeInTiles, Is.EqualTo(7));
@@ -84,10 +84,10 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void Definition_EffectsCollectionIsReadOnlySnapshot()
         {
-            var input = new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0) };
+            var input = new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 4, 0) };
             var spell = new SpellDefinition("id", "Name", MagicSchool.Destruction, 5, input);
-            input[0] = new SpellEffectSpec(SpellEffectKind.RestoreHealth, 99, 0);
-            Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectKind.DirectDamage));
+            input[0] = new SpellEffectSpec(SpellEffectCode.RestoreHealth, 99, 0);
+            Assert.That(spell.Effects[0].Kind, Is.EqualTo(SpellEffectCode.DirectDamage));
             Assert.That(spell.Effects[0].Magnitude, Is.EqualTo(4));
         }
     }

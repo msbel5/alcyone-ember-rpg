@@ -38,8 +38,24 @@ namespace EmberCrpg.Simulation.Combat
             if (events == null) throw new ArgumentNullException(nameof(events));
             if (siteId.IsEmpty) throw new ArgumentException("SiteId must be non-empty.", nameof(siteId));
 
+            if (attacker.Vitals.Fatigue.Current < action.StaminaCost)
+            {
+                events.Append(new WorldEvent(
+                    now,
+                    WorldEventKind.CombatResolved,
+                    attacker.Id,
+                    siteId,
+                    $"combat_resolved action:{action.Id} attacker:{attacker.Id} defender:{defender.Id} rejected:insufficient_stamina"));
+                return new CombatActionOutcome(false, 0);
+            }
+
+            if (action.StaminaCost > 0)
+                attacker.ApplyVitals(attacker.Vitals.WithFatigue(attacker.Vitals.Fatigue.Damage(action.StaminaCost)));
+
             var hit = _hit.Roll(attacker.Accuracy, defender.Dodge, rng);
             var damage = hit ? _damage.Roll(attacker.BaseDamage, damageBandWidth, defender.Armor, rng) : 0;
+            if (damage > 0)
+                defender.ApplyVitals(defender.Vitals.WithHealth(defender.Vitals.Health.Damage(damage)));
 
             events.Append(new WorldEvent(
                 now,

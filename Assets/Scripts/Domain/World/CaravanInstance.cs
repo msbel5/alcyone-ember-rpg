@@ -22,6 +22,19 @@ namespace EmberCrpg.Domain.World
         public static CaravanState Unloading { get; } = new CaravanState("unloading");
         public static CaravanState Idle { get; } = new CaravanState("idle");
 
+        public static CaravanState FromCode(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+                return Idle;
+            var normalized = code.Trim();
+            if (normalized == Loading.Code) return Loading;
+            if (normalized == EnRoute.Code) return EnRoute;
+            if (normalized == Arrived.Code) return Arrived;
+            if (normalized == Unloading.Code) return Unloading;
+            if (normalized == Idle.Code) return Idle;
+            return new CaravanState(normalized);
+        }
+
         public string Code => _code ?? Idle.Code;
         public bool IsEmpty => string.IsNullOrEmpty(_code);
 
@@ -99,6 +112,15 @@ namespace EmberCrpg.Domain.World
         {
             StepsSinceDeparture++;
             State = CaravanState.EnRoute;
+        }
+
+        public void Load(int quantity)
+        {
+            if (quantity < 0)
+                throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be non-negative.");
+            PayloadRemaining += quantity;
+            if (quantity > 0)
+                State = CaravanState.EnRoute;
         }
 
         /// <summary>Marks arrival at the destination site.</summary>

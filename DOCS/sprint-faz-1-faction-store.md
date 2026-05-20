@@ -52,7 +52,7 @@ fallback harness is the contract-pinning surface here).
   fluent builders, batch helpers, or LINQ surface beyond the
   enumerable `Records` projection. Concrete consumers (the upcoming
   `SliceWorldState` migration) ship in the next PR.
-- Rule 3 (data-driven effect): not applicable; no `SpellEffectKind`
+- Rule 3 (data-driven effect): not applicable; no `SpellEffectCode`
   change.
 - Rule 4 (world-store promotion): this PR is the SOCIETY-seed half
   of the world-store promotion path — it provides the registry that

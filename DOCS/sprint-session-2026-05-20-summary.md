@@ -59,7 +59,7 @@ This file records what landed in the five-hour window.
 - **Faz 5** — foundation merged via #136 (atoms 1-11); plant/season/farming primitives live in `Assets/Scripts/Domain/Time/`, `/Process/`, and `/Simulation/Process/`. Atom 12 (acceptance replay) queued.
 - **Faz 6** — atom map merged (#140); primitives merged (#143); reputation system pending merge (#148).
 - **Faz 7** — atom map merged (#140); no implementation yet.
-- **Faz 8** — atom map merged (#140); no implementation yet. Sprint 5 `SpellEffectKind` enum still present, awaits the promotion bundle.
+- **Faz 8** — atom map merged (#140); no implementation yet. Sprint 5 `SpellEffectCode` enum still present, awaits the promotion bundle.
 - **Faz 9** — atom map merged (#140); CO-09 still deferred; no implementation yet.
 - **Faz 10** — atom map merged (#140); primitives merged (#146).
 - **Faz 11** — atom map merged (#140); Captain-side snapshot rows batch 1 merged (#142); batch 2 pending merge (#147); Mami-side scene atoms (8-16) await Mami's own sprint.

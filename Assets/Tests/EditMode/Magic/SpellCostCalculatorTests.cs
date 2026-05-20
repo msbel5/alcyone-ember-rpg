@@ -27,10 +27,10 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var instant = CreateSpell(
                 SpellTargetKind.SingleTarget,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 5, 0) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 5, 0) });
             var timed = CreateSpell(
                 SpellTargetKind.SingleTarget,
-                new[] { new SpellEffectSpec(SpellEffectKind.DirectDamage, 5, 25) });
+                new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 5, 25) });
             var calculator = new SpellCostCalculator();
 
             Assert.That(calculator.EstimateTotalManaCost(instant), Is.EqualTo(8));
@@ -45,8 +45,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 SpellTargetKind.AreaAtRange,
                 new[]
                 {
-                    new SpellEffectSpec(SpellEffectKind.DirectDamage, 4, 0),
-                    new SpellEffectSpec(SpellEffectKind.RestoreFatigue, 2, 20),
+                    new SpellEffectSpec(SpellEffectCode.DirectDamage, 4, 0),
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 2, 20),
                 });
             var calculator = new SpellCostCalculator();
 
