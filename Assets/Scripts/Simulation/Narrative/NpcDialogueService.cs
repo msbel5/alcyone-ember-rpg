@@ -81,7 +81,7 @@ namespace EmberCrpg.Simulation.Narrative
 
         public string Text { get; }
         public string RefusalReason { get; }
-        public bool Refused => !string.IsNullOrEmpty(RefusalReason);
+        public bool IsRefused => !string.IsNullOrEmpty(RefusalReason);
 
         public static DialogueResponse Spoken(string text) => new DialogueResponse(text, null);
         public static DialogueResponse Refused(string reason) => new DialogueResponse(null, reason);
