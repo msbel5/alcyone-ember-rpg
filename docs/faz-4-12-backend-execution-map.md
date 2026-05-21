@@ -2,7 +2,7 @@
 
 _Generated:_ 2026-05-17
 _Branch:_ agent/faz-5-season-ledger
-_Depends on:_ DOCS/backend-method-tree.md, docs/ROADMAP.md, DOCS/mechanic-map-v1.md
+_Depends on:_ docs/backend-method-tree.md, docs/ROADMAP.md, docs/mechanic-map-v1.md
 
 This file is the missing execution bridge: roadmap acceptance -> backend method groups -> next small PR slices. It exists to prevent free-running agents from opening disconnected PRs.
 

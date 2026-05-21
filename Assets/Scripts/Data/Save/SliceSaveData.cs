@@ -5,6 +5,15 @@ using System;
 // Inputs: pure world-state values copied by the mapper.
 // Outputs: JsonUtility-friendly fields with no behavior.
 // Bible reference: MASTER_MECHANICS_BIBLE.md §48, PRD Sprint 1 FR-06, Sprint 2 FR-02 through FR-04.
+//
+// Codex audit (sixth pass D-P3 #D3): the playerRoomId/talkerRoomId/merchantRoomId/
+// guardRoomId/enemyRoomId fields below mirror the deprecated SliceWorldState
+// named role views. They are kept for backward-compatible save migration —
+// SliceSaveMapper writes BOTH the legacy named ids AND the new actors[]
+// list so a player on an old save can load. New code that adds save data
+// should write into actors[] / world stores only; do not expand the legacy
+// named-id surface. Removal lines up with the SliceWorldState role-view
+// removal after the Faz 13 cleanup sprint.
 namespace EmberCrpg.Data.Save
 {
     [Serializable]

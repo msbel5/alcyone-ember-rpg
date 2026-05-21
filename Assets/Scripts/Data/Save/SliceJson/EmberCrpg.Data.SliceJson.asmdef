@@ -1,6 +1,6 @@
 {
     "name": "EmberCrpg.Data.SliceJson",
-    "rootNamespace": "EmberCrpg.Data.Save",
+    "rootNamespace": "EmberCrpg.Data.SliceJson",
     "references": [
         "EmberCrpg.Domain",
         "EmberCrpg.Simulation",

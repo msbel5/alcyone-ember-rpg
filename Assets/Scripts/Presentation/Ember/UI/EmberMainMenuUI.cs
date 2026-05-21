@@ -89,74 +89,10 @@ namespace EmberCrpg.Presentation.Ember.UI
 #endif
         }
 
-        #if UNITY_EDITOR
-        public static void BuildMenuScene(string path)
-        {
-            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
-    
-            var canvasObj = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            var canvas = canvasObj.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-    
-            canvasObj.AddComponent<EmberMainMenuUI>();
-    
-            var panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
-            panel.transform.SetParent(canvas.transform, false);
-            var rt = panel.GetComponent<RectTransform>();
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            panel.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.12f);
-
-            var title = new GameObject("Title", typeof(RectTransform), typeof(Text));
-            title.transform.SetParent(panel.transform, false);
-            var titleRt = title.GetComponent<RectTransform>();
-            titleRt.anchorMin = new Vector2(0.5f, 0.8f);
-            titleRt.anchorMax = new Vector2(0.5f, 0.8f);
-            titleRt.sizeDelta = new Vector2(400, 100);
-            var titleText = title.GetComponent<Text>();
-            titleText.text = "EMBER";
-            titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            titleText.fontSize = 72;
-            titleText.alignment = TextAnchor.MiddleCenter;
-            titleText.color = new Color(1f, 0.8f, 0.2f);
-
-            string[] buttons = { "New Game", "Continue", "Quit" };
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                var btnObj = new GameObject(buttons[i], typeof(RectTransform), typeof(Image), typeof(Button));
-                btnObj.transform.SetParent(panel.transform, false);
-                var btnRt = btnObj.GetComponent<RectTransform>();
-                btnRt.anchorMin = new Vector2(0.5f, 0.5f - i * 0.15f);
-                btnRt.anchorMax = new Vector2(0.5f, 0.5f - i * 0.15f);
-                btnRt.sizeDelta = new Vector2(200, 50);
-        
-                btnObj.GetComponent<Image>().color = new Color(0.3f, 0.3f, 0.35f);
-                var btn = btnObj.GetComponent<Button>();
-        
-                var txtObj = new GameObject("Text", typeof(RectTransform), typeof(Text));
-                txtObj.transform.SetParent(btnObj.transform, false);
-                var txtRt = txtObj.GetComponent<RectTransform>();
-                txtRt.anchorMin = Vector2.zero;
-                txtRt.anchorMax = Vector2.one;
-                txtRt.offsetMin = Vector2.zero;
-                txtRt.offsetMax = Vector2.zero;
-                var txt = txtObj.GetComponent<Text>();
-                txt.text = buttons[i];
-                txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                txt.alignment = TextAnchor.MiddleCenter;
-                txt.color = Color.white;
-                // Codex audit (D-P3): the build helper used to declare an
-                // unused `int index = i;` plus a stale listener comment about
-                // UnityEvent wiring. The button objects are wired by the
-                // companion EmberMainMenuUI MonoBehaviour at scene start;
-                // the Editor build helper just authors the GameObjects, so
-                // these stragglers were noise.
-            }
-    
-            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, path);
-        }
-        #endif
+        // Codex audit (sixth pass B-P2 #B3): the editor-only BuildMenuScene
+        // helper used to live here behind `#if UNITY_EDITOR`. It now lives at
+        // Assets/Editor/Ember/Menu/EmberMainMenuSceneBuilder.cs in the editor
+        // asmdef, where it belongs. Runtime callers never used it, so this
+        // file is now pure runtime UI code.
     }
 }
