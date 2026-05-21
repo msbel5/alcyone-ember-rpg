@@ -138,8 +138,15 @@ namespace EmberCrpg.Presentation.Ember.Save
                 // throw used to still flash "Loaded." while leaving world state
                 // at its pre-load baseline.
                 var domainResult = ApplyDomainRestore(data);
+                // Codex audit (third pass A-P2): NoAdapter used to fall through
+                // to "Loaded." even though a non-empty domainStateJson payload
+                // was silently dropped. Treat both Failed AND NoAdapter as
+                // partial loads when the save carried a payload — only the
+                // empty/absent payload path is a full success.
                 if (domainResult == DomainRestoreResult.Failed)
                     ShowStatus("Load partial: domain restore failed.");
+                else if (domainResult == DomainRestoreResult.NoAdapter)
+                    ShowStatus("Load partial: domain restore unavailable.");
                 else
                     ShowStatus("Loaded.");
             }
@@ -167,8 +174,15 @@ namespace EmberCrpg.Presentation.Ember.Save
                 RestorePosition(_pendingLoad);
                 var domainResult = ApplyDomainRestore(_pendingLoad);
                 _pendingLoad = null;
+                // Codex audit (third pass A-P2): NoAdapter used to fall through
+                // to "Loaded." even though a non-empty domainStateJson payload
+                // was silently dropped. Treat both Failed AND NoAdapter as
+                // partial loads when the save carried a payload — only the
+                // empty/absent payload path is a full success.
                 if (domainResult == DomainRestoreResult.Failed)
                     ShowStatus("Load partial: domain restore failed.");
+                else if (domainResult == DomainRestoreResult.NoAdapter)
+                    ShowStatus("Load partial: domain restore unavailable.");
                 else
                     ShowStatus("Loaded.");
             }

@@ -43,7 +43,7 @@ The player launches the game, can:
 5. **Open inventory** (Tab): `InventoryGrid` panel becomes visible, shows 8 placeholder items from the registry. Tab again to close.
 6. **Cast a spell** (Faz 8 scene): press number key 1–5 → SpellBar slot highlights, a particle ripple fires forward, a damage log line appears in `CombatHud`.
 7. **Enter combat** (Faz 7 scene): press F → swing animation (just a quick rotation of the camera will do); damage log line, goblin billboard tint flashes red, health bar in `CombatHud` ticks down on a counter-hit.
-8. **Save / Load** via F5 / F9: write player position + current scene name + tick count to `PlayerPrefs` JSON; restore on F9.
+8. **Save / Load** via F5 / F9: writes the full `SaveData` (player position, scene, tick, plus the adapter's `domainStateJson` envelope from `IEmberSaveBridge.ExportStateJson()`) to `PlayerPrefs` JSON; F9 restores both rig transform AND the deterministic simulation snapshot via `RestoreStateJson` + `EmberTickDriver.AlignTo`.
 9. **Quit cleanly** with Esc → Escape (held 1s) → quit.
 
 Visuals can be ugly. Particles can be primitives. Animations can be 90° transform tweens. **None of this needs polish, only function.**

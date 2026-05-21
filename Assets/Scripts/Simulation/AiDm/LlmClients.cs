@@ -138,19 +138,12 @@ namespace EmberCrpg.Simulation.AiDm
             if (colon < 0) return result;
             var arrStart = json.IndexOf('[', colon + 1);
             if (arrStart < 0) return result;
-            // Walk forward, balancing brackets to find array end
-            int depth = 1;
-            int arrEnd = -1;
-            for (int i = arrStart + 1; i < json.Length; i++)
-            {
-                var c = json[i];
-                if (c == '[') depth++;
-                else if (c == ']')
-                {
-                    depth--;
-                    if (depth == 0) { arrEnd = i; break; }
-                }
-            }
+            // Codex audit (third pass A-P2): the bracket scanner used to ignore
+            // string contents, so a `]`, `{`, or `}` inside a JSON string value
+            // (e.g. `"reason":"loaded ] of payload"`) corrupted depth tracking
+            // and silently dropped subsequent tool calls. Track string state
+            // (with escape awareness) so brackets inside strings don't count.
+            int arrEnd = FindMatchingBracket(json, arrStart, '[', ']');
             if (arrEnd < 0) return result;
             // Iterate top-level objects inside [arrStart+1, arrEnd)
             int p = arrStart + 1;
@@ -160,25 +153,45 @@ namespace EmberCrpg.Simulation.AiDm
                 if (p >= arrEnd) break;
                 if (json[p] != '{') { p++; continue; }
                 int objStart = p;
-                int objDepth = 1;
-                int objEnd = -1;
-                for (int j = p + 1; j < arrEnd; j++)
-                {
-                    var c = json[j];
-                    if (c == '{') objDepth++;
-                    else if (c == '}')
-                    {
-                        objDepth--;
-                        if (objDepth == 0) { objEnd = j; break; }
-                    }
-                }
-                if (objEnd < 0) break;
+                int objEnd = FindMatchingBracket(json, objStart, '{', '}');
+                if (objEnd < 0 || objEnd > arrEnd) break;
                 var obj = json.Substring(objStart, objEnd - objStart + 1);
                 p = objEnd + 1;
                 var call = TryParseToolCallObject(obj);
                 if (call != null) result.Add(call);
             }
             return result;
+        }
+
+        /// <summary>
+        /// Codex audit (third pass A-P2): string-aware bracket walker. Starts
+        /// at <paramref name="openIndex"/> (which must hold <paramref name="open"/>),
+        /// returns the index of the matching <paramref name="close"/>, or -1 if
+        /// not found. Skips brackets that occur inside JSON string literals,
+        /// honoring `\"` and `\\` escapes.
+        /// </summary>
+        private static int FindMatchingBracket(string text, int openIndex, char open, char close)
+        {
+            int depth = 1;
+            bool inString = false;
+            for (int i = openIndex + 1; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (inString)
+                {
+                    if (c == '\\') { i++; continue; } // skip escaped char
+                    if (c == '"') inString = false;
+                    continue;
+                }
+                if (c == '"') { inString = true; continue; }
+                if (c == open) depth++;
+                else if (c == close)
+                {
+                    depth--;
+                    if (depth == 0) return i;
+                }
+            }
+            return -1;
         }
 
         private static ToolCallRequest TryParseToolCallObject(string obj)
@@ -211,45 +224,57 @@ namespace EmberCrpg.Simulation.AiDm
             if (colon < 0) return result;
             var braceStart = obj.IndexOf('{', colon + 1);
             if (braceStart < 0) return result;
-            int depth = 1;
-            int braceEnd = -1;
-            for (int i = braceStart + 1; i < obj.Length; i++)
-            {
-                var c = obj[i];
-                if (c == '{') depth++;
-                else if (c == '}')
-                {
-                    depth--;
-                    if (depth == 0) { braceEnd = i; break; }
-                }
-            }
+            int braceEnd = FindMatchingBracket(obj, braceStart, '{', '}');
             if (braceEnd < 0) return result;
-            // Inside parameter object, expect "key":"value" pairs; capture each
+            // Inside parameter object, expect "key": <scalar> pairs. Codex audit
+            // (third pass A-P2): the previous parser only captured quoted string
+            // values, silently dropping numeric `actor_id: 1234`, `int site_id`,
+            // bool, and null scalars. The validator downstream coerces strings,
+            // so we render every scalar to its invariant string form.
             int p = braceStart + 1;
             while (p < braceEnd)
             {
-                while (p < braceEnd && obj[p] != '"') p++;
+                while (p < braceEnd && (obj[p] == ' ' || obj[p] == ',' || obj[p] == '\n' || obj[p] == '\r' || obj[p] == '\t')) p++;
                 if (p >= braceEnd) break;
+                if (obj[p] != '"') { p++; continue; }
                 int keyStart = p + 1;
                 int keyEnd = obj.IndexOf('"', keyStart);
                 if (keyEnd < 0 || keyEnd >= braceEnd) break;
                 var k = obj.Substring(keyStart, keyEnd - keyStart);
                 int afterKey = obj.IndexOf(':', keyEnd + 1);
                 if (afterKey < 0 || afterKey >= braceEnd) break;
-                // Value: only support string values for now (parameters dict is <string,string>)
-                int valStart = obj.IndexOf('"', afterKey + 1);
-                if (valStart < 0 || valStart >= braceEnd) { p = afterKey + 1; continue; }
-                int valEnd = valStart + 1;
-                while (valEnd < braceEnd)
+                int valCursor = afterKey + 1;
+                while (valCursor < braceEnd && (obj[valCursor] == ' ' || obj[valCursor] == '\n' || obj[valCursor] == '\r' || obj[valCursor] == '\t')) valCursor++;
+                if (valCursor >= braceEnd) break;
+                var ch = obj[valCursor];
+                string v;
+                int next;
+                if (ch == '"')
                 {
-                    if (obj[valEnd] == '\\' && valEnd + 1 < braceEnd) { valEnd += 2; continue; }
-                    if (obj[valEnd] == '"') break;
-                    valEnd++;
+                    // Quoted string value — same scan as before, with escape awareness.
+                    int valEnd = valCursor + 1;
+                    while (valEnd < braceEnd)
+                    {
+                        if (obj[valEnd] == '\\' && valEnd + 1 < braceEnd) { valEnd += 2; continue; }
+                        if (obj[valEnd] == '"') break;
+                        valEnd++;
+                    }
+                    if (valEnd >= braceEnd) break;
+                    v = obj.Substring(valCursor + 1, valEnd - valCursor - 1);
+                    next = valEnd + 1;
                 }
-                if (valEnd >= braceEnd) break;
-                var v = obj.Substring(valStart + 1, valEnd - valStart - 1);
+                else
+                {
+                    // Scalar token until comma / closing brace / whitespace.
+                    int tokenStart = valCursor;
+                    int tokenEnd = valCursor;
+                    while (tokenEnd < braceEnd && obj[tokenEnd] != ',' && obj[tokenEnd] != '}' && obj[tokenEnd] != ' ' && obj[tokenEnd] != '\n' && obj[tokenEnd] != '\r' && obj[tokenEnd] != '\t')
+                        tokenEnd++;
+                    v = obj.Substring(tokenStart, tokenEnd - tokenStart);
+                    next = tokenEnd;
+                }
                 result[k] = v;
-                p = valEnd + 1;
+                p = next;
             }
             return result;
         }

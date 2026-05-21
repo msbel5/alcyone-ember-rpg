@@ -24,6 +24,11 @@ namespace EmberCrpg.Data.Save
     {
         public static SliceSaveData ToData(SliceWorldState world)
         {
+            // Codex audit (third pass A-P3): null world used to NRE inside the
+            // initializer; throw a typed exception so callers can detect and
+            // recover (e.g. surface a "save corrupt" status) rather than
+            // crashing the save path.
+            if (world == null) throw new ArgumentNullException(nameof(world));
             return new SliceSaveData
             {
                 totalMinutes = world.Time.TotalMinutes,
