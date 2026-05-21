@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EmberCrpg.Domain.Core;
 
 namespace EmberCrpg.Domain.Process
@@ -70,16 +71,19 @@ namespace EmberCrpg.Domain.Process
         /// <summary>True when the stockpile holds at least one of the item.</summary>
         public bool Contains(string itemTag) => Get(itemTag) > 0;
 
-        /// <summary>Deterministic enumeration of (itemTag, count) entries with non-zero count, in insertion order.</summary>
+        /// <summary>
+        /// Codex audit (A/P3): yields entries in canonical item-tag order
+        /// rather than Dictionary's implementation-defined enumeration, so the
+        /// save layer and tests see byte-stable rows regardless of insertion
+        /// sequence or CLR version.
+        /// </summary>
         public IEnumerable<KeyValuePair<string, int>> Entries
         {
             get
             {
-                foreach (var kv in _counts)
-                {
-                    if (kv.Value > 0)
-                        yield return kv;
-                }
+                return _counts
+                    .Where(kv => kv.Value > 0)
+                    .OrderBy(kv => kv.Key, System.StringComparer.Ordinal);
             }
         }
 
