@@ -6,6 +6,20 @@ using System.Text.Json;
 // It is intentionally not a claim of Unity serialization parity.
 namespace UnityEngine
 {
+    /// <summary>
+    /// Codex audit (fifth pass): minimal Vector3 stub so the fallback harness
+    /// can compile SaveData (which now lives in its own file and carries
+    /// playerPosition). Unity provides the real Vector3 at editor/runtime;
+    /// this struct has no behavior beyond holding three floats.
+    /// </summary>
+    public struct Vector3
+    {
+        public float x;
+        public float y;
+        public float z;
+        public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+    }
+
     public static class JsonUtility
     {
         private static readonly JsonSerializerOptions Options = new JsonSerializerOptions

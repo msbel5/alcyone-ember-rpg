@@ -145,6 +145,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 AdvanceTick(restoredTick);
         }
 
+        // Codex audit (fifth pass C-P3): explicit no-op overrides surface that
+        // the placeholder does not route gameplay commands. Real adapters
+        // (DomainSimulationAdapter) implement these against domain state.
+        public bool TryCastSpell(int spellSlotIndex)
+        {
+            LogCombat($"placeholder: spell slot {spellSlotIndex} not routed.");
+            return false;
+        }
+        public bool TryMeleeStrike(string targetActorName, int rawDamage)
+        {
+            LogCombat($"placeholder: melee at {targetActorName ?? string.Empty} not routed.");
+            return false;
+        }
+        public bool TryInteract(string targetTag)
+        {
+            LogCombat($"placeholder: interact {targetTag ?? string.Empty} not routed.");
+            return false;
+        }
+
         public string ConsultFate()
         {
             // Codex review (2026-05-21): the placeholder advertises itself as

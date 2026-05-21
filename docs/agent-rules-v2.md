@@ -47,7 +47,13 @@ in the sprint summary.
 ## 3. Data-driven effect rule
 
 Do not add new hard-coded `SpellEffectCode` branches. Magic has moved
-off enum-driven expansion.
+off enum-driven expansion. The remaining legacy
+`SpellEffectResolutionService` switch is acknowledged as a migration
+adapter for the seven original effect codes; new effects must ship as
+`EffectDefinition` + `EffectOperation` rows registered with
+`EffectOperationHandlers`. The data-driven `SpellResolver` is wired
+into the live game via `DomainSimulationAdapter.TryCastSpell` (Codex
+audit fifth pass A-P1).
 
 Before any new effect ships:
 
