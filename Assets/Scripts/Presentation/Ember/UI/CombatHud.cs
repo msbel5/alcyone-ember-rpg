@@ -21,7 +21,14 @@ namespace EmberCrpg.Presentation.Ember.UI
         private void Awake()
         {
             _health      = Bar.Build(transform, "Health",  new Vector2(0.02f, 0.55f), new Vector2(0.32f, 0.85f), new Color(0.85f, 0.2f, 0.15f));
-            _stamina     = Bar.Build(transform, "Stamina", new Vector2(0.35f, 0.55f), new Vector2(0.65f, 0.85f), new Color(0.85f, 0.7f, 0.1f));
+            // Codex audit (sixth pass J-P3 #J2): the bar previously labeled
+            // "Stamina" actually displays the domain's Vitals.Fatigue value.
+            // Renamed the visible label to match the domain stat so players
+            // see the same concept the simulation tracks. Internal field name
+            // (`_stamina`) and CombatHudState parameter (`stamina`) stay as-is
+            // for now — staged rename, full alignment scheduled with the Faz
+            // 13 cleanup sprint.
+            _stamina     = Bar.Build(transform, "Fatigue", new Vector2(0.35f, 0.55f), new Vector2(0.65f, 0.85f), new Color(0.85f, 0.7f, 0.1f));
             _mana        = Bar.Build(transform, "Mana",    new Vector2(0.68f, 0.55f), new Vector2(0.98f, 0.85f), new Color(0.2f, 0.45f, 0.95f));
             _damageLog   = BuildLogLine(transform, new Vector2(0.02f, 0.05f), new Vector2(0.98f, 0.5f));
         }

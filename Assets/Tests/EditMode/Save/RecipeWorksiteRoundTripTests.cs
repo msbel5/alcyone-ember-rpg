@@ -6,6 +6,7 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Presentation.Ember.Save;
 using EmberCrpg.Simulation.Process;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;

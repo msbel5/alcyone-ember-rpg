@@ -52,6 +52,12 @@ Builds/
 Assets/AI Toolkit/Temp/
 Assets/AI Toolkit/Temp.meta
 
+# Unity Performance Testing auto-generated run info (rewritten on every test run
+# with whichever packages happen to be installed locally — including dev-only
+# `com.unity.ai.assistant`. Keep it out of git so CI/Mami machines don't diff.)
+Assets/Resources/PerformanceTestRunInfo.json
+Assets/Resources/PerformanceTestRunInfo.json.meta
+
 # Codex audit Batch 4: Unity Editor sometimes inlines per-machine package
 # sources (Unity AI Assistant, Inference, etc.) under Packages/. Track only
 # the manifest + lock; never commit the embedded package source trees.

@@ -37,6 +37,10 @@ namespace EmberCrpg.Presentation.Ember.Combat
 
         private void Cast(int slotIndex)
         {
+            // Codex audit (sixth pass A-P1 #8): bail out when a modal
+            // (dialog / inventory) panel owns the input. Prevents the
+            // dialog topic chooser's Alpha key from also firing a spell.
+            if (EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost.IsModalOpen()) return;
             var adapter = EmberDomainAdapterLocator.Current;
             if (adapter == null) return;
 

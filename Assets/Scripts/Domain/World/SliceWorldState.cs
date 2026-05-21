@@ -43,35 +43,42 @@ namespace EmberCrpg.Domain.World
         public List<ToolCallTraceRecord> ToolCallTrace = new List<ToolCallTraceRecord>();
         public List<LlmProposalLogEntry> LlmProposalLog = new List<LlmProposalLogEntry>();
 
-        [Obsolete("Use Actors.FirstByRole(ActorRole.Player) or ActorStore role-view helpers. This named slice view is deprecated in Faz 1.", false)]
+        // Codex audit (sixth pass D-P3 #D2): the five named role views below
+        // (Player/Talker/Merchant/Guard/Enemy) are deprecated since Faz 1 but
+        // 71 call sites across Simulation/Presentation/Data still read or
+        // write them. Removal is scheduled for after the Faz 13 cleanup
+        // sprint — until then, the [Obsolete] attribute fires warning-only
+        // (error: false) so existing callers compile while new code is
+        // guided to ActorStore.FirstByRole(...).
+        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Player) or ActorStore role-view helpers.", false)]
         public ActorRecord Player
         {
             get { return GetActorView(ActorRole.Player); }
             set { SetActorView(ActorRole.Player, value); }
         }
 
-        [Obsolete("Use Actors.FirstByRole(ActorRole.Talker) or ActorStore role-view helpers. This named slice view is deprecated in Faz 1.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Talker) or ActorStore role-view helpers.", false)]
         public ActorRecord Talker
         {
             get { return GetActorView(ActorRole.Talker); }
             set { SetActorView(ActorRole.Talker, value); }
         }
 
-        [Obsolete("Use Actors.FirstByRole(ActorRole.Merchant) or ActorStore role-view helpers. This named slice view is deprecated in Faz 1.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Merchant) or ActorStore role-view helpers.", false)]
         public ActorRecord Merchant
         {
             get { return GetActorView(ActorRole.Merchant); }
             set { SetActorView(ActorRole.Merchant, value); }
         }
 
-        [Obsolete("Use Actors.FirstByRole(ActorRole.Guard) or ActorStore role-view helpers. This named slice view is deprecated in Faz 1.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Guard) or ActorStore role-view helpers.", false)]
         public ActorRecord Guard
         {
             get { return GetActorView(ActorRole.Guard); }
             set { SetActorView(ActorRole.Guard, value); }
         }
 
-        [Obsolete("Use Actors.FirstByRole(ActorRole.Enemy) or ActorStore role-view helpers. This named slice view is deprecated in Faz 1.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Enemy) or ActorStore role-view helpers.", false)]
         public ActorRecord Enemy
         {
             get { return GetActorView(ActorRole.Enemy); }

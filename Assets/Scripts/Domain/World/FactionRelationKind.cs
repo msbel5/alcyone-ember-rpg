@@ -26,9 +26,14 @@ namespace EmberCrpg.Domain.World
 
         public static FactionRelationKind FromReputation(int reputation)
         {
+            // Codex audit (sixth pass A-P2 #10): the previous boundaries were
+            // asymmetric — `>= 25` Friendly but `> -25` Neutral made rep=25
+            // Friendly while rep=-25 fell into Hostile. The Neutral band was
+            // 49 integers wide instead of the intended 50. Switch the lower
+            // bound to `>= -25` so Neutral covers a symmetric -25..24 range.
             if (reputation >= 75) return Allied;
             if (reputation >= 25) return Friendly;
-            if (reputation > -25) return Neutral;
+            if (reputation >= -25) return Neutral;
             if (reputation > -75) return Hostile;
             return War;
         }

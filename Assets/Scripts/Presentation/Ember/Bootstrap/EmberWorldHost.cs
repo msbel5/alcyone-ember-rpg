@@ -35,7 +35,13 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         private void Awake()
         {
-            _tick = GetComponent<EmberTickDriver>() ?? gameObject.AddComponent<EmberTickDriver>();
+            // Codex audit (sixth pass A-P3 #7): Unity's fake-null semantics
+            // make `??` unreliable on UnityEngine.Object — a destroyed but
+            // not-yet-collected component would pass through as non-null.
+            // Use an explicit null check for safety even though Awake is
+            // typically pre-destruction.
+            var existingTick = GetComponent<EmberTickDriver>();
+            _tick = existingTick == null ? gameObject.AddComponent<EmberTickDriver>() : existingTick;
             _tick.Listener = this;
 
             // Codex audit (third pass A-P1): the live scene used to run on
@@ -50,7 +56,16 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             EmberDomainAdapterLocator.Register(_adapter);
             _adapter.AdvanceTick(0);
 
-            gameObject.AddComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
+            // Codex audit (sixth pass E-P2 #E3): if the host re-runs (additive
+            // scene loading, domain reload during play, or a scene that
+            // already authors EmberSaveService as a sibling component),
+            // AddComponent would attach a second instance and Unity would
+            // fire two Save/Load handlers per click. Reuse the existing one
+            // when present.
+            if (gameObject.GetComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>() == null)
+            {
+                gameObject.AddComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
+            }
 
             _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -97,11 +112,22 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             if (Input.GetKeyDown(KeyCode.Tab))
             {
+                // Codex audit (sixth pass D-P3 #D1): if the scene wires an
+                // EmberPlayerInventoryToggle (every Faz* scene does, plus the
+                // PlayerRig builder), delegate to its Toggle() so the toggle
+                // component is no longer dead code. Falls back to the inline
+                // loop for any scene that omits the component.
+                var toggle = Object.FindFirstObjectByType<EmberPlayerInventoryToggle>(FindObjectsInactive.Include);
+                if (toggle != null)
+                {
+                    toggle.Toggle();
+                }
+                else if (_inventoryGrids != null)
                 foreach (var inv in _inventoryGrids)
                 {
                     bool active = !inv.gameObject.activeSelf;
                     inv.gameObject.SetActive(active);
-                    
+
                     // If opening inventory, unlock cursor. If closing, lock it (if not in dialog)
                     if (active)
                     {
@@ -117,7 +143,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                             dialogVisible = true;
                             break;
                         }
-                        
+
                         if (!dialogVisible)
                         {
                             Cursor.lockState = CursorLockMode.Locked;
@@ -127,18 +153,44 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 }
             }
 
-            // Spell selection
-            for (int i = 0; i < 5; i++)
+            // Codex audit (sixth pass A-P1 #8): bail out of Alpha1..5 spell
+            // selection while a dialog panel is open — those keys belong to
+            // the dialog topic chooser. Without this short-circuit, a single
+            // "1" press fires SelectTopic(topics[0]) AND mutates
+            // _selectedSpellSlot AND queues a spell cast on the next swing.
+            if (!IsModalOpen())
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+                // Spell selection
+                for (int i = 0; i < 5; i++)
                 {
-                    _selectedSpellSlot = i;
+                    if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+                    {
+                        _selectedSpellSlot = i;
+                    }
                 }
             }
         }
 
+        /// <summary>
+        /// Codex audit (sixth pass A-P1 #8): central modal predicate so
+        /// non-dialog input handlers can yield to the dialog panel. Cheap —
+        /// FindFirstObjectByType is O(scene size) per call, but only runs
+        /// once per Update tick.
+        /// </summary>
+        internal static bool IsModalOpen()
+        {
+            var dialog = Object.FindFirstObjectByType<DialogBoxPanel>(FindObjectsInactive.Exclude);
+            return dialog != null;
+        }
+
         private void HandleQuitInput()
         {
+            // Codex audit (sixth pass A-P2 #9): when a dialog panel is open
+            // the DialogBoxPanel owns Escape (Close). Yielding prevents the
+            // double-handler race where one frame both Close()s the panel AND
+            // toggles cursor lock AND starts the >1s quit hold.
+            if (IsModalOpen()) { _escHoldTimer = 0f; return; }
+
             // Codex audit Batch 3 / Finding D-2: the previous structure
             //   if (GetKey(Escape)) { hold }
             //   else { if (GetKeyDown(Escape)) toggleCursor; reset; }
@@ -151,6 +203,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             {
                 Cursor.lockState = (Cursor.lockState == CursorLockMode.Locked) ? CursorLockMode.None : CursorLockMode.Locked;
                 Cursor.visible = (Cursor.lockState != CursorLockMode.Locked);
+                // Codex audit (sixth pass A-P2 #9): reset hold timer in the
+                // tap branch so a brief focus-loss after the toggle does not
+                // accumulate stale partial-hold time toward the >1s quit.
+                _escHoldTimer = 0f;
             }
 
             if (Input.GetKey(KeyCode.Escape))
@@ -266,12 +322,12 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         private static IDomainSimulationAdapter CreateFallbackAdapter()
         {
-            var type = System.Type.GetType(
-                "EmberCrpg.Presentation.Ember.Adapters.PlaceholderSimulationAdapter, EmberCrpg.Presentation");
-            if (type != null && typeof(IDomainSimulationAdapter).IsAssignableFrom(type))
-                return (IDomainSimulationAdapter)System.Activator.CreateInstance(type);
-
-            return new EmptySimulationAdapter();
+            // Codex audit (sixth pass D-P3 #D4): the reflection-based lookup
+            // plus EmptySimulationAdapter inner fallback was dead in practice —
+            // PlaceholderSimulationAdapter lives in the same assembly as this
+            // host, so the typeof reference resolves at compile time. Drop the
+            // reflection + the duplicate empty-adapter implementation.
+            return new EmberCrpg.Presentation.Ember.Adapters.PlaceholderSimulationAdapter();
         }
 
         /// <summary>
@@ -296,39 +352,5 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             }
         }
 
-        private sealed class EmptySimulationAdapter : IDomainSimulationAdapter
-        {
-            private static readonly IReadOnlyList<JobQueueRow> EmptyJobs = System.Array.Empty<JobQueueRow>();
-            private static readonly IReadOnlyList<ColonyNeedsRow> EmptyNeeds = System.Array.Empty<ColonyNeedsRow>();
-            private static readonly IReadOnlyList<FactionRow> EmptyFactions = System.Array.Empty<FactionRow>();
-            private static readonly IReadOnlyList<InventorySlot> EmptyInventory = System.Array.Empty<InventorySlot>();
-            private static readonly IReadOnlyList<string> EmptySpells = System.Array.Empty<string>();
-
-            public void AdvanceTick(int tickIndex) { }
-            public int TickIndex => 0;
-            public string HudText => "Tick 0   Day 1   Spring";
-            public IReadOnlyList<JobQueueRow> JobQueueRows => EmptyJobs;
-            public IReadOnlyList<ColonyNeedsRow> ColonyNeedsRows => EmptyNeeds;
-            public IReadOnlyList<FactionRow> FactionRows => EmptyFactions;
-            public IReadOnlyList<InventorySlot> InventorySlots => EmptyInventory;
-            public IReadOnlyList<string> SpellSlots => EmptySpells;
-            public CombatHudState CombatHud => new CombatHudState(0, 100, 0, 100, 0, 100, string.Empty);
-            public bool TryReadActor(string actorName, out ActorViewState state) { state = default; return false; }
-            public bool TryReadWorksite(string siteName, out WorksiteViewState state) { state = default; return false; }
-            public IDialogSource GetDialogSource(string actorName) => null;
-            public void LogCombat(string message) { }
-            public void TakePlayerDamage(int amount) { }
-            public string ConsultFate() => string.Empty;
-            // Codex audit (fifth pass C-P3): explicit no-op command overrides
-            // so missing routing is visible in this fallback adapter, not
-            // silently degraded by interface default implementations.
-            public bool TryCastSpell(int spellSlotIndex) => false;
-            public bool TryMeleeStrike(string targetActorName, int rawDamage) => false;
-            public bool TryInteract(string targetTag) => false;
-            // Codex audit Batch 2 / Finding 3 — fallback adapter has nothing to
-            // round-trip. Return empty / no-op so save/load lifecycle still runs.
-            public string ExportStateJson() => string.Empty;
-            public void RestoreStateJson(string json) { }
-        }
     }
 }
