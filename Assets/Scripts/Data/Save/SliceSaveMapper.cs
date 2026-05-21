@@ -753,11 +753,21 @@ namespace EmberCrpg.Data.Save
 
         private static EquipmentSaveData ToEquipmentData(EquipmentState equipment)
         {
+            // Codex audit (A/P2): the previous version hardcoded
+            // `new[] { EquipmentSlot.Weapon }`, so any future slot (armor,
+            // shield, ring, etc.) would be silently dropped at save time.
+            // Use the new stable enumerator on EquipmentState so every
+            // non-empty equipped slot makes it into the DTO, in canonical
+            // slot-code order for deterministic JSON output.
             return new EquipmentSaveData
             {
-                slots = new[] { EquipmentSlot.Weapon }
-                    .Select(slot => new EquippedItemSaveData { slot = (int)slot, slotCode = slot.Code, itemId = equipment.GetEquippedItemId(slot).Value })
-                    .Where(slot => slot.itemId != 0UL)
+                slots = equipment.EnumerateEquipped()
+                    .Select(pair => new EquippedItemSaveData
+                    {
+                        slot = (int)pair.Key,
+                        slotCode = pair.Key.Code,
+                        itemId = pair.Value.Value,
+                    })
                     .ToArray(),
             };
         }

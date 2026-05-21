@@ -340,6 +340,13 @@ namespace EmberCrpg.Data.Save
         public int fatigue;
         public int thirst;
         public int mood;
+
+        // Codex audit (A/P3): `mood` cannot distinguish "actor saved at the
+        // Lowest mood (Value=0)" from "pre-Faz-4 save with no mood field"
+        // (Unity default-deserializes both to 0). hasMood is set to true on
+        // every new save so the load path can tell them apart and round-trip
+        // genuinely-Lowest actors instead of forcing them back to Neutral.
+        public bool hasMood;
     }
 
     [Serializable]

@@ -81,5 +81,41 @@ namespace EmberCrpg.Tests.EditMode.World
 
             Assert.That(events.Count, Is.EqualTo(0));
         }
+
+        // Codex audit Batch 5 / A-P2 regression: a caravan with zero payload
+        // (origin stockpile empty or item missing) used to "arrive" with
+        // delivered:0 — a successful-looking CaravanArrived event for nothing.
+        // The caravan must stall instead, leaving its state intact so the
+        // next tick can retry once origin restocks.
+        [Test]
+        public void Tick_AtCadence_OriginEmpty_StallsInsteadOfArriving()
+        {
+            // PayloadRemaining=0 → caravan will try to Load from origin.
+            // Origin stockpile resolves but has no "iron_ingot" → Load(0).
+            var caravan = new CaravanInstance(CaravanId, RouteId, Origin, 0, 2, CaravanState.EnRoute);
+            var route = Route();
+            var originStock = new StockpileComponent(Origin); // empty on purpose
+            var destinationStock = new StockpileComponent(Destination);
+            var events = new WorldEventLog();
+            var system = new CaravanSystem();
+
+            System.Func<SiteId, StockpileComponent> resolver = siteId =>
+                siteId.Equals(Origin) ? originStock :
+                siteId.Equals(Destination) ? destinationStock : null;
+
+            system.Tick(new[] { caravan }, _ => route, resolver, default, events);
+
+            // No goods delivered to destination.
+            Assert.That(destinationStock.Get("iron_ingot"), Is.EqualTo(0));
+            // Caravan remains EnRoute (not Idle / Arrived) — next tick can retry.
+            Assert.That(caravan.State, Is.EqualTo(CaravanState.EnRoute));
+            Assert.That(caravan.PayloadRemaining, Is.EqualTo(0));
+            // One stuck event emitted at the ORIGIN site, not the destination.
+            Assert.That(events.Count, Is.EqualTo(1));
+            Assert.That(events.Events[0].Kind, Is.EqualTo(WorldEventKind.CaravanArrived));
+            Assert.That(events.Events[0].SiteId, Is.EqualTo(Origin));
+            Assert.That(events.Events[0].Reason, Does.Contain("caravan_stuck"));
+            Assert.That(events.Events[0].Reason, Does.Contain("origin_empty"));
+        }
     }
 }

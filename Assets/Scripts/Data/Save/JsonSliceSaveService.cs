@@ -79,7 +79,18 @@ namespace EmberCrpg.Data.Save
 
         public SliceWorldState LoadFromJson(string json)
         {
+            // Codex audit (A/P3): JsonUtility.FromJson<T>(null/empty) returns
+            // an empty SliceSaveData with default everything, which would
+            // round-trip into a vanilla world but mask a caller-side data
+            // outage (corrupt PlayerPrefs, dropped HTTP body, etc.). Fail
+            // fast instead so the caller can decide whether to fall back to
+            // NewGame or surface a save-corruption notice.
+            if (string.IsNullOrWhiteSpace(json))
+                throw new ArgumentException("Save JSON must be non-empty.", nameof(json));
+
             var data = JsonUtility.FromJson<SliceSaveData>(json);
+            if (data == null)
+                throw new InvalidOperationException("Save JSON did not deserialize into a SliceSaveData payload.");
             var world = SliceSaveMapper.ToWorld(data);
             _worksites = SliceSaveMapper.ToWorksiteStore(data.worksites);
             _recipeWorkOrders = ToRecipeWorkOrders(data.recipeWorkOrders);

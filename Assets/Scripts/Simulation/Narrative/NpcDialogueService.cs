@@ -64,7 +64,13 @@ namespace EmberCrpg.Simulation.Narrative
             };
 
             var memory = askeeMemory ?? askee.Memory;
-            if (memory != null && _recall.HasRecentFact(memory, topic.Id, memoryHorizon))
+            // Codex audit (A/P2): the 3-arg HasRecentFact overload accepts any
+            // fact whose RecordedAt is >= memoryHorizon, including future-dated
+            // entries that can appear after a clock-drifted load. Use the
+            // 4-arg [since, now] window overload so only facts that have
+            // actually occurred up to `now` count toward the "remembered"
+            // branch — matches TradeRefusalHook's PR#171 fix pattern.
+            if (memory != null && _recall.HasRecentFact(memory, topic.Id, memoryHorizon, now))
             {
                 var template = _templates.Get(topic.DefaultAnswerTemplateId + "_remembered")
                     ?? _templates.Get(topic.DefaultAnswerTemplateId);
