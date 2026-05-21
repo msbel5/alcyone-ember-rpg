@@ -280,7 +280,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         {
             try
             {
-                var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(seed: 1);
+                var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1);
                 return new EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter(world);
             }
             catch (System.Exception)

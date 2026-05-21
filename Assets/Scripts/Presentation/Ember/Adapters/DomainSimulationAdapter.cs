@@ -160,7 +160,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return string.IsNullOrEmpty(_activeDialogActor) ? string.Empty
                 : $"You speak with {_activeDialogActor}.";
         }
-        public IReadOnlyList<string> GetTopics() => _world.Topics?.Select(t => t.Id.Code).ToList() ?? new List<string>();
+        public IReadOnlyList<string> GetTopics() => _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
         public void SelectTopic(string topicId)
         {
             // Real domain-driven dialog routing happens through Topic services;
