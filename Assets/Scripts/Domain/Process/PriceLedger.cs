@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EmberCrpg.Domain.Core;
 
 namespace EmberCrpg.Domain.Process
@@ -65,13 +66,20 @@ namespace EmberCrpg.Domain.Process
         /// <summary>Total number of (site, item) cells tracked.</summary>
         public int Count => _prices.Count;
 
-        /// <summary>All tracked price rows in deterministic insertion order.</summary>
+        /// <summary>
+        /// Codex audit (A/P3): yields rows in canonical (SiteId.Value, ItemTag)
+        /// order rather than Dictionary's implementation-defined enumeration,
+        /// so downstream save layers and tests get a byte-stable layout
+        /// regardless of insertion sequence or CLR version.
+        /// </summary>
         public IEnumerable<PriceLedgerEntry> Entries
         {
             get
             {
-                foreach (var row in _prices)
-                    yield return new PriceLedgerEntry(row.Key.SiteId, row.Key.ItemTag, row.Value);
+                return _prices
+                    .OrderBy(kv => kv.Key.SiteId.Value)
+                    .ThenBy(kv => kv.Key.ItemTag, System.StringComparer.Ordinal)
+                    .Select(kv => new PriceLedgerEntry(kv.Key.SiteId, kv.Key.ItemTag, kv.Value));
             }
         }
 
