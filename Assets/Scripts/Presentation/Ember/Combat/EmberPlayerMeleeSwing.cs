@@ -49,21 +49,30 @@ namespace EmberCrpg.Presentation.Ember.Combat
                 var sink = hit.collider.GetComponentInParent<IDamageSink>();
                 if (sink != null)
                 {
-                    sink.Apply(10);
-
-                    // Codex audit (third pass A-P1): the previous flow applied
-                    // the visual damage tint via IDamageSink but only mutated
-                    // the adapter via TakePlayerDamage(2) (incoming damage).
-                    // Route the outgoing strike through
-                    // IPlayerCommandSink.TryMeleeStrike so the adapter can
-                    // resolve it against domain state instead of leaving the
-                    // kill entirely in view-tint land.
+                    // Codex audit (fourth pass A-P1): the previous flow ran
+                    // the IDamageSink visual + counter-hit BEFORE the domain
+                    // adapter confirmed the strike. A rejected/no-target
+                    // command would still flash red and ding the player's HP.
+                    // Resolve the domain strike FIRST; only run the visual
+                    // damage tint AND counter-hit when the command accepts.
                     var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current;
+                    bool accepted = false;
                     if (adapter != null)
                     {
-                        var targetName = hit.collider.gameObject != null ? hit.collider.gameObject.name : string.Empty;
-                        adapter.TryMeleeStrike(targetName, rawDamage: 10);
-                        adapter.TakePlayerDamage(2); // counter-hit
+                        // Prefer the parent ActorView's stable display name
+                        // when present so the adapter can resolve to a domain
+                        // ActorRecord by name. Falls back to the collider's
+                        // GameObject name when no ActorView is attached.
+                        var actorView = hit.collider.GetComponentInParent<ActorView>();
+                        var targetName = actorView != null && actorView.gameObject != null
+                            ? actorView.gameObject.name
+                            : (hit.collider.gameObject != null ? hit.collider.gameObject.name : string.Empty);
+                        accepted = adapter.TryMeleeStrike(targetName, rawDamage: 10);
+                    }
+                    if (accepted)
+                    {
+                        sink.Apply(10);
+                        if (adapter != null) adapter.TakePlayerDamage(2); // counter-hit
                     }
                 }
             }

@@ -76,7 +76,7 @@ Target acceptance sentence (refined for tool-calling):
 | 1 | AI/DM | `Assets/Scripts/Domain/AiDm/ToolId.cs` | Stable string id for a tool. | `ToolIdTests` | queued |
 | 2 | AI/DM | `Assets/Scripts/Domain/AiDm/ToolSurfaceKind.cs` | Stable string surface kind (`npc`, `party`, `dm`). | `ToolSurfaceKindTests` | queued |
 | 3 | AI/DM | `Assets/Scripts/Domain/AiDm/ToolDescriptor.cs` | Data row: tool id, surface kind, input schema (typed params), output schema, side-effect class (`read | mutate`). | `ToolDescriptorTests` | queued |
-| 4 | AI/DM | `Assets/Scripts/Domain/AiDm/ToolCallRequest.cs`, `ToolCallResult.cs` | Immutable typed request and result envelopes. | `ToolCallEnvelopeTests` | queued |
+| 4 | AI/DM | `Assets/Scripts/Domain/AiDm/ToolCallEnvelope.cs` (folds ToolCallRequest + ToolCallResult + ToolCallRejection) | Immutable typed request and result envelopes. | `ToolCallEnvelopeTests` | landed |
 | 5 | AI/DM | `Assets/Scripts/Simulation/AiDm/ToolRegistry.cs` | Loads `ToolDescriptor` rows per surface kind; deterministic lookup. | `ToolRegistryTests` | queued |
 | 6 | AI/DM | `Assets/Scripts/Simulation/AiDm/ToolCallValidator.cs` | Reject unknown tool, wrong surface, out-of-fence (e.g., Memory before Faz 9 already shipped, so OK now), bad schema. | `ToolCallValidatorTests` | queued |
 | 7 | AI/DM | `Assets/Scripts/Simulation/AiDm/ToolCallRouter.cs` | Route validated calls to deterministic command/query services; emit `ToolInvoked` to WorldEventLog. | `ToolCallRouterTests` | queued |

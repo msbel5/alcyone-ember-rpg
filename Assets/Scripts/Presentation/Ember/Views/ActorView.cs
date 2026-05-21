@@ -16,8 +16,23 @@ namespace EmberCrpg.Presentation.Ember.Views
     [DisallowMultipleComponent]
     public sealed class ActorView : MonoBehaviour, IDamageSink
     {
+        // Codex audit (fourth pass A-P1): EmberWorldHost.PushWorldViews used
+        // to look up the domain actor by gameObject.name (e.g. "Smith_A"),
+        // but SliceWorldFactory's actors are named "Warden", "Sage Nera",
+        // etc. Expose an explicit DomainActorKey field so scenes can author
+        // the matching domain-side name on each ActorView, and fall back to
+        // the GameObject name when unset for legacy scenes.
+        [SerializeField] private string _domainActorKey;
         [SerializeField] private float _interpolationSpeed = 8f;
         [SerializeField] private Transform _billboard;
+
+        /// <summary>
+        /// Stable key the host uses when calling
+        /// <c>IDomainSimulationAdapter.TryReadActor</c>. Defaults to the
+        /// GameObject name when no scene-authored value is provided.
+        /// </summary>
+        public string DomainActorKey =>
+            string.IsNullOrEmpty(_domainActorKey) ? gameObject.name : _domainActorKey;
 
         private ActorViewState _target;
         private bool _hasTarget;
