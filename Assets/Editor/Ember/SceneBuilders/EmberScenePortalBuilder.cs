@@ -45,9 +45,9 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             if (font != null)
             {
                 textMesh.font = font;
-                var renderer = labelObj.GetComponent<MeshRenderer>();
-                if (renderer != null && font.material != null)
-                    renderer.sharedMaterial = font.material;
+                var labelRenderer = labelObj.GetComponent<MeshRenderer>();
+                if (labelRenderer != null && font.material != null)
+                    labelRenderer.sharedMaterial = font.material;
             }
 
             return portal;
