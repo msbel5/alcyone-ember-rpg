@@ -52,9 +52,12 @@ namespace EmberCrpg.Presentation.Ember.Combat
             // and surfacing failure via LogCombat. If the command sink reports
             // false we still flash the visual (UX feedback) and write a
             // fallback log line for placeholder adapters.
-            bool routed = adapter.TryCastSpell(slotIndex);
-            if (!routed)
-                adapter.LogCombat($"You cast {spellName}!");
+            // Codex audit (fourth pass A-P2): when TryCastSpell returns false
+            // the adapter has already logged a refusal reason (insufficient
+            // mana / no caster / slot out of range). Do NOT overwrite that
+            // with a fake "You cast ..." success — leave the refusal text
+            // visible so the player understands the cast did not fire.
+            adapter.TryCastSpell(slotIndex);
 
             if (_eye != null)
             {

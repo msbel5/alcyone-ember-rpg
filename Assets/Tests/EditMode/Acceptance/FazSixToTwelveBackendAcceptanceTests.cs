@@ -170,24 +170,43 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
         [Test]
         public void Faz10_NpcEscalatesToDm_DmQueriesSnapshot_TracePersists()
         {
+            // Codex audit (fourth pass A-P2): the previous version of this
+            // test claimed "NPC escalates to DM" but constructed the
+            // query_world_snapshot ToolCallRequest directly, bypassing
+            // DmAgentEscalationService.EscalateNpcToDm entirely. Use the
+            // service so the escalation path itself is the acceptance proof,
+            // then also fire the snapshot query so the trace covers both
+            // verbs (escalate_resolve_or_pass + query_world_snapshot).
             var world = NewWorld();
             var registry = new ToolRegistry();
             DmAgentToolSurface.RegisterAll(registry);
             var router = new ToolCallRouter(new ToolCallValidator());
             var tracer = new ToolCallTracer();
-            new DmAgentEscalationService().RegisterHandlers(router, world);
+            var escalationService = new DmAgentEscalationService();
+            escalationService.RegisterHandlers(router, world);
 
-            var request = new ToolCallRequest(new ToolId("query_world_snapshot"), ToolSurfaceKind.Dm, new Dictionary<string, string>());
-            var result = router.Invoke(request, registry, world.Time, new SiteId(9), world.Events, tracer);
+            var escalateResult = escalationService.EscalateNpcToDm(
+                npcRequestId: "rumor-42",
+                registry: registry,
+                router: router,
+                now: world.Time,
+                siteId: new SiteId(9),
+                events: world.Events,
+                tracer: tracer);
+            Assert.That(escalateResult.Accepted, Is.True);
 
-            Assert.That(result.Accepted, Is.True);
-            Assert.That(result.Payload, Does.Contain("actors:5"));
-            Assert.That(tracer.Entries.Count, Is.EqualTo(1));
+            var snapshotRequest = new ToolCallRequest(new ToolId("query_world_snapshot"), ToolSurfaceKind.Dm, new Dictionary<string, string>());
+            var snapshotResult = router.Invoke(snapshotRequest, registry, world.Time, new SiteId(9), world.Events, tracer);
+
+            Assert.That(snapshotResult.Accepted, Is.True);
+            Assert.That(snapshotResult.Payload, Does.Contain("actors:5"));
+            Assert.That(tracer.Entries.Count, Is.EqualTo(2));
             world.ToolCallTrace.AddRange(tracer.Entries);
 
             var restored = RoundTrip(world);
-            Assert.That(restored.ToolCallTrace.Single().Request.ToolId.Code, Is.EqualTo("query_world_snapshot"));
-            Assert.That(restored.ToolCallTrace.Single().Result.Accepted, Is.True);
+            Assert.That(restored.ToolCallTrace.Count, Is.EqualTo(2));
+            Assert.That(restored.ToolCallTrace.Any(t => t.Request.ToolId.Code == "escalate_resolve_or_pass"), Is.True);
+            Assert.That(restored.ToolCallTrace.Any(t => t.Request.ToolId.Code == "query_world_snapshot"), Is.True);
         }
 
         [Test]

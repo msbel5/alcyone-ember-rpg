@@ -127,6 +127,15 @@ namespace EmberCrpg.Presentation.Ember.Save
 
             if (SceneManager.GetActiveScene().name != data.sceneName)
             {
+                // Codex audit (fourth pass F-P3): match the main-menu Continue
+                // path — validate against EditorBuildSettings before LoadScene
+                // (Editor only; player builds let Unity surface its own
+                // "scene not in build" error).
+                if (!IsKnownBuildScene(data.sceneName))
+                {
+                    ShowStatus("Load failed: scene not in build.");
+                    return;
+                }
                 _pendingLoad = data;
                 SceneManager.LoadScene(data.sceneName);
             }
@@ -153,6 +162,28 @@ namespace EmberCrpg.Presentation.Ember.Save
         }
 
         private static SaveData _pendingLoad;
+
+        /// <summary>
+        /// Codex audit (fourth pass F-P3): mirror EmberMainMenuUI's build-
+        /// scene validation. Editor build only; player builds trust Unity's
+        /// runtime resolution.
+        /// </summary>
+        private static bool IsKnownBuildScene(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName)) return false;
+#if UNITY_EDITOR
+            foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
+            {
+                if (scene == null || string.IsNullOrEmpty(scene.path)) continue;
+                var stem = System.IO.Path.GetFileNameWithoutExtension(scene.path);
+                if (string.Equals(stem, sceneName, System.StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+#else
+            return true;
+#endif
+        }
 
         /// <summary>
         /// Codex audit Batch 2 / Finding 4: the main-menu Continue() button used
