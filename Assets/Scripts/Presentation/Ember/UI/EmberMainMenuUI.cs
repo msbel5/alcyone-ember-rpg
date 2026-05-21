@@ -65,7 +65,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             var canvas = canvasObj.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
     
-            var menu = canvasObj.AddComponent<EmberMainMenuUI>();
+            canvasObj.AddComponent<EmberMainMenuUI>();
     
             var panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
             panel.transform.SetParent(canvas.transform, false);
@@ -114,11 +114,12 @@ namespace EmberCrpg.Presentation.Ember.UI
                 txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 txt.alignment = TextAnchor.MiddleCenter;
                 txt.color = Color.white;
-
-                int index = i;
-                // We'll use UnityEvent in editor to wire these if we were using a real builder,
-                // but since we are script-generating the scene, we'll just use code.
-                // Note: Persistent listeners are better for prefabs, but for a one-off scene:
+                // Codex audit (D-P3): the build helper used to declare an
+                // unused `int index = i;` plus a stale listener comment about
+                // UnityEvent wiring. The button objects are wired by the
+                // companion EmberMainMenuUI MonoBehaviour at scene start;
+                // the Editor build helper just authors the GameObjects, so
+                // these stragglers were noise.
             }
     
             UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, path);

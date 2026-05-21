@@ -25,7 +25,14 @@ namespace EmberCrpg.Domain.World
 
         public FactionReputation Apply(int delta)
         {
-            return new FactionReputation(Clamp(_value + delta));
+            // Codex audit (second pass A-P2): `_value + delta` could overflow
+            // int before Clamp ran (e.g. _value=Int32.MaxValue-1 + delta=100
+            // wrapped to a large negative, which Clamp pinned to Min instead
+            // of saturating at Max). Promote to long first.
+            long next = (long)_value + delta;
+            if (next > int.MaxValue) next = int.MaxValue;
+            else if (next < int.MinValue) next = int.MinValue;
+            return new FactionReputation(Clamp((int)next));
         }
 
         public FactionReputation Decay(int amount)

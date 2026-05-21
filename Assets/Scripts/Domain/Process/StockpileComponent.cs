@@ -48,7 +48,13 @@ namespace EmberCrpg.Domain.Process
             if (quantity < 0)
                 throw new ArgumentOutOfRangeException(nameof(quantity), "Use Remove for negative quantities.");
             var key = itemTag.Trim();
-            _counts[key] = (_counts.TryGetValue(key, out var current) ? current : 0) + quantity;
+            // Codex audit (second pass A-P1): unchecked int addition could wrap
+            // negative when (current + quantity) crossed Int32.MaxValue,
+            // silently making inventory "disappear". Promote to long first,
+            // clamp to Int32.MaxValue, then store.
+            var current = _counts.TryGetValue(key, out var c) ? c : 0;
+            var next = (long)current + quantity;
+            _counts[key] = next > int.MaxValue ? int.MaxValue : (int)next;
         }
 
         /// <summary>

@@ -673,7 +673,12 @@ namespace EmberCrpg.Data.Save
 
         private static ToolCallParameterSaveData[] ToToolCallParameterData(IReadOnlyDictionary<string, string> parameters)
         {
+            // Codex audit (second pass A-P3): the dictionary's enumeration order
+            // is implementation-defined, so the on-disk parameter list could
+            // shift between Save() calls for the same in-memory state. Sort
+            // by parameter name (ordinal) for deterministic JSON output.
             return (parameters ?? new Dictionary<string, string>())
+                .OrderBy(parameter => parameter.Key, StringComparer.Ordinal)
                 .Select(parameter => new ToolCallParameterSaveData { name = parameter.Key, value = parameter.Value })
                 .ToArray();
         }

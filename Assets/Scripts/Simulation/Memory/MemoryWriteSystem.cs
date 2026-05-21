@@ -35,14 +35,31 @@ namespace EmberCrpg.Simulation.Memory
             Record(witnessMemory, new TopicId("trade"), counterparty, now, detail);
         }
 
+        // Codex audit (second pass A-P2): the original crime detector relied on
+        // substring matching ("theft" / "stole") inside the free-form
+        // worldEvent.Reason. Structured crime events whose reason starts with
+        // "assault", "pickpocket", "vandalism", "arson", or any future crime
+        // vocabulary were silently dropped. The stable code prefix set lets
+        // the engine emit deterministic crime markers and lets simulation
+        // services bind on a known list rather than a substring search.
+        internal static readonly System.Collections.Generic.HashSet<string> KnownCrimeCodes =
+            new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "theft", "stole",
+                "assault", "battery",
+                "pickpocket", "robbery",
+                "vandalism", "arson",
+                "trespass", "fraud",
+                "murder", "manslaughter",
+            };
+
         public bool RecordFromWorldEvent(MemoryComponent witnessMemory, WorldEvent worldEvent)
         {
             if (witnessMemory == null) throw new ArgumentNullException(nameof(witnessMemory));
             if (worldEvent == null) throw new ArgumentNullException(nameof(worldEvent));
 
             var reason = worldEvent.Reason ?? string.Empty;
-            if (reason.IndexOf("theft", StringComparison.OrdinalIgnoreCase) >= 0
-                || reason.IndexOf("stole", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (IsCrimeReason(reason))
             {
                 RecordCrime(witnessMemory, worldEvent.ActorId, worldEvent.Tick, reason);
                 return true;
@@ -55,6 +72,22 @@ namespace EmberCrpg.Simulation.Memory
             }
 
             return false;
+        }
+
+        private static bool IsCrimeReason(string reason)
+        {
+            if (string.IsNullOrEmpty(reason)) return false;
+            // Stable lexer: take the leading whitespace/punctuation-delimited
+            // token as the structured code and check it against the known set.
+            // This lets reason strings shape themselves as
+            //   "theft item:coin"
+            //   "assault target:guard"
+            //   "pickpocket gold:5"
+            // and land deterministically in the crime branch.
+            var tokens = reason.Split(new[] { ' ', '\t', ':', ',', ';' },
+                StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length == 0) return false;
+            return KnownCrimeCodes.Contains(tokens[0]);
         }
     }
 }
