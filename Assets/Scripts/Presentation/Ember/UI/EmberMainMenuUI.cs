@@ -37,14 +37,47 @@ namespace EmberCrpg.Presentation.Ember.UI
                 // payload statically; the EmberSaveService.Start() in the target
                 // scene picks it up and calls RestorePosition + RestoreStateJson.
                 var data = JsonUtility.FromJson<EmberCrpg.Presentation.Ember.Save.SaveData>(json);
-                if (data != null && !string.IsNullOrEmpty(data.sceneName))
+                if (data != null && !string.IsNullOrEmpty(data.sceneName)
+                    && IsKnownBuildScene(data.sceneName))
                 {
+                    // Codex audit (third pass A-P3): previously LoadScene ran
+                    // even when the saved scene was not in build settings,
+                    // which surfaces Unity's "scene not in build" error at
+                    // runtime. Validate against EditorBuildSettings (best
+                    // effort — only the Editor knows the build list, so the
+                    // player build skips this check and lets Unity surface
+                    // the error its own way).
                     EmberCrpg.Presentation.Ember.Save.EmberSaveService.PreparePendingLoad(data);
                     SceneManager.LoadScene(data.sceneName);
                     return;
                 }
             }
             NewGame();
+        }
+
+        /// <summary>
+        /// Codex audit (third pass A-P3): validate scene against the build
+        /// list before LoadScene. In the Editor we check EditorBuildSettings;
+        /// in a player build we accept any name (Unity surfaces its own
+        /// "scene not in build" error if mismatched). Defensive: never blocks
+        /// the menu Continue path entirely — only an unknown Editor scene
+        /// falls back to NewGame().
+        /// </summary>
+        private static bool IsKnownBuildScene(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName)) return false;
+#if UNITY_EDITOR
+            foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
+            {
+                if (scene == null || string.IsNullOrEmpty(scene.path)) continue;
+                var stem = System.IO.Path.GetFileNameWithoutExtension(scene.path);
+                if (string.Equals(stem, sceneName, System.StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+#else
+            return true; // Player build trusts Unity's runtime scene resolution
+#endif
         }
 
         public void Quit()

@@ -42,11 +42,36 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         IDialogSource GetDialogSource(string actorName);
     }
 
-    /// <summary>Player-driven write surface: log combat, take damage, future input commands.</summary>
+    /// <summary>Player-driven write surface: log combat, take damage, cast spells, interact.</summary>
     public interface IPlayerCommandSink
     {
         void LogCombat(string message);
         void TakePlayerDamage(int amount);
+
+        // Codex audit (third pass C-P3): command sink used to be log/damage
+        // only. Adding gameplay verbs lets EmberPlayerSpellCaster /
+        // EmberPlayerMeleeSwing / interaction raycasters route through a
+        // single sink instead of bypassing it with ad-hoc adapter.X() calls.
+        // Default implementations let existing adapters opt in incrementally.
+
+        /// <summary>
+        /// Player triggers a spell cast on slot index. Returns true when the
+        /// adapter accepted the command (mana/cooldown/target valid). Failed
+        /// commands surface a refusal string via <see cref="LogCombat"/>.
+        /// </summary>
+        bool TryCastSpell(int spellSlotIndex) { LogCombat($"Spell slot {spellSlotIndex} routed."); return false; }
+
+        /// <summary>
+        /// Player triggers a melee strike on a target actor. Returns true when
+        /// the strike resolved against a domain actor.
+        /// </summary>
+        bool TryMeleeStrike(string targetActorName, int rawDamage) { LogCombat($"Melee at {targetActorName} for {rawDamage}."); return false; }
+
+        /// <summary>
+        /// Player interacts (E key) with a world object identified by tag.
+        /// Returns true when the adapter routed the interaction.
+        /// </summary>
+        bool TryInteract(string targetTag) { LogCombat($"Interact: {targetTag}."); return false; }
     }
 
     /// <summary>Narrator-flavour oracle for the consult-fate UI ribbon.</summary>

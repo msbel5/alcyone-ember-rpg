@@ -38,7 +38,15 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             _tick = GetComponent<EmberTickDriver>() ?? gameObject.AddComponent<EmberTickDriver>();
             _tick.Listener = this;
 
-            _adapter = EmberDomainAdapterLocator.Current ?? CreateFallbackAdapter();
+            // Codex audit (third pass A-P1): the live scene used to run on
+            // PlaceholderSimulationAdapter exclusively, so every HUD row was
+            // fabricated state. Prefer a registered domain adapter; if none
+            // is registered yet, try to bootstrap a DomainSimulationAdapter
+            // backed by a fresh SliceWorldState. Only fall back to the
+            // placeholder when both routes fail (UI-only sandbox scenes).
+            _adapter = EmberDomainAdapterLocator.Current
+                ?? TryCreateDomainAdapter()
+                ?? CreateFallbackAdapter();
             EmberDomainAdapterLocator.Register(_adapter);
             _adapter.AdvanceTick(0);
 
@@ -257,6 +265,28 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 return (IDomainSimulationAdapter)System.Activator.CreateInstance(type);
 
             return new EmptySimulationAdapter();
+        }
+
+        /// <summary>
+        /// Codex audit (third pass A-P1): try to bootstrap a real
+        /// <see cref="DomainSimulationAdapter"/> over a fresh
+        /// <see cref="EmberCrpg.Domain.World.SliceWorldState"/>. Returns
+        /// <c>null</c> if SliceWorldFactory throws or if the construction
+        /// path is otherwise unavailable; the caller falls through to the
+        /// placeholder. Wrapped in try/catch so a missing
+        /// Simulation-side dependency never crashes scene bootstrap.
+        /// </summary>
+        private static IDomainSimulationAdapter TryCreateDomainAdapter()
+        {
+            try
+            {
+                var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(seed: 1);
+                return new EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter(world);
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
         }
 
         private sealed class EmptySimulationAdapter : IDomainSimulationAdapter

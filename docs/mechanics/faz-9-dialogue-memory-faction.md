@@ -516,13 +516,13 @@ namespace EmberCrpg.Domain.Actors
 }
 ```
 
-### `Assets/Scripts/Domain/Crpg/DialogueDef.cs`
+### `Assets/Scripts/Domain/Narrative/DialogueDef.cs`
 
 ```csharp
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Crpg
+namespace EmberCrpg.Domain.Narrative
 {
     /// <summary>Data-driven dialogue tree definition. It carries ids and rows only; DialogueSystem owns evaluation.</summary>
     public sealed record DialogueDef(string DialogueId, ActorId NpcActorId, IReadOnlyList<DialogueNodeDef> Nodes, string StartNodeId);
@@ -547,13 +547,13 @@ namespace EmberCrpg.Domain.Crpg
 }
 ```
 
-### `Assets/Scripts/Domain/Crpg/DialogueRuntime.cs`
+### `Assets/Scripts/Domain/Narrative/DialogueRuntime.cs`
 
 ```csharp
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Crpg
+namespace EmberCrpg.Domain.Narrative
 {
     /// <summary>Runtime state for one active conversation. It is serializable pure data and contains no UI state.</summary>
     public sealed record DialogueSession(string SessionId, string DialogueId, string CurrentNodeId, ActorId PlayerActorId, ActorId NpcActorId, bool IsActive);
@@ -569,12 +569,12 @@ namespace EmberCrpg.Domain.Crpg
 }
 ```
 
-### `Assets/Scripts/Domain/Crpg/SocialCheckDef.cs`
+### `Assets/Scripts/Domain/Narrative/SocialCheckDef.cs`
 
 ```csharp
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Crpg
+namespace EmberCrpg.Domain.Narrative
 {
     /// <summary>Data row for persuade, intimidate, or similar social checks. SkillKey and OperationKey keep checks data-driven.</summary>
     public sealed record SocialCheckDef(string CheckId, string OperationKey, string SkillKey, int BaseDifficulty, int DispositionWeight, int FactionWeight);
@@ -788,7 +788,7 @@ namespace EmberCrpg.Simulation.Living
 ```csharp
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
-using EmberCrpg.Domain.Crpg;
+using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Society;
 
@@ -844,7 +844,7 @@ namespace EmberCrpg.Simulation.Crpg
 
 ```csharp
 using EmberCrpg.Domain.Actors;
-using EmberCrpg.Domain.Crpg;
+using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Simulation.Rng;
 

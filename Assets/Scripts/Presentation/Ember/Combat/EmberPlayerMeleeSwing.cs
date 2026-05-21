@@ -50,11 +50,20 @@ namespace EmberCrpg.Presentation.Ember.Combat
                 if (sink != null)
                 {
                     sink.Apply(10);
-                    
+
+                    // Codex audit (third pass A-P1): the previous flow applied
+                    // the visual damage tint via IDamageSink but only mutated
+                    // the adapter via TakePlayerDamage(2) (incoming damage).
+                    // Route the outgoing strike through
+                    // IPlayerCommandSink.TryMeleeStrike so the adapter can
+                    // resolve it against domain state instead of leaving the
+                    // kill entirely in view-tint land.
                     var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current;
                     if (adapter != null)
                     {
-                        adapter.TakePlayerDamage(2); // Player loses 2 HP on hit
+                        var targetName = hit.collider.gameObject != null ? hit.collider.gameObject.name : string.Empty;
+                        adapter.TryMeleeStrike(targetName, rawDamage: 10);
+                        adapter.TakePlayerDamage(2); // counter-hit
                     }
                 }
             }
