@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -10,6 +11,14 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private void Awake()
         {
+            // Mami playtest fix: buttons were unclickable because the scene
+            // shipped without an EventSystem (Unity needs it for UI input
+            // dispatch) AND cursor stayed locked from any previous gameplay
+            // scene. Both issues now self-heal at menu Awake — no scene
+            // re-authoring required.
+            EnsureEventSystemExists();
+            UnlockCursor();
+
             var newGameBtn = transform.Find("Panel/New Game")?.GetComponent<Button>();
             if (newGameBtn != null) newGameBtn.onClick.AddListener(NewGame);
 
@@ -18,6 +27,21 @@ namespace EmberCrpg.Presentation.Ember.UI
 
             var quitBtn = transform.Find("Panel/Quit")?.GetComponent<Button>();
             if (quitBtn != null) quitBtn.onClick.AddListener(Quit);
+        }
+
+        private static void EnsureEventSystemExists()
+        {
+            if (EventSystem.current != null) return;
+            var existing = Object.FindFirstObjectByType<EventSystem>(FindObjectsInactive.Include);
+            if (existing != null) return;
+            var go = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            DontDestroyOnLoad(go);
+        }
+
+        private static void UnlockCursor()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
 
         public void NewGame()
