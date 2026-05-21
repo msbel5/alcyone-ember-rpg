@@ -27,6 +27,13 @@ namespace EmberCrpg.Simulation.AiDm
         }
     }
 
+    /// <summary>
+    /// DM-side narrator. Wraps LlmRoutingService and appends a structured
+    /// proposal-log entry that carries the proposed tool calls.
+    /// Codex audit (D-P3): no production host calls this service today —
+    /// experimental until the AI/DM scene host attaches it. Tests exercise
+    /// the public surface but the runtime tick chain does not consume it.
+    /// </summary>
     public sealed class DmNarrationService
     {
         private readonly LlmRoutingService _routing;
@@ -106,6 +113,12 @@ namespace EmberCrpg.Simulation.AiDm
         public int AppliedToolCalls { get; }
     }
 
+    /// <summary>
+    /// Stores narrator-side checkpoints into the deterministic world-event log.
+    /// Codex audit (D-P3): no production host invokes RecordCheckpoint today —
+    /// experimental until the AI/DM session host hooks it into save/replay.
+    /// Integration tests demonstrate the intended pattern.
+    /// </summary>
     public sealed class StorytellerCheckpointSystem
     {
         public void RecordCheckpoint(SliceWorldState world, GameTime now, string label)

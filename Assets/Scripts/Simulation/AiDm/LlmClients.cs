@@ -5,7 +5,14 @@ using EmberCrpg.Domain.AiDm;
 
 namespace EmberCrpg.Simulation.AiDm
 {
-    /// <summary>Explicit endpoint config for sync LLM clients. Disabled by default.</summary>
+    /// <summary>
+    /// Explicit endpoint config for sync LLM clients. Disabled by default.
+    /// Codex audit (D-P3): currently consumed only by LocalQwenClient /
+    /// CloudLlmClient (also experimental) and the AiDm test suite. Kept
+    /// public so external setup code and integration tests can build a
+    /// real-provider client; do not depend on this type in production
+    /// pathways until the routing surface is wired.
+    /// </summary>
     public sealed class LlmClientConfig
     {
         public LlmClientConfig(LlmProviderKind provider, string endpointUrl, string apiKey, bool enabled)
@@ -22,6 +29,13 @@ namespace EmberCrpg.Simulation.AiDm
         public bool Enabled { get; }
     }
 
+    /// <summary>
+    /// HTTP client targeting a local Qwen-compatible endpoint.
+    /// Codex audit (D-P3): no production caller is wired today; this class is
+    /// experimental — set up by integration tests and a manual smoke harness.
+    /// Routing service can adopt it once the local inference contract is
+    /// frozen. Do not lock production behaviour on this until then.
+    /// </summary>
     public sealed class LocalQwenClient
     {
         private readonly LlmClientConfig _config;
@@ -41,6 +55,14 @@ namespace EmberCrpg.Simulation.AiDm
         }
     }
 
+    /// <summary>
+    /// HTTP client targeting a cloud provider (Anthropic/OpenAI/etc.). Provider
+    /// label is derived from <see cref="LlmClientConfig.Provider"/>.
+    /// Codex audit (D-P3): no production caller is wired today; experimental
+    /// alongside <see cref="LocalQwenClient"/>. Use through integration tests
+    /// only until LlmRoutingService is wired to construct one from
+    /// configuration.
+    /// </summary>
     public sealed class CloudLlmClient
     {
         private readonly LlmClientConfig _config;
@@ -188,11 +210,37 @@ namespace EmberCrpg.Simulation.AiDm
                     {
                         case '"': sb.Append('"'); break;
                         case '\\': sb.Append('\\'); break;
+                        case '/': sb.Append('/'); break;
                         case 'n': sb.Append('\n'); break;
                         case 'r': sb.Append('\r'); break;
                         case 't': sb.Append('\t'); break;
                         case 'b': sb.Append('\b'); break;
                         case 'f': sb.Append('\f'); break;
+                        case 'u':
+                            // Codex audit (A/P3): previously the parser fell into
+                            // the `default` branch on `\uXXXX`, emitting the literal
+                            // 'u' followed by four raw chars instead of the encoded
+                            // code point — string fields with international content
+                            // or quoted glyphs (e.g. é) round-tripped as
+                            // garbage. Decode the four hex digits to a UTF-16 code
+                            // unit; high surrogates pair naturally if the next
+                            // escape is another \u. Fall back to literal `\u` on
+                            // malformed escape so we never throw mid-parse.
+                            if (i + 5 < json.Length
+                                && int.TryParse(json.Substring(i + 2, 4),
+                                    System.Globalization.NumberStyles.HexNumber,
+                                    System.Globalization.CultureInfo.InvariantCulture,
+                                    out var code))
+                            {
+                                sb.Append((char)code);
+                                i += 4; // i++ below advances past 'u'
+                            }
+                            else
+                            {
+                                sb.Append('\\');
+                                sb.Append('u');
+                            }
+                            break;
                         default:  sb.Append(esc); break;
                     }
                     i++;
