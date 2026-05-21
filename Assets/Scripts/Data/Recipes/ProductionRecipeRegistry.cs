@@ -10,7 +10,7 @@ namespace EmberCrpg.Data.Recipes
     /// Production recipe data rows. The two seed recipes (smelt iron ingot,
     /// bake bread) live here as concrete rows so the game can compete jobs at
     /// runtime without depending on test fixtures.
-    /// Closes CO-07 in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-07 in docs/sprint-faz-4-atom-map.md Debt ledger.
     /// </summary>
     public static class ProductionRecipeRegistry
     {

@@ -10,7 +10,7 @@ using EmberCrpg.Domain.World;
 // NeedRecoverySystem is Faz 4's concrete recovery consumer. EatMeal mutates
 // inventory only after proving hunger can change; Sleep never touches inventory.
 // Both paths recompute mood and emit a NeedChanged trace for playable proof.
-// Atom-map ref: DOCS/sprint-faz-4-atom-map.md Eat / sleep recovery rail.
+// Atom-map ref: docs/sprint-faz-4-atom-map.md Eat / sleep recovery rail.
 namespace EmberCrpg.Simulation.Living
 {
     /// <summary>Applies deterministic need recovery actions to actors.</summary>

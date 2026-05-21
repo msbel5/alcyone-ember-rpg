@@ -8,7 +8,7 @@ using EmberCrpg.Domain.Core;
 // Outputs: immutable record consumed by SiteStore in the next Faz 1 PR; no Unity,
 // no I/O, no serialization concerns. Mirrors InventoryItem's defensive constructor
 // pattern so invariants are pinned at construction.
-// Atom-map ref: DOCS/sprint-faz-1-atom-map.md SiteStore sub-area.
+// Atom-map ref: docs/sprint-faz-1-atom-map.md SiteStore sub-area.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure record describing a site (region / settlement / dungeon) by id, kind, name, and bounds.</summary>

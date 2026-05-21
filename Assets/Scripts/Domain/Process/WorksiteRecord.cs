@@ -7,7 +7,7 @@ using EmberCrpg.Domain.Core;
 // worksite by site id, grid position, typed kind, and active flag without
 // mutating inventory, ticking recipes, logging events, or serializing state.
 // WorksiteStore and RecipeSystem will own lookup/progress behaviour later.
-// Atom-map ref: DOCS/sprint-faz-2-atom-map.md Worksite state sub-area.
+// Atom-map ref: docs/sprint-faz-2-atom-map.md Worksite state sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

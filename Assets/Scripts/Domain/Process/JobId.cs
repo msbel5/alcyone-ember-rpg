@@ -5,7 +5,7 @@ using System;
 // Domain value with no allocation, lookup, ticking, logging, serialization, or
 // Unity dependency. Zero is reserved as the empty sentinel so JobBoard and
 // JobAssignmentSystem can reject missing jobs deterministically in later atoms.
-// Atom-map ref: DOCS/sprint-faz-3-atom-map.md Pure job definition rail.
+// Atom-map ref: docs/sprint-faz-3-atom-map.md Pure job definition rail.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

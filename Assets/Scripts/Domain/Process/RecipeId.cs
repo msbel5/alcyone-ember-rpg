@@ -5,7 +5,7 @@ using System;
 // Domain value with no registry lookup, allocation, logging, serialization, or
 // Unity dependency. Zero is reserved as the empty sentinel so RecipeDef and
 // RecipeSystem can reject missing recipes deterministically in later atoms.
-// Atom-map ref: DOCS/sprint-faz-2-atom-map.md Recipe definitions sub-area.
+// Atom-map ref: docs/sprint-faz-2-atom-map.md Recipe definitions sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

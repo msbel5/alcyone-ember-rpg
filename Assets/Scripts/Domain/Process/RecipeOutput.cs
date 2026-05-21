@@ -7,7 +7,7 @@ using EmberCrpg.Domain.Inventory;
 // and strictly positive quantity. It does not mutate ItemStore, allocate item
 // ids, advance work, or emit events; RecipeDef and RecipeSystem compose it in
 // later Faz 2 atoms.
-// Atom-map ref: DOCS/sprint-faz-2-atom-map.md Recipe definitions sub-area.
+// Atom-map ref: docs/sprint-faz-2-atom-map.md Recipe definitions sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

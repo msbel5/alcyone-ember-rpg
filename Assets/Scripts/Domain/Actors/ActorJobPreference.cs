@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Process;
 // It records a concrete JobKind plus an explicit priority, but it does not read
 // JobBoard state, select jobs, move actors, start recipes, or emit EventLog
 // lines. Those behaviours belong to the later JobAssignmentSystem atoms.
-// Atom-map ref: DOCS/sprint-faz-3-atom-map.md Actor job preference and schedule rail.
+// Atom-map ref: docs/sprint-faz-3-atom-map.md Actor job preference and schedule rail.
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>
