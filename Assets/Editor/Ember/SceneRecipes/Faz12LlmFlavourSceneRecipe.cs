@@ -16,20 +16,24 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
         public void Build()
         {
             var floorMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/tavern_floor.png", tiling: 4f);
+                $"{EmberAssetPaths.TilesDir}/tavern_floor.png", tiling: 8f);
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/wood_floor.png", tiling: 3f);
+                $"{EmberAssetPaths.TilesDir}/wood_floor.png", tiling: 5f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 18f, floorMat, "FlavourFloor");
-            EmberTerrainBuilder.BuildWall(new Vector3(0f, 1.5f,  9f), new Vector3(18f, 3f, 0.4f), wallMat, "NorthWall");
-            EmberTerrainBuilder.BuildWall(new Vector3(0f, 1.5f, -9f), new Vector3(18f, 3f, 0.4f), wallMat, "SouthWall");
-            EmberTerrainBuilder.BuildWall(new Vector3(-9f, 1.5f, 0f), new Vector3(0.4f, 3f, 18f), wallMat, "WestWall");
-            EmberTerrainBuilder.BuildWall(new Vector3( 9f, 1.5f, 0f), new Vector3(0.4f, 3f, 18f), wallMat, "EastWall");
+            EmberTerrainBuilder.BuildRoom(Vector3.zero, 20f, 20f, 4f, floorMat, wallMat);
 
             EmberLightingBuilder.AddDirectionalSun(
-                color: new Color(1f, 0.7f, 0.45f),
-                intensity: 0.7f,
-                eulerAngles: new Vector3(55f, 200f, 0f));
+                color: new Color(1f, 0.75f, 0.5f),
+                intensity: 0.9f,
+                eulerAngles: new Vector3(60f, 180f, 0f));
+
+            var ambiance = new GameObject("Ambiance", typeof(Light));
+            ambiance.transform.position = new Vector3(0f, 3.5f, 0f);
+            var l = ambiance.GetComponent<Light>();
+            l.type = LightType.Point;
+            l.range = 15f;
+            l.intensity = 1.0f;
+            l.color = new Color(1f, 0.8f, 0.5f);
 
             EmberPlayerRigBuilder.BuildRig(
                 spawnPosition: new Vector3(0f, 0f, -6f),

@@ -46,7 +46,16 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         public void NewGame()
         {
-            SceneManager.LoadScene(_firstSceneName);
+            var worldGen = transform.Find("WorldGenUI");
+            if (worldGen != null)
+            {
+                worldGen.gameObject.SetActive(true);
+                transform.Find("Panel")?.gameObject.SetActive(false);
+            }
+            else
+            {
+                SceneManager.LoadScene(_firstSceneName);
+            }
         }
 
         public void Continue()

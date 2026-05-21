@@ -17,19 +17,30 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
         public void Build()
         {
             var floorMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/marble.png", tiling: 4f);
+                $"{EmberAssetPaths.TilesDir}/marble.png", tiling: 6f);
+            var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
+                $"{EmberAssetPaths.TilesDir}/dark_stone.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 24f, floorMat, "ShrineFloor");
+            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 40f, floorMat, "ShrineFloor");
+            
+            // Circular boundary wall
+            for(int i=0; i<8; i++) {
+                float angle = i * 45f * Mathf.Deg2Rad;
+                Vector3 pos = new Vector3(Mathf.Cos(angle) * 15f, 1.5f, Mathf.Sin(angle) * 15f);
+                EmberTerrainBuilder.BuildWall(pos, new Vector3(10f, 3f, 0.5f), wallMat, $"Boundary_{i}")
+                    .transform.rotation = Quaternion.Euler(0, -i * 45f, 0);
+            }
 
             var podium = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             podium.name = "Podium";
             podium.transform.position = new Vector3(0f, 0.25f, 3f);
             podium.transform.localScale = new Vector3(2.5f, 0.25f, 2.5f);
+            podium.GetComponent<MeshRenderer>().sharedMaterial = floorMat;
 
             EmberLightingBuilder.AddDirectionalSun(
-                color: new Color(0.85f, 0.9f, 1f),
-                intensity: 1.0f,
-                eulerAngles: new Vector3(80f, 0f, 0f));
+                color: new Color(0.9f, 0.95f, 1f),
+                intensity: 1.3f,
+                eulerAngles: new Vector3(70f, 45f, 0f));
 
             EmberPlayerRigBuilder.BuildRig(
                 spawnPosition: new Vector3(0f, 0f, -7f),

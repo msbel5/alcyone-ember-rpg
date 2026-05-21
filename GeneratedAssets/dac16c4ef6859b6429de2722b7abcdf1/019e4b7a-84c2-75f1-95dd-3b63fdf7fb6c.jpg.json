@@ -1,0 +1,28 @@
+{
+    "asset": "dac16c4ef6859b6429de2722b7abcdf1",
+    "fileName": "019e4b7a-84c2-75f1-95dd-3b63fdf7fb6c.jpg",
+    "prompt": "Parchment UI frame, 9-slice, warm parchment texture, burnt edges, silver trim, ornate corners, isolated on transparent background, top-down view, game asset, 2D, high quality, fantasy style",
+    "negativePrompt": "",
+    "model": "flux-2-pro",
+    "modelName": "Flux 2 (Pro)",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelatePixelGridSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": []
+    },
+    "upscaleFactor": 0,
+    "dimensions": {
+        "width": 1024,
+        "height": 1024
+    },
+    "spriteSheet": false,
+    "duration": 0.0
+}

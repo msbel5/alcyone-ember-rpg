@@ -16,18 +16,20 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
         public void Build()
         {
             var groundMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/stone_floor.png", tiling: 6f);
+                $"{EmberAssetPaths.TilesDir}/stone_floor.png", tiling: 8f);
+            var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
+                $"{EmberAssetPaths.TilesDir}/brick.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildGroundPlane(
-                center: Vector3.zero,
-                sizeMeters: 30f,
-                material: groundMat,
-                name: "Ground");
+            // Create a small enclosure for the forge area
+            EmberTerrainBuilder.BuildRoom(new Vector3(0, 0, 5), 20f, 15f, 4f, groundMat, wallMat);
+            
+            // Exterior ground
+            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 50f, groundMat, "Ground");
 
             EmberLightingBuilder.AddDirectionalSun(
-                color: new Color(1f, 0.95f, 0.85f),
-                intensity: 1.2f,
-                eulerAngles: new Vector3(50f, 30f, 0f));
+                color: new Color(1f, 0.98f, 0.9f),
+                intensity: 1.3f,
+                eulerAngles: new Vector3(50f, 45f, 0f));
 
             EmberPlayerRigBuilder.BuildRig(
                 spawnPosition: new Vector3(0f, 0f, -6f),

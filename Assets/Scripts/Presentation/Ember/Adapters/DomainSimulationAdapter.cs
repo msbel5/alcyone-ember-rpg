@@ -31,7 +31,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     ///    so worksite/job/soil/plant process sidecars survive the
     ///    Export/Restore round-trip.
     /// </summary>
-    public sealed class DomainSimulationAdapter : IDomainSimulationAdapter, IDialogSource
+    public sealed class DomainSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait
     {
         private readonly SliceWorldState _world;
         private readonly EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService _saveService;
@@ -40,9 +40,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _lastCombatLine = string.Empty;
         private string _activeDialogActor = string.Empty;
         private string _currentDialogLine = string.Empty;
+        private string _currentPortrait = "portrait_npc_placeholder";
 
         public DomainSimulationAdapter(SliceWorldState world)
-        {
+{
             _world = world ?? throw new System.ArgumentNullException(nameof(world));
             // Codex audit (fourth pass A-P2): retain ONE save service so the
             // sidecar process state (worksites / jobs / soils / plants) lives
@@ -312,8 +313,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return this;
         }
 
+        public void SeedWorld(string mood, string calling, string startLocation)
+        {
+            UnityEngine.Debug.Log($"Domain Seeded: Mood={mood}, Calling={calling}");
+        }
+
         // ----- IDialogSource -----
         public string GetCurrentLine() => _currentDialogLine;
+        public string GetPortraitName() => _currentPortrait;
         public IReadOnlyList<string> GetTopics() => _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
 
         public void SelectTopic(string topicId)

@@ -53,18 +53,37 @@ namespace EmberCrpg.Editor.Ember.Tools
         private static void CollectFolder(string folder, System.Collections.Generic.List<SpriteRegistry.Entry> sink)
         {
             if (!AssetDatabase.IsValidFolder(folder)) return;
-            var guids = AssetDatabase.FindAssets("t:Sprite", new[] { folder });
+            
+            // Find all textures in the folder
+            var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { folder });
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
-                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                if (sprite == null) continue;
-                sink.Add(new SpriteRegistry.Entry
+                var assets = AssetDatabase.LoadAllAssetsAtPath(path);
+                
+                foreach (var asset in assets)
                 {
-                    Name = Path.GetFileNameWithoutExtension(path),
-                    Sprite = sprite,
-                });
+                    if (asset is Sprite sprite)
+                    {
+                        // Add the sprite by its own name (for slices) 
+                        // AND by the file name (for the default/first one)
+                        string fileName = Path.GetFileNameWithoutExtension(path);
+                        
+                        sink.Add(new SpriteRegistry.Entry
+                        {
+                            Name = sprite.name,
+                            Sprite = sprite,
+                        });
+                        
+                        // Fallback: if sprite name is same as filename or starts with it, 
+                        // ensure we have an entry for just the filename
+                        if (!sink.Exists(e => e.Name == fileName))
+                        {
+                             sink.Add(new SpriteRegistry.Entry { Name = fileName, Sprite = sprite });
+                        }
+                    }
+                }
             }
         }
-    }
+}
 }
