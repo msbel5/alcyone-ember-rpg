@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EmberCrpg.Domain.Core;
 
 // Design note:
@@ -145,13 +146,22 @@ namespace EmberCrpg.Domain.World
                 : FactionReputation.Neutral;
         }
 
-        /// <summary>Persistable reputation rows in deterministic key order.</summary>
+        /// <summary>
+        /// Codex audit (A/P3): the previous iteration relied on Dictionary's
+        /// implementation-defined enumeration order — usually insertion order
+        /// in modern .NET but not contractually guaranteed, which made
+        /// determinism savings fragile across runtime/CLR upgrades. Sort by
+        /// (Low.Value, High.Value) so any caller that snapshots these rows
+        /// gets a canonical byte-stable layout.
+        /// </summary>
         public IEnumerable<FactionReputationRow> ReputationRows
         {
             get
             {
-                foreach (var row in _reputation)
-                    yield return new FactionReputationRow(row.Key.Low, row.Key.High, row.Value);
+                return _reputation
+                    .OrderBy(kv => kv.Key.Low.Value)
+                    .ThenBy(kv => kv.Key.High.Value)
+                    .Select(kv => new FactionReputationRow(kv.Key.Low, kv.Key.High, kv.Value));
             }
         }
 
