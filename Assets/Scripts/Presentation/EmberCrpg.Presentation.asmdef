@@ -4,7 +4,8 @@
     "references": [
         "EmberCrpg.Domain",
         "EmberCrpg.Simulation",
-        "EmberCrpg.Data"
+        "EmberCrpg.Data",
+        "EmberCrpg.Data.SliceJson"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
