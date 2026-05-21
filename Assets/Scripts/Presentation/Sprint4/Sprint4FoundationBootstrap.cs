@@ -25,7 +25,15 @@ namespace EmberCrpg.Presentation.Sprint4
             if (existingController != null) return;
 
             var marker = Object.FindFirstObjectByType<Sprint4FoundationMarker>(FindObjectsInactive.Include);
-            if (marker == null) return;
+            if (marker == null)
+            {
+                // Legacy scene fallback: Assets/Scenes/Sprint4Foundation.unity
+                // ships without the marker; gate on the scene-name token so
+                // it still bootstraps. Removal of this fallback is blocked on
+                // porting that scene to carry a Sprint4FoundationMarker.
+                var activeScene = SceneManager.GetActiveScene();
+                if (!activeScene.name.Contains(SceneNameToken)) return;
+            }
 
             EnsureLight();
             EnsureGround();

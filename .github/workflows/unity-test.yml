@@ -80,6 +80,19 @@ jobs:
             Library-EditMode-
             Library-
 
+      # The com.unity.ai.assistant editor tool is embedded under
+      # Packages/com.unity.ai.assistant/ on Mami's local machine but the
+      # 538 MB folder is gitignored, so CI never has it. Strip the file:
+      # reference from manifest.json so Unity's package resolver does not
+      # bail with "package.json cannot be found". The embedded package is
+      # editor-only and unused by tests.
+      - name: Strip editor-only embedded packages from manifest
+        run: |
+          if grep -q '"com.unity.ai.assistant"' Packages/manifest.json; then
+            sed -i '/"com.unity.ai.assistant"/d' Packages/manifest.json
+            echo "Stripped com.unity.ai.assistant from manifest for CI."
+          fi
+
       - name: Run EditMode Tests
         id: editmode
         uses: game-ci/unity-test-runner@v4
@@ -121,6 +134,12 @@ jobs:
             Library-PlayMode-
             Library-
 
+      - name: Strip editor-only embedded packages from manifest
+        run: |
+          if grep -q '"com.unity.ai.assistant"' Packages/manifest.json; then
+            sed -i '/"com.unity.ai.assistant"/d' Packages/manifest.json
+          fi
+
       - name: Run PlayMode Tests
         uses: game-ci/unity-test-runner@v4
         env:
@@ -158,6 +177,12 @@ jobs:
           path: Library
           key: Library-Build-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
           restore-keys: Library-Build-
+
+      - name: Strip editor-only embedded packages from manifest
+        run: |
+          if grep -q '"com.unity.ai.assistant"' Packages/manifest.json; then
+            sed -i '/"com.unity.ai.assistant"/d' Packages/manifest.json
+          fi
 
       - name: Build Linux64
         uses: game-ci/unity-builder@v4
