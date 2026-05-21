@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Combat;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
