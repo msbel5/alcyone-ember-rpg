@@ -59,13 +59,16 @@ namespace EmberCrpg.Presentation.Ember.Combat
                     bool accepted = false;
                     if (adapter != null)
                     {
-                        // Prefer the parent ActorView's stable display name
-                        // when present so the adapter can resolve to a domain
-                        // ActorRecord by name. Falls back to the collider's
-                        // GameObject name when no ActorView is attached.
+                        // Codex review on PR #196 (P1): use ActorView.DomainActorKey
+                        // (the same field EmberWorldHost.PushWorldViews uses when
+                        // calling TryReadActor). The previous version used
+                        // actorView.gameObject.name, which guarantees a mismatch
+                        // in scenes that author a different domain key —
+                        // TryMeleeStrike would always fail with "No target" and
+                        // the gated visual + counter-hit never fire.
                         var actorView = hit.collider.GetComponentInParent<ActorView>();
-                        var targetName = actorView != null && actorView.gameObject != null
-                            ? actorView.gameObject.name
+                        var targetName = actorView != null
+                            ? actorView.DomainActorKey
                             : (hit.collider.gameObject != null ? hit.collider.gameObject.name : string.Empty);
                         accepted = adapter.TryMeleeStrike(targetName, rawDamage: 10);
                     }

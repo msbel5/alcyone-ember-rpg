@@ -169,9 +169,16 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // Codex audit (fourth pass A-P2): the cooldown tracker only
                 // contains spells the actor has CAST (which seeds nothing on
                 // a fresh world). The known-spell catalog is the right source.
+                //
+                // Codex review on PR #196 (P1): MUST preserve catalog index
+                // order so slot N in the HUD matches slot N in TryCastSpell.
+                // Previously this method sorted alphabetically (flame_bolt /
+                // mending_touch / ember_ward becomes ember_ward / flame_bolt /
+                // mending_touch), but TryCastSpell still resolved by raw
+                // `SliceSpellCatalog.All[index]`, so pressing slot 0 would
+                // cast a different spell than the one displayed.
                 return EmberCrpg.Simulation.Magic.SliceSpellCatalog.All
                     .Select(s => s.TemplateId)
-                    .OrderBy(id => id, System.StringComparer.Ordinal)
                     .ToList();
             }
         }
