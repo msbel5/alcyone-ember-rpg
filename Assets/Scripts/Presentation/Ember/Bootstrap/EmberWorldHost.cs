@@ -88,7 +88,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             }
 
             if (Input.GetKeyDown(KeyCode.Tab))
-{
+            {
                 foreach (var inv in _inventoryGrids)
                 {
                     bool active = !inv.gameObject.activeSelf;
@@ -233,7 +233,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             if (!string.IsNullOrEmpty(_fateLine)) return _fateLine;
 
             switch (_selectedTopic)
-{
+            {
                 case "work": return "The forge queue is moving. Watch the left panel for job state.";
                 case "trade": return "Caravans shift prices as stock moves between settlements.";
                 case "fate": return "The oracle can surface a deterministic world query without mutating state.";
@@ -270,7 +270,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             public void AdvanceTick(int tickIndex) { }
             public int TickIndex => 0;
             public string HudText => "Tick 0   Day 1   Spring";
-public IReadOnlyList<JobQueueRow> JobQueueRows => EmptyJobs;
+            public IReadOnlyList<JobQueueRow> JobQueueRows => EmptyJobs;
             public IReadOnlyList<ColonyNeedsRow> ColonyNeedsRows => EmptyNeeds;
             public IReadOnlyList<FactionRow> FactionRows => EmptyFactions;
             public IReadOnlyList<InventorySlot> InventorySlots => EmptyInventory;

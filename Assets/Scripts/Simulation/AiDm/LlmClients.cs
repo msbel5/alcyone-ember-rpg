@@ -109,8 +109,149 @@ namespace EmberCrpg.Simulation.AiDm
                 var json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                 var text = ExtractStringField(json, "text") ?? string.Empty;
                 var tokens = ExtractIntField(json, "tokens_used") ?? 0;
-                return new LlmResponse(text, null, tokens);
+                // Codex audit (second pass A-P1): the HTTP path previously
+                // hardcoded `null` for the tool-call list, so every Consult-Fate
+                // proposal from a cloud / local-HTTP provider was discarded
+                // before the validator could see it — the model's tool decisions
+                // never reached the simulation. Parse `proposed_tool_calls` as
+                // an array of { tool_id, surface, parameters: {...} } objects.
+                var calls = ExtractProposedToolCalls(json);
+                return new LlmResponse(text, calls, tokens);
             }
+        }
+
+        /// <summary>
+        /// Extracts a JSON array shaped as
+        /// `"proposed_tool_calls":[{"tool_id":"...","surface":"...","parameters":{...}}, ...]`
+        /// from the provider response. Tolerant of missing fields; any malformed
+        /// row is skipped rather than throwing. Hand-rolled to avoid a JSON
+        /// dependency in Domain-adjacent code.
+        /// </summary>
+        private static System.Collections.Generic.List<ToolCallRequest> ExtractProposedToolCalls(string json)
+        {
+            var result = new System.Collections.Generic.List<ToolCallRequest>();
+            if (string.IsNullOrEmpty(json)) return result;
+            const string key = "\"proposed_tool_calls\"";
+            var idx = json.IndexOf(key, StringComparison.Ordinal);
+            if (idx < 0) return result;
+            var colon = json.IndexOf(':', idx + key.Length);
+            if (colon < 0) return result;
+            var arrStart = json.IndexOf('[', colon + 1);
+            if (arrStart < 0) return result;
+            // Walk forward, balancing brackets to find array end
+            int depth = 1;
+            int arrEnd = -1;
+            for (int i = arrStart + 1; i < json.Length; i++)
+            {
+                var c = json[i];
+                if (c == '[') depth++;
+                else if (c == ']')
+                {
+                    depth--;
+                    if (depth == 0) { arrEnd = i; break; }
+                }
+            }
+            if (arrEnd < 0) return result;
+            // Iterate top-level objects inside [arrStart+1, arrEnd)
+            int p = arrStart + 1;
+            while (p < arrEnd)
+            {
+                while (p < arrEnd && (json[p] == ' ' || json[p] == ',' || json[p] == '\n' || json[p] == '\r' || json[p] == '\t')) p++;
+                if (p >= arrEnd) break;
+                if (json[p] != '{') { p++; continue; }
+                int objStart = p;
+                int objDepth = 1;
+                int objEnd = -1;
+                for (int j = p + 1; j < arrEnd; j++)
+                {
+                    var c = json[j];
+                    if (c == '{') objDepth++;
+                    else if (c == '}')
+                    {
+                        objDepth--;
+                        if (objDepth == 0) { objEnd = j; break; }
+                    }
+                }
+                if (objEnd < 0) break;
+                var obj = json.Substring(objStart, objEnd - objStart + 1);
+                p = objEnd + 1;
+                var call = TryParseToolCallObject(obj);
+                if (call != null) result.Add(call);
+            }
+            return result;
+        }
+
+        private static ToolCallRequest TryParseToolCallObject(string obj)
+        {
+            try
+            {
+                var toolIdRaw = ExtractStringField(obj, "tool_id");
+                var surfaceRaw = ExtractStringField(obj, "surface");
+                if (string.IsNullOrEmpty(toolIdRaw) || string.IsNullOrEmpty(surfaceRaw))
+                    return null;
+                // Surface code → ToolSurfaceKind via FromCode (returns Empty on miss).
+                var surface = ToolSurfaceKind.FromCode(surfaceRaw);
+                if (surface.IsEmpty) return null;
+                var parameters = ExtractParametersObject(obj);
+                return new ToolCallRequest(new ToolId(toolIdRaw), surface, parameters);
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
+        }
+
+        private static System.Collections.Generic.IReadOnlyDictionary<string, string> ExtractParametersObject(string obj)
+        {
+            var result = new System.Collections.Generic.Dictionary<string, string>();
+            const string key = "\"parameters\"";
+            var idx = obj.IndexOf(key, StringComparison.Ordinal);
+            if (idx < 0) return result;
+            var colon = obj.IndexOf(':', idx + key.Length);
+            if (colon < 0) return result;
+            var braceStart = obj.IndexOf('{', colon + 1);
+            if (braceStart < 0) return result;
+            int depth = 1;
+            int braceEnd = -1;
+            for (int i = braceStart + 1; i < obj.Length; i++)
+            {
+                var c = obj[i];
+                if (c == '{') depth++;
+                else if (c == '}')
+                {
+                    depth--;
+                    if (depth == 0) { braceEnd = i; break; }
+                }
+            }
+            if (braceEnd < 0) return result;
+            // Inside parameter object, expect "key":"value" pairs; capture each
+            int p = braceStart + 1;
+            while (p < braceEnd)
+            {
+                while (p < braceEnd && obj[p] != '"') p++;
+                if (p >= braceEnd) break;
+                int keyStart = p + 1;
+                int keyEnd = obj.IndexOf('"', keyStart);
+                if (keyEnd < 0 || keyEnd >= braceEnd) break;
+                var k = obj.Substring(keyStart, keyEnd - keyStart);
+                int afterKey = obj.IndexOf(':', keyEnd + 1);
+                if (afterKey < 0 || afterKey >= braceEnd) break;
+                // Value: only support string values for now (parameters dict is <string,string>)
+                int valStart = obj.IndexOf('"', afterKey + 1);
+                if (valStart < 0 || valStart >= braceEnd) { p = afterKey + 1; continue; }
+                int valEnd = valStart + 1;
+                while (valEnd < braceEnd)
+                {
+                    if (obj[valEnd] == '\\' && valEnd + 1 < braceEnd) { valEnd += 2; continue; }
+                    if (obj[valEnd] == '"') break;
+                    valEnd++;
+                }
+                if (valEnd >= braceEnd) break;
+                var v = obj.Substring(valStart + 1, valEnd - valStart - 1);
+                result[k] = v;
+                p = valEnd + 1;
+            }
+            return result;
         }
 
         private static string BuildRequestJson(LlmRequest request)

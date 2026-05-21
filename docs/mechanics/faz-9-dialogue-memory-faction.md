@@ -287,12 +287,12 @@ Faz 9’e özgü ek akış:
 
 ## 4. C# scaffold — DOSYA YOLU + İMZA (gövde YOK)
 
-### `Assets/Scripts/Domain/Living/MemoryEntry.cs`
+### `Assets/Scripts/Domain/Memory/MemoryEntry.cs`
 
 ```csharp
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Living
+namespace EmberCrpg.Domain.Memory
 {
     /// <summary>Immutable fact remembered by one actor. It stores mechanical data only; prose belongs to Presentation or AI/DM views.</summary>
     public sealed record MemoryEntry(
@@ -307,13 +307,13 @@ namespace EmberCrpg.Domain.Living
 }
 ```
 
-### `Assets/Scripts/Domain/Living/MemoryComponent.cs`
+### `Assets/Scripts/Domain/Memory/MemoryComponent.cs`
 
 ```csharp
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Living
+namespace EmberCrpg.Domain.Memory
 {
     /// <summary>Actor-local memory component attached to ActorRecord. It is bounded, deterministic, and written only by MemorySystem.</summary>
     public sealed class MemoryComponent
@@ -348,13 +348,13 @@ namespace EmberCrpg.Domain.Living
 }
 ```
 
-### `Assets/Scripts/Domain/Living/DispositionComponent.cs`
+### `Assets/Scripts/Domain/Memory/DispositionComponent.cs`
 
 ```csharp
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Living
+namespace EmberCrpg.Domain.Memory
 {
     /// <summary>Actor-pair disposition component. Scores are stored per target actor and recomputed by DispositionSystem.</summary>
     public sealed class DispositionComponent
@@ -391,13 +391,13 @@ namespace EmberCrpg.Domain.Living
 }
 ```
 
-### `Assets/Scripts/Domain/Living/FactionMembershipComponent.cs`
+### `Assets/Scripts/Domain/Memory/FactionMembershipComponent.cs`
 
 ```csharp
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Living
+namespace EmberCrpg.Domain.Memory
 {
     /// <summary>Actor-local faction component. It records home faction and actor-specific standings without subclassing ActorRecord.</summary>
     public sealed class FactionMembershipComponent
@@ -429,13 +429,13 @@ namespace EmberCrpg.Domain.Living
 }
 ```
 
-### `Assets/Scripts/Domain/Living/DialogueComponent.cs`
+### `Assets/Scripts/Domain/Memory/DialogueComponent.cs`
 
 ```csharp
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Living
+namespace EmberCrpg.Domain.Memory
 {
     /// <summary>Actor-local dialogue component. It links an actor to data-driven topic ids and seen topic ids.</summary>
     public sealed class DialogueComponent
@@ -470,7 +470,7 @@ namespace EmberCrpg.Domain.Living
 ### `Assets/Scripts/Domain/Actors/ActorRecord.cs` (extend existing)
 
 ```csharp
-using EmberCrpg.Domain.Living;
+using EmberCrpg.Domain.Memory;
 
 namespace EmberCrpg.Domain.Actors
 {
@@ -674,10 +674,10 @@ namespace EmberCrpg.Domain.Society
 }
 ```
 
-### `Assets/Scripts/Domain/Living/NeedsInfluenceSnapshot.cs`
+### `Assets/Scripts/Domain/Memory/NeedsInfluenceSnapshot.cs`
 
 ```csharp
-namespace EmberCrpg.Domain.Living
+namespace EmberCrpg.Domain.Memory
 {
     /// <summary>Faz 4 preview hook passed into dialogue and disposition evaluation. Faz 9 stores the hook shape but does not simulate needs.</summary>
     public sealed record NeedsInfluenceSnapshot(int Hunger, int Fatigue, int Thirst, int MoodModifier, string ReasonKey);
@@ -723,7 +723,7 @@ namespace EmberCrpg.Simulation.World
 ```csharp
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
-using EmberCrpg.Domain.Living;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Society;
 using EmberCrpg.Domain.World;
 
@@ -758,7 +758,7 @@ namespace EmberCrpg.Simulation.Living
 ```csharp
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
-using EmberCrpg.Domain.Living;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Society;
 using EmberCrpg.Domain.World;
 
@@ -789,7 +789,7 @@ namespace EmberCrpg.Simulation.Living
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Crpg;
-using EmberCrpg.Domain.Living;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Society;
 
 namespace EmberCrpg.Simulation.Crpg
@@ -845,7 +845,7 @@ namespace EmberCrpg.Simulation.Crpg
 ```csharp
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Crpg;
-using EmberCrpg.Domain.Living;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Simulation.Rng;
 
 namespace EmberCrpg.Simulation.Crpg
@@ -948,7 +948,7 @@ namespace EmberCrpg.Simulation.Society
 
 ```csharp
 using EmberCrpg.Domain.Actors;
-using EmberCrpg.Domain.Living;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Society;
 
 namespace EmberCrpg.Simulation.Crpg

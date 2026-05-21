@@ -93,7 +93,38 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // domain adapter can detect placeholder envelopes and discard them.
         public string ExportStateJson()
         {
-            return "{\"version\":\"placeholder-v1\",\"tick\":" + _tick + ",\"hud\":\"" + (_hudText ?? string.Empty).Replace("\"", "\\\"") + "\"}";
+            // Codex audit (second pass A-P3): previously only `"` was escaped in
+            // the HUD payload, so a HUD line containing a backslash or a
+            // control byte (e.g. an embedded newline / tab from a debug build)
+            // produced malformed JSON that downstream RestoreStateJson silently
+            // dropped. EscapeJsonString handles `"`, `\`, `/`, the four
+            // standard control-letter escapes, and everything below 0x20 as
+            // `\uXXXX`.
+            return "{\"version\":\"placeholder-v1\",\"tick\":" + _tick + ",\"hud\":\"" + EscapeJsonString(_hudText ?? string.Empty) + "\"}";
+        }
+
+        private static string EscapeJsonString(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            var sb = new System.Text.StringBuilder(value.Length + 8);
+            foreach (var c in value)
+            {
+                switch (c)
+                {
+                    case '"':  sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\b': sb.Append("\\b"); break;
+                    case '\f': sb.Append("\\f"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < 0x20) sb.AppendFormat("\\u{0:x4}", (int)c);
+                        else sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
         }
 
         public void RestoreStateJson(string json)

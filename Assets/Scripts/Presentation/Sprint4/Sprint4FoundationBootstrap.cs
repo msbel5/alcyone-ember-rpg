@@ -6,14 +6,24 @@ namespace EmberCrpg.Presentation.Sprint4
     /// <summary>Creates a buildable Sprint 4 playground from a minimal scene asset.</summary>
     public static class Sprint4FoundationBootstrap
     {
+        private const string GroundName = "Sprint4 Greybox Ground";
         private const string SceneNameToken = "Sprint4";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateFoundationIfNeeded()
         {
+            // Codex audit (second pass E-P2): the previous guard used a
+            // scene-name substring (`Contains("Sprint4")`), which would misfire
+            // for any scene that happened to include "Sprint4" in its name.
+            // Intent-based detection now uses component presence first: if the
+            // scene already authors a Sprint4PlayerController, bail (do not
+            // duplicate). Only when the scene name still carries the legacy
+            // marker AND no controller exists do we build the greybox.
+            var existingController = Object.FindFirstObjectByType<Sprint4PlayerController>(FindObjectsInactive.Include);
+            if (existingController != null) return;
+
             var activeScene = SceneManager.GetActiveScene();
-            if (!activeScene.name.Contains(SceneNameToken) || Object.FindFirstObjectByType<Sprint4PlayerController>() != null)
-                return;
+            if (!activeScene.name.Contains(SceneNameToken)) return;
 
             EnsureLight();
             EnsureGround();
@@ -35,8 +45,14 @@ namespace EmberCrpg.Presentation.Sprint4
 
         private static void EnsureGround()
         {
+            // Codex audit (second pass E-P2): previously this always called
+            // CreatePrimitive, duplicating authored ground if the scene already
+            // had a `Sprint4 Greybox Ground` GameObject. Probe by name first
+            // so the bootstrap is idempotent and doesn't stack greyboxes when
+            // a real authored Sprint 4 scene is later opened.
+            if (GameObject.Find(GroundName) != null) return;
             var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ground.name = "Sprint4 Greybox Ground";
+            ground.name = GroundName;
             ground.transform.position = new Vector3(0f, -0.1f, 0f);
             ground.transform.localScale = new Vector3(24f, 0.2f, 24f);
         }

@@ -991,7 +991,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 #### `SpellEffectCode.cs`
 - namespace: `EmberCrpg.Domain.Magic`
 - types:
-  - L10: `enum SpellEffectCode`
+  - L12: `readonly struct SpellEffectCode : IEquatable<SpellEffectCode>` (value object; previously an enum, promoted in Faz 8 — see EffectOperationKind for the operation taxonomy)
 
 #### `SpellEffectSpec.cs`
 - namespace: `EmberCrpg.Domain.Magic`

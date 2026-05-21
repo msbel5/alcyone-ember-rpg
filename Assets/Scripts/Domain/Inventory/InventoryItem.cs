@@ -56,7 +56,13 @@ namespace EmberCrpg.Domain.Inventory
 
         public void AddQuantity(int amount)
         {
-            Quantity += Math.Max(0, amount);
+            // Codex audit (second pass A-P2): unchecked int addition could wrap
+            // negative when (Quantity + amount) crossed Int32.MaxValue. Promote
+            // to long, clamp to Int32.MaxValue. Negative/zero amounts are no-ops
+            // (matches prior Math.Max(0, amount) behavior).
+            if (amount <= 0) return;
+            var next = (long)Quantity + amount;
+            Quantity = next > int.MaxValue ? int.MaxValue : (int)next;
         }
 
         public void RemoveQuantity(int amount)

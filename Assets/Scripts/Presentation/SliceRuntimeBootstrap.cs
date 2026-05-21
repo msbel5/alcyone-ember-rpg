@@ -17,25 +17,31 @@ namespace EmberCrpg.Presentation.Slice
             var activeScene = SceneManager.GetActiveScene();
             var sceneName = activeScene.name ?? string.Empty;
 
-            // Bail when an existing slice controller is already present.
-            if (Object.FindFirstObjectByType<SliceGameController>() != null) return;
-
-            // Codex review (2026-05-21): the previous name/path heuristic
-            // ("Faz*", "MainMenu", "/Scenes/Ember/") was brittle — any
-            // out-of-convention scene name silently re-enabled the slice
-            // controller next to the host. Detect intent instead: look for
-            // EmberWorldHost via reflection so this Sprint 1/2 file does
-            // not take an assembly-level dependency on the newer Ember
-            // bootstrap layer. The reflective lookup is allocation-free and
-            // happens once per scene load.
+            // Codex audit (second pass E-P2): when an Ember scene is loaded
+            // after the slice scene (DontDestroyOnLoad slice controller
+            // survives), the previous guard short-circuited new creation but
+            // left the stale controller dangling next to EmberWorldHost.
+            // Destroy it first so the Ember scene starts clean.
             var emberHostType = System.Type.GetType(
                 "EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost, EmberCrpg.Presentation");
-            if (emberHostType != null
-                && Object.FindFirstObjectByType(emberHostType, FindObjectsInactive.Include) != null)
+            bool emberHostPresent = emberHostType != null
+                && Object.FindFirstObjectByType(emberHostType, FindObjectsInactive.Include) != null;
+
+            var existingController = Object.FindFirstObjectByType<SliceGameController>(FindObjectsInactive.Include);
+
+            if (emberHostPresent)
+            {
+                if (existingController != null)
+                    Object.Destroy(existingController.gameObject);
                 return;
+            }
 
             // Fallback for the original Sprint 4 combat foundation scenes.
             if (sceneName.Contains("Sprint4")) return;
+
+            // Bail when an existing slice controller is already present and we
+            // are NOT in an Ember scene — keep using the live one.
+            if (existingController != null) return;
 
             var controller = new GameObject("Sprint2SliceController");
             Object.DontDestroyOnLoad(controller);

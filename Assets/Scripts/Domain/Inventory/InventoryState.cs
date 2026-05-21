@@ -40,6 +40,10 @@ namespace EmberCrpg.Domain.Inventory
 
         public bool TryRemove(string templateId, int quantity, EquipmentState equipment = null)
         {
+            // Codex audit (second pass A-P2): non-positive quantities used to
+            // no-op but return true, lying to callers about a "successful"
+            // removal of 0 / negative units. Reject explicitly.
+            if (quantity <= 0) return false;
             var existing = _items.FirstOrDefault(candidate => candidate.TemplateId == templateId);
             if (existing == null || existing.Quantity < quantity)
                 return false;
@@ -55,6 +59,8 @@ namespace EmberCrpg.Domain.Inventory
 
         public bool TryRemoveStackable(string templateId, int quantity)
         {
+            // Codex audit (second pass A-P2): mirror the TryRemove guard.
+            if (quantity <= 0) return false;
             var existing = _items.FirstOrDefault(candidate => !candidate.IsEquipment && candidate.TemplateId == templateId);
             if (existing == null || existing.Quantity < quantity)
                 return false;

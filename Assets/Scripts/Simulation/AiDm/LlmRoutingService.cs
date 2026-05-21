@@ -13,11 +13,24 @@ namespace EmberCrpg.Simulation.AiDm
     {
         private readonly LlmDispatch _local;
         private readonly LlmDispatch _cloud;
+        private readonly LlmProviderKind _cloudKind;
 
         public LlmRoutingService(LlmDispatch local, LlmDispatch cloud)
+            : this(local, cloud, LlmProviderKind.CloudAnthropic)
+        {
+        }
+
+        /// <summary>
+        /// Codex audit (second pass A-P2): the original 2-arg constructor
+        /// hardcoded `CloudAnthropic` for every cloud dispatch, mis-labelling
+        /// every CloudOpenAI/CloudOther provider in telemetry. The 3-arg form
+        /// preserves the actual configured provider through `chosen`.
+        /// </summary>
+        public LlmRoutingService(LlmDispatch local, LlmDispatch cloud, LlmProviderKind cloudKind)
         {
             _local = local;
             _cloud = cloud;
+            _cloudKind = cloudKind.IsEmpty ? LlmProviderKind.CloudAnthropic : cloudKind;
         }
 
         public LlmResponse Complete(LlmRequest request, out LlmProviderKind chosen)
@@ -43,7 +56,7 @@ namespace EmberCrpg.Simulation.AiDm
                 var response = _cloud(request);
                 if (response != null)
                 {
-                    chosen = LlmProviderKind.CloudAnthropic;
+                    chosen = _cloudKind;
                     return response;
                 }
             }
