@@ -63,14 +63,23 @@ namespace EmberCrpg.Simulation.Magic
 
             int totalMagnitude = 0;
             int operationsApplied = 0;
+            // Codex audit (fifth pass A-P1): the previous loop incremented
+            // operationsApplied BEFORE ApplyOperationToContext ran, so a
+            // terrain-apply op that early-returned (missing required tag,
+            // missing terrain stockpile while present in context) still
+            // counted as "applied" — the result reported success for a
+            // no-op. Distinguish:
+            //   * context == null: pure cost-gating call; count handler
+            //     successes (the caller doesn't have a mutable world yet).
+            //   * context != null: count only when ApplyOperationToContext
+            //     returns true (confirmed mutation).
             foreach (var operation in definition.Operations)
             {
-                if (_handlers.TryHandle(operation, out var magnitude))
-                {
-                    totalMagnitude += magnitude;
-                    operationsApplied++;
-                    ApplyOperationToContext(operation, context);
-                }
+                if (!_handlers.TryHandle(operation, out var magnitude)) continue;
+                bool mutated = ApplyOperationToContext(operation, context);
+                if (context != null && !mutated) continue;
+                totalMagnitude += magnitude;
+                operationsApplied++;
             }
 
             if (!siteContext.IsEmpty)
@@ -86,35 +95,45 @@ namespace EmberCrpg.Simulation.Magic
             return SpellResolutionResult.Success(totalMagnitude, operationsApplied);
         }
 
-        private static void ApplyOperationToContext(EffectOperation operation, SpellResolverContext context)
+        /// <summary>
+        /// Codex audit (fifth pass A-P1): returns true only when the
+        /// context was actually mutated. Callers count an operation as
+        /// "applied" only when this returns true so the result's
+        /// OperationsApplied / TotalMagnitude reflect real world changes,
+        /// not the number of times the loop visited an operation row.
+        /// </summary>
+        private static bool ApplyOperationToContext(EffectOperation operation, SpellResolverContext context)
         {
             if (context == null)
-                return;
+                return false;
 
             if (operation.Kind.Equals(EffectOperationKind.DirectDamage) && context.TargetActor != null)
             {
                 context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Damage(operation.Magnitude)));
-                return;
+                return true;
             }
 
             if (operation.Kind.Equals(EffectOperationKind.DirectRestore) && context.TargetActor != null)
             {
                 context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Restore(operation.Magnitude)));
-                return;
+                return true;
             }
 
             if (operation.Kind.Equals(EffectOperationKind.TerrainApply) && context.TerrainStockpile != null)
             {
                 var requiredTag = string.IsNullOrWhiteSpace(operation.TargetRule) ? context.RequiredTerrainTag : operation.TargetRule;
                 if (!string.IsNullOrWhiteSpace(requiredTag) && !context.TerrainStockpile.Contains(requiredTag))
-                    return;
+                    return false;
 
                 if (!string.IsNullOrWhiteSpace(requiredTag))
                     context.TerrainStockpile.Remove(requiredTag, 1);
                 context.TerrainStockpile.Add(context.ResultTerrainTag, 1);
                 if (context.TargetActor != null)
                     context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Damage(operation.Magnitude)));
+                return true;
             }
+
+            return false;
         }
     }
 
