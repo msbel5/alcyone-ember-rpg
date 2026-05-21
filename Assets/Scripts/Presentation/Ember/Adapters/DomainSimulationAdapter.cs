@@ -439,7 +439,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // (rawDamage parameter).
             var attacker = _world.Actors.FirstByRole(ActorRole.Player) ?? target;
             var meleeAction = new CombatActionDef(
-                id: new CombatActionId(1UL),
+                id: new CombatActionId("melee_swing"),
                 staminaCost: 0,
                 hitFormulaKey: "accuracy_vs_dodge",
                 damageFormulaKey: "base_minus_armor",
