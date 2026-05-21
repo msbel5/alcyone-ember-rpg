@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using EmberCrpg.Domain.Core;
 
 // Design note:
@@ -41,6 +42,20 @@ namespace EmberCrpg.Domain.Inventory
             foreach (var pair in _equipped)
                 clone.Equip(pair.Key, pair.Value);
             return clone;
+        }
+
+        /// <summary>
+        /// Codex audit (A/P2): enumerate every equipped (slot, itemId) pair in
+        /// stable slot-code order. SliceSaveMapper used to hardcode "weapon
+        /// only", silently dropping future slots; the dictionary's natural
+        /// enumeration order is also non-deterministic. Sorting by Code gives
+        /// the save layer a stable canonical list.
+        /// </summary>
+        public IEnumerable<KeyValuePair<EquipmentSlot, ItemId>> EnumerateEquipped()
+        {
+            return _equipped
+                .Where(pair => !pair.Value.IsEmpty)
+                .OrderBy(pair => pair.Key.Code, System.StringComparer.Ordinal);
         }
     }
 }

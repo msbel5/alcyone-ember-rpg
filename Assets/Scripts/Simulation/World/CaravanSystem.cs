@@ -45,6 +45,23 @@ namespace EmberCrpg.Simulation.World
                     var origin = resolveStockpile(route.OriginSiteId);
                     var loaded = origin?.Remove(route.ItemTag, route.QuantityPerCaravan) ?? 0;
                     caravan.Load(loaded);
+
+                    // Codex audit (A/P2): the caravan used to proceed to
+                    // arrival even when loaded=0 (origin empty / item missing).
+                    // That produced a CaravanArrived event with delivered:0 —
+                    // looked successful, achieved nothing, swallowed the route
+                    // tick. Stall instead: emit a stuck event explaining why
+                    // and leave caravan in its current state for next tick.
+                    if (caravan.PayloadRemaining == 0)
+                    {
+                        events.Append(new WorldEvent(
+                            now,
+                            WorldEventKind.CaravanArrived,
+                            default,
+                            route.OriginSiteId,
+                            $"caravan_stuck id:{caravan.Id} route:{caravan.RouteId} item:{route.ItemTag} reason:origin_empty"));
+                        continue;
+                    }
                 }
 
                 // PR#161 bot review fix: previously the caravan was marked Arrived

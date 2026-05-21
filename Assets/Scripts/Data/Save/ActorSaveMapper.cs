@@ -55,11 +55,14 @@ namespace EmberCrpg.Data.Save
                 targetSiteId = schedule.IsIdle ? 0UL : schedule.TargetSiteId.Value,
                 targetWorksitePositionX = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.X,
                 targetWorksitePositionY = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.Y,
-                // Persist needs and mood as 0-100 ints
+                // Persist needs and mood as 0-100 ints. hasMood lets the load
+                // path tell "actor saved at Lowest (Value=0)" apart from
+                // "pre-Faz-4 save without a mood field" (Codex A/P3).
                 hunger = actor.Needs.Hunger.Value,
                 fatigue = actor.Needs.Fatigue.Value,
                 thirst = actor.Needs.Thirst.Value,
                 mood = actor.Mood.Value,
+                hasMood = true,
             };
         }
 
@@ -79,13 +82,16 @@ namespace EmberCrpg.Data.Save
             var position = new GridPosition(save.positionX, save.positionY);
 
             // Save format carries needs/mood if present; default to comfortable/null-neutral.
-            // PR#130 bot review fix: pre-Faz-4 saves have no mood field, so Unity reads
-            // save.mood as 0 and `new ActorMood(0)` returns the worst mood (the
-            // ActorMood storage uses 0 internally as the "unset / neutral" sentinel).
-            // Treat a literal 0 read from JSON as missing field and fall back to
-            // Neutral, which matches actor state pre-Faz-4 by definition.
+            // Codex audit (A/P3): the original "mood <= 0 → Neutral" heuristic
+            // erased legitimately Lowest (Value=0) actors on every reload. Use
+            // the new `hasMood` presence flag instead: when true, accept any
+            // 0..100 mood value verbatim; only fall back to Neutral when the
+            // save predates the flag (pre-Faz-4 saves where hasMood reads
+            // false by default-deserialization).
             var needs = new ActorNeeds(new NeedValue(save.hunger), new NeedValue(save.fatigue), new NeedValue(save.thirst));
-            var mood = save.mood <= 0 ? ActorMood.Neutral : new ActorMood(save.mood);
+            var mood = save.hasMood ? new ActorMood(save.mood)
+                      : save.mood > 0 ? new ActorMood(save.mood)
+                      : ActorMood.Neutral;
 
             var topicIds = save.topicIds ?? Array.Empty<string>();
             var asked = save.askedTopicIds ?? Array.Empty<string>();
