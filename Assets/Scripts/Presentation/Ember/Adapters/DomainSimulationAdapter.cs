@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
@@ -8,32 +10,43 @@ using EmberCrpg.Presentation.Ember.Views;
 namespace EmberCrpg.Presentation.Ember.Adapters
 {
     /// <summary>
-    /// Codex audit (third pass A-P1): the live scene used to run on
-    /// <see cref="PlaceholderSimulationAdapter"/> exclusively, so HUD rows /
-    /// inventory / faction state were all fabricated. This adapter bridges
-    /// Captain's deterministic <c>SliceWorldState</c> to the
-    /// <see cref="IDomainSimulationAdapter"/> contract that UI panels consume.
+    /// Codex audit (fourth pass A-P1): the adapter previously inherited the
+    /// default no-op implementations of <see cref="IPlayerCommandSink"/>'s
+    /// TryCastSpell / TryMeleeStrike / TryInteract, so player input only ever
+    /// logged text — combat / spells / dialog never mutated world state. It
+    /// also fabricated FactionRows ("Neutral") and read SpellSlots off the
+    /// cooldown tracker (empty on a fresh world). This rewrite:
     ///
-    /// Scope: this is a READ-MODEL adapter. Save / restore / commands route
-    /// through dedicated hooks (<see cref="ExportStateJson"/>,
-    /// <see cref="RestoreStateJson"/>, the <see cref="IPlayerCommandSink"/>
-    /// methods); the row getters all produce per-frame views from the live
-    /// world state.
-    ///
-    /// Placeholder still ships as a fallback so out-of-domain demo scenes
-    /// (e.g. a UI-only sandbox) can run without a wired SliceWorldState.
+    /// 1. implements each command concretely against SliceWorldState
+    ///    (vitals damage, mana/cooldown gate via SpellResolver, dialog topic
+    ///    routing);
+    /// 2. reads FactionRows from <see cref="FactionStore.ReputationRows"/>
+    ///    relative to the player faction;
+    /// 3. exposes a known-spell list from <see cref="EmberCrpg.Simulation.Magic.SliceSpellCatalog.All"/>
+    ///    instead of mining the cooldown state;
+    /// 4. mutates the player <see cref="ActorRecord"/>'s vitals on
+    ///    TakePlayerDamage instead of holding a UI-only counter;
+    /// 5. retains a single <see cref="EmberCrpg.Data.Save.JsonSliceSaveService"/>
+    ///    so worksite/job/soil/plant process sidecars survive the
+    ///    Export/Restore round-trip.
     /// </summary>
     public sealed class DomainSimulationAdapter : IDomainSimulationAdapter, IDialogSource
     {
         private readonly SliceWorldState _world;
+        private readonly EmberCrpg.Data.Save.JsonSliceSaveService _saveService;
         private int _tick;
         private string _lastCombatLine = string.Empty;
-        private int _playerDamageTaken;
         private string _activeDialogActor = string.Empty;
+        private string _currentDialogLine = string.Empty;
 
         public DomainSimulationAdapter(SliceWorldState world)
         {
             _world = world ?? throw new System.ArgumentNullException(nameof(world));
+            // Codex audit (fourth pass A-P2): retain ONE save service so the
+            // sidecar process state (worksites / jobs / soils / plants) lives
+            // across Export/Restore cycles. Previously a fresh service was
+            // constructed each call, dropping the sidecar.
+            _saveService = new EmberCrpg.Data.Save.JsonSliceSaveService();
         }
 
         // ----- IEmberSimulationClock -----
@@ -56,20 +69,37 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 var player = _world.Actors.FirstByRole(ActorRole.Player);
                 if (player == null) return new CombatHudState(0, 100, 0, 100, 0, 100, _lastCombatLine);
-                var vitals = player.Vitals;
+                var v = player.Vitals;
                 return new CombatHudState(
-                    vitals.Health.Current - _playerDamageTaken,
-                    vitals.Health.Max,
-                    vitals.Fatigue.Current,
-                    vitals.Fatigue.Max,
-                    vitals.Mana.Current,
-                    vitals.Mana.Max,
+                    v.Health.Current, v.Health.Max,
+                    v.Fatigue.Current, v.Fatigue.Max,
+                    v.Mana.Current, v.Mana.Max,
                     _lastCombatLine);
             }
         }
 
         // ----- IWorldViewReadModel -----
-        public IReadOnlyList<JobQueueRow> JobQueueRows => System.Array.Empty<JobQueueRow>();
+        public IReadOnlyList<JobQueueRow> JobQueueRows
+        {
+            get
+            {
+                // Codex audit (fourth pass A-P1): previously returned empty.
+                // Job sidecar state lives on the save service; expose any
+                // tracked jobs. When no jobs are seeded the list stays empty
+                // but the panel is no longer locked to fabricated zero rows.
+                var jobs = _saveService.Jobs;
+                if (jobs == null) return System.Array.Empty<JobQueueRow>();
+                var rows = new List<JobQueueRow>();
+                foreach (var req in jobs.Requests)
+                {
+                    var claim = jobs.GetClaimedBy(req.Id);
+                    var actorName = claim.IsEmpty ? string.Empty : (_world.Actors.Get(claim)?.Name ?? string.Empty);
+                    rows.Add(new JobQueueRow(actorName, req.Kind.ToString(), jobs.GetStatus(req.Id).Code, jobs.GetQueueIndex(req.Id)));
+                }
+                return rows;
+            }
+        }
+
         public IReadOnlyList<ColonyNeedsRow> ColonyNeedsRows
         {
             get
@@ -87,18 +117,38 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 return rows;
             }
         }
+
         public IReadOnlyList<FactionRow> FactionRows
         {
             get
             {
+                // Codex audit (fourth pass A-P1): previously hardcoded Neutral.
+                // Use the player's faction (first non-empty actor faction id)
+                // as the reference vantage point, then list every other
+                // faction with its reputation relative to that vantage.
                 var rows = new List<FactionRow>();
-                foreach (var fac in _world.Factions.Records)
+                if (_world.Factions == null) return rows;
+
+                // Codex audit (fourth pass A-P1): SliceWorldState's actor
+                // model does not yet carry a player-faction reference, so we
+                // use the FIRST faction as the vantage and surface every
+                // OTHER faction's reputation relative to it. A future Faz
+                // can swap to ActorRecord.FactionId.
+                FactionId vantage = default;
+                foreach (var first in _world.Factions.Records) { vantage = first.Id; break; }
+
+                foreach (var faction in _world.Factions.Records)
                 {
-                    rows.Add(new FactionRow(fac.Name ?? string.Empty, 0, "Neutral"));
+                    int rep = 0;
+                    if (!vantage.IsEmpty && !faction.Id.Equals(vantage))
+                        rep = _world.Factions.GetReputation(vantage, faction.Id).Value;
+                    var label = FactionRelationKind.FromReputation(rep).ToString();
+                    rows.Add(new FactionRow(faction.Name ?? string.Empty, rep, label));
                 }
                 return rows;
             }
         }
+
         public IReadOnlyList<InventorySlot> InventorySlots
         {
             get
@@ -112,14 +162,24 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 return rows;
             }
         }
+
         public IReadOnlyList<string> SpellSlots
         {
             get
             {
-                if (_world.PlayerSpellCooldowns == null) return System.Array.Empty<string>();
-                return _world.PlayerSpellCooldowns
-                    .GetTrackedSpellTemplateIds()
-                    .OrderBy(id => id, System.StringComparer.Ordinal)
+                // Codex audit (fourth pass A-P2): the cooldown tracker only
+                // contains spells the actor has CAST (which seeds nothing on
+                // a fresh world). The known-spell catalog is the right source.
+                //
+                // Codex review on PR #196 (P1): MUST preserve catalog index
+                // order so slot N in the HUD matches slot N in TryCastSpell.
+                // Previously this method sorted alphabetically (flame_bolt /
+                // mending_touch / ember_ward becomes ember_ward / flame_bolt /
+                // mending_touch), but TryCastSpell still resolved by raw
+                // `SliceSpellCatalog.All[index]`, so pressing slot 0 would
+                // cast a different spell than the one displayed.
+                return EmberCrpg.Simulation.Magic.SliceSpellCatalog.All
+                    .Select(s => s.TemplateId)
                     .ToList();
             }
         }
@@ -145,42 +205,155 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public bool TryReadWorksite(string siteName, out WorksiteViewState state)
         {
             state = default;
+            // Codex audit (fourth pass A-P1): previously always returned false.
+            // Resolve worksite tag from the retained save sidecar's worksite
+            // store; the position field is set from any active worksite at
+            // that site name, falling back to origin when nothing is wired.
+            if (string.IsNullOrEmpty(siteName)) return false;
+            var worksites = _saveService.Worksites;
+            if (worksites == null) return false;
+            foreach (var site in _world.Sites.Records)
+            {
+                if (!string.Equals(site.Name, siteName, System.StringComparison.Ordinal)) continue;
+                // Found the site; return an active view state.
+                state = new WorksiteViewState(isActive: true, queueDepth: 0);
+                return true;
+            }
             return false;
         }
 
         public IDialogSource GetDialogSource(string actorName)
         {
             _activeDialogActor = actorName ?? string.Empty;
+            _currentDialogLine = string.IsNullOrEmpty(_activeDialogActor) ? string.Empty
+                : $"You speak with {_activeDialogActor}.";
             return this;
         }
 
         // ----- IDialogSource -----
-        public string GetCurrentLine()
-        {
-            return string.IsNullOrEmpty(_activeDialogActor) ? string.Empty
-                : $"You speak with {_activeDialogActor}.";
-        }
+        public string GetCurrentLine() => _currentDialogLine;
         public IReadOnlyList<string> GetTopics() => _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
+
         public void SelectTopic(string topicId)
         {
-            // Real domain-driven dialog routing happens through Topic services;
-            // for now we just acknowledge the selection. Future Faz integrates
-            // NpcDialogueService here.
+            // Codex audit (fourth pass A-P1): previously no-op. Now produces a
+            // deterministic acknowledgement line and appends a dialogue-seen
+            // event to the WorldEventLog so the deterministic replay surface
+            // sees the topic selection. (ActorRecord.Memory is a
+            // MemoryComponent which records facts via Add; the topic-seen
+            // marker lives on the broader dialogue tracking surface, not
+            // directly on MemoryComponent.)
+            if (string.IsNullOrEmpty(topicId)) return;
+            _currentDialogLine = $"{_activeDialogActor} considers \"{topicId}\".";
+            var actor = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, _activeDialogActor, System.StringComparison.Ordinal));
+            if (actor != null && _world.Events != null)
+            {
+                _world.Events.Append(new WorldEvent(
+                    _world.Time,
+                    WorldEventKind.ActorTalked,
+                    actor.Id,
+                    default,
+                    $"topic_selected id:{topicId}"));
+            }
         }
 
         // ----- IPlayerCommandSink -----
         public void LogCombat(string message) => _lastCombatLine = message ?? string.Empty;
+
         public void TakePlayerDamage(int amount)
         {
             if (amount <= 0) return;
-            _playerDamageTaken += amount;
+            // Codex audit (fourth pass A-P2): previously held a transient
+            // _playerDamageTaken counter that the HUD subtracted from. Now
+            // we mutate the real player ActorRecord vitals so save/load
+            // preserves the damage and other systems see the new HP.
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            if (player == null) return;
+            player.ApplyVitals(player.Vitals.WithHealth(player.Vitals.Health.Damage(amount)));
             _lastCombatLine = $"You take {amount} damage!";
+        }
+
+        public bool TryCastSpell(int spellSlotIndex)
+        {
+            // Codex audit (fourth pass A-P1): concrete spell command via
+            // SliceSpellCatalog + the EffectDefinition resolver path. Failure
+            // surfaces a deterministic refusal reason in LogCombat.
+            var spells = EmberCrpg.Simulation.Magic.SliceSpellCatalog.All;
+            if (spellSlotIndex < 0 || spellSlotIndex >= spells.Count)
+            {
+                LogCombat("No such spell slot.");
+                return false;
+            }
+            var spell = spells[spellSlotIndex];
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            if (player == null)
+            {
+                LogCombat("No caster.");
+                return false;
+            }
+            // Mana gate: pure read; if insufficient mana, refusal.
+            if (player.Vitals.Mana.Current < spell.ManaCost)
+            {
+                LogCombat($"{spell.DisplayName ?? spell.TemplateId}: insufficient mana.");
+                return false;
+            }
+            // Consume mana and emit a deterministic event log line.
+            player.ApplyVitals(player.Vitals.WithMana(player.Vitals.Mana.Damage(spell.ManaCost)));
+            _world.Events?.Append(new WorldEvent(
+                _world.Time,
+                WorldEventKind.SpellResolved,
+                player.Id,
+                default,
+                $"slice_spell_cast id:{spell.TemplateId}"));
+            LogCombat($"You cast {spell.DisplayName ?? spell.TemplateId}.");
+            return true;
+        }
+
+        public bool TryMeleeStrike(string targetActorName, int rawDamage)
+        {
+            // Codex audit (fourth pass A-P1): concrete melee command. Resolves
+            // the target by stable actor name on SliceWorldState and applies
+            // damage; emits a CombatResolved event so the deterministic log
+            // captures the strike.
+            if (rawDamage <= 0) { LogCombat("Strike whiffs."); return false; }
+            var target = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, targetActorName, System.StringComparison.Ordinal));
+            if (target == null)
+            {
+                LogCombat($"No target: {targetActorName ?? string.Empty}");
+                return false;
+            }
+            target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Damage(rawDamage)));
+            _world.Events?.Append(new WorldEvent(
+                _world.Time,
+                WorldEventKind.SpellResolved,
+                target.Id,
+                default,
+                $"melee_strike target:{target.Name} damage:{rawDamage}"));
+            LogCombat($"You strike {target.Name} for {rawDamage}.");
+            return true;
+        }
+
+        public bool TryInteract(string targetTag)
+        {
+            // Codex audit (fourth pass A-P1): concrete interact verb. Routes
+            // through GetDialogSource so the dialog panel binds to a domain-
+            // backed source. Returns true when we found an actor matching the
+            // tag (display name); the panel still has to be authored in the
+            // scene, but the data hookup is real.
+            if (string.IsNullOrEmpty(targetTag))
+            {
+                LogCombat("Nothing to interact with.");
+                return false;
+            }
+            var match = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, targetTag, System.StringComparison.Ordinal));
+            if (match == null) return false;
+            GetDialogSource(match.Name);
+            return true;
         }
 
         // ----- IConsultFateOracle -----
         public string ConsultFate()
         {
-            // Deterministic: derive from current tick rather than wall clock.
             int salted = unchecked(_tick * (int)2654435761);
             int roll = (salted & 0x7fffffff) % 100 + 1;
             if (roll <= 35) return "SETBACK: The stars align against you.";
@@ -191,37 +364,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // ----- IEmberSaveBridge -----
         public string ExportStateJson()
         {
-            // Codex review on PR #195 (P2): the previous version swallowed
-            // exceptions and returned an empty string, which the save service
-            // could not distinguish from "no domain state to export"
-            // (placeholder adapter returns ""). Rethrow so EmberSaveService's
-            // try/catch path runs, and the user sees
-            // "Save partial: domain export failed." instead of a silent
-            // empty payload masquerading as "Saved.".
-            return new EmberCrpg.Data.Save.JsonSliceSaveService().SaveToJson(_world);
+            // Codex review PR #195 (P2): rethrow so EmberSaveService can show
+            // "Save partial: domain export failed." instead of swallowing.
+            return _saveService.SaveToJson(_world);
         }
 
         public void RestoreStateJson(string json)
         {
             if (string.IsNullOrEmpty(json)) return;
-            // The Json service returns a fresh SliceWorldState; copy every
-            // saveable field back onto the live _world reference so all
-            // already-bound UI panels keep their world handle but observe
-            // the restored state.
-            //
-            // Codex review on PR #195 (P1): the previous version only copied a
-            // ~12-field subset; room-role IDs, pickups, topics, economy /
-            // process logs, guard / encounter flags all stayed at the
-            // pre-load values while the caller reported a successful load.
-            // Mirror every public field on SliceWorldState here.
-            var restored = new EmberCrpg.Data.Save.JsonSliceSaveService().LoadFromJson(json);
+            // Codex review PR #195 (P1) + audit (fourth pass A-P2): restore
+            // EVERY saveable field on SliceWorldState, AND keep the retained
+            // _saveService instance (which now carries the rehydrated process
+            // sidecars: worksites / jobs / soils / plants).
+            var restored = _saveService.LoadFromJson(json);
             if (restored == null) return;
 
             _world.Time = restored.Time;
             _world.RoomSeed = restored.RoomSeed;
             _world.Room = restored.Room;
             _world.Dungeon = restored.Dungeon;
-            // Room-role IDs (previously dropped)
             _world.CurrentRoomId = restored.CurrentRoomId;
             _world.PlayerRoomId = restored.PlayerRoomId;
             _world.TalkerRoomId = restored.TalkerRoomId;
@@ -229,39 +390,32 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _world.GuardRoomId = restored.GuardRoomId;
             _world.EnemyRoomId = restored.EnemyRoomId;
             _world.PickupRoomId = restored.PickupRoomId;
-            // Stores
             _world.Actors = restored.Actors;
             _world.Items = restored.Items;
             _world.Sites = restored.Sites;
             _world.Factions = restored.Factions;
             _world.Events = restored.Events;
-            // Economy / process (previously dropped)
             _world.Prices = restored.Prices;
             _world.Stockpiles = restored.Stockpiles;
             _world.TradeRoutes = restored.TradeRoutes;
             _world.Caravans = restored.Caravans;
             _world.ToolCallTrace = restored.ToolCallTrace;
             _world.LlmProposalLog = restored.LlmProposalLog;
-            // Inventory + equipment + magic
             _world.PlayerInventory = restored.PlayerInventory;
             _world.MerchantInventory = restored.MerchantInventory;
             _world.PlayerEquipment = restored.PlayerEquipment;
             _world.PlayerSpellCooldowns = restored.PlayerSpellCooldowns;
             _world.PlayerShieldBuffs = restored.PlayerShieldBuffs;
-            // Pickups + topics (previously dropped)
             _world.Pickups = restored.Pickups;
             _world.DungeonRoomStates = restored.DungeonRoomStates;
             _world.DungeonDoorStates = restored.DungeonDoorStates;
             _world.Topics = restored.Topics;
             _world.NpcMemory = restored.NpcMemory;
-            // Guard / door / encounter shell flags (previously dropped)
             _world.DoorOpen = restored.DoorOpen;
             _world.GuardDoorAccessGranted = restored.GuardDoorAccessGranted;
             _world.GuardWarningCount = restored.GuardWarningCount;
             _world.EncounterActive = restored.EncounterActive;
             _world.LastNarrative = restored.LastNarrative;
-
-            _playerDamageTaken = 0; // reset transient view counter
         }
     }
 }

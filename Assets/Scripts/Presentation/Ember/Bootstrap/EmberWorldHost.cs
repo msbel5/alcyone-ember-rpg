@@ -211,10 +211,17 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         private void PushWorldViews()
         {
+            // Codex audit (fourth pass A-P1): the previous lookup used
+            // actor.name (the GameObject name like "Smith_A") to resolve a
+            // domain ActorRecord, which silently failed because
+            // SliceWorldFactory creates actors named "Warden", "Sage Nera",
+            // etc. ActorView now exposes a DomainActorKey that scenes can
+            // author per-view (falling back to the GameObject name for
+            // legacy scenes).
             for (int i = 0; i < _actorViews.Length; i++)
             {
                 var actor = _actorViews[i];
-                if (_adapter.TryReadActor(actor.name, out var state))
+                if (_adapter.TryReadActor(actor.DomainActorKey, out var state))
                     actor.SetTarget(state);
             }
 
