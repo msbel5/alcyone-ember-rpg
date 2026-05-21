@@ -4,7 +4,7 @@ using System;
 // JobStatus is a stable-string lifecycle value object for jobs on the JobBoard.
 // Lifecycle codes are stable across save/load, tests, and visual snapshots so
 // new lifecycle states (or refined block reasons) ship as data, not enum branches.
-// Closes CO-05 in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+// Closes CO-05 in docs/sprint-faz-4-atom-map.md Debt ledger.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

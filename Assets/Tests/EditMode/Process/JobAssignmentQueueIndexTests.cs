@@ -7,7 +7,7 @@ namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>
     /// Pins deterministic queue ordering for multiple actors targeting the same worksite.
-    /// Closes CO-04 row in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-04 row in docs/sprint-faz-4-atom-map.md Debt ledger.
     /// </summary>
     public sealed class JobAssignmentQueueIndexTests
     {

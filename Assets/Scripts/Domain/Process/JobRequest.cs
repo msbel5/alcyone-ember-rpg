@@ -8,7 +8,7 @@ using EmberCrpg.Domain.Core;
 // priority, and quantity without assigning actors, mutating inventory, ticking
 // recipes, serializing state, or emitting EventLog lines. JobBoard owns the
 // deterministic pending/claimed lifecycle in the sibling atom.
-// Atom-map ref: DOCS/sprint-faz-3-atom-map.md Job board state.
+// Atom-map ref: docs/sprint-faz-3-atom-map.md Job board state.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

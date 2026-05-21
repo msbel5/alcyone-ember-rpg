@@ -8,7 +8,7 @@ using EmberCrpg.Domain.Core;
 // share one contract: dictionary-backed registry keyed by a value-typed Id,
 // deterministic insertion-order enumeration, default-id rejection, no Unity,
 // no I/O. Roadmap reference: docs/ROADMAP.md Faz 1 (Core Store reset);
-// atom-map row: DOCS/sprint-faz-1-atom-map.md SiteStore sub-area.
+// atom-map row: docs/sprint-faz-1-atom-map.md SiteStore sub-area.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>

@@ -5,7 +5,7 @@ using EmberCrpg.Domain.Process;
 // RecipeFixtureCatalog is the Faz 3 competition-proof fixture rail. It keeps
 // the canonical PROCESS/MATTER recipe shapes in one place so job-assignment
 // tests can compare smelting and baking without copying recipe rows.
-// Atom-map ref: DOCS/sprint-faz-3-atom-map.md competition-proof bundle.
+// Atom-map ref: docs/sprint-faz-3-atom-map.md competition-proof bundle.
 namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>Canonical recipe fixtures consumed by Faz 3 job assignment tests.</summary>

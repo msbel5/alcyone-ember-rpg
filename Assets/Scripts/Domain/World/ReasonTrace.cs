@@ -12,7 +12,7 @@ using System.Collections.ObjectModel;
 // Faz 1 PRs; no Unity, no I/O, no serialization concerns. Mirrors the
 // FactionRecord / SiteRecord defensive-constructor pattern so invariants are
 // pinned at construction.
-// Atom-map ref: DOCS/sprint-faz-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
+// Atom-map ref: docs/sprint-faz-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure record describing a causal chain as an ordered sequence of cause labels.</summary>

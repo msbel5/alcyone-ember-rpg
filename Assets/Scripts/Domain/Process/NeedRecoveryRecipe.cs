@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Actors;
 // concrete eat/sleep actions. It names one need pressure to reduce and carries
 // the optional inventory item consumed by the action. Runtime mutation and
 // EventLog output belong to NeedRecoverySystem.
-// Atom-map ref: DOCS/sprint-faz-4-atom-map.md Eat / sleep recovery rail.
+// Atom-map ref: docs/sprint-faz-4-atom-map.md Eat / sleep recovery rail.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>Pure definition for one deterministic need-recovery action.</summary>

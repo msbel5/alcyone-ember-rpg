@@ -8,7 +8,7 @@ using System.Linq;
 // into a deterministic recipe definition. It still does not mutate inventory,
 // tick work, allocate item ids, or emit EventLog lines; RecipeSystem owns that
 // runtime behavior in the next visible slice.
-// Atom-map ref: DOCS/sprint-faz-2-atom-map.md Recipe definitions sub-area.
+// Atom-map ref: docs/sprint-faz-2-atom-map.md Recipe definitions sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

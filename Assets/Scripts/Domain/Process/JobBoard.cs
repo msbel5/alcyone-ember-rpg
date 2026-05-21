@@ -8,7 +8,7 @@ using EmberCrpg.Domain.Core;
 // It only stores, orders, claims, and removes jobs. Actor preference matching,
 // RecipeSystem starts, save/load mapping, and EventLog output remain later atom
 // rows so this bundle stays pure and easily testable.
-// Atom-map ref: DOCS/sprint-faz-3-atom-map.md Job board state.
+// Atom-map ref: docs/sprint-faz-3-atom-map.md Job board state.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>
@@ -115,7 +115,7 @@ namespace EmberCrpg.Domain.Process
         /// jobs sharing the same worksite (SiteId + WorksitePosition). Ordering follows
         /// claim sequence: the first actor to claim at that worksite gets index 0.
         /// Returns -1 for empty ids, unknown ids, or unclaimed jobs.
-        /// Closes CO-04 in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+        /// Closes CO-04 in docs/sprint-faz-4-atom-map.md Debt ledger.
         /// </summary>
         public int GetQueueIndex(JobId id)
         {
@@ -150,7 +150,7 @@ namespace EmberCrpg.Domain.Process
         /// Pending when present but unclaimed, Assigned when an actor holds the claim.
         /// Terminal states (Completed/Canceled) are removed from the board, so an
         /// unknown id resolves to Pending as the safe non-terminal default for callers.
-        /// Closes CO-05 in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+        /// Closes CO-05 in docs/sprint-faz-4-atom-map.md Debt ledger.
         /// </summary>
         public JobStatus GetStatus(JobId id)
         {

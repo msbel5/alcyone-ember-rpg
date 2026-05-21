@@ -109,7 +109,7 @@ namespace EmberCrpg.Domain.World
         // Player/Talker/Merchant/Guard/Enemy fields onto ActorStore. Concrete
         // consumer arrives in the next Faz 1 PR (SliceWorldState reads these
         // shims and then marks its named fields [Obsolete]). Per
-        // DOCS/agent-rules-v2.md rule 4 (world-store promotion), no new
+        // docs/agent-rules-v2.md rule 4 (world-store promotion), no new
         // hard-coded slice fields may be added; these lookups are the
         // replacement path.
 

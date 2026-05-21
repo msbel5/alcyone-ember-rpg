@@ -11,7 +11,7 @@ namespace EmberCrpg.Tests.EditMode.Process
     /// <summary>
     /// Pins deterministic one-cell-per-tick advancement of claimed actors toward
     /// their assigned worksite, plus the ActorStepped event emission.
-    /// Closes CO-03 row in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-03 row in docs/sprint-faz-4-atom-map.md Debt ledger.
     /// </summary>
     public sealed class PathfindingSystemTests
     {

@@ -11,7 +11,7 @@ using EmberCrpg.Domain.Core;
 // Outputs: immutable record consumed by WorldEventLog; no Unity, no I/O,
 // no serialization concerns. Mirrors SiteRecord / FactionRecord
 // defensive-constructor pattern so invariants are pinned at construction.
-// Atom-map ref: DOCS/sprint-faz-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
+// Atom-map ref: docs/sprint-faz-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure record describing a Faz 1 world event by tick, kind, optional actor, optional site, reason, and optional causal trace.</summary>

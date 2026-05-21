@@ -9,7 +9,7 @@ using EmberCrpg.Domain.Core;
 // no I/O, no serialization concerns. Mirrors SiteRecord's defensive constructor
 // pattern so invariants are pinned at construction; EquipmentSlot.None remains
 // the legal "non-equipment" value, just like InventoryItem.
-// Atom-map ref: DOCS/sprint-faz-1-atom-map.md ItemStore sub-area.
+// Atom-map ref: docs/sprint-faz-1-atom-map.md ItemStore sub-area.
 namespace EmberCrpg.Domain.Inventory
 {
     /// <summary>Pure record describing an item registry entry by id, material, quality, and slot.</summary>

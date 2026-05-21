@@ -12,7 +12,7 @@ using EmberCrpg.Domain.World;
 // active RecipeWorkOrder for a claimed job. TickAssignedJobs advances active
 // recipe work, emits job-specific EventLog rows, closes completed JobBoard
 // entries, and idles the claimed actor. Persistence remains a later atom in
-// DOCS/sprint-faz-3-atom-map.md.
+// docs/sprint-faz-3-atom-map.md.
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>
