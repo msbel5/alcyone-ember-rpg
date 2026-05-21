@@ -4,7 +4,6 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
-using EmberCrpg.Presentation.VisualLayer;
 
 namespace EmberCrpg.Presentation.Ember.Adapters
 {
