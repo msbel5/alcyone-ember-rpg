@@ -16,9 +16,73 @@ The project's goal is a **deterministic living-world CRPG**:
 
 The game will be open source and free.
 
-## Status (2026-05-09)
+## Status (2026-05-21) — playable vertical slice, ugly
 
-We are entering **Faz 0** — audit and realignment. Sprints 1 to 5 produced
+The backend is **complete through Faz 12**. The Unity Editor can now
+press-Play through 10 wired Faz scenes plus a MainMenu, save/load via
+PlayerPrefs, walk/strike/cast on a deterministic simulation. **Visually
+it is rough** — placeholder sprites, programmatic flat-color HUD,
+several scenes have unreachable exit points, Faz 12 is visually
+overcrowded. The game is shippable as a prototype but is not yet a
+showcase build.
+
+### What works (verified press-Play)
+- MainMenu → New Game / Continue / Quit (cursor + EventSystem self-heal
+  at Awake)
+- Faz 3 (Smithing Overworld) → Faz 4 (Colony Needs) → Faz 5 (Season
+  Farm) → Faz 6 (Trade Market) → Faz 7 (Combat Dungeon) → Faz 8 (Ritual
+  Hall) → Faz 9 (Tavern Dialog) → Faz 10 (Oracle Shrine) → Faz 11
+  (Showroom Overview) → Faz 12 (Tavern Flavour LLM)
+- WASD movement, mouse-look, E interact, mouse-click melee, Alpha 1-5
+  spell cast, Tab inventory, Esc menu
+- Deterministic save/load round-trip (PlayerPrefs `ember.save.v1`)
+- 1320 EditMode tests green under
+  `tools/validation/fallback/ValidationFallbackHarness.csproj` (Faz 1-12
+  Domain + Simulation + Data coverage)
+
+### Known visual / authoring issues (Mami playtest 2026-05-21)
+- Visuals are **placeholder quality**: programmatic flat-color HUD by
+  design (CombatHud builds Image rectangles, no parchment frames yet)
+- **Faz 12 Tavern Flavour** scene is overcrowded: too many GameObjects,
+  hard to navigate
+- **Some Faz scenes lack reachable exit points** to next scene —
+  portal collider needs repositioning per-scene
+- Player rig collision: capsule height is tight on Y=0.08, occasional
+  floor clipping at Awake
+- Some portal Labels still show pink shader-error on old scenes — the
+  builder is fixed, but old scenes need rebuild via Ember → Scenes
+  menu OR manual font assignment
+- No character creation flow: New Game drops the player straight into
+  Faz 3 with hardcoded SliceWorldFactory defaults — class / birthsign /
+  name input is a deliberate post-Faz-13 sprint
+
+### What does NOT exist yet
+- Character creation (class, birthsign, name, custom skill picker)
+- Tutorial / wake-up intro
+- Visual polish (real sprites instead of programmatic rectangles, UI
+  parchment frames, post-processing)
+- Audio (BGM, SFX) — `EmberAmbientAudio` component is wired but no
+  clips assigned
+- Animation: actors are static billboards
+- AI/DM real-runtime: `NarrationServices.cs` is test-wired only, not
+  the live tick chain
+
+### Next-up backlog
+1. **Polish branch**: per-scene exit-point fix, Faz 12 declutter, HUD
+   sprite frames (the audit calls them P2)
+2. **Faz 13 — Character Creation sprint**: wake-up scene, name input,
+   class picker, birthsign picker, custom skill priorities
+3. **Faz 14 — InputSystem migration**: replace legacy `UnityEngine.Input`
+   with `com.unity.inputsystem` (decision recorded in
+   `docs/input-handling-decision.md`)
+4. **Faz 15 — Visual pass**: real sprites, parchment HUD frames,
+   ambient audio clips, post-process
+
+---
+
+## Historical status (2026-05-09)
+
+We were entering **Faz 0** — audit and realignment. Sprints 1 to 5 produced
 real code (Domain + Simulation + Tests folders, magic effect resolution,
 some combat scaffolding) but the cron loop drifted into a tight magic-test
 matrix (PRs #62-#71) without producing player-visible capability.
