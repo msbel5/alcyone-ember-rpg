@@ -91,7 +91,7 @@ namespace EmberCrpg.Presentation.Ember.Camera
         }
 
         private void ToggleCursor()
-{
+        {
             _captureCursor = !_captureCursor;
             Cursor.lockState = _captureCursor ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !_captureCursor;

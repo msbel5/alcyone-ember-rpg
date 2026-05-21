@@ -75,7 +75,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                         d.gameObject.SetActive(true);
                     }
                 }
-}
+            }
 
             if (_fateTimer > 0)
             {
