@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 // Design note:
 // SliceRuntimeBootstrap auto-creates the slice presentation entry point in an empty scene.
@@ -14,9 +13,6 @@ namespace EmberCrpg.Presentation.Slice
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateController()
         {
-            var activeScene = SceneManager.GetActiveScene();
-            var sceneName = activeScene.name ?? string.Empty;
-
             // Codex audit (second pass E-P2): when an Ember scene is loaded
             // after the slice scene (DontDestroyOnLoad slice controller
             // survives), the previous guard short-circuited new creation but
@@ -35,9 +31,6 @@ namespace EmberCrpg.Presentation.Slice
                     Object.Destroy(existingController.gameObject);
                 return;
             }
-
-            // Fallback for the original Sprint 4 combat foundation scenes.
-            if (sceneName.Contains("Sprint4")) return;
 
             // Codex audit (seventh pass E-P2 #16): the marker is now the
             // ONLY opt-in. The previous Slice/Sprint1/Sprint2 name fallback

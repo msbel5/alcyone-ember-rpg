@@ -27,7 +27,7 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
         [Test]
         public void Faz6_CaravanTradePriceReputationShortage_AndSaveRoundTrip()
         {
-            var world = NewWorld();
+            var world = NewWorld(seedWorldAnchors: false);
             var origin = new StockpileComponent(new SiteId(20));
             var destination = new StockpileComponent(new SiteId(21));
             origin.Add("iron", 8);
@@ -279,9 +279,9 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             Assert.That(world.Events.Events.Count(e => e.Reason == "approved_tool_call"), Is.EqualTo(1));
         }
 
-        private static SliceWorldState NewWorld()
+        private static SliceWorldState NewWorld(bool seedWorldAnchors = true)
         {
-            return new SliceWorldFactory().Create(1337);
+            return new SliceWorldFactory().Create(1337, seedWorldAnchors);
         }
 
         private static SliceWorldState RoundTrip(SliceWorldState world)

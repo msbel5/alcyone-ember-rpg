@@ -30,10 +30,10 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 spawnPosition: new Vector3(0f, 0f, -7f),
                 spawnRotation: Quaternion.identity);
 
-            EmberWorldspaceBuilder.SpawnActor("Smith_A",   "blacksmith", new Vector3(-3f, 0f, 1f));
-            EmberWorldspaceBuilder.SpawnActor("Smith_B",   "blacksmith", new Vector3(-1f, 0f, 1f));
-            EmberWorldspaceBuilder.SpawnActor("Innkeeper", "innkeeper",  new Vector3( 1f, 0f, 1f));
-            EmberWorldspaceBuilder.SpawnActor("Mage",      "mage",       new Vector3( 3f, 0f, 1f));
+            EmberWorldspaceBuilder.SpawnActor("Smith_A",   "blacksmith", new Vector3(-3f, 0f, 1f), domainActorKey: "Warden");
+            EmberWorldspaceBuilder.SpawnActor("Smith_B",   "blacksmith", new Vector3(-1f, 0f, 1f), domainActorKey: "Quartermaster Ivo");
+            EmberWorldspaceBuilder.SpawnActor("Innkeeper", "innkeeper",  new Vector3( 1f, 0f, 1f), domainActorKey: "Sage Nera");
+            EmberWorldspaceBuilder.SpawnActor("Mage",      "mage",       new Vector3( 3f, 0f, 1f), domainActorKey: "Sentinel Rook");
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Forge", new Vector3(-2f, 0.75f, 3.5f));
 
             var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");

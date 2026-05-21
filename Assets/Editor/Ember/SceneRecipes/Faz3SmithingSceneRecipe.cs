@@ -35,8 +35,8 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 fov: 70f);
 
             var smiths = new GameObject("Smiths").transform;
-            EmberWorldspaceBuilder.SpawnActor("Smith_A", "blacksmith", new Vector3(-1.2f, 0f, 0f), smiths);
-            EmberWorldspaceBuilder.SpawnActor("Smith_B", "blacksmith", new Vector3( 1.2f, 0f, 0f), smiths);
+            EmberWorldspaceBuilder.SpawnActor("Smith_A", "blacksmith", new Vector3(-1.2f, 0f, 0f), smiths, "Warden");
+            EmberWorldspaceBuilder.SpawnActor("Smith_B", "blacksmith", new Vector3( 1.2f, 0f, 0f), smiths, "Quartermaster Ivo");
 
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Furnace", new Vector3(0f, 0.75f, 3f));
 

@@ -122,7 +122,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
                 local: req => new LlmResponse("ok", null, 1),
                 cloud: null);
             var svc = new DmNarrationService(routing);
-            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1);
+            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
             var beforeCount = world.LlmProposalLog.Count;
             var req = new LlmRequest("dm.narrate", "c1", new List<ToolDescriptor>(), 64, 0UL);
             var resp = svc.Narrate(req, new GameTime(0), world);
@@ -134,7 +134,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void StorytellerCheckpointSystem_RecordCheckpoint_AppendsEventWhenSitePresent()
         {
-            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1);
+            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
             // Seed a site so the checkpoint has a valid anchor.
             world.Sites.Add(new SiteRecord(new SiteId(1UL), SiteKind.Settlement, "outpost", new GridPosition(0, 0), new GridPosition(1, 1)));
             var before = world.Events.Count;
@@ -145,8 +145,8 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void StorytellerCheckpointSystem_RecordCheckpoint_NoSites_SilentNoop()
         {
-            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1);
-            // Default factory leaves sites empty; RecordCheckpoint must skip.
+            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
+            // Explicit no-anchor factory leaves sites empty; RecordCheckpoint must skip.
             Assert.That(world.Sites.Count, Is.EqualTo(0));
             var before = world.Events.Count;
             new StorytellerCheckpointSystem().RecordCheckpoint(world, new GameTime(0), "act-x");

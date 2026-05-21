@@ -87,7 +87,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void FactoryPopulatesStoreBackedNamedViewsAndKeepsOtherStoreRootsReady()
         {
-            var world = new SliceWorldFactory().Create(17);
+            var world = new SliceWorldFactory().Create(17, seedWorldAnchors: false);
 
             Assert.That(world.Actors.Count, Is.EqualTo(5));
             Assert.That(world.Items, Is.Not.Null);

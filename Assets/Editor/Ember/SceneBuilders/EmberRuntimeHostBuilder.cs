@@ -13,15 +13,18 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
     {
         public static GameObject EnsureHost()
         {
-            var existing = GameObject.Find("EmberWorldHost");
-            if (existing != null)
+            var hostType = ResolveRuntimeType("EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost");
+            var existingComponent = hostType != null
+                ? Object.FindFirstObjectByType(hostType, FindObjectsInactive.Include)
+                : null;
+            if (existingComponent is Component existingHost)
             {
-                AssignSpriteRegistry(existing);
-                return existing;
+                AssignSpriteRegistry(existingHost.gameObject);
+                return existingHost.gameObject;
             }
 
             var host = new GameObject("EmberWorldHost");
-            AddRuntimeComponent(host, "EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost");
+            AddRuntimeComponent(host, hostType, "EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost");
             AddAmbientAudio(host);
             AssignSpriteRegistry(host);
             return host;
@@ -68,9 +71,8 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void AddRuntimeComponent(GameObject host, string fullName)
+        private static void AddRuntimeComponent(GameObject host, System.Type type, string fullName)
         {
-            var type = ResolveRuntimeType(fullName);
             if (type == null)
             {
                 Debug.LogWarning($"Could not resolve runtime component {fullName}");

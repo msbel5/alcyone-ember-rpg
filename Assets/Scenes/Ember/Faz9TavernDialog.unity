@@ -1862,6 +1862,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b613bd17fa18204cb3c113787f67238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Views.ActorView
+  _domainActorKey: Sage Nera
   _interpolationSpeed: 8
   _billboard: {fileID: 0}
 --- !u!4 &1658740297
@@ -2022,6 +2023,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b613bd17fa18204cb3c113787f67238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Views.ActorView
+  _domainActorKey: Quartermaster Ivo
   _interpolationSpeed: 8
   _billboard: {fileID: 0}
 --- !u!4 &1665818095
@@ -2085,6 +2087,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b613bd17fa18204cb3c113787f67238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Views.ActorView
+  _domainActorKey: Warden
   _interpolationSpeed: 8
   _billboard: {fileID: 0}
 --- !u!4 &1698185791

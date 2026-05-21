@@ -21,7 +21,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void SaveAndLoad_RoundTripsCanonicalStoreRootsAndEventLog()
         {
-            var world = new SliceWorldFactory().Create(2112);
+            var world = new SliceWorldFactory().Create(2112, seedWorldAnchors: false);
             var guard = MakeRecord(44, "Bridge Guard", ActorRole.Guard, new GridPosition(9, 4));
             var siteId = new SiteId(20);
             var itemId = new ItemId(700);

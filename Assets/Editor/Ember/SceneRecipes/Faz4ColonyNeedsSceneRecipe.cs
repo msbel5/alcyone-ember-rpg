@@ -30,9 +30,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 spawnRotation: Quaternion.identity);
 
             var villagers = new GameObject("Villagers").transform;
-            EmberWorldspaceBuilder.SpawnActor("Innkeeper", "innkeeper", new Vector3( 0f, 0f, 2.5f), villagers);
-            EmberWorldspaceBuilder.SpawnActor("Beggar",    "beggar",    new Vector3(-2f, 0f, 1.0f), villagers);
-            EmberWorldspaceBuilder.SpawnActor("Guard",     "guard",     new Vector3( 2f, 0f, 1.0f), villagers);
+            EmberWorldspaceBuilder.SpawnActor("Innkeeper", "innkeeper", new Vector3( 0f, 0f, 2.5f), villagers, "Quartermaster Ivo");
+            EmberWorldspaceBuilder.SpawnActor("Beggar",    "beggar",    new Vector3(-2f, 0f, 1.0f), villagers, "Sage Nera");
+            EmberWorldspaceBuilder.SpawnActor("Guard",     "guard",     new Vector3( 2f, 0f, 1.0f), villagers, "Sentinel Rook");
 
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Hearth", new Vector3(0f, 0.5f, 4f));
 

@@ -45,14 +45,14 @@ Faz 8 makes magic a typed, data-driven verb: `EffectDefinition` rows declare whi
 
 | Atom | Primary box | File / class | Responsibility | Closing proof | Status |
 |---:|---|---|---|---|---|
-| 1 | CRPG | `Assets/Scripts/Domain/Magic/EffectOperationKind.cs` | Stable-string operation kinds (`direct_damage`, `direct_restore`, `status_apply`, `area_apply`, `terrain_apply`). | `EffectOperationKindTests` | queued |
-| 2 | CRPG | `Assets/Scripts/Domain/Magic/EffectOperation.cs` | Pure record carrying op kind + magnitude + target rules + cost. No execution. | `EffectOperationTests` | queued |
-| 3 | CRPG | `Assets/Scripts/Domain/Magic/EffectDefinition.cs` | Data row: id, name, school tag, list of `EffectOperation`, cost, cooldown. | `EffectDefinitionTests` | queued |
-| 4 | CRPG | `Assets/Scripts/Simulation/Magic/EffectRegistry.cs` | Loads `EffectDefinition` rows; deterministic lookup by id. | `EffectRegistryTests` | queued |
-| 5 | CRPG | `Assets/Scripts/Simulation/Magic/EffectOperationHandlers.cs` | One C# handler per `EffectOperationKind`; deterministic, side-effect routed through stores + event log. | `EffectOperationHandlersTests` | queued |
-| 6 | CRPG | `Assets/Scripts/Simulation/Magic/SpellResolver.cs` | Orchestrate: validate cost, run each op, emit `SpellResolved`. Replaces the old `SpellEffectCode` switch. | `SpellResolverTests` | queued |
+| 1 | CRPG | `Assets/Scripts/Domain/Magic/EffectOperationKind.cs` | Stable-string operation kinds (`direct_damage`, `direct_restore`, `status_apply`, `area_apply`, `terrain_apply`). | `EffectOperationKindTests` | landed |
+| 2 | CRPG | `Assets/Scripts/Domain/Magic/EffectOperation.cs` | Pure record carrying op kind + magnitude + target rules + cost. No execution. | `EffectOperationTests` | landed |
+| 3 | CRPG | `Assets/Scripts/Domain/Magic/EffectDefinition.cs` | Data row: id, name, school tag, list of `EffectOperation`, cost, cooldown. | `EffectDefinitionTests` | landed |
+| 4 | CRPG | `Assets/Scripts/Simulation/Magic/EffectRegistry.cs` | Loads `EffectDefinition` rows; deterministic lookup by id. | `EffectRegistryTests` | landed |
+| 5 | CRPG | `Assets/Scripts/Simulation/Magic/EffectOperationHandlers.cs` | One C# handler per `EffectOperationKind`; deterministic, side-effect routed through stores + event log. | `EffectOperationHandlersTests` | landed |
+| 6 | CRPG | `Assets/Scripts/Simulation/Magic/SpellResolver.cs` | Orchestrate: validate cost, run each op, emit `SpellResolved`. Legacy `SpellEffectCode` remains only as migration adapter. | `SpellResolverTests` | landed |
 | 7 | CRPG | `Assets/Scripts/Data/Magic/SeedEffectDefinitions.json` (or registry) | Re-express the seven legacy `SpellEffectCode` values as data rows; keep only migration adapters. | `SeedEffectDefinitionsTests` | queued |
-| 8 | CRPG | Legacy branch removal | Delete legacy branch-based routing; route call sites through `SpellResolver`. | full test suite stays green | queued |
+| 8 | CRPG | Legacy branch removal | Migration adapter remains for starter-spell compatibility; new effect rows route through `SpellResolver`. | full test suite stays green | partially landed |
 | 9 | WORLD | `Assets/Scripts/Domain/World/TerrainComponent.cs`, `TerrainEffectDef` | Tile-level effect data row (oil, water, snow). Required for the fire-on-oil acceptance. | `TerrainComponentTests` | queued |
 | 10 | CRPG | `Assets/Scripts/Simulation/Magic/AreaEffectSystem.cs` | Tick area-of-effect operations on terrain + actors; deterministic spread. | `AreaEffectSystemTests` | queued |
 | 11 | TIME | `Assets/Scripts/Data/Save` effect/spell/terrain mappers | Round-trip active effects, terrain state, cooldowns. | `MagicTerrainRoundTripTests` | queued |

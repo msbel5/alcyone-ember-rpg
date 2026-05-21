@@ -75,7 +75,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     bool exists = false;
                     foreach (var record in _saveService.Worksites.Records)
                     {
-                        if (record.SiteId.Equals(site.Id) && record.Position.Equals(site.Position))
+                        var position = CenterOf(site);
+                        if (record.SiteId.Equals(site.Id) && record.Position.Equals(position))
                         {
                             exists = true;
                             break;
@@ -83,7 +84,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     }
                     if (exists) continue;
                     _saveService.Worksites.Add(new EmberCrpg.Domain.Process.WorksiteRecord(
-                        site.Id, site.Position, EmberCrpg.Domain.Process.WorksiteKind.None, isActive: true));
+                        site.Id, CenterOf(site), WorksiteKindFor(site.Name), isActive: true));
                 }
             }
         }
@@ -181,7 +182,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // HUD still includes the player's home faction. When
                 // ActorRecord.FactionId lands the vantage will switch to the
                 // player's actual home faction.
-                EmberCrpg.Domain.World.FactionId vantage = default;
+                FactionId vantage = default;
                 foreach (var faction in _world.Factions.Records)
                 {
                     vantage = faction.Id;
@@ -389,17 +390,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var knownIds = new List<string>(spells.Count);
             foreach (var s in spells) knownIds.Add(s.TemplateId);
 
-            ActorRecord requestedTarget = null;
-            foreach (var candidate in _world.Actors.Records)
-            {
-                if (candidate == null || candidate.Id.Equals(player.Id)) continue;
-                if (candidate.Role == ActorRole.Enemy)
-                {
-                    requestedTarget = candidate;
-                    break;
-                }
-            }
-            requestedTarget = requestedTarget ?? player;
+            var requestedTarget = SelectSpellTarget(spell, player);
 
             var executionService = new EmberCrpg.Simulation.Magic.SpellExecutionService(
                 new EmberCrpg.Simulation.Magic.SpellCastingService(_ => spell),
@@ -418,7 +409,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 _world.Time,
                 WorldEventKind.SpellResolved,
                 player.Id,
-                requestedTarget != null && !requestedTarget.Id.Equals(player.Id) ? requestedTarget.Id : default,
+                ResolveCombatSiteId(player, requestedTarget),
                 $"slice_spell_cast id:{spell.TemplateId} mana:{executed.ManaSpent}"));
             LogCombat(executed.Message);
             return true;
@@ -488,8 +479,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 EmberCrpg.Domain.Core.SiteId bestId = default;
                 foreach (var site in _world.Sites.Records)
                 {
-                    var dx = site.Position.X - anchor.Position.X;
-                    var dz = site.Position.Y - anchor.Position.Y;
+                    var sitePosition = CenterOf(site);
+                    var dx = sitePosition.X - anchor.Position.X;
+                    var dz = sitePosition.Y - anchor.Position.Y;
                     int d = dx * dx + dz * dz;
                     if (d < bestDistance)
                     {
@@ -505,6 +497,60 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 return site.Id;
             }
             return default;
+        }
+
+        private ActorRecord SelectSpellTarget(EmberCrpg.Domain.Magic.SpellDefinition spell, ActorRecord player)
+        {
+            if (spell == null || player == null) return player;
+            if (spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.CasterSelf
+                || spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.AreaAroundCaster)
+                return player;
+
+            ActorRecord best = null;
+            var bestDistance = int.MaxValue;
+            foreach (var candidate in _world.Actors.Records)
+            {
+                if (candidate == null || candidate.Id.Equals(player.Id) || !candidate.IsAlive)
+                    continue;
+                if (candidate.Role != ActorRole.Enemy)
+                    continue;
+
+                var distance = player.Position.ManhattanDistanceTo(candidate.Position);
+                if (spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.Touch && distance != 1)
+                    continue;
+                if ((spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.SingleTarget
+                        || spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.AreaAtRange)
+                    && spell.RangeInTiles > 0
+                    && distance > spell.RangeInTiles)
+                    continue;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = candidate;
+                }
+            }
+
+            return best ?? player;
+        }
+
+        private static GridPosition CenterOf(SiteRecord site)
+        {
+            if (site == null) return default;
+            return new GridPosition(
+                (site.MinBound.X + site.MaxBound.X) / 2,
+                (site.MinBound.Y + site.MaxBound.Y) / 2);
+        }
+
+        private static WorksiteKind WorksiteKindFor(string siteName)
+        {
+            if (string.Equals(siteName, "Furnace", System.StringComparison.Ordinal)
+                || string.Equals(siteName, "Forge", System.StringComparison.Ordinal))
+                return WorksiteKind.Furnace;
+            if (string.Equals(siteName, "Hearth", System.StringComparison.Ordinal))
+                return WorksiteKind.Bakery;
+            if (string.Equals(siteName, "HarvestShed", System.StringComparison.Ordinal))
+                return WorksiteKind.Field;
+            return WorksiteKind.Generic;
         }
 
         public bool TryInteract(string targetTag)

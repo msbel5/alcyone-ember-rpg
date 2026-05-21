@@ -35,7 +35,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 spawnPosition: new Vector3(0f, 0f, -7f),
                 spawnRotation: Quaternion.identity);
 
-            EmberWorldspaceBuilder.SpawnActor("Oracle", "fairy", new Vector3(0f, 0.5f, 3f));
+            EmberWorldspaceBuilder.SpawnActor("Oracle", "fairy", new Vector3(0f, 0.5f, 3f), domainActorKey: "Sage Nera");
 
             var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
             var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",

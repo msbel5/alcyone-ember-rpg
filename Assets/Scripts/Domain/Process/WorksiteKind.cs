@@ -22,5 +22,8 @@ namespace EmberCrpg.Domain.Process
 
         /// <summary>Field tile used by Faz 5 planting and harvest jobs.</summary>
         Field = 3,
+
+        /// <summary>Generic authored worksite marker for visual/debug scene anchors.</summary>
+        Generic = 4,
     }
 }

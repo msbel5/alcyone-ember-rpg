@@ -39,7 +39,7 @@ These are awaiting CI green and merge in the next half hour.
 - **Faz 9** — Atoms 2-5 + 7 + 10 + 11 live; Atoms 8-9 pending (#168). Atoms 6 (ActorRecord.Memory), 12-13 still remain.
 - **Faz 10** — Atoms 1-10 live or pending. Atoms 11-15 (escalation, mock LLM, tracer, save, acceptance) still remain.
 - **Faz 11** — Captain-side Atoms 1-7 complete. Mami-side Atoms 8-16 remain Mami territory.
-- **Faz 12** — Atoms 1-2 + 5 + 6 + 7 + 10 + 12 live or pending. Atoms 3-4 (local + cloud clients) + 8-9 (flavour + narration services) + 11 (ConsultFateService) + 13-15 (save + acceptance) remain.
+- **Faz 12** — Atoms 1-2 + 3 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 live or partially covered. Atom 4 cloud fallback + Atoms 13-15 (save + acceptance) remain.
 
 ## Atom totals shipped this session
 
@@ -92,8 +92,7 @@ These are awaiting CI green and merge in the next half hour.
 - Save/load mappers for Faz 6/7/8/9/10/12 state
 - Acceptance replay tests per Faz (Faz 5/6/7/8/9/10/12)
 - Faz 8 seed effect row polish and remaining terrain/area magic work
-- Faz 12 real LLM clients (local Qwen HTTP, cloud Anthropic/OpenAI HTTP)
-- Faz 12 NpcFlavourService + DmNarrationService + StorytellerCheckpointSystem + ConsultFateService
+- Faz 12 cloud LLM fallback client + replay save acceptance
 - Faz 11 Mami-side Unity scenes consuming the Captain snapshot rows
 - AI image generation, gerçek görüntüler, oyun playable hali — Mami territory
 

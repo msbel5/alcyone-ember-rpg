@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace EmberCrpg.Presentation.Sprint4
 {
@@ -7,7 +6,6 @@ namespace EmberCrpg.Presentation.Sprint4
     public static class Sprint4FoundationBootstrap
     {
         private const string GroundName = "Sprint4 Greybox Ground";
-        private const string SceneNameToken = "Sprint4";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateFoundationIfNeeded()
@@ -27,11 +25,7 @@ namespace EmberCrpg.Presentation.Sprint4
             if (existingController != null) return;
 
             var marker = Object.FindFirstObjectByType<Sprint4FoundationMarker>(FindObjectsInactive.Include);
-            if (marker == null)
-            {
-                var activeScene = SceneManager.GetActiveScene();
-                if (!activeScene.name.Contains(SceneNameToken)) return;
-            }
+            if (marker == null) return;
 
             EnsureLight();
             EnsureGround();
