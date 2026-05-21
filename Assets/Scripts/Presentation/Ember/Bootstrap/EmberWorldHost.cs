@@ -23,7 +23,17 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         private static readonly IReadOnlyList<string> Topics = new List<string> { "rumors", "work", "trade", "fate" };
 
         private EmberTickDriver _tick;
+        // Codex audit (seventh pass C-P2 #11): the host historically held a
+        // single aggregate IDomainSimulationAdapter. Keeping that for the
+        // locator registration, but expose narrower role-interface views so
+        // host code paths depend on what they actually use (clock + read
+        // model + command sink) rather than the full aggregate.
         private IDomainSimulationAdapter _adapter;
+        private IEmberSimulationClock _clock;
+        private IEmberHudReadModel _hud;
+        private IWorldViewReadModel _worldView;
+        private IPlayerCommandSink _commands;
+        private IConsultFateOracle _oracle;
         private ActorView[] _actorViews;
         private WorksiteView[] _worksiteViews;
         private InventoryGrid[] _inventoryGrids;
@@ -53,8 +63,16 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             _adapter = EmberDomainAdapterLocator.Current
                 ?? TryCreateDomainAdapter()
                 ?? CreateFallbackAdapter();
+            // Codex audit (seventh pass C-P2 #11): split the aggregate into
+            // narrow role-typed handles so host code paths depend on what
+            // they actually use.
+            _clock = _adapter;
+            _hud = _adapter;
+            _worldView = _adapter;
+            _commands = _adapter;
+            _oracle = _adapter;
             EmberDomainAdapterLocator.Register(_adapter);
-            _adapter.AdvanceTick(0);
+            _clock.AdvanceTick(0);
 
             // Codex audit (sixth pass E-P2 #E3): if the host re-runs (additive
             // scene loading, domain reload during play, or a scene that
@@ -85,7 +103,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             if (Input.GetKeyDown(KeyCode.R))
             {
-                _fateLine = _adapter.ConsultFate();
+                _fateLine = _oracle.ConsultFate();
                 _fateTimer = 3f;
                 
                 // Ensure a dialog box is visible to show the fate line
@@ -261,7 +279,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         public void OnTick(int tickIndex)
         {
-            _adapter.AdvanceTick(tickIndex);
+            _clock.AdvanceTick(tickIndex);
             PushWorldViews();
         }
 
@@ -277,26 +295,26 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             for (int i = 0; i < _actorViews.Length; i++)
             {
                 var actor = _actorViews[i];
-                if (_adapter.TryReadActor(actor.DomainActorKey, out var state))
+                if (_worldView.TryReadActor(actor.DomainActorKey, out var state))
                     actor.SetTarget(state);
             }
 
             for (int i = 0; i < _worksiteViews.Length; i++)
             {
                 var worksite = _worksiteViews[i];
-                if (_adapter.TryReadWorksite(worksite.name, out var state))
+                if (_worldView.TryReadWorksite(worksite.name, out var state))
                     worksite.SetState(state);
             }
         }
 
-        public string GetHudText() => _adapter.HudText;
-        IReadOnlyList<JobQueueRow> IJobQueueSource.GetRows() => _adapter.JobQueueRows;
-        IReadOnlyList<ColonyNeedsRow> IColonyNeedsSource.GetRows() => _adapter.ColonyNeedsRows;
-        IReadOnlyList<FactionRow> IFactionSource.GetRows() => _adapter.FactionRows;
-        public IReadOnlyList<InventorySlot> GetSlots() => _adapter.InventorySlots;
-        IReadOnlyList<string> ISpellBarSource.GetSlots() => _adapter.SpellSlots;
+        public string GetHudText() => _hud.HudText;
+        IReadOnlyList<JobQueueRow> IJobQueueSource.GetRows() => _worldView.JobQueueRows;
+        IReadOnlyList<ColonyNeedsRow> IColonyNeedsSource.GetRows() => _worldView.ColonyNeedsRows;
+        IReadOnlyList<FactionRow> IFactionSource.GetRows() => _worldView.FactionRows;
+        public IReadOnlyList<InventorySlot> GetSlots() => _worldView.InventorySlots;
+        IReadOnlyList<string> ISpellBarSource.GetSlots() => _worldView.SpellSlots;
         int ISpellBarSource.GetSelectedSlot() => _selectedSpellSlot;
-        CombatHudState ICombatHudSource.Read() => _adapter.CombatHud;
+        CombatHudState ICombatHudSource.Read() => _hud.CombatHud;
         public Sprite GetSprite(string name) => _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;
 
         public string GetCurrentLine()
@@ -346,8 +364,17 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1);
                 return new EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter(world);
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
+                // Codex audit (seventh pass A-P2 #8): the previous catch was
+                // silent — a real backend bootstrap failure produced no log
+                // line, the host quietly fell through to the placeholder,
+                // and Mami saw an empty HUD with no clue why. Surface the
+                // exception so the failure is visible in the Editor console
+                // and player.log. We still return null so the caller's
+                // placeholder fallback runs (game stays bootable), but the
+                // operator can now investigate the root cause.
+                Debug.LogError("EmberWorldHost: domain adapter bootstrap failed; falling back to PlaceholderSimulationAdapter. " + ex);
                 return null;
             }
         }

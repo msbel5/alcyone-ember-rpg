@@ -87,6 +87,13 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
 
             var attacker = Actor("Striker", new ActorId(30), ActorRole.Player, health: 20, fatigue: 10, mana: 5, accuracy: 120, dodge: 0, armor: 0, damage: 8);
             var defender = Actor("Bandit", new ActorId(31), ActorRole.Enemy, health: 20, fatigue: 8, mana: 3, accuracy: 40, dodge: 0, armor: 1, damage: 2);
+            // Codex audit (seventh pass G-P2 #20): the previous test created
+            // attacker/defender as locals only — they never reached world.Actors,
+            // so the post-round-trip assertions could not verify their vitals.
+            // Replace the seed world's role actors with these test actors so
+            // SliceSaveMapper actually serialises them through ActorSaveMapper.
+            ReplaceActorByRole(world, attacker);
+            ReplaceActorByRole(world, defender);
             var action = new CombatActionDef(new CombatActionId("slash"), staminaCost: 3, "flat", "flat", "slash");
 
             var outcome = new CombatActionResolver(new CombatHitRollService(), new CombatDamageService())
@@ -101,6 +108,14 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             var restored = RoundTrip(world);
             Assert.That(restored.PlayerEquipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(sword));
             Assert.That(EquipmentSlot.Weapon.Code, Is.EqualTo("main_hand"));
+            // Codex audit (seventh pass G-P2 #20): test name claims vitals
+            // round-trip but only equipment + weapon slot were checked.
+            // Add the actual vitals assertion against the restored snapshot
+            // so the title is no longer misleading.
+            var restoredAttacker = restored.Actors.FirstByRole(ActorRole.Player);
+            var restoredDefender = restored.Actors.FirstByRole(ActorRole.Enemy);
+            Assert.That(restoredAttacker.Vitals.Fatigue.Current, Is.EqualTo(7));
+            Assert.That(restoredDefender.Vitals.Health.Current, Is.EqualTo(13));
         }
 
         [Test]
@@ -271,7 +286,15 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
 
         private static SliceWorldState RoundTrip(SliceWorldState world)
         {
-            return SliceSaveMapper.ToWorld(SliceSaveMapper.ToData(world));
+            var data = SliceSaveMapper.ToData(world);
+            return SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld(data.roomSeed));
+        }
+
+        private static void ReplaceActorByRole(SliceWorldState world, ActorRecord replacement)
+        {
+            var existing = world.Actors.FirstByRole(replacement.Role);
+            if (existing != null) world.Actors.Remove(existing.Id);
+            world.Actors.Add(replacement);
         }
 
         private static ActorRecord Actor(string name, ActorId id, ActorRole role, int health, int fatigue, int mana, int accuracy, int dodge, int armor, int damage)

@@ -61,30 +61,35 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         void LogCombat(string message);
         void TakePlayerDamage(int amount);
 
-        // Codex audit (third pass C-P3): command sink used to be log/damage
-        // only. Adding gameplay verbs lets EmberPlayerSpellCaster /
-        // EmberPlayerMeleeSwing / interaction raycasters route through a
-        // single sink instead of bypassing it with ad-hoc adapter.X() calls.
-        // Default implementations let existing adapters opt in incrementally.
+        // Codex audit (seventh pass C-P3 #12): the default-method shims used
+        // to hide silent "command not implemented" paths — adapters could
+        // omit TryCastSpell / TryMeleeStrike / TryInteract and the host
+        // would call a default that just logged a hint and returned false,
+        // making missing routing invisible. Defaults removed: every
+        // implementer must now explicitly handle each verb (or explicitly
+        // return false with a deliberate refusal). Both production adapters
+        // (DomainSimulationAdapter, PlaceholderSimulationAdapter) already
+        // override these; the test EmptySimulationAdapter was retired in
+        // the sixth pass.
 
         /// <summary>
         /// Player triggers a spell cast on slot index. Returns true when the
         /// adapter accepted the command (mana/cooldown/target valid). Failed
         /// commands surface a refusal string via <see cref="LogCombat"/>.
         /// </summary>
-        bool TryCastSpell(int spellSlotIndex) { LogCombat($"Spell slot {spellSlotIndex} routed."); return false; }
+        bool TryCastSpell(int spellSlotIndex);
 
         /// <summary>
         /// Player triggers a melee strike on a target actor. Returns true when
         /// the strike resolved against a domain actor.
         /// </summary>
-        bool TryMeleeStrike(string targetActorName, int rawDamage) { LogCombat($"Melee at {targetActorName} for {rawDamage}."); return false; }
+        bool TryMeleeStrike(string targetActorName, int rawDamage);
 
         /// <summary>
         /// Player interacts (E key) with a world object identified by tag.
         /// Returns true when the adapter routed the interaction.
         /// </summary>
-        bool TryInteract(string targetTag) { LogCombat($"Interact: {targetTag}."); return false; }
+        bool TryInteract(string targetTag);
 
         /// <summary>
         /// Acquire the command channel for an NPC conversation. Returns the
@@ -164,6 +169,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private static IDomainSimulationAdapter _current;
 
         public static IDomainSimulationAdapter Current => _current;
+
+        // Codex audit (seventh pass C-P3 #13): role-specific accessors let
+        // narrow consumers (HUD panels, telemetry, AI-DM clients) take a
+        // single role interface dependency without grabbing the aggregate.
+        // Returns null when no adapter is registered yet.
+        public static IEmberClockSource ClockSource => _current;
+        public static IEmberHudReadModel HudReadModel => _current;
+        public static IWorldViewReadModel WorldViewReadModel => _current;
+        public static IPlayerCommandSink PlayerCommandSink => _current;
+        public static IConsultFateOracle ConsultFateOracle => _current;
+        public static IEmberSaveBridge SaveBridge => _current;
 
         public static void Register(IDomainSimulationAdapter adapter)
         {
