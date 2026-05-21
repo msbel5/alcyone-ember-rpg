@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Presentation.Ember.UI;
@@ -236,13 +237,24 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public void SelectTopic(string topicId)
         {
             // Codex audit (fourth pass A-P1): previously no-op. Now produces a
-            // deterministic acknowledgement line and writes a dialogue-seen
-            // marker into the active actor's memory.
+            // deterministic acknowledgement line and appends a dialogue-seen
+            // event to the WorldEventLog so the deterministic replay surface
+            // sees the topic selection. (ActorRecord.Memory is a
+            // MemoryComponent which records facts via Add; the topic-seen
+            // marker lives on the broader dialogue tracking surface, not
+            // directly on MemoryComponent.)
             if (string.IsNullOrEmpty(topicId)) return;
             _currentDialogLine = $"{_activeDialogActor} considers \"{topicId}\".";
             var actor = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, _activeDialogActor, System.StringComparison.Ordinal));
-            if (actor?.Memory != null)
-                actor.Memory.MarkDialogueSeen(topicId);
+            if (actor != null && _world.Events != null)
+            {
+                _world.Events.Append(new WorldEvent(
+                    _world.Time,
+                    WorldEventKind.ActorTalked,
+                    actor.Id,
+                    default,
+                    $"topic_selected id:{topicId}"));
+            }
         }
 
         // ----- IPlayerCommandSink -----
