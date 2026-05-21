@@ -134,8 +134,27 @@ namespace EmberCrpg.Presentation.Ember.Save
             if (data == null || string.IsNullOrEmpty(data.domainStateJson)) return;
             var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current;
             if (adapter == null) return;
-            try { adapter.RestoreStateJson(data.domainStateJson); }
-            catch (System.Exception) { /* placeholder envelope mismatch is best-effort */ }
+
+            // Codex review on PR #188 (P2): gate the tick AlignTo behind a
+            // successful RestoreStateJson. If the envelope is malformed (version
+            // mismatch, truncated payload, placeholder mismatch) the catch
+            // swallowed the exception but the AlignTo still ran, advancing the
+            // driver to saved+1 while the adapter remained at its pre-load
+            // state — a brand new desync. Skip AlignTo on failure so the driver
+            // continues from its current value and the existing snapshot is not
+            // clobbered by a mis-aligned OnTick.
+            bool restored = false;
+            try
+            {
+                adapter.RestoreStateJson(data.domainStateJson);
+                restored = true;
+            }
+            catch (System.Exception)
+            {
+                // placeholder envelope mismatch is best-effort; do NOT AlignTo.
+            }
+
+            if (!restored) return;
 
             // Codex review on PR #185 (P1): align the scene's EmberTickDriver to
             // the restored tick so the next OnTick(...) does not roll the

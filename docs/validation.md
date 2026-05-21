@@ -21,10 +21,10 @@ The script writes evidence logs and test artifacts under `validation-output/` (g
 <Unity> -batchmode -projectPath <repo> -runTests -testPlatform EditMode -testResults validation-output/unity-editmode-results.xml -logFile validation-output/unity-editmode.log -quit
 ```
 
-3. If Unity is not found, runs a deterministic pure-C# NUnit fallback harness with `/home/msbel/.dotnet/dotnet`:
+3. If Unity is not found, runs a deterministic pure-C# NUnit fallback harness via the `dotnet` on `PATH` (Linux/macOS/Windows alike). Codex audit (H/P3) flagged the hardcoded Linux path that previously appeared here; the canonical command resolves whichever .NET 8 SDK the developer's `PATH` carries:
 
 ```bash
-/home/msbel/.dotnet/dotnet test tools/validation/fallback/ValidationFallbackHarness.csproj --configuration Release --nologo --results-directory validation-output/fallback-test-results --logger 'trx;LogFileName=fallback.trx'
+dotnet test tools/validation/fallback/ValidationFallbackHarness.csproj --configuration Release --nologo --results-directory validation-output/fallback-test-results --logger 'trx;LogFileName=fallback.trx'
 ```
 
 ## Fallback meaning
