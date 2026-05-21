@@ -36,6 +36,19 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             textMesh.fontSize = 32;
             textMesh.characterSize = 0.1f;
             textMesh.color = Color.yellow;
+            // Unity AI audit (P3): newly built TextMesh defaulted to a null
+            // Font reference and a null sharedMaterial, producing pink-
+            // shader-error labels in Play mode. Assign the LegacyRuntime
+            // built-in font + its companion material so the label renders
+            // correctly without manual scene authoring.
+            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font != null)
+            {
+                textMesh.font = font;
+                var renderer = labelObj.GetComponent<MeshRenderer>();
+                if (renderer != null && font.material != null)
+                    renderer.sharedMaterial = font.material;
+            }
 
             return portal;
         }
