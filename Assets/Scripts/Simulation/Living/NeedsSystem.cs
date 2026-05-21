@@ -8,7 +8,7 @@ using EmberCrpg.Domain.World;
 // pressure values and derived mood, then emits a concrete NeedChanged event
 // when a caller uses the EventLog overload. Recovery, job refusal, save/load,
 // inventory consumption, and sleep/eat actions are later atoms.
-// Atom-map ref: DOCS/sprint-faz-4-atom-map.md Needs tick rail.
+// Atom-map ref: docs/sprint-faz-4-atom-map.md Needs tick rail.
 namespace EmberCrpg.Simulation.Living
 {
     /// <summary>Deterministically advances actor needs and recomputes mood.</summary>

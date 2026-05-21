@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Actors;
 // need pressure, then returns a mood snapshot. It does not mutate ActorRecord,
 // tick needs, persist state, emit
 // EventLog rows, or decide job refusal.
-// Atom-map ref: DOCS/sprint-faz-4-atom-map.md Mood derivation rail.
+// Atom-map ref: docs/sprint-faz-4-atom-map.md Mood derivation rail.
 namespace EmberCrpg.Simulation.Living
 {
     /// <summary>Derives actor mood from deterministic actor needs.</summary>

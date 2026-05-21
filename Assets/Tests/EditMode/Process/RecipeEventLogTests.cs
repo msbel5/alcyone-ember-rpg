@@ -11,7 +11,7 @@ using NUnit.Framework;
 // RecipeEventLogTests pins the player-visible part of the first RecipeSystem
 // slice: completing SmeltIronIngot appends an ordered WorldEventLog entry with
 // a causal ReasonTrace. This is the product-visible proof required by
-// DOCS/agent-rules-v2.md rule 1.
+// docs/agent-rules-v2.md rule 1.
 namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>Verifies RecipeSystem world-event emission.</summary>

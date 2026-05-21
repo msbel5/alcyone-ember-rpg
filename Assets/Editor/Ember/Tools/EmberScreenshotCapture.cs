@@ -11,14 +11,14 @@ namespace EmberCrpg.Editor.Ember.Tools
     /// <summary>
     /// Captures one PNG per faz scene without touching MCP or Play Mode. Each capture
     /// opens the scene, renders the active camera into a render texture, writes the
-    /// PNG under <c>DOCS/screenshots/</c>. Scenes that do not exist yet are silently
+    /// PNG under <c>docs/screenshots/</c>. Scenes that do not exist yet are silently
     /// skipped — re-run after <c>Ember &gt; Build Scene &gt; All</c> to refresh.
     /// </summary>
     public static class EmberScreenshotCapture
     {
         private const int Width = 1920;
         private const int Height = 1080;
-        private const string ScreenshotsRootRelative = "DOCS/screenshots";
+        private const string ScreenshotsRootRelative = "docs/screenshots";
 
         [MenuItem("Ember/Capture/All Faz Scene Screenshots")]
         public static void CaptureAll()

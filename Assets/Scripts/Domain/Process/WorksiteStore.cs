@@ -8,7 +8,7 @@ using EmberCrpg.Domain.Core;
 // It keeps WorksiteRecord lookup deterministic and pure: no Unity references,
 // no I/O, no ticking recipes, no inventory mutation, and no EventLog writes.
 // RecipeSystem will consume this store in the next visible Faz 2 slice.
-// Atom-map ref: DOCS/sprint-faz-2-atom-map.md Worksite state sub-area.
+// Atom-map ref: docs/sprint-faz-2-atom-map.md Worksite state sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

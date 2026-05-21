@@ -4,7 +4,7 @@
 // the smithing lane for the furnace/SmeltIronIngot acceptance path and the
 // baking lane for the BakeBread competition-proof fixture. No hauling, combat,
 // or speculative extras belong here until their PR consumes them.
-// Atom-map ref: DOCS/sprint-faz-3-atom-map.md Pure job definition rail.
+// Atom-map ref: docs/sprint-faz-3-atom-map.md Pure job definition rail.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

@@ -4,7 +4,7 @@ using System;
 // ActorNeeds is Faz 4's actor-local need component. It stores only current
 // pressure values; ticking, recovery, mood derivation, save/load, and job
 // refusal are later atoms that consume this component.
-// Atom-map ref: DOCS/sprint-faz-4-atom-map.md Pure needs component rail.
+// Atom-map ref: docs/sprint-faz-4-atom-map.md Pure needs component rail.
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>Immutable actor need snapshot for hunger, fatigue, and thirst.</summary>

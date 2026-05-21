@@ -12,7 +12,7 @@ using NUnit.Framework;
 // These tests pin the first visible Faz 2 RecipeSystem slice: an active furnace
 // consumes ore/fuel, advances for 40 deterministic ticks, produces an iron ingot,
 // and emits a WorldEventLog line. Save/load and playable replay docs remain later
-// atoms in DOCS/sprint-faz-2-atom-map.md.
+// atoms in docs/sprint-faz-2-atom-map.md.
 namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>Verifies the narrow deterministic RecipeSystem smelting contract.</summary>

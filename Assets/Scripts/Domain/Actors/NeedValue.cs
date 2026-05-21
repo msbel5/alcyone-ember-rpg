@@ -4,7 +4,7 @@ using System;
 // NeedValue is Faz 4's bounded 0-100 pressure scalar. Higher values are worse:
 // 0 means comfortable, 100 means max pressure. It deliberately has no tick
 // rates, recovery recipes, job refusal policy, or EventLog output.
-// Atom-map ref: DOCS/sprint-faz-4-atom-map.md Pure needs component rail.
+// Atom-map ref: docs/sprint-faz-4-atom-map.md Pure needs component rail.
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>Immutable 0-100 actor-need pressure value.</summary>

@@ -6,7 +6,7 @@ namespace EmberCrpg.Simulation.World
     /// <summary>
     /// Deterministic four-connected A* pathfinder over packed (x, y) cells.
     /// Pure in-memory: no Unity, no I/O. Same request returns the same path.
-    /// Closes CO-02 in DOCS/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-02 in docs/sprint-faz-4-atom-map.md Debt ledger.
     /// </summary>
     public sealed class GridPathfinder : IPathfinder
     {

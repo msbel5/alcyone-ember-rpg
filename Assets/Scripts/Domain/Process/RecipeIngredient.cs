@@ -5,7 +5,7 @@ using System;
 // describes a required stockpile input by deterministic item/material tag and
 // quantity, without consuming inventory, reading stores, or ticking time. Later
 // RecipeDef and RecipeSystem atoms compose these rows into smelting behaviour.
-// Atom-map ref: DOCS/sprint-faz-2-atom-map.md Recipe definitions sub-area.
+// Atom-map ref: docs/sprint-faz-2-atom-map.md Recipe definitions sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

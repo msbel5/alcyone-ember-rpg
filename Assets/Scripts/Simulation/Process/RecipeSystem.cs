@@ -12,7 +12,7 @@ using EmberCrpg.Domain.World;
 // small deterministic work order, and emits a WorldEventLog line when the
 // recipe completes. It does not own save/load, job assignment, skill scaling,
 // Unity presentation, or generic factory registries; those are later atoms in
-// DOCS/sprint-faz-2-atom-map.md.
+// docs/sprint-faz-2-atom-map.md.
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>
