@@ -51,3 +51,10 @@ Builds/
 # Unity AI Toolkit cache (per-machine)
 Assets/AI Toolkit/Temp/
 Assets/AI Toolkit/Temp.meta
+
+# Codex audit Batch 4: Unity Editor sometimes inlines per-machine package
+# sources (Unity AI Assistant, Inference, etc.) under Packages/. Track only
+# the manifest + lock; never commit the embedded package source trees.
+Packages/*/
+!Packages/manifest.json
+!Packages/packages-lock.json
