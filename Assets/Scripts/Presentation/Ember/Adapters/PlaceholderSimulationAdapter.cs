@@ -30,7 +30,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         public int TickIndex => _tick;
         public string HudText => _hudText;
-public IReadOnlyList<JobQueueRow> JobQueueRows => _jobRows;
+        public IReadOnlyList<JobQueueRow> JobQueueRows => _jobRows;
         public IReadOnlyList<ColonyNeedsRow> ColonyNeedsRows => _needsRows;
         public IReadOnlyList<FactionRow> FactionRows => _factionRows;
         public IReadOnlyList<InventorySlot> InventorySlots => _inventorySlots;
