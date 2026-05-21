@@ -3,11 +3,8 @@
 This folder lives under `Assets/Scripts/Data/` for historical / discovery
 reasons, but architecturally it is **presentation infrastructure**, not Data.
 
-Codex audit (second pass, B-P1) re-flagged this:
-
-> Data depends on Simulation and UnityEngine via `JsonSliceSaveService`.
-> Suggested fix: move Unity JSON bridge to Presentation/Infrastructure, or
-> make SliceJson pure DTO serialization with `noEngineReferences=true`.
+Codex audit follow-up: the parent `EmberCrpg.Data` assembly remains pure; this
+sub-assembly is intentionally the Unity JSON bridge.
 
 ## Why it stays under Data/
 

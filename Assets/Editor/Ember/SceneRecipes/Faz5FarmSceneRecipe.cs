@@ -39,7 +39,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 crop.name = $"Crop_{row}_{col}";
             }
 
-            EmberWorldspaceBuilder.SpawnActor("Farmer", "warrior", new Vector3(-3f, 0f, -2f));
+            EmberWorldspaceBuilder.SpawnActor("Farmer", "warrior", new Vector3(-3f, 0f, -2f), domainActorKey: "Warden");
             EmberWorldspaceBuilder.SpawnWorksiteMarker("HarvestShed", new Vector3(4f, 0.75f, 1f));
 
             var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");

@@ -30,9 +30,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 spawnRotation: Quaternion.identity);
 
             var stalls = new GameObject("Stalls").transform;
-            EmberWorldspaceBuilder.SpawnActor("Merchant", "merchant", new Vector3(-1.5f, 0f, 2.5f), stalls);
-            EmberWorldspaceBuilder.SpawnActor("Guard",    "guard",    new Vector3( 3.5f, 0f, 2.5f), stalls);
-            EmberWorldspaceBuilder.SpawnActor("Trader",   "rogue",    new Vector3( 1.5f, 0f, 4.5f), stalls);
+            EmberWorldspaceBuilder.SpawnActor("Merchant", "merchant", new Vector3(-1.5f, 0f, 2.5f), stalls, "Quartermaster Ivo");
+            EmberWorldspaceBuilder.SpawnActor("Guard",    "guard",    new Vector3( 3.5f, 0f, 2.5f), stalls, "Sentinel Rook");
+            EmberWorldspaceBuilder.SpawnActor("Trader",   "rogue",    new Vector3( 1.5f, 0f, 4.5f), stalls, "Warden");
 
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Caravan", new Vector3(-5f, 0.75f, 4f));
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Stall",   new Vector3(0f, 0.5f, 3.5f));

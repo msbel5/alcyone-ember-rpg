@@ -529,6 +529,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b613bd17fa18204cb3c113787f67238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Views.ActorView
+  _domainActorKey: Sage Nera
   _interpolationSpeed: 8
   _billboard: {fileID: 0}
 --- !u!4 &290060025
@@ -1643,6 +1644,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b613bd17fa18204cb3c113787f67238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Views.ActorView
+  _domainActorKey: Quartermaster Ivo
   _interpolationSpeed: 8
   _billboard: {fileID: 0}
 --- !u!4 &1110262791
@@ -1819,6 +1821,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b613bd17fa18204cb3c113787f67238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Views.ActorView
+  _domainActorKey: Warden
   _interpolationSpeed: 8
   _billboard: {fileID: 0}
 --- !u!4 &1252977925
@@ -3136,6 +3139,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b613bd17fa18204cb3c113787f67238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Views.ActorView
+  _domainActorKey: Sentinel Rook
   _interpolationSpeed: 8
   _billboard: {fileID: 0}
 --- !u!4 &2131258040

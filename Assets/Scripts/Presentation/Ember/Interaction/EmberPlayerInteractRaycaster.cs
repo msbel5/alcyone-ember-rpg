@@ -57,8 +57,8 @@ namespace EmberCrpg.Presentation.Ember.Interaction
 
             if (_dialogPanel != null)
             {
-                var adapter = EmberDomainAdapterLocator.Current;
-                if (adapter != null)
+                var commands = EmberDomainAdapterLocator.PlayerCommandSink;
+                if (commands != null)
                 {
                     // Codex audit (fourth pass D-P2): previously bypassed
                     // IPlayerCommandSink.TryInteract entirely and reached
@@ -68,8 +68,8 @@ namespace EmberCrpg.Presentation.Ember.Interaction
                     // panel to the returned source. The placeholder adapter's
                     // default TryInteract is a no-op-success so legacy scenes
                     // still get a panel even without a real domain backing.
-                    adapter.TryInteract(target.DisplayName);
-                    _dialogPanel.Source = adapter.GetDialogSource(target.DisplayName);
+                    commands.TryInteract(target.DisplayName);
+                    _dialogPanel.Source = commands.GetDialogSource(target.DisplayName);
                     _dialogPanel.gameObject.SetActive(true);
 
                     // Unlock cursor when dialog is open

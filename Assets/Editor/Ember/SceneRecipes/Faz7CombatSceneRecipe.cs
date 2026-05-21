@@ -37,9 +37,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 fov: 60f);
 
             var enemies = new GameObject("Enemies").transform;
-            EmberWorldspaceBuilder.SpawnActor("Goblin_A", "goblin", new Vector3(-2f, 0f, 4f), enemies);
-            EmberWorldspaceBuilder.SpawnActor("Goblin_B", "goblin", new Vector3( 2f, 0f, 4f), enemies);
-            EmberWorldspaceBuilder.SpawnActor("Bandit_Lord", "bandit", new Vector3(0f, 0f, 7f), enemies);
+            EmberWorldspaceBuilder.SpawnActor("Goblin_A", "goblin", new Vector3(-2f, 0f, 4f), enemies, "Ash Rat");
+            EmberWorldspaceBuilder.SpawnActor("Goblin_B", "goblin", new Vector3( 2f, 0f, 4f), enemies, "Sentinel Rook");
+            EmberWorldspaceBuilder.SpawnActor("Bandit_Lord", "bandit", new Vector3(0f, 0f, 7f), enemies, "Warden");
 
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Chest", new Vector3(0f, 0.5f, 8.5f));
 

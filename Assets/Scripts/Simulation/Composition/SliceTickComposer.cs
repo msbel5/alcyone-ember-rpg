@@ -3,7 +3,9 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Time;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Living;
+using EmberCrpg.Simulation.Magic;
 using EmberCrpg.Simulation.Time;
+using EmberCrpg.Simulation.World;
 
 namespace EmberCrpg.Simulation.Composition
 {
@@ -48,11 +50,18 @@ namespace EmberCrpg.Simulation.Composition
 
         private readonly GameTimeAdvanceSystem _timeAdvance;
         private readonly NeedsSystem _needs;
+        private readonly MagicTickDriver _magic;
+        private readonly CaravanSystem _caravans;
         private int _lastTickIndex = -1;
         private int _ticksSinceHourly;
+        private int _ticksSinceDaily;
 
         public SliceTickComposer()
-            : this(new GameTimeAdvanceSystem(BuildDefaultCalendar()), new NeedsSystem())
+            : this(
+                new GameTimeAdvanceSystem(BuildDefaultCalendar()),
+                new NeedsSystem(),
+                new MagicTickDriver(new SpellCooldownService(), new ShieldBuffService()),
+                new CaravanSystem())
         {
         }
 
@@ -68,17 +77,27 @@ namespace EmberCrpg.Simulation.Composition
             });
         }
 
-        public SliceTickComposer(GameTimeAdvanceSystem timeAdvance, NeedsSystem needs)
+        public SliceTickComposer(
+            GameTimeAdvanceSystem timeAdvance,
+            NeedsSystem needs,
+            MagicTickDriver magic,
+            CaravanSystem caravans)
         {
             _timeAdvance = timeAdvance ?? throw new ArgumentNullException(nameof(timeAdvance));
             _needs = needs ?? throw new ArgumentNullException(nameof(needs));
+            _magic = magic ?? throw new ArgumentNullException(nameof(magic));
+            _caravans = caravans ?? throw new ArgumentNullException(nameof(caravans));
         }
 
         // Codex audit (seventh pass review on PR #198): single-arg constructor
         // kept for any caller that already passed a custom calendar; defaults
         // the NeedsSystem to the canonical mood evaluator.
         public SliceTickComposer(GameTimeAdvanceSystem timeAdvance)
-            : this(timeAdvance, new NeedsSystem())
+            : this(
+                timeAdvance,
+                new NeedsSystem(),
+                new MagicTickDriver(new SpellCooldownService(), new ShieldBuffService()),
+                new CaravanSystem())
         {
         }
 
@@ -98,6 +117,8 @@ namespace EmberCrpg.Simulation.Composition
 
             // 1) Always advance game time (cheap, monotonic).
             world.Time = _timeAdvance.Advance(world.Time, delta * MinutesPerTick);
+            if (world.PlayerSpellCooldowns != null && world.PlayerShieldBuffs != null)
+                _magic.AdvanceTicks(world.PlayerSpellCooldowns, world.PlayerShieldBuffs, delta);
 
             // 2) Hourly tick: NeedsSystem decays per-actor needs at its
             // design rate. Codex audit (seventh pass A-P1 #1): previously the
@@ -115,6 +136,14 @@ namespace EmberCrpg.Simulation.Composition
                     _needs.TickActorNeeds(actor, world.Events, world.Time, ticks: 1);
                 }
             }
+
+            _ticksSinceDaily += delta;
+            while (_ticksSinceDaily >= TicksPerGameDay)
+            {
+                _ticksSinceDaily -= TicksPerGameDay;
+                if (world.Caravans == null || world.Events == null) continue;
+                _caravans.Tick(world.Caravans, world.FindTradeRoute, world.FindStockpile, world.Time, world.Events);
+            }
         }
 
         /// <summary>
@@ -125,6 +154,7 @@ namespace EmberCrpg.Simulation.Composition
         {
             _lastTickIndex = -1;
             _ticksSinceHourly = 0;
+            _ticksSinceDaily = 0;
         }
     }
 }
