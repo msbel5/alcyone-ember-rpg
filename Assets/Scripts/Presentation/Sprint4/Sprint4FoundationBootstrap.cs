@@ -12,18 +12,23 @@ namespace EmberCrpg.Presentation.Sprint4
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateFoundationIfNeeded()
         {
-            // Codex audit (second pass E-P2): the previous guard used a
-            // scene-name substring (`Contains("Sprint4")`), which would misfire
-            // for any scene that happened to include "Sprint4" in its name.
-            // Intent-based detection now uses component presence first: if the
-            // scene already authors a Sprint4PlayerController, bail (do not
-            // duplicate). Only when the scene name still carries the legacy
-            // marker AND no controller exists do we build the greybox.
+            // Codex audit (fifth pass E-P2): intent-marker first. If the
+            // scene already authors a Sprint4PlayerController, exit (do
+            // not duplicate). Otherwise look for an explicit
+            // Sprint4FoundationMarker authored at scene root; only when
+            // neither marker exists AND the scene-name carries the legacy
+            // "Sprint4" token do we fall back to the substring guard. The
+            // marker path is the canonical contract for new scenes; the
+            // scene-name fallback is documented soft compatibility.
             var existingController = Object.FindFirstObjectByType<Sprint4PlayerController>(FindObjectsInactive.Include);
             if (existingController != null) return;
 
-            var activeScene = SceneManager.GetActiveScene();
-            if (!activeScene.name.Contains(SceneNameToken)) return;
+            var marker = Object.FindFirstObjectByType<Sprint4FoundationMarker>(FindObjectsInactive.Include);
+            if (marker == null)
+            {
+                var activeScene = SceneManager.GetActiveScene();
+                if (!activeScene.name.Contains(SceneNameToken)) return;
+            }
 
             EnsureLight();
             EnsureGround();

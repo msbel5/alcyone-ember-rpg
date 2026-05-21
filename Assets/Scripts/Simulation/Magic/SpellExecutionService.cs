@@ -14,7 +14,20 @@ using EmberCrpg.Simulation.Rng;
 // Bible reference: EMBER_VISION_BIBLE.md §3 Layer 3 and MASTER_MECHANICS_BIBLE.md §14-§15.
 namespace EmberCrpg.Simulation.Magic
 {
-    /// <summary>Pure deterministic orchestration service for one end-to-end spell execution.</summary>
+    /// <summary>
+    /// Pure deterministic orchestration service for one end-to-end spell execution.
+    ///
+    /// Codex audit (fifth pass A-P2): this service is the LEGACY spell pipeline
+    /// kept for back-compat with the seven original <see cref="EmberCrpg.Domain.Magic.SpellEffectCode"/>
+    /// rows + the existing acceptance tests. The live game's spell command
+    /// (<see cref="EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter.TryCastSpell"/>)
+    /// now routes through <see cref="SpellCastingService"/>'s prepare/commit
+    /// pair and (for data-driven new spells) the
+    /// <see cref="SpellResolver"/> + <see cref="EffectOperationHandlers"/>
+    /// pipeline. New magic work should ship as <c>EffectDefinition</c> +
+    /// <c>EffectOperation</c> rows; do not add new branches into
+    /// <see cref="SpellEffectResolutionService"/>.
+    /// </summary>
     public sealed class SpellExecutionService
     {
         private readonly SpellCastingService _castingService;
