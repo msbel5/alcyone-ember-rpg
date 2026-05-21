@@ -5,6 +5,7 @@
         "EmberCrpg.Domain",
         "EmberCrpg.Simulation",
         "EmberCrpg.Data",
+        "EmberCrpg.Data.SliceJson",
         "EmberCrpg.Presentation",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
