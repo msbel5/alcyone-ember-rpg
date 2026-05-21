@@ -141,7 +141,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             // the restored tick so the next OnTick(...) does not roll the
             // adapter's just-restored timeline back to 1. Without this sync,
             // any save at tick > 0 is clobbered on the very next frame.
-            var driver = Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.Tick.EmberTickDriver>(
+            var driver = UnityEngine.Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.Tick.EmberTickDriver>(
                 FindObjectsInactive.Include);
             if (driver != null)
                 driver.AlignTo(data.tickIndex);
