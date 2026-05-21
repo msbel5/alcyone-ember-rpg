@@ -5,7 +5,11 @@
         "EmberCrpg.Domain",
         "EmberCrpg.Simulation",
         "EmberCrpg.Data",
-        "EmberCrpg.Data.SliceJson"
+        "EmberCrpg.Data.SliceJson",
+        "Unity.TextMeshPro",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.Cinemachine"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

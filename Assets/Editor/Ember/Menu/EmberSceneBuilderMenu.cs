@@ -67,9 +67,13 @@ namespace EmberCrpg.Editor.Ember.Menu
             EmberSceneFactory.CreateEmpty();
             recipe.Build();
             EmberRuntimeHostBuilder.EnsureHost();
+            
+            // AAA Polish: Bake NavMesh
+            UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
+            
             var path = EmberSceneSavePolicy.ResolveScenePath(recipe.SceneName);
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), path);
             AssetDatabase.Refresh();
         }
-    }
+}
 }

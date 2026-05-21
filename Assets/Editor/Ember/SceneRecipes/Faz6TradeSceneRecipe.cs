@@ -16,14 +16,19 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
         public void Build()
         {
             var groundMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/cobblestone.png", tiling: 8f);
+                $"{EmberAssetPaths.TilesDir}/cobblestone.png", tiling: 10f);
+            var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
+                $"{EmberAssetPaths.TilesDir}/brick.png", tiling: 5f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 28f, groundMat, "MarketSquare");
+            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 40f, groundMat, "MarketSquare");
+            
+            // Add some background walls for context
+            EmberTerrainBuilder.BuildWall(new Vector3(0, 2, 20), new Vector3(40, 4, 1), wallMat, "NorthBoundary");
 
             EmberLightingBuilder.AddDirectionalSun(
-                color: new Color(1f, 0.9f, 0.78f),
-                intensity: 1.1f,
-                eulerAngles: new Vector3(48f, 200f, 0f));
+                color: new Color(1f, 0.95f, 0.85f),
+                intensity: 1.3f,
+                eulerAngles: new Vector3(50f, 180f, 0f));
 
             EmberPlayerRigBuilder.BuildRig(
                 spawnPosition: new Vector3(0f, 0f, -6f),

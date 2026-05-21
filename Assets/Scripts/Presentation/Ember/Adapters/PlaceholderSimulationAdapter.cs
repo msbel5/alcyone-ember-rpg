@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// <see cref="EmberDomainAdapterLocator.Register"/> once Captain's domain stores
     /// expose an integration adapter.
     /// </summary>
-    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSource
+    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait
     {
         private readonly List<JobQueueRow> _jobRows = new List<JobQueueRow>();
         private readonly List<ColonyNeedsRow> _needsRows = new List<ColonyNeedsRow>();
@@ -26,6 +26,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _hudText = "Tick 0   Day 1   Spring";
 
         private string _currentDialogLine = "Greetings traveler.";
+        private string _currentPortrait = "portrait_npc_placeholder";
         private List<string> _currentTopics = new List<string> { "Jobs", "Factions", "Rumors" };
 
         public int TickIndex => _tick;
@@ -57,14 +58,23 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IDialogSource GetDialogSource(string actorName)
         {
             _currentDialogLine = $"Greetings, I am {actorName}. What brings you here?";
+            _currentPortrait = actorName.ToLower().Contains("goblin") ? "portrait_npc_placeholder" : "portrait_npc_placeholder"; // We can vary this later
             return this;
         }
 
         public string GetCurrentLine() => _currentDialogLine;
+        public string GetPortraitName() => _currentPortrait;
         public IReadOnlyList<string> GetTopics() => _currentTopics;
         public void SelectTopic(string topicId)
         {
-            _currentDialogLine = $"You asked about {topicId}. It is a complex matter indeed.";
+            _currentDialogLine = $"You asked about <color=#f1c40f>{topicId}</color>. It is a complex matter indeed.";
+        }
+
+        public void SeedWorld(string mood, string calling, string startLocation)
+        {
+            Debug.Log($"World Seeded: Mood={mood}, Calling={calling}, Start={startLocation}");
+            // Placeholder can just log or change initial text
+            _hudText = $"Starting {calling} in a {mood} world...";
         }
 
         public void LogCombat(string message)

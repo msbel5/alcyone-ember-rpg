@@ -17,14 +17,24 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
         public void Build()
         {
             var floorMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/stone_floor.png", tiling: 6f);
+                $"{EmberAssetPaths.TilesDir}/stone_floor.png", tiling: 8f);
+            var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
+                $"{EmberAssetPaths.TilesDir}/brick.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 24f, floorMat, "ShowroomFloor");
+            EmberTerrainBuilder.BuildRoom(Vector3.zero, 30f, 30f, 4f, floorMat, wallMat);
 
             EmberLightingBuilder.AddDirectionalSun(
-                color: new Color(1f, 0.95f, 0.88f),
-                intensity: 1.05f,
-                eulerAngles: new Vector3(60f, 35f, 0f));
+                color: new Color(1f, 0.98f, 0.92f),
+                intensity: 1.2f,
+                eulerAngles: new Vector3(50f, -30f, 0f));
+            
+            // Add some point lights for ambiance
+            var lightA = new GameObject("AmbianceLightA", typeof(Light));
+            lightA.transform.position = new Vector3(-5f, 2f, 5f);
+            lightA.GetComponent<Light>().type = LightType.Point;
+            lightA.GetComponent<Light>().range = 10f;
+            lightA.GetComponent<Light>().intensity = 0.5f;
+            lightA.GetComponent<Light>().color = new Color(1f, 0.7f, 0.4f);
 
             EmberPlayerRigBuilder.BuildRig(
                 spawnPosition: new Vector3(0f, 0f, -7f),

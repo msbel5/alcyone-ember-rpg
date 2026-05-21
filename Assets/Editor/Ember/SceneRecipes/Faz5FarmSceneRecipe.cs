@@ -15,14 +15,19 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
         public void Build()
         {
             var groundMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/grass.png", tiling: 10f);
+                $"{EmberAssetPaths.TilesDir}/grass.png", tiling: 12f);
+            var dirtMat = EmberMaterialFactory.GetOrCreateTileMaterial(
+                $"{EmberAssetPaths.TilesDir}/dirt_path.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 40f, groundMat, "Field");
+            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 60f, groundMat, "Field");
+            
+            // Path to harvest shed
+            EmberTerrainBuilder.BuildGroundPlane(new Vector3(2f, 0.01f, 0f), 10f, dirtMat, "Path");
 
             EmberLightingBuilder.AddDirectionalSun(
-                color: new Color(1f, 0.96f, 0.9f),
-                intensity: 1.25f,
-                eulerAngles: new Vector3(55f, 25f, 0f));
+                color: new Color(1f, 1f, 0.95f),
+                intensity: 1.4f,
+                eulerAngles: new Vector3(60f, 30f, 0f));
 
             EmberPlayerRigBuilder.BuildRig(
                 spawnPosition: new Vector3(0f, 0f, -8f),

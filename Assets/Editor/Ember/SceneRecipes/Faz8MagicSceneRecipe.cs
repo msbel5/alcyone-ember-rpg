@@ -16,21 +16,25 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
         public void Build()
         {
             var floorMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/marble.png", tiling: 4f);
+                $"{EmberAssetPaths.TilesDir}/marble.png", tiling: 6f);
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/dark_stone.png", tiling: 2f);
+                $"{EmberAssetPaths.TilesDir}/dark_stone.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 22f, floorMat, "RitualFloor");
-
-            EmberTerrainBuilder.BuildWall(new Vector3( 0f, 1.5f,  11f), new Vector3(22f, 3f, 0.5f), wallMat, "NorthWall");
-            EmberTerrainBuilder.BuildWall(new Vector3( 0f, 1.5f, -11f), new Vector3(22f, 3f, 0.5f), wallMat, "SouthWall");
-            EmberTerrainBuilder.BuildWall(new Vector3(-11f, 1.5f, 0f), new Vector3(0.5f, 3f, 22f), wallMat, "WestWall");
-            EmberTerrainBuilder.BuildWall(new Vector3( 11f, 1.5f, 0f), new Vector3(0.5f, 3f, 22f), wallMat, "EastWall");
+            EmberTerrainBuilder.BuildRoom(Vector3.zero, 25f, 25f, 5f, floorMat, wallMat);
 
             EmberLightingBuilder.AddDirectionalSun(
-                color: new Color(0.6f, 0.7f, 1f),
-                intensity: 0.7f,
-                eulerAngles: new Vector3(75f, 0f, 0f));
+                color: new Color(0.7f, 0.8f, 1f),
+                intensity: 0.8f,
+                eulerAngles: new Vector3(80f, 0f, 0f));
+
+            // Purple magical lights
+            var magicLight = new GameObject("MagicalLight", typeof(Light));
+            magicLight.transform.position = new Vector3(0f, 4f, 0f);
+            var l = magicLight.GetComponent<Light>();
+            l.type = LightType.Point;
+            l.range = 20f;
+            l.intensity = 1.0f;
+            l.color = new Color(0.7f, 0.2f, 1f);
 
             EmberPlayerRigBuilder.BuildRig(
                 spawnPosition: new Vector3(0f, 0f, -8f),

@@ -71,7 +71,18 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
         {
             if (string.IsNullOrEmpty(spriteName)) return null;
             var path = $"{EmberAssetPaths.CharactersDir}/{spriteName}.png";
-            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            
+            // Try to load as a single sprite first
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite != null) return sprite;
+
+            // For Multiple/Sliced, load all sub-assets and return the first sprite
+            var all = AssetDatabase.LoadAllAssetsAtPath(path);
+            foreach (var asset in all)
+            {
+                if (asset is Sprite s) return s;
+            }
+            return null;
         }
 
         private static Component AddRuntimeComponent(GameObject host, string fullName)

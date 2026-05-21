@@ -1,41 +1,68 @@
 using UnityEngine;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Adapters;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Unity.Cinemachine;
 
 namespace EmberCrpg.Presentation.Ember.Interaction
 {
     /// <summary>
-    /// Raycasts forward from the player's eye camera to detect interactables.
+    /// AAA Polished raycaster. Triggers Dialog and manages camera focus/damping/DOF.
     /// </summary>
     public sealed class EmberPlayerInteractRaycaster : MonoBehaviour
     {
-        [SerializeField] private float _interactDistance = 3.5f;
+        [SerializeField] private float _interactDistance = 5.0f;
 
         private Transform _eye;
         private DialogBoxPanel _dialogPanel;
+        private CinemachineCamera _vcam;
+        private DepthOfField _dof;
 
         private void Awake()
         {
-            _eye = transform.Find("EyeCamera");
-            // Dialog panel is typically found in the scene's UI canvas
+            _eye = transform.Find("EyeCamera") ?? GetComponentInChildren<UnityEngine.Camera>()?.transform;
+            _vcam = GetComponentInChildren<CinemachineCamera>(includeInactive: true);
+            
+            gameObject.layer = 2;
+            foreach (Transform t in transform) t.gameObject.layer = 2;
+
+            var volumes = Object.FindObjectsByType<Volume>(FindObjectsSortMode.None);
+            foreach (var v in volumes)
+            {
+                if (v.isGlobal && v.sharedProfile != null && v.sharedProfile.TryGet<DepthOfField>(out var dof))
+                {
+                    _dof = dof;
+                    break;
+                }
+            }
         }
 
         private void Update()
         {
             if (_eye == null) return;
+            if (EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost.IsModalOpen())
+            {
+                UpdateDofFocus();
+                return;
+            }
+            else
+            {
+                if (_dof != null) _dof.active = false;
+            }
 
             Ray ray = new Ray(_eye.position, _eye.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit, _interactDistance))
+            int mask = ~(1 << 2);
+            if (Physics.Raycast(ray, out RaycastHit hit, _interactDistance, mask))
             {
                 var interactable = hit.collider.GetComponentInParent<EmberInteractable>();
                 var portal = hit.collider.GetComponentInParent<EmberScenePortal>();
 
                 if (interactable != null)
                 {
-                    // For now, we assume [E] is the interaction key
                     if (Input.GetKeyDown(KeyCode.E))
                     {
-                        OpenDialog(interactable);
+                        OpenDialog(interactable, hit.point);
                     }
                 }
                 else if (portal != null)
@@ -48,35 +75,40 @@ namespace EmberCrpg.Presentation.Ember.Interaction
             }
         }
 
-        private void OpenDialog(EmberInteractable target)
+        private void UpdateDofFocus()
+        {
+            if (_dof == null) return;
+            _dof.active = true;
+            // Simple focus on a fixed distance or raycast hit
+            _dof.focusDistance.Override(2.0f); 
+        }
+
+        private void OpenDialog(EmberInteractable target, Vector3 hitPoint)
         {
             if (_dialogPanel == null)
-            {
                 _dialogPanel = FindFirstObjectByType<DialogBoxPanel>(FindObjectsInactive.Include);
-            }
 
             if (_dialogPanel != null)
             {
                 var commands = EmberDomainAdapterLocator.PlayerCommandSink;
                 if (commands != null)
                 {
-                    // Codex audit (fourth pass D-P2): previously bypassed
-                    // IPlayerCommandSink.TryInteract entirely and reached
-                    // straight into GetDialogSource. Route through TryInteract
-                    // so the adapter can apply domain side-effects (memory
-                    // marker, dialog-seen counter); then bind the dialog
-                    // panel to the returned source. The placeholder adapter's
-                    // default TryInteract is a no-op-success so legacy scenes
-                    // still get a panel even without a real domain backing.
                     commands.TryInteract(target.DisplayName);
                     _dialogPanel.Source = commands.GetDialogSource(target.DisplayName);
                     _dialogPanel.gameObject.SetActive(true);
 
-                    // Unlock cursor when dialog is open
                     Cursor.lockState = CursorLockMode.None;
                     Cursor.visible = true;
+                    
+                    if (_dof != null)
+                    {
+                        float dist = Vector3.Distance(_eye.position, hitPoint);
+                        _dof.focusDistance.Override(dist);
+                        _dof.active = true;
+                    }
                 }
             }
         }
     }
 }
+

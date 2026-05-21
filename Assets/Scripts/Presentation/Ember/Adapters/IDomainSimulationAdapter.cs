@@ -153,6 +153,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         IConsultFateOracle,
         IEmberSaveBridge
     {
+        void SeedWorld(string mood, string calling, string startLocation);
     }
 
     /// <summary>

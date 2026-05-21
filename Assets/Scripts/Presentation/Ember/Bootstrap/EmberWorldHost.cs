@@ -15,7 +15,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class EmberWorldHost : MonoBehaviour, EmberTickDriver.ITickListener,
-        IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSource,
+        IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait,
         IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ISpellBarSource
     {
         [SerializeField] private SpriteRegistry _spriteRegistry;
@@ -331,9 +331,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         }
 
         public IReadOnlyList<string> GetTopics() => Topics;
+        public string GetPortraitName() => "portrait_npc_placeholder";
 
         public void SelectTopic(string topicId)
-        {
+{
             if (!string.IsNullOrEmpty(topicId))
                 _selectedTopic = topicId;
         }

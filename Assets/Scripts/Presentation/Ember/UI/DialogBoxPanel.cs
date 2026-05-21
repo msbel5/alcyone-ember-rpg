@@ -1,46 +1,130 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
+using EmberCrpg.Presentation.Ember.Bootstrap;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
-    /// <summary>
+/// <summary>
     /// Fallout 1 / Hitchhiker-style dialog scaffold. Shows the NPC line on top and a
     /// list of player Ask-About topics underneath. Drives the simulation by handing the
     /// topic key back to <see cref="IDialogSource"/>; the simulation decides the reply.
+    /// Now with TMP support, typewriter effects, and character portraits.
     /// </summary>
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(CanvasGroup))]
     public sealed class DialogBoxPanel : MonoBehaviour
     {
         public IDialogSource Source { get; set; }
 
-        private Text _npcLineLabel;
+        [Header("Assets")]
+        [SerializeField] private TMP_FontAsset _font;
+        [SerializeField] private Sprite _panelFrame;
+
+        [Header("Speeds")]
+        [SerializeField] private float _charsPerSecond = 45f;
+
+        private TMP_Text _npcLineLabel;
         private RectTransform _topicsRoot;
-        private readonly List<Text> _topicLabels = new List<Text>();
+        private Image _portraitImage;
+        private Image _frameImage;
+        private CanvasGroup _canvasGroup;
+        private readonly List<TMP_Text> _topicLabels = new List<TMP_Text>();
+        
+        private string _fullLineText;
+        private string _displayedLineText;
+        private float _typewriterElapsed;
+        private bool _isTypewriting;
 
         private void Awake()
         {
-            _npcLineLabel = BuildLine(transform, anchorMinY: 0.55f, anchorMaxY: 0.95f, alignTop: true, fontSize: 18);
-            _topicsRoot = BuildPanelRoot(transform, anchorMinY: 0.05f, anchorMaxY: 0.5f);
+            _canvasGroup = GetComponent<CanvasGroup>();
+            _frameImage = GetComponent<Image>();
+            if (_panelFrame != null && _frameImage != null)
+            {
+                _frameImage.sprite = _panelFrame;
+                _frameImage.type = Image.Type.Sliced;
+            }
+
+            _portraitImage = BuildPortrait(transform);
+            _npcLineLabel = BuildLine(transform, anchorMinX: 0.2f, anchorMaxX: 0.95f, anchorMinY: 0.55f, anchorMaxY: 0.95f, alignTop: true, fontSize: 18);
+            _topicsRoot = BuildPanelRoot(transform, anchorMinX: 0.2f, anchorMaxX: 0.95f, anchorMinY: 0.05f, anchorMaxY: 0.5f);
+            
             RebuildTopicLabels();
+        }
+
+        private void OnEnable()
+        {
+            StartCoroutine(UiAnimationHelper.AnimateOpen(_canvasGroup, GetComponent<RectTransform>()));
+            _typewriterElapsed = 0f;
+            _displayedLineText = string.Empty;
+            _isTypewriting = true;
         }
 
         private void Update()
         {
             if (Source == null) return;
-            _npcLineLabel.text = Source.GetCurrentLine();
+
+            string targetLine = Source.GetCurrentLine();
+            if (targetLine != _fullLineText)
+            {
+                _fullLineText = targetLine;
+                _displayedLineText = string.Empty;
+                _typewriterElapsed = 0f;
+                _isTypewriting = true;
+            }
+
+            if (_isTypewriting)
+            {
+                _typewriterElapsed += Time.unscaledDeltaTime;
+                int charsToShow = Mathf.FloorToInt(_typewriterElapsed * _charsPerSecond);
+                if (charsToShow >= _fullLineText.Length)
+                {
+                    _displayedLineText = _fullLineText;
+                    _isTypewriting = false;
+                }
+                else
+                {
+                    _displayedLineText = _fullLineText.Substring(0, charsToShow);
+                }
+
+                if (Input.GetMouseButtonDown(0))
+                {
+                    _displayedLineText = _fullLineText;
+                    _isTypewriting = false;
+                }
+            }
+
+            _npcLineLabel.text = _displayedLineText;
+
+            // Handle portrait
+            if (_portraitImage != null && Source is IDialogSourcePortrait portraitSource)
+            {
+                // We'd need a way to look up the sprite from the portrait name
+                // For now, we assume the host can provide it or we just placeholder it.
+            }
+
             var topics = Source.GetTopics();
             for (int i = 0; i < _topicLabels.Count; i++)
             {
-                _topicLabels[i].text = i < topics.Count
-                    ? $"{i + 1}. Ask about {topics[i]}"
-                    : string.Empty;
+                if (i < topics.Count)
+                {
+                    _topicLabels[i].text = $"{i + 1}. Ask about <color=#f1c40f>{topics[i]}</color>";
+                }
+                else
+                {
+                    _topicLabels[i].text = string.Empty;
+                }
             }
 
             for (int i = 0; i < 9 && i < topics.Count; i++)
             {
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+                {
                     Source.SelectTopic(topics[i]);
+                }
             }
 
             if (Input.GetKeyDown(KeyCode.Escape))
@@ -51,52 +135,73 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         public void Close()
         {
+            StartCoroutine(CloseRoutine());
+        }
+
+        private IEnumerator CloseRoutine()
+        {
+            yield return UiAnimationHelper.AnimateClose(_canvasGroup, GetComponent<RectTransform>());
             Source = null;
             gameObject.SetActive(false);
             
-            // Re-lock cursor
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            if (!EmberWorldHost.IsModalOpen())
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
 
         private void RebuildTopicLabels()
         {
+            foreach (var label in _topicLabels) if(label != null) Destroy(label.gameObject);
             _topicLabels.Clear();
             for (int i = 0; i < 6; i++)
             {
-                var label = BuildLine(_topicsRoot, anchorMinY: 1f - (i + 1) * 0.16f, anchorMaxY: 1f - i * 0.16f, alignTop: true, fontSize: 16);
+                var label = BuildLine(_topicsRoot, anchorMinX: 0f, anchorMaxX: 1f, anchorMinY: 1f - (i + 1) * 0.16f, anchorMaxY: 1f - i * 0.16f, alignTop: true, fontSize: 16);
                 _topicLabels.Add(label);
             }
         }
 
-        private static Text BuildLine(Transform parent, float anchorMinY, float anchorMaxY, bool alignTop, int fontSize)
+        private TMP_Text BuildLine(Transform parent, float anchorMinX, float anchorMaxX, float anchorMinY, float anchorMaxY, bool alignTop, int fontSize)
         {
-            var go = new GameObject("Line", typeof(RectTransform), typeof(Text));
+            var go = new GameObject("Line", typeof(RectTransform), typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, worldPositionStays: false);
             var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, anchorMinY);
-            rt.anchorMax = new Vector2(1f, anchorMaxY);
-            rt.offsetMin = new Vector2(12f, 6f);
-            rt.offsetMax = new Vector2(-12f, -6f);
-            var text = go.GetComponent<Text>();
-            text.alignment = alignTop ? TextAnchor.UpperLeft : TextAnchor.MiddleLeft;
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            rt.anchorMin = new Vector2(anchorMinX, anchorMinY);
+            rt.anchorMax = new Vector2(anchorMaxX, anchorMaxY);
+            rt.offsetMin = new Vector2(60f, 40f);
+            rt.offsetMax = new Vector2(-60f, -40f);
+            var text = go.GetComponent<TextMeshProUGUI>();
+text.alignment = alignTop ? TextAlignmentOptions.TopLeft : TextAlignmentOptions.Left;
+            if (_font != null) text.font = _font;
             text.fontSize = fontSize;
-            text.color = new Color(0.95f, 0.95f, 0.88f);
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
-            return text;
+            text.color = new Color(0.15f, 0.1f, 0.05f); // Deep Charcoal Brown
+return text;
         }
 
-        private static RectTransform BuildPanelRoot(Transform parent, float anchorMinY, float anchorMaxY)
+        private static Image BuildPortrait(Transform parent)
+        {
+            var go = new GameObject("Portrait", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, worldPositionStays: false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.02f, 0.55f);
+            rt.anchorMax = new Vector2(0.18f, 0.95f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var img = go.GetComponent<Image>();
+            img.color = new Color(1, 1, 1, 0.5f); // Placeholder alpha
+            return img;
+        }
+
+        private static RectTransform BuildPanelRoot(Transform parent, float anchorMinX, float anchorMaxX, float anchorMinY, float anchorMaxY)
         {
             var go = new GameObject("Topics", typeof(RectTransform));
             go.transform.SetParent(parent, worldPositionStays: false);
             var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, anchorMinY);
-            rt.anchorMax = new Vector2(1f, anchorMaxY);
-            rt.offsetMin = new Vector2(12f, 6f);
-            rt.offsetMax = new Vector2(-12f, -6f);
+            rt.anchorMin = new Vector2(anchorMinX, anchorMinY);
+            rt.anchorMax = new Vector2(anchorMaxX, anchorMaxY);
+            rt.offsetMin = new Vector2(60f, 40f);
+            rt.offsetMax = new Vector2(-60f, -40f);
             return rt;
         }
     }
@@ -107,4 +212,10 @@ namespace EmberCrpg.Presentation.Ember.UI
         IReadOnlyList<string> GetTopics();
         void SelectTopic(string topicId);
     }
+
+    public interface IDialogSourcePortrait : IDialogSource
+    {
+        string GetPortraitName();
+    }
 }
+

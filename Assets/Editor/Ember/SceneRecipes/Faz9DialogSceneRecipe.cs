@@ -16,21 +16,24 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
         public void Build()
         {
             var floorMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/tavern_floor.png", tiling: 4f);
+                $"{EmberAssetPaths.TilesDir}/tavern_floor.png", tiling: 6f);
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
-                $"{EmberAssetPaths.TilesDir}/wood_floor.png", tiling: 3f);
+                $"{EmberAssetPaths.TilesDir}/wood_floor.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 16f, floorMat, "TavernFloor");
-
-            EmberTerrainBuilder.BuildWall(new Vector3( 0f, 1.5f,  8f),  new Vector3(16f, 3f, 0.4f), wallMat, "NorthWall");
-            EmberTerrainBuilder.BuildWall(new Vector3( 0f, 1.5f, -8f),  new Vector3(16f, 3f, 0.4f), wallMat, "SouthWall");
-            EmberTerrainBuilder.BuildWall(new Vector3(-8f, 1.5f, 0f),   new Vector3(0.4f, 3f, 16f), wallMat, "WestWall");
-            EmberTerrainBuilder.BuildWall(new Vector3( 8f, 1.5f, 0f),   new Vector3(0.4f, 3f, 16f), wallMat, "EastWall");
+            EmberTerrainBuilder.BuildRoom(Vector3.zero, 18f, 18f, 3.5f, floorMat, wallMat);
 
             EmberLightingBuilder.AddDirectionalSun(
-                color: new Color(1f, 0.78f, 0.55f),
-                intensity: 0.85f,
-                eulerAngles: new Vector3(50f, 120f, 0f));
+                color: new Color(1f, 0.85f, 0.65f),
+                intensity: 1.1f,
+                eulerAngles: new Vector3(45f, 135f, 0f));
+            
+            var interiorLight = new GameObject("InteriorWarmth", typeof(Light));
+            interiorLight.transform.position = new Vector3(0f, 3f, 0f);
+            var l = interiorLight.GetComponent<Light>();
+            l.type = LightType.Point;
+            l.range = 15f;
+            l.intensity = 0.7f;
+            l.color = new Color(1f, 0.7f, 0.4f);
 
             EmberPlayerRigBuilder.BuildRig(
                 spawnPosition: new Vector3(0f, 0f, -5f),

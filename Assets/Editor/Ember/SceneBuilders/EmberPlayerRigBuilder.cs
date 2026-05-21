@@ -1,17 +1,20 @@
 using UnityEngine;
+using UnityEditor;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Unity.Cinemachine;
 
 namespace EmberCrpg.Editor.Ember.SceneBuilders
 {
     /// <summary>
-    /// Builds the first-person player rig: a capsule body with a child eye camera.
-    /// Runtime control lives on <c>EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController</c>.
-    /// The builder wires that script and the input adapter by reflection-friendly name
-    /// so the editor assembly does not need a hard reference on the runtime assembly.
+    /// AAA Polished rig builder. Includes Cinemachine, URP Volume, and polished scripts.
     /// </summary>
     public static class EmberPlayerRigBuilder
     {
         public const float DefaultCapsuleHeight = 1.85f;
         public const float DefaultCapsuleRadius = 0.35f;
+
+        private const string ProfileGuid = "a1b2c3d4"; // We'll need the actual GUID or path
 
         public static GameObject BuildRig(Vector3 spawnPosition, Quaternion spawnRotation, float fov = 70f)
         {
@@ -35,18 +38,46 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             var bodyCollider = body.GetComponent<Collider>();
             if (bodyCollider != null) Object.DestroyImmediate(bodyCollider);
 
-            EmberCameraRigBuilder.AddFirstPersonCamera(
+            Camera eyeCamera = EmberCameraRigBuilder.AddFirstPersonCamera(
                 parent: rig,
                 fieldOfView: fov,
                 nearClip: 0.05f,
                 farClip: 500f,
                 localEyePosition: new Vector3(0f, DefaultCapsuleHeight * 0.95f, 0f));
 
+            // AAA Polish: We'll skip CinemachineBrain for now as it overrides manual EyeCamera rotation
+            // and the user wants manual look control back.
+            // eyeCamera.gameObject.AddComponent<CinemachineBrain>();
+
+            // Add Virtual Camera (Disabled, just for reference/future use)
+            var vcamGo = new GameObject("PlayerVCam", typeof(CinemachineCamera));
+            vcamGo.transform.SetParent(rig.transform, worldPositionStays: false);
+            vcamGo.transform.localPosition = new Vector3(0f, DefaultCapsuleHeight * 0.95f, 0f);
+            var vcam = vcamGo.GetComponent<CinemachineCamera>();
+            vcam.Priority = 10;
+            vcam.Lens.FieldOfView = fov;
+            vcam.Lens.NearClipPlane = 0.05f;
+            vcam.enabled = false;
+
+            // Add Global Volume to scene if not present
+            var volumeGo = GameObject.Find("GlobalVolume");
+            if (volumeGo == null)
+            {
+                volumeGo = new GameObject("GlobalVolume", typeof(Volume));
+                var volume = volumeGo.GetComponent<Volume>();
+                volume.isGlobal = true;
+                volume.priority = 1;
+                
+                string profilePath = "Assets/Settings/EmberGlobalVolumeProfile.asset";
+                volume.sharedProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath);
+            }
+
             AddScriptByName(rig, "EmberFirstPersonController");
             AddScriptByName(rig, "EmberPlayerInteractRaycaster");
             AddScriptByName(rig, "EmberPlayerInventoryToggle");
             AddScriptByName(rig, "EmberPlayerSpellCaster");
             AddScriptByName(rig, "EmberPlayerMeleeSwing");
+            
             return rig;
         }
 
@@ -62,5 +93,6 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             
             if (type != null) host.AddComponent(type);
         }
+    }
 }
-}
+

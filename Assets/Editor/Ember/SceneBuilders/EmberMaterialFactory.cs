@@ -20,19 +20,43 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             var matPath = $"{EmberAssetPaths.MaterialsRoot}/Tile_{safeName}.mat";
 
             var existing = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-            if (existing != null)
-                return existing;
-
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            var material = new Material(shader);
+            
+            Material material;
+            if (existing != null)
+            {
+                material = existing;
+                if (material.shader != shader) material.shader = shader;
+            }
+            else
+            {
+                material = new Material(shader);
+            }
+
             var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(textureAssetPath);
             if (tex != null)
             {
-                material.mainTexture = tex;
-                material.mainTextureScale = new Vector2(tiling, tiling);
+                if (shader.name.Contains("Universal Render Pipeline/Lit"))
+                {
+                    material.SetTexture("_BaseMap", tex);
+                    material.SetVector("_BaseMap_ST", new Vector4(tiling, tiling, 0, 0));
+                }
+                else
+                {
+                    material.mainTexture = tex;
+                    material.mainTextureScale = new Vector2(tiling, tiling);
+                }
             }
-            AssetDatabase.CreateAsset(material, matPath);
+            
+            if (existing == null)
+            {
+                AssetDatabase.CreateAsset(material, matPath);
+            }
+            else
+            {
+                EditorUtility.SetDirty(material);
+            }
             return material;
-        }
+}
     }
 }

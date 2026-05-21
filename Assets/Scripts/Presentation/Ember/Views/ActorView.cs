@@ -16,21 +16,15 @@ namespace EmberCrpg.Presentation.Ember.Views
     [DisallowMultipleComponent]
     public sealed class ActorView : MonoBehaviour, IDamageSink
     {
-        // Codex audit (fourth pass A-P1): EmberWorldHost.PushWorldViews used
-        // to look up the domain actor by gameObject.name (e.g. "Smith_A"),
-        // but SliceWorldFactory's actors are named "Warden", "Sage Nera",
-        // etc. Expose an explicit DomainActorKey field so scenes can author
-        // the matching domain-side name on each ActorView, and fall back to
-        // the GameObject name when unset for legacy scenes.
         [SerializeField] private string _domainActorKey;
         [SerializeField] private float _interpolationSpeed = 8f;
         [SerializeField] private Transform _billboard;
 
-        /// <summary>
-        /// Stable key the host uses when calling
-        /// <c>IDomainSimulationAdapter.TryReadActor</c>. Defaults to the
-        /// GameObject name when no scene-authored value is provided.
-        /// </summary>
+        [Header("Animation")]
+        [SerializeField] private float _walkCycleFrequency = 0.4f;
+        [SerializeField] private float _idleFloatFrequency = 1.5f;
+        [SerializeField] private float _idleFloatAmplitude = 0.05f;
+        
         public string DomainActorKey =>
             string.IsNullOrEmpty(_domainActorKey) ? gameObject.name : _domainActorKey;
 
@@ -38,6 +32,10 @@ namespace EmberCrpg.Presentation.Ember.Views
         private bool _hasTarget;
         private SpriteRenderer _renderer;
         private float _tintRemaining;
+        private float _shakeRemaining;
+        private Vector3 _billboardBaseLocalPos;
+        private float _walkTimer;
+        private Vector3 _lastPosition;
 
         private void Awake()
         {
@@ -45,7 +43,11 @@ namespace EmberCrpg.Presentation.Ember.Views
                 _billboard = transform.Find("Billboard");
             
             if (_billboard != null)
+            {
                 _renderer = _billboard.GetComponent<SpriteRenderer>();
+                _billboardBaseLocalPos = _billboard.localPosition;
+            }
+            _lastPosition = transform.position;
         }
 
         public void SetTarget(ActorViewState state)
@@ -57,6 +59,7 @@ namespace EmberCrpg.Presentation.Ember.Views
         public void Apply(int amount)
         {
             _tintRemaining = 0.2f;
+            _shakeRemaining = 0.2f;
             var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current;
             if (adapter != null)
             {
@@ -67,23 +70,54 @@ namespace EmberCrpg.Presentation.Ember.Views
         private void Update()
         {
             if (!_hasTarget) return;
+
+            // 1. Interpolation
             var t = Mathf.Clamp01(_interpolationSpeed * Time.deltaTime);
             transform.position = Vector3.Lerp(transform.position, _target.WorldPosition, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, _target.WorldRotation, t);
-            if (_billboard != null)
-                _billboard.gameObject.SetActive(_target.Visible);
+            
+            if (_billboard == null) return;
+            _billboard.gameObject.SetActive(_target.Visible);
 
-            if (_renderer != null)
+            // 2. Animation Logic
+            float speed = Time.deltaTime > 0 ? (transform.position - _lastPosition).magnitude / Time.deltaTime : 0f;
+            _lastPosition = transform.position;
+
+            if (speed > 0.05f)
             {
-                if (_tintRemaining > 0)
+                // Walk cycle: 2-frame ping-pong via flipX
+                _walkTimer += Time.deltaTime;
+                if (_walkTimer > _walkCycleFrequency)
                 {
-                    _tintRemaining -= Time.deltaTime;
-                    _renderer.color = Color.red;
+                    _walkTimer = 0f;
+                    if (_renderer != null) _renderer.flipX = !_renderer.flipX;
                 }
-                else
-                {
-                    _renderer.color = Color.white;
-                }
+                _billboard.localPosition = _billboardBaseLocalPos;
+            }
+            else
+            {
+                // Idle float
+                float floatOffset = Mathf.Sin(Time.time * _idleFloatFrequency) * _idleFloatAmplitude;
+                _billboard.localPosition = _billboardBaseLocalPos + new Vector3(0f, floatOffset, 0f);
+                _walkTimer = 0f;
+            }
+
+            // 3. Combat Effects
+            if (_tintRemaining > 0)
+            {
+                _tintRemaining -= Time.deltaTime;
+                if (_renderer != null) _renderer.color = Color.red;
+            }
+            else
+            {
+                if (_renderer != null) _renderer.color = Color.white;
+            }
+
+            if (_shakeRemaining > 0)
+            {
+                _shakeRemaining -= Time.deltaTime;
+                float shake = 0.05f;
+                _billboard.localPosition += new Vector3(Random.Range(-shake, shake), Random.Range(-shake, shake), 0f);
             }
         }
     }

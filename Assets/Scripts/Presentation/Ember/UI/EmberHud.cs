@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
@@ -13,13 +14,24 @@ namespace EmberCrpg.Presentation.Ember.UI
     {
         public IEmberHudSource Source { get; set; }
 
-        private Text _label;
+        [SerializeField] private TMP_FontAsset _font;
+        [SerializeField] private Sprite _backgroundFrame;
+
+        private TMP_Text _label;
+        private Image _background;
         private float _refreshTimer;
         private const float RefreshIntervalSeconds = 0.25f;
 
         private void Awake()
         {
-            _label = GetComponentInChildren<Text>(includeInactive: true);
+            _background = GetComponent<Image>();
+            if (_backgroundFrame != null && _background != null)
+            {
+                _background.sprite = _backgroundFrame;
+                _background.type = Image.Type.Sliced;
+            }
+
+            _label = GetComponentInChildren<TMP_Text>(includeInactive: true);
             if (_label == null) _label = BuildLabel();
         }
 
@@ -31,21 +43,21 @@ namespace EmberCrpg.Presentation.Ember.UI
             _label.text = Source != null ? Source.GetHudText() : "Tick 0  ·  Day 1  ·  Calm";
         }
 
-        private Text BuildLabel()
+        private TMP_Text BuildLabel()
         {
-            var go = new GameObject("HudLabel", typeof(RectTransform), typeof(Text));
+            var go = new GameObject("HudLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
             go.transform.SetParent(transform, worldPositionStays: false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
-            rt.offsetMin = new Vector2(12f, 4f);
-            rt.offsetMax = new Vector2(-12f, -4f);
-            var text = go.GetComponent<Text>();
-            text.alignment = TextAnchor.MiddleLeft;
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            rt.offsetMin = new Vector2(60f, 10f);
+            rt.offsetMax = new Vector2(-60f, -10f);
+var text = go.GetComponent<TextMeshProUGUI>();
+            text.alignment = TextAlignmentOptions.Left;
+            if (_font != null) text.font = _font;
             text.fontSize = 22;
-            text.color = new Color(0.95f, 0.95f, 0.88f);
-            return text;
+            text.color = new Color(0.15f, 0.1f, 0.05f);
+return text;
         }
     }
 
