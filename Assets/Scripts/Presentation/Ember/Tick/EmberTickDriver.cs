@@ -23,6 +23,21 @@ namespace EmberCrpg.Presentation.Ember.Tick
 
         public void Pause(bool paused) => _paused = paused;
 
+        /// <summary>
+        /// Codex review on PR #185 (P1): align the driver's running counter and
+        /// sub-tick accumulator to a restored tick. Without this, a save loaded
+        /// at e.g. tick 500 was clobbered on the next frame when the driver
+        /// emitted OnTick(1) → adapter.AdvanceTick(1). Call this immediately
+        /// after IDomainSimulationAdapter.RestoreStateJson so the timeline
+        /// resumes from the saved point.
+        /// </summary>
+        public void AlignTo(int tickIndex)
+        {
+            if (tickIndex < 0) tickIndex = 0;
+            CurrentTick = tickIndex;
+            _accumulator = 0f;
+        }
+
         private void Update()
         {
             if (_paused || Listener == null || _tickIntervalSeconds <= 0f) return;

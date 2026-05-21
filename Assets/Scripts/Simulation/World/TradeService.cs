@@ -43,8 +43,16 @@ namespace EmberCrpg.Simulation.World
             if (available < quantity)
                 return false;
 
-            var unitPrice = ledger.GetPrice(sellerStockpile.SiteId, itemTag);
             var normalizedCurrency = string.IsNullOrWhiteSpace(currencyTag) ? null : currencyTag.Trim();
+            // Codex audit (A/P2): when a currency tag is supplied but the ledger
+            // has no price row for the item, GetPrice returns 0 and the payment
+            // block below is skipped entirely — a priced trade silently became
+            // free. Refuse the trade rather than letting items move without
+            // payment. Unpriced (currencyTag == null) trades are still allowed.
+            if (normalizedCurrency != null && !ledger.Contains(sellerStockpile.SiteId, itemTag))
+                return false;
+
+            var unitPrice = ledger.GetPrice(sellerStockpile.SiteId, itemTag);
             var totalPrice = unitPrice * quantity;
             if (normalizedCurrency != null)
             {

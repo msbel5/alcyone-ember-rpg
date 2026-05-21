@@ -93,12 +93,50 @@ namespace EmberCrpg.Simulation.AiDm
 
         private static string BuildRequestJson(LlmRequest request)
         {
-            var sb = new StringBuilder(128);
+            var sb = new StringBuilder(256);
             sb.Append('{');
             sb.Append("\"system_prompt_id\":");   AppendJsonString(sb, request.SystemPromptId);
             sb.Append(",\"conversation_id\":");   AppendJsonString(sb, request.ConversationId);
             sb.Append(",\"max_tokens\":").Append(request.MaxTokens);
             sb.Append(",\"seed\":").Append(request.Seed);
+
+            // Codex audit (A/P2): the request envelope previously dropped the
+            // available_tools list entirely, so any cloud-routed conversation
+            // arrived at the provider with no tool schemas — every tool call
+            // would be a hallucination. Serialize the descriptor rows
+            // deterministically (stable id order from LlmRequest) so the
+            // provider sees the exact contract.
+            sb.Append(",\"available_tools\":[");
+            var tools = request.AvailableTools;
+            if (tools != null)
+            {
+                for (int i = 0; i < tools.Count; i++)
+                {
+                    if (i > 0) sb.Append(',');
+                    var tool = tools[i];
+                    if (tool == null) { sb.Append("null"); continue; }
+                    sb.Append('{');
+                    sb.Append("\"id\":");           AppendJsonString(sb, tool.Id.Code);
+                    sb.Append(",\"surface\":");     AppendJsonString(sb, tool.Surface.Code);
+                    sb.Append(",\"output_schema\":"); AppendJsonString(sb, tool.OutputSchemaKey);
+                    sb.Append(",\"side_effect\":"); AppendJsonString(sb, tool.SideEffect.Code);
+                    sb.Append(",\"parameters\":[");
+                    var pars = tool.Parameters;
+                    for (int p = 0; p < pars.Count; p++)
+                    {
+                        if (p > 0) sb.Append(',');
+                        var par = pars[p];
+                        sb.Append('{');
+                        sb.Append("\"name\":");      AppendJsonString(sb, par.Name);
+                        sb.Append(",\"schema\":");   AppendJsonString(sb, par.SchemaKey);
+                        sb.Append(",\"required\":").Append(par.Required ? "true" : "false");
+                        sb.Append('}');
+                    }
+                    sb.Append("]}");
+                }
+            }
+            sb.Append(']');
+
             sb.Append('}');
             return sb.ToString();
         }
