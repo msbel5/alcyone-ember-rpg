@@ -12,18 +12,26 @@ namespace EmberCrpg.Presentation.Sprint4
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateFoundationIfNeeded()
         {
-            // Codex audit (sixth pass E-P2 #E2): intent-marker is now the
-            // sole opt-in. The previous scene-name fallback meant any scene
-            // whose name happened to contain "Sprint4" got auto-bootstrapped,
-            // which collided with Ember scenes during testing. New Sprint 4
-            // playground scenes MUST author a Sprint4FoundationMarker at root;
-            // the SceneNameToken constant is kept for ARCHITECTURE.md history
-            // only.
+            // Codex audit (seventh pass — inline review on sixth-pass PR #198):
+            // The sixth-pass dropped the SceneNameToken fallback entirely, but
+            // the legacy Assets/Scenes/Sprint4Foundation.unity scene has no
+            // Sprint4FoundationMarker authored, so the bootstrap stopped
+            // producing the playground (no ground / player / camera rig) and
+            // left the scene non-playable. Restore the scene-name fallback
+            // for that one legacy scene — the marker is still the canonical
+            // opt-in for NEW scenes and remains the first probe. Removal of
+            // the fallback is gated on porting Sprint4Foundation.unity to
+            // carry a Sprint4FoundationMarker (tracked under the Faz 13
+            // cleanup ledger).
             var existingController = Object.FindFirstObjectByType<Sprint4PlayerController>(FindObjectsInactive.Include);
             if (existingController != null) return;
 
             var marker = Object.FindFirstObjectByType<Sprint4FoundationMarker>(FindObjectsInactive.Include);
-            if (marker == null) return;
+            if (marker == null)
+            {
+                var activeScene = SceneManager.GetActiveScene();
+                if (!activeScene.name.Contains(SceneNameToken)) return;
+            }
 
             EnsureLight();
             EnsureGround();
@@ -45,16 +53,26 @@ namespace EmberCrpg.Presentation.Sprint4
 
         private static void EnsureGround()
         {
-            // Codex audit (second pass E-P2): previously this always called
-            // CreatePrimitive, duplicating authored ground if the scene already
-            // had a `Sprint4 Greybox Ground` GameObject. Probe by name first
-            // so the bootstrap is idempotent and doesn't stack greyboxes when
-            // a real authored Sprint 4 scene is later opened.
-            if (GameObject.Find(GroundName) != null) return;
+            // Codex audit (seventh pass E-P3 #17): the previous idempotency
+            // guard probed `GameObject.Find(GroundName)` — fragile because
+            // any unrelated GameObject sharing the name would suppress
+            // spawn, and a renamed ground would silently get duplicated.
+            // Switch to a component-marker probe: tag the spawned ground
+            // with the Sprint4FoundationMarker (same component used as the
+            // scene-level opt-in). A future Sprint4-specific ground marker
+            // can replace it without changing this guard.
+            // Component-based idempotency: every ground we spawn carries a
+            // Sprint4GreyboxGroundMarker. Re-running the bootstrap finds the
+            // marker and bails. Name kept for human-readable debugging only.
+            foreach (var existing in Object.FindObjectsByType<Sprint4GreyboxGroundMarker>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (existing != null) return;
+            }
             var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
             ground.name = GroundName;
             ground.transform.position = new Vector3(0f, -0.1f, 0f);
             ground.transform.localScale = new Vector3(24f, 0.2f, 24f);
+            ground.AddComponent<Sprint4GreyboxGroundMarker>();
         }
 
         private static GameObject CreatePlayer()

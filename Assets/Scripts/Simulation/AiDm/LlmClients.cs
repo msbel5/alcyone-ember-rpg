@@ -13,6 +13,14 @@ namespace EmberCrpg.Simulation.AiDm
     /// real-provider client; do not depend on this type in production
     /// pathways until the routing surface is wired.
     /// </summary>
+    // Codex audit (seventh pass J-P3 #32): this file deliberately folds three
+    // related public types — LlmClientConfig, LocalQwenClient, CloudLlmClient
+    // — into a single file because they share the same HTTP envelope and
+    // config struct. The fold is documented in docs/sprint-faz-12-atom-map.md
+    // rows 3 + 4. Splitting them across three files would only multiply
+    // boilerplate (each would import the same envelope types and config). If
+    // a future code style sweep mandates one-public-type-per-file, the split
+    // points are obvious; do not split now.
     public sealed class LlmClientConfig
     {
         public LlmClientConfig(LlmProviderKind provider, string endpointUrl, string apiKey, bool enabled)
@@ -31,10 +39,12 @@ namespace EmberCrpg.Simulation.AiDm
 
     /// <summary>
     /// HTTP client targeting a local Qwen-compatible endpoint.
-    /// Codex audit (D-P3): no production caller is wired today; this class is
-    /// experimental — set up by integration tests and a manual smoke harness.
-    /// Routing service can adopt it once the local inference contract is
-    /// frozen. Do not lock production behaviour on this until then.
+    /// Codex audit (D-P3, restated in seventh-pass #14): no production caller
+    /// wires this in any of the live Faz scenes; the only callers are
+    /// integration tests and a manual smoke harness. Production adoption is
+    /// gated on the Faz 12 LLM tool-calling sprint where LlmRoutingService
+    /// will be wired against this contract. Until then, treat this class as
+    /// experimental — do not couple gameplay code to it.
     /// </summary>
     public sealed class LocalQwenClient
     {
@@ -58,10 +68,12 @@ namespace EmberCrpg.Simulation.AiDm
     /// <summary>
     /// HTTP client targeting a cloud provider (Anthropic/OpenAI/etc.). Provider
     /// label is derived from <see cref="LlmClientConfig.Provider"/>.
-    /// Codex audit (D-P3): no production caller is wired today; experimental
-    /// alongside <see cref="LocalQwenClient"/>. Use through integration tests
-    /// only until LlmRoutingService is wired to construct one from
-    /// configuration.
+    /// Codex audit (D-P3, restated in seventh-pass #14): no production caller
+    /// is wired today; experimental alongside <see cref="LocalQwenClient"/>.
+    /// Same Faz 12 gate applies: do not couple gameplay to this class until
+    /// LlmRoutingService picks it up from configuration. The integration
+    /// tests under Assets/Tests/EditMode/Net/* are the only consumers right
+    /// now and they bypass the routing seam entirely.
     /// </summary>
     public sealed class CloudLlmClient
     {

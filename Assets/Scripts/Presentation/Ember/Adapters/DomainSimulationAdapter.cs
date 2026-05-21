@@ -57,6 +57,35 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // Codex audit (sixth pass A-P0 #1): wire the per-tick composer so
             // the live game's simulation actually moves forward.
             _tickComposer = new EmberCrpg.Simulation.Composition.SliceTickComposer();
+
+            // Codex audit (seventh pass A-P2 #5): SliceWorldFactory authors
+            // `_world.Sites` (SiteRecord definitions) but the runtime
+            // WorksiteStore is empty until a save loads — so TryReadWorksite
+            // returned `isActive=false` even when the scene had worksites
+            // authored. Seed the WorksiteStore with one Active record per
+            // authored Site so the HUD and view layer immediately see them.
+            // Worksite kind defaults to Generic for now; specific kinds are
+            // assigned by the recipe system as work orders attach.
+            if (_saveService.Worksites != null && _world.Sites != null)
+            {
+                foreach (var site in _world.Sites.Records)
+                {
+                    // Skip if a record with the same SiteId+Position already
+                    // exists (idempotent re-seed safe).
+                    bool exists = false;
+                    foreach (var record in _saveService.Worksites.Records)
+                    {
+                        if (record.SiteId.Equals(site.Id) && record.Position.Equals(site.Position))
+                        {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (exists) continue;
+                    _saveService.Worksites.Add(new EmberCrpg.Domain.Process.WorksiteRecord(
+                        site.Id, site.Position, EmberCrpg.Domain.Process.WorksiteKind.None, isActive: true));
+                }
+            }
         }
 
         // ----- IEmberSimulationClock -----
@@ -143,19 +172,30 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var rows = new List<FactionRow>();
                 if (_world.Factions == null) return rows;
 
-                // Codex audit (sixth pass A-P1 #2): the previous "first
-                // faction as vantage" heuristic was non-deterministic when the
-                // store reordered and silently masked the missing
-                // player-faction wiring. ActorRecord does not yet carry a
-                // FactionId field; until that lands, surface every faction
-                // with reputation 0 / Neutral relative to itself rather than
-                // pretending an arbitrary one is the player's vantage. Real
-                // vantage will be derived from ActorRecord.FactionId once
-                // that field is added (tracked as Faz X follow-up).
+                // Codex audit (seventh pass A-P2 #7): previously emitted every
+                // faction at reputation 0 / Neutral, hiding the real diplomacy
+                // state held in FactionStore.ReputationRows. Use the FIRST
+                // authored faction as the deterministic player vantage and
+                // emit each OTHER faction with its real reputation relative
+                // to the vantage; the vantage itself is reported at 0 so the
+                // HUD still includes the player's home faction. When
+                // ActorRecord.FactionId lands the vantage will switch to the
+                // player's actual home faction.
+                EmberCrpg.Domain.World.FactionId vantage = default;
                 foreach (var faction in _world.Factions.Records)
                 {
-                    var label = FactionRelationKind.FromReputation(0).ToString();
-                    rows.Add(new FactionRow(faction.Name ?? string.Empty, 0, label));
+                    vantage = faction.Id;
+                    break;
+                }
+                foreach (var faction in _world.Factions.Records)
+                {
+                    int reputation = 0;
+                    if (!faction.Id.Equals(vantage))
+                    {
+                        reputation = _world.Factions.GetReputation(vantage, faction.Id).Value;
+                    }
+                    var label = FactionRelationKind.FromReputation(reputation).ToString();
+                    rows.Add(new FactionRow(faction.Name ?? string.Empty, reputation, label));
                 }
                 return rows;
             }
@@ -337,38 +377,50 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 LogCombat($"{spell.DisplayName ?? spell.TemplateId}: insufficient mana.");
                 return false;
             }
-            // Codex audit (fifth pass A-P1): route through the canonical
-            // SpellCastingService so mana spend, cooldown, and the
-            // deterministic event log are all driven by the simulation-side
-            // service rather than ad-hoc here. The TryPrepareCast +
-            // CommitPreparedCast pair is the production seam; this command
-            // builds the known-spell list from SliceSpellCatalog.All so the
-            // gate matches the HUD slot list. SpellExecutionService is not
-            // used here directly because it requires a richer target/context
-            // contract; we apply CastingService for the mana/cooldown gate
-            // and emit a SpellResolved event with the deterministic outcome.
+            // Codex audit (seventh pass A-P1 #2): the previous pass routed
+            // only TryPrepareCast + CommitPreparedCast, so mana/cooldown
+            // updated but the spell's actual effects (damage, heal, buff)
+            // never landed on a target. Switch to SpellExecutionService,
+            // which composes Cast → Target → Effect → CastRoll, so the live
+            // command performs real domain mutation. Target picker selects
+            // the closest hostile actor (or the caster for self-buffs); if
+            // no hostile target exists, fall back to the caster so single-
+            // target effects still resolve.
             var knownIds = new List<string>(spells.Count);
             foreach (var s in spells) knownIds.Add(s.TemplateId);
-            var castingService = new EmberCrpg.Simulation.Magic.SpellCastingService(_ => spell);
-            var prepare = castingService.TryPrepareCast(player, spell.TemplateId, knownIds, _world.PlayerSpellCooldowns);
-            if (!prepare.Success)
+
+            ActorRecord requestedTarget = null;
+            foreach (var candidate in _world.Actors.Records)
             {
-                LogCombat(prepare.Message ?? $"{spell.DisplayName ?? spell.TemplateId}: failed.");
+                if (candidate == null || candidate.Id.Equals(player.Id)) continue;
+                if (candidate.Role == ActorRole.Enemy)
+                {
+                    requestedTarget = candidate;
+                    break;
+                }
+            }
+            requestedTarget = requestedTarget ?? player;
+
+            var executionService = new EmberCrpg.Simulation.Magic.SpellExecutionService(
+                new EmberCrpg.Simulation.Magic.SpellCastingService(_ => spell),
+                new EmberCrpg.Simulation.Magic.SpellTargetValidator(),
+                new EmberCrpg.Simulation.Magic.SpellEffectResolutionService(),
+                new EmberCrpg.Simulation.Magic.SpellCastRollService());
+            var executed = executionService.TryExecute(
+                player, spell.TemplateId, knownIds, requestedTarget, _world.PlayerSpellCooldowns);
+            if (!executed.Success)
+            {
+                LogCombat(executed.Message ?? $"{spell.DisplayName ?? spell.TemplateId}: failed.");
                 return false;
             }
-            var commit = castingService.CommitPreparedCast(player, spell, _world.PlayerSpellCooldowns);
-            if (!commit.Success)
-            {
-                LogCombat(commit.Message ?? $"{spell.DisplayName ?? spell.TemplateId}: failed.");
-                return false;
-            }
+
             _world.Events?.Append(new WorldEvent(
                 _world.Time,
                 WorldEventKind.SpellResolved,
                 player.Id,
-                default,
-                $"slice_spell_cast id:{spell.TemplateId} mana:{commit.ManaSpent}"));
-            LogCombat(commit.Message);
+                requestedTarget != null && !requestedTarget.Id.Equals(player.Id) ? requestedTarget.Id : default,
+                $"slice_spell_cast id:{spell.TemplateId} mana:{executed.ManaSpent}"));
+            LogCombat(executed.Message);
             return true;
         }
 
@@ -401,8 +453,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 damageFormulaKey: "base_minus_armor",
                 animationTag: "melee_swing");
             var rng = new EmberCrpg.Simulation.Rng.XorShiftRng((uint)(_tick == 0 ? 1 : _tick));
-            // Use a stable fallback site when none is contextually attached.
-            var siteId = new EmberCrpg.Domain.Core.SiteId(1UL);
+            // Codex audit (seventh pass A-P2 #6): previously hard-coded
+            // SiteId(1UL) so every combat event was logged under a synthetic
+            // location. Derive the site from the actual world: closest
+            // authored site to the attacker, falling back to the first
+            // site, falling back to SiteId.Empty so the event log stays
+            // honest if no sites exist (e.g. tutorial / dialog-only scenes).
+            var siteId = ResolveCombatSiteId(attacker, target);
             if (_world.Events == null)
             {
                 // Defensive: events log is required by CombatActionResolver.
@@ -419,6 +476,35 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 ? $"You strike {target.Name} for {outcome.Damage}."
                 : $"You miss {target.Name}.");
             return outcome.Hit;
+        }
+
+        private EmberCrpg.Domain.Core.SiteId ResolveCombatSiteId(ActorRecord attacker, ActorRecord target)
+        {
+            if (_world.Sites == null) return default;
+            ActorRecord anchor = attacker ?? target;
+            if (anchor != null)
+            {
+                int bestDistance = int.MaxValue;
+                EmberCrpg.Domain.Core.SiteId bestId = default;
+                foreach (var site in _world.Sites.Records)
+                {
+                    var dx = site.Position.X - anchor.Position.X;
+                    var dz = site.Position.Y - anchor.Position.Y;
+                    int d = dx * dx + dz * dz;
+                    if (d < bestDistance)
+                    {
+                        bestDistance = d;
+                        bestId = site.Id;
+                    }
+                }
+                if (!bestId.IsEmpty) return bestId;
+            }
+            // Fallback: first authored site, then default.
+            foreach (var site in _world.Sites.Records)
+            {
+                return site.Id;
+            }
+            return default;
         }
 
         public bool TryInteract(string targetTag)

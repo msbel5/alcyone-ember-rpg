@@ -14,9 +14,11 @@ using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
-using EmberCrpg.Simulation.Process;
-using EmberCrpg.Simulation.World;
-
+// Codex audit (seventh pass B-P1 #9): Data.SliceJson no longer references
+// EmberCrpg.Simulation. RecipeWorkOrder / SliceWorldFactory rehydration moved
+// to EmberCrpg.Simulation.Process.SliceSaveRehydration. SliceWorldState
+// construction is the caller's responsibility (overload taking the seed
+// world, below).
 namespace EmberCrpg.Data.Save
 {
     /// <summary>Pure mapping layer between aggregate world state and JSON DTOs.</summary>
@@ -79,9 +81,9 @@ namespace EmberCrpg.Data.Save
             };
         }
 
-        public static SliceWorldState ToWorld(SliceSaveData data)
+        public static SliceWorldState ToWorld(SliceSaveData data, SliceWorldState seedWorld)
         {
-            var world = new SliceWorldFactory().Create(data.roomSeed);
+            var world = seedWorld ?? throw new ArgumentNullException(nameof(seedWorld));
             world.Time = new EmberCrpg.Domain.Core.GameTime(data.totalMinutes);
             if (data.dungeonRooms != null && data.dungeonRooms.Length > 0)
                 world.Dungeon = DungeonSaveMapper.ToLayout(data.roomSeed, data.dungeonStartRoomId, data.dungeonRooms, data.dungeonDoors, data.dungeonSpawns);
@@ -153,41 +155,13 @@ namespace EmberCrpg.Data.Save
             return store;
         }
 
-        public static RecipeWorkOrderSaveData ToRecipeWorkOrderData(RecipeWorkOrder order)
-        {
-            if (order == null)
-                throw new ArgumentNullException(nameof(order));
-
-            return new RecipeWorkOrderSaveData
-            {
-                recipeId = order.Recipe.Id.Value,
-                siteId = order.SiteId.Value,
-                positionX = order.Position.X,
-                positionY = order.Position.Y,
-                actorId = order.ActorId.Value,
-                progressTicks = order.ProgressTicks,
-            };
-        }
-
-        public static RecipeWorkOrder ToRecipeWorkOrder(RecipeWorkOrderSaveData data, Func<RecipeId, RecipeDef> resolveRecipe)
-        {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (resolveRecipe == null)
-                throw new ArgumentNullException(nameof(resolveRecipe));
-
-            var recipeId = new RecipeId(data.recipeId);
-            var recipe = resolveRecipe(recipeId);
-            if (recipe == null)
-                throw new InvalidOperationException($"RecipeWorkOrder save data references unknown recipe {recipeId}.");
-
-            return RecipeWorkOrder.Resume(
-                recipe,
-                new SiteId(data.siteId),
-                new GridPosition(data.positionX, data.positionY),
-                new ActorId(data.actorId),
-                data.progressTicks);
-        }
+        // Codex audit (seventh pass B-P1 #9, #10): the previous methods
+        // `ToRecipeWorkOrderData(RecipeWorkOrder)` and
+        // `ToRecipeWorkOrder(RecipeWorkOrderSaveData, ...)` took/returned a
+        // Simulation.Process type, forcing this Data asmdef to reference
+        // EmberCrpg.Simulation. Moved to
+        // EmberCrpg.Simulation.Process.SliceSaveRehydration so the Data
+        // asmdef no longer leaks the Simulation namespace.
 
         public static JobRequestSaveData[] ToJobBoardData(JobBoard board)
         {

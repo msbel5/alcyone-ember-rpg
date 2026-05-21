@@ -71,7 +71,7 @@ namespace EmberCrpg.Presentation.Ember.Save
         {
             var data = SliceSaveMapper.ToData(world);
             data.worksites = SliceSaveMapper.ToWorksiteData(_worksites);
-            data.recipeWorkOrders = _recipeWorkOrders.Select(SliceSaveMapper.ToRecipeWorkOrderData).ToArray();
+            data.recipeWorkOrders = _recipeWorkOrders.Select(EmberCrpg.Simulation.Process.SliceSaveRehydration.ToRecipeWorkOrderData).ToArray();
             data.jobs = SliceSaveMapper.ToJobBoardData(_jobs);
             data.soils = SliceSaveMapper.ToSoilComponentData(_soils);
             data.plants = SliceSaveMapper.ToPlantComponentData(_plants);
@@ -92,7 +92,11 @@ namespace EmberCrpg.Presentation.Ember.Save
             var data = JsonUtility.FromJson<SliceSaveData>(json);
             if (data == null)
                 throw new InvalidOperationException("Save JSON did not deserialize into a SliceSaveData payload.");
-            var world = SliceSaveMapper.ToWorld(data);
+            // Codex audit (seventh pass B-P1 #10): SliceSaveMapper.ToWorld
+            // no longer constructs the seed world (would have leaked a
+            // Simulation type into Data). Build the seed here, then map.
+            var seedWorld = EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld(data.roomSeed);
+            var world = SliceSaveMapper.ToWorld(data, seedWorld);
             _worksites = SliceSaveMapper.ToWorksiteStore(data.worksites);
             _recipeWorkOrders = ToRecipeWorkOrders(data.recipeWorkOrders);
             _jobs = SliceSaveMapper.ToJobBoard(data.jobs);
@@ -108,7 +112,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             if (_resolveRecipe == null)
                 throw new InvalidOperationException("JsonSliceSaveService needs a recipe resolver to load active recipe work orders.");
 
-            return data.Select(order => SliceSaveMapper.ToRecipeWorkOrder(order, _resolveRecipe)).ToList();
+            return data.Select(order => EmberCrpg.Simulation.Process.SliceSaveRehydration.ToRecipeWorkOrder(order, _resolveRecipe)).ToList();
         }
     }
 }

@@ -51,9 +51,12 @@ off enum-driven expansion. The remaining legacy
 `SpellEffectResolutionService` switch is acknowledged as a migration
 adapter for the seven original effect codes; new effects must ship as
 `EffectDefinition` + `EffectOperation` rows registered with
-`EffectOperationHandlers`. The data-driven `SpellResolver` is wired
-into the live game via `DomainSimulationAdapter.TryCastSpell` (Codex
-audit fifth pass A-P1).
+`EffectOperationHandlers`. As of the seventh pass,
+`DomainSimulationAdapter.TryCastSpell` routes through `SpellExecutionService`
+(Cast → Target → Effect → CastRoll), so a live cast mutates the chosen
+target's vitals via `SpellEffectResolutionService`. The fully data-driven
+`SpellResolver` (zero-C#-branch new effect) is still queued under Faz 8
+slice 2.
 
 Before any new effect ships:
 
