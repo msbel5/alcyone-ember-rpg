@@ -15,7 +15,7 @@ Wire the active worksite and recipe work-order DTOs through the production `Json
 
 - `Assets/Scripts/Data/Save/JsonSliceSaveService.cs` — carries the process-side `WorksiteStore`, serializes active recipe work orders, and rehydrates them with a caller-supplied recipe resolver.
 - `Assets/Tests/EditMode/Save/RecipeWorksiteRoundTripTests.cs` — exercises `JsonSliceSaveService.SaveToJson` / `LoadFromJson` directly, then continues the loaded order to one `RecipeCompleted` event and one iron ingot.
-- `DOCS/sprint-faz-2-recipe-worksite-save-review-fix.md` — records this review-fix increment.
+- `docs/sprint-faz-2-recipe-worksite-save-review-fix.md` — records this review-fix increment.
 
 ## Validation
 

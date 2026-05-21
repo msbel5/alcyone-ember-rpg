@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using EmberCrpg.Data.Save;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Process;
@@ -11,7 +12,7 @@ using UnityEngine;
 // Inputs: pure world snapshots or JSON strings.
 // Outputs: pretty JSON and reconstructed world state via DTO mapping.
 // Bible reference: PRD FR-06.
-namespace EmberCrpg.Data.Save
+namespace EmberCrpg.Presentation.Ember.Save
 {
     /// <summary>JsonUtility-backed save/load bridge for the vertical slice.</summary>
     public sealed class JsonSliceSaveService

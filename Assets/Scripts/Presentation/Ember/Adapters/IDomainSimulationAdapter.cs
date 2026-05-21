@@ -10,14 +10,29 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     // surface — callers had no way to take a dependency on just the slice they
     // needed. Split into five role interfaces; the legacy
     // IDomainSimulationAdapter aggregates them so existing implementations
-    // (PlaceholderSimulationAdapter, EmberWorldHost.EmptySimulationAdapter)
+    // (PlaceholderSimulationAdapter)
     // and existing call sites stay compile-compatible.
 
-    /// <summary>Tick clock advancement and read-back.</summary>
-    public interface IEmberSimulationClock
+    /// <summary>
+    /// Write side of the simulation clock: host calls <see cref="AdvanceTick"/> each frame.
+    /// Codex audit (sixth pass C-P2 #C1): split out from <see cref="IEmberSimulationClock"/>
+    /// so HUD/telemetry/test consumers that only read the tick index can take
+    /// <see cref="IEmberClockSource"/> instead of the aggregate.
+    /// </summary>
+    public interface IEmberClockSink
     {
         void AdvanceTick(int tickIndex);
+    }
+
+    /// <summary>Read side of the simulation clock: query current tick.</summary>
+    public interface IEmberClockSource
+    {
         int TickIndex { get; }
+    }
+
+    /// <summary>Tick clock advancement and read-back. Composes sink + source.</summary>
+    public interface IEmberSimulationClock : IEmberClockSink, IEmberClockSource
+    {
     }
 
     /// <summary>HUD strings + combat HUD rows the on-screen overlay consumes.</summary>
@@ -38,8 +53,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         bool TryReadActor(string actorName, out ActorViewState state);
         bool TryReadWorksite(string siteName, out WorksiteViewState state);
-
-        IDialogSource GetDialogSource(string actorName);
     }
 
     /// <summary>Player-driven write surface: log combat, take damage, cast spells, interact.</summary>
@@ -72,15 +85,39 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// Returns true when the adapter routed the interaction.
         /// </summary>
         bool TryInteract(string targetTag) { LogCombat($"Interact: {targetTag}."); return false; }
+
+        /// <summary>
+        /// Acquire the command channel for an NPC conversation. Returns the
+        /// player-facing source that exposes topic selection and reply hooks.
+        /// Codex audit (sixth pass C-P2 #C2): used to live in
+        /// <see cref="IWorldViewReadModel"/>, which is a snapshot-DTO surface.
+        /// Dialog is a stateful command channel, not a read model — moved here
+        /// next to the other player-driven verbs.
+        /// </summary>
+        IDialogSource GetDialogSource(string actorName);
     }
 
-    /// <summary>Narrator-flavour oracle for the consult-fate UI ribbon.</summary>
+    /// <summary>
+    /// Narrator-flavour oracle for the consult-fate UI ribbon.
+    /// Codex audit (sixth pass C-P3 #C3): documents the contract — implementations
+    /// MUST return a non-null, non-empty string for every call. The 35/35/30
+    /// distribution and bucket→string mapping is canonised by
+    /// <c>EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket</c>; adapters that
+    /// want different copy still use that bucket as the threshold table.
+    /// </summary>
     public interface IConsultFateOracle
     {
         string ConsultFate();
     }
 
-    /// <summary>Save / load round-trip envelope for the full deterministic snapshot.</summary>
+    /// <summary>
+    /// Save / load round-trip envelope for the full deterministic snapshot.
+    /// Codex audit (sixth pass C-P3 #C4): contract clarified — exports are
+    /// expected to be valid JSON (or null when there is no state yet), and
+    /// imports MUST tolerate null/empty input without throwing. Round-trip
+    /// fidelity is enforced by the EditMode round-trip tests under
+    /// Assets/Tests/EditMode/Save/.
+    /// </summary>
     public interface IEmberSaveBridge
     {
         // Codex audit Batch 2 / Finding 3: The Ember save service previously
@@ -116,6 +153,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// <summary>
     /// Convenience locator. Resolves the single adapter for the scene. Implementations
     /// register themselves in <c>Awake</c>; callers do not import any domain type.
+    /// Codex audit (sixth pass C-P3 #C5): the locator is a deliberate
+    /// scene-scoped singleton — there is exactly one IDomainSimulationAdapter
+    /// per scene (the EmberWorldHost or its placeholder), and `Register`
+    /// overwrites without warning so additive scene loads do not double-register.
+    /// Tests reset by calling <c>Register(null)</c> in <c>[TearDown]</c>.
     /// </summary>
     public static class EmberDomainAdapterLocator
     {

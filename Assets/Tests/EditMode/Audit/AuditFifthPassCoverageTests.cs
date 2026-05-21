@@ -150,7 +150,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
             var startingHp = defender.Vitals.Health.Current;
             defender.ApplyVitals(defender.Vitals.WithHealth(defender.Vitals.Health.Damage(5)));
 
-            var save = new EmberCrpg.Data.Save.JsonSliceSaveService();
+            var save = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService();
             var json = save.SaveToJson(world);
             var loaded = save.LoadFromJson(json);
 

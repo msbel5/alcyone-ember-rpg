@@ -26,14 +26,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     ///    instead of mining the cooldown state;
     /// 4. mutates the player <see cref="ActorRecord"/>'s vitals on
     ///    TakePlayerDamage instead of holding a UI-only counter;
-    /// 5. retains a single <see cref="EmberCrpg.Data.Save.JsonSliceSaveService"/>
+    /// 5. retains a single <see cref="EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService"/>
     ///    so worksite/job/soil/plant process sidecars survive the
     ///    Export/Restore round-trip.
     /// </summary>
     public sealed class DomainSimulationAdapter : IDomainSimulationAdapter, IDialogSource
     {
         private readonly SliceWorldState _world;
-        private readonly EmberCrpg.Data.Save.JsonSliceSaveService _saveService;
+        private readonly EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService _saveService;
+        private readonly EmberCrpg.Simulation.Composition.SliceTickComposer _tickComposer;
         private int _tick;
         private string _lastCombatLine = string.Empty;
         private string _activeDialogActor = string.Empty;
@@ -46,11 +47,24 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // sidecar process state (worksites / jobs / soils / plants) lives
             // across Export/Restore cycles. Previously a fresh service was
             // constructed each call, dropping the sidecar.
-            _saveService = new EmberCrpg.Data.Save.JsonSliceSaveService();
+            // Codex audit (sixth pass A-P1 #6): supply a recipe resolver so
+            // LoadFromJson does not throw on saves that carry active recipe
+            // work orders. ProductionRecipeRegistry.Resolve is the canonical
+            // catalog lookup. If the project later adds catalog scopes per
+            // scene, this seam swaps to a scene-bound resolver.
+            _saveService = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService(
+                EmberCrpg.Data.Recipes.ProductionRecipeRegistry.Resolve);
+            // Codex audit (sixth pass A-P0 #1): wire the per-tick composer so
+            // the live game's simulation actually moves forward.
+            _tickComposer = new EmberCrpg.Simulation.Composition.SliceTickComposer();
         }
 
         // ----- IEmberSimulationClock -----
-        public void AdvanceTick(int tickIndex) => _tick = tickIndex;
+        public void AdvanceTick(int tickIndex)
+        {
+            _tick = tickIndex;
+            _tickComposer.Advance(_world, tickIndex);
+        }
         public int TickIndex => _tick;
 
         // ----- IEmberHudReadModel -----
@@ -129,21 +143,19 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var rows = new List<FactionRow>();
                 if (_world.Factions == null) return rows;
 
-                // Codex audit (fourth pass A-P1): SliceWorldState's actor
-                // model does not yet carry a player-faction reference, so we
-                // use the FIRST faction as the vantage and surface every
-                // OTHER faction's reputation relative to it. A future Faz
-                // can swap to ActorRecord.FactionId.
-                FactionId vantage = default;
-                foreach (var first in _world.Factions.Records) { vantage = first.Id; break; }
-
+                // Codex audit (sixth pass A-P1 #2): the previous "first
+                // faction as vantage" heuristic was non-deterministic when the
+                // store reordered and silently masked the missing
+                // player-faction wiring. ActorRecord does not yet carry a
+                // FactionId field; until that lands, surface every faction
+                // with reputation 0 / Neutral relative to itself rather than
+                // pretending an arbitrary one is the player's vantage. Real
+                // vantage will be derived from ActorRecord.FactionId once
+                // that field is added (tracked as Faz X follow-up).
                 foreach (var faction in _world.Factions.Records)
                 {
-                    int rep = 0;
-                    if (!vantage.IsEmpty && !faction.Id.Equals(vantage))
-                        rep = _world.Factions.GetReputation(vantage, faction.Id).Value;
-                    var label = FactionRelationKind.FromReputation(rep).ToString();
-                    rows.Add(new FactionRow(faction.Name ?? string.Empty, rep, label));
+                    var label = FactionRelationKind.FromReputation(0).ToString();
+                    rows.Add(new FactionRow(faction.Name ?? string.Empty, 0, label));
                 }
                 return rows;
             }
@@ -373,19 +385,40 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 LogCombat($"No target: {targetActorName ?? string.Empty}");
                 return false;
             }
-            target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Damage(rawDamage)));
-            // Codex audit (fifth pass A-P1): emit CombatResolved (not
-            // SpellResolved). The previous miscategorization sent every
-            // melee strike through the magic-event channel, breaking trace
-            // readers that filter by kind.
-            _world.Events?.Append(new WorldEvent(
-                _world.Time,
-                WorldEventKind.CombatResolved,
-                target.Id,
-                default,
-                $"melee_strike target:{target.Name} damage:{rawDamage}"));
-            LogCombat($"You strike {target.Name} for {rawDamage}.");
-            return true;
+            // Codex audit (sixth pass A-P0 #4): previously bypassed the
+            // CombatActionResolver chain entirely (auto-hit, no armor / dodge /
+            // accuracy / stamina). Route through CombatActionResolver so the
+            // hit roll, damage roll, armor mitigation, stamina cost, and the
+            // canonical CombatResolved event all match the deterministic
+            // kernel. The action template is a synthetic "melee_swing"
+            // CombatActionDef; the band-width matches the existing baseline
+            // (rawDamage parameter).
+            var attacker = _world.Actors.FirstByRole(ActorRole.Player) ?? target;
+            var meleeAction = new CombatActionDef(
+                id: new CombatActionId(1UL),
+                staminaCost: 0,
+                hitFormulaKey: "accuracy_vs_dodge",
+                damageFormulaKey: "base_minus_armor",
+                animationTag: "melee_swing");
+            var rng = new EmberCrpg.Simulation.Rng.XorShiftRng((uint)(_tick == 0 ? 1 : _tick));
+            // Use a stable fallback site when none is contextually attached.
+            var siteId = new EmberCrpg.Domain.Core.SiteId(1UL);
+            if (_world.Events == null)
+            {
+                // Defensive: events log is required by CombatActionResolver.
+                target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Damage(rawDamage)));
+                LogCombat($"You strike {target.Name} for {rawDamage}.");
+                return true;
+            }
+            var resolver = new EmberCrpg.Simulation.Combat.CombatActionResolver(
+                new EmberCrpg.Simulation.Combat.CombatHitRollService(),
+                new EmberCrpg.Simulation.Combat.CombatDamageService());
+            var outcome = resolver.Resolve(meleeAction, attacker, target, damageBandWidth: rawDamage / 2,
+                rng: rng, now: _world.Time, siteId: siteId, events: _world.Events);
+            LogCombat(outcome.Hit
+                ? $"You strike {target.Name} for {outcome.Damage}."
+                : $"You miss {target.Name}.");
+            return outcome.Hit;
         }
 
         public bool TryInteract(string targetTag)
@@ -409,10 +442,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // ----- IConsultFateOracle -----
         public string ConsultFate()
         {
-            int salted = unchecked(_tick * (int)2654435761);
-            int roll = (salted & 0x7fffffff) % 100 + 1;
-            if (roll <= 35) return "SETBACK: The stars align against you.";
-            if (roll <= 70) return "NEUTRAL: The DM watches in silence.";
+            // Codex audit (sixth pass A-P2 #3, #5): unify the consult-fate
+            // bucket distribution with PlaceholderSimulationAdapter via the
+            // canonical Domain.AiDm.ConsultFateOutcomeBucket (35/35/30).
+            // Also use uint Knuth multiplier explicitly so the cast is not
+            // a foot-gun.
+            uint salted = (uint)_tick * 2654435761u;
+            int roll = (int)(salted % 100u) + 1;
+            var bucket = EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.FromRoll(roll);
+            if (bucket.Equals(EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.Setback))
+                return "SETBACK: The stars align against you.";
+            if (bucket.Equals(EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.Neutral))
+                return "NEUTRAL: The DM watches in silence.";
             return "FAVOURABLE: Fortune smiles.";
         }
 
@@ -427,50 +468,26 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public void RestoreStateJson(string json)
         {
             if (string.IsNullOrEmpty(json)) return;
-            // Codex review PR #195 (P1) + audit (fourth pass A-P2): restore
-            // EVERY saveable field on SliceWorldState, AND keep the retained
-            // _saveService instance (which now carries the rehydrated process
-            // sidecars: worksites / jobs / soils / plants).
+            // Codex audit (sixth pass A-P2 #14): the previous field-by-field
+            // copy silently dropped any new field added to SliceWorldState.
+            // Mirror EVERY public instance field via reflection so the copy
+            // stays in lockstep with the type. Properties (the obsolete
+            // role accessors) are intentionally skipped — they delegate to
+            // the actor store which is itself a field.
             var restored = _saveService.LoadFromJson(json);
             if (restored == null) return;
 
-            _world.Time = restored.Time;
-            _world.RoomSeed = restored.RoomSeed;
-            _world.Room = restored.Room;
-            _world.Dungeon = restored.Dungeon;
-            _world.CurrentRoomId = restored.CurrentRoomId;
-            _world.PlayerRoomId = restored.PlayerRoomId;
-            _world.TalkerRoomId = restored.TalkerRoomId;
-            _world.MerchantRoomId = restored.MerchantRoomId;
-            _world.GuardRoomId = restored.GuardRoomId;
-            _world.EnemyRoomId = restored.EnemyRoomId;
-            _world.PickupRoomId = restored.PickupRoomId;
-            _world.Actors = restored.Actors;
-            _world.Items = restored.Items;
-            _world.Sites = restored.Sites;
-            _world.Factions = restored.Factions;
-            _world.Events = restored.Events;
-            _world.Prices = restored.Prices;
-            _world.Stockpiles = restored.Stockpiles;
-            _world.TradeRoutes = restored.TradeRoutes;
-            _world.Caravans = restored.Caravans;
-            _world.ToolCallTrace = restored.ToolCallTrace;
-            _world.LlmProposalLog = restored.LlmProposalLog;
-            _world.PlayerInventory = restored.PlayerInventory;
-            _world.MerchantInventory = restored.MerchantInventory;
-            _world.PlayerEquipment = restored.PlayerEquipment;
-            _world.PlayerSpellCooldowns = restored.PlayerSpellCooldowns;
-            _world.PlayerShieldBuffs = restored.PlayerShieldBuffs;
-            _world.Pickups = restored.Pickups;
-            _world.DungeonRoomStates = restored.DungeonRoomStates;
-            _world.DungeonDoorStates = restored.DungeonDoorStates;
-            _world.Topics = restored.Topics;
-            _world.NpcMemory = restored.NpcMemory;
-            _world.DoorOpen = restored.DoorOpen;
-            _world.GuardDoorAccessGranted = restored.GuardDoorAccessGranted;
-            _world.GuardWarningCount = restored.GuardWarningCount;
-            _world.EncounterActive = restored.EncounterActive;
-            _world.LastNarrative = restored.LastNarrative;
+            var type = typeof(SliceWorldState);
+            foreach (var field in type.GetFields(
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+            {
+                var value = field.GetValue(restored);
+                field.SetValue(_world, value);
+            }
+
+            // Reset the tick composer anchor so the next AdvanceTick does
+            // not double-advance the just-restored time.
+            _tickComposer.ResetAnchor();
         }
     }
 }

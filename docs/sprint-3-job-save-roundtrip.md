@@ -12,7 +12,7 @@ Complete the Faz 3 save/load persistence atoms for job assignment without adding
 - `Assets/Scripts/Data/Save/JsonSliceSaveService.cs`
 - `Assets/Tests/EditMode/Save/JobAssignmentRoundTripTests.cs`
 - `DOCS/sprint-faz-3-atom-map.md`
-- `DOCS/sprint-3-job-save-roundtrip.md`
+- `docs/sprint-3-job-save-roundtrip.md`
 
 ## Behaviour
 

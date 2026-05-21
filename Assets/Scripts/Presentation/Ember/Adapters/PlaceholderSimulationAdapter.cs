@@ -166,15 +166,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         public string ConsultFate()
         {
-            // Codex review (2026-05-21): the placeholder advertises itself as
-            // "deterministic" but Random.Range made the roll wall-clock dependent,
-            // breaking replay. Derive from the running tick with a fixed salt so
-            // the same tick yields the same bucket. 33/33/34 distribution matches
-            // the original thresholds.
-            int salted = unchecked(_tick * (int)2654435761);
-            int roll = (salted & 0x7fffffff) % 100 + 1;
-            if (roll <= 33) return "SETBACK: The stars align against you. A cold wind blows.";
-            if (roll <= 66) return "NEUTRAL: The path is unclear. The DM watches in silence.";
+            // Codex audit (sixth pass A-P2 #3, #5): unify the consult-fate
+            // bucket distribution with DomainSimulationAdapter via the
+            // canonical Domain.AiDm.ConsultFateOutcomeBucket (35/35/30).
+            // Use uint Knuth multiplier explicitly. Distribution and copy now
+            // match across both adapters so replay against either is valid.
+            uint salted = (uint)_tick * 2654435761u;
+            int roll = (int)(salted % 100u) + 1;
+            var bucket = EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.FromRoll(roll);
+            if (bucket.Equals(EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.Setback))
+                return "SETBACK: The stars align against you. A cold wind blows.";
+            if (bucket.Equals(EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.Neutral))
+                return "NEUTRAL: The path is unclear. The DM watches in silence.";
             return "FAVOURABLE: Fortune smiles upon your endeavor.";
         }
 

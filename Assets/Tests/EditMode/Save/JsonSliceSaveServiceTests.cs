@@ -45,7 +45,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             var farDoorState = world.DungeonDoorStates.Last();
             farDoorState.Open = false;
 
-            var service = new EmberCrpg.Data.Save.JsonSliceSaveService();
+            var service = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService();
             var json = service.SaveToJson(world);
             var loaded = service.LoadFromJson(json);
 
@@ -90,7 +90,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         {
             var world = new SliceWorldFactory().Create(2027);
 
-            var service = new EmberCrpg.Data.Save.JsonSliceSaveService();
+            var service = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService();
             var loaded = service.LoadFromJson(service.SaveToJson(world));
 
             Assert.That(loaded.PlayerSpellCooldowns, Is.Not.Null);
@@ -102,7 +102,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         {
             var world = new SliceWorldFactory().Create(2027);
 
-            var service = new EmberCrpg.Data.Save.JsonSliceSaveService();
+            var service = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService();
             var loaded = service.LoadFromJson(service.SaveToJson(world));
 
             Assert.That(loaded.PlayerShieldBuffs, Is.Not.Null);
