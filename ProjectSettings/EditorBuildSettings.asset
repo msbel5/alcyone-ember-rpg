@@ -9,6 +9,15 @@ EditorBuildSettings:
     path: Assets/Scenes/Ember/MainMenu.unity
     guid: 9ef86c3e6107db341a85e5818a35fb5f
   - enabled: 1
+    path: Assets/Scenes/Ember/Faz10OracleShrine.unity
+    guid: 7f158263783ded04db12051cf52370b5
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz11ShowroomOverview.unity
+    guid: 0a3fc057da189134bb6ce1182640b104
+  - enabled: 1
+    path: Assets/Scenes/Ember/Faz12TavernFlavour.unity
+    guid: 76666ec3e61e6e440941c26e4496fc81
+  - enabled: 1
     path: Assets/Scenes/Ember/Faz3SmithingOverworld.unity
     guid: ba941c4cc7e59564ab17d752e8bb9ea9
   - enabled: 1
@@ -29,17 +38,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Ember/Faz9TavernDialog.unity
     guid: 180624683c8afdf47831c2870c58fb04
-  - enabled: 1
-    path: Assets/Scenes/Ember/Faz10OracleShrine.unity
-    guid: 7f158263783ded04db12051cf52370b5
-  - enabled: 1
-    path: Assets/Scenes/Ember/Faz11ShowroomOverview.unity
-    guid: 0a3fc057da189134bb6ce1182640b104
-  - enabled: 1
-    path: Assets/Scenes/Ember/Faz12TavernFlavour.unity
-    guid: 76666ec3e61e6e440941c26e4496fc81
-  - enabled: 1
-    path: Assets/Scenes/Sprint4Foundation.unity
-    guid: 92b2f977c6bb4e4ebc6c7ace4f8484a7
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
   m_UseUCBPForAssetBundles: 0
