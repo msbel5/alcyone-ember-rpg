@@ -275,11 +275,11 @@ sequenceDiagram
 Aşağıdaki bloklar signature-only scaffold’dur. Captain her atom PR’da gövdeleri ekler; burada hiçbir metot gövdesi yoktur.
 
 ```csharp
-// File: Assets/Scripts/Domain/Society/SettlementEconomyModels.cs
+// File: Assets/Scripts/Domain/World/SettlementEconomyModels.cs
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Society
+namespace EmberCrpg.Domain.World
 {
     /// <summary>Settlement stock row for one trade good. Keeps stock data-driven by item tag.</summary>
     public sealed class SettlementStockRow
@@ -418,11 +418,11 @@ namespace EmberCrpg.Domain.Society
 ```
 
 ```csharp
-// File: Assets/Scripts/Domain/Society/TravelGraphModels.cs
+// File: Assets/Scripts/Domain/World/TravelGraphModels.cs
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Society
+namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure travel edge between two settlements. Travel time and danger are TIME inputs.</summary>
     public sealed class TravelEdgeRecord
@@ -480,11 +480,11 @@ namespace EmberCrpg.Domain.Society
 ```
 
 ```csharp
-// File: Assets/Scripts/Domain/Society/FactionPriceModels.cs
+// File: Assets/Scripts/Domain/World/FactionPriceModels.cs
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Society
+namespace EmberCrpg.Domain.World
 {
     /// <summary>Faction pair relation row used by trade and prices. Values are data, not branches.</summary>
     public sealed class FactionRelationRecord
@@ -581,11 +581,11 @@ namespace EmberCrpg.Domain.Society
 ```
 
 ```csharp
-// File: Assets/Scripts/Domain/Society/CaravanModels.cs
+// File: Assets/Scripts/Domain/World/CaravanModels.cs
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
-namespace EmberCrpg.Domain.Society
+namespace EmberCrpg.Domain.World
 {
     /// <summary>Stable handle for a planned or active trade route.</summary>
     public readonly struct TradeRouteId
@@ -1070,7 +1070,7 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Process;
-using EmberCrpg.Domain.Society;
+using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.World;
 
@@ -1121,7 +1121,7 @@ namespace EmberCrpg.Simulation.Process
 // File: Assets/Scripts/Simulation/Society/TradeRouteSystems.cs
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
-using EmberCrpg.Domain.Society;
+using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Rng;
 

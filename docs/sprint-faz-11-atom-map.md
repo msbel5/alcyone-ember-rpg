@@ -47,14 +47,14 @@ Target acceptance sentence from `docs/ROADMAP.md`:
 | 5 | Captain | `Assets/Scripts/Presentation/VisualLayer/CombatEventTailSnapshot.cs` | Pure-C# read snapshot: tail of `CombatResolved` events with attacker, defender, damage. | `CombatEventTailSnapshotTests` | queued |
 | 6 | Captain | `Assets/Scripts/Presentation/VisualLayer/MemoryFactSnapshot.cs` | Pure-C# read snapshot of actor memory facts indexed by topic. | `MemoryFactSnapshotTests` | queued |
 | 7 | Captain | `Assets/Scripts/Presentation/VisualLayer/ToolCallTraceSnapshot.cs` | Pure-C# read snapshot of recent ToolCall traces. | `ToolCallTraceSnapshotTests` | queued |
-| 8 | Mami | `Assets/Scenes/Faz3SmithingOverworld.unity` | Smith queue / furnace acceptance scene; renders `JobDebugSnapshot`. | screenshot at `DOCS/screenshots/faz-3.png` | Mami |
-| 9 | Mami | `Assets/Scenes/Faz4ColonyNeeds.unity` | Hunger/fatigue/mood + refusal HUD. | `DOCS/screenshots/faz-4.png` | Mami |
-| 10 | Mami | `Assets/Scenes/Faz5SeasonFarm.unity` | Season clock, plant growth, harvest. | `DOCS/screenshots/faz-5.png` | Mami |
-| 11 | Mami | `Assets/Scenes/Faz6TradeFaction.unity` | Caravan, prices, faction relations. | `DOCS/screenshots/faz-6.png` | Mami |
-| 12 | Mami | `Assets/Scenes/Faz7Combat.unity` | Equip, attack, armor reduction, hostile faction. | `DOCS/screenshots/faz-7.png` | Mami |
-| 13 | Mami | `Assets/Scenes/Faz8Magic.unity` | Fire on oil tile, area damage. | `DOCS/screenshots/faz-8.png` | Mami |
-| 14 | Mami | `Assets/Scenes/Faz9DialogueMemory.unity` | Ask About / Tell Me About surface, NPC refusal on remembered crime. | `DOCS/screenshots/faz-9.png` | Mami |
-| 15 | Mami | `Assets/Scenes/Faz10DmQuery.unity` | F9 DM snapshot HUD with memory + faction + ToolCall list. | `DOCS/screenshots/faz-10.png` | Mami |
+| 8 | Mami | `Assets/Scenes/Ember/Faz3SmithingOverworld.unity` | Smith queue / furnace acceptance scene; renders `JobDebugSnapshot`. | screenshot at `DOCS/screenshots/faz-3.png` | Mami |
+| 9 | Mami | `Assets/Scenes/Ember/Faz4ColonyNeeds.unity` | Hunger/fatigue/mood + refusal HUD. | `DOCS/screenshots/faz-4.png` | Mami |
+| 10 | Mami | `Assets/Scenes/Ember/Faz5SeasonFarm.unity` | Season clock, plant growth, harvest. | `DOCS/screenshots/faz-5.png` | Mami |
+| 11 | Mami | `Assets/Scenes/Ember/Faz6TradeFaction.unity` | Caravan, prices, faction relations. | `DOCS/screenshots/faz-6.png` | Mami |
+| 12 | Mami | `Assets/Scenes/Ember/Faz7Combat.unity` | Equip, attack, armor reduction, hostile faction. | `DOCS/screenshots/faz-7.png` | Mami |
+| 13 | Mami | `Assets/Scenes/Ember/Faz8Magic.unity` | Fire on oil tile, area damage. | `DOCS/screenshots/faz-8.png` | Mami |
+| 14 | Mami | `Assets/Scenes/Ember/Faz9DialogueMemory.unity` | Ask About / Tell Me About surface, NPC refusal on remembered crime. | `DOCS/screenshots/faz-9.png` | Mami |
+| 15 | Mami | `Assets/Scenes/Ember/Faz10DmQuery.unity` | F9 DM snapshot HUD with memory + faction + ToolCall list. | `DOCS/screenshots/faz-10.png` | Mami |
 | 16 | Mami | Faz 11 promotion screenshot index | Index page listing every screenshot. | `DOCS/screenshots/INDEX.md` | Mami |
 
 ## Suggested bundles (Captain side only)

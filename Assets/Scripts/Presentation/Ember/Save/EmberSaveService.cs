@@ -1,7 +1,7 @@
+using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections;
-using System;
 
 namespace EmberCrpg.Presentation.Ember.Save
 {
@@ -57,15 +57,30 @@ namespace EmberCrpg.Presentation.Ember.Save
 
             int ticks = 0;
             string domainJson = string.Empty;
+            bool domainAvailable = false;
+            bool domainFailed = false;
             var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current;
             if (adapter != null)
             {
+                domainAvailable = true;
                 ticks = adapter.TickIndex;
                 // Codex audit Batch 2 / Finding 3: bundle the full deterministic
                 // simulation state so F9 / Continue restores more than the player
                 // rig transform.
-                try { domainJson = adapter.ExportStateJson() ?? string.Empty; }
-                catch (System.Exception) { domainJson = string.Empty; }
+                // Codex audit (second pass A-P1): previously we swallowed the
+                // export failure and persisted an empty domainStateJson,
+                // showing "Saved." even though the deterministic snapshot was
+                // lost. Track the failure and surface it via ShowStatus so the
+                // user knows the rig+tick saved but the world state did not.
+                try
+                {
+                    domainJson = adapter.ExportStateJson() ?? string.Empty;
+                }
+                catch (System.Exception)
+                {
+                    domainJson = string.Empty;
+                    domainFailed = true;
+                }
             }
 
             var data = new SaveData
@@ -79,27 +94,54 @@ namespace EmberCrpg.Presentation.Ember.Save
 
             PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(data));
             PlayerPrefs.Save();
-            ShowStatus("Saved.");
+            if (domainAvailable && domainFailed)
+                ShowStatus("Save partial: domain export failed.");
+            else
+                ShowStatus("Saved.");
         }
 
         private void Load()
         {
             string json = PlayerPrefs.GetString(SaveKey);
-            if (string.IsNullOrEmpty(json)) return;
+            if (string.IsNullOrEmpty(json))
+            {
+                ShowStatus("No save found.");
+                return;
+            }
 
-            var data = JsonUtility.FromJson<SaveData>(json);
+            SaveData data;
+            try
+            {
+                data = JsonUtility.FromJson<SaveData>(json);
+            }
+            catch (System.Exception)
+            {
+                ShowStatus("Load failed: save corrupt.");
+                return;
+            }
+            if (data == null || string.IsNullOrEmpty(data.sceneName))
+            {
+                ShowStatus("Load failed: invalid save payload.");
+                return;
+            }
+
             if (SceneManager.GetActiveScene().name != data.sceneName)
             {
-                // To restore after load, we use a static or persistent object.
-                // For this project, let's just use a static field to hold the data.
                 _pendingLoad = data;
                 SceneManager.LoadScene(data.sceneName);
             }
             else
             {
                 RestorePosition(data);
-                ApplyDomainRestore(data);
-                ShowStatus("Loaded.");
+                // Codex audit (second pass A-P1): only claim "Loaded." when the
+                // domain restore actually succeeded. A swallowed RestoreStateJson
+                // throw used to still flash "Loaded." while leaving world state
+                // at its pre-load baseline.
+                var domainResult = ApplyDomainRestore(data);
+                if (domainResult == DomainRestoreResult.Failed)
+                    ShowStatus("Load partial: domain restore failed.");
+                else
+                    ShowStatus("Loaded.");
             }
         }
 
@@ -123,17 +165,37 @@ namespace EmberCrpg.Presentation.Ember.Save
             if (_pendingLoad != null && _pendingLoad.sceneName == SceneManager.GetActiveScene().name)
             {
                 RestorePosition(_pendingLoad);
-                ApplyDomainRestore(_pendingLoad);
+                var domainResult = ApplyDomainRestore(_pendingLoad);
                 _pendingLoad = null;
-                ShowStatus("Loaded.");
+                if (domainResult == DomainRestoreResult.Failed)
+                    ShowStatus("Load partial: domain restore failed.");
+                else
+                    ShowStatus("Loaded.");
             }
         }
 
-        private static void ApplyDomainRestore(SaveData data)
+        /// <summary>
+        /// Codex audit (second pass A-P1): outcome of <see cref="ApplyDomainRestore"/>.
+        /// The previous void return swallowed export/restore exceptions and
+        /// allowed the UI to flash "Loaded." even when world state was lost.
+        /// </summary>
+        public enum DomainRestoreResult
         {
-            if (data == null || string.IsNullOrEmpty(data.domainStateJson)) return;
+            /// <summary>No payload to restore — vanilla rig+tick load.</summary>
+            NoPayload = 0,
+            /// <summary>No adapter registered for the scene.</summary>
+            NoAdapter = 1,
+            /// <summary>RestoreStateJson threw — adapter state unchanged.</summary>
+            Failed = 2,
+            /// <summary>RestoreStateJson + tick AlignTo both succeeded.</summary>
+            Restored = 3,
+        }
+
+        private static DomainRestoreResult ApplyDomainRestore(SaveData data)
+        {
+            if (data == null || string.IsNullOrEmpty(data.domainStateJson)) return DomainRestoreResult.NoPayload;
             var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current;
-            if (adapter == null) return;
+            if (adapter == null) return DomainRestoreResult.NoAdapter;
 
             // Codex review on PR #188 (P2): gate the tick AlignTo behind a
             // successful RestoreStateJson. If the envelope is malformed (version
@@ -151,10 +213,12 @@ namespace EmberCrpg.Presentation.Ember.Save
             }
             catch (System.Exception)
             {
-                // placeholder envelope mismatch is best-effort; do NOT AlignTo.
+                // Codex audit (second pass A-P1): the caller now distinguishes
+                // failure from no-payload so the UI can avoid claiming "Loaded."
+                return DomainRestoreResult.Failed;
             }
 
-            if (!restored) return;
+            if (!restored) return DomainRestoreResult.Failed;
 
             // Codex review on PR #185 (P1): align the scene's EmberTickDriver to
             // the restored tick so the next OnTick(...) does not roll the
@@ -164,6 +228,7 @@ namespace EmberCrpg.Presentation.Ember.Save
                 FindObjectsInactive.Include);
             if (driver != null)
                 driver.AlignTo(data.tickIndex);
+            return DomainRestoreResult.Restored;
         }
 
         private void RestorePosition(SaveData data)
