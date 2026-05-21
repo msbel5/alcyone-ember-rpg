@@ -116,7 +116,7 @@ All `.cs` files ship with paired tests and `.meta` files for Unity.
 ## Next-session priority (when Mami wakes up)
 
 1. Merge #156 (Faz 9 memory primitives) once green.
-2. Open the first Mami-side Faz 11 scene PR — e.g. `Assets/Scenes/Faz3SmithingOverworld.unity` consuming `JobDebugSnapshot`.
+2. Open the first Mami-side Faz 11 scene PR — e.g. `Assets/Scenes/Ember/Faz3SmithingOverworld.unity` consuming `JobDebugSnapshot`.
 3. Captain can begin Faz 6 caravan-runtime bundle (Atoms 8-9) on top of TradeRouteDef + StockpileComponent + PriceLedger.
 4. Faz 8 magic promotion bundle (delete `SpellEffectCode` enum) is the biggest remaining backend yak-shave — schedule a dedicated sprint.
 

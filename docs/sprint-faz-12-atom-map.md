@@ -43,9 +43,9 @@ Plus: `player can press the DM key and Consult Fate; the DM proposes one of thre
 | Atom | Primary box | File / class | Responsibility | Closing proof | Status |
 |---:|---|---|---|---|---|
 | 1 | AI/DM | `Assets/Scripts/Domain/AiDm/LlmProviderKind.cs` | Stable string provider kind (`local_qwen`, `cloud_anthropic`, `cloud_openai`, `mock`). | `LlmProviderKindTests` | queued |
-| 2 | AI/DM | `Assets/Scripts/Domain/AiDm/LlmRequest.cs`, `LlmResponse.cs` | Immutable typed envelopes: input is `{system_prompt_id, conversation_id, tool_descriptors, max_tokens, seed}`; output is `{text, proposed_tool_calls, tokens_used}`. | `LlmEnvelopeTests` | queued |
+| 2 | AI/DM | `Assets/Scripts/Domain/AiDm/LlmEnvelope.cs` (folds LlmRequest + LlmResponse types) | Immutable typed envelopes: input is `{system_prompt_id, conversation_id, tool_descriptors, max_tokens, seed}`; output is `{text, proposed_tool_calls, tokens_used}`. | `LlmEnvelopeTests` | queued |
 | 3 | AI/DM | `Assets/Scripts/Simulation/AiDm/LocalQwenClient.cs` | HTTP client to local Ollama; deterministic seed; timeout fallback. | `LocalQwenClientTests` | queued |
-| 4 | AI/DM | `Assets/Scripts/Simulation/AiDm/CloudLlmClient.cs` | HTTP client to one cloud provider; same envelope; circuit breaker on quota. | `CloudLlmClientTests` | queued |
+| 4 | AI/DM | `Assets/Scripts/Simulation/AiDm/LlmClients.cs` (folds LocalQwenClient + CloudLlmClient) | HTTP client to one cloud provider; same envelope; circuit breaker on quota. | `CloudLlmClientTests` | queued |
 | 5 | AI/DM | `Assets/Scripts/Simulation/AiDm/LlmRoutingService.cs` | Try local first, fall back to cloud only on local failure for same packet. | `LlmRoutingServiceTests` | queued |
 | 6 | AI/DM | `Assets/Scripts/Simulation/AiDm/LlmProposalValidator.cs` | Take `LlmResponse.proposed_tool_calls`, route each through Faz 10 `ToolCallValidator`. Reject any that fence-violate. | `LlmProposalValidatorTests` | queued |
 | 7 | AI/DM | `Assets/Scripts/Simulation/AiDm/FlavourBudget.cs` | Per-tick budget counter; rejects calls past the cap; emits `LlmBudgetExceeded`. | `FlavourBudgetTests` | queued |

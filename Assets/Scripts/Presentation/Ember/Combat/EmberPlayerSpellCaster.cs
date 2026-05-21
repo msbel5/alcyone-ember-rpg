@@ -44,7 +44,17 @@ namespace EmberCrpg.Presentation.Ember.Combat
             if (slotIndex >= spells.Count) return;
 
             string spellName = spells[slotIndex];
-            adapter.LogCombat($"You cast {spellName}!");
+
+            // Codex audit (third pass A-P1): previously the spell input only
+            // wrote a log line — no mana, cooldown, terrain, or world-event
+            // mutation. Route the cast through IPlayerCommandSink.TryCastSpell;
+            // the adapter is now responsible for delegating to SpellResolver
+            // and surfacing failure via LogCombat. If the command sink reports
+            // false we still flash the visual (UX feedback) and write a
+            // fallback log line for placeholder adapters.
+            bool routed = adapter.TryCastSpell(slotIndex);
+            if (!routed)
+                adapter.LogCombat($"You cast {spellName}!");
 
             if (_eye != null)
             {
