@@ -2,6 +2,7 @@ using System;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Time;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Simulation.Living;
 using EmberCrpg.Simulation.Time;
 
 namespace EmberCrpg.Simulation.Composition
@@ -30,11 +31,28 @@ namespace EmberCrpg.Simulation.Composition
         /// </summary>
         public const long MinutesPerTick = 1L;
 
+        /// <summary>
+        /// Game-day length in ember ticks. Matches <c>DomainSimulationAdapter.HudText</c>
+        /// (which formats `Day = 1 + tick / 240`). Anything that wants to run
+        /// "once per game day" should gate on this constant.
+        /// </summary>
+        public const int TicksPerGameDay = 240;
+
+        /// <summary>
+        /// Game-hour length in ember ticks. Used to gate <see cref="NeedsSystem"/>
+        /// so per-actor needs decay at its design rate (HungerIncreasePerTick=20
+        /// per logical tick, which the system author sized as "per game hour")
+        /// rather than every minute.
+        /// </summary>
+        public const int TicksPerGameHour = TicksPerGameDay / 24;
+
         private readonly GameTimeAdvanceSystem _timeAdvance;
+        private readonly NeedsSystem _needs;
         private int _lastTickIndex = -1;
+        private int _ticksSinceHourly;
 
         public SliceTickComposer()
-            : this(new GameTimeAdvanceSystem(BuildDefaultCalendar()))
+            : this(new GameTimeAdvanceSystem(BuildDefaultCalendar()), new NeedsSystem())
         {
         }
 
@@ -50,9 +68,18 @@ namespace EmberCrpg.Simulation.Composition
             });
         }
 
-        public SliceTickComposer(GameTimeAdvanceSystem timeAdvance)
+        public SliceTickComposer(GameTimeAdvanceSystem timeAdvance, NeedsSystem needs)
         {
             _timeAdvance = timeAdvance ?? throw new ArgumentNullException(nameof(timeAdvance));
+            _needs = needs ?? throw new ArgumentNullException(nameof(needs));
+        }
+
+        // Codex audit (seventh pass review on PR #198): single-arg constructor
+        // kept for any caller that already passed a custom calendar; defaults
+        // the NeedsSystem to the canonical mood evaluator.
+        public SliceTickComposer(GameTimeAdvanceSystem timeAdvance)
+            : this(timeAdvance, new NeedsSystem())
+        {
         }
 
         /// <summary>
@@ -68,13 +95,36 @@ namespace EmberCrpg.Simulation.Composition
             int delta = _lastTickIndex < 0 ? 0 : tickIndex - _lastTickIndex;
             _lastTickIndex = tickIndex;
             if (delta <= 0) return;
+
+            // 1) Always advance game time (cheap, monotonic).
             world.Time = _timeAdvance.Advance(world.Time, delta * MinutesPerTick);
+
+            // 2) Hourly tick: NeedsSystem decays per-actor needs at its
+            // design rate. Codex audit (seventh pass A-P1 #1): previously the
+            // composer only advanced time, so colony needs never moved in a
+            // running game. Gate at TicksPerGameHour so the existing
+            // HungerIncreasePerTick=20 numbers stay calibrated.
+            _ticksSinceHourly += delta;
+            while (_ticksSinceHourly >= TicksPerGameHour)
+            {
+                _ticksSinceHourly -= TicksPerGameHour;
+                if (world.Actors == null || world.Events == null) continue;
+                foreach (var actor in world.Actors.Records)
+                {
+                    if (actor == null) continue;
+                    _needs.TickActorNeeds(actor, world.Events, world.Time, ticks: 1);
+                }
+            }
         }
 
         /// <summary>
         /// Reset the composer's tick anchor — call after a save restore so
         /// the next Advance does not double-tick the restored time.
         /// </summary>
-        public void ResetAnchor() => _lastTickIndex = -1;
+        public void ResetAnchor()
+        {
+            _lastTickIndex = -1;
+            _ticksSinceHourly = 0;
+        }
     }
 }

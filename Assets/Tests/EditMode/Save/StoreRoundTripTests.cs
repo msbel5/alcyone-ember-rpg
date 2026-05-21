@@ -85,7 +85,7 @@ namespace EmberCrpg.Tests.EditMode.Save
                 .Concat(new[] { ActorSaveMapper.ToData(canonicalGuard) })
                 .ToArray();
 
-            var loaded = SliceSaveMapper.ToWorld(data);
+            var loaded = SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld(data.roomSeed));
 
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Id, Is.EqualTo(canonicalGuard.Id));
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Name, Is.EqualTo("Canonical Guard"));
@@ -99,7 +99,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             var data = SliceSaveMapper.ToData(world);
             data.actors = Array.Empty<ActorSaveData>();
 
-            var loaded = SliceSaveMapper.ToWorld(data);
+            var loaded = SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld(data.roomSeed));
 
             Assert.That(loaded.Actors.Count, Is.EqualTo(0));
         }
@@ -113,7 +113,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             data.actors = new[] { ActorSaveMapper.ToData(canonicalGuard) };
             data.guard = new ActorSaveData();
 
-            var loaded = SliceSaveMapper.ToWorld(data);
+            var loaded = SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld(data.roomSeed));
 
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Id, Is.EqualTo(canonicalGuard.Id));
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Name, Is.EqualTo("Canonical Guard"));

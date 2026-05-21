@@ -39,13 +39,15 @@ namespace EmberCrpg.Presentation.Slice
             // Fallback for the original Sprint 4 combat foundation scenes.
             if (sceneName.Contains("Sprint4")) return;
 
-            // Codex audit (sixth pass E-P2 #E1): the canonical opt-in is now
-            // SliceRuntimeMarker authored at scene root. New scenes that want
-            // the auto-spawn place that MonoBehaviour. Legacy slice scenes
-            // without the marker still bootstrap via the name fallback below.
+            // Codex audit (seventh pass E-P2 #16): the marker is now the
+            // ONLY opt-in. The previous Slice/Sprint1/Sprint2 name fallback
+            // was kept "for legacy scenes" but no such scenes exist in
+            // Assets/Scenes/, so the fallback was dead and any future
+            // accidental name collision would have spawned a stray
+            // SliceGameController. Drop the fallback entirely; new scenes
+            // that want the auto-bootstrap MUST author a SliceRuntimeMarker.
             var marker = Object.FindFirstObjectByType<SliceRuntimeMarker>(FindObjectsInactive.Include);
-            bool nameFallback = sceneName.Contains("Slice") || sceneName.Contains("Sprint1") || sceneName.Contains("Sprint2");
-            if (marker == null && !nameFallback) return;
+            if (marker == null) return;
 
             // Bail when an existing slice controller is already present and we
             // are NOT in an Ember scene — keep using the live one.

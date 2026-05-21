@@ -3,7 +3,6 @@
     "rootNamespace": "EmberCrpg.Data.SliceJson",
     "references": [
         "EmberCrpg.Domain",
-        "EmberCrpg.Simulation",
         "EmberCrpg.Data"
     ],
     "includePlatforms": [],

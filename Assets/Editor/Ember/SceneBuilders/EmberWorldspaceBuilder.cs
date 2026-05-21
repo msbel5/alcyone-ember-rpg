@@ -16,7 +16,8 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             string actorName,
             string spriteName,
             Vector3 worldPosition,
-            Transform parent = null)
+            Transform parent = null,
+            string domainActorKey = null)
         {
             var go = new GameObject(actorName);
             if (parent != null) go.transform.SetParent(parent, worldPositionStays: false);
@@ -30,7 +31,15 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             renderer.sprite = LoadSpriteByName(spriteName);
             renderer.sortingOrder = 10;
             AddRuntimeComponent(billboardChild, "EmberCrpg.Presentation.Ember.Views.CameraFacingBillboard");
-            AddRuntimeComponent(go, "EmberCrpg.Presentation.Ember.Views.ActorView");
+            var actorView = AddRuntimeComponent(go, "EmberCrpg.Presentation.Ember.Views.ActorView");
+            // Codex audit (seventh pass A-P1 #3): serialize the stable domain
+            // actor key into the ActorView's _domainActorKey field so the
+            // runtime adapter binding is name-independent (and survives
+            // GameObject renames in the scene). When a caller does not pass
+            // a key, default to the actorName argument — which is what the
+            // builder uses as the GameObject name today, so behaviour is
+            // preserved for any caller that has not opted in.
+            SerializeDomainActorKey(actorView, string.IsNullOrEmpty(domainActorKey) ? actorName : domainActorKey);
             AddInteractable(go, actorName);
 
             var capsuleShadow = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -65,16 +74,31 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
-        private static void AddRuntimeComponent(GameObject host, string fullName)
+        private static Component AddRuntimeComponent(GameObject host, string fullName)
         {
             var type = ResolveRuntimeType(fullName);
             if (type == null)
             {
                 Debug.LogWarning($"Could not resolve runtime component {fullName}");
-                return;
+                return null;
             }
 
-            host.AddComponent(type);
+            return host.AddComponent(type);
+        }
+
+        private static void SerializeDomainActorKey(Component actorView, string key)
+        {
+            if (actorView == null || string.IsNullOrEmpty(key)) return;
+            // ActorView's _domainActorKey is a [SerializeField] private string.
+            // Set it via SerializedObject so the value persists into the
+            // generated scene asset.
+            var serialized = new SerializedObject(actorView);
+            var prop = serialized.FindProperty("_domainActorKey");
+            if (prop != null)
+            {
+                prop.stringValue = key;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         private static System.Type ResolveRuntimeType(string fullName)
