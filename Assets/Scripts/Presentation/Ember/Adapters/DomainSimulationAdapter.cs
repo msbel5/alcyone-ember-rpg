@@ -191,42 +191,76 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // ----- IEmberSaveBridge -----
         public string ExportStateJson()
         {
-            // Route through JsonSliceSaveService for the full deterministic
-            // round-trip. Catch failures so a corrupt domain state does not
-            // crash the save service caller — the empty payload signals the
-            // save layer to surface "Save partial: domain export failed."
-            try { return new EmberCrpg.Data.Save.JsonSliceSaveService().SaveToJson(_world); }
-            catch (System.Exception) { return string.Empty; }
+            // Codex review on PR #195 (P2): the previous version swallowed
+            // exceptions and returned an empty string, which the save service
+            // could not distinguish from "no domain state to export"
+            // (placeholder adapter returns ""). Rethrow so EmberSaveService's
+            // try/catch path runs, and the user sees
+            // "Save partial: domain export failed." instead of a silent
+            // empty payload masquerading as "Saved.".
+            return new EmberCrpg.Data.Save.JsonSliceSaveService().SaveToJson(_world);
         }
 
         public void RestoreStateJson(string json)
         {
             if (string.IsNullOrEmpty(json)) return;
-            // The Json service returns a fresh SliceWorldState; copy the
-            // observable fields back onto the live _world reference so all
-            // already-bound UI panels keep their world handle.
+            // The Json service returns a fresh SliceWorldState; copy every
+            // saveable field back onto the live _world reference so all
+            // already-bound UI panels keep their world handle but observe
+            // the restored state.
+            //
+            // Codex review on PR #195 (P1): the previous version only copied a
+            // ~12-field subset; room-role IDs, pickups, topics, economy /
+            // process logs, guard / encounter flags all stayed at the
+            // pre-load values while the caller reported a successful load.
+            // Mirror every public field on SliceWorldState here.
             var restored = new EmberCrpg.Data.Save.JsonSliceSaveService().LoadFromJson(json);
             if (restored == null) return;
+
             _world.Time = restored.Time;
             _world.RoomSeed = restored.RoomSeed;
             _world.Room = restored.Room;
             _world.Dungeon = restored.Dungeon;
+            // Room-role IDs (previously dropped)
             _world.CurrentRoomId = restored.CurrentRoomId;
             _world.PlayerRoomId = restored.PlayerRoomId;
+            _world.TalkerRoomId = restored.TalkerRoomId;
+            _world.MerchantRoomId = restored.MerchantRoomId;
+            _world.GuardRoomId = restored.GuardRoomId;
+            _world.EnemyRoomId = restored.EnemyRoomId;
+            _world.PickupRoomId = restored.PickupRoomId;
+            // Stores
             _world.Actors = restored.Actors;
             _world.Items = restored.Items;
             _world.Sites = restored.Sites;
             _world.Factions = restored.Factions;
             _world.Events = restored.Events;
+            // Economy / process (previously dropped)
+            _world.Prices = restored.Prices;
+            _world.Stockpiles = restored.Stockpiles;
+            _world.TradeRoutes = restored.TradeRoutes;
+            _world.Caravans = restored.Caravans;
+            _world.ToolCallTrace = restored.ToolCallTrace;
+            _world.LlmProposalLog = restored.LlmProposalLog;
+            // Inventory + equipment + magic
             _world.PlayerInventory = restored.PlayerInventory;
             _world.MerchantInventory = restored.MerchantInventory;
             _world.PlayerEquipment = restored.PlayerEquipment;
             _world.PlayerSpellCooldowns = restored.PlayerSpellCooldowns;
             _world.PlayerShieldBuffs = restored.PlayerShieldBuffs;
+            // Pickups + topics (previously dropped)
+            _world.Pickups = restored.Pickups;
+            _world.DungeonRoomStates = restored.DungeonRoomStates;
+            _world.DungeonDoorStates = restored.DungeonDoorStates;
+            _world.Topics = restored.Topics;
             _world.NpcMemory = restored.NpcMemory;
+            // Guard / door / encounter shell flags (previously dropped)
             _world.DoorOpen = restored.DoorOpen;
             _world.GuardDoorAccessGranted = restored.GuardDoorAccessGranted;
+            _world.GuardWarningCount = restored.GuardWarningCount;
+            _world.EncounterActive = restored.EncounterActive;
             _world.LastNarrative = restored.LastNarrative;
+
             _playerDamageTaken = 0; // reset transient view counter
         }
     }
