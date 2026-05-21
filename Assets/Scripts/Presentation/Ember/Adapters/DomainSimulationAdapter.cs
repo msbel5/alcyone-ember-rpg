@@ -205,21 +205,49 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public bool TryReadWorksite(string siteName, out WorksiteViewState state)
         {
             state = default;
-            // Codex audit (fourth pass A-P1): previously always returned false.
-            // Resolve worksite tag from the retained save sidecar's worksite
-            // store; the position field is set from any active worksite at
-            // that site name, falling back to origin when nothing is wired.
+            // Codex audit (fifth pass A-P1): previously returned the
+            // synthetic `(isActive: true, queueDepth: 0)` for any site
+            // name match — the view never reflected the actual worksite
+            // store. Now derive isActive from the WorksiteStore and
+            // queueDepth from the JobBoard's request count at that site.
             if (string.IsNullOrEmpty(siteName)) return false;
-            var worksites = _saveService.Worksites;
-            if (worksites == null) return false;
+            EmberCrpg.Domain.Core.SiteId siteId = default;
             foreach (var site in _world.Sites.Records)
             {
-                if (!string.Equals(site.Name, siteName, System.StringComparison.Ordinal)) continue;
-                // Found the site; return an active view state.
-                state = new WorksiteViewState(isActive: true, queueDepth: 0);
-                return true;
+                if (string.Equals(site.Name, siteName, System.StringComparison.Ordinal))
+                {
+                    siteId = site.Id;
+                    break;
+                }
             }
-            return false;
+            if (siteId.IsEmpty) return false;
+
+            var worksites = _saveService.Worksites;
+            bool isActive = false;
+            if (worksites != null)
+            {
+                foreach (var record in worksites.Records)
+                {
+                    if (record.SiteId.Equals(siteId) && record.IsActive)
+                    {
+                        isActive = true;
+                        break;
+                    }
+                }
+            }
+
+            int queueDepth = 0;
+            var jobs = _saveService.Jobs;
+            if (jobs != null)
+            {
+                foreach (var req in jobs.Requests)
+                {
+                    if (req.SiteId.Equals(siteId)) queueDepth++;
+                }
+            }
+
+            state = new WorksiteViewState(isActive: isActive, queueDepth: queueDepth);
+            return true;
         }
 
         public IDialogSource GetDialogSource(string actorName)
@@ -297,15 +325,38 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 LogCombat($"{spell.DisplayName ?? spell.TemplateId}: insufficient mana.");
                 return false;
             }
-            // Consume mana and emit a deterministic event log line.
-            player.ApplyVitals(player.Vitals.WithMana(player.Vitals.Mana.Damage(spell.ManaCost)));
+            // Codex audit (fifth pass A-P1): route through the canonical
+            // SpellCastingService so mana spend, cooldown, and the
+            // deterministic event log are all driven by the simulation-side
+            // service rather than ad-hoc here. The TryPrepareCast +
+            // CommitPreparedCast pair is the production seam; this command
+            // builds the known-spell list from SliceSpellCatalog.All so the
+            // gate matches the HUD slot list. SpellExecutionService is not
+            // used here directly because it requires a richer target/context
+            // contract; we apply CastingService for the mana/cooldown gate
+            // and emit a SpellResolved event with the deterministic outcome.
+            var knownIds = new List<string>(spells.Count);
+            foreach (var s in spells) knownIds.Add(s.TemplateId);
+            var castingService = new EmberCrpg.Simulation.Magic.SpellCastingService(_ => spell);
+            var prepare = castingService.TryPrepareCast(player, spell.TemplateId, knownIds, _world.PlayerSpellCooldowns);
+            if (!prepare.Success)
+            {
+                LogCombat(prepare.Message ?? $"{spell.DisplayName ?? spell.TemplateId}: failed.");
+                return false;
+            }
+            var commit = castingService.CommitPreparedCast(player, spell, _world.PlayerSpellCooldowns);
+            if (!commit.Success)
+            {
+                LogCombat(commit.Message ?? $"{spell.DisplayName ?? spell.TemplateId}: failed.");
+                return false;
+            }
             _world.Events?.Append(new WorldEvent(
                 _world.Time,
                 WorldEventKind.SpellResolved,
                 player.Id,
                 default,
-                $"slice_spell_cast id:{spell.TemplateId}"));
-            LogCombat($"You cast {spell.DisplayName ?? spell.TemplateId}.");
+                $"slice_spell_cast id:{spell.TemplateId} mana:{commit.ManaSpent}"));
+            LogCombat(commit.Message);
             return true;
         }
 
@@ -323,9 +374,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 return false;
             }
             target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Damage(rawDamage)));
+            // Codex audit (fifth pass A-P1): emit CombatResolved (not
+            // SpellResolved). The previous miscategorization sent every
+            // melee strike through the magic-event channel, breaking trace
+            // readers that filter by kind.
             _world.Events?.Append(new WorldEvent(
                 _world.Time,
-                WorldEventKind.SpellResolved,
+                WorldEventKind.CombatResolved,
                 target.Id,
                 default,
                 $"melee_strike target:{target.Name} damage:{rawDamage}"));

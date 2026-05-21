@@ -24,6 +24,8 @@
     <Compile Include="../../../Assets/Scripts/Presentation/SliceAtmosphereSelector.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/SliceHudFormatter.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/VisualLayer/**/*.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/JsonSliceSaveService.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveData.cs" />
     <Compile Include="../../../Assets/Tests/EditMode/**/*.cs" />
     <Compile Include="UnityJsonUtilityStub.cs" />
   </ItemGroup>

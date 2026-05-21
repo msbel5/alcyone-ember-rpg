@@ -319,6 +319,12 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             public void LogCombat(string message) { }
             public void TakePlayerDamage(int amount) { }
             public string ConsultFate() => string.Empty;
+            // Codex audit (fifth pass C-P3): explicit no-op command overrides
+            // so missing routing is visible in this fallback adapter, not
+            // silently degraded by interface default implementations.
+            public bool TryCastSpell(int spellSlotIndex) => false;
+            public bool TryMeleeStrike(string targetActorName, int rawDamage) => false;
+            public bool TryInteract(string targetTag) => false;
             // Codex audit Batch 2 / Finding 3 — fallback adapter has nothing to
             // round-trip. Return empty / no-op so save/load lifecycle still runs.
             public string ExportStateJson() => string.Empty;
