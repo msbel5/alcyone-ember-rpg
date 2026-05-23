@@ -29,6 +29,24 @@ namespace EmberCrpg.Presentation.Sprint4
             var marker = Object.FindFirstObjectByType<Sprint4FoundationMarker>(FindObjectsInactive.Include);
             if (marker == null)
             {
+                // --------------------------------------------------------------
+                // DELIBERATE: scene-name fallback re-flagged by Codex ninth pass
+                // (E-P3) and reviewed again. We are KEEPING the fallback.
+                //
+                // Why: the only scene that depends on it is the legacy
+                // Assets/Scenes/Sprint4Foundation.unity which does NOT carry a
+                // Sprint4FoundationMarker authored on a scene GameObject.
+                // Removing the fallback would silently turn that scene
+                // non-playable (no ground/player/camera rig spawns), which
+                // would break the playable vertical-slice promise documented
+                // in README "Faz 1-12 wired" status.
+                //
+                // TODO(faz-13-cleanup): migrate Sprint4Foundation.unity to
+                // carry a Sprint4FoundationMarker on a scene root GameObject,
+                // then DELETE this fallback block + the SceneNameToken const.
+                // The marker is already the canonical opt-in for every other
+                // Sprint4 scene; this is the last hold-out.
+                // --------------------------------------------------------------
                 // Legacy scene fallback: Assets/Scenes/Sprint4Foundation.unity
                 // ships without the marker; gate on the scene-name token so
                 // it still bootstraps. Removal of this fallback is blocked on

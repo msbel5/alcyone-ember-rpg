@@ -26,7 +26,35 @@
     <Compile Include="../../../Assets/Scripts/Presentation/VisualLayer/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/JsonSliceSaveService.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveData.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/EmberWorldGenIntent.cs" />
     <Compile Include="../../../Assets/Tests/EditMode/**/*.cs" />
     <Compile Include="UnityJsonUtilityStub.cs" />
   </ItemGroup>
+
+  <!--
+    Audit (ninth pass G-P1): fail the build the moment any unresolved git
+    merge marker leaks into Assets/Scripts/**/*.cs. We delegate the scan to
+    a sibling script per-OS so the MSBuild Exec invocation does NOT have to
+    escape literal "&lt;" and "&gt;" characters (those are what the scripts
+    look for and they trip up the various shell-quoting layers between
+    MSBuild, cmd.exe, and the underlying shell).
+
+    Runs at BeforeTargets="BeforeBuild" so the failure is surfaced before
+    the C# compiler runs.
+  -->
+  <Target Name="GuardAgainstConflictMarkers" BeforeTargets="BeforeBuild">
+    <!-- Windows: PowerShell wrapper script. -->
+    <Exec
+      Condition="'$(OS)' == 'Windows_NT'"
+      Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\GuardConflictMarkers.ps1&quot;"
+      IgnoreExitCode="false"
+      WorkingDirectory="$(MSBuildProjectDirectory)" />
+
+    <!-- POSIX (CI / WSL / macOS): bash wrapper script. -->
+    <Exec
+      Condition="'$(OS)' != 'Windows_NT'"
+      Command="bash $(MSBuildProjectDirectory)/guard-conflict-markers.sh"
+      IgnoreExitCode="false"
+      WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
 </Project>

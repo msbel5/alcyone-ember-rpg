@@ -54,3 +54,19 @@ Rejected because:
 
 Open a follow-up audit row under `docs/sprint-faz-14-atom-map.md` (once Faz
 14 exists) titled `INPUT-MIGRATION` and link back to this file.
+
+## Ninth-pass audit I-P3 / J-P3 — Submit / Cancel / debug axes
+
+Codex ninth-pass flagged `ProjectSettings/InputManager.asset:137` (the
+`Submit` / `Cancel` / `Horizontal` / `Vertical` debug-name axes) as
+potentially-unused script bindings. They are NOT unused: those axes are
+consumed by Unity's UI Event System (`UnityEngine.EventSystems.EventSystem`
++ `StandaloneInputModule.submitButton` / `.cancelButton`) — NOT by any
+gameplay script. The EventSystem auto-spawned by `EmberMainMenuUI` and
+`EmberWorldHost` reads them at runtime to route Enter / Esc / arrow keys to
+the focused selectable. Removing or renaming them would silently break
+keyboard-driven menu navigation.
+
+No change to `ProjectSettings/InputManager.asset` is required. This note
+exists so future audit passes can resolve the finding by reference instead
+of re-investigating the binding chain.
