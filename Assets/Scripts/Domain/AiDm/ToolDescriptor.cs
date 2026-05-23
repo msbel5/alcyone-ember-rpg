@@ -16,6 +16,17 @@ namespace EmberCrpg.Domain.AiDm
             IEnumerable<ToolParameter> parameters,
             string outputSchemaKey,
             ToolSideEffect sideEffect)
+            : this(id, surface, parameters, outputSchemaKey, sideEffect, string.Empty)
+        {
+        }
+
+        public ToolDescriptor(
+            ToolId id,
+            ToolSurfaceKind surface,
+            IEnumerable<ToolParameter> parameters,
+            string outputSchemaKey,
+            ToolSideEffect sideEffect,
+            string serverSideHandler)
         {
             if (id.IsEmpty) throw new ArgumentException("ToolDescriptor.Id must be non-empty.", nameof(id));
             if (surface.IsEmpty) throw new ArgumentException("ToolDescriptor.Surface must be set.", nameof(surface));
@@ -27,6 +38,7 @@ namespace EmberCrpg.Domain.AiDm
             Parameters = parameters == null ? new ToolParameter[0] : new List<ToolParameter>(parameters).AsReadOnly();
             OutputSchemaKey = outputSchemaKey;
             SideEffect = sideEffect;
+            ServerSideHandler = serverSideHandler ?? string.Empty;
         }
 
         public ToolId Id { get; }
@@ -34,6 +46,7 @@ namespace EmberCrpg.Domain.AiDm
         public IReadOnlyList<ToolParameter> Parameters { get; }
         public string OutputSchemaKey { get; }
         public ToolSideEffect SideEffect { get; }
+        public string ServerSideHandler { get; }
     }
 
     /// <summary>

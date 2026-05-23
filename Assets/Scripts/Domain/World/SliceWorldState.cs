@@ -14,6 +14,7 @@ using EmberCrpg.Domain.Magic;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
+using EmberCrpg.Domain.Worldgen;
 
 namespace EmberCrpg.Domain.World
 {
@@ -42,6 +43,8 @@ namespace EmberCrpg.Domain.World
         public List<CaravanInstance> Caravans = new List<CaravanInstance>();
         public List<ToolCallTraceRecord> ToolCallTrace = new List<ToolCallTraceRecord>();
         public List<LlmProposalLogEntry> LlmProposalLog = new List<LlmProposalLogEntry>();
+        public List<NpcSeedRecord> NpcSeeds = new List<NpcSeedRecord>();
+        public WorldProfile WorldProfile;
 
         // Codex audit (sixth pass D-P3 #D2): the five named role views below
         // (Player/Talker/Merchant/Guard/Enemy) are deprecated since Faz 1 but
