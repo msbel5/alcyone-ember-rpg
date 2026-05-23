@@ -1,0 +1,46 @@
+{
+  "_class_name": "ORTStableDiffusionXLPipeline",
+  "_diffusers_version": "0.24.0",
+  "_name_or_path": "stabilityai/sdxl-turbo",
+  "feature_extractor": [
+    null,
+    null
+  ],
+  "force_zeros_for_empty_prompt": true,
+  "image_encoder": [
+    null,
+    null
+  ],
+  "scheduler": [
+    "diffusers",
+    "EulerAncestralDiscreteScheduler"
+  ],
+  "text_encoder": [
+    "diffusers",
+    "OnnxRuntimeModel"
+  ],
+  "text_encoder_2": [
+    "diffusers",
+    "OnnxRuntimeModel"
+  ],
+  "tokenizer": [
+    "transformers",
+    "CLIPTokenizer"
+  ],
+  "tokenizer_2": [
+    "transformers",
+    "CLIPTokenizer"
+  ],
+  "unet": [
+    "diffusers",
+    "OnnxRuntimeModel"
+  ],
+  "vae_decoder": [
+    "diffusers",
+    "OnnxRuntimeModel"
+  ],
+  "vae_encoder": [
+    "diffusers",
+    "OnnxRuntimeModel"
+  ]
+}
