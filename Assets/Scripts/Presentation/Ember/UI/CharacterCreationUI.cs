@@ -20,7 +20,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         private TMP_InputField _nameInput;
         private string _playerName = "Adventurer";
         private string _birthsignId = "the_lover";
-        private string _selectedClassId = "warrior";
+        private string _selectedClassId;
         private int _questionIndex;
 
         private void Awake()
@@ -124,12 +124,14 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             ClearContent();
             var suggested = _service.SuggestClass(_answers.ToArray());
-            _selectedClassId = suggested.Id;
+            if (string.IsNullOrEmpty(_selectedClassId))
+                _selectedClassId = suggested.Id;
             CreateLabel($"Suggested Class: {suggested.Name}");
             foreach (var klass in CharacterCreationCatalog.Classes)
             {
                 var captured = klass;
-                CreateButton(captured.Name, () =>
+                var label = captured.Id == _selectedClassId ? captured.Name + " (Selected)" : captured.Name;
+                CreateButton(label, () =>
                 {
                     _selectedClassId = captured.Id;
                     ShowClassStep();

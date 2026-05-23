@@ -551,10 +551,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             if (_world.Events == null) _world.Events = new WorldEventLog();
             var fallbackSite = StartingSettlement.IsEmpty ? FirstSiteId() : SettlementSiteId(StartingSettlement);
+            var minYear = generated.History.Count == 0 ? 0 : generated.History.Min(history => history.Year);
             foreach (var history in generated.History)
             {
                 _world.Events.Append(new WorldEvent(
-                    new GameTime((long)history.Year * 525_600L),
+                    new GameTime((long)(history.Year - minYear) * GameTime.MinutesPerYear),
                     ToRuntimeEventKind(history.Kind),
                     default,
                     fallbackSite,
