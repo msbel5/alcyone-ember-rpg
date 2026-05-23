@@ -52,6 +52,11 @@ Builds/
 Assets/AI Toolkit/Temp/
 Assets/AI Toolkit/Temp.meta
 
+# SDXL Turbo external-data shards exceed GitHub LFS' 2GB per-object limit.
+# Keep them local or download them during model bootstrap; do not publish them.
+Assets/StreamingAssets/Models/sdxl-turbo/unet/model.onnx.data
+Assets/StreamingAssets/Models/sdxl-turbo/text_encoder_2/model.onnx.data
+
 # Unity Performance Testing auto-generated run info (rewritten on every test run
 # with whichever packages happen to be installed locally — including dev-only
 # `com.unity.ai.assistant`. Keep it out of git so CI/Mami machines don't diff.)
