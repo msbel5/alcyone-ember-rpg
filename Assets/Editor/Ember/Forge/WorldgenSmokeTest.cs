@@ -63,7 +63,6 @@ namespace EmberCrpg.Editor.Forge
             if (!forge.IsAvailable()) forge = new ComfyUiAssetForge();
 
             var portraits = new List<Texture2D>();
-            int count = 0;
             int maxCount = 10; // Generate first 10 for the grid and testing
 
             foreach (var npc in world.Npcs.Take(maxCount))
