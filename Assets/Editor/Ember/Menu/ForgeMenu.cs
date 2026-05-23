@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using EmberCrpg.Domain.Forge;
 using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.Forge;
