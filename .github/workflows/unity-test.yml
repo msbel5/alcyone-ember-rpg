@@ -92,6 +92,14 @@ jobs:
             sed -i '/"com.unity.ai.assistant"/d' Packages/manifest.json
             echo "Stripped com.unity.ai.assistant from manifest for CI."
           fi
+          # com.unity.ai.inference is re-added by Unity Editor on Mami's dev
+          # machine because the embedded ai.assistant package references
+          # Unity.InferenceEngine. Strip it on CI — the ONNX backend uses
+          # Microsoft.ML.OnnxRuntime (pure-C# DLL), not Sentis.
+          if grep -q '"com.unity.ai.inference"' Packages/manifest.json; then
+            sed -i '/"com.unity.ai.inference"/d' Packages/manifest.json
+            echo "Stripped com.unity.ai.inference from manifest for CI."
+          fi
 
       - name: Run EditMode Tests
         id: editmode

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "qwen2.5-3b-q4km",
+    "path": "qwen2.5-3b-instruct-q4_k_m.gguf",
+    "size": 2030000000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf"
+  },
+  {
+    "id": "qwen2.5-1.5b-q4km",
+    "path": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+    "size": 1100000000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+  },
+  {
+    "id": "sdxl-turbo-text-encoder",
+    "path": "sdxl-turbo/text_encoder.onnx",
+    "size": 248000000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/text_encoder/model.onnx"
+  },
+  {
+    "id": "sdxl-turbo-text-encoder-2",
+    "path": "sdxl-turbo/text_encoder_2.onnx",
+    "size": 1430000000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/text_encoder_2/model.onnx"
+  },
+  {
+    "id": "sdxl-turbo-unet",
+    "path": "sdxl-turbo/unet.onnx",
+    "size": 5200000000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/unet/model.onnx"
+  },
+  {
+    "id": "sdxl-turbo-vae-decoder",
+    "path": "sdxl-turbo/vae_decoder.onnx",
+    "size": 197000000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/vae_decoder/model.onnx"
+  },
+  {
+    "id": "sdxl-turbo-tokenizer",
+    "path": "sdxl-turbo/tokenizer.json",
+    "size": 2500000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/tokenizer/tokenizer.json"
+  },
+  {
+    "id": "sd15-lcm-unet",
+    "path": "sd15-lcm/unet.onnx",
+    "size": 1700000000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/latent-consistency/lcm-sdxl/resolve/main/unet/diffusion_pytorch_model.onnx"
+  },
+  {
+    "id": "minilm-l6-v2-model",
+    "path": "minilm-l6-v2/model.onnx",
+    "size": 90000000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx"
+  },
+  {
+    "id": "minilm-l6-v2-tokenizer",
+    "path": "minilm-l6-v2/tokenizer.json",
+    "size": 470000,
+    "sha256": "TBD",
+    "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json"
+  }
+]

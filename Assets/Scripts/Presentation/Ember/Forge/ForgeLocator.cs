@@ -8,6 +8,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
         public static IAssetForge AssetForge { get; private set; }
         public static NativeLlmClient NativeLlm { get; private set; }
         public static LlmRoutingService LlmRouter { get; private set; }
+        public static EmbeddingClient Embedding { get; private set; }
 
         public static void Register(IAssetForge forge, NativeLlmClient llm, LlmRoutingService router)
         {
@@ -16,11 +17,25 @@ namespace EmberCrpg.Presentation.Ember.Forge
             LlmRouter = router;
         }
 
+        // ModelBootstrap rebinds the asset forge once it has verified model paths
+        // on disk — it must NOT clobber the LLM router that ForgeBootstrap already
+        // wired. Hence these targeted setters.
+        public static void SetAssetForge(IAssetForge forge)
+        {
+            AssetForge = forge;
+        }
+
+        public static void SetEmbeddingClient(EmbeddingClient client)
+        {
+            Embedding = client;
+        }
+
         public static void Clear()
         {
             AssetForge = null;
             NativeLlm = null;
             LlmRouter = null;
+            Embedding = null;
         }
     }
 }
