@@ -41,6 +41,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _activeDialogActor = string.Empty;
         private string _currentDialogLine = string.Empty;
         private string _currentPortrait = "portrait_npc_placeholder";
+        private EmberCrpg.Simulation.Rng.XorShiftRng _meleeRng;
 
         public DomainSimulationAdapter(SliceWorldState world)
 {
@@ -451,7 +452,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 hitFormulaKey: "accuracy_vs_dodge",
                 damageFormulaKey: "base_minus_armor",
                 animationTag: "melee_swing");
-            var rng = new EmberCrpg.Simulation.Rng.XorShiftRng((uint)(_tick == 0 ? 1 : _tick));
+            // Eighth-pass A-P1: previous code constructed a fresh RNG seeded
+            // only by _tick. Two strikes in the same tick produced identical
+            // hit + damage rolls, making combat feel broken. Cache one RNG
+            // instance and advance it monotonically; replay determinism still
+            // holds because the seed is worldSeed-anchored.
+            if (_meleeRng == null) _meleeRng = new EmberCrpg.Simulation.Rng.XorShiftRng(0xE3B6_1EE7u);
+            var rng = _meleeRng;
             // Codex audit (seventh pass A-P2 #6): previously hard-coded
             // SiteId(1UL) so every combat event was logged under a synthetic
             // location. Derive the site from the actual world: closest
@@ -514,14 +521,44 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 || spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.AreaAroundCaster)
                 return player;
 
+            // Eighth-pass A-P0: filtering "Role != Enemy" excluded every
+            // friendly target, so Restoration / Buff spells could never pick
+            // an ally (they silently fell back to caster). Branch on effect
+            // kind: friendly-effect spells skip enemies, hostile spells skip
+            // non-enemies. SpellTargetKind alone is insufficient — both
+            // Mending and FlameBolt are "SingleTarget" — so inspect the
+            // spell's effect ops for friendly intent.
+            bool wantsFriendly = false;
+            if (spell.Effects != null)
+            {
+                foreach (var effect in spell.Effects)
+                {
+                    var code = effect.Code;
+                    if (code == EmberCrpg.Domain.Magic.SpellEffectCode.RestoreHealth
+                        || code == EmberCrpg.Domain.Magic.SpellEffectCode.ShieldBuff
+                        || code == EmberCrpg.Domain.Magic.SpellEffectCode.RestoreMana
+                        || code == EmberCrpg.Domain.Magic.SpellEffectCode.RestoreFatigue)
+                    {
+                        wantsFriendly = true;
+                        break;
+                    }
+                }
+            }
+
             ActorRecord best = null;
             var bestDistance = int.MaxValue;
             foreach (var candidate in _world.Actors.Records)
             {
                 if (candidate == null || candidate.Id.Equals(player.Id) || !candidate.IsAlive)
                     continue;
-                if (candidate.Role != ActorRole.Enemy)
+                if (wantsFriendly)
+                {
+                    if (candidate.Role == ActorRole.Enemy) continue;
+                }
+                else if (candidate.Role != ActorRole.Enemy)
+                {
                     continue;
+                }
 
                 var distance = player.Position.ManhattanDistanceTo(candidate.Position);
                 if (spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.Touch && distance != 1)
