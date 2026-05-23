@@ -58,7 +58,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IDialogSource GetDialogSource(string actorName)
         {
             _currentDialogLine = $"Greetings, I am {actorName}. What brings you here?";
-            _currentPortrait = actorName.ToLower().Contains("goblin") ? "portrait_npc_placeholder" : "portrait_npc_placeholder"; // We can vary this later
+            // Eighth-pass D-P2 + A-P3: was a dead conditional (both branches
+            // returned the same string) AND would NRE on null actorName.
+            _currentPortrait = string.IsNullOrEmpty(actorName)
+                ? "portrait_npc_placeholder"
+                : $"portrait_{actorName.ToLowerInvariant()}_placeholder";
             return this;
         }
 
