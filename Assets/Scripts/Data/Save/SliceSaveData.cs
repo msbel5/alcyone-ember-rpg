@@ -51,6 +51,7 @@ namespace EmberCrpg.Data.Save
         public WorldEventSaveData[] worldEvents;
         public ToolCallTraceSaveData[] toolCallTrace;
         public LlmProposalLogSaveData[] llmProposalLog;
+        public WorldProfileSaveData worldProfile;
         public WorksiteSaveData[] worksites;
         public RecipeWorkOrderSaveData[] recipeWorkOrders;
         public JobRequestSaveData[] jobs;
@@ -69,6 +70,21 @@ namespace EmberCrpg.Data.Save
         public int guardWarningCount;
         public bool encounterActive;
         public string lastNarrative;
+    }
+
+    [Serializable]
+    public sealed class WorldProfileSaveData
+    {
+        public int style;
+        public int genre;
+        public uint seed;
+        public int targetPopulation;
+        public int regionCount;
+        public int factionCount;
+        public int historyYears;
+        public string moodKeyword;
+        public string playerCallingKeyword;
+        public string startLocationKeyword;
     }
 
     [Serializable]

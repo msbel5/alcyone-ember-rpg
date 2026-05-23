@@ -82,4 +82,24 @@ namespace EmberCrpg.Domain.Worldgen
         TradeRouteOpened = 7,
         Migration = 8,
     }
+
+    /// <summary>High-level world tone selected by the world-generation wizard.</summary>
+    public enum WorldStyle
+    {
+        LowFantasyMorrowind = 0,
+        HighFantasyTolkien = 1,
+        DarkFantasyGrim = 2,
+        SteampunkRevolution = 3,
+        AncientMythology = 4,
+    }
+
+    /// <summary>Campaign pressure lens selected by the world-generation wizard.</summary>
+    public enum WorldGenre
+    {
+        Survival = 0,
+        PoliticalIntrigue = 1,
+        MonsterHunt = 2,
+        MerchantEmpire = 3,
+        Pilgrimage = 4,
+    }
 }

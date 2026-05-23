@@ -5,6 +5,7 @@ using EmberCrpg.Domain.Combat;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 
@@ -42,6 +43,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _currentDialogLine = string.Empty;
         private string _currentPortrait = "portrait_npc_placeholder";
         private EmberCrpg.Simulation.Rng.XorShiftRng _meleeRng;
+        private const ulong RegionSiteOffset = 100_000UL;
+        private const ulong SettlementSiteOffset = 200_000UL;
+        private const ulong GeneratedNpcActorOffset = 10_000UL;
 
         public DomainSimulationAdapter(SliceWorldState world)
 {
@@ -106,7 +110,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             get
             {
                 var day = 1 + _tick / 240;
-                return $"Tick {_tick:0000}   Day {day:000}";
+                var profile = _world.WorldProfile;
+                if (profile == null)
+                    return $"Tick {_tick:0000}   Day {day:000}";
+                return $"Tick {_tick:0000}   Day {day:000}   {profile.Style}/{profile.Genre}   Pop {profile.TargetPopulation:N0}";
             }
         }
 
@@ -324,7 +331,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public EmberCrpg.Simulation.Worldgen.GeneratedWorld GeneratedWorld { get; private set; }
 
         /// <summary>The starting region selected from the wizard's start-location string. Empty when no world has been seeded.</summary>
-        public EmberCrpg.Domain.Worldgen.RegionId StartingRegion { get; private set; }
+        public RegionId StartingRegion { get; private set; }
+        public SettlementId StartingSettlement { get; private set; }
+        public FactionId StartingFaction { get; private set; }
 
         public void SeedWorld(string mood, string calling, string startLocation)
         {
@@ -333,36 +342,40 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // therefore always produce the same world, which is what makes
             // "share your seed" a viable replay feature down the line.
             uint seed = FoldSeed(mood, calling, startLocation);
+            var style = ParseStyle(mood);
+            var genre = ParseGenre(mood, calling, startLocation);
+            var preferredSize = ParsePreferredSettlementSize(startLocation);
+            var parameters = EmberCrpg.Simulation.Worldgen.WorldgenParameters.For(style, genre);
 
             var generated = EmberCrpg.Simulation.Worldgen.WorldgenService.Generate(
                 seed,
-                EmberCrpg.Simulation.Worldgen.WorldgenParameters.Default);
+                parameters);
             GeneratedWorld = generated;
-
-            // TODO(worldgen-mood): wire `mood` into the WorldgenService event
-            // probability tables (e.g. grim → more FactionWar / Calamity,
-            // hopeful → more SettlementFounded / TradeRouteOpened). Today
-            // only the seed-fold consumes mood; the kind distribution is
-            // mood-agnostic.
-            // TODO(worldgen-calling): wire `calling` into the starting
-            // faction bias — a "scholar" calling should start with reputation
-            // tilted toward Order/Circle factions, a "soldier" calling
-            // toward House/Pact. Today calling only feeds the seed-fold.
-
-            // Start-location: pick the first region whose name contains the
-            // wizard's start-location text (case-insensitive). Falls back
-            // to the first region so the field is never empty for a
-            // generated world.
             StartingRegion = SelectStartingRegion(generated, startLocation);
+            StartingSettlement = SelectStartingSettlement(generated, preferredSize, startLocation);
+            StartingFaction = SelectStartingFaction(generated, calling);
+
+            _world.WorldProfile = new WorldProfile(
+                style,
+                genre,
+                seed,
+                parameters.TargetPopulation,
+                parameters.RegionCount,
+                parameters.FactionCount,
+                parameters.HistoryYears,
+                mood,
+                calling,
+                startLocation);
+            HydrateGeneratedWorld(generated, preferredSize);
 
             UnityEngine.Debug.Log(
-                $"Domain Seeded: seed={seed} mood='{mood}' calling='{calling}' start='{startLocation}' " +
+                $"Domain Seeded: seed={seed} style={style} genre={genre} mood='{mood}' calling='{calling}' start='{startLocation}' " +
                 $"regions={generated.Regions.Count} settlements={generated.Settlements.Count} " +
                 $"npcs={generated.Npcs.Count} pop={generated.TotalPopulation:N0} " +
-                $"history={generated.History.Count} startingRegion={StartingRegion}");
+                $"history={generated.History.Count} startingRegion={StartingRegion} startingSettlement={StartingSettlement} startingFaction={StartingFaction}");
         }
 
-        private static EmberCrpg.Domain.Worldgen.RegionId SelectStartingRegion(
+        private static RegionId SelectStartingRegion(
             EmberCrpg.Simulation.Worldgen.GeneratedWorld generated,
             string startLocation)
         {
@@ -378,6 +391,243 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 }
             }
             return generated.Regions[0].Id;
+        }
+
+        private static SettlementId SelectStartingSettlement(
+            EmberCrpg.Simulation.Worldgen.GeneratedWorld generated,
+            SettlementSize preferredSize,
+            string startLocation)
+        {
+            if (!string.IsNullOrWhiteSpace(startLocation))
+            {
+                foreach (var settlement in generated.Settlements)
+                {
+                    if (settlement.Name.IndexOf(startLocation, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                        return settlement.Id;
+                }
+            }
+
+            foreach (var settlement in generated.Settlements)
+            {
+                if (settlement.Size == preferredSize)
+                    return settlement.Id;
+            }
+            return generated.Settlements.Count == 0 ? default : generated.Settlements[0].Id;
+        }
+
+        private static FactionId SelectStartingFaction(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated, string calling)
+        {
+            if (generated.Factions.Count == 0) return default;
+            string normalized = (calling ?? string.Empty).Trim().ToLowerInvariant();
+            for (int i = 0; i < generated.Factions.Count; i++)
+            {
+                var name = generated.Factions[i].Name.ToLowerInvariant();
+                if ((normalized.Contains("mage") || normalized.Contains("scholar")) && (name.Contains("order") || name.Contains("circle")))
+                    return generated.Factions[i].Id;
+                if ((normalized.Contains("merchant") || normalized.Contains("trader") || normalized.Contains("smith")) && name.Contains("league"))
+                    return generated.Factions[i].Id;
+                if ((normalized.Contains("war") || normalized.Contains("guard") || normalized.Contains("soldier")) && (name.Contains("house") || name.Contains("pact")))
+                    return generated.Factions[i].Id;
+            }
+
+            uint hash = FoldSeed(calling, string.Empty, string.Empty);
+            return generated.Factions[(int)(hash % (uint)generated.Factions.Count)].Id;
+        }
+
+        private void HydrateGeneratedWorld(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated, SettlementSize preferredSize)
+        {
+            HydrateSites(generated);
+            HydrateFactions(generated);
+            HydrateNpcs(generated);
+            HydrateHistory(generated);
+            MovePlayerToStartingSettlement();
+        }
+
+        private void HydrateSites(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+        {
+            if (_world.Sites == null) _world.Sites = new SiteStore();
+            for (int i = 0; i < generated.Regions.Count; i++)
+            {
+                var region = generated.Regions[i];
+                var id = RegionSiteId(region.Id);
+                if (_world.Sites.Contains(id)) continue;
+                int x = (i % 10) * 96;
+                int y = (i / 10) * 96;
+                _world.Sites.Add(new SiteRecord(id, SiteKind.Region, region.Name, new GridPosition(x, y), new GridPosition(x + 80, y + 80)));
+            }
+
+            for (int i = 0; i < generated.Settlements.Count; i++)
+            {
+                var settlement = generated.Settlements[i];
+                var id = SettlementSiteId(settlement.Id);
+                if (_world.Sites.Contains(id)) continue;
+                int x = (i % 32) * 12;
+                int y = (i / 32) * 12;
+                int radius = settlement.Size == SettlementSize.Capital ? 6 : settlement.Size == SettlementSize.City ? 5 : settlement.Size == SettlementSize.Town ? 3 : 2;
+                _world.Sites.Add(new SiteRecord(id, SiteKind.Settlement, settlement.Name, new GridPosition(x, y), new GridPosition(x + radius, y + radius)));
+            }
+        }
+
+        private void HydrateFactions(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+        {
+            _world.Factions = new FactionStore();
+            foreach (var faction in generated.Factions)
+                _world.Factions.Add(faction);
+
+            foreach (var relation in generated.FactionRelations)
+                _world.Factions.WithReputation(relation.FactionA, relation.FactionB, relation.Reputation);
+
+            if (!StartingFaction.IsEmpty)
+            {
+                foreach (var faction in generated.Factions)
+                {
+                    if (faction.Id.Equals(StartingFaction)) continue;
+                    _world.Factions.WithReputation(StartingFaction, faction.Id, new FactionReputation(15));
+                }
+            }
+        }
+
+        private void HydrateNpcs(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+        {
+            if (_world.Actors == null) _world.Actors = new ActorStore();
+            foreach (var npc in generated.Npcs)
+            {
+                var actorId = new ActorId(GeneratedNpcActorOffset + npc.Id.Value);
+                if (_world.Actors.Contains(actorId)) continue;
+                var position = CenterOfSite(SettlementSiteId(npc.Home));
+                _world.Actors.Add(new ActorRecord(
+                    actorId,
+                    npc.Name,
+                    ToActorRole(npc.Role),
+                    StatsFor(npc.Role),
+                    VitalsFor(npc.Role),
+                    position,
+                    accuracy: npc.Role == NpcRole.Guard || npc.Role == NpcRole.Outlaw ? 55 : 35,
+                    dodge: npc.Role == NpcRole.Outlaw ? 55 : 30,
+                    armor: npc.Role == NpcRole.Guard ? 12 : 4,
+                    baseDamage: npc.Role == NpcRole.Outlaw ? 10 : 4,
+                    topicIds: new[] { "rumors", "work", "trade" }));
+            }
+        }
+
+        private void HydrateHistory(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+        {
+            if (_world.Events == null) _world.Events = new WorldEventLog();
+            var fallbackSite = StartingSettlement.IsEmpty ? FirstSiteId() : SettlementSiteId(StartingSettlement);
+            foreach (var history in generated.History)
+            {
+                _world.Events.Append(new WorldEvent(
+                    new GameTime((long)history.Year * 525_600L),
+                    ToRuntimeEventKind(history.Kind),
+                    default,
+                    fallbackSite,
+                    history.Detail));
+            }
+        }
+
+        private void MovePlayerToStartingSettlement()
+        {
+            if (StartingSettlement.IsEmpty || _world.Actors == null) return;
+            if (!_world.Actors.TryFirstByRole(ActorRole.Player, out var player) || player == null) return;
+            player.MoveTo(CenterOfSite(SettlementSiteId(StartingSettlement)));
+        }
+
+        private GridPosition CenterOfSite(SiteId siteId)
+        {
+            if (_world.Sites != null && _world.Sites.TryGet(siteId, out var site))
+                return CenterOf(site);
+            return default;
+        }
+
+        private SiteId FirstSiteId()
+        {
+            if (_world.Sites != null)
+            {
+                foreach (var site in _world.Sites.Records)
+                    return site.Id;
+            }
+            return new SiteId(1UL);
+        }
+
+        private static SiteId RegionSiteId(RegionId id) => new SiteId(RegionSiteOffset + id.Value);
+        private static SiteId SettlementSiteId(SettlementId id) => new SiteId(SettlementSiteOffset + id.Value);
+
+        private static ActorRole ToActorRole(NpcRole role)
+        {
+            switch (role)
+            {
+                case NpcRole.Merchant: return ActorRole.Merchant;
+                case NpcRole.Guard: return ActorRole.Guard;
+                case NpcRole.Outlaw: return ActorRole.Enemy;
+                default: return ActorRole.Talker;
+            }
+        }
+
+        private static EmberStatBlock StatsFor(NpcRole role)
+        {
+            switch (role)
+            {
+                case NpcRole.Guard: return new EmberStatBlock(55, 45, 55, 30, 35, 35);
+                case NpcRole.Merchant: return new EmberStatBlock(35, 40, 35, 45, 45, 60);
+                case NpcRole.Scholar: return new EmberStatBlock(25, 35, 35, 70, 60, 45);
+                case NpcRole.Outlaw: return new EmberStatBlock(45, 60, 40, 35, 55, 40);
+                default: return new EmberStatBlock(35, 35, 40, 35, 40, 45);
+            }
+        }
+
+        private static ActorVitals VitalsFor(NpcRole role)
+        {
+            var stats = StatsFor(role);
+            return new ActorVitals(
+                new VitalStat(20 + stats.End / 2, 20 + stats.End / 2),
+                new VitalStat(20 + stats.Mig / 2, 20 + stats.Mig / 2),
+                new VitalStat(10 + stats.Mnd / 2, 10 + stats.Mnd / 2));
+        }
+
+        private static WorldEventKind ToRuntimeEventKind(WorldHistoryKind kind)
+        {
+            switch (kind)
+            {
+                case WorldHistoryKind.FactionWar:
+                case WorldHistoryKind.FactionAlliance:
+                    return WorldEventKind.FactionReputationChanged;
+                case WorldHistoryKind.TradeRouteOpened:
+                    return WorldEventKind.TradeCompleted;
+                case WorldHistoryKind.Calamity:
+                    return WorldEventKind.ShortageDetected;
+                default:
+                    return WorldEventKind.StorytellerCheckpoint;
+            }
+        }
+
+        private static WorldStyle ParseStyle(string mood)
+        {
+            var text = (mood ?? string.Empty).ToLowerInvariant();
+            if (text.Contains("grim") || text.Contains("dark") || text.Contains("bleak")) return WorldStyle.DarkFantasyGrim;
+            if (text.Contains("high") || text.Contains("tolkien") || text.Contains("heroic")) return WorldStyle.HighFantasyTolkien;
+            if (text.Contains("steam") || text.Contains("industrial") || text.Contains("revolution")) return WorldStyle.SteampunkRevolution;
+            if (text.Contains("ancient") || text.Contains("myth") || text.Contains("bronze")) return WorldStyle.AncientMythology;
+            return WorldStyle.LowFantasyMorrowind;
+        }
+
+        private static WorldGenre ParseGenre(string mood, string calling, string startLocation)
+        {
+            var text = ((mood ?? string.Empty) + " " + (calling ?? string.Empty) + " " + (startLocation ?? string.Empty)).ToLowerInvariant();
+            if (text.Contains("politic") || text.Contains("diplomat") || text.Contains("court") || text.Contains("noble")) return WorldGenre.PoliticalIntrigue;
+            if (text.Contains("monster") || text.Contains("hunt") || text.Contains("beast")) return WorldGenre.MonsterHunt;
+            if (text.Contains("merchant") || text.Contains("trade") || text.Contains("caravan") || text.Contains("smith")) return WorldGenre.MerchantEmpire;
+            if (text.Contains("pilgrim") || text.Contains("shrine") || text.Contains("temple") || text.Contains("priest")) return WorldGenre.Pilgrimage;
+            return WorldGenre.Survival;
+        }
+
+        private static SettlementSize ParsePreferredSettlementSize(string startLocation)
+        {
+            var text = (startLocation ?? string.Empty).ToLowerInvariant();
+            if (text.Contains("capital")) return SettlementSize.Capital;
+            if (text.Contains("city")) return SettlementSize.City;
+            if (text.Contains("hamlet")) return SettlementSize.Hamlet;
+            if (text.Contains("village") || text.Contains("farm")) return SettlementSize.Village;
+            return SettlementSize.Town;
         }
 
         private static uint FoldSeed(string mood, string calling, string startLocation)

@@ -94,12 +94,7 @@ namespace EmberCrpg.Simulation.Worldgen
                 var suffix = RegionSuffixes[rng.NextInt(RegionSuffixes.Length)];
                 var name = word + " " + suffix;
 
-                // Biome cycles deterministically across the 8 buckets with a
-                // small RNG jitter so a fresh seed does not always start in
-                // TemperatePlain. NextInt drives the jitter, the cycling
-                // anchor keeps the distribution roughly even.
-                var biomeValues = BiomeValues();
-                var biome = biomeValues[(i + rng.NextInt(biomeValues.Length)) % biomeValues.Length];
+                var biome = RollBiome(rng, parameters);
 
                 // Per-region population bounds are coarse — the realized
                 // total comes from summing settlements, not from sampling
@@ -127,6 +122,60 @@ namespace EmberCrpg.Simulation.Worldgen
                 BiomeKind.TropicalJungle,
                 BiomeKind.FrozenTundra,
             };
+        }
+
+        private static BiomeKind RollBiome(IDeterministicRng rng, WorldgenParameters parameters)
+        {
+            var values = BiomeValues();
+            int total = 0;
+            for (int i = 0; i < values.Length; i++)
+                total += BiomeWeight(values[i], parameters.Style, parameters.Genre);
+
+            int roll = rng.NextInt(total);
+            int cursor = 0;
+            for (int i = 0; i < values.Length; i++)
+            {
+                cursor += BiomeWeight(values[i], parameters.Style, parameters.Genre);
+                if (roll < cursor) return values[i];
+            }
+            return values[0];
+        }
+
+        private static int BiomeWeight(BiomeKind biome, WorldStyle style, WorldGenre genre)
+        {
+            int weight = 10;
+            switch (style)
+            {
+                case WorldStyle.HighFantasyTolkien:
+                    if (biome == BiomeKind.BorealForest || biome == BiomeKind.TemperatePlain || biome == BiomeKind.MountainHighland) weight += 8;
+                    break;
+                case WorldStyle.DarkFantasyGrim:
+                    if (biome == BiomeKind.FrozenTundra || biome == BiomeKind.CoastalMarsh || biome == BiomeKind.MountainHighland) weight += 9;
+                    if (biome == BiomeKind.TropicalJungle) weight -= 5;
+                    break;
+                case WorldStyle.SteampunkRevolution:
+                    if (biome == BiomeKind.TemperatePlain || biome == BiomeKind.CoastalMarsh) weight += 10;
+                    if (biome == BiomeKind.FrozenTundra || biome == BiomeKind.TropicalJungle) weight -= 4;
+                    break;
+                case WorldStyle.AncientMythology:
+                    if (biome == BiomeKind.DesertWaste || biome == BiomeKind.MountainHighland || biome == BiomeKind.AridSteppe) weight += 10;
+                    break;
+            }
+
+            switch (genre)
+            {
+                case WorldGenre.Survival:
+                    if (biome == BiomeKind.FrozenTundra || biome == BiomeKind.DesertWaste || biome == BiomeKind.AridSteppe) weight += 5;
+                    break;
+                case WorldGenre.MerchantEmpire:
+                    if (biome == BiomeKind.CoastalMarsh || biome == BiomeKind.TemperatePlain) weight += 5;
+                    break;
+                case WorldGenre.Pilgrimage:
+                    if (biome == BiomeKind.MountainHighland || biome == BiomeKind.DesertWaste) weight += 4;
+                    break;
+            }
+
+            return weight < 1 ? 1 : weight;
         }
 
         // ---------------- settlements ----------------
@@ -170,7 +219,44 @@ namespace EmberCrpg.Simulation.Worldgen
                 }
             }
 
-            return settlements;
+            return NormalizePopulation(settlements, parameters.TargetPopulation);
+        }
+
+        private static List<SettlementRecord> NormalizePopulation(List<SettlementRecord> settlements, int targetPopulation)
+        {
+            int total = 0;
+            for (int i = 0; i < settlements.Count; i++)
+                total += settlements[i].Population;
+            if (total == targetPopulation) return settlements;
+
+            var normalized = new List<SettlementRecord>(settlements.Count);
+            int scaledTotal = 0;
+            for (int i = 0; i < settlements.Count; i++)
+            {
+                var s = settlements[i];
+                int population = Math.Max(1, (int)(((long)s.Population * targetPopulation) / total));
+                scaledTotal += population;
+                normalized.Add(new SettlementRecord(s.Id, s.Region, s.Name, population, s.Size));
+            }
+
+            int delta = targetPopulation - scaledTotal;
+            int step = delta >= 0 ? 1 : -1;
+            int remaining = Math.Abs(delta);
+            int cursor = 0;
+            while (remaining > 0)
+            {
+                int index = cursor % normalized.Count;
+                var s = normalized[index];
+                int population = s.Population + step;
+                if (population > 0)
+                {
+                    normalized[index] = new SettlementRecord(s.Id, s.Region, s.Name, population, s.Size);
+                    remaining--;
+                }
+                cursor++;
+            }
+
+            return normalized;
         }
 
         private static SettlementRecord MakeSettlement(
@@ -420,16 +506,7 @@ namespace EmberCrpg.Simulation.Worldgen
             for (int offset = 0; offset < parameters.HistoryYears; offset++)
             {
                 int year = startYear + offset;
-                int kindRoll = rng.NextInt(100);
-                WorldHistoryKind kind;
-                if (kindRoll < 20) kind = WorldHistoryKind.SettlementFounded;
-                else if (kindRoll < 35) kind = WorldHistoryKind.FactionWar;
-                else if (kindRoll < 45) kind = WorldHistoryKind.FactionAlliance;
-                else if (kindRoll < 60) kind = WorldHistoryKind.NobleMarriage;
-                else if (kindRoll < 72) kind = WorldHistoryKind.NobleDeath;
-                else if (kindRoll < 80) kind = WorldHistoryKind.Calamity;
-                else if (kindRoll < 92) kind = WorldHistoryKind.TradeRouteOpened;
-                else kind = WorldHistoryKind.Migration;
+                WorldHistoryKind kind = RollHistoryKind(rng, parameters);
 
                 string subject;
                 string detail;
@@ -466,6 +543,70 @@ namespace EmberCrpg.Simulation.Worldgen
             }
 
             return history;
+        }
+
+        private static WorldHistoryKind RollHistoryKind(IDeterministicRng rng, WorldgenParameters parameters)
+        {
+            var kinds = new[]
+            {
+                WorldHistoryKind.SettlementFounded,
+                WorldHistoryKind.FactionWar,
+                WorldHistoryKind.FactionAlliance,
+                WorldHistoryKind.NobleMarriage,
+                WorldHistoryKind.NobleDeath,
+                WorldHistoryKind.Calamity,
+                WorldHistoryKind.TradeRouteOpened,
+                WorldHistoryKind.Migration,
+            };
+
+            int total = 0;
+            for (int i = 0; i < kinds.Length; i++)
+                total += HistoryWeight(kinds[i], parameters.Style, parameters.Genre);
+
+            int roll = rng.NextInt(total);
+            int cursor = 0;
+            for (int i = 0; i < kinds.Length; i++)
+            {
+                cursor += HistoryWeight(kinds[i], parameters.Style, parameters.Genre);
+                if (roll < cursor) return kinds[i];
+            }
+            return WorldHistoryKind.Migration;
+        }
+
+        private static int HistoryWeight(WorldHistoryKind kind, WorldStyle style, WorldGenre genre)
+        {
+            int weight;
+            switch (kind)
+            {
+                case WorldHistoryKind.SettlementFounded: weight = 20; break;
+                case WorldHistoryKind.FactionWar: weight = 15; break;
+                case WorldHistoryKind.FactionAlliance: weight = 10; break;
+                case WorldHistoryKind.NobleMarriage: weight = 15; break;
+                case WorldHistoryKind.NobleDeath: weight = 12; break;
+                case WorldHistoryKind.Calamity: weight = 8; break;
+                case WorldHistoryKind.TradeRouteOpened: weight = 12; break;
+                default: weight = 8; break;
+            }
+
+            if (style == WorldStyle.DarkFantasyGrim && (kind == WorldHistoryKind.FactionWar || kind == WorldHistoryKind.Calamity || kind == WorldHistoryKind.NobleDeath))
+                weight += 12;
+            if (style == WorldStyle.HighFantasyTolkien && (kind == WorldHistoryKind.FactionAlliance || kind == WorldHistoryKind.SettlementFounded))
+                weight += 8;
+            if (style == WorldStyle.SteampunkRevolution && kind == WorldHistoryKind.TradeRouteOpened)
+                weight += 12;
+            if (style == WorldStyle.AncientMythology && (kind == WorldHistoryKind.Migration || kind == WorldHistoryKind.Calamity))
+                weight += 7;
+
+            if (genre == WorldGenre.PoliticalIntrigue && (kind == WorldHistoryKind.FactionAlliance || kind == WorldHistoryKind.NobleMarriage || kind == WorldHistoryKind.NobleDeath))
+                weight += 10;
+            if (genre == WorldGenre.MonsterHunt && (kind == WorldHistoryKind.Calamity || kind == WorldHistoryKind.Migration))
+                weight += 9;
+            if (genre == WorldGenre.MerchantEmpire && kind == WorldHistoryKind.TradeRouteOpened)
+                weight += 10;
+            if (genre == WorldGenre.Pilgrimage && (kind == WorldHistoryKind.Migration || kind == WorldHistoryKind.SettlementFounded))
+                weight += 8;
+
+            return weight < 1 ? 1 : weight;
         }
 
         private static string HistoryDetail(WorldHistoryKind kind, string subject)

@@ -14,6 +14,7 @@ using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Worldgen;
 // Codex audit (seventh pass B-P1 #9): Data.SliceJson no longer references
 // EmberCrpg.Simulation. RecipeWorkOrder / SliceWorldFactory rehydration moved
 // to EmberCrpg.Simulation.Process.SliceSaveRehydration. SliceWorldState
@@ -65,6 +66,7 @@ namespace EmberCrpg.Data.Save
                 worldEvents = ToWorldEventLogData(world.Events),
                 toolCallTrace = ToToolCallTraceData(world.ToolCallTrace),
                 llmProposalLog = ToLlmProposalLogData(world.LlmProposalLog),
+                worldProfile = ToWorldProfileData(world.WorldProfile),
                 inventory = ToInventoryData(world.PlayerInventory),
                 playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
@@ -121,6 +123,7 @@ namespace EmberCrpg.Data.Save
             world.Events = ToWorldEventLog(data.worldEvents);
             world.ToolCallTrace = ToToolCallTrace(data.toolCallTrace);
             world.LlmProposalLog = ToLlmProposalLog(data.llmProposalLog);
+            world.WorldProfile = ToWorldProfile(data.worldProfile);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
@@ -633,6 +636,40 @@ namespace EmberCrpg.Data.Save
                 .Where(entry => entry != null)
                 .Select(entry => ToToolCallTraceData(entry.Tick, entry.SiteId, entry.Request, entry.Result))
                 .ToArray();
+        }
+
+        private static WorldProfileSaveData ToWorldProfileData(WorldProfile profile)
+        {
+            if (profile == null) return null;
+            return new WorldProfileSaveData
+            {
+                style = (int)profile.Style,
+                genre = (int)profile.Genre,
+                seed = profile.Seed,
+                targetPopulation = profile.TargetPopulation,
+                regionCount = profile.RegionCount,
+                factionCount = profile.FactionCount,
+                historyYears = profile.HistoryYears,
+                moodKeyword = profile.MoodKeyword,
+                playerCallingKeyword = profile.PlayerCallingKeyword,
+                startLocationKeyword = profile.StartLocationKeyword,
+            };
+        }
+
+        private static WorldProfile ToWorldProfile(WorldProfileSaveData data)
+        {
+            if (data == null) return null;
+            return new WorldProfile(
+                (WorldStyle)data.style,
+                (WorldGenre)data.genre,
+                data.seed,
+                data.targetPopulation,
+                data.regionCount,
+                data.factionCount,
+                data.historyYears,
+                data.moodKeyword,
+                data.playerCallingKeyword,
+                data.startLocationKeyword);
         }
 
         private static ToolCallTraceSaveData ToToolCallTraceData(GameTime tick, SiteId siteId, ToolCallRequest request, ToolCallResult result)
