@@ -138,7 +138,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                                   EmberWorldGenIntent.Pending.Calling,
                                   EmberWorldGenIntent.Pending.Start);
             }
-            UnityEngine.SceneManagement.SceneManager.LoadScene("Faz3SmithingOverworld");
+            UnityEngine.SceneManagement.SceneManager.LoadScene("CharacterCreation");
         }
     }
 

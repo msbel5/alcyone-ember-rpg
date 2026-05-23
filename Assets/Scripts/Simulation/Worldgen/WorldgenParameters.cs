@@ -1,4 +1,5 @@
 using System;
+using EmberCrpg.Domain.Worldgen;
 
 // Design note:
 // WorldgenParameters is the tunable knob set for the FOUNDATION generator.
@@ -21,7 +22,10 @@ namespace EmberCrpg.Simulation.Worldgen
             int factionCount,
             int npcCount,
             int historyYears,
-            int worldStartYear)
+            int worldStartYear,
+            WorldStyle style = WorldStyle.LowFantasyMorrowind,
+            WorldGenre genre = WorldGenre.Survival,
+            int targetPopulation = 1_000_000)
         {
             if (regionCount <= 0)
                 throw new ArgumentOutOfRangeException(nameof(regionCount), regionCount, "regionCount must be positive.");
@@ -41,7 +45,12 @@ namespace EmberCrpg.Simulation.Worldgen
                 throw new ArgumentOutOfRangeException(nameof(npcCount), npcCount, "npcCount must be positive.");
             if (historyYears <= 0)
                 throw new ArgumentOutOfRangeException(nameof(historyYears), historyYears, "historyYears must be positive.");
+            if (targetPopulation <= 0)
+                throw new ArgumentOutOfRangeException(nameof(targetPopulation), targetPopulation, "targetPopulation must be positive.");
 
+            Style = style;
+            Genre = genre;
+            TargetPopulation = targetPopulation;
             RegionCount = regionCount;
             CapitalCount = capitalCount;
             CityCount = cityCount;
@@ -53,6 +62,9 @@ namespace EmberCrpg.Simulation.Worldgen
             WorldStartYear = worldStartYear;
         }
 
+        public WorldStyle Style { get; }
+        public WorldGenre Genre { get; }
+        public int TargetPopulation { get; }
         public int RegionCount { get; }
         public int CapitalCount { get; }
         public int CityCount { get; }
@@ -79,17 +91,78 @@ namespace EmberCrpg.Simulation.Worldgen
         {
             get
             {
-                return new WorldgenParameters(
-                    regionCount: 50,
-                    capitalCount: 1,
-                    cityCount: 8,
-                    townCount: 40,
-                    villageCount: 151,
-                    factionCount: 20,
-                    npcCount: 750,
-                    historyYears: 100,
-                    worldStartYear: 1);
+                return For(WorldStyle.LowFantasyMorrowind, WorldGenre.Survival);
             }
+        }
+
+        public static WorldgenParameters For(WorldStyle style, WorldGenre genre)
+        {
+            int regionCount = 50;
+            int capitalCount = 1;
+            int cityCount = 8;
+            int townCount = 40;
+            int villageCount = 151;
+            int factionCount = 20;
+            int npcCount = 750;
+            int targetPopulation = 1_000_000;
+
+            switch (style)
+            {
+                case WorldStyle.HighFantasyTolkien:
+                    regionCount = 56; cityCount = 10; townCount = 44; villageCount = 166; factionCount = 24; npcCount = 860;
+                    break;
+                case WorldStyle.DarkFantasyGrim:
+                    regionCount = 47; cityCount = 7; townCount = 46; villageCount = 159; factionCount = 26; npcCount = 900; targetPopulation = 1_020_000;
+                    break;
+                case WorldStyle.SteampunkRevolution:
+                    regionCount = 44; capitalCount = 2; cityCount = 13; townCount = 55; villageCount = 120; factionCount = 28; npcCount = 920;
+                    break;
+                case WorldStyle.AncientMythology:
+                    regionCount = 52; cityCount = 6; townCount = 32; villageCount = 170; factionCount = 18; npcCount = 700;
+                    break;
+            }
+
+            switch (genre)
+            {
+                case WorldGenre.PoliticalIntrigue:
+                    factionCount += 6; npcCount += 32; townCount += 1; villageCount -= 1;
+                    if (style == WorldStyle.DarkFantasyGrim) targetPopulation = 1_043_217;
+                    break;
+                case WorldGenre.MonsterHunt:
+                    regionCount += 4; townCount -= 4; villageCount += 10; factionCount -= 2;
+                    break;
+                case WorldGenre.MerchantEmpire:
+                    cityCount += 3; townCount += 10; villageCount -= 13; factionCount += 3; npcCount += 80;
+                    break;
+                case WorldGenre.Pilgrimage:
+                    townCount += 6; villageCount += 6; npcCount += 45;
+                    break;
+            }
+
+            if (style == WorldStyle.DarkFantasyGrim && genre == WorldGenre.PoliticalIntrigue)
+            {
+                regionCount = 47;
+                capitalCount = 1;
+                cityCount = 7;
+                townCount = 46;
+                villageCount = 159;
+                factionCount = 32;
+                npcCount = 932;
+            }
+
+            return new WorldgenParameters(
+                regionCount,
+                capitalCount,
+                cityCount,
+                townCount,
+                villageCount,
+                Math.Max(1, factionCount),
+                Math.Max(1, npcCount),
+                historyYears: 100,
+                worldStartYear: 1,
+                style: style,
+                genre: genre,
+                targetPopulation: targetPopulation);
         }
     }
 }

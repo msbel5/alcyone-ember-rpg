@@ -16,6 +16,18 @@ namespace EmberCrpg.Domain.AiDm
             IEnumerable<ToolDescriptor> availableTools,
             int maxTokens,
             ulong seed)
+            : this(systemPromptId, conversationId, availableTools, maxTokens, seed, string.Empty, null)
+        {
+        }
+
+        public LlmRequest(
+            string systemPromptId,
+            string conversationId,
+            IEnumerable<ToolDescriptor> availableTools,
+            int maxTokens,
+            ulong seed,
+            string systemPrompt,
+            IEnumerable<string> recentTurns)
         {
             if (string.IsNullOrWhiteSpace(systemPromptId))
                 throw new ArgumentException("SystemPromptId must be non-blank.", nameof(systemPromptId));
@@ -31,6 +43,10 @@ namespace EmberCrpg.Domain.AiDm
                 : new List<ToolDescriptor>(availableTools).AsReadOnly();
             MaxTokens = maxTokens;
             Seed = seed;
+            SystemPrompt = systemPrompt ?? string.Empty;
+            RecentTurns = recentTurns == null
+                ? new string[0]
+                : new List<string>(recentTurns).AsReadOnly();
         }
 
         public string SystemPromptId { get; }
@@ -38,6 +54,8 @@ namespace EmberCrpg.Domain.AiDm
         public IReadOnlyList<ToolDescriptor> AvailableTools { get; }
         public int MaxTokens { get; }
         public ulong Seed { get; }
+        public string SystemPrompt { get; }
+        public IReadOnlyList<string> RecentTurns { get; }
     }
 
     /// <summary>

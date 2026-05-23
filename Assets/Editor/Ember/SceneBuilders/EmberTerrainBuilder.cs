@@ -43,8 +43,13 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             // Center the terrain
             go.transform.position = center - new Vector3(sizeMeters / 2f, 0f, sizeMeters / 2f);
             
-            // Mark as static for NavMesh
+            // Codex review (PR #203 P1): legacy NavMeshBuilder.BuildNavMesh
+            // bake path still relies on NavigationStatic. Faz 14 sprint
+            // migrates to NavMeshBuildMarkup; until then keep the flag and
+            // silence CS0618.
+#pragma warning disable CS0618
             GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.NavigationStatic);
+#pragma warning restore CS0618
             
             return go;
         }
@@ -100,8 +105,13 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
                 renderer.sharedMaterial = mat;
             }
             
-            // Mark as static for NavMesh
+            // Codex review (PR #203 P1): legacy NavMeshBuilder.BuildNavMesh
+            // bake path still relies on NavigationStatic. Faz 14 sprint
+            // migrates to NavMeshBuildMarkup; until then keep the flag and
+            // silence CS0618.
+#pragma warning disable CS0618
             GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.NavigationStatic);
+#pragma warning restore CS0618
             
             return go;
         }

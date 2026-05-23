@@ -14,6 +14,7 @@ using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Worldgen;
 // Codex audit (seventh pass B-P1 #9): Data.SliceJson no longer references
 // EmberCrpg.Simulation. RecipeWorkOrder / SliceWorldFactory rehydration moved
 // to EmberCrpg.Simulation.Process.SliceSaveRehydration. SliceWorldState
@@ -65,6 +66,8 @@ namespace EmberCrpg.Data.Save
                 worldEvents = ToWorldEventLogData(world.Events),
                 toolCallTrace = ToToolCallTraceData(world.ToolCallTrace),
                 llmProposalLog = ToLlmProposalLogData(world.LlmProposalLog),
+                npcSeeds = ToNpcSeedData(world.NpcSeeds),
+                worldProfile = ToWorldProfileData(world.WorldProfile),
                 inventory = ToInventoryData(world.PlayerInventory),
                 playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
@@ -121,6 +124,8 @@ namespace EmberCrpg.Data.Save
             world.Events = ToWorldEventLog(data.worldEvents);
             world.ToolCallTrace = ToToolCallTrace(data.toolCallTrace);
             world.LlmProposalLog = ToLlmProposalLog(data.llmProposalLog);
+            world.NpcSeeds = ToNpcSeeds(data.npcSeeds);
+            world.WorldProfile = ToWorldProfile(data.worldProfile);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
@@ -635,6 +640,40 @@ namespace EmberCrpg.Data.Save
                 .ToArray();
         }
 
+        private static WorldProfileSaveData ToWorldProfileData(WorldProfile profile)
+        {
+            if (profile == null) return null;
+            return new WorldProfileSaveData
+            {
+                style = (int)profile.Style,
+                genre = (int)profile.Genre,
+                seed = profile.Seed,
+                targetPopulation = profile.TargetPopulation,
+                regionCount = profile.RegionCount,
+                factionCount = profile.FactionCount,
+                historyYears = profile.HistoryYears,
+                moodKeyword = profile.MoodKeyword,
+                playerCallingKeyword = profile.PlayerCallingKeyword,
+                startLocationKeyword = profile.StartLocationKeyword,
+            };
+        }
+
+        private static WorldProfile ToWorldProfile(WorldProfileSaveData data)
+        {
+            if (data == null) return null;
+            return new WorldProfile(
+                (WorldStyle)data.style,
+                (WorldGenre)data.genre,
+                data.seed,
+                data.targetPopulation,
+                data.regionCount,
+                data.factionCount,
+                data.historyYears,
+                data.moodKeyword,
+                data.playerCallingKeyword,
+                data.startLocationKeyword);
+        }
+
         private static ToolCallTraceSaveData ToToolCallTraceData(GameTime tick, SiteId siteId, ToolCallRequest request, ToolCallResult result)
         {
             return new ToolCallTraceSaveData
@@ -732,6 +771,45 @@ namespace EmberCrpg.Data.Save
                     (row.rejectedToolCalls ?? Array.Empty<LlmRejectedToolCallSaveData>())
                         .Where(rejection => rejection != null && rejection.request != null)
                         .Select(rejection => new ToolCallRejection(ToToolCallRequest(rejection.request), rejection.reason))))
+                .ToList();
+        }
+
+        private static NpcSeedSaveData[] ToNpcSeedData(IEnumerable<NpcSeedRecord> npcs)
+        {
+            return (npcs ?? Array.Empty<NpcSeedRecord>())
+                .Where(npc => npc != null)
+                .OrderBy(npc => npc.Id.Value)
+                .Select(npc => new NpcSeedSaveData
+                {
+                    id = npc.Id.Value,
+                    home = npc.Home.Value,
+                    faction = npc.Faction.Value,
+                    name = npc.Name,
+                    birthYear = npc.BirthYear,
+                    role = (int)npc.Role,
+                    portraitAssetPath = npc.PortraitAssetPath,
+                })
+                .ToArray();
+        }
+
+        private static List<NpcSeedRecord> ToNpcSeeds(NpcSeedSaveData[] data)
+        {
+            return (data ?? Array.Empty<NpcSeedSaveData>())
+                .Where(row => row != null
+                    && row.id != 0UL
+                    && row.home != 0UL
+                    && row.faction != 0UL
+                    && !string.IsNullOrWhiteSpace(row.name)
+                    && row.role != (int)NpcRole.None)
+                .OrderBy(row => row.id)
+                .Select(row => new NpcSeedRecord(
+                    new NpcId(row.id),
+                    new SettlementId(row.home),
+                    new FactionId(row.faction),
+                    row.name,
+                    row.birthYear,
+                    (NpcRole)row.role,
+                    row.portraitAssetPath))
                 .ToList();
         }
 

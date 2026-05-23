@@ -48,6 +48,8 @@ namespace EmberCrpg.Simulation.AiDm
     /// </summary>
     public sealed class LocalQwenClient
     {
+        public const string DefaultOllamaGenerateEndpoint = "http://localhost:11434/api/generate";
+
         private readonly LlmClientConfig _config;
         private readonly HttpClient _http;
 
@@ -62,6 +64,33 @@ namespace EmberCrpg.Simulation.AiDm
         public LlmResponse Complete(LlmRequest request)
         {
             return LlmHttpClientCore.CompleteHttp(_config, _http, request);
+        }
+
+        /// <summary>
+        /// Codex review (PR #203 P2): a non-null `Complete().Text` is not a
+        /// reliable availability signal because the response constructor
+        /// normalises null → string.Empty. Probe the explicit HTTP status of
+        /// a small HEAD/GET against the configured endpoint instead, so
+        /// callers get a true/false grounded in network reachability + 2xx.
+        /// </summary>
+        public bool IsAvailable()
+        {
+            if (!_config.Enabled || string.IsNullOrWhiteSpace(_config.EndpointUrl))
+                return false;
+            try
+            {
+                using (var probe = new HttpRequestMessage(HttpMethod.Get, _config.EndpointUrl))
+                {
+                    var resp = _http.SendAsync(probe).GetAwaiter().GetResult();
+                    // Ollama responds 200 OK on GET to /api/generate even
+                    // without a model selected; any 2xx-3xx is "service up".
+                    return (int)resp.StatusCode >= 200 && (int)resp.StatusCode < 400;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
@@ -119,7 +148,7 @@ namespace EmberCrpg.Simulation.AiDm
                     return new LlmResponse(string.Empty, null, 0);
 
                 var json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                var text = ExtractStringField(json, "text") ?? string.Empty;
+                var text = ExtractStringField(json, "text") ?? ExtractStringField(json, "response") ?? string.Empty;
                 var tokens = ExtractIntField(json, "tokens_used") ?? 0;
                 // Codex audit (second pass A-P1): the HTTP path previously
                 // hardcoded `null` for the tool-call list, so every Consult-Fate
@@ -299,6 +328,13 @@ namespace EmberCrpg.Simulation.AiDm
             sb.Append(",\"conversation_id\":");   AppendJsonString(sb, request.ConversationId);
             sb.Append(",\"max_tokens\":").Append(request.MaxTokens);
             sb.Append(",\"seed\":").Append(request.Seed);
+            if (!string.IsNullOrEmpty(request.SystemPrompt) || request.RecentTurns.Count > 0)
+            {
+                sb.Append(",\"prompt\":");
+                AppendJsonString(sb, BuildOllamaPrompt(request));
+                sb.Append(",\"stream\":false");
+                sb.Append(",\"model\":\"qwen2.5:3b-instruct-q4_K_M\"");
+            }
 
             // Codex audit (A/P2): the request envelope previously dropped the
             // available_tools list entirely, so any cloud-routed conversation
@@ -338,6 +374,17 @@ namespace EmberCrpg.Simulation.AiDm
             sb.Append(']');
 
             sb.Append('}');
+            return sb.ToString();
+        }
+
+        private static string BuildOllamaPrompt(LlmRequest request)
+        {
+            var sb = new StringBuilder();
+            if (!string.IsNullOrEmpty(request.SystemPrompt))
+                sb.Append(request.SystemPrompt).Append('\n');
+            for (int i = 0; i < request.RecentTurns.Count; i++)
+                sb.Append("Memory ").Append(i + 1).Append(": ").Append(request.RecentTurns[i]).Append('\n');
+            sb.Append("Respond in character.");
             return sb.ToString();
         }
 
