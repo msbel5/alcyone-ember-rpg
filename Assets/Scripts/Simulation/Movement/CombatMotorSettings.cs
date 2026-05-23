@@ -1,9 +1,9 @@
 namespace EmberCrpg.Simulation.Movement
 {
     /// <summary>Tuning values shared by the runtime CharacterController adapter and deterministic tests.</summary>
-    public readonly struct Sprint4MotorSettings
+    public readonly struct CombatMotorSettings
     {
-        public Sprint4MotorSettings(float moveSpeed, float jumpHeight, float gravity, float groundedStickVelocity)
+        public CombatMotorSettings(float moveSpeed, float jumpHeight, float gravity, float groundedStickVelocity)
         {
             MoveSpeed = moveSpeed;
             JumpHeight = jumpHeight;
@@ -11,7 +11,7 @@ namespace EmberCrpg.Simulation.Movement
             GroundedStickVelocity = groundedStickVelocity;
         }
 
-        public static Sprint4MotorSettings Default => new Sprint4MotorSettings(
+        public static CombatMotorSettings Default => new CombatMotorSettings(
             moveSpeed: 5f,
             jumpHeight: 1.35f,
             gravity: -24f,

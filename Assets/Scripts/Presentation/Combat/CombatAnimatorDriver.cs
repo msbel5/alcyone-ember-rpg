@@ -1,10 +1,10 @@
 using EmberCrpg.Simulation.Movement;
 using UnityEngine;
 
-namespace EmberCrpg.Presentation.Sprint4
+namespace EmberCrpg.Presentation.Combat
 {
-    /// <summary>Placeholder animator contract for Sprint 4 locomotion without depending on final art assets.</summary>
-    public sealed class Sprint4AnimatorDriver : MonoBehaviour
+    /// <summary>Placeholder animator contract for combat locomotion without depending on final art assets.</summary>
+    public sealed class CombatAnimatorDriver : MonoBehaviour
     {
         public const string MoveSpeedParameter = "MoveSpeed";
         public const string GroundedParameter = "Grounded";
@@ -22,7 +22,7 @@ namespace EmberCrpg.Presentation.Sprint4
 
         [SerializeField] private Animator animator;
 
-        public Sprint4LocomotionState CurrentState { get; private set; } = Sprint4LocomotionState.Idle;
+        public CombatLocomotionState CurrentState { get; private set; } = CombatLocomotionState.Idle;
 
         private void Awake()
         {
@@ -30,7 +30,7 @@ namespace EmberCrpg.Presentation.Sprint4
                 animator = GetComponentInChildren<Animator>();
         }
 
-        public void Apply(Sprint4MotorStep step, bool isGrounded, bool isFirstPerson)
+        public void Apply(CombatMotorStep step, bool isGrounded, bool isFirstPerson)
         {
             CurrentState = ResolveState(step, isGrounded);
             if (animator == null || animator.runtimeAnimatorController == null)
@@ -46,13 +46,13 @@ namespace EmberCrpg.Presentation.Sprint4
                 animator.SetTrigger(JumpTriggerHash);
         }
 
-        private static Sprint4LocomotionState ResolveState(Sprint4MotorStep step, bool isGrounded)
+        private static CombatLocomotionState ResolveState(CombatMotorStep step, bool isGrounded)
         {
             if (!isGrounded && step.State.VerticalVelocity > 0.1f)
-                return Sprint4LocomotionState.Jump;
+                return CombatLocomotionState.Jump;
             if (!isGrounded)
-                return Sprint4LocomotionState.Fall;
-            return step.PlanarVelocity.SqrMagnitude > 0.01f ? Sprint4LocomotionState.Move : Sprint4LocomotionState.Idle;
+                return CombatLocomotionState.Fall;
+            return step.PlanarVelocity.SqrMagnitude > 0.01f ? CombatLocomotionState.Move : CombatLocomotionState.Idle;
         }
 
         private void SetFloatIfPresent(int hash, float value)
@@ -85,7 +85,7 @@ namespace EmberCrpg.Presentation.Sprint4
         }
     }
 
-    public enum Sprint4LocomotionState
+    public enum CombatLocomotionState
     {
         Idle = 0,
         Move = 1,

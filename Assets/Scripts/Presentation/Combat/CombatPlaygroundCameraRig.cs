@@ -1,9 +1,9 @@
 using UnityEngine;
 
-namespace EmberCrpg.Presentation.Sprint4
+namespace EmberCrpg.Presentation.Combat
 {
     /// <summary>Dependency-light third/first-person camera rig with smooth follow and spherecast collision intent.</summary>
-    public sealed class Sprint4CameraRig : MonoBehaviour
+    public sealed class CombatPlaygroundCameraRig : MonoBehaviour
     {
         [Header("Target")]
         [SerializeField] private Transform target;
@@ -36,7 +36,7 @@ namespace EmberCrpg.Presentation.Sprint4
         private float yaw;
         private float pitch;
 
-        public Sprint4CameraMode Mode { get; private set; } = Sprint4CameraMode.ThirdPerson;
+        public CombatPlaygroundCameraMode Mode { get; private set; } = CombatPlaygroundCameraMode.ThirdPerson;
         public float PlanarYawDegrees => yaw;
 
         private void Awake()
@@ -65,7 +65,7 @@ namespace EmberCrpg.Presentation.Sprint4
             if (Input.GetKeyDown(toggleKey))
                 ToggleMode();
 
-            if (Mode == Sprint4CameraMode.FirstPerson)
+            if (Mode == CombatPlaygroundCameraMode.FirstPerson)
                 ApplyFirstPerson();
             else
                 ApplyThirdPerson();
@@ -80,7 +80,7 @@ namespace EmberCrpg.Presentation.Sprint4
 
         public void ToggleMode()
         {
-            Mode = Mode == Sprint4CameraMode.ThirdPerson ? Sprint4CameraMode.FirstPerson : Sprint4CameraMode.ThirdPerson;
+            Mode = Mode == CombatPlaygroundCameraMode.ThirdPerson ? CombatPlaygroundCameraMode.FirstPerson : CombatPlaygroundCameraMode.ThirdPerson;
             followVelocity = Vector3.zero;
         }
 
@@ -128,7 +128,7 @@ namespace EmberCrpg.Presentation.Sprint4
         }
     }
 
-    public enum Sprint4CameraMode
+    public enum CombatPlaygroundCameraMode
     {
         ThirdPerson = 0,
         FirstPerson = 1,

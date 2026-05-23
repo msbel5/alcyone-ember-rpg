@@ -1,17 +1,17 @@
 // Design note:
-// Sprint4CombatInputAdapter maps local Unity inputs into the pure RTWP combat scheduler.
+// CombatInputAdapter maps local Unity inputs into the pure RTWP combat scheduler.
 // Inputs: Space/mouse/keyboard buttons plus Time.deltaTime.
 // Outputs: queued combat actions and scheduler tick events for later UI/animation hooks.
-// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Faz 2 presentation seam.
+// Bible reference: ARCHITECTURE.md RTWP combat lock, combat playground presentation seam.
 using EmberCrpg.Domain.Combat;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Simulation.Combat;
 using UnityEngine;
 
-namespace EmberCrpg.Presentation.Sprint4
+namespace EmberCrpg.Presentation.Combat
 {
-    /// <summary>Thin Unity input adapter that queues Sprint 4 RTWP combat actions into pure simulation state.</summary>
-    public sealed class Sprint4CombatInputAdapter : MonoBehaviour
+    /// <summary>Thin Unity input adapter that queues RTWP combat actions into pure simulation state.</summary>
+    public sealed class CombatInputAdapter : MonoBehaviour
     {
         [Header("Actor Handles")]
         [SerializeField] private int localActorId = 1;

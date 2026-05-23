@@ -1,9 +1,9 @@
 namespace EmberCrpg.Simulation.Movement
 {
-    /// <summary>Engine-agnostic movement command for the Sprint 4 player baseline.</summary>
-    public readonly struct Sprint4MovementInput
+    /// <summary>Engine-agnostic movement command for the combat playground baseline.</summary>
+    public readonly struct CombatMovementInput
     {
-        public Sprint4MovementInput(float moveX, float moveZ, float yawDegrees, bool jumpPressed)
+        public CombatMovementInput(float moveX, float moveZ, float yawDegrees, bool jumpPressed)
         {
             MoveX = moveX;
             MoveZ = moveZ;
@@ -23,6 +23,6 @@ namespace EmberCrpg.Simulation.Movement
         /// <summary>True only on the frame the player requested a jump.</summary>
         public bool JumpPressed { get; }
 
-        public Sprint4Vector3 LocalPlanar => Sprint4Vector3.ClampMagnitude(new Sprint4Vector3(MoveX, 0f, MoveZ), 1f);
+        public CombatVector3 LocalPlanar => CombatVector3.ClampMagnitude(new CombatVector3(MoveX, 0f, MoveZ), 1f);
     }
 }

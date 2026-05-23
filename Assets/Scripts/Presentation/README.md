@@ -46,9 +46,9 @@ DO NOT add MonoBehaviour scripts here — these are pure C# DTOs.
 
 ## 3. `Sprint4/` — legacy combat foundation (Sprint 4 era, deprecated)
 
-`Sprint4PlayerController`, `Sprint4CameraRig`, `Sprint4AnimatorDriver`,
-`Sprint4CombatInputAdapter`, `Sprint4FoundationBootstrap`,
-`Sprint4UnityConversions`. Wired exclusively into `Assets/Scenes/Sprint4Foundation.unity`.
+`CombatPlaygroundController`, `CombatPlaygroundCameraRig`, `CombatAnimatorDriver`,
+`CombatInputAdapter`, `CombatPlaygroundBootstrap`,
+`CombatUnityConversions`. Wired exclusively into `Assets/Scenes/Sprint4Foundation.unity`.
 
 Superseded by `Ember.Camera.EmberFirstPersonController`. Do not extend.
 Will be removed once the Sprint4Foundation scene is retired.
@@ -79,7 +79,7 @@ as part of the simulation core, not as a slice-era artifact.
 
 ## Conflict avoidance
 
-- Two first-person controllers exist (`Sprint4CameraRig` and
+- Two first-person controllers exist (`CombatPlaygroundCameraRig` and
   `Ember.Camera.EmberFirstPersonController`). Only one runs per scene
   because each is referenced by a distinct scene's GameObject hierarchy.
   Never put both controllers in the same scene.

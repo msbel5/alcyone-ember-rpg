@@ -89,22 +89,22 @@ namespace EmberCrpg.Tests.EditMode.Audit
             Assert.That(item.Quantity, Is.EqualTo(0));
         }
 
-        // ----- Sprint4Vector3.ClampMagnitude (G-P3) -----
+        // ----- CombatVector3.ClampMagnitude (G-P3) -----
         [Test]
-        public void Sprint4Vector3_ClampMagnitude_ReducesOversizedVector()
+        public void CombatVector3_ClampMagnitude_ReducesOversizedVector()
         {
-            var v = new Sprint4Vector3(10f, 0f, 0f);
-            var clamped = Sprint4Vector3.ClampMagnitude(v,3f);
+            var v = new CombatVector3(10f, 0f, 0f);
+            var clamped = CombatVector3.ClampMagnitude(v,3f);
             // Magnitude should be at-most 3
             Assert.That(clamped.X * clamped.X + clamped.Y * clamped.Y + clamped.Z * clamped.Z,
                 Is.LessThanOrEqualTo(3f * 3f + 0.001f));
         }
 
         [Test]
-        public void Sprint4Vector3_ClampMagnitude_PreservesSmallVector()
+        public void CombatVector3_ClampMagnitude_PreservesSmallVector()
         {
-            var v = new Sprint4Vector3(1f, 0f, 0f);
-            var clamped = Sprint4Vector3.ClampMagnitude(v,5f);
+            var v = new CombatVector3(1f, 0f, 0f);
+            var clamped = CombatVector3.ClampMagnitude(v,5f);
             Assert.That(clamped.X, Is.EqualTo(1f).Within(0.001f));
         }
     }

@@ -1,11 +1,11 @@
 using EmberCrpg.Simulation.Movement;
 using UnityEngine;
 
-namespace EmberCrpg.Presentation.Sprint4
+namespace EmberCrpg.Presentation.Combat
 {
-    /// <summary>CharacterController-backed Sprint 4 player capsule with WASD, jump, and camera-relative motion.</summary>
+    /// <summary>CharacterController-backed combat playground player capsule with WASD, jump, and camera-relative motion.</summary>
     [RequireComponent(typeof(CharacterController))]
-    public sealed class Sprint4PlayerController : MonoBehaviour
+    public sealed class CombatPlaygroundController : MonoBehaviour
     {
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 5f;
@@ -15,16 +15,16 @@ namespace EmberCrpg.Presentation.Sprint4
         [SerializeField] private float turnSmoothing = 14f;
 
         [Header("Runtime References")]
-        [SerializeField] private Sprint4CameraRig cameraRig;
-        [SerializeField] private Sprint4AnimatorDriver animatorDriver;
+        [SerializeField] private CombatPlaygroundCameraRig cameraRig;
+        [SerializeField] private CombatAnimatorDriver animatorDriver;
 
-        private readonly Sprint4KinematicMotor motor = new Sprint4KinematicMotor();
+        private readonly CombatKinematicMotor motor = new CombatKinematicMotor();
         private CharacterController characterController;
-        private Sprint4MotorState motorState;
-        private Sprint4MotorStep lastStep;
+        private CombatMotorState motorState;
+        private CombatMotorStep lastStep;
 
-        public Sprint4MotorState MotorState => motorState;
-        public Sprint4MotorStep LastStep => lastStep;
+        public CombatMotorState MotorState => motorState;
+        public CombatMotorStep LastStep => lastStep;
 
         private void Awake()
         {
@@ -36,15 +36,15 @@ namespace EmberCrpg.Presentation.Sprint4
             characterController.minMoveDistance = 0f;
 
             if (animatorDriver == null)
-                animatorDriver = GetComponentInChildren<Sprint4AnimatorDriver>();
+                animatorDriver = GetComponentInChildren<CombatAnimatorDriver>();
 
-            motorState = new Sprint4MotorState(transform.position.ToSprint4(), 0f, characterController.isGrounded);
+            motorState = new CombatMotorState(transform.position.ToCombat(), 0f, characterController.isGrounded);
         }
 
         private void Start()
         {
             if (cameraRig == null)
-                cameraRig = FindFirstObjectByType<Sprint4CameraRig>();
+                cameraRig = FindFirstObjectByType<CombatPlaygroundCameraRig>();
             if (cameraRig != null)
                 cameraRig.SetTarget(transform);
         }
@@ -52,22 +52,22 @@ namespace EmberCrpg.Presentation.Sprint4
         private void Update()
         {
             var input = ReadInput();
-            var settings = new Sprint4MotorSettings(moveSpeed, jumpHeight, gravity, groundedStickVelocity);
-            motorState = new Sprint4MotorState(transform.position.ToSprint4(), motorState.VerticalVelocity, characterController.isGrounded);
+            var settings = new CombatMotorSettings(moveSpeed, jumpHeight, gravity, groundedStickVelocity);
+            motorState = new CombatMotorState(transform.position.ToCombat(), motorState.VerticalVelocity, characterController.isGrounded);
             lastStep = motor.Plan(motorState, input, settings, Time.deltaTime);
 
             var collisionFlags = characterController.Move(lastStep.Displacement.ToUnity());
             var grounded = characterController.isGrounded || (collisionFlags & CollisionFlags.Below) != 0;
-            motorState = motor.ResolveGrounding(lastStep.State, transform.position.ToSprint4(), grounded);
-            lastStep = new Sprint4MotorStep(lastStep.Displacement, lastStep.PlanarVelocity, motorState, lastStep.JumpedThisFrame);
+            motorState = motor.ResolveGrounding(lastStep.State, transform.position.ToCombat(), grounded);
+            lastStep = new CombatMotorStep(lastStep.Displacement, lastStep.PlanarVelocity, motorState, lastStep.JumpedThisFrame);
 
             RotateTowardMovement(lastStep.PlanarVelocity.ToUnity());
 
             if (animatorDriver != null)
-                animatorDriver.Apply(lastStep, grounded, cameraRig != null && cameraRig.Mode == Sprint4CameraMode.FirstPerson);
+                animatorDriver.Apply(lastStep, grounded, cameraRig != null && cameraRig.Mode == CombatPlaygroundCameraMode.FirstPerson);
         }
 
-        private Sprint4MovementInput ReadInput()
+        private CombatMovementInput ReadInput()
         {
             var moveX = Input.GetAxisRaw("Horizontal");
             var moveZ = Input.GetAxisRaw("Vertical");
@@ -78,7 +78,7 @@ namespace EmberCrpg.Presentation.Sprint4
             if (Input.GetKey(KeyCode.S)) moveZ -= 1f;
             if (Input.GetKey(KeyCode.W)) moveZ += 1f;
 
-            return new Sprint4MovementInput(
+            return new CombatMovementInput(
                 Mathf.Clamp(moveX, -1f, 1f),
                 Mathf.Clamp(moveZ, -1f, 1f),
                 cameraRig != null ? cameraRig.PlanarYawDegrees : transform.eulerAngles.y,

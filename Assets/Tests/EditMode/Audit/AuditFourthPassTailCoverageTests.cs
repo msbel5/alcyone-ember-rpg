@@ -153,16 +153,16 @@ namespace EmberCrpg.Tests.EditMode.Audit
             Assert.That(world.Events.Count, Is.EqualTo(before));
         }
 
-        // ----- Sprint4KinematicMotor.ResolveGrounding (G-P3) -----
+        // ----- CombatKinematicMotor.ResolveGrounding (G-P3) -----
         [Test]
-        public void Sprint4KinematicMotor_ResolveGrounding_TransitionsToGrounded()
+        public void CombatKinematicMotor_ResolveGrounding_TransitionsToGrounded()
         {
-            var motor = new Sprint4KinematicMotor();
-            var state = new Sprint4MotorState(
-                position: new Sprint4Vector3(0f, 5f, 0f),
+            var motor = new CombatKinematicMotor();
+            var state = new CombatMotorState(
+                position: new CombatVector3(0f, 5f, 0f),
                 verticalVelocity: -10f,
                 isGrounded: false);
-            var next = motor.ResolveGrounding(state, new Sprint4Vector3(0f, 0f, 0f), isGrounded: true);
+            var next = motor.ResolveGrounding(state, new CombatVector3(0f, 0f, 0f), isGrounded: true);
             Assert.That(next.IsGrounded, Is.True);
             Assert.That(next.Position.Y, Is.EqualTo(0f).Within(0.001f));
         }

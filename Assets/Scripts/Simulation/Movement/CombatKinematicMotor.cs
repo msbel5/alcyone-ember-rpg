@@ -3,14 +3,14 @@ using System;
 namespace EmberCrpg.Simulation.Movement
 {
     /// <summary>
-    /// Deterministic Sprint 4 movement baseline. Unity adapters provide collision resolution;
+    /// Deterministic combat movement baseline. Unity adapters provide collision resolution;
     /// this class owns input normalization, yaw-relative planar velocity, jump impulse, and gravity.
     /// </summary>
-    public sealed class Sprint4KinematicMotor
+    public sealed class CombatKinematicMotor
     {
         private const float DegreesToRadians = MathF.PI / 180f;
 
-        public Sprint4MotorStep Plan(Sprint4MotorState state, Sprint4MovementInput input, Sprint4MotorSettings settings, float deltaTime)
+        public CombatMotorStep Plan(CombatMotorState state, CombatMovementInput input, CombatMotorSettings settings, float deltaTime)
         {
             if (deltaTime < 0f)
                 throw new ArgumentOutOfRangeException(nameof(deltaTime), "Movement delta time cannot be negative.");
@@ -32,29 +32,29 @@ namespace EmberCrpg.Simulation.Movement
 
             verticalVelocity += settings.Gravity * deltaTime;
 
-            var displacement = new Sprint4Vector3(
+            var displacement = new CombatVector3(
                 planarVelocity.X * deltaTime,
                 verticalVelocity * deltaTime,
                 planarVelocity.Z * deltaTime);
 
-            var nextState = new Sprint4MotorState(state.Position + displacement, verticalVelocity, grounded);
-            return new Sprint4MotorStep(displacement, planarVelocity, nextState, jumped);
+            var nextState = new CombatMotorState(state.Position + displacement, verticalVelocity, grounded);
+            return new CombatMotorStep(displacement, planarVelocity, nextState, jumped);
         }
 
-        public Sprint4MotorState ResolveGrounding(Sprint4MotorState state, Sprint4Vector3 resolvedPosition, bool isGrounded)
+        public CombatMotorState ResolveGrounding(CombatMotorState state, CombatVector3 resolvedPosition, bool isGrounded)
         {
             var verticalVelocity = isGrounded && state.VerticalVelocity < 0f ? 0f : state.VerticalVelocity;
-            return new Sprint4MotorState(resolvedPosition, verticalVelocity, isGrounded);
+            return new CombatMotorState(resolvedPosition, verticalVelocity, isGrounded);
         }
 
-        public static Sprint4Vector3 ToWorldPlanar(Sprint4Vector3 localPlanar, float yawDegrees)
+        public static CombatVector3 ToWorldPlanar(CombatVector3 localPlanar, float yawDegrees)
         {
             var radians = yawDegrees * DegreesToRadians;
             var sin = MathF.Sin(radians);
             var cos = MathF.Cos(radians);
 
-            var right = new Sprint4Vector3(cos, 0f, -sin);
-            var forward = new Sprint4Vector3(sin, 0f, cos);
+            var right = new CombatVector3(cos, 0f, -sin);
+            var forward = new CombatVector3(sin, 0f, cos);
             return (right * localPlanar.X) + (forward * localPlanar.Z);
         }
     }
