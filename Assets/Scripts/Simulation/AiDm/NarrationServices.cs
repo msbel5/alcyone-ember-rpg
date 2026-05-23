@@ -3,6 +3,7 @@ using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
+// Codex ninth-pass D-P3: confirmed test-wired only — no production caller exists at HEAD. Backend-only by design until the AI/DM scene host attaches it in Faz 12 (per docs/sprint-faz-12-atom-map.md row 11).
 namespace EmberCrpg.Simulation.AiDm
 {
     // Codex audit (seventh pass J-P3 #33): this file deliberately folds the

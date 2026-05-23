@@ -72,6 +72,17 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             _commands = _adapter;
             _oracle = _adapter;
             EmberDomainAdapterLocator.Register(_adapter);
+
+            // Codex ninth-pass A-P1: consume any pending world-gen intent
+            // from the MainMenu wizard BEFORE the first tick advances state,
+            // so this play-through's world reflects the player's answers.
+            var pending = EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending;
+            if (pending != null && !pending.IsEmpty)
+            {
+                _commands?.SeedWorld(pending.Mood, pending.Calling, pending.Start);
+                EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending = null;
+            }
+
             _clock.AdvanceTick(0);
 
             // Codex audit (sixth pass E-P2 #E3): if the host re-runs (additive

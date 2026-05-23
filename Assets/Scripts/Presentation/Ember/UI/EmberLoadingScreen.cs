@@ -79,33 +79,9 @@ namespace EmberCrpg.Presentation.Ember.UI
             }
         }
 
-        public void LoadScene(string sceneName)
-        {
-            StartCoroutine(LoadRoutine(sceneName));
-        }
-
-        private IEnumerator LoadRoutine(string sceneName)
-        {
-            gameObject.SetActive(true);
-            PickRandomFlavor();
-            
-            yield return StartCoroutine(Fade(0f, 1f, 0.3f));
-            
-            float startTime = Time.realtimeSinceStartup;
-            AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
-            while (!op.isDone)
-            {
-                if (_spinner != null) _spinner.transform.Rotate(0, 0, -200 * Time.deltaTime);
-                yield return null;
-            }
-
-            // Ensure min duration
-            float elapsed = Time.realtimeSinceStartup - startTime;
-            if (elapsed < 0.6f) yield return new WaitForSecondsRealtime(0.6f - elapsed);
-
-            yield return StartCoroutine(Fade(1f, 0f, 0.3f));
-            gameObject.SetActive(false);
-        }
+        // Audit (ninth pass A-P3/D-P1): the explicit LoadScene(string)/LoadRoutine
+        // pair was deleted — no production caller existed (Codex confirmed). The
+        // Awake auto-display + AutoDismissRoutine is the only used entry path.
 
         private void PickRandomFlavor()
         {

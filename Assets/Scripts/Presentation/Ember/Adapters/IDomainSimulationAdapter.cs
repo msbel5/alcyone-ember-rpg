@@ -100,6 +100,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// next to the other player-driven verbs.
         /// </summary>
         IDialogSource GetDialogSource(string actorName);
+
+        /// <summary>
+        /// World seeding command — applies the MainMenu/world-gen wizard's
+        /// mood/calling/start-location text to the freshly bootstrapped world
+        /// before the first tick advances. Codex ninth-pass C-P2: previously
+        /// sat on the aggregate IDomainSimulationAdapter; moved here so the
+        /// host can call it through its narrow IPlayerCommandSink handle.
+        /// </summary>
+        void SeedWorld(string mood, string calling, string startLocation);
     }
 
     /// <summary>
@@ -153,7 +162,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         IConsultFateOracle,
         IEmberSaveBridge
     {
-        void SeedWorld(string mood, string calling, string startLocation);
     }
 
     /// <summary>
