@@ -33,9 +33,13 @@ namespace EmberCrpg.Presentation.Ember.UI
                 _background.type = Image.Type.Sliced;
             }
 
-            _health      = Bar.Build(transform, "Health",  new Vector2(0.02f, 0.55f), new Vector2(0.32f, 0.85f), new Color(0.85f, 0.2f, 0.15f), _font);
-            _stamina     = Bar.Build(transform, "Fatigue", new Vector2(0.35f, 0.55f), new Vector2(0.65f, 0.85f), new Color(0.85f, 0.7f, 0.1f), _font);
-            _mana        = Bar.Build(transform, "Mana",    new Vector2(0.68f, 0.55f), new Vector2(0.98f, 0.85f), new Color(0.2f, 0.45f, 0.95f), _font);
+            // Mami fix: HUD bars used to occupy 30% × 30% of the screen each
+            // (anchored 0.55-0.85 vertical = giant blocks covering gameplay).
+            // Daggerfall-style: compact bottom-row bars, ~22% wide × 4% tall
+            // each, anchored to the lower edge with a small gutter.
+            _health      = Bar.Build(transform, "Health",  new Vector2(0.02f, 0.02f), new Vector2(0.24f, 0.06f), new Color(0.85f, 0.2f, 0.15f), _font);
+            _stamina     = Bar.Build(transform, "Fatigue", new Vector2(0.26f, 0.02f), new Vector2(0.48f, 0.06f), new Color(0.85f, 0.7f, 0.1f), _font);
+            _mana        = Bar.Build(transform, "Mana",    new Vector2(0.50f, 0.02f), new Vector2(0.72f, 0.06f), new Color(0.2f, 0.45f, 0.95f), _font);
             _damageLog   = BuildLogLine(transform, new Vector2(0.02f, 0.05f), new Vector2(0.98f, 0.5f), _font);
         }
 

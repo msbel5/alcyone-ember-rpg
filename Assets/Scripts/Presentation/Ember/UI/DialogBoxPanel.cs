@@ -68,7 +68,18 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             if (Source == null) return;
 
-            string targetLine = Source.GetCurrentLine();
+            // Mami fix: show animated "thinking …" while the LLM async call
+            // is in flight; the dot count cycles 1→2→3 every 0.3s.
+            string targetLine;
+            if (Source.IsThinking)
+            {
+                int dots = ((int)(Time.unscaledTime * 3.0f)) % 3 + 1;
+                targetLine = "Thinking" + new string('.', dots);
+            }
+            else
+            {
+                targetLine = Source.GetCurrentLine();
+            }
             if (targetLine != _fullLineText)
             {
                 _fullLineText = targetLine;
