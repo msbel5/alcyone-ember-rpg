@@ -125,24 +125,44 @@ namespace EmberCrpg.Simulation.Composition
             // composer only advanced time, so colony needs never moved in a
             // running game. Gate at TicksPerGameHour so the existing
             // HungerIncreasePerTick=20 numbers stay calibrated.
+            // Codex ninth-pass A-P2 / G-P2: catch-up events must be stamped
+            // at the cadence-boundary timestamp, not at the post-advance
+            // time, so event-log replays show needs ticking at hour
+            // boundaries. We compute the number of boundary crossings up
+            // front, then iterate forward stamping each crossing at its
+            // exact minute. This is deterministically equivalent to the
+            // original modulus juggling but avoids the off-by-one when more
+            // than one boundary is crossed in a single Advance call.
             _ticksSinceHourly += delta;
-            while (_ticksSinceHourly >= TicksPerGameHour)
+            int hourlyCrossings = _ticksSinceHourly / TicksPerGameHour;
+            _ticksSinceHourly -= hourlyCrossings * TicksPerGameHour;
+            for (int i = 1; i <= hourlyCrossings; i++)
             {
-                _ticksSinceHourly -= TicksPerGameHour;
                 if (world.Actors == null || world.Events == null) continue;
+                // Boundary i was reached at world.Time - (totalRemaining) where
+                // totalRemaining = (hourlyCrossings - i)*hour + _ticksSinceHourly.
+                long stampMinutes = world.Time.TotalMinutes
+                                    - (long)_ticksSinceHourly
+                                    - ((long)hourlyCrossings - i) * TicksPerGameHour;
+                var stamp = new GameTime(stampMinutes < 0 ? 0 : stampMinutes);
                 foreach (var actor in world.Actors.Records)
                 {
                     if (actor == null) continue;
-                    _needs.TickActorNeeds(actor, world.Events, world.Time, ticks: 1);
+                    _needs.TickActorNeeds(actor, world.Events, stamp, ticks: 1);
                 }
             }
 
             _ticksSinceDaily += delta;
-            while (_ticksSinceDaily >= TicksPerGameDay)
+            int dailyCrossings = _ticksSinceDaily / TicksPerGameDay;
+            _ticksSinceDaily -= dailyCrossings * TicksPerGameDay;
+            for (int i = 1; i <= dailyCrossings; i++)
             {
-                _ticksSinceDaily -= TicksPerGameDay;
                 if (world.Caravans == null || world.Events == null) continue;
-                _caravans.Tick(world.Caravans, world.FindTradeRoute, world.FindStockpile, world.Time, world.Events);
+                long stampMinutes = world.Time.TotalMinutes
+                                    - (long)_ticksSinceDaily
+                                    - ((long)dailyCrossings - i) * TicksPerGameDay;
+                var stamp = new GameTime(stampMinutes < 0 ? 0 : stampMinutes);
+                _caravans.Tick(world.Caravans, world.FindTradeRoute, world.FindStockpile, stamp, world.Events);
             }
         }
 
@@ -163,6 +183,21 @@ namespace EmberCrpg.Simulation.Composition
         {
             _lastTickIndex = -1;
             // _ticksSinceHourly / _ticksSinceDaily intentionally preserved.
+        }
+
+        /// <summary>
+        /// Codex ninth-pass A-P2: deterministically rebuild the
+        /// hourly/daily accumulators from a restored <see cref="GameTime"/>.
+        /// Use after save/load when the in-memory accumulator state can't
+        /// be trusted. The remainder of (TotalMinutes mod TicksPerGameHour)
+        /// is the in-flight progress toward the next hourly tick.
+        /// </summary>
+        public void RebuildAccumulatorsFrom(GameTime worldTime)
+        {
+            long minutes = worldTime.TotalMinutes;
+            _ticksSinceHourly = (int)(minutes % TicksPerGameHour);
+            _ticksSinceDaily = (int)(minutes % TicksPerGameDay);
+            _lastTickIndex = -1;
         }
     }
 }

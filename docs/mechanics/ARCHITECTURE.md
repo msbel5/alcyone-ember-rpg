@@ -473,7 +473,7 @@ For when implementation begins, here are the canonical source files to open:
 
 **DM API (Ember — growing in thin deterministic slices)**
 - `Assets/Scripts/Simulation/Narrative/NpcMemoryQueryService.cs` — current memory-backed Tier 1 query contexts for dialogue, guard stance, and merchant familiarity
-- `Assets/Scripts/Domain/DM/IDmQueryService.cs` — future broader Tier 1 + 2 contract
-- `Assets/Scripts/Domain/DM/IDmRollService.cs` — future Tier 3 contract
-- `Assets/Scripts/Domain/DM/IDmMutationService.cs` — future Tier 4 contract
+- `Assets/Scripts/Domain/AiDm/IDmQueryService.cs (planned)` — future broader Tier 1 + 2 contract
+- `Assets/Scripts/Domain/AiDm/IDmRollService.cs (planned)` — future Tier 3 contract
+- `Assets/Scripts/Domain/AiDm/IDmMutationService.cs (planned)` — future Tier 4 contract
 - `Assets/Scripts/Simulation/Rng/IRng.cs` — deterministic RNG primitive

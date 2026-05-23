@@ -16,9 +16,15 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private void Awake()
         {
+            // Codex ninth-pass A-P1 / D-P1: previously SetActive(false) on the
+            // host GameObject — that turned Update() into dead code so Esc was
+            // never read. Use CanvasGroup transparency + blocksRaycasts toggle
+            // to "hide" while keeping the listener alive.
             _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
             _canvasGroup.alpha = 0f;
-            gameObject.SetActive(false);
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
             BuildMenu();
         }
 
@@ -35,7 +41,8 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             _isPaused = true;
             Time.timeScale = 0f;
-            gameObject.SetActive(true);
+            _canvasGroup.interactable = true;
+            _canvasGroup.blocksRaycasts = true;
             StartCoroutine(UiAnimationHelper.AnimateOpen(_canvasGroup, GetComponent<RectTransform>()));
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -53,7 +60,9 @@ namespace EmberCrpg.Presentation.Ember.UI
         private System.Collections.IEnumerator CloseRoutine()
         {
             yield return UiAnimationHelper.AnimateClose(_canvasGroup, GetComponent<RectTransform>());
-            gameObject.SetActive(false);
+            _canvasGroup.alpha = 0f;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
         }
 
         private void BuildMenu()

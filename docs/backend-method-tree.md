@@ -97,7 +97,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### Faz 6 Trade routes + Faction
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
 - `Assets/Scripts/Domain/Core/FactionId.cs`
 - `Assets/Scripts/Domain/World/FactionRecord.cs`
 - `Assets/Scripts/Domain/World/FactionStore.cs`
@@ -115,7 +115,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 ### Faz 7 Combat + Equipment
 - `Assets/Scripts/Data/Save/ItemSaveMapper.cs`
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
 - `Assets/Scripts/Domain/Actors/ActorRecord.cs`
 - `Assets/Scripts/Domain/Actors/ActorVitals.cs`
 - `Assets/Scripts/Domain/Actors/VitalStat.cs`
@@ -273,7 +273,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### Faz 9 Dialogue + Memory + Faction reputation
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
 - `Assets/Scripts/Domain/Actors/ActorRecord.cs`
 - `Assets/Scripts/Domain/Memory/ActorMemory.cs`
 - `Assets/Scripts/Domain/Memory/ActorMemoryEventTypes.cs`
@@ -294,7 +294,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### Faz 10 DM Query API
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
 - `Assets/Scripts/Domain/World/ReasonTrace.cs`
 - `Assets/Scripts/Domain/World/SliceWorldState.cs`
 - `Assets/Scripts/Domain/World/WorldEvent.cs`
@@ -349,7 +349,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### Faz 12 LLM / NPC fallback flavour
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
 - `Assets/Scripts/Domain/Core/GameTime.cs`
 - `Assets/Scripts/Domain/Memory/NpcMemoryStore.cs`
 - `Assets/Scripts/Simulation/Living/NeedMoodEvaluator.cs`

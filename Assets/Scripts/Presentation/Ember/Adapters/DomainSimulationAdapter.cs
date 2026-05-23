@@ -314,9 +314,98 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return this;
         }
 
+        // Ninth-pass FOUNDATION worldgen: SeedWorld now runs the deterministic
+        // WorldgenService (Assets/Scripts/Simulation/Worldgen/) so the
+        // mood/calling/start tuple from the main-menu wizard actually
+        // produces a ~50-region, ~200-settlement, ~750-NPC world instead
+        // of vanishing into a log line. The generated bundle is held on
+        // the adapter so subsequent reads (UI panels, save/load) can
+        // inspect it through the IDomainSimulationAdapter handle.
+        public EmberCrpg.Simulation.Worldgen.GeneratedWorld GeneratedWorld { get; private set; }
+
+        /// <summary>The starting region selected from the wizard's start-location string. Empty when no world has been seeded.</summary>
+        public EmberCrpg.Domain.Worldgen.RegionId StartingRegion { get; private set; }
+
         public void SeedWorld(string mood, string calling, string startLocation)
         {
-            UnityEngine.Debug.Log($"Domain Seeded: Mood={mood}, Calling={calling}");
+            // Derive a deterministic uint seed from the three wizard strings
+            // by FNV-1a-folding their concatenation. The same wizard inputs
+            // therefore always produce the same world, which is what makes
+            // "share your seed" a viable replay feature down the line.
+            uint seed = FoldSeed(mood, calling, startLocation);
+
+            var generated = EmberCrpg.Simulation.Worldgen.WorldgenService.Generate(
+                seed,
+                EmberCrpg.Simulation.Worldgen.WorldgenParameters.Default);
+            GeneratedWorld = generated;
+
+            // TODO(worldgen-mood): wire `mood` into the WorldgenService event
+            // probability tables (e.g. grim → more FactionWar / Calamity,
+            // hopeful → more SettlementFounded / TradeRouteOpened). Today
+            // only the seed-fold consumes mood; the kind distribution is
+            // mood-agnostic.
+            // TODO(worldgen-calling): wire `calling` into the starting
+            // faction bias — a "scholar" calling should start with reputation
+            // tilted toward Order/Circle factions, a "soldier" calling
+            // toward House/Pact. Today calling only feeds the seed-fold.
+
+            // Start-location: pick the first region whose name contains the
+            // wizard's start-location text (case-insensitive). Falls back
+            // to the first region so the field is never empty for a
+            // generated world.
+            StartingRegion = SelectStartingRegion(generated, startLocation);
+
+            UnityEngine.Debug.Log(
+                $"Domain Seeded: seed={seed} mood='{mood}' calling='{calling}' start='{startLocation}' " +
+                $"regions={generated.Regions.Count} settlements={generated.Settlements.Count} " +
+                $"npcs={generated.Npcs.Count} pop={generated.TotalPopulation:N0} " +
+                $"history={generated.History.Count} startingRegion={StartingRegion}");
+        }
+
+        private static EmberCrpg.Domain.Worldgen.RegionId SelectStartingRegion(
+            EmberCrpg.Simulation.Worldgen.GeneratedWorld generated,
+            string startLocation)
+        {
+            if (generated.Regions.Count == 0)
+                return default;
+            if (!string.IsNullOrWhiteSpace(startLocation))
+            {
+                for (int i = 0; i < generated.Regions.Count; i++)
+                {
+                    var r = generated.Regions[i];
+                    if (r.Name.IndexOf(startLocation, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                        return r.Id;
+                }
+            }
+            return generated.Regions[0].Id;
+        }
+
+        private static uint FoldSeed(string mood, string calling, string startLocation)
+        {
+            // FNV-1a-32 over the three strings concatenated with a unit
+            // separator so "ab|c" and "a|bc" do not fold to the same seed.
+            const uint Prime = 16777619u;
+            uint hash = 2166136261u;
+            FoldString(ref hash, mood, Prime);
+            FoldString(ref hash, "", Prime);
+            FoldString(ref hash, calling, Prime);
+            FoldString(ref hash, "", Prime);
+            FoldString(ref hash, startLocation, Prime);
+            // Avoid the XorShiftRng zero-seed reroute by nudging the result
+            // when it lands on 0 — preserves determinism (the same inputs
+            // still fold to the same seed) without losing entropy.
+            if (hash == 0u) hash = 2463534242u;
+            return hash;
+        }
+
+        private static void FoldString(ref uint hash, string s, uint prime)
+        {
+            if (s == null) return;
+            for (int i = 0; i < s.Length; i++)
+            {
+                hash ^= s[i];
+                hash *= prime;
+            }
         }
 
         // ----- IDialogSource -----
@@ -457,7 +546,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // hit + damage rolls, making combat feel broken. Cache one RNG
             // instance and advance it monotonically; replay determinism still
             // holds because the seed is worldSeed-anchored.
-            if (_meleeRng == null) _meleeRng = new EmberCrpg.Simulation.Rng.XorShiftRng(0xE3B6_1EE7u);
+            // Codex ninth-pass A-P2: derive the melee RNG seed from
+            // world.Time so save/load reproduces strike outcomes
+            // deterministically. (Previously the RNG was a fresh instance
+            // per adapter; reload meant identical seed → identical first
+            // strike post-load, but a save mid-fight would re-roll.) Now
+            // the seed advances with simulation time.
+            if (_meleeRng == null)
+            {
+                uint timeSeed = (uint)(_world.Time.TotalMinutes & 0xFFFFFFFFL);
+                _meleeRng = new EmberCrpg.Simulation.Rng.XorShiftRng(timeSeed ^ 0xE3B6_1EE7u);
+            }
             var rng = _meleeRng;
             // Codex audit (seventh pass A-P2 #6): previously hard-coded
             // SiteId(1UL) so every combat event was logged under a synthetic
@@ -533,11 +632,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 foreach (var effect in spell.Effects)
                 {
-<<<<<<< HEAD
                     var code = effect.Kind;
-=======
-                    var code = effect.Code;
->>>>>>> origin/main
                     if (code == EmberCrpg.Domain.Magic.SpellEffectCode.RestoreHealth
                         || code == EmberCrpg.Domain.Magic.SpellEffectCode.ShieldBuff
                         || code == EmberCrpg.Domain.Magic.SpellEffectCode.RestoreMana

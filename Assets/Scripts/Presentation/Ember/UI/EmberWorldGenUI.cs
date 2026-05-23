@@ -117,12 +117,33 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private void BeginJourney()
         {
+            // Codex ninth-pass A-P1: the MainMenu's adapter is destroyed on
+            // LoadScene; the next scene creates a fresh one that never sees
+            // SeedWorld(...). Stash the player's mood/calling/start text in a
+            // static payload that survives the scene transition. The target
+            // scene's EmberWorldHost.Awake consumes it before the first
+            // AdvanceTick, so a deterministic world is generated from the
+            // player's actual answers (Daggerfall-style unique playthrough).
+            EmberWorldGenIntent.Pending = new EmberWorldGenIntent(
+                mood: _moodInput?.text ?? string.Empty,
+                calling: _callingInput?.text ?? string.Empty,
+                start: _startInput?.text ?? string.Empty);
+
+            // Apply immediately to the menu-side adapter too in case anything
+            // reads it before scene unload.
             var adapter = EmberDomainAdapterLocator.Current;
             if (adapter != null)
             {
-                adapter.SeedWorld(_moodInput.text, _callingInput.text, _startInput.text);
+                adapter.SeedWorld(EmberWorldGenIntent.Pending.Mood,
+                                  EmberWorldGenIntent.Pending.Calling,
+                                  EmberWorldGenIntent.Pending.Start);
             }
             UnityEngine.SceneManagement.SceneManager.LoadScene("Faz3SmithingOverworld");
         }
     }
+
+    // Codex ninth-pass G-P2: EmberWorldGenIntent moved to its own file
+    // (EmberWorldGenIntent.cs) so the EditMode/fallback harness can compile
+    // and exercise the scene-handoff contract without dragging UnityEngine
+    // into the test path.
 }

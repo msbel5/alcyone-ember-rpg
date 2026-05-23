@@ -801,7 +801,7 @@ namespace EmberCrpg.Simulation.World
 ### Faz 10 AI / DM scaffold
 
 ```csharp
-// Assets/Scripts/Domain/DM/ActorVitalsView.cs
+// Assets/Scripts/Domain/AiDm/ActorVitalsView.cs (planned)
 namespace EmberCrpg.Domain.DM
 {
     /// <summary>LLM-readable immutable resource snapshot. It exposes values only, not mutable ActorVitals instances.</summary>
@@ -832,7 +832,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/ScheduleView.cs
+// Assets/Scripts/Domain/AiDm/ScheduleView.cs (planned)
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 
@@ -860,7 +860,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/ActorView.cs
+// Assets/Scripts/Domain/AiDm/ActorView.cs (planned)
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 
@@ -894,7 +894,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/MemoryFactView.cs
+// Assets/Scripts/Domain/AiDm/MemoryFactView.cs (planned)
 using EmberCrpg.Domain.Core;
 
 namespace EmberCrpg.Domain.DM
@@ -921,7 +921,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/MemoryView.cs
+// Assets/Scripts/Domain/AiDm/MemoryView.cs (planned)
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
@@ -952,7 +952,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/ReasonTraceView.cs
+// Assets/Scripts/Domain/AiDm/ReasonTraceView.cs (planned)
 using System.Collections.Generic;
 
 namespace EmberCrpg.Domain.DM
@@ -979,7 +979,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/WorldEventView.cs
+// Assets/Scripts/Domain/AiDm/WorldEventView.cs (planned)
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
@@ -1013,7 +1013,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/FactionView.cs
+// Assets/Scripts/Domain/AiDm/FactionView.cs (planned)
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
@@ -1041,7 +1041,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/DmWorldSnapshot.cs
+// Assets/Scripts/Domain/AiDm/DmWorldSnapshot.cs (planned)
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
@@ -1084,7 +1084,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/DmToolRows.cs
+// Assets/Scripts/Domain/AiDm/DmToolRows.cs (planned)
 using EmberCrpg.Domain.Core;
 
 namespace EmberCrpg.Domain.DM
@@ -1191,7 +1191,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/IDmQueryService.cs
+// Assets/Scripts/Domain/AiDm/IDmQueryService.cs (planned)
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 
@@ -1216,7 +1216,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/IDmChanceService.cs
+// Assets/Scripts/Domain/AiDm/IDmChanceService.cs (planned)
 namespace EmberCrpg.Domain.DM
 {
     /// <summary>Tier 2 computed probabilities. It computes chance and reason without consuming RNG.</summary>
@@ -1229,7 +1229,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/IDmRollService.cs
+// Assets/Scripts/Domain/AiDm/IDmRollService.cs (planned)
 namespace EmberCrpg.Domain.DM
 {
     /// <summary>Tier 3 roll API. It is the only DM surface allowed to consume DeterministicRng.</summary>
@@ -1242,7 +1242,7 @@ namespace EmberCrpg.Domain.DM
 ```
 
 ```csharp
-// Assets/Scripts/Domain/DM/IDmMutationService.cs
+// Assets/Scripts/Domain/AiDm/IDmMutationService.cs (planned)
 namespace EmberCrpg.Domain.DM
 {
     /// <summary>Tier 4 mutation proposal API. Implementations must route through validation and simulation ticks.</summary>
@@ -1403,12 +1403,12 @@ namespace EmberCrpg.Tests.Xunit.DM
 | 16 | `Assets/Tests/Xunit/Process/JobBoardTests.cs` | Pin order, duplicate claims, terminal status. | `[box=PROCESS]` |
 | 17 | `Assets/Tests/Xunit/Actors/ScheduleComponentTests.cs` | Pin priority and assignment transitions. | `[box=LIVING]` |
 | 18 | `Assets/Tests/Xunit/Process/JobAssignmentAcceptanceTests.cs` | Two smiths queue at furnace and produce deterministic ingots. | `[box=PROCESS][box=LIVING]` |
-| 19 | `Assets/Scripts/Domain/DM/*View.cs` | `ActorView`, `MemoryView`, `WorldEventView`, `ReasonTraceView`, `FactionView`. | `[box=AI/DM][box=LIVING]` |
-| 20 | `Assets/Scripts/Domain/DM/DmWorldSnapshot.cs` | Shared F9/LLM immutable snapshot. | `[box=AI/DM]` |
-| 21 | `Assets/Scripts/Domain/DM/IDmQueryService.cs` | Tier 1 pure query contract. | `[box=AI/DM]` |
-| 22 | `Assets/Scripts/Domain/DM/IDmChanceService.cs` | Tier 2 computed probability contract. | `[box=AI/DM]` |
-| 23 | `Assets/Scripts/Domain/DM/IDmRollService.cs` + `Simulation/DM/DmRollService.cs` | Tier 3 deterministic RNG roll surface. | `[box=AI/DM][box=TIME]` |
-| 24 | `Assets/Scripts/Domain/DM/IDmMutationService.cs` + `Simulation/DM/ValidatedDmMutationRouter.cs` | Tier 4 mutation proposal routes through validation + tick. | `[box=AI/DM][box=PROCESS]` |
+| 19 | `Assets/Scripts/Domain/AiDm/*View.cs (planned)` | `ActorView`, `MemoryView`, `WorldEventView`, `ReasonTraceView`, `FactionView`. | `[box=AI/DM][box=LIVING]` |
+| 20 | `Assets/Scripts/Domain/AiDm/DmWorldSnapshot.cs (planned)` | Shared F9/LLM immutable snapshot. | `[box=AI/DM]` |
+| 21 | `Assets/Scripts/Domain/AiDm/IDmQueryService.cs (planned)` | Tier 1 pure query contract. | `[box=AI/DM]` |
+| 22 | `Assets/Scripts/Domain/AiDm/IDmChanceService.cs (planned)` | Tier 2 computed probability contract. | `[box=AI/DM]` |
+| 23 | `Assets/Scripts/Domain/AiDm/IDmRollService.cs (planned)` + `Simulation/DM/DmRollService.cs` | Tier 3 deterministic RNG roll surface. | `[box=AI/DM][box=TIME]` |
+| 24 | `Assets/Scripts/Domain/AiDm/IDmMutationService.cs (planned)` + `Simulation/DM/ValidatedDmMutationRouter.cs` | Tier 4 mutation proposal routes through validation + tick. | `[box=AI/DM][box=PROCESS]` |
 | 25 | `Assets/Scripts/Simulation/DM/DmProjectionService.cs` | Build read-only snapshot from stores, memory, events, factions. | `[box=AI/DM]` |
 | 26 | `Assets/Tests/Xunit/DM/MockLlmClient.cs` | Test-only client that exercises API without state authority. | `[box=AI/DM]` |
 | 27 | `Assets/Scripts/Presentation/DM/DmDebugHudDumpFormatter.cs` | F9 dump formatter; presentation consumes same snapshot. | `[box=AI/DM]` |
