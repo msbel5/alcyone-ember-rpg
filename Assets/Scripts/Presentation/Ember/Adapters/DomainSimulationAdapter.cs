@@ -97,6 +97,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
         }
 
+        public SliceWorldState World => _world;
+
         // ----- IEmberSimulationClock -----
         public void AdvanceTick(int tickIndex)
         {
