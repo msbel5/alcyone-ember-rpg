@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
-namespace EmberCrpg.Presentation.VisualLayer
+namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of the tail of the WorldEventLog for Unity HUD overlays.

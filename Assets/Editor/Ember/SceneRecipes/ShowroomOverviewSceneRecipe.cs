@@ -10,7 +10,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// ColonyNeedsPanel, InventoryGrid, and DialogBoxPanel side by side so a single
     /// capture demonstrates that the view layer can read deterministic backend snapshots.
     /// </summary>
-    public sealed class Faz11VisualLayerSceneRecipe : IEmberSceneRecipe
+    public sealed class ShowroomOverviewSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz11ShowroomOverview";
 

@@ -9,7 +9,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// Builds a circular ritual hall: stone floor, a mage actor, an effigy target, a wide
     /// HUD area at the bottom for the spellbar and a side panel for spell descriptions.
     /// </summary>
-    public sealed class Faz8MagicSceneRecipe : IEmberSceneRecipe
+    public sealed class RitualHallSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz8RitualHall";
 

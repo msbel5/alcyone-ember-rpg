@@ -17,34 +17,34 @@ namespace EmberCrpg.Editor.Ember.Menu
         private const string Root = "Ember/Build Scene/";
 
         [MenuItem(Root + "Faz 3 — Smithing Overworld")]
-        public static void BuildFaz3() => RunRecipe(new Faz3SmithingSceneRecipe());
+        public static void BuildFaz3() => RunRecipe(new SmithingOverworldSceneRecipe());
 
         [MenuItem(Root + "Faz 4 — Colony Needs")]
-        public static void BuildFaz4() => RunRecipe(new Faz4ColonyNeedsSceneRecipe());
+        public static void BuildFaz4() => RunRecipe(new ColonyNeedsSceneRecipe());
 
         [MenuItem(Root + "Faz 5 — Season Farm")]
-        public static void BuildFaz5() => RunRecipe(new Faz5FarmSceneRecipe());
+        public static void BuildFaz5() => RunRecipe(new SeasonFarmSceneRecipe());
 
         [MenuItem(Root + "Faz 6 — Trade Market")]
-        public static void BuildFaz6() => RunRecipe(new Faz6TradeSceneRecipe());
+        public static void BuildFaz6() => RunRecipe(new TradeMarketSceneRecipe());
 
         [MenuItem(Root + "Faz 7 — Combat Dungeon")]
-        public static void BuildFaz7() => RunRecipe(new Faz7CombatSceneRecipe());
+        public static void BuildFaz7() => RunRecipe(new CombatDungeonSceneRecipe());
 
         [MenuItem(Root + "Faz 8 — Ritual Hall")]
-        public static void BuildFaz8() => RunRecipe(new Faz8MagicSceneRecipe());
+        public static void BuildFaz8() => RunRecipe(new RitualHallSceneRecipe());
 
         [MenuItem(Root + "Faz 9 — Tavern Dialog")]
-        public static void BuildFaz9() => RunRecipe(new Faz9DialogSceneRecipe());
+        public static void BuildFaz9() => RunRecipe(new TavernDialogSceneRecipe());
 
         [MenuItem(Root + "Faz 10 — Oracle Shrine")]
-        public static void BuildFaz10() => RunRecipe(new Faz10DmQuerySceneRecipe());
+        public static void BuildFaz10() => RunRecipe(new OracleShrineSceneRecipe());
 
         [MenuItem(Root + "Faz 11 — Showroom Overview")]
-        public static void BuildFaz11() => RunRecipe(new Faz11VisualLayerSceneRecipe());
+        public static void BuildFaz11() => RunRecipe(new ShowroomOverviewSceneRecipe());
 
         [MenuItem(Root + "Faz 12 — Tavern Flavour (LLM)")]
-        public static void BuildFaz12() => RunRecipe(new Faz12LlmFlavourSceneRecipe());
+        public static void BuildFaz12() => RunRecipe(new TavernFlavourSceneRecipe());
 
         [MenuItem(Root + "Character Creation")]
         public static void BuildCharacterCreation() => RunUiRecipe(new CharacterCreationSceneRecipe());
@@ -54,16 +54,16 @@ namespace EmberCrpg.Editor.Ember.Menu
         {
             SpriteRegistryAutoBuilder.Build();
             RunUiRecipe(new CharacterCreationSceneRecipe());
-            RunRecipe(new Faz3SmithingSceneRecipe());
-            RunRecipe(new Faz4ColonyNeedsSceneRecipe());
-            RunRecipe(new Faz5FarmSceneRecipe());
-            RunRecipe(new Faz6TradeSceneRecipe());
-            RunRecipe(new Faz7CombatSceneRecipe());
-            RunRecipe(new Faz8MagicSceneRecipe());
-            RunRecipe(new Faz9DialogSceneRecipe());
-            RunRecipe(new Faz10DmQuerySceneRecipe());
-            RunRecipe(new Faz11VisualLayerSceneRecipe());
-            RunRecipe(new Faz12LlmFlavourSceneRecipe());
+            RunRecipe(new SmithingOverworldSceneRecipe());
+            RunRecipe(new ColonyNeedsSceneRecipe());
+            RunRecipe(new SeasonFarmSceneRecipe());
+            RunRecipe(new TradeMarketSceneRecipe());
+            RunRecipe(new CombatDungeonSceneRecipe());
+            RunRecipe(new RitualHallSceneRecipe());
+            RunRecipe(new TavernDialogSceneRecipe());
+            RunRecipe(new OracleShrineSceneRecipe());
+            RunRecipe(new ShowroomOverviewSceneRecipe());
+            RunRecipe(new TavernFlavourSceneRecipe());
         }
 
         public static void RunRecipe(IEmberSceneRecipe recipe)

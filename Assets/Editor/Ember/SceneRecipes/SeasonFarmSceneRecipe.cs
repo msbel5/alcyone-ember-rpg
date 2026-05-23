@@ -8,7 +8,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// Faz 5 acceptance: plant a crop, watch the season tick, harvest at the right stage.
     /// Builds a small farm exterior with two crop rows, a farmer actor, and the season HUD.
     /// </summary>
-    public sealed class Faz5FarmSceneRecipe : IEmberSceneRecipe
+    public sealed class SeasonFarmSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz5SeasonFarm";
 

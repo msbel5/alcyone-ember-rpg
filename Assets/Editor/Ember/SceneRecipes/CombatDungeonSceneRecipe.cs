@@ -8,7 +8,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// Faz 7 acceptance: melee swing, damage roll, equipped weapon affects outcome.
     /// Builds a dungeon-style interior with stone walls, two enemies, a chest, dim sun.
     /// </summary>
-    public sealed class Faz7CombatSceneRecipe : IEmberSceneRecipe
+    public sealed class CombatDungeonSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz7CombatDungeon";
 

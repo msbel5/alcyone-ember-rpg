@@ -10,7 +10,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// quiet hilltop shrine: a low platform, a DM "Oracle" actor, a wide central card
     /// panel showing tool calls and replies.
     /// </summary>
-    public sealed class Faz10DmQuerySceneRecipe : IEmberSceneRecipe
+    public sealed class OracleShrineSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz10OracleShrine";
 

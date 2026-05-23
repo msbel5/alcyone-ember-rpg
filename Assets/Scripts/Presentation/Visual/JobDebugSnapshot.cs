@@ -4,7 +4,7 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
-namespace EmberCrpg.Presentation.VisualLayer
+namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of pending and claimed jobs for Unity debug surfaces.

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 
-namespace EmberCrpg.Presentation.VisualLayer
+namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>Read-only recent memory-fact rows for debug overlays. Pure C#.</summary>
     public sealed class MemoryFactSnapshot

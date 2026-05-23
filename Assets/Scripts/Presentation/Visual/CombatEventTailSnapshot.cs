@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using EmberCrpg.Domain.World;
 
-namespace EmberCrpg.Presentation.VisualLayer
+namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>Read-only tail of combat-resolved events for debug overlays. Pure C#.</summary>
     public sealed class CombatEventTailSnapshot

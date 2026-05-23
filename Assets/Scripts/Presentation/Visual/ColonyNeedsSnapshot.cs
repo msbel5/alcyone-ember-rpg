@@ -3,7 +3,7 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
-namespace EmberCrpg.Presentation.VisualLayer
+namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of actor needs and mood for Unity debug HUD surfaces.

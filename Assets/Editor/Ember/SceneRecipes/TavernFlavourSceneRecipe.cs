@@ -9,7 +9,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// LLM gate; none mutates the world. Reuses the tavern interior and exposes a wide
     /// dialog/narration panel that the LLM client writes to via the same source contract.
     /// </summary>
-    public sealed class Faz12LlmFlavourSceneRecipe : IEmberSceneRecipe
+    public sealed class TavernFlavourSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz12TavernFlavour";
 

@@ -1,7 +1,7 @@
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Time;
 
-namespace EmberCrpg.Presentation.VisualLayer
+namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of the current game time and resolved season for Unity HUD.

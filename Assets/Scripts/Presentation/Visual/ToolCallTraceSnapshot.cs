@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using EmberCrpg.Domain.AiDm;
 
-namespace EmberCrpg.Presentation.VisualLayer
+namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of recent AI/DM tool-call requests + results for

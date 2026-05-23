@@ -9,7 +9,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// Builds the smithing exterior as a first-person walkable scene: stone floor,
     /// two smiths, a furnace marker, sun light, UI overlay scaffold.
     /// </summary>
-    public sealed class Faz3SmithingSceneRecipe : IEmberSceneRecipe
+    public sealed class SmithingOverworldSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz3SmithingOverworld";
 

@@ -9,7 +9,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// Builds a marketplace exterior with a merchant, a guard, a caravan marker, and the
     /// inventory/trade UI scaffold.
     /// </summary>
-    public sealed class Faz6TradeSceneRecipe : IEmberSceneRecipe
+    public sealed class TradeMarketSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz6TradeMarket";
 

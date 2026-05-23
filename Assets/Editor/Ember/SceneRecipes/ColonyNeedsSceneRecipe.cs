@@ -9,7 +9,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// Scene composition: settlement floor, three actors with mood-affected portraits,
     /// a tavern marker, and the colony-needs UI panel on the right edge.
     /// </summary>
-    public sealed class Faz4ColonyNeedsSceneRecipe : IEmberSceneRecipe
+    public sealed class ColonyNeedsSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz4ColonyNeeds";
 

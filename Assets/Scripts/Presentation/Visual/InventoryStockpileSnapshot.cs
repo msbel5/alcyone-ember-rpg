@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using EmberCrpg.Domain.Inventory;
 
-namespace EmberCrpg.Presentation.VisualLayer
+namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of inventory contents aggregated by templateId for

@@ -9,7 +9,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// memory and faction state. Tavern interior with an innkeeper and a dialog panel
     /// rooted to the lower half of the screen, Fallout 1 / Hitchhiker style.
     /// </summary>
-    public sealed class Faz9DialogSceneRecipe : IEmberSceneRecipe
+    public sealed class TavernDialogSceneRecipe : IEmberSceneRecipe
     {
         public string SceneName => "Faz9TavernDialog";
 
