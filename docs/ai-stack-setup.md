@@ -3,10 +3,10 @@
 This guide describes how to provision the **pure C# / Unity-free** inference
 stack that Ember CRPG ships with. The backend uses two libraries:
 
-- **LLamaSharp 0.18.0** — local GGUF inference for the Qwen 2.5 Instruct line.
+- **LLamaSharp 0.27.0** — local GGUF inference for the Qwen 2.5 Instruct line.
   Runs in `EmberCrpg.Simulation` (`noEngineReferences=true`) — Unity is not
   involved at runtime.
-- **Microsoft.ML.OnnxRuntime 1.18.0** — image generation (SDXL Turbo or
+- **Microsoft.ML.OnnxRuntime 1.26.0** — image generation (SDXL Turbo or
   SD 1.5 LCM ONNX) and NPC-memory embeddings (all-MiniLM-L6-v2 ONNX).
   Also pure managed; runs in `EmberCrpg.Simulation` too.
 
@@ -32,9 +32,9 @@ DLLs are **not auto-downloaded**. Drop them into `Assets/Plugins/x86_64/`:
 How to obtain (Windows):
 
 1. Download each NuGet `.nupkg` (rename `.nupkg` to `.zip` and extract):
-   - https://www.nuget.org/packages/LLamaSharp/0.18.0
+   - https://www.nuget.org/packages/LLamaSharp/0.27.0
    - https://www.nuget.org/packages/LLamaSharp.Backend.Cpu/0.18.0
-   - https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime/1.18.0
+   - https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime/1.26.0
    - https://www.nuget.org/packages/Microsoft.ML.Tokenizers/0.21.0
 2. Copy the managed DLLs from `lib/net8.0/` (or `lib/netstandard2.0/`) and
    native DLLs from `runtimes/win-x64/native/` into `Assets/Plugins/x86_64/`.

@@ -6,7 +6,7 @@ Drop the following DLLs into THIS folder before building Ember:
 LLamaSharp (LLM, GGUF):
   - LLamaSharp.dll                    (managed, all platforms)
   - LLamaSharp.Backend.Cpu (runtimes\win-x64\native\llama.dll for Windows)
-  - Source: https://www.nuget.org/packages/LLamaSharp/0.18.0
+  - Source: https://www.nuget.org/packages/LLamaSharp/0.27.0
             https://www.nuget.org/packages/LLamaSharp.Backend.Cpu/0.18.0
   - Place llama.dll next to LLamaSharp.dll on Windows; the Cuda12 backend ships
     separate native binaries under runtimes\win-x64\native\.
@@ -15,7 +15,7 @@ Microsoft.ML.OnnxRuntime (image gen + embeddings):
   - Microsoft.ML.OnnxRuntime.dll      (managed)
   - onnxruntime.dll                   (native, Windows x64 — runtimes\win-x64\native\)
   - onnxruntime_providers_shared.dll  (native helper)
-  - Source: https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime/1.18.0
+  - Source: https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime/1.26.0
             https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.Gpu/1.18.0  (optional, for CUDA)
 
 Microsoft.ML.Tokenizers (CLIP tokenizer JSON + WordPiece for MiniLM):
