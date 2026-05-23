@@ -81,6 +81,12 @@ namespace EmberCrpg.Presentation.Ember.UI
             go.transform.SetParent(parent, worldPositionStays: false);
             go.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 40);
 
+            // Mami playtest: input boxes rendered white-on-white. Tint the
+            // background dark so the typed text + placeholder are legible
+            // against the panel.
+            var bgImg = go.GetComponent<Image>();
+            bgImg.color = new Color(0.15f, 0.12f, 0.10f, 0.95f);
+
             var input = go.GetComponent<TMP_InputField>();
             var textArea = new GameObject("TextArea", typeof(RectTransform), typeof(RectMask2D));
             textArea.transform.SetParent(go.transform, worldPositionStays: false);
