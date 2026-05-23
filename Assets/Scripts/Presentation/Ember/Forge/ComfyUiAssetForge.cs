@@ -26,7 +26,22 @@ namespace EmberCrpg.Presentation.Ember.Forge
             try
             {
                 var response = _http.GetAsync(_baseUrl + "/system_stats").GetAwaiter().GetResult();
-                return response.IsSuccessStatusCode;
+                using (response)
+                    return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var response = await _http.GetAsync(_baseUrl + "/system_stats", cancellationToken).ConfigureAwait(false);
+                using (response)
+                    return response.IsSuccessStatusCode;
             }
             catch
             {
@@ -37,7 +52,8 @@ namespace EmberCrpg.Presentation.Ember.Forge
         public async Task<AssetGenerationResult> GenerateAsync(AssetGenerationRequest request, CancellationToken cancellationToken)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            if (!IsAvailable()) return AssetGenerationResult.Failed(request.RequestId, "comfyui_unavailable");
+            if (!await IsAvailableAsync(cancellationToken).ConfigureAwait(false))
+                return AssetGenerationResult.Failed(request.RequestId, "comfyui_unavailable");
 
             var stopwatch = Stopwatch.StartNew();
             var promptJson = BuildPromptJson(request);

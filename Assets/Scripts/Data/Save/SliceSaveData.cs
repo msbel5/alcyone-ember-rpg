@@ -51,6 +51,7 @@ namespace EmberCrpg.Data.Save
         public WorldEventSaveData[] worldEvents;
         public ToolCallTraceSaveData[] toolCallTrace;
         public LlmProposalLogSaveData[] llmProposalLog;
+        public NpcSeedSaveData[] npcSeeds;
         public WorldProfileSaveData worldProfile;
         public WorksiteSaveData[] worksites;
         public RecipeWorkOrderSaveData[] recipeWorkOrders;
@@ -70,6 +71,18 @@ namespace EmberCrpg.Data.Save
         public int guardWarningCount;
         public bool encounterActive;
         public string lastNarrative;
+    }
+
+    [Serializable]
+    public sealed class NpcSeedSaveData
+    {
+        public ulong id;
+        public ulong home;
+        public ulong faction;
+        public string name;
+        public int birthYear;
+        public int role;
+        public string portraitAssetPath;
     }
 
     [Serializable]

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
-using EmberCrpg.Domain.CharacterCreation;
-using EmberCrpg.Simulation.CharacterCreation;
+using EmberCrpg.Presentation.Ember.Adapters;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -15,7 +14,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         [SerializeField] private string _firstSceneName = "Faz3SmithingOverworld";
 
         private readonly List<string> _answers = new List<string>();
-        private readonly CharacterCreationService _service = new CharacterCreationService();
+        private readonly CharacterCreationViewModel _viewModel = new CharacterCreationViewModel();
         private RectTransform _content;
         private TMP_InputField _nameInput;
         private string _playerName = "Adventurer";
@@ -89,7 +88,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             ClearContent();
             CreateLabel("Birthsign");
-            foreach (var sign in CharacterCreationCatalog.Birthsigns)
+            foreach (var sign in _viewModel.Birthsigns)
             {
                 var captured = sign;
                 CreateButton($"{captured.Name}  {captured.PassiveBonus}", () =>
@@ -105,7 +104,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         private void ShowQuestionStep()
         {
             ClearContent();
-            var question = CharacterCreationCatalog.Questions[_questionIndex];
+            var question = _viewModel.Questions[_questionIndex];
             CreateLabel($"{_questionIndex + 1}/10  {question.Prompt}");
             foreach (var choice in question.Choices)
             {
@@ -114,7 +113,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                 {
                     _answers.Add(captured.Id);
                     _questionIndex++;
-                    if (_questionIndex >= CharacterCreationCatalog.Questions.Count) ShowClassStep();
+                    if (_questionIndex >= _viewModel.Questions.Count) ShowClassStep();
                     else ShowQuestionStep();
                 });
             }
@@ -123,11 +122,11 @@ namespace EmberCrpg.Presentation.Ember.UI
         private void ShowClassStep()
         {
             ClearContent();
-            var suggested = _service.SuggestClass(_answers.ToArray());
+            var suggested = _viewModel.SuggestClass(_answers);
             if (string.IsNullOrEmpty(_selectedClassId))
                 _selectedClassId = suggested.Id;
             CreateLabel($"Suggested Class: {suggested.Name}");
-            foreach (var klass in CharacterCreationCatalog.Classes)
+            foreach (var klass in _viewModel.Classes)
             {
                 var captured = klass;
                 var label = captured.Id == _selectedClassId ? captured.Name + " (Selected)" : captured.Name;

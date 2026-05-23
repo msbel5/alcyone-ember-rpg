@@ -24,6 +24,8 @@
     <Compile Include="../../../Assets/Scripts/Presentation/SliceAtmosphereSelector.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/SliceHudFormatter.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/VisualLayer/**/*.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Adapters/CharacterCreationViewModel.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/ComfyUiAssetForge.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/JsonSliceSaveService.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveData.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/EmberWorldGenIntent.cs" />

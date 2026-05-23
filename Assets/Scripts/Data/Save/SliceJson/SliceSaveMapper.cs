@@ -66,6 +66,7 @@ namespace EmberCrpg.Data.Save
                 worldEvents = ToWorldEventLogData(world.Events),
                 toolCallTrace = ToToolCallTraceData(world.ToolCallTrace),
                 llmProposalLog = ToLlmProposalLogData(world.LlmProposalLog),
+                npcSeeds = ToNpcSeedData(world.NpcSeeds),
                 worldProfile = ToWorldProfileData(world.WorldProfile),
                 inventory = ToInventoryData(world.PlayerInventory),
                 playerEquipment = ToEquipmentData(world.PlayerEquipment),
@@ -123,6 +124,7 @@ namespace EmberCrpg.Data.Save
             world.Events = ToWorldEventLog(data.worldEvents);
             world.ToolCallTrace = ToToolCallTrace(data.toolCallTrace);
             world.LlmProposalLog = ToLlmProposalLog(data.llmProposalLog);
+            world.NpcSeeds = ToNpcSeeds(data.npcSeeds);
             world.WorldProfile = ToWorldProfile(data.worldProfile);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
@@ -769,6 +771,45 @@ namespace EmberCrpg.Data.Save
                     (row.rejectedToolCalls ?? Array.Empty<LlmRejectedToolCallSaveData>())
                         .Where(rejection => rejection != null && rejection.request != null)
                         .Select(rejection => new ToolCallRejection(ToToolCallRequest(rejection.request), rejection.reason))))
+                .ToList();
+        }
+
+        private static NpcSeedSaveData[] ToNpcSeedData(IEnumerable<NpcSeedRecord> npcs)
+        {
+            return (npcs ?? Array.Empty<NpcSeedRecord>())
+                .Where(npc => npc != null)
+                .OrderBy(npc => npc.Id.Value)
+                .Select(npc => new NpcSeedSaveData
+                {
+                    id = npc.Id.Value,
+                    home = npc.Home.Value,
+                    faction = npc.Faction.Value,
+                    name = npc.Name,
+                    birthYear = npc.BirthYear,
+                    role = (int)npc.Role,
+                    portraitAssetPath = npc.PortraitAssetPath,
+                })
+                .ToArray();
+        }
+
+        private static List<NpcSeedRecord> ToNpcSeeds(NpcSeedSaveData[] data)
+        {
+            return (data ?? Array.Empty<NpcSeedSaveData>())
+                .Where(row => row != null
+                    && row.id != 0UL
+                    && row.home != 0UL
+                    && row.faction != 0UL
+                    && !string.IsNullOrWhiteSpace(row.name)
+                    && row.role != (int)NpcRole.None)
+                .OrderBy(row => row.id)
+                .Select(row => new NpcSeedRecord(
+                    new NpcId(row.id),
+                    new SettlementId(row.home),
+                    new FactionId(row.faction),
+                    row.name,
+                    row.birthYear,
+                    (NpcRole)row.role,
+                    row.portraitAssetPath))
                 .ToList();
         }
 

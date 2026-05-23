@@ -527,6 +527,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private void HydrateNpcs(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
         {
             if (_world.Actors == null) _world.Actors = new ActorStore();
+            _world.NpcSeeds = generated.Npcs.ToList();
             foreach (var npc in generated.Npcs)
             {
                 var actorId = new ActorId(GeneratedNpcActorOffset + npc.Id.Value);
