@@ -20,7 +20,7 @@ Microsoft.ML.OnnxRuntime (image gen + embeddings):
 
 Microsoft.ML.Tokenizers (CLIP tokenizer JSON + WordPiece for MiniLM):
   - Microsoft.ML.Tokenizers.dll
-  - Source: https://www.nuget.org/packages/Microsoft.ML.Tokenizers/0.21.0
+  - Source: https://www.nuget.org/packages/Microsoft.ML.Tokenizers/3.0.0-preview.26160.2
 
 After dropping the DLLs:
   1. Add `USE_ONNX_RUNTIME` AND `USE_LLAMASHARP` to
