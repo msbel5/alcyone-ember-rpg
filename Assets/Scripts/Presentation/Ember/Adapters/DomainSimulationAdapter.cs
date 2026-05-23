@@ -704,7 +704,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         }
 
         // ----- IDialogSource -----
-        public string GetCurrentLine() => _currentDialogLine;
+        // Mami: _isDialogThinking surfaces a "thinking …" placeholder while
+        // the NPC LLM (or DM ConsultFate) is still generating, so the panel
+        // never shows a stale or empty line during background inference.
+        public string GetCurrentLine() => _isDialogThinking
+            ? (string.IsNullOrEmpty(_activeDialogActor)
+                ? "Thinking…"
+                : _activeDialogActor + " thinks…")
+            : _currentDialogLine;
+        public bool IsThinking => _isDialogThinking;
         public string GetPortraitName() => _currentPortrait;
         public IReadOnlyList<string> GetTopics() => _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
 

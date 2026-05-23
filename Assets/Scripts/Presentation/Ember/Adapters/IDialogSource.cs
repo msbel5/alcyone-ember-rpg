@@ -14,6 +14,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         string GetCurrentLine();
         IReadOnlyList<string> GetTopics();
         void SelectTopic(string topicId);
+
+        /// <summary>
+        /// True while the dialog source is waiting on an async LLM (NPC line
+        /// generation, DM ConsultFate response, etc.). Panels poll this to
+        /// render a "thinking…" indicator instead of an empty / stale line.
+        /// Default false for sources that never block.
+        /// </summary>
+        bool IsThinking => false;
     }
 
     /// <summary>
