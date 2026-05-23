@@ -89,17 +89,34 @@ namespace EmberCrpg.Simulation.AiDm
             try
             {
                 var prompt = BuildPrompt(request);
+                // LLamaSharp 0.27 API: InferenceParams.Seed removed (now lives
+                // on the SamplingPipeline), and InteractiveExecutor.Infer()
+                // renamed to InferAsync() returning IAsyncEnumerable<string>.
                 var inferenceParams = new InferenceParams()
                 {
                     MaxTokens = request.MaxTokens,
                     AntiPrompts = new[] { "User:", "Memory" },
-                    Seed = (uint)request.Seed
+                    SamplingPipeline = new LLama.Sampling.DefaultSamplingPipeline
+                    {
+                        Seed = (uint)request.Seed,
+                        Temperature = 0.7f
+                    }
                 };
 
                 string resultText = "";
-                foreach (var text in _executor.Infer(prompt, inferenceParams))
+                // Drain the async stream synchronously to keep the existing
+                // sync Complete() signature.
+                var enumerator = _executor.InferAsync(prompt, inferenceParams).GetAsyncEnumerator();
+                try
                 {
-                    resultText += text;
+                    while (enumerator.MoveNextAsync().AsTask().GetAwaiter().GetResult())
+                    {
+                        resultText += enumerator.Current;
+                    }
+                }
+                finally
+                {
+                    enumerator.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 }
 
                 return new LlmResponse(resultText, null, 0);
