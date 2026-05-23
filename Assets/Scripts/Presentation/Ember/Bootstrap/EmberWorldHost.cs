@@ -85,6 +85,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 gameObject.AddComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
             }
 
+            EnsurePauseMenu();
+
             _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _inventoryGrids = Object.FindObjectsByType<InventoryGrid>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -105,16 +107,34 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             {
                 _fateLine = _oracle.ConsultFate();
                 _fateTimer = 3f;
-                
-                // Ensure a dialog box is visible to show the fate line
+
+                // Codex audit (eighth pass A-P1): the previous unconditional
+                // `d.Source = this` clobbered any active NPC dialog adapter
+                // (e.g. a DomainActorDialogSource bound via GetDialogSource),
+                // silently replacing per-NPC dialog with the host's oracle
+                // string. Guard the rebind: only adopt the panel when its
+                // Source is null OR already the host. When an adapter-owned
+                // source is bound, surface the fate text via the HUD's
+                // combat-log path instead so the player still sees it.
                 var dialogs = Object.FindObjectsByType<DialogBoxPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                bool routedToPanel = false;
                 foreach (var d in dialogs)
                 {
                     if (d.name.Contains("Narration") || d.name.Contains("Dialog"))
                     {
-                        d.Source = this;
-                        d.gameObject.SetActive(true);
+                        if (d.Source == null || ReferenceEquals(d.Source, this))
+                        {
+                            d.Source = this;
+                            d.gameObject.SetActive(true);
+                            routedToPanel = true;
+                        }
                     }
+                }
+                if (!routedToPanel)
+                {
+                    // Adapter-owned dialog is active — keep its NPC line on the
+                    // panel and surface the fate response via the HUD log.
+                    _commands?.LogCombat(_fateLine);
                 }
             }
 
@@ -317,6 +337,18 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         CombatHudState ICombatHudSource.Read() => _hud.CombatHud;
         public Sprite GetSprite(string name) => _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;
 
+        /// <summary>
+        /// Audit (eighth pass D-P2): static convenience for UI panels that
+        /// don't hold a reference to the host but want to resolve a sprite
+        /// by name (e.g. DialogBoxPanel portrait lookup).
+        /// </summary>
+        public static Sprite GetSpriteFromHost(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            var host = Object.FindFirstObjectByType<EmberWorldHost>(FindObjectsInactive.Include);
+            return host != null ? host.GetSprite(name) : null;
+        }
+
         public string GetCurrentLine()
         {
             if (!string.IsNullOrEmpty(_fateLine)) return _fateLine;
@@ -334,9 +366,58 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         public string GetPortraitName() => "portrait_npc_placeholder";
 
         public void SelectTopic(string topicId)
-{
+        {
             if (!string.IsNullOrEmpty(topicId))
                 _selectedTopic = topicId;
+            // Codex audit (eighth pass A-P1): the host's IDialogSource
+            // implementation previously only mutated _selectedTopic, so when
+            // a DialogBoxPanel routed SelectTopic("trade") into this method
+            // while a per-NPC adapter source was actually responsible for
+            // the conversation, the adapter never saw the topic change and
+            // its line stayed stuck. The R-key path explicitly assigns
+            // `d.Source = this`, so host-owned panels still route through
+            // the local _selectedTopic above. For adapter-owned sources
+            // the panel already calls source.SelectTopic directly (its
+            // Source is the adapter, not the host), so no forwarding is
+            // required from here. TODO(eighth-pass): if host is ever
+            // installed as a proxy that intercepts adapter-owned dialog,
+            // re-route via _commands.GetDialogSource(_activeDialogActor).
+        }
+
+        /// <summary>
+        /// Audit (eighth pass D-P1): PauseMenu was dormant — no scene authored it.
+        /// Ensure exactly one PauseMenu exists on a Canvas so Escape actually
+        /// surfaces SAVE/LOAD/MAIN MENU/QUIT.
+        /// </summary>
+        private static void EnsurePauseMenu()
+        {
+            var existing = Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.PauseMenu>(FindObjectsInactive.Include);
+            if (existing != null) return;
+
+            var canvas = Object.FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+            if (canvas == null)
+            {
+                var canvasGo = new GameObject(
+                    "PauseMenuCanvas",
+                    typeof(Canvas),
+                    typeof(UnityEngine.UI.CanvasScaler),
+                    typeof(UnityEngine.UI.GraphicRaycaster));
+                canvas = canvasGo.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 2000;
+            }
+
+            var pauseGo = new GameObject(
+                "PauseMenu",
+                typeof(RectTransform),
+                typeof(CanvasGroup),
+                typeof(EmberCrpg.Presentation.Ember.UI.PauseMenu));
+            pauseGo.transform.SetParent(canvas.transform, worldPositionStays: false);
+            var rt = pauseGo.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
         }
 
         private static IDomainSimulationAdapter CreateFallbackAdapter()

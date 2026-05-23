@@ -16,6 +16,12 @@ namespace EmberCrpg.Simulation.Living
     {
         public const int HungerIncreasePerTick = 20;
         public const int FatigueIncreasePerTick = 15;
+        // Codex audit (eighth pass A-P1): Thirst is part of ActorNeeds and
+        // ActorNeeds.WithThirst exists, but TickNeeds never advanced it —
+        // thirst pressure stayed at its initial value forever. Sized between
+        // hunger (20) and fatigue (15) so the survival-loop ordering remains
+        // hunger > thirst > fatigue.
+        public const int ThirstIncreasePerTick = 10;
 
         private readonly NeedMoodEvaluator _moodEvaluator;
 
@@ -36,7 +42,8 @@ namespace EmberCrpg.Simulation.Living
 
             return needs
                 .WithHunger(needs.Hunger.Increase(ScaleRate(HungerIncreasePerTick, ticks)))
-                .WithFatigue(needs.Fatigue.Increase(ScaleRate(FatigueIncreasePerTick, ticks)));
+                .WithFatigue(needs.Fatigue.Increase(ScaleRate(FatigueIncreasePerTick, ticks)))
+                .WithThirst(needs.Thirst.Increase(ScaleRate(ThirstIncreasePerTick, ticks)));
         }
 
         public ActorMood RecomputeMood(ActorRecord actor)
@@ -81,6 +88,7 @@ namespace EmberCrpg.Simulation.Living
                     $"time:{now.TotalMinutes}",
                     $"hunger:{previousNeeds.Hunger.Value}->{nextNeeds.Hunger.Value}",
                     $"fatigue:{previousNeeds.Fatigue.Value}->{nextNeeds.Fatigue.Value}",
+                    $"thirst:{previousNeeds.Thirst.Value}->{nextNeeds.Thirst.Value}",
                     $"mood:{nextMood.Value}",
                 })));
 

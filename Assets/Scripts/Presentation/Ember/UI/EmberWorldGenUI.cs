@@ -80,11 +80,11 @@ namespace EmberCrpg.Presentation.Ember.UI
             var go = new GameObject("Input", typeof(RectTransform), typeof(Image), typeof(TMP_InputField));
             go.transform.SetParent(parent, worldPositionStays: false);
             go.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 40);
-            
+
             var input = go.GetComponent<TMP_InputField>();
             var textArea = new GameObject("TextArea", typeof(RectTransform), typeof(RectMask2D));
             textArea.transform.SetParent(go.transform, worldPositionStays: false);
-            
+
             var text = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
             text.transform.SetParent(textArea.transform, worldPositionStays: false);
             var tmp = text.GetComponent<TextMeshProUGUI>();
@@ -94,7 +94,24 @@ namespace EmberCrpg.Presentation.Ember.UI
 
             input.textComponent = tmp;
             input.textViewport = textArea.GetComponent<RectTransform>();
-            
+
+            // Audit (eighth pass D-P2): the `placeholder` parameter was
+            // accepted but never used — the field rendered without prompt
+            // text. Build a child "Placeholder" TMP label and assign it to
+            // the input's Placeholder slot.
+            if (!string.IsNullOrEmpty(placeholder))
+            {
+                var placeholderGo = new GameObject("Placeholder", typeof(RectTransform), typeof(TextMeshProUGUI));
+                placeholderGo.transform.SetParent(textArea.transform, worldPositionStays: false);
+                var phTmp = placeholderGo.GetComponent<TextMeshProUGUI>();
+                phTmp.text = placeholder;
+                if (_font != null) phTmp.font = _font;
+                phTmp.fontSize = 18;
+                phTmp.color = new Color(1f, 1f, 1f, 0.4f);
+                phTmp.fontStyle = FontStyles.Italic;
+                input.placeholder = phTmp;
+            }
+
             return input;
         }
 

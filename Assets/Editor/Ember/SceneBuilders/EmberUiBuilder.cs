@@ -26,10 +26,20 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.matchWidthOrHeight = 0.5f;
 
-            var eventSystem = new GameObject("EventSystem",
-                typeof(UnityEngine.EventSystems.EventSystem),
-                typeof(UnityEngine.EventSystems.StandaloneInputModule));
-            eventSystem.transform.SetParent(root.transform, worldPositionStays: false);
+            // Audit (eighth pass E-P2): EmberMainMenuUI.EnsureEventSystemExists
+            // creates a DontDestroyOnLoad EventSystem at runtime. When a Faz*
+            // scene that was built via this helper loads, BOTH EventSystems
+            // are present and Unity warns "Multiple EventSystems in scene...".
+            // Skip creation here when one already exists in the scene.
+            var existingEventSystem = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>(
+                FindObjectsInactive.Include);
+            if (existingEventSystem == null)
+            {
+                var eventSystem = new GameObject("EventSystem",
+                    typeof(UnityEngine.EventSystems.EventSystem),
+                    typeof(UnityEngine.EventSystems.StandaloneInputModule));
+                eventSystem.transform.SetParent(root.transform, worldPositionStays: false);
+            }
 
             return canvas;
         }

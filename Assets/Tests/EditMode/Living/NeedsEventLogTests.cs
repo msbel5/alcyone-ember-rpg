@@ -40,7 +40,11 @@ namespace EmberCrpg.Tests.EditMode.Living
                 $"time:{GameTime.MinutesPerDay}",
                 "hunger:0->40",
                 "fatigue:0->30",
-                "mood:27",
+                // Codex audit (eighth pass A-P1): thirst now ticks at
+                // ThirstIncreasePerTick=10, so 2 ticks moves Thirst 0->20
+                // and the mood drops by (40+30+20)/3 = 30 instead of 23.
+                "thirst:0->20",
+                "mood:20",
             }));
         }
 

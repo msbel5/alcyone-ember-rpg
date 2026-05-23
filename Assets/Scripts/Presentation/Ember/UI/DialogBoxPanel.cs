@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.Bootstrap;
 
 namespace EmberCrpg.Presentation.Ember.UI
@@ -100,10 +101,30 @@ namespace EmberCrpg.Presentation.Ember.UI
             _npcLineLabel.text = _displayedLineText;
 
             // Handle portrait
+            // Audit (eighth pass D-P2): previously empty — wire portrait sprite
+            // lookup through any ISpriteByName-capable source (typically
+            // EmberWorldHost), then assign to a child Image named "Portrait"
+            // (created lazily by BuildPortrait above).
             if (_portraitImage != null && Source is IDialogSourcePortrait portraitSource)
             {
-                // We'd need a way to look up the sprite from the portrait name
-                // For now, we assume the host can provide it or we just placeholder it.
+                var portraitName = portraitSource.GetPortraitName();
+                if (!string.IsNullOrEmpty(portraitName))
+                {
+                    Sprite portrait = null;
+                    if (Source is EmberCrpg.Presentation.Ember.UI.ISpriteByName lookup)
+                        portrait = lookup.GetSprite(portraitName);
+                    if (portrait == null)
+                    {
+                        var host = EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost
+                            .GetSpriteFromHost(portraitName);
+                        portrait = host;
+                    }
+                    if (portrait != null)
+                    {
+                        _portraitImage.sprite = portrait;
+                        _portraitImage.color = Color.white;
+                    }
+                }
             }
 
             var topics = Source.GetTopics();
@@ -206,16 +227,8 @@ return text;
         }
     }
 
-    public interface IDialogSource
-    {
-        string GetCurrentLine();
-        IReadOnlyList<string> GetTopics();
-        void SelectTopic(string topicId);
-    }
-
-    public interface IDialogSourcePortrait : IDialogSource
-    {
-        string GetPortraitName();
-    }
+    // Audit (eighth pass B-P2): IDialogSource and IDialogSourcePortrait
+    // moved to Assets/Scripts/Presentation/Ember/Adapters/IDialogSource.cs
+    // in namespace EmberCrpg.Presentation.Ember.Adapters.
 }
 
