@@ -72,8 +72,16 @@ namespace EmberCrpg.Editor.Ember.Menu
             recipe.Build();
             EmberRuntimeHostBuilder.EnsureHost();
             
-            // AAA Polish: Bake NavMesh
+            // AAA Polish: Bake NavMesh.
+            // Unity 6 deprecated UnityEditor.AI.NavMeshBuilder in favor of the
+            // com.unity.ai.navigation package's NavMeshSurface component.
+            // Until that package lands in manifest.json (tracked under the
+            // Faz 14 navigation sprint), keep the legacy synchronous bake —
+            // it still works and produces the same NavMesh.asset. The pragma
+            // silences the CS0618 warning so the build stays green.
+#pragma warning disable CS0618
             UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
+#pragma warning restore CS0618
             
             var path = EmberSceneSavePolicy.ResolveScenePath(recipe.SceneName);
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), path);
