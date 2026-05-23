@@ -18,6 +18,11 @@ namespace EmberCrpg.Domain.Worldgen
     public sealed class NpcSeedRecord
     {
         public NpcSeedRecord(NpcId id, SettlementId home, FactionId faction, string name, int birthYear, NpcRole role)
+            : this(id, home, faction, name, birthYear, role, string.Empty)
+        {
+        }
+
+        public NpcSeedRecord(NpcId id, SettlementId home, FactionId faction, string name, int birthYear, NpcRole role, string portraitAssetPath)
         {
             if (id.IsEmpty)
                 throw new ArgumentException("NpcId.Empty cannot back an NpcSeedRecord.", nameof(id));
@@ -36,6 +41,7 @@ namespace EmberCrpg.Domain.Worldgen
             Name = name;
             BirthYear = birthYear;
             Role = role;
+            PortraitAssetPath = portraitAssetPath ?? string.Empty;
         }
 
         public NpcId Id { get; }
@@ -44,5 +50,6 @@ namespace EmberCrpg.Domain.Worldgen
         public string Name { get; }
         public int BirthYear { get; }
         public NpcRole Role { get; }
+        public string PortraitAssetPath { get; }
     }
 }
