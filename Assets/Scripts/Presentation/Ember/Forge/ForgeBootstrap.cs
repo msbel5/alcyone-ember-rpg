@@ -81,12 +81,17 @@ namespace EmberCrpg.Presentation.Ember.Forge
             // paths when it resolves the manifest. We hand four paths in the
             // order OnnxAssetForge expects: text encoder, U-Net, VAE decoder,
             // tokenizer JSON.
+            // SDXL Turbo HuggingFace export layout: each component lives in
+            // its own subdirectory (text_encoder/model.onnx, unet/model.onnx,
+            // vae_decoder/model.onnx) and the tokenizer ships as
+            // vocab.json + merges.txt + tokenizer_config.json (no single
+            // tokenizer.json). Path file probe uses vocab.json.
             var paths = new[]
             {
-                Path.Combine(modelDir, "sdxl-turbo", "text_encoder.onnx"),
-                Path.Combine(modelDir, "sdxl-turbo", "unet.onnx"),
-                Path.Combine(modelDir, "sdxl-turbo", "vae_decoder.onnx"),
-                Path.Combine(modelDir, "sdxl-turbo", "tokenizer.json"),
+                Path.Combine(modelDir, "sdxl-turbo", "text_encoder", "model.onnx"),
+                Path.Combine(modelDir, "sdxl-turbo", "unet", "model.onnx"),
+                Path.Combine(modelDir, "sdxl-turbo", "vae_decoder", "model.onnx"),
+                Path.Combine(modelDir, "sdxl-turbo", "tokenizer", "vocab.json"),
             };
             return new OnnxAssetForge(paths, OnnxDiffusionFlavor.SdxlTurbo);
         }

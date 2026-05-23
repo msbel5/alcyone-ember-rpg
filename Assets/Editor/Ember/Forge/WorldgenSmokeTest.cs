@@ -52,12 +52,16 @@ namespace EmberCrpg.Editor.Forge
             // 2. Initialize Forge
             var cache = new AssetForgeCache(Application.persistentDataPath);
             var modelDir = Path.Combine(Application.streamingAssetsPath, "Models", "sdxl-turbo");
+            // SDXL Turbo HuggingFace layout: each component is its own
+            // subdirectory with model.onnx inside; the tokenizer ships as
+            // vocab.json + merges.txt + tokenizer_config.json (NOT a single
+            // tokenizer.json). Point at vocab.json as the existence marker.
             var onnxPaths = new[]
             {
-                Path.Combine(modelDir, "text_encoder.onnx"),
-                Path.Combine(modelDir, "unet.onnx"),
-                Path.Combine(modelDir, "vae_decoder.onnx"),
-                Path.Combine(modelDir, "tokenizer.json"),
+                Path.Combine(modelDir, "text_encoder", "model.onnx"),
+                Path.Combine(modelDir, "unet", "model.onnx"),
+                Path.Combine(modelDir, "vae_decoder", "model.onnx"),
+                Path.Combine(modelDir, "tokenizer", "vocab.json"),
             };
             IAssetForge forge = new OnnxAssetForge(onnxPaths, OnnxDiffusionFlavor.SdxlTurbo);
             if (!forge.IsAvailable()) forge = new ComfyUiAssetForge();
