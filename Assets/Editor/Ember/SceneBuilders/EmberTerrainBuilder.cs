@@ -43,8 +43,12 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             // Center the terrain
             go.transform.position = center - new Vector3(sizeMeters / 2f, 0f, sizeMeters / 2f);
             
-            // Mark as static for NavMesh
-            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.NavigationStatic);
+            // Unity 6 navigation: StaticEditorFlags.NavigationStatic is deprecated.
+            // The modern NavMeshBuilder.CollectSources picks geometry via
+            // NavMeshBuildMarkup (passed at bake time) rather than per-GameObject
+            // static flags. Setting no nav flag is a no-op for the new bake path.
+            // The other static flags (Batching, Occluder, Occludee, Lightmap,
+            // Reflection, OffMeshLink) are left to scene-recipe defaults.
             
             return go;
         }
@@ -100,8 +104,12 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
                 renderer.sharedMaterial = mat;
             }
             
-            // Mark as static for NavMesh
-            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.NavigationStatic);
+            // Unity 6 navigation: StaticEditorFlags.NavigationStatic is deprecated.
+            // The modern NavMeshBuilder.CollectSources picks geometry via
+            // NavMeshBuildMarkup (passed at bake time) rather than per-GameObject
+            // static flags. Setting no nav flag is a no-op for the new bake path.
+            // The other static flags (Batching, Occluder, Occludee, Lightmap,
+            // Reflection, OffMeshLink) are left to scene-recipe defaults.
             
             return go;
         }
