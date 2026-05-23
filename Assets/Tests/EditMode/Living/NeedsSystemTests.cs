@@ -11,7 +11,7 @@ namespace EmberCrpg.Tests.EditMode.Living
     public sealed class NeedsSystemTests
     {
         [Test]
-        public void TickNeeds_AdvancesHungerAndFatigueOnly()
+        public void TickNeeds_AdvancesHungerFatigueAndThirst()
         {
             var needs = new ActorNeeds(new NeedValue(10), new NeedValue(20), new NeedValue(30));
 
@@ -19,7 +19,9 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             Assert.That(ticked.Hunger.Value, Is.EqualTo(30));
             Assert.That(ticked.Fatigue.Value, Is.EqualTo(35));
-            Assert.That(ticked.Thirst.Value, Is.EqualTo(30));
+            // Codex audit (eighth pass A-P1): Thirst now ticks at
+            // ThirstIncreasePerTick=10 instead of staying frozen.
+            Assert.That(ticked.Thirst.Value, Is.EqualTo(40));
         }
 
         [Test]
@@ -31,7 +33,9 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             Assert.That(ticked.Hunger, Is.EqualTo(NeedValue.Critical));
             Assert.That(ticked.Fatigue, Is.EqualTo(NeedValue.Critical));
-            Assert.That(ticked.Thirst.Value, Is.EqualTo(40));
+            // Codex audit (eighth pass A-P1): 40 + (10 * 5) = 90, still below
+            // Max=100 so this exercises the non-clamp branch for thirst.
+            Assert.That(ticked.Thirst.Value, Is.EqualTo(90));
         }
 
         [Test]

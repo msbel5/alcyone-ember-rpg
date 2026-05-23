@@ -73,10 +73,22 @@ namespace EmberCrpg.Presentation.Ember.UI
             group.childControlWidth = true;
 
             CreateButton(layoutGo.transform, "RESUME", Resume);
-            CreateButton(layoutGo.transform, "SAVE (F5)", () => { /* Logic would trigger EmberSaveService */ });
-            CreateButton(layoutGo.transform, "LOAD (F9)", () => { /* Logic would trigger EmberSaveService */ });
+            CreateButton(layoutGo.transform, "SAVE (F5)", InvokeSave);
+            CreateButton(layoutGo.transform, "LOAD (F9)", InvokeLoad);
             CreateButton(layoutGo.transform, "MAIN MENU", () => { Time.timeScale = 1f; SceneManager.LoadScene("MainMenu"); });
             CreateButton(layoutGo.transform, "QUIT", Application.Quit);
+        }
+
+        private static void InvokeSave()
+        {
+            var svc = Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.Save.EmberSaveService>(FindObjectsInactive.Include);
+            if (svc != null) svc.Save();
+        }
+
+        private static void InvokeLoad()
+        {
+            var svc = Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.Save.EmberSaveService>(FindObjectsInactive.Include);
+            if (svc != null) svc.Load();
         }
 
         private void CreateButton(Transform parent, string label, UnityEngine.Events.UnityAction action)
