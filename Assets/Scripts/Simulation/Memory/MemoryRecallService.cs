@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
@@ -57,6 +58,19 @@ namespace EmberCrpg.Simulation.Memory
                 return true;
             }
             return false;
+        }
+
+        public IReadOnlyList<string> LastN(ActorMemory memory, int count)
+        {
+            if (memory == null || count <= 0)
+                return new string[0];
+
+            return memory.Events
+                .OrderByDescending(row => row.Timestamp.TotalMinutes)
+                .Take(count)
+                .OrderBy(row => row.Timestamp.TotalMinutes)
+                .Select(row => $"{row.Timestamp.TotalMinutes}:{row.EventType}:{row.SubjectId}:{row.ItemTemplateId}:{row.Amount}")
+                .ToArray();
         }
     }
 }
