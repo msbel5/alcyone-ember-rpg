@@ -51,20 +51,13 @@ namespace EmberCrpg.Editor.Forge
 
             // 2. Initialize Forge
             var cache = new AssetForgeCache(Application.persistentDataPath);
-            var modelDir = Path.Combine(Application.streamingAssetsPath, "Models", "sdxl-turbo");
-            // SDXL Turbo HuggingFace layout: each component is its own
-            // subdirectory with model.onnx inside; the tokenizer ships as
-            // vocab.json + merges.txt + tokenizer_config.json (NOT a single
-            // tokenizer.json). Point at vocab.json as the existence marker.
-            var onnxPaths = new[]
+            var modelRoot = Path.Combine(Application.streamingAssetsPath, "Models");
+            IAssetForge forge = BuildNativeForge(modelRoot);
+            if (!forge.IsAvailable())
             {
-                Path.Combine(modelDir, "text_encoder", "model.onnx"),
-                Path.Combine(modelDir, "unet", "model.onnx"),
-                Path.Combine(modelDir, "vae_decoder", "model.onnx"),
-                Path.Combine(modelDir, "tokenizer", "vocab.json"),
-            };
-            IAssetForge forge = new OnnxAssetForge(onnxPaths, OnnxDiffusionFlavor.SdxlTurbo);
-            if (!forge.IsAvailable()) forge = new ComfyUiAssetForge();
+                Debug.LogError("Native forge unavailable. Cannot generate sample portraits.");
+                return;
+            }
 
             var portraits = new List<Texture2D>();
             int maxCount = 10; // Generate first 10 for the grid and testing
@@ -105,6 +98,58 @@ namespace EmberCrpg.Editor.Forge
             Debug.Log("Phase 3 Smoke Test Complete.");
         }
 
+        private static IAssetForge BuildNativeForge(string modelRoot)
+        {
+            var sdxl = new OnnxAssetForge(
+                new[]
+                {
+                    Path.Combine(modelRoot, "sdxl-turbo", "text_encoder", "model.onnx"),
+                    Path.Combine(modelRoot, "sdxl-turbo", "text_encoder_2", "model.onnx"),
+                    Path.Combine(modelRoot, "sdxl-turbo", "unet", "model.onnx"),
+                    Path.Combine(modelRoot, "sdxl-turbo", "vae_decoder", "model.onnx"),
+                    Path.Combine(modelRoot, "sdxl-turbo", "tokenizer", "vocab.json"),
+                    Path.Combine(modelRoot, "sdxl-turbo", "tokenizer", "merges.txt"),
+                    Path.Combine(modelRoot, "sdxl-turbo", "tokenizer", "tokenizer_config.json"),
+                },
+                OnnxDiffusionFlavor.SdxlTurbo,
+                HasCudaRuntimeArtifacts()
+                    ? OnnxExecutionProviderPreference.PreferCuda
+                    : OnnxExecutionProviderPreference.CpuOnly);
+
+            if (sdxl.IsAvailable() && sdxl.TryWarmup(out _))
+                return sdxl;
+
+            sdxl.Dispose();
+
+            var sd15 = new OnnxAssetForge(
+                new[]
+                {
+                    Path.Combine(modelRoot, "sd-1.5", "text_encoder", "model.onnx"),
+                    Path.Combine(modelRoot, "sd-1.5", "unet", "model.onnx"),
+                    Path.Combine(modelRoot, "sd-1.5", "vae_decoder", "model.onnx"),
+                    Path.Combine(modelRoot, "sd-1.5", "tokenizer", "vocab.json"),
+                    Path.Combine(modelRoot, "sd-1.5", "tokenizer", "merges.txt"),
+                    Path.Combine(modelRoot, "sd-1.5", "tokenizer", "tokenizer_config.json"),
+                },
+                OnnxDiffusionFlavor.Sd15Lcm,
+                OnnxExecutionProviderPreference.CpuOnly);
+
+            if (sd15.IsAvailable() && sd15.TryWarmup(out _))
+                return sd15;
+
+            sd15.Dispose();
+            return new NativeFailureForge("sdxl_and_sd15_unavailable");
+        }
+
+        private static bool HasCudaRuntimeArtifacts()
+        {
+            var basePath = Path.Combine(Application.dataPath, "Plugins", "x86_64", "cuda");
+            return File.Exists(Path.Combine(basePath, "onnxruntime.dll"))
+                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_cuda.dll"))
+                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_shared.dll"))
+                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_tensorrt.dll"));
+        }
+
         private static void SaveGrid(List<Texture2D> textures, string relativePath)
         {
             int cols = 5;
@@ -131,6 +176,24 @@ namespace EmberCrpg.Editor.Forge
             // Clean up textures
             foreach (var t in textures) UnityEngine.Object.DestroyImmediate(t);
             UnityEngine.Object.DestroyImmediate(grid);
+        }
+
+        private sealed class NativeFailureForge : IAssetForge
+        {
+            private readonly string _reason;
+
+            public NativeFailureForge(string reason)
+            {
+                _reason = string.IsNullOrWhiteSpace(reason) ? "native_forge_failed" : reason;
+            }
+
+            public Task<AssetGenerationResult> GenerateAsync(AssetGenerationRequest request, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(AssetGenerationResult.Failed(request?.RequestId ?? "worldgen_smoke", _reason));
+            }
+
+            public bool IsAvailable() => false;
         }
     }
     
