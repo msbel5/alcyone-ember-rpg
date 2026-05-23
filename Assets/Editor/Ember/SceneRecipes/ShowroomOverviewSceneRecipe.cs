@@ -21,7 +21,8 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/brick.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildRoom(Vector3.zero, 30f, 30f, 4f, floorMat, wallMat);
+            var room = EmberTerrainBuilder.BuildRoom(Vector3.zero, 30f, 30f, 4f, floorMat, wallMat);
+            var roomFloor = EmberScenePlacement.RequireRoomFloor(room);
 
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(1f, 0.98f, 0.92f),
@@ -36,8 +37,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             lightA.GetComponent<Light>().intensity = 0.5f;
             lightA.GetComponent<Light>().color = new Color(1f, 0.7f, 0.4f);
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(roomFloor);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -7f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity);
 
             EmberWorldspaceBuilder.SpawnActor("Smith_A",   "blacksmith", new Vector3(-3f, 0f, 1f), domainActorKey: "Warden");
@@ -87,7 +89,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.55f));
             EmberUiBuilder.AttachRuntimeScript(spellBar.gameObject, "EmberCrpg.Presentation.Ember.UI.SpellBar");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "TavernFlavour", "→ Faz 12");
-}
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
+            EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(ShowroomOverviewSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "TavernFlavour", "→ Tavern Flavour");
+        }
     }
 }

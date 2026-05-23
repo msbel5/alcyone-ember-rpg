@@ -20,7 +20,8 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/wood_floor.png", tiling: 5f);
 
-            EmberTerrainBuilder.BuildRoom(Vector3.zero, 20f, 20f, 4f, floorMat, wallMat);
+            var room = EmberTerrainBuilder.BuildRoom(Vector3.zero, 20f, 20f, 4f, floorMat, wallMat);
+            var roomFloor = EmberScenePlacement.RequireRoomFloor(room);
 
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(1f, 0.75f, 0.5f),
@@ -35,8 +36,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             l.intensity = 1.0f;
             l.color = new Color(1f, 0.8f, 0.5f);
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(roomFloor);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -6f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity);
 
             EmberWorldspaceBuilder.SpawnActor("Bard",      "bard",       new Vector3(-2f, 0f, 1f), domainActorKey: "Sage Nera");
@@ -54,7 +56,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.75f));
             EmberUiBuilder.AttachRuntimeScript(narration.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "SmithingOverworld", "→ Faz 3");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
+            EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(TavernFlavourSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "SmithingOverworld", "→ Smithing Overworld");
         }
     }
 }

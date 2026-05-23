@@ -21,7 +21,8 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 $"{EmberAssetPaths.TilesDir}/brick.png", tiling: 4f);
 
             // Create a small enclosure for the forge area
-            EmberTerrainBuilder.BuildRoom(new Vector3(0, 0, 5), 20f, 15f, 4f, groundMat, wallMat);
+            var room = EmberTerrainBuilder.BuildRoom(new Vector3(0, 0, 5), 20f, 15f, 4f, groundMat, wallMat);
+            var roomFloor = EmberScenePlacement.RequireRoomFloor(room);
             
             // Exterior ground
             EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 50f, groundMat, "Ground");
@@ -31,8 +32,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 intensity: 1.3f,
                 eulerAngles: new Vector3(50f, 45f, 0f));
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(roomFloor);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -6f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity,
                 fov: 70f);
 
@@ -53,7 +55,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 background: new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(jobPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.JobQueuePanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 12f), "ColonyNeeds", "→ Faz 4");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
+            EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(SmithingOverworldSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "ColonyNeeds", "→ Colony Needs");
         }
     }
 }

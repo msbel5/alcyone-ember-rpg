@@ -19,7 +19,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var dirtMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/dirt_path.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 60f, groundMat, "Field");
+            var field = EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 60f, groundMat, "Field");
             
             // Path to harvest shed
             EmberTerrainBuilder.BuildGroundPlane(new Vector3(2f, 0.01f, 0f), 10f, dirtMat, "Path");
@@ -29,8 +29,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 intensity: 1.4f,
                 eulerAngles: new Vector3(60f, 30f, 0f));
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(field);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -8f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity);
 
             var crops = new GameObject("Crops").transform;
@@ -57,7 +58,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(seasonPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "TradeMarket", "→ Faz 6");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(field);
+            EmberScenePlacement.AssertInsideFloorFootprint(field, portalSpawn, nameof(SeasonFarmSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "TradeMarket", "→ Trade Market");
         }
     }
 }

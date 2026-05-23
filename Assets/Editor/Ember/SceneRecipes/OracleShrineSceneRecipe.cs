@@ -21,10 +21,12 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/dark_stone.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 40f, floorMat, "ShrineFloor");
+            var shrineFloor = EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 40f, floorMat, "ShrineFloor");
             
             // Circular boundary wall
             for(int i=0; i<8; i++) {
+                // Keep an east-side gap so the portal is reachable by straight walk from center spawn.
+                if (i == 0) continue;
                 float angle = i * 45f * Mathf.Deg2Rad;
                 Vector3 pos = new Vector3(Mathf.Cos(angle) * 15f, 1.5f, Mathf.Sin(angle) * 15f);
                 EmberTerrainBuilder.BuildWall(pos, new Vector3(10f, 3f, 0.5f), wallMat, $"Boundary_{i}")
@@ -42,8 +44,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 intensity: 1.3f,
                 eulerAngles: new Vector3(70f, 45f, 0f));
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(shrineFloor);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -7f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity);
 
             EmberWorldspaceBuilder.SpawnActor("Oracle", "fairy", new Vector3(0f, 0.5f, 3f), domainActorKey: "Sage Nera");
@@ -58,7 +61,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.7f));
             EmberUiBuilder.AttachRuntimeScript(card.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "ShowroomOverview", "→ Faz 11");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(shrineFloor);
+            EmberScenePlacement.AssertInsideFloorFootprint(shrineFloor, portalSpawn, nameof(OracleShrineSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "ShowroomOverview", "→ Showroom Overview");
         }
     }
 }

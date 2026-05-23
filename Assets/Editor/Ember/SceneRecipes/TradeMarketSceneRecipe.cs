@@ -20,7 +20,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/brick.png", tiling: 5f);
 
-            EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 40f, groundMat, "MarketSquare");
+            var marketSquare = EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 40f, groundMat, "MarketSquare");
             
             // Add some background walls for context
             EmberTerrainBuilder.BuildWall(new Vector3(0, 2, 20), new Vector3(40, 4, 1), wallMat, "NorthBoundary");
@@ -30,8 +30,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 intensity: 1.3f,
                 eulerAngles: new Vector3(50f, 180f, 0f));
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(marketSquare);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -6f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity);
 
             var stalls = new GameObject("Stalls").transform;
@@ -58,7 +59,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(factions.gameObject, "EmberCrpg.Presentation.Ember.UI.FactionPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "CombatDungeon", "→ Faz 7");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(marketSquare);
+            EmberScenePlacement.AssertInsideFloorFootprint(marketSquare, portalSpawn, nameof(TradeMarketSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "CombatDungeon", "→ Combat Dungeon");
         }
     }
 }

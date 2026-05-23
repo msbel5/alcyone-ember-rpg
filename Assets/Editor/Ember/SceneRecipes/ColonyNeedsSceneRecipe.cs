@@ -20,7 +20,8 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/stone_wall.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildRoom(Vector3.zero, 20f, 20f, 3.5f, floorMat, wallMat);
+            var room = EmberTerrainBuilder.BuildRoom(Vector3.zero, 20f, 20f, 3.5f, floorMat, wallMat);
+            var roomFloor = EmberScenePlacement.RequireRoomFloor(room);
 
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(1f, 0.92f, 0.8f),
@@ -36,8 +37,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             l.intensity = 0.8f;
             l.color = new Color(1f, 0.6f, 0.3f);
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(roomFloor);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -5f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity);
 
             var villagers = new GameObject("Villagers").transform;
@@ -58,7 +60,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(needsPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.ColonyNeedsPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "SeasonFarm", "→ Faz 5");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
+            EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(ColonyNeedsSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "SeasonFarm", "→ Season Farm");
         }
     }
 }

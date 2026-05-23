@@ -20,7 +20,8 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/wood_floor.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildRoom(Vector3.zero, 18f, 18f, 3.5f, floorMat, wallMat);
+            var room = EmberTerrainBuilder.BuildRoom(Vector3.zero, 18f, 18f, 3.5f, floorMat, wallMat);
+            var roomFloor = EmberScenePlacement.RequireRoomFloor(room);
 
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(1f, 0.85f, 0.65f),
@@ -35,8 +36,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             l.intensity = 0.7f;
             l.color = new Color(1f, 0.7f, 0.4f);
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(roomFloor);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -5f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity);
 
             EmberWorldspaceBuilder.SpawnActor("Innkeeper", "innkeeper",    new Vector3(0f, 0f, 3f), domainActorKey: "Quartermaster Ivo");
@@ -54,7 +56,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.7f));
             EmberUiBuilder.AttachRuntimeScript(dialog.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 8f), "OracleShrine", "→ Faz 10");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
+            EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(TavernDialogSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "OracleShrine", "→ Oracle Shrine");
         }
     }
 }

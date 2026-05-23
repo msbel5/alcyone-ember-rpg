@@ -20,7 +20,8 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/dark_stone.png", tiling: 4f);
 
-            EmberTerrainBuilder.BuildRoom(Vector3.zero, 25f, 25f, 5f, floorMat, wallMat);
+            var room = EmberTerrainBuilder.BuildRoom(Vector3.zero, 25f, 25f, 5f, floorMat, wallMat);
+            var roomFloor = EmberScenePlacement.RequireRoomFloor(room);
 
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(0.7f, 0.8f, 1f),
@@ -36,8 +37,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             l.intensity = 1.0f;
             l.color = new Color(0.7f, 0.2f, 1f);
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(roomFloor);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -8f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity);
 
             EmberWorldspaceBuilder.SpawnActor("Mage",      "mage",        new Vector3(-1.5f, 0f, 0f), domainActorKey: "Warden");
@@ -54,7 +56,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.55f));
             EmberUiBuilder.AttachRuntimeScript(spellBar.gameObject, "EmberCrpg.Presentation.Ember.UI.SpellBar");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 12f), "TavernDialog", "→ Faz 9");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
+            EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(RitualHallSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "TavernDialog", "→ Tavern Dialog");
         }
     }
 }

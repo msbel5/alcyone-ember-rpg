@@ -19,7 +19,8 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var wallMat = EmberMaterialFactory.GetOrCreateTileMaterial(
                 $"{EmberAssetPaths.TilesDir}/stone_wall.png", tiling: 3f);
 
-            EmberTerrainBuilder.BuildRoom(Vector3.zero, 24f, 24f, 4f, floorMat, wallMat);
+            var room = EmberTerrainBuilder.BuildRoom(Vector3.zero, 24f, 24f, 4f, floorMat, wallMat);
+            var roomFloor = EmberScenePlacement.RequireRoomFloor(room);
 
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(0.7f, 0.65f, 0.6f),
@@ -37,8 +38,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 l.color = new Color(0.4f, 0.6f, 1f);
             }
 
+            var spawnPosition = EmberScenePlacement.ComputePlayerSpawn(roomFloor);
             EmberPlayerRigBuilder.BuildRig(
-                spawnPosition: new Vector3(0f, 0f, -7f),
+                spawnPosition: spawnPosition,
                 spawnRotation: Quaternion.identity,
                 fov: 60f);
 
@@ -55,7 +57,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.55f));
             EmberUiBuilder.AttachRuntimeScript(combatHud.gameObject, "EmberCrpg.Presentation.Ember.UI.CombatHud");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "RitualHall", "→ Faz 8");
+            var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
+            EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(CombatDungeonSceneRecipe));
+            EmberScenePortalBuilder.BuildPortal(portalSpawn, "RitualHall", "→ Ritual Hall");
         }
     }
 }
