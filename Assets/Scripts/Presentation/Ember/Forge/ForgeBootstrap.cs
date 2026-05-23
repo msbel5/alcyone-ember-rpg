@@ -2,7 +2,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using UnityEngine;
+using EmberCrpg.Domain.Forge;
 using EmberCrpg.Simulation.AiDm;
+using EmberCrpg.Simulation.Forge;
 using EmberCrpg.Domain.AiDm;
 
 namespace EmberCrpg.Presentation.Ember.Forge
@@ -15,23 +17,32 @@ namespace EmberCrpg.Presentation.Ember.Forge
         public bool ComfyUiAvailable { get; private set; }
         public bool OllamaAvailable { get; private set; }
         public bool NativeLlmAvailable => _nativeLlm?.IsAvailable ?? false;
-        public bool SentisAvailable => _sentisForge?.IsAvailable() ?? false;
+        public bool OnnxForgeAvailable => _onnxForge?.IsAvailable() ?? false;
 
         private NativeLlmClient _nativeLlm;
-        private SentisAssetForge _sentisForge;
+        private OnnxAssetForge _onnxForge;
+        private IAssetForge _activeForge;
         private CancellationTokenSource _cts;
 
         private void Awake()
         {
             _cts = new CancellationTokenSource();
-            
-            // Initialize clients
+
+            // Initialize clients. Models live under persistentDataPath after the
+            // ModelBootstrap download step. Until ModelBootstrap completes we
+            // operate in placeholder mode — the forge returns deterministic stub
+            // PNGs and the LLM falls back to the HTTP Ollama client.
             var httpLlm = new LocalQwenClient(new LlmClientConfig(LlmProviderKind.LocalQwen, _ollamaUrl, string.Empty, true));
-            var modelDir = Path.Combine(Application.streamingAssetsPath, "Models");
+            var modelDir = ResolveModelDirectory();
             _nativeLlm = new NativeLlmClient(modelDir, httpLlm);
 
             var httpForge = new ComfyUiAssetForge(_comfyUiUrl);
-            _sentisForge = new SentisAssetForge(httpForge);
+            _onnxForge = BuildOnnxForge(modelDir);
+
+            // Primary path is OnnxAssetForge; if it's in placeholder mode the
+            // game still functions, but ComfyUI remains the high-quality
+            // network fallback for dev builds with a running ComfyUI server.
+            _activeForge = _onnxForge.IsAvailable() ? (IAssetForge)_onnxForge : httpForge;
 
             // Register in locator
             var router = new LlmRoutingService(
@@ -39,7 +50,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
                 req => httpLlm.Complete(req),
                 LlmProviderKind.LocalQwen
             );
-            ForgeLocator.Register(_sentisForge, _nativeLlm, router);
+            ForgeLocator.Register(_activeForge, _nativeLlm, router);
 
             _ = DetectAsync(_cts.Token);
         }
@@ -49,8 +60,35 @@ namespace EmberCrpg.Presentation.Ember.Forge
             _cts?.Cancel();
             _cts?.Dispose();
             _nativeLlm?.Dispose();
-            _sentisForge?.Dispose();
+            _onnxForge?.Dispose();
             ForgeLocator.Clear();
+        }
+
+        private string ResolveModelDirectory()
+        {
+            // Bundled models ship under streamingAssetsPath/Models. Downloaded /
+            // user-provided overrides live under persistentDataPath/Models. We
+            // prefer the latter when it exists so the runtime always sees the
+            // freshest copy.
+            var persistent = Path.Combine(Application.persistentDataPath, "Models");
+            if (Directory.Exists(persistent)) return persistent;
+            return Path.Combine(Application.streamingAssetsPath, "Models");
+        }
+
+        private OnnxAssetForge BuildOnnxForge(string modelDir)
+        {
+            // Default to the SDXL-Turbo bundle. ModelBootstrap may rewrite these
+            // paths when it resolves the manifest. We hand four paths in the
+            // order OnnxAssetForge expects: text encoder, U-Net, VAE decoder,
+            // tokenizer JSON.
+            var paths = new[]
+            {
+                Path.Combine(modelDir, "sdxl-turbo", "text_encoder.onnx"),
+                Path.Combine(modelDir, "sdxl-turbo", "unet.onnx"),
+                Path.Combine(modelDir, "sdxl-turbo", "vae_decoder.onnx"),
+                Path.Combine(modelDir, "sdxl-turbo", "tokenizer.json"),
+            };
+            return new OnnxAssetForge(paths, OnnxDiffusionFlavor.SdxlTurbo);
         }
 
         private async Task DetectAsync(CancellationToken cancellationToken)
@@ -58,13 +96,13 @@ namespace EmberCrpg.Presentation.Ember.Forge
             await Task.Run(() =>
             {
                 if (cancellationToken.IsCancellationRequested) return;
-                
+
                 ComfyUiAvailable = new ComfyUiAssetForge(_comfyUiUrl).IsAvailable();
                 OllamaAvailable = new LocalQwenClient(
                     new LlmClientConfig(LlmProviderKind.LocalQwen, _ollamaUrl, string.Empty, true))
                     .IsAvailable();
-                
-                Debug.Log($"Forge Connectivity: ComfyUI={ComfyUiAvailable}, Ollama={OllamaAvailable}, NativeLLM={NativeLlmAvailable}, Sentis={SentisAvailable}");
+
+                Debug.Log($"Forge Connectivity: ComfyUI={ComfyUiAvailable}, Ollama={OllamaAvailable}, NativeLLM={NativeLlmAvailable}, OnnxForge={OnnxForgeAvailable}");
             }, cancellationToken).ConfigureAwait(false);
         }
 

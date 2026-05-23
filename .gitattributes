@@ -10,6 +10,12 @@ Assets/Art/**/*.wav filter=lfs diff=lfs merge=lfs -text
 Assets/Art/**/*.ogg filter=lfs diff=lfs merge=lfs -text
 Assets/Art/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
 
+# AI model files + native DLLs (pure C# ONNX/LLamaSharp backend)
+*.gguf filter=lfs diff=lfs merge=lfs -text
+*.onnx filter=lfs diff=lfs merge=lfs -text
+Assets/Plugins/x86_64/*.dll filter=lfs diff=lfs merge=lfs -text
+Assets/Plugins/x86_64/*.so filter=lfs diff=lfs merge=lfs -text
+Assets/Plugins/x86_64/*.dylib filter=lfs diff=lfs merge=lfs -text
 # Line endings
 *.cs text eol=lf
 *.shader text eol=lf
@@ -23,9 +29,6 @@ Assets/Art/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
 *.md text eol=lf
 *.sln text eol=crlf
 *.csproj text eol=crlf
-*.onnx filter=lfs diff=lfs merge=lfs -text
 *.onnx.data filter=lfs diff=lfs merge=lfs -text
 *.pb filter=lfs diff=lfs merge=lfs -text
-*.gguf filter=lfs diff=lfs merge=lfs -text
-Assets/Plugins/x86_64/*.dll filter=lfs diff=lfs merge=lfs -text
 Assets/Plugins/x86_64/cuda/*.dll filter=lfs diff=lfs merge=lfs -text

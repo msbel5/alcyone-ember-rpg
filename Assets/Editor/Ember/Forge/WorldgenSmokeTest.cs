@@ -51,7 +51,16 @@ namespace EmberCrpg.Editor.Forge
 
             // 2. Initialize Forge
             var cache = new AssetForgeCache(Application.persistentDataPath);
-            IAssetForge forge = new SentisAssetForge(new ComfyUiAssetForge());
+            var modelDir = Path.Combine(Application.streamingAssetsPath, "Models", "sdxl-turbo");
+            var onnxPaths = new[]
+            {
+                Path.Combine(modelDir, "text_encoder.onnx"),
+                Path.Combine(modelDir, "unet.onnx"),
+                Path.Combine(modelDir, "vae_decoder.onnx"),
+                Path.Combine(modelDir, "tokenizer.json"),
+            };
+            IAssetForge forge = new OnnxAssetForge(onnxPaths, OnnxDiffusionFlavor.SdxlTurbo);
+            if (!forge.IsAvailable()) forge = new ComfyUiAssetForge();
 
             var portraits = new List<Texture2D>();
             int count = 0;
