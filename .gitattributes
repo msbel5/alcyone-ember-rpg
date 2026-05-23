@@ -9,11 +9,11 @@ Assets/Art/**/*.fbx filter=lfs diff=lfs merge=lfs -text
 Assets/Art/**/*.wav filter=lfs diff=lfs merge=lfs -text
 Assets/Art/**/*.ogg filter=lfs diff=lfs merge=lfs -text
 Assets/Art/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
-
 # AI model files + native DLLs (pure C# ONNX/LLamaSharp backend)
 *.gguf filter=lfs diff=lfs merge=lfs -text
 *.onnx filter=lfs diff=lfs merge=lfs -text
 Assets/Plugins/x86_64/*.dll filter=lfs diff=lfs merge=lfs -text
+Assets/Plugins/x86_64/cuda/*.dll filter=lfs diff=lfs merge=lfs -text
 Assets/Plugins/x86_64/*.so filter=lfs diff=lfs merge=lfs -text
 Assets/Plugins/x86_64/*.dylib filter=lfs diff=lfs merge=lfs -text
 # Line endings
@@ -31,4 +31,3 @@ Assets/Plugins/x86_64/*.dylib filter=lfs diff=lfs merge=lfs -text
 *.csproj text eol=crlf
 *.onnx.data filter=lfs diff=lfs merge=lfs -text
 *.pb filter=lfs diff=lfs merge=lfs -text
-Assets/Plugins/x86_64/cuda/*.dll filter=lfs diff=lfs merge=lfs -text
