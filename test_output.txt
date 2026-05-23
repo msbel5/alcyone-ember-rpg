@@ -1,0 +1,170 @@
+Run Started
+FAILED: EmberCrpg.Tests.EditMode.Audit.AuditFifthPassCoverageTests.Faz7_AcceptanceStyle_ActorVitalsSurviveSaveLoadWhenAddedToStore
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.Audit.AuditFifthPassCoverageTests.Faz7_AcceptanceStyle_ActorVitalsSurviveSaveLoadWhenAddedToStore () [0x000ac] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Audit\AuditFifthPassCoverageTests.cs:155 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.Audit.AuditFifthPassCoverageTests
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.Audit
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JobAssignmentRoundTripTests.JsonDto_RoundTripsClaimedJobBoardAndActorScheduleState
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.Save.JobAssignmentRoundTripTests.JsonDto_RoundTripsClaimedJobBoardAndActorScheduleState () [0x0012a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Save\JobAssignmentRoundTripTests.cs:60 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JobAssignmentRoundTripTests
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_FreshWorld_StartsWithNoShieldBuffs
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_FreshWorld_StartsWithNoShieldBuffs () [0x00017] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Save\JsonSliceSaveServiceTests.cs:106 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_FreshWorld_StartsWithNoSpellCooldowns
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_FreshWorld_StartsWithNoSpellCooldowns () [0x00017] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Save\JsonSliceSaveServiceTests.cs:94 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_RoundTripsDoorMerchantGuardAndEnemyState
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_RoundTripsDoorMerchantGuardAndEnemyState () [0x0020f] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Save\JsonSliceSaveServiceTests.cs:50 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.PlantSeasonRoundTripTests.JsonDto_RoundTripsSoilAndPlantComponents
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.Save.PlantSeasonRoundTripTests.JsonDto_RoundTripsSoilAndPlantComponents () [0x00066] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Save\PlantSeasonRoundTripTests.cs:31 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.PlantSeasonRoundTripTests
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.RecipeWorksiteRoundTripTests.JsonDto_RoundTripsActiveWorksiteProgressAndProducedStock
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.Save.RecipeWorksiteRoundTripTests.JsonDto_RoundTripsActiveWorksiteProgressAndProducedStock () [0x000ea] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Save\RecipeWorksiteRoundTripTests.cs:47 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.RecipeWorksiteRoundTripTests
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.StoreRoundTripTests.SaveAndLoad_RoundTripsCanonicalStoreRootsAndEventLog
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.Save.StoreRoundTripTests.SaveAndLoad_RoundTripsCanonicalStoreRootsAndEventLog () [0x00105] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Save\StoreRoundTripTests.cs:43 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.Save.StoreRoundTripTests
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.Save
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.World.Faz1AcceptanceReplayTests.Replay_GuardTalkMemoryAndSecondSiteSurviveSaveLoad
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+Stack:   at EmberCrpg.Domain.Worldgen.WorldProfile..ctor (EmberCrpg.Domain.Worldgen.WorldStyle style, EmberCrpg.Domain.Worldgen.WorldGenre genre, System.UInt32 seed, System.Int32 targetPopulation, System.Int32 regionCount, System.Int32 factionCount, System.Int32 historyYears, System.String moodKeyword, System.String playerCallingKeyword, System.String startLocationKeyword) [0x000e8] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Domain\Worldgen\WorldProfile.cs:39 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorldProfile (EmberCrpg.Data.Save.WorldProfileSaveData data) [0x00005] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:664 
+  at EmberCrpg.Data.Save.SliceSaveMapper.ToWorld (EmberCrpg.Data.Save.SliceSaveData data, EmberCrpg.Domain.World.SliceWorldState seedWorld) [0x0023e] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Data\Save\SliceJson\SliceSaveMapper.cs:128 
+  at EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService.LoadFromJson (System.String json) [0x0003a] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Scripts\Presentation\Ember\Save\JsonSliceSaveService.cs:99 
+  at EmberCrpg.Tests.EditMode.World.Faz1AcceptanceReplayTests.Replay_GuardTalkMemoryAndSecondSiteSurviveSaveLoad () [0x00191] in C:\Users\msbel\projects\alcyone-ember-rpg\Assets\Tests\EditMode\World\Faz1AcceptanceReplayTests.cs:52 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+
+FAILED: EmberCrpg.Tests.EditMode.World.Faz1AcceptanceReplayTests
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode.World
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests.EditMode
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg.Tests
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: EmberCrpg
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: C:/Users/msbel/projects/alcyone-ember-rpg/Library/ScriptAssemblies/EmberCrpg.Tests.EditMode.dll
+Message: One or more child tests had errors
+Stack: 
+
+FAILED: ember-crpg-unity
+Message: One or more child tests had errors
+Stack: 
+
+Run Finished. Passed: 1369, Failed: 9

@@ -23,7 +23,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
                 "portrait-cache-hash"));
 
             var data = SliceSaveMapper.ToData(world);
-            var loaded = SliceSaveMapper.ToWorld(data, SliceSaveRehydration.CreateSeedWorld(data.roomSeed));
+            var loaded = SliceSaveMapper.ToWorld(data, SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
 
             Assert.That(loaded.NpcSeeds.Count, Is.EqualTo(1));
             Assert.That(loaded.NpcSeeds[0].Id.Value, Is.EqualTo(7UL));

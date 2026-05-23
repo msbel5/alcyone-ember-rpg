@@ -26,7 +26,7 @@ namespace EmberCrpg.Data.Save
             var schedule = actor.ScheduleState;
             return new ActorSaveData
             {
-                id = actor.Id.Value,
+                id = (long)actor.Id.Value,
                 name = actor.Name,
                 role = (int)actor.Role,
                 positionX = actor.Position.X,
@@ -51,11 +51,11 @@ namespace EmberCrpg.Data.Save
                 askedTopicIds = actor.AskedTopicIds?.ToArray(),
                 jobPreferences = actor.JobPreferences?.Select(p => new ActorJobPreferenceSaveData { kind = (int)p.Kind, priority = p.Priority.Value }).ToArray(),
                 memoryFacts = actor.Memory?.Facts.Select(ToMemoryFactData).ToArray(),
-                currentJobId = schedule.IsIdle ? 0UL : schedule.CurrentJobId.Value,
-                targetSiteId = schedule.IsIdle ? 0UL : schedule.TargetSiteId.Value,
+                currentJobId = (long)(schedule.IsIdle ? 0UL : schedule.CurrentJobId.Value),
+                targetSiteId = (long)(schedule.IsIdle ? 0UL : schedule.TargetSiteId.Value),
                 targetWorksitePositionX = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.X,
                 targetWorksitePositionY = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.Y,
-                // Persist needs and mood as 0-100 ints. hasMood lets the load
+// Persist needs and mood as 0-100 ints. hasMood lets the load
                 // path tell "actor saved at Lowest (Value=0)" apart from
                 // "pre-Faz-4 save without a mood field" (Codex A/P3).
                 hunger = actor.Needs.Hunger.Value,
@@ -71,7 +71,7 @@ namespace EmberCrpg.Data.Save
             if (save == null)
                 return null;
 
-            var id = new ActorId(save.id);
+            var id = new ActorId((ulong)save.id);
             var name = string.IsNullOrEmpty(save.name) ? "restored" : save.name;
             var role = (ActorRole)save.role;
             var stats = new EmberStatBlock(save.mig, save.agi, save.end, save.mnd, save.ins, save.pre);
@@ -112,9 +112,9 @@ namespace EmberCrpg.Data.Save
                 if (fact == null || string.IsNullOrWhiteSpace(fact.topicCode))
                     continue;
                 memory.Add(new MemoryFact(
-                    new ActorId(fact.remembererId == 0UL ? id.Value : fact.remembererId),
+                    new ActorId(fact.remembererId == 0L ? id.Value : (ulong)fact.remembererId),
                     new TopicId(fact.topicCode),
-                    new ActorId(fact.aboutActorId),
+                    new ActorId((ulong)fact.aboutActorId),
                     new GameTime(fact.recordedAtMinutes < 0 ? 0 : fact.recordedAtMinutes),
                     fact.detail));
             }
@@ -132,9 +132,9 @@ namespace EmberCrpg.Data.Save
                 baseDamage: save.baseDamage,
                 topicIds: topicIds,
                 jobPreferences: jobPrefs,
-                scheduleState: (save.currentJobId == 0UL
+                scheduleState: (save.currentJobId == 0L
                     ? default(ActorScheduleState)
-                    : ActorScheduleState.Assigned(new JobId(save.currentJobId), new SiteId(save.targetSiteId), new GridPosition(save.targetWorksitePositionX, save.targetWorksitePositionY))),
+                    : ActorScheduleState.Assigned(new JobId((ulong)save.currentJobId), new SiteId((ulong)save.targetSiteId), new GridPosition(save.targetWorksitePositionX, save.targetWorksitePositionY))),
                 needs: needs,
                 mood: mood,
                 memory: memory);
@@ -148,12 +148,12 @@ namespace EmberCrpg.Data.Save
         {
             return new MemoryFactSaveData
             {
-                remembererId = fact.Rememberer.Value,
+                remembererId = (long)fact.Rememberer.Value,
                 topicCode = fact.Topic.Code,
-                aboutActorId = fact.AboutActor.Value,
+                aboutActorId = (long)fact.AboutActor.Value,
                 recordedAtMinutes = fact.RecordedAt.TotalMinutes,
                 detail = fact.Detail,
             };
         }
-    }
+}
 }

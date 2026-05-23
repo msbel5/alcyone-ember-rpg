@@ -16,7 +16,7 @@ namespace EmberCrpg.Data.Save
         {
             return new ItemSaveData
             {
-                id = item.Id.Value,
+                id = (long)item.Id.Value,
                 templateId = item.TemplateId,
                 displayName = item.DisplayName,
                 quantity = item.Quantity,
@@ -32,7 +32,7 @@ namespace EmberCrpg.Data.Save
             var slot = string.IsNullOrWhiteSpace(item.equipmentSlotCode)
                 ? EquipmentSlot.FromLegacyValue(item.equipmentSlot)
                 : EquipmentSlot.FromCode(item.equipmentSlotCode);
-            return new InventoryItem(new ItemId(item.id), item.templateId, item.displayName, item.quantity, slot, item.accuracyBonus, item.damageBonus);
+            return new InventoryItem(new ItemId((ulong)item.id), item.templateId, item.displayName, item.quantity, slot, item.accuracyBonus, item.damageBonus);
         }
 
         public static PickupSaveData ToData(RoomPickup pickup)

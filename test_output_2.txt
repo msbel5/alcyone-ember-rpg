@@ -1,0 +1,92 @@
+Run Started
+FAILED: EmberCrpg.Tests.EditMode.Audit.AuditFifthPassCoverageTests.Faz7_AcceptanceStyle_ActorVitalsSurviveSaveLoadWhenAddedToStore
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.Audit.AuditFifthPassCoverageTests
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.Audit
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JobAssignmentRoundTripTests.JsonDto_RoundTripsClaimedJobBoardAndActorScheduleState
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JobAssignmentRoundTripTests
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_FreshWorld_StartsWithNoShieldBuffs
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_FreshWorld_StartsWithNoSpellCooldowns
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests.SaveAndLoad_RoundTripsDoorMerchantGuardAndEnemyState
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.Save.JsonSliceSaveServiceTests
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.Save.PlantSeasonRoundTripTests.JsonDto_RoundTripsSoilAndPlantComponents
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.Save.PlantSeasonRoundTripTests
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.Save.RecipeWorksiteRoundTripTests.JsonDto_RoundTripsActiveWorksiteProgressAndProducedStock
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.Save.RecipeWorksiteRoundTripTests
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.Save.StoreRoundTripTests.SaveAndLoad_RoundTripsCanonicalStoreRootsAndEventLog
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.Save.StoreRoundTripTests
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.Save
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.World.Faz1AcceptanceReplayTests.Replay_GuardTalkMemoryAndSecondSiteSurviveSaveLoad
+Message: System.ArgumentOutOfRangeException : Target population must be positive.
+Parameter name: targetPopulation
+Actual value was 0.
+
+FAILED: EmberCrpg.Tests.EditMode.World.Faz1AcceptanceReplayTests
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode.World
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests.EditMode
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg.Tests
+Message: One or more child tests had errors
+
+FAILED: EmberCrpg
+Message: One or more child tests had errors
+
+FAILED: C:/Users/msbel/projects/alcyone-ember-rpg/Library/ScriptAssemblies/EmberCrpg.Tests.EditMode.dll
+Message: One or more child tests had errors
+
+FAILED: ember-crpg-unity
+Message: One or more child tests had errors
+
+Run Finished. Passed: 1369, Failed: 9

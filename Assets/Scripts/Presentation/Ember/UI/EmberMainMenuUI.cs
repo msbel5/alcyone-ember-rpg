@@ -11,21 +11,25 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private void Awake()
         {
-            // Mami playtest fix: buttons were unclickable because the scene
-            // shipped without an EventSystem (Unity needs it for UI input
-            // dispatch) AND cursor stayed locked from any previous gameplay
-            // scene. Both issues now self-heal at menu Awake — no scene
-            // re-authoring required.
+            Debug.Log("[EmberMainMenuUI] Awake called.");
             EnsureEventSystemExists();
             UnlockCursor();
 
-            var newGameBtn = transform.Find("Panel/New Game")?.GetComponent<Button>();
-            if (newGameBtn != null) newGameBtn.onClick.AddListener(NewGame);
+            var newGameBtn = transform.Find("Panel/Buttons/New Game")?.GetComponent<Button>();
+            if (newGameBtn != null) 
+            {
+                Debug.Log("[EmberMainMenuUI] Found New Game button.");
+                newGameBtn.onClick.AddListener(NewGame);
+            }
+            else
+            {
+                Debug.LogWarning("[EmberMainMenuUI] FAILED to find New Game button.");
+            }
 
-            var continueBtn = transform.Find("Panel/Continue")?.GetComponent<Button>();
+            var continueBtn = transform.Find("Panel/Buttons/Continue")?.GetComponent<Button>();
             if (continueBtn != null) continueBtn.onClick.AddListener(Continue);
 
-            var quitBtn = transform.Find("Panel/Quit")?.GetComponent<Button>();
+            var quitBtn = transform.Find("Panel/Buttons/Quit")?.GetComponent<Button>();
             if (quitBtn != null) quitBtn.onClick.AddListener(Quit);
         }
 
@@ -46,14 +50,17 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         public void NewGame()
         {
+            Debug.Log("[EmberMainMenuUI] NewGame invoked.");
             var worldGen = transform.Find("WorldGenUI");
             if (worldGen != null)
             {
+                Debug.Log("[EmberMainMenuUI] Activating WorldGenUI.");
                 worldGen.gameObject.SetActive(true);
                 transform.Find("Panel")?.gameObject.SetActive(false);
             }
             else
             {
+                Debug.LogWarning("[EmberMainMenuUI] WorldGenUI NOT found, loading scene.");
                 SpawnLoadingScreen();
                 SceneManager.LoadScene(_firstSceneName);
             }

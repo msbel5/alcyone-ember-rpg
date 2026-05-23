@@ -25,7 +25,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
                 startLocationKeyword: "capital");
 
             var data = SliceSaveMapper.ToData(world);
-            var loaded = SliceSaveMapper.ToWorld(data, SliceSaveRehydration.CreateSeedWorld(data.roomSeed));
+            var loaded = SliceSaveMapper.ToWorld(data, SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
 
             Assert.That(loaded.WorldProfile, Is.EqualTo(world.WorldProfile));
         }

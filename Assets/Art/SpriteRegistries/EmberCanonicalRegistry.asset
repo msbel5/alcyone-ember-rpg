@@ -109,8 +109,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 9ef1f4ad719c5914dba884fd9666f589, type: 3}
   - Name: antidote
     Sprite: {fileID: 21300000, guid: 3c5a5e5164c74fb4bbcc03a637538ca2, type: 3}
-  - Name: antimagic_shard
-    Sprite: {fileID: 21300000, guid: bd79e632517d2344bad4c1f3cb0f88fa, type: 3}
   - Name: antiseptic_tincture
     Sprite: {fileID: 21300000, guid: 7bfca45572236ff408f27a8164f3171b, type: 3}
   - Name: apple_cider
@@ -153,26 +151,18 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: cc669e0f8979d7443ac0f82ca7762fb9, type: 3}
   - Name: basilisk_scale
     Sprite: {fileID: 21300000, guid: 53d546696fdfdb9489dd7ce3b95e9605, type: 3}
-  - Name: bat_guano
-    Sprite: {fileID: 21300000, guid: 62b19ed82192ace4bb428d66fd468db6, type: 3}
   - Name: battle_ration
     Sprite: {fileID: 21300000, guid: fe9dc03e9f9c7204bac210b86c45954d, type: 3}
   - Name: bear_claw
     Sprite: {fileID: 21300000, guid: 5264c5ea42c85dc42b2b9941ee939a35, type: 3}
   - Name: bear_meat
     Sprite: {fileID: 21300000, guid: 3a54a1d0804323d40bec45d9cc419060, type: 3}
-  - Name: bear_pelt
-    Sprite: {fileID: 21300000, guid: 994355e183cbfd7468197be2b582b8e6, type: 3}
   - Name: beastform_elixir
     Sprite: {fileID: 21300000, guid: 1422452aa02e4de4593c0cc37d312a3e, type: 3}
   - Name: bed
     Sprite: {fileID: 21300000, guid: af62e1766d6c9994d856ebc03bcd09b4, type: 3}
-  - Name: behir_lightning_gland
-    Sprite: {fileID: 21300000, guid: 2530c4272eb04294e9a95bd46a41debd, type: 3}
   - Name: beholder_eye
     Sprite: {fileID: 21300000, guid: a3df05ea156980a49a3de9f6db29a42a, type: 3}
-  - Name: beholder_tooth
-    Sprite: {fileID: 21300000, guid: 54eddf0b2563de3499f91d6bb4acdd98, type: 3}
   - Name: belt
     Sprite: {fileID: 21300000, guid: 9afadb4ad4c172a4e91aef12e5e94f7a, type: 3}
   - Name: belt_of_dwarven_kind
@@ -191,16 +181,12 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 576b7277b7f1a2d489b5c3a8813f799c, type: 3}
   - Name: black_pearl
     Sprite: {fileID: 21300000, guid: 67e79a4c21ba44041977ddf28ad79f1e, type: 3}
-  - Name: blackpowder_bomb
-    Sprite: {fileID: 21300000, guid: f960dc6587f68654ea445d7a130d3bf0, type: 3}
   - Name: blazing_crystal
     Sprite: {fileID: 21300000, guid: fd9ac283054a52946be7a2ca7b7e12ad, type: 3}
   - Name: blazing_longsword
     Sprite: {fileID: 21300000, guid: b13483a528f9d934d9064df146975699, type: 3}
   - Name: blessed_chain_mail
     Sprite: {fileID: 21300000, guid: 9d8ceb8cc8c23064c8b3e01731bb1eae, type: 3}
-  - Name: blink_dog_fur
-    Sprite: {fileID: 21300000, guid: bbba27fda922699469cf4cbb534e1730, type: 3}
   - Name: blood_crystal
     Sprite: {fileID: 21300000, guid: 4e8b040b16fc80145bb1ee4212c197cb, type: 3}
   - Name: blood_ruby_coin
@@ -285,14 +271,10 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: f2efccdd5135b394aad5a2510e80af61, type: 3}
   - Name: central_eye_lens
     Sprite: {fileID: 21300000, guid: 5f3f1042d87290d46b7dae584f4fa1ba, type: 3}
-  - Name: chain_links
-    Sprite: {fileID: 21300000, guid: d5f049cad3c33a2429c4b469e4879133, type: 3}
   - Name: chain_mail
     Sprite: {fileID: 21300000, guid: 8f52593b402f0d042b726824291273ec, type: 3}
   - Name: chain_shirt
     Sprite: {fileID: 21300000, guid: c5adeb97fede69c4cb71de0cb0fb0fea, type: 3}
-  - Name: chainmail_leggings
-    Sprite: {fileID: 21300000, guid: fc9e644b8ebfecf448b2b53e65d89504, type: 3}
   - Name: chair
     Sprite: {fileID: 21300000, guid: 9d6abc750783fed42b7e1dbf2f8b88ce, type: 3}
   - Name: chamomile
@@ -303,8 +285,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 852637ade1c861b48afb670f2a65d807, type: 3}
   - Name: charcoal_powder
     Sprite: {fileID: 21300000, guid: e9687152f22f19445a01ee59f0accc01, type: 3}
-  - Name: cheese_wheel
-    Sprite: {fileID: 21300000, guid: 9306e57df02bfc74399cf4fd01cb0ddc, type: 3}
   - Name: chimera_horn
     Sprite: {fileID: 21300000, guid: 152e99a782a38154899708dc4ff917a8, type: 3}
   - Name: circlet_of_blasting
@@ -313,10 +293,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 09fdebe40fd912345988954ee98421ac, type: 3}
   - Name: circlet_of_intellect
     Sprite: {fileID: 21300000, guid: ce085b944cccf074691ff38e631f1be5, type: 3}
-  - Name: circlet_of_telepathy
-    Sprite: {fileID: 21300000, guid: ae7dab0117aadc8428eddbb6caafe5fe, type: 3}
-  - Name: clay_brick
-    Sprite: {fileID: 21300000, guid: 44885ba217c449848804bfcb22b1f7f0, type: 3}
   - Name: climbing_pitons
     Sprite: {fileID: 21300000, guid: 690fc92fbe18a4d4dbee672fdca096d7, type: 3}
   - Name: cloak_of_arachnida
@@ -371,10 +347,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 02819afc16793f147b4e0cf485239fbd, type: 3}
   - Name: crown_of_the_conqueror
     Sprite: {fileID: 21300000, guid: d68041800d5da6743a2bf27a09587ef7, type: 3}
-  - Name: crown_treasury_note
-    Sprite: {fileID: 21300000, guid: c006958bf8eb4f24690fd43d6eb45433, type: 3}
-  - Name: crude_armor_shard
-    Sprite: {fileID: 21300000, guid: 93a494e0682a2d544b469fb4118c71a9, type: 3}
   - Name: crude_dagger
     Sprite: {fileID: 21300000, guid: 0c7e7df0d64b83a4c8f58ec661022641, type: 3}
   - Name: crystal_orb_of_scrying
@@ -399,22 +371,14 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 4567299aa6c69b944bd1f930055f5875, type: 3}
   - Name: dark_iron_coin
     Sprite: {fileID: 21300000, guid: e9eeadf9e727ac940ac4945c3a732244, type: 3}
-  - Name: date_cake
-    Sprite: {fileID: 21300000, guid: d6aa0dd7d3bc7b34f941264763861b6b, type: 3}
   - Name: death_dog_fang
     Sprite: {fileID: 21300000, guid: 33ebfe36742c45240b37f9054a590d51, type: 3}
   - Name: decanter_of_endless_water
     Sprite: {fileID: 21300000, guid: 22a92f2520710da408e788c75e773dc7, type: 3}
   - Name: deep_current_gem
     Sprite: {fileID: 21300000, guid: dbcbd4dc94f2e6d498080ef45d8400fd, type: 3}
-  - Name: demon_heart
-    Sprite: {fileID: 21300000, guid: 3794038b18c5d114da0b842b4e461c16, type: 3}
   - Name: demon_hide_armor
     Sprite: {fileID: 21300000, guid: 92d79c1491e192740a2333b4bed6cf9b, type: 3}
-  - Name: demon_ichor
-    Sprite: {fileID: 21300000, guid: bbbffb9f3b9317644a58598b4cad40e9, type: 3}
-  - Name: demon_lord_horn
-    Sprite: {fileID: 21300000, guid: c7f0ae88587302a41a13421764d56202, type: 3}
   - Name: diamond
     Sprite: {fileID: 21300000, guid: f4e060254dbefc84585899e239ab6da6, type: 3}
   - Name: diplomatic_treaty
@@ -443,14 +407,10 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: bce40fa88567912419ec4b85c39e0132, type: 3}
   - Name: dragon_pepper_stew
     Sprite: {fileID: 21300000, guid: 4b087f7f92590674c8e90bab8fb0fd55, type: 3}
-  - Name: dragon_scale
-    Sprite: {fileID: 21300000, guid: aa9f13036ab3aa54e9c802caeefa3227, type: 3}
   - Name: dragon_scale_coin
     Sprite: {fileID: 21300000, guid: 4e18ff775f7597947888e80626e71e3b, type: 3}
   - Name: dragon_slayer_contract
     Sprite: {fileID: 21300000, guid: 7b8348e5d990fd844a9e805e52f15be0, type: 3}
-  - Name: dragon_tooth
-    Sprite: {fileID: 21300000, guid: 91b353332ae87744eb95ea31f1498786, type: 3}
   - Name: dragonbone_dice
     Sprite: {fileID: 21300000, guid: e3c309d3b0bc01348ac0aa820003f1ee, type: 3}
   - Name: dragonborn_heritage_token
@@ -465,8 +425,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 9ddffe914d17cd9409c7f49a22936ee7, type: 3}
   - Name: dried_fruit
     Sprite: {fileID: 21300000, guid: 6c8472e2785801042a924787a29ab5bd, type: 3}
-  - Name: dried_meat
-    Sprite: {fileID: 21300000, guid: ebdcc02fe1660f84fa7091927daf4754, type: 3}
   - Name: drow_poison
     Sprite: {fileID: 21300000, guid: 223d5225e0e8a1149a952eb3d8348d9d, type: 3}
   - Name: dwarven_ale
@@ -477,8 +435,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 033944f591dc57a4289c56dc33725277, type: 3}
   - Name: earth_essence
     Sprite: {fileID: 21300000, guid: 97e71481590f91e4bad2f620ef17fb47, type: 3}
-  - Name: ectoplasm
-    Sprite: {fileID: 21300000, guid: 8b02e922d4bbe894f8fed72896cba01a, type: 3}
   - Name: egg
     Sprite: {fileID: 21300000, guid: ff256d6fd60dba3499ded0f79aa3cd63, type: 3}
   - Name: elder_brain_fragment
@@ -547,8 +503,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 0af08a1f31225e348bbeb924774fec6a, type: 3}
   - Name: ethereal_essence
     Sprite: {fileID: 21300000, guid: 21f4930bd00eecd4abb3ede5ee2674b3, type: 3}
-  - Name: ettercap_web
-    Sprite: {fileID: 21300000, guid: 48c66b9db43f76f4aa1c01fba2c71221, type: 3}
   - Name: eye_stalk_fragment
     Sprite: {fileID: 21300000, guid: afabd9dbd58da624384430c52e523b02, type: 3}
   - Name: eyes_of_the_eagle
@@ -563,8 +517,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 215d81f8e571bba42954ae9d441a0ad8, type: 3}
   - Name: fever_tea
     Sprite: {fileID: 21300000, guid: c5d0257c81806f04fb08f2e0cb6565e9, type: 3}
-  - Name: fey_dust
-    Sprite: {fileID: 21300000, guid: c14cd279062734e4ea42f6a17f9627d6, type: 3}
   - Name: fey_glamour_coin
     Sprite: {fileID: 21300000, guid: fb34fa812c280104195a0e03476204ce, type: 3}
   - Name: feywild_invitation
@@ -573,8 +525,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 1f9481d761072d043bb117a3b9759cdc, type: 3}
   - Name: fire_bomb
     Sprite: {fileID: 21300000, guid: 45b642450545a304ea9d62ed9961fc42, type: 3}
-  - Name: fire_dragon_blood
-    Sprite: {fileID: 21300000, guid: a81db8eeb9509d9448a9bdaaa792da60, type: 3}
   - Name: fire_essence
     Sprite: {fileID: 21300000, guid: 6a6e66d59b4959e42916c40efdab69a5, type: 3}
   - Name: fire_opal
@@ -591,8 +541,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: c0ab8b686a33dab4196efaa047e62ea5, type: 3}
   - Name: flour
     Sprite: {fileID: 21300000, guid: b0dc245ead366dc4d8625db450ecfdb1, type: 3}
-  - Name: flux
-    Sprite: {fileID: 21300000, guid: 71b543ae42046c64da1b61dd3850623a, type: 3}
   - Name: focus_incense
     Sprite: {fileID: 21300000, guid: cae5202b1dc48404e9ddc2de4ae05836, type: 3}
   - Name: forceblade_greatsword
@@ -603,8 +551,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: e14dcda1a3f39da46bf6222c16085779, type: 3}
   - Name: frost_bomb
     Sprite: {fileID: 21300000, guid: d7e5d125bc610c64291655952b9dd767, type: 3}
-  - Name: frost_giant_axe
-    Sprite: {fileID: 21300000, guid: 045e8c87133445840bead027fd52568a, type: 3}
   - Name: frost_ward_armor
     Sprite: {fileID: 21300000, guid: 475fdf5b56fe44e48a67c3da2275b7d8, type: 3}
   - Name: frostbite_battleaxe
@@ -613,8 +559,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 5e8e52ddfe883e248af1a23d53e9d7cf, type: 3}
   - Name: frozen_greataxe
     Sprite: {fileID: 21300000, guid: 0b4eecf6f910f8d4ea4fdd858ab28f8a, type: 3}
-  - Name: frozen_trophy
-    Sprite: {fileID: 21300000, guid: 0ff03728d7d163c44bd06fce35d52888, type: 3}
   - Name: fruit
     Sprite: {fileID: 21300000, guid: 6a6811bd8e15363428761acfb878eb5a, type: 3}
   - Name: full_plate_armor
@@ -645,44 +589,24 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 43f6827942513844f98fe2b7f3a69ecb, type: 3}
   - Name: giant_frost_rune
     Sprite: {fileID: 21300000, guid: 78fe0c86055113e4a9344634745cda4f, type: 3}
-  - Name: giant_gold_ring
-    Sprite: {fileID: 21300000, guid: 997e82bf29cd5184ebcf171b3ce1c9b7, type: 3}
-  - Name: giant_heart
-    Sprite: {fileID: 21300000, guid: ac868f262704d9b4480ee1d89b824269, type: 3}
-  - Name: giant_rune_stone
-    Sprite: {fileID: 21300000, guid: 93e5c4d07a1dc4b428eb9565727bd6cb, type: 3}
   - Name: giants_ration
     Sprite: {fileID: 21300000, guid: 40e098d4fc8505e45b2c03695c1f46ad, type: 3}
   - Name: giants_tonic
     Sprite: {fileID: 21300000, guid: 99cdfdf123aeaed468b2250a54ff7feb, type: 3}
   - Name: glacial_plate_armor
     Sprite: {fileID: 21300000, guid: a76612aee6695cd4db5c0ff082123bce, type: 3}
-  - Name: glacial_shard
-    Sprite: {fileID: 21300000, guid: cdde9631427c8bb489d171a12fd4fca3, type: 3}
   - Name: gladiator_armor
     Sprite: {fileID: 21300000, guid: 5c2ad1914fae9044ba189a797f286b45, type: 3}
   - Name: glass_bead_necklace
     Sprite: {fileID: 21300000, guid: c241e58ed80e54246b47d1e731badc9d, type: 3}
-  - Name: glass_vial
-    Sprite: {fileID: 21300000, guid: a8565f6af4ebefe4aaadc175aeaec728, type: 3}
   - Name: glassblower_tools
     Sprite: {fileID: 21300000, guid: dcfc499ecebfed64fa6d205918b6eacf, type: 3}
-  - Name: gloves
-    Sprite: {fileID: 21300000, guid: fb83612c9eaad3f4f8d4d0c19d302478, type: 3}
   - Name: gloves_of_missile_snaring
     Sprite: {fileID: 21300000, guid: 87429a5023ebbf14eb24869b886b882a, type: 3}
   - Name: gloves_of_thievery
     Sprite: {fileID: 21300000, guid: c3e10d4df2cb68c48ab29231f3ea5c53, type: 3}
-  - Name: goblin_crown
-    Sprite: {fileID: 21300000, guid: 02ab3517aa5df8849a769193ac90e71b, type: 3}
-  - Name: goblin_ear
-    Sprite: {fileID: 21300000, guid: dff4c977b4092d04d96b8b1e47034eb6, type: 3}
-  - Name: goblin_trade_token
-    Sprite: {fileID: 21300000, guid: 6703947dd02f18b49b69fa359133ea3f, type: 3}
   - Name: goggles_of_minute_seeing
     Sprite: {fileID: 21300000, guid: 07f8c7b1c8624a34a9b79c628f66d5fe, type: 3}
-  - Name: goggles_of_night
-    Sprite: {fileID: 21300000, guid: 8da91ba258986664c82efa79a9d0e9bf, type: 3}
   - Name: goggles_of_revealing
     Sprite: {fileID: 21300000, guid: 9983985ac5b44a94fb8f1fad03e9f8ab, type: 3}
   - Name: gold_coin
@@ -697,16 +621,10 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 06d6877aead73c64698ff2d38e1024b9, type: 3}
   - Name: golem_clay
     Sprite: {fileID: 21300000, guid: a167169f92efce64095d3bf6b79b2417, type: 3}
-  - Name: gorgon_eye
-    Sprite: {fileID: 21300000, guid: 0848f859908ffc647a4849c40df7c5df, type: 3}
-  - Name: grain
-    Sprite: {fileID: 21300000, guid: def62958654b6c544808430019050ddc, type: 3}
   - Name: granite_core
     Sprite: {fileID: 21300000, guid: baa7e7dc7f1363b448608607b7af438e, type: 3}
   - Name: granite_rune
     Sprite: {fileID: 21300000, guid: d47fb4e358766164685a540cec2c5328, type: 3}
-  - Name: grappling_hook
-    Sprite: {fileID: 21300000, guid: 6c89ea5e57ecac449a27b6009a9d3038, type: 3}
   - Name: greataxe
     Sprite: {fileID: 21300000, guid: f3069f5880b6be141a6f06c8548cfd3e, type: 3}
   - Name: greatclub
@@ -719,24 +637,16 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 0e8bd6d708331f44ba3cbdd7cca08bd5, type: 3}
   - Name: grick_beak
     Sprite: {fileID: 21300000, guid: a52f80a6a1f9e9c4d9b7aee4a7d54040, type: 3}
-  - Name: griffon_feather
-    Sprite: {fileID: 21300000, guid: 6da05f1c7306a2c489e90b48ddf2bf3f, type: 3}
   - Name: grizzly_fang
     Sprite: {fileID: 21300000, guid: 323ee37674d02e74091575c02fc2e583, type: 3}
-  - Name: grizzly_pelt
-    Sprite: {fileID: 21300000, guid: 079001c2fc7c6364298c6902788eb162, type: 3}
   - Name: guardian_plate
     Sprite: {fileID: 21300000, guid: 1e87062c4e9ec364fa90afd6229eae46, type: 3}
   - Name: guild_charter
     Sprite: {fileID: 21300000, guid: 5ccd30cb3f5227748bf5960f4809298d, type: 3}
-  - Name: guild_scrip
-    Sprite: {fileID: 21300000, guid: 35b5719bc8040454a8965926541b89e1, type: 3}
   - Name: half_plate_armor
     Sprite: {fileID: 21300000, guid: b0888874deb654149bde473c5ebdba52, type: 3}
   - Name: handaxe
     Sprite: {fileID: 21300000, guid: 794631fbf65da7c42b7eb2939c62dae8, type: 3}
-  - Name: hardtack
-    Sprite: {fileID: 21300000, guid: d4106760859674541adad500b24a0a4d, type: 3}
   - Name: harpy_feather
     Sprite: {fileID: 21300000, guid: 30a81535a1faa0846aac3f85211031b3, type: 3}
   - Name: hat_of_disguise
@@ -773,22 +683,16 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: c8571876a8440be438a68e28098b3589, type: 3}
   - Name: herbalism_kit
     Sprite: {fileID: 21300000, guid: 23c860aa689486c4aa01645ad19581a9, type: 3}
-  - Name: hide
-    Sprite: {fileID: 21300000, guid: 02d440d7de145194aa4abb9991a9c74f, type: 3}
   - Name: hide_armor
     Sprite: {fileID: 21300000, guid: a3591b382a2528d4eaa5d70a22bd45c4, type: 3}
   - Name: holy_bomb
     Sprite: {fileID: 21300000, guid: 054e3631c72e59848822edc1c61d13f3, type: 3}
   - Name: holy_water
     Sprite: {fileID: 21300000, guid: ff9d9f3a9e54dcb4aa0667173fe3617a, type: 3}
-  - Name: honey
-    Sprite: {fileID: 21300000, guid: f2d98a758b89e7349beeeda1b43dec60, type: 3}
   - Name: honey_cake
     Sprite: {fileID: 21300000, guid: 48512ab67f8e9de42bcb9b03cf4f752f, type: 3}
   - Name: hook_horror_claw
     Sprite: {fileID: 21300000, guid: c8b53812cc917004098a79acd35fb157, type: 3}
-  - Name: horseshoe
-    Sprite: {fileID: 21300000, guid: 54267620c4dea90489fe57c8a7850dcf, type: 3}
   - Name: hunter_s_trap
     Sprite: {fileID: 21300000, guid: 4e94168e18a764a48a38d9ae22f01c0e, type: 3}
   - Name: hunting_knife
@@ -801,8 +705,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: db2df5af52f42214789e85d12eb7f45e, type: 3}
   - Name: immovable_rod
     Sprite: {fileID: 21300000, guid: e20d5ccb849795646980df3bb9f92f27, type: 3}
-  - Name: imp_wing
-    Sprite: {fileID: 21300000, guid: 3e622d176ea9e3c43a4bcad02b74cb33, type: 3}
   - Name: infected_blood
     Sprite: {fileID: 21300000, guid: 05d58d2c75f64394abafa1f0d6e1185e, type: 3}
   - Name: infernal_contract
@@ -813,8 +715,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 892c9685604301c4caead0358adac802, type: 3}
   - Name: iron_arrowhead
     Sprite: {fileID: 21300000, guid: 9c19fa3a4312c9e4a93512d069f87822, type: 3}
-  - Name: iron_bar
-    Sprite: {fileID: 21300000, guid: 4b4b02c0366842644b5b116d37f76fe8, type: 3}
   - Name: iron_battleaxe
     Sprite: {fileID: 21300000, guid: 77cc9ac2b17f0c44596e8e2afa3fe030, type: 3}
   - Name: iron_buckler
@@ -831,8 +731,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: c9feac1da6beedb4da0afd1a4b0305d7, type: 3}
   - Name: iron_gut_tonic
     Sprite: {fileID: 21300000, guid: 9800814c0e5965546b693fd2deb5a7cf, type: 3}
-  - Name: iron_halberd
-    Sprite: {fileID: 21300000, guid: c165b541192a17e48ae2a27993d000d3, type: 3}
   - Name: iron_helm
     Sprite: {fileID: 21300000, guid: 4bc61e8eaa6729b4f967bab2ab641767, type: 3}
   - Name: iron_helmet
@@ -845,8 +743,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: e5a76781850789845a9a6ade3c0c3bc7, type: 3}
   - Name: iron_maul
     Sprite: {fileID: 21300000, guid: 11a89e04ace34e44681bdacde917a45e, type: 3}
-  - Name: iron_nail
-    Sprite: {fileID: 21300000, guid: f465141bbdd29094ca8e520ab06a6476, type: 3}
   - Name: iron_ore
     Sprite: {fileID: 21300000, guid: 70fe1ffc3415bcb4e9cdc19a9475217d, type: 3}
   - Name: iron_plate
@@ -873,16 +769,12 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: cae2c68af8f4184409695968b5a1aa56, type: 3}
   - Name: jackalwere_pelt
     Sprite: {fileID: 21300000, guid: e6148ba057962364289fa07dc72a8419, type: 3}
-  - Name: jade_stone
-    Sprite: {fileID: 21300000, guid: 2802ae1e3eeb6554a9f581ea47060acd, type: 3}
   - Name: jeweled_crown
     Sprite: {fileID: 21300000, guid: 8276e5f50c8debd438dbdb221c4cd1b6, type: 3}
   - Name: jeweled_goblet
     Sprite: {fileID: 21300000, guid: d7c7d3ab9f4e1d24a92768ff1574935b, type: 3}
   - Name: jeweler_tools
     Sprite: {fileID: 21300000, guid: aba92691091998042b7f95e712ea9bba, type: 3}
-  - Name: kenku_feather
-    Sprite: {fileID: 21300000, guid: faefa7913e4162e4ca72d3ff8a74a585, type: 3}
   - Name: keystone_fragment_north
     Sprite: {fileID: 21300000, guid: 3078c0f53ae52b7459caeb867ab0abe5, type: 3}
   - Name: keystone_fragment_south
@@ -901,8 +793,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 723dee1b341fc5749b2a9afb08019052, type: 3}
   - Name: lead_ingot
     Sprite: {fileID: 21300000, guid: e73a76f1849734044a4a7e9b283e007d, type: 3}
-  - Name: leather
-    Sprite: {fileID: 21300000, guid: 50326e4f2dfcaaf49b5a15895d37c8b9, type: 3}
   - Name: leather_armor
     Sprite: {fileID: 21300000, guid: bd9fc619c5f84e240bb15dd024e54f8c, type: 3}
   - Name: leather_helmet
@@ -917,8 +807,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: b439637c9c037f84293e01f942a50ebf, type: 3}
   - Name: lich_crown
     Sprite: {fileID: 21300000, guid: 9021faf3cebc04747b99d581b9b62294, type: 3}
-  - Name: lich_dust
-    Sprite: {fileID: 21300000, guid: 81a1a3092fd3f2b45854fe9a20c04ea0, type: 3}
   - Name: lich_finger_bone
     Sprite: {fileID: 21300000, guid: 747db60aa799c2c4493d3ca564293ba0, type: 3}
   - Name: lich_phylactery_map
@@ -931,10 +819,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 704475ed9b555f2468c6120d2747f40f, type: 3}
   - Name: lightning_javelin
     Sprite: {fileID: 21300000, guid: a5bbe3665f8a3c24abd3983c55c15101, type: 3}
-  - Name: linen_cloth
-    Sprite: {fileID: 21300000, guid: c4cc024621e17cb46beb208920f6e2d8, type: 3}
-  - Name: living_armor
-    Sprite: {fileID: 21300000, guid: 01fd2d340055bfc4986efbd59178d501, type: 3}
   - Name: lockpick
     Sprite: {fileID: 21300000, guid: 30b2b5c2af6dc154193e8358cc1100cf, type: 3}
   - Name: lockpick_set
@@ -955,8 +839,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 4d71c199e5abc864a80ebb1d4590a8cd, type: 3}
   - Name: mana_potion
     Sprite: {fileID: 21300000, guid: 7b24141c1328cd945a69b7f61ab1d0df, type: 3}
-  - Name: mandrake_root
-    Sprite: {fileID: 21300000, guid: 4f79390b465fccb4782708ccb00f0b96, type: 3}
   - Name: manticore_spike
     Sprite: {fileID: 21300000, guid: 27ae5e5181a36f543a7a47d0663d6378, type: 3}
   - Name: mantle_of_spell_resistance
@@ -969,32 +851,20 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: ca0362e3a7c3b5d4890c65d1ab32c8fb, type: 3}
   - Name: mead
     Sprite: {fileID: 21300000, guid: 8aabb0fe04ce5b54a8d88fe5e75eb8e9, type: 3}
-  - Name: meat
-    Sprite: {fileID: 21300000, guid: 223832401d2197947a02deca91d78a9f, type: 3}
-  - Name: medallion_of_thoughts
-    Sprite: {fileID: 21300000, guid: 936d827f46350bd4aacbfbb1466d6e10, type: 3}
   - Name: medicinal_broth
     Sprite: {fileID: 21300000, guid: 1ed50fa517947b64088ba5e816f9eca9, type: 3}
-  - Name: medusa_scale
-    Sprite: {fileID: 21300000, guid: d51afb0a0f794ad4a9b560fd2d5b78e9, type: 3}
-  - Name: merchant_seal_coin
-    Sprite: {fileID: 21300000, guid: 92359ff5ab9ba0c4fbbf4f59f7512a5b, type: 3}
   - Name: merchants_letter_of_credit
     Sprite: {fileID: 21300000, guid: 198b3dddb8c6f794291bfdd6123fc678, type: 3}
   - Name: mimic_adhesive
     Sprite: {fileID: 21300000, guid: 025955bf20f959745affd841b1f72811, type: 3}
   - Name: mind_flayer_brain
     Sprite: {fileID: 21300000, guid: facc0db15f7e250499c7edb50ed06392, type: 3}
-  - Name: mind_flayer_tentacle
-    Sprite: {fileID: 21300000, guid: 980092b4cb7e4f34d9342e48219e5b59, type: 3}
   - Name: minotaur_musk
     Sprite: {fileID: 21300000, guid: ddf4b257d3de1094895341501750bcd7, type: 3}
   - Name: mithral_battleaxe
     Sprite: {fileID: 21300000, guid: 1ef407ca73322e448807a965a6124092, type: 3}
   - Name: mithral_buckler
     Sprite: {fileID: 21300000, guid: f290ea90cb0d9e0409fd1331bd7029c8, type: 3}
-  - Name: mithral_chain_shirt
-    Sprite: {fileID: 21300000, guid: ad78a679b6b68cb45b2909fae4248e16, type: 3}
   - Name: mithral_coin
     Sprite: {fileID: 21300000, guid: 842fb4c67519793488b267eb107f85fc, type: 3}
   - Name: mithral_dagger
@@ -1015,22 +885,16 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: dc37082f44986ac41a534027fd5a3cfa, type: 3}
   - Name: mithral_ore
     Sprite: {fileID: 21300000, guid: 66ae52df8cdc2134ea68e55de22855a1, type: 3}
-  - Name: mithral_rapier
-    Sprite: {fileID: 21300000, guid: de316aa7ff8fe3e41be95677f198f0f7, type: 3}
   - Name: mithral_round_shield
     Sprite: {fileID: 21300000, guid: b10d1f1808dc1dd4dbb78fb0ec0cf4cb, type: 3}
   - Name: mithral_warhammer
     Sprite: {fileID: 21300000, guid: 91683c2c75e035949a9e3465c04784a5, type: 3}
   - Name: moonberry_wine
     Sprite: {fileID: 21300000, guid: 92db658ca066fec43832d60f10bb246a, type: 3}
-  - Name: moonflower
-    Sprite: {fileID: 21300000, guid: e916806ba2826db4bab40f040c3b2f4c, type: 3}
   - Name: moonlight_dust
     Sprite: {fileID: 21300000, guid: 965571300e2f8b04bab770a5c164a582, type: 3}
   - Name: moonpetal
     Sprite: {fileID: 21300000, guid: 3ae735aa4221b61439399b807d3a0823, type: 3}
-  - Name: moonstone_dust
-    Sprite: {fileID: 21300000, guid: fec905e9633bd044382b8ceaf1b3ce89, type: 3}
   - Name: moonweave_robe
     Sprite: {fileID: 21300000, guid: 3fb0ee98ec849bb4b9dba8d738caa895, type: 3}
   - Name: mummy_wrapping
@@ -1067,12 +931,8 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: d3ecf38190979a345bf33d7d739a3e31, type: 3}
   - Name: northern_fur_armor
     Sprite: {fileID: 21300000, guid: a792a4dbeaab504499ab3137fdf4a68d, type: 3}
-  - Name: obsidian_dagger
-    Sprite: {fileID: 21300000, guid: 6707449848e4c984e80e8d87d0396901, type: 3}
   - Name: obsidian_orb
     Sprite: {fileID: 21300000, guid: d2b0db14e4b4fc54fbe8a55a46cc3aa3, type: 3}
-  - Name: ogre_moss
-    Sprite: {fileID: 21300000, guid: 792ec9e1d0a14eb41bd810753834c7b5, type: 3}
   - Name: ogre_skin_belt
     Sprite: {fileID: 21300000, guid: 66f0d1f41255181499b9044f5f220c2d, type: 3}
   - Name: ogre_tooth
@@ -1081,8 +941,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 7d782dcadcd615448b0f5105aa44aaef, type: 3}
   - Name: oil_of_acid_resistance
     Sprite: {fileID: 21300000, guid: e29625f515b20f442a275d1db1960ff4, type: 3}
-  - Name: oil_of_etherealness
-    Sprite: {fileID: 21300000, guid: b36afb8078a9902438655b97fd0c1abe, type: 3}
   - Name: oil_of_flame
     Sprite: {fileID: 21300000, guid: 9bb397a0fb90b4e4ea0e43f1a1c42913, type: 3}
   - Name: oil_of_frost
@@ -1099,12 +957,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 34af2593d9f01f2418d864970039c766, type: 3}
   - Name: onyx_gem
     Sprite: {fileID: 21300000, guid: 4604e0a88f1b5df41ad4e8dd37b21379, type: 3}
-  - Name: ooze_residue
-    Sprite: {fileID: 21300000, guid: 501754aedc43aae4eaeb7fa55bfcf1e5, type: 3}
-  - Name: orc_tusk
-    Sprite: {fileID: 21300000, guid: 3495f02eb8c30f94686ba824a9cede05, type: 3}
-  - Name: orc_war_token
-    Sprite: {fileID: 21300000, guid: 68743e2246c70444bad887e35b513df8, type: 3}
   - Name: orc_warbanner
     Sprite: {fileID: 21300000, guid: adb96075e262b9241b32b1060723f694, type: 3}
   - Name: ornate_mirror
@@ -1171,8 +1023,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 8759fa0a7ee06cc4ea1798cc3e014c46, type: 3}
   - Name: platinum_ring
     Sprite: {fileID: 21300000, guid: 19aabcae64f90014382dd7901e49e879, type: 3}
-  - Name: poison_antitoxin
-    Sprite: {fileID: 21300000, guid: ba9ded0a249afb64aad8b189521e27ac, type: 3}
   - Name: poison_vial
     Sprite: {fileID: 21300000, guid: cc7486eaa698ab64eb5bd134cbabb37e, type: 3}
   - Name: poisoner_kit
@@ -1187,8 +1037,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: c5c08c79e5e255940860e10c0f740712, type: 3}
   - Name: potion_of_cold_resistance
     Sprite: {fileID: 21300000, guid: 63444664587e20b45ad788e0c031e01b, type: 3}
-  - Name: potion_of_darkvision
-    Sprite: {fileID: 21300000, guid: 01e6be1d55302d849bb2e8c568fe9f96, type: 3}
   - Name: potion_of_diminution
     Sprite: {fileID: 21300000, guid: adccbc3907eec114e88817d19efaa865, type: 3}
   - Name: potion_of_endurance
@@ -1199,8 +1047,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 29dab33569e06c84f9507c67004839b0, type: 3}
   - Name: potion_of_fire_resistance
     Sprite: {fileID: 21300000, guid: f4aaa9ec119cf9545b19169c7fa4caa7, type: 3}
-  - Name: potion_of_flying
-    Sprite: {fileID: 21300000, guid: 71b9d4f627b571045aab30001c71e2bc, type: 3}
   - Name: potion_of_force_resist
     Sprite: {fileID: 21300000, guid: da30850f7c77da44abac82c5687b54a7, type: 3}
   - Name: potion_of_gaseous_form
@@ -1233,8 +1079,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 7712cfea632c28749afd0dd94ebfa0c9, type: 3}
   - Name: potion_of_radiant_resist
     Sprite: {fileID: 21300000, guid: 287141b5fcbb11445a20f18d13d5aa71, type: 3}
-  - Name: potion_of_regeneration
-    Sprite: {fileID: 21300000, guid: 9770e030642738143980231a776a5211, type: 3}
   - Name: potion_of_resistance
     Sprite: {fileID: 21300000, guid: 01bc27505250eba4dbac67a531864c3b, type: 3}
   - Name: potion_of_spider_climb
@@ -1245,8 +1089,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 17fd55010baf2474b8196dfa5757c43a, type: 3}
   - Name: potion_of_superior_healing
     Sprite: {fileID: 21300000, guid: 8b80ea38fdfd437469ed95ec0960c662, type: 3}
-  - Name: potion_of_tongues
-    Sprite: {fileID: 21300000, guid: ee6ab6f7081797244b9480f20beeecb7, type: 3}
   - Name: potion_of_true_seeing
     Sprite: {fileID: 21300000, guid: 67b3f2bdcaa54e84f8d1226cfd810b39, type: 3}
   - Name: potion_of_vitality
@@ -1255,16 +1097,12 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: ff750bb8e10c4f04cac481d0e7ff7b1c, type: 3}
   - Name: power_word_scroll
     Sprite: {fileID: 21300000, guid: 074660b870faa1e49a4f8e13216318c7, type: 3}
-  - Name: primordial_ember
-    Sprite: {fileID: 21300000, guid: f663001c3930cb44283e26f1be90b407, type: 3}
   - Name: prisoners_journal
     Sprite: {fileID: 21300000, guid: 48c2199502865764eb7cf3f1228e99e5, type: 3}
   - Name: prophecy_scroll
     Sprite: {fileID: 21300000, guid: 9ec21c07135c17543bdead8ea4664049, type: 3}
   - Name: psionic_crystal
     Sprite: {fileID: 21300000, guid: 9140ee7eb3ccd5b4e9db0918e45fc987, type: 3}
-  - Name: quaggoth_fungus
-    Sprite: {fileID: 21300000, guid: 506e3ac0038f176479873bba78234d3e, type: 3}
   - Name: quarterstaff
     Sprite: {fileID: 21300000, guid: 45f8a77f721f65e4caeea6e488185e96, type: 3}
   - Name: quartz_crystal
@@ -1275,26 +1113,18 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: d1a4878dbf2fc2e4abda1ad7daa5e4e5, type: 3}
   - Name: radiant_mithral_longsword
     Sprite: {fileID: 21300000, guid: f5f0b2f8a8efafc4d8a1082780abac8d, type: 3}
-  - Name: raw_fish
-    Sprite: {fileID: 21300000, guid: 9abb4e33a951215459ad55d49d7f95c8, type: 3}
   - Name: rebellion_banner
     Sprite: {fileID: 21300000, guid: e1a7d9307e416a44da5fa78dea64711a, type: 3}
-  - Name: regeneration_gland
-    Sprite: {fileID: 21300000, guid: ac92c3a4fca3a7d42b02c79f2c0ecdfc, type: 3}
   - Name: reinforced_leather_armor
     Sprite: {fileID: 21300000, guid: ef46685f80dce4c4280ffdaeaf4332d4, type: 3}
   - Name: relic_of_the_dawn
     Sprite: {fileID: 21300000, guid: 82cda350ec8e713468bd3481dc78c65a, type: 3}
-  - Name: remorhaz_plate
-    Sprite: {fileID: 21300000, guid: 1b52419ceb56e344d85d4cb5493fd0b7, type: 3}
   - Name: resistance_potion
     Sprite: {fileID: 21300000, guid: 4a31429f4662e594588114f54d8c6870, type: 3}
   - Name: restorative_stew
     Sprite: {fileID: 21300000, guid: 11608ec0d8a84e14a90c2dd0a75aa713, type: 3}
   - Name: ring_mail
     Sprite: {fileID: 21300000, guid: 721e02229f3dffb4ba0cb562bd9f2377, type: 3}
-  - Name: ring_of_agility
-    Sprite: {fileID: 21300000, guid: 33cd85e465881574489efae125c66469, type: 3}
   - Name: ring_of_cold_resistance
     Sprite: {fileID: 21300000, guid: eeb105cb6cd080c4b956a8e59ca7ae94, type: 3}
   - Name: ring_of_endurance
@@ -1305,8 +1135,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 7809601eb63798a45bf9310ee4bbb094, type: 3}
   - Name: ring_of_free_action
     Sprite: {fileID: 21300000, guid: 17f3b8f7ff1decc4e8da0e4c2382e2b2, type: 3}
-  - Name: ring_of_invisibility
-    Sprite: {fileID: 21300000, guid: 1a7c196ffca45a449813cd2313ab7c5a, type: 3}
   - Name: ring_of_protection
     Sprite: {fileID: 21300000, guid: 77d9a66d61a7c7e4ba704821bfd38d07, type: 3}
   - Name: ring_of_regeneration
@@ -1333,8 +1161,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: e7652b04b6e89ca48bb5fcf5d7753fe3, type: 3}
   - Name: rotting_flesh
     Sprite: {fileID: 21300000, guid: 3a6e384cdf4ae4740b3c58b059743aef, type: 3}
-  - Name: royal_scepter
-    Sprite: {fileID: 21300000, guid: 12e9b5335477dbe44b3c0f69e1b43127, type: 3}
   - Name: royal_seal_letter
     Sprite: {fileID: 21300000, guid: 516f932a75d3e964aa0cbb214a77b729, type: 3}
   - Name: ruby
@@ -1397,8 +1223,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: d41a1da1a092f3e49a2e8cecbdcf5e70, type: 3}
   - Name: scroll_of_lightning_bolt
     Sprite: {fileID: 21300000, guid: 531b57d2f50011a428afbffcf07d3496, type: 3}
-  - Name: scroll_of_mastery
-    Sprite: {fileID: 21300000, guid: a825e9bf30888da449e5aa7c0c54fe06, type: 3}
   - Name: scroll_of_meteor_swarm
     Sprite: {fileID: 21300000, guid: 33e4e6b98f7d0924b977cf7e1960a20f, type: 3}
   - Name: scroll_of_power_word_kill
@@ -1427,8 +1251,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 116fff38836391e40a4673ddde830073, type: 3}
   - Name: sentinel_armor
     Sprite: {fileID: 21300000, guid: 231822e5fe8b9474fab5a3215d348e9f, type: 3}
-  - Name: serpent_crown
-    Sprite: {fileID: 21300000, guid: 0c6f61b418642414a8497328f4f06f98, type: 3}
   - Name: serpent_venom
     Sprite: {fileID: 21300000, guid: 36a3665bba1d16745b59de0b0677f1c0, type: 3}
   - Name: serpents_kiss_bow
@@ -1463,8 +1285,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 0f19bd357bf5c154f82e169574bebea2, type: 3}
   - Name: silver_candelabra
     Sprite: {fileID: 21300000, guid: ccb112e0015eda048a7c056080dfce3c, type: 3}
-  - Name: silver_chalice
-    Sprite: {fileID: 21300000, guid: 34919be2280a228448677cd984bef8e6, type: 3}
   - Name: silver_cloud_gem
     Sprite: {fileID: 21300000, guid: a3201b071d394694fa53e43b6d857f03, type: 3}
   - Name: silver_coin
@@ -1499,28 +1319,18 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 920d9d39fc0889742823bc8b0401d36d, type: 3}
   - Name: soul_gem_filled
     Sprite: {fileID: 21300000, guid: 4851d98c58719244980ed1a3c9b0b474, type: 3}
-  - Name: spectator_eye_stalk
-    Sprite: {fileID: 21300000, guid: 83bf980137761314a9791ced06872881, type: 3}
   - Name: speed_potion
     Sprite: {fileID: 21300000, guid: 19eb7d2eca32bb7458075cd336071f15, type: 3}
   - Name: spellbook_ancient
     Sprite: {fileID: 21300000, guid: 57b5b8a67fd88d244b26738256c59739, type: 3}
-  - Name: spellbook_archmage
-    Sprite: {fileID: 21300000, guid: 5802b2f3abcf8c648ac4d3b106803af5, type: 3}
-  - Name: spiced_wine
-    Sprite: {fileID: 21300000, guid: b6c1cbfbd8e32b14080b3dc4228bf810, type: 3}
   - Name: spider_eye
     Sprite: {fileID: 21300000, guid: 24d2cc10f81d50a44aea0914184f3749, type: 3}
-  - Name: spider_silk
-    Sprite: {fileID: 21300000, guid: f083815c88193aa468d6e59eb28696ca, type: 3}
   - Name: spider_silk_robe
     Sprite: {fileID: 21300000, guid: 9c7f3ea93ecf38f41bffa5cee94cc052, type: 3}
   - Name: spiked_gauntlets
     Sprite: {fileID: 21300000, guid: 9aad5a5f71f26854f90791ff740793e2, type: 3}
   - Name: splint_brace
     Sprite: {fileID: 21300000, guid: 4f8d082c66ca13f4a85d1728cda8a5a9, type: 3}
-  - Name: spring_water
-    Sprite: {fileID: 21300000, guid: b379f41e6a28ebe42875a32b9f0b4db9, type: 3}
   - Name: spyglass
     Sprite: {fileID: 21300000, guid: 1833b28d8a6b8444a96865b075da0e29, type: 3}
   - Name: staff
@@ -1529,8 +1339,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 1e32809fcec325d4f8feed9340bc69ce, type: 3}
   - Name: staff_of_frost
     Sprite: {fileID: 21300000, guid: ccfece5fa5d772244bc4fccb948e8c9d, type: 3}
-  - Name: staff_of_lightning
-    Sprite: {fileID: 21300000, guid: c0678d7d95fbb7e449db51ef13cb1ccc, type: 3}
   - Name: staff_of_the_archmage
     Sprite: {fileID: 21300000, guid: f07c197bb9741ea4fb18f5140abb9383, type: 3}
   - Name: stamina_draught
@@ -1539,8 +1347,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: d05d860a62f4597439abd6b30fe5f5d1, type: 3}
   - Name: starfall_blade
     Sprite: {fileID: 21300000, guid: 8e28c29e273a3e7489478e0af0abd790, type: 3}
-  - Name: steel_bar
-    Sprite: {fileID: 21300000, guid: bad162bf7f7ef294bb3b12e27c5a811d, type: 3}
   - Name: steel_battleaxe
     Sprite: {fileID: 21300000, guid: 5659becabd0e84f49aa2d5b004353129, type: 3}
   - Name: steel_buckler
@@ -1591,8 +1397,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: b1c968c9cee452c4985f854090945eb5, type: 3}
   - Name: stone_shard
     Sprite: {fileID: 21300000, guid: 2d649bd037829a74db26ba40e3f0b3a5, type: 3}
-  - Name: stonecap
-    Sprite: {fileID: 21300000, guid: 43f6abf258a1c434a968e1b15906d991, type: 3}
   - Name: storm_arrow_bow
     Sprite: {fileID: 21300000, guid: 9060bdc00d924ab48b5edd1ccca46741, type: 3}
   - Name: storm_crystal
@@ -1619,8 +1423,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: beee95d3753a4524f9fd17121aacdb02, type: 3}
   - Name: tanning_agent
     Sprite: {fileID: 21300000, guid: 84c91f4681380444ab8fb34f769a2179, type: 3}
-  - Name: tempest_shard
-    Sprite: {fileID: 21300000, guid: f748c7b7b88d8ca4fa273a3bc2a6c4b5, type: 3}
   - Name: temple_offering_coin
     Sprite: {fileID: 21300000, guid: 80c2412e9ea47794c8717632c41c9f6d, type: 3}
   - Name: tentacle_whip
@@ -1635,8 +1437,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: d2fcbc77e3dbd3446b12da6ac12a7c82, type: 3}
   - Name: thunderguard_armor
     Sprite: {fileID: 21300000, guid: 443af27f0cb6e4049aea1cb8dbfb9d5e, type: 3}
-  - Name: thunderstone
-    Sprite: {fileID: 21300000, guid: 8015abaeff97fb4428d1a70cfae0f992, type: 3}
   - Name: thunderstrike_mace
     Sprite: {fileID: 21300000, guid: 90d3c63be6940484f94c3148eec7b040, type: 3}
   - Name: tidal_crystal
@@ -1655,12 +1455,8 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 89e441089628f1b4fa6c4aba981449d6, type: 3}
   - Name: torch
     Sprite: {fileID: 21300000, guid: f402476d420c3924c90e0464e268d57c, type: 3}
-  - Name: torn_cloth
-    Sprite: {fileID: 21300000, guid: 5aa723efb5d6fdd4f8fa178a56e516dc, type: 3}
   - Name: tower_shield
     Sprite: {fileID: 21300000, guid: 83a863eb9ae03664dbb977b70c48669a, type: 3}
-  - Name: trade_bar_gold
-    Sprite: {fileID: 21300000, guid: 00eb5665007d5524b9adf9946f84dbd4, type: 3}
   - Name: trade_bar_silver
     Sprite: {fileID: 21300000, guid: 603f54f70050e6f4fabadeb54708bba3, type: 3}
   - Name: trail_rations
@@ -1669,8 +1465,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: ef70fa5c51a51e947a1a5f9b84afdf19, type: 3}
   - Name: traveler_s_cloak
     Sprite: {fileID: 21300000, guid: afbd8b711381c0147850b47eec5bc2bc, type: 3}
-  - Name: travelers_biscuit
-    Sprite: {fileID: 21300000, guid: 5c47e128d3121c54ba57a27438a54cd8, type: 3}
   - Name: treant_bark
     Sprite: {fileID: 21300000, guid: 4a7d3f28ad399df438cc1b3275f05921, type: 3}
   - Name: troll_blood
@@ -1683,8 +1477,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 597efae6211fbed4da8af776ea3b8b4b, type: 3}
   - Name: turquoise_gem
     Sprite: {fileID: 21300000, guid: 1c23313ddee690640a4bf3972b0c7e1f, type: 3}
-  - Name: tyrants_fang_sword
-    Sprite: {fileID: 21300000, guid: 4c1d20de0ddade349aed6c70c79b504c, type: 3}
   - Name: umber_hulk_mandible
     Sprite: {fileID: 21300000, guid: 820f05e09c0b9b04da5815e0b1a69528, type: 3}
   - Name: undead_essence
@@ -1693,8 +1485,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: d435cf412ab6013439dedd1d2bd37d31, type: 3}
   - Name: undying_essence
     Sprite: {fileID: 21300000, guid: 9fd12cba4efbb7c429f42f115a890941, type: 3}
-  - Name: universal_antidote
-    Sprite: {fileID: 21300000, guid: a7c7dff594c73044085f5ff3277a69ba, type: 3}
   - Name: vampire_cloak
     Sprite: {fileID: 21300000, guid: af65570339a273b4db239c8da9b2b67b, type: 3}
   - Name: vampire_fang
@@ -1705,8 +1495,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 041e819ddc6915d4aa3725da78e55c25, type: 3}
   - Name: vault_key
     Sprite: {fileID: 21300000, guid: 4a7525a242628214c98bb82512f0669f, type: 3}
-  - Name: vegetable
-    Sprite: {fileID: 21300000, guid: 1cb0987c035c53b49ac10394c64c7750, type: 3}
   - Name: venom_extract
     Sprite: {fileID: 21300000, guid: 64c795d254a05c94791a14f8dae62ab2, type: 3}
   - Name: venom_sac
@@ -1755,14 +1543,8 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 25b0af94c204a0a47bb41763c4ddf946, type: 3}
   - Name: winged_boots
     Sprite: {fileID: 21300000, guid: 83a0c5c9590d89d49b9510b4cb63ea4b, type: 3}
-  - Name: winter_wolf_pelt
-    Sprite: {fileID: 21300000, guid: 9c3eb434dc7d9ca40aab55240606b7d0, type: 3}
   - Name: witchs_brew
     Sprite: {fileID: 21300000, guid: a2703b502d5b5aa49866353064eaed4f, type: 3}
-  - Name: wolf_heart
-    Sprite: {fileID: 21300000, guid: 188e0496823de4c448dd8415ff811ef1, type: 3}
-  - Name: wolf_pelt
-    Sprite: {fileID: 21300000, guid: e010ac9384dcbc14486aac19a949345c, type: 3}
   - Name: wolfsbane
     Sprite: {fileID: 21300000, guid: 2228c604023ed6347b876a75ba50e1c9, type: 3}
   - Name: wood_plank
@@ -1791,10 +1573,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: d8194535b8615db4199d7dac47b24f08, type: 3}
   - Name: wyvern_poison
     Sprite: {fileID: 21300000, guid: 8a26df7c1dce8fe45857bc35d94eb74f, type: 3}
-  - Name: wyvern_stinger
-    Sprite: {fileID: 21300000, guid: dc7d7cab4284aeb49bb5d55adf217748, type: 3}
-  - Name: yeast
-    Sprite: {fileID: 21300000, guid: 8fc03fa85f66e394aa62e4fa4a2cad38, type: 3}
   - Name: young_dragon_heart
     Sprite: {fileID: 21300000, guid: e46513ec09959c84c84fe7e8165f0bfa, type: 3}
   - Name: yuan_ti_scale
@@ -1897,12 +1675,12 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 4621b1c49ff0cc6428cc13bbf6e118a7, type: 3}
   - Name: turn_undead
     Sprite: {fileID: 21300000, guid: e1c1aebda588f9b48993ce4a51443034, type: 3}
-  - Name: bandit
-    Sprite: {fileID: 21300000, guid: 3e1bdf718457a5b4ba383cf539e3286b, type: 3}
+  - Name: bandit_fixed
+    Sprite: {fileID: 21300000, guid: 331fa81573196c5428702a3121017f24, type: 3}
   - Name: bard
     Sprite: {fileID: 21300000, guid: b36c6e8a685625949ad23e885cd388d3, type: 3}
-  - Name: beggar
-    Sprite: {fileID: 21300000, guid: 51d13f322f0ad5b4089fc988ed64442c, type: 3}
+  - Name: beggar_fixed
+    Sprite: {fileID: 21300000, guid: da73eb9b9b77cd948bf7156bdc841f79, type: 3}
   - Name: blacksmith
     Sprite: {fileID: 21300000, guid: 9ace1ffbd18b35449ad89df28e249953, type: 3}
   - Name: dragon
@@ -1911,10 +1689,8 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: b1c861f6d295f424abb1d0a1c9038ef3, type: 3}
   - Name: ghost
     Sprite: {fileID: 21300000, guid: 84c49344968aaac479c44ab0d6842a18, type: 3}
-  - Name: goblin
-    Sprite: {fileID: 21300000, guid: df17d0280ba1d844585330ea0f8b76bd, type: 3}
-  - Name: guard
-    Sprite: {fileID: 21300000, guid: 9b12bbef0435bc942a7674d2c42bb5e5, type: 3}
+  - Name: goblin_fixed
+    Sprite: {fileID: 21300000, guid: 11f5a4e9458e19949b755abb4b00bd1b, type: 3}
   - Name: healer
     Sprite: {fileID: 21300000, guid: e2015fa67877bb44b9b4f7e7a6c1436f, type: 3}
   - Name: innkeeper
@@ -1925,8 +1701,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: f7795e10870c8b843b16f5aa0925eb1e, type: 3}
   - Name: merchant
     Sprite: {fileID: 21300000, guid: 07082e1f758e44a4c9f40e526dbd69bc, type: 3}
-  - Name: mimic
-    Sprite: {fileID: 21300000, guid: 76f6329f864376145823138b3d79dd09, type: 3}
   - Name: necromancer
     Sprite: {fileID: 21300000, guid: 7f4d00f9d726ecc47938f6f29dc034cf, type: 3}
   - Name: orc
@@ -1935,8 +1709,6 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 7ec3db3a7d35f7f4288d844a24181334, type: 3}
   - Name: quest_giver
     Sprite: {fileID: 21300000, guid: 66642c0a2209dc648b5324961fcbc9e8, type: 3}
-  - Name: rat
-    Sprite: {fileID: 21300000, guid: 64e66f36d2a716e499c2e8060de0caec, type: 3}
   - Name: rogue
     Sprite: {fileID: 21300000, guid: 1302f1ca0da1ac3489b9cb5613cceb0d, type: 3}
   - Name: sage
@@ -1949,117 +1721,7 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 629e6d83b96abcc4482387f49650b539, type: 3}
   - Name: thief
     Sprite: {fileID: 21300000, guid: 26c574e692f5d9b48a0bb3b19fc022fe, type: 3}
-  - Name: troll
-    Sprite: {fileID: 21300000, guid: 3e50cbbe93d1fa74a89c4edbe69b73ee, type: 3}
   - Name: warrior
     Sprite: {fileID: 21300000, guid: b09180634f47e904e90cffd98941e43f, type: 3}
   - Name: witch
     Sprite: {fileID: 21300000, guid: 34854aaf10a6b2c4fbf1ed6195cfa495, type: 3}
-  - Name: wolf
-    Sprite: {fileID: 21300000, guid: 262088c5b7124264c9c80b884cb8b605, type: 3}
-  - Name: zombie
-    Sprite: {fileID: 21300000, guid: 00d1e94bee880a34f8dd54283085d9cc, type: 3}
-  - Name: dwarf_warrior_female
-    Sprite: {fileID: 21300000, guid: 9246a3adc2e55324990bc984a4c04eaf, type: 3}
-  - Name: dwarf_warrior_male
-    Sprite: {fileID: 21300000, guid: c8fad82c59db89a4f9c71bf95f33e9e6, type: 3}
-  - Name: elf_ranger_female
-    Sprite: {fileID: 21300000, guid: 8b922f0be079da44a9d9b46b428d9228, type: 3}
-  - Name: elf_ranger_male
-    Sprite: {fileID: 21300000, guid: e1c22916596025944857fe983bdb453c, type: 3}
-  - Name: halfling_rogue_female
-    Sprite: {fileID: 21300000, guid: 5321aaeff9bcc394f8093bc511a2b473, type: 3}
-  - Name: halfling_rogue_male
-    Sprite: {fileID: 21300000, guid: 0820e27f89e6f2a4daaa8e636c04a243, type: 3}
-  - Name: human_cleric_female
-    Sprite: {fileID: 21300000, guid: dc5bbd0ec48808d419c59906a37050d5, type: 3}
-  - Name: human_cleric_male
-    Sprite: {fileID: 21300000, guid: 3ac933296d43abc418ce11a060600f64, type: 3}
-  - Name: human_fighter_female
-    Sprite: {fileID: 21300000, guid: 5e556669bb6064d4fa1e5fa2aa16b689, type: 3}
-  - Name: human_fighter_male
-    Sprite: {fileID: 21300000, guid: ed9b956370adc814db8a555ec1c5045a, type: 3}
-  - Name: human_mage_female
-    Sprite: {fileID: 21300000, guid: 26bbb40a9c4416d4d8345c6d8b87c0eb, type: 3}
-  - Name: human_mage_male
-    Sprite: {fileID: 21300000, guid: 0e939428fa037ee4c8bea795ecb8b294, type: 3}
-  - Name: human_rogue_female
-    Sprite: {fileID: 21300000, guid: ac5c791dbce9fa8479a831188deb6211, type: 3}
-  - Name: human_rogue_male
-    Sprite: {fileID: 21300000, guid: 2838dfbbaca94b5439ef935bb9d8ef28, type: 3}
-  - Name: npc_bandit_leader
-    Sprite: {fileID: 21300000, guid: f3af516f3cf93fc42bdddfe1bfb53e76, type: 3}
-  - Name: npc_blacksmith
-    Sprite: {fileID: 21300000, guid: 01aac24c34d24c842a633a8077c0ec76, type: 3}
-  - Name: npc_elder
-    Sprite: {fileID: 21300000, guid: 303f77b209350ad41b321c7b3b3dd82d, type: 3}
-  - Name: npc_guard
-    Sprite: {fileID: 21300000, guid: 552915635c64de94ca398c12c25bc840, type: 3}
-  - Name: npc_innkeeper
-    Sprite: {fileID: 21300000, guid: e7fe78775a1bb3742b8c33609b9f49fb, type: 3}
-  - Name: npc_merchant
-    Sprite: {fileID: 21300000, guid: 28502292361aa424fa209e33ee9fdf04, type: 3}
-  - Name: npc_priest
-    Sprite: {fileID: 21300000, guid: 4b47f399ac7f32542afa232112d4a2aa, type: 3}
-  - Name: npc_stranger
-    Sprite: {fileID: 21300000, guid: 1bb78cd6700a7ed429b7f7eaec838c50, type: 3}
-  - Name: bleeding
-    Sprite: {fileID: 21300000, guid: fc958acbacb2f3e41b62865d8e81de8b, type: 3}
-  - Name: bless
-    Sprite: {fileID: 21300000, guid: 0dd839396b190184caf02ee39c67bc4d, type: 3}
-  - Name: blinded
-    Sprite: {fileID: 21300000, guid: 9b0e113f5ee53d5448c337034c3d79dc, type: 3}
-  - Name: burning
-    Sprite: {fileID: 21300000, guid: fccba07665704e94a996f742bcf2eae8, type: 3}
-  - Name: charmed
-    Sprite: {fileID: 21300000, guid: 98ca5914b990f7f4e8dafddcc34b47c2, type: 3}
-  - Name: concentrating
-    Sprite: {fileID: 21300000, guid: 69b5c4ff6cdaaa142b8e4c59aac1c196, type: 3}
-  - Name: cursed
-    Sprite: {fileID: 21300000, guid: 36c82b1afab21134e9de99078522e7e1, type: 3}
-  - Name: diseased
-    Sprite: {fileID: 21300000, guid: 8c8fcc506bb3b0a4c93dd34ba600ceef, type: 3}
-  - Name: exhausted
-    Sprite: {fileID: 21300000, guid: 96a8d72176ac9ce4f96957ed07904aaa, type: 3}
-  - Name: feared
-    Sprite: {fileID: 21300000, guid: f3f9d0e57c3d87a44badf7de7a4bdceb, type: 3}
-  - Name: frozen
-    Sprite: {fileID: 21300000, guid: 57302c66792396b4a98dac08c1d12761, type: 3}
-  - Name: haste
-    Sprite: {fileID: 21300000, guid: cee7ec4e5799e0b43867159517518163, type: 3}
-  - Name: heroism
-    Sprite: {fileID: 21300000, guid: e49ae3b5131fbb047bde0bae27109dad, type: 3}
-  - Name: hidden
-    Sprite: {fileID: 21300000, guid: 9b2b4e6183f3d8b448c04862df82c07c, type: 3}
-  - Name: mage_armor_buff
-    Sprite: {fileID: 21300000, guid: 5b001cd3cfbaceb4b9cfb58af8a84ea9, type: 3}
-  - Name: poisoned
-    Sprite: {fileID: 21300000, guid: 295ee055730a2fb449520a19fe3fcfd7, type: 3}
-  - Name: prone
-    Sprite: {fileID: 21300000, guid: d73d9660a4f53654da74d3893fa5cf18, type: 3}
-  - Name: rallied
-    Sprite: {fileID: 21300000, guid: 63eba8ef3a0e132438fabdd422a3964e, type: 3}
-  - Name: regeneration
-    Sprite: {fileID: 21300000, guid: f85e79d81af45574193f0c8376daeb27, type: 3}
-  - Name: resting
-    Sprite: {fileID: 21300000, guid: 53ff9fcebbc60bf4ab500f0307836ca5, type: 3}
-  - Name: shield_of_faith
-    Sprite: {fileID: 21300000, guid: bb7d7bbfd647dae4ba615c7a573e5ee3, type: 3}
-  - Name: shocked
-    Sprite: {fileID: 21300000, guid: ae2824b0ba4d42d4bab706c26a892859, type: 3}
-  - Name: silenced
-    Sprite: {fileID: 21300000, guid: 9f221f4353553bc4395b2e192ade72d3, type: 3}
-  - Name: slowed
-    Sprite: {fileID: 21300000, guid: 0f4d9c194c3c43c44a77fc837aa2be30, type: 3}
-  - Name: stoneskin
-    Sprite: {fileID: 21300000, guid: cdf55905cb4e19849a286b91232dc9c5, type: 3}
-  - Name: stunned
-    Sprite: {fileID: 21300000, guid: 912470913556c24428d7e6fff7cf1612, type: 3}
-  - Name: tracking
-    Sprite: {fileID: 21300000, guid: 473337be2e9c42649a56da491d416843, type: 3}
-  - Name: true_sight
-    Sprite: {fileID: 21300000, guid: 98cc385b9b72272428d7f40586966b10, type: 3}
-  - Name: weakened
-    Sprite: {fileID: 21300000, guid: 41b93f06d04b6844887d7fd9b107e4ad, type: 3}
-  - Name: well_fed
-    Sprite: {fileID: 21300000, guid: 4c248d9b81122ed4aa7cc5bb8a287925, type: 3}

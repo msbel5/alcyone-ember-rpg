@@ -1,0 +1,38 @@
+{
+    "asset": "11f5a4e9458e19949b755abb4b00bd1b",
+    "fileName": "019e530c-326d-7974-843a-f1b77a90bfb8.png",
+    "prompt": "menacing green-skinned goblin warrior, muscular build, wearing dark leather loincloth and suspenders, yellow glowing eyes, single character centered, standing pose, front view, no floating weapons, isolated on transparent background, high fantasy dark RPG style, painterly digital art, matches existing goblin style, no background",
+    "negativePrompt": "",
+    "model": "gemini-3.1-flash",
+    "modelName": "Gemini 3.1 Nano Banana 2",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelatePixelGridSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": [
+            {
+                "doodleReferenceType": 7,
+                "doodle": [],
+                "label": "Image",
+                "strength": 0.25,
+                "invertStrength": false,
+                "assetReferenceGuid": "df17d0280ba1d844585330ea0f8b76bd",
+                "unlabeledIndex": -1
+            }
+        ]
+    },
+    "upscaleFactor": 0,
+    "dimensions": {
+        "width": 1024,
+        "height": 1024
+    },
+    "spriteSheet": false,
+    "duration": 0.0
+}
