@@ -11,7 +11,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class ColonyNeedsSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz4ColonyNeeds";
+        public string SceneName => "ColonyNeeds";
 
         public void Build()
         {
@@ -58,7 +58,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(needsPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.ColonyNeedsPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "Faz5SeasonFarm", "→ Faz 5");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "SeasonFarm", "→ Faz 5");
         }
     }
 }

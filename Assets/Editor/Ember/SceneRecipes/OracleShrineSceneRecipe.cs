@@ -12,7 +12,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class OracleShrineSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz10OracleShrine";
+        public string SceneName => "OracleShrine";
 
         public void Build()
         {
@@ -58,7 +58,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.7f));
             EmberUiBuilder.AttachRuntimeScript(card.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "Faz11ShowroomOverview", "→ Faz 11");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "ShowroomOverview", "→ Faz 11");
         }
     }
 }

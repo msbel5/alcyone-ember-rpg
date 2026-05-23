@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.UI.CharacterCreationUI
   _font: {fileID: 0}
-  _firstSceneName: Faz3SmithingOverworld
+  _firstSceneName: SmithingOverworld
 --- !u!4 &420919629
 Transform:
   m_ObjectHideFlags: 0

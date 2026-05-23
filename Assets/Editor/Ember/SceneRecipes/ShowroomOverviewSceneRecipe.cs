@@ -12,7 +12,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class ShowroomOverviewSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz11ShowroomOverview";
+        public string SceneName => "ShowroomOverview";
 
         public void Build()
         {
@@ -87,7 +87,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.55f));
             EmberUiBuilder.AttachRuntimeScript(spellBar.gameObject, "EmberCrpg.Presentation.Ember.UI.SpellBar");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "Faz12TavernFlavour", "→ Faz 12");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "TavernFlavour", "→ Faz 12");
 }
     }
 }

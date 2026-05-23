@@ -11,7 +11,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class TradeMarketSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz6TradeMarket";
+        public string SceneName => "TradeMarket";
 
         public void Build()
         {
@@ -58,7 +58,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(factions.gameObject, "EmberCrpg.Presentation.Ember.UI.FactionPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "Faz7CombatDungeon", "→ Faz 7");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 10f), "CombatDungeon", "→ Faz 7");
         }
     }
 }

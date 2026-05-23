@@ -1484,7 +1484,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05cec7af361994f42a0dba30c5fb866f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.UI.EmberMainMenuUI
-  _firstSceneName: Faz3SmithingOverworld
+  _firstSceneName: SmithingOverworld
 --- !u!114 &1832605985
 MonoBehaviour:
   m_ObjectHideFlags: 0

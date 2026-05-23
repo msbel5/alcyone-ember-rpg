@@ -10,7 +10,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class SeasonFarmSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz5SeasonFarm";
+        public string SceneName => "SeasonFarm";
 
         public void Build()
         {
@@ -57,7 +57,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(seasonPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "Faz6TradeMarket", "→ Faz 6");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "TradeMarket", "→ Faz 6");
         }
     }
 }

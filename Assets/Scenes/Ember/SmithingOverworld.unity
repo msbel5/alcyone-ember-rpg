@@ -2432,7 +2432,7 @@ GameObject:
   - component: {fileID: 1615772153}
   - component: {fileID: 1615772152}
   m_Layer: 0
-  m_Name: Portal_to_Faz4ColonyNeeds
+  m_Name: Portal_to_ColonyNeeds
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2450,7 +2450,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97a4d1e584756e34f8cd7c5028e7c83b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Interaction.EmberScenePortal
-  _targetSceneName: Faz4ColonyNeeds
+  _targetSceneName: ColonyNeeds
 --- !u!23 &1615772153
 MeshRenderer:
   m_ObjectHideFlags: 0

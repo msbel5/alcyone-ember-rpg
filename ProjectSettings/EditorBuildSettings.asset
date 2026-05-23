@@ -12,34 +12,34 @@ EditorBuildSettings:
     path: Assets/Scenes/Ember/CharacterCreation.unity
     guid: bea151148587b664e93f3c57ee45598d
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz10OracleShrine.unity
+    path: Assets/Scenes/Ember/OracleShrine.unity
     guid: 7f158263783ded04db12051cf52370b5
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz11ShowroomOverview.unity
+    path: Assets/Scenes/Ember/ShowroomOverview.unity
     guid: 0a3fc057da189134bb6ce1182640b104
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz12TavernFlavour.unity
+    path: Assets/Scenes/Ember/TavernFlavour.unity
     guid: 76666ec3e61e6e440941c26e4496fc81
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz3SmithingOverworld.unity
+    path: Assets/Scenes/Ember/SmithingOverworld.unity
     guid: ba941c4cc7e59564ab17d752e8bb9ea9
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz4ColonyNeeds.unity
+    path: Assets/Scenes/Ember/ColonyNeeds.unity
     guid: 4f1093911ecb5af438ef330bc1c7172f
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz5SeasonFarm.unity
+    path: Assets/Scenes/Ember/SeasonFarm.unity
     guid: 882ba75b6784ece4aafe69f33da1ec4c
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz6TradeMarket.unity
+    path: Assets/Scenes/Ember/TradeMarket.unity
     guid: 809fb3c232e6904419ef17b0fad56856
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz7CombatDungeon.unity
+    path: Assets/Scenes/Ember/CombatDungeon.unity
     guid: 21455d8acc67fc842ac093afc3fb137c
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz8RitualHall.unity
+    path: Assets/Scenes/Ember/RitualHall.unity
     guid: 0e69636bcdd6a88458f18aab8fab3b54
   - enabled: 1
-    path: Assets/Scenes/Ember/Faz9TavernDialog.unity
+    path: Assets/Scenes/Ember/TavernDialog.unity
     guid: 180624683c8afdf47831c2870c58fb04
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}

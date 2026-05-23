@@ -11,7 +11,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class RitualHallSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz8RitualHall";
+        public string SceneName => "RitualHall";
 
         public void Build()
         {
@@ -54,7 +54,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.55f));
             EmberUiBuilder.AttachRuntimeScript(spellBar.gameObject, "EmberCrpg.Presentation.Ember.UI.SpellBar");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 12f), "Faz9TavernDialog", "→ Faz 9");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 12f), "TavernDialog", "→ Faz 9");
         }
     }
 }

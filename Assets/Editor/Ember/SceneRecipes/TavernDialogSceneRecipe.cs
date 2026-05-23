@@ -11,7 +11,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class TavernDialogSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz9TavernDialog";
+        public string SceneName => "TavernDialog";
 
         public void Build()
         {
@@ -54,7 +54,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.7f));
             EmberUiBuilder.AttachRuntimeScript(dialog.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 8f), "Faz10OracleShrine", "→ Faz 10");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 8f), "OracleShrine", "→ Faz 10");
         }
     }
 }

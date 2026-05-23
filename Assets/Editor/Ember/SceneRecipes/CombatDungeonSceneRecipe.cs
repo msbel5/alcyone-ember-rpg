@@ -10,7 +10,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class CombatDungeonSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz7CombatDungeon";
+        public string SceneName => "CombatDungeon";
 
         public void Build()
         {
@@ -55,7 +55,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.55f));
             EmberUiBuilder.AttachRuntimeScript(combatHud.gameObject, "EmberCrpg.Presentation.Ember.UI.CombatHud");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "Faz8RitualHall", "→ Faz 8");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 15f), "RitualHall", "→ Faz 8");
         }
     }
 }

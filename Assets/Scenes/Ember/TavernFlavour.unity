@@ -1663,7 +1663,7 @@ GameObject:
   - component: {fileID: 1174272496}
   - component: {fileID: 1174272495}
   m_Layer: 0
-  m_Name: Portal_to_Faz3SmithingOverworld
+  m_Name: Portal_to_SmithingOverworld
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1681,7 +1681,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97a4d1e584756e34f8cd7c5028e7c83b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Interaction.EmberScenePortal
-  _targetSceneName: Faz3SmithingOverworld
+  _targetSceneName: SmithingOverworld
 --- !u!23 &1174272496
 MeshRenderer:
   m_ObjectHideFlags: 0

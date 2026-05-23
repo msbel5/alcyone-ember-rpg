@@ -48,10 +48,10 @@ DO NOT add MonoBehaviour scripts here — these are pure C# DTOs.
 
 `CombatPlaygroundController`, `CombatPlaygroundCameraRig`, `CombatAnimatorDriver`,
 `CombatInputAdapter`, `CombatPlaygroundBootstrap`,
-`CombatUnityConversions`. Wired exclusively into `Assets/Scenes/Sprint4Foundation.unity`.
+`CombatUnityConversions`. Wired exclusively into `Assets/Scenes/CombatPlayground.unity`.
 
 Superseded by `Ember.Camera.EmberFirstPersonController`. Do not extend.
-Will be removed once the Sprint4Foundation scene is retired.
+Will be removed once the CombatPlayground scene is retired.
 
 ## 4. Root files (`Slice*.cs`, `InventoryEquipmentFormatter.cs`) — Sprint 1/2 vertical slice
 

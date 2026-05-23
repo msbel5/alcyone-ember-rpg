@@ -11,7 +11,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
     /// </summary>
     public sealed class SmithingOverworldSceneRecipe : IEmberSceneRecipe
     {
-        public string SceneName => "Faz3SmithingOverworld";
+        public string SceneName => "SmithingOverworld";
 
         public void Build()
         {
@@ -53,7 +53,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 background: new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(jobPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.JobQueuePanel");
 
-            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 12f), "Faz4ColonyNeeds", "→ Faz 4");
+            EmberScenePortalBuilder.BuildPortal(new Vector3(0f, 0f, 12f), "ColonyNeeds", "→ Faz 4");
         }
     }
 }

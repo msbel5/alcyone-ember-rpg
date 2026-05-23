@@ -1218,7 +1218,7 @@ GameObject:
   - component: {fileID: 622688016}
   - component: {fileID: 622688015}
   m_Layer: 0
-  m_Name: Portal_to_Faz6TradeMarket
+  m_Name: Portal_to_TradeMarket
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1236,7 +1236,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97a4d1e584756e34f8cd7c5028e7c83b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.Interaction.EmberScenePortal
-  _targetSceneName: Faz6TradeMarket
+  _targetSceneName: TradeMarket
 --- !u!23 &622688016
 MeshRenderer:
   m_ObjectHideFlags: 0
