@@ -524,6 +524,22 @@ namespace EmberCrpg.Simulation.Worldgen
                     case WorldHistoryKind.FactionWar:
                     case WorldHistoryKind.FactionAlliance:
                         var f1 = factions[rng.NextInt(factions.Count)];
+                        // Codex review (PR #203 P1): WorldgenParameters allows
+                        // factionCount=1. The previous reroll path called
+                        // rng.NextInt(factions.Count - 1), which becomes
+                        // NextInt(0) and throws ArgumentOutOfRangeException
+                        // when only one faction exists. Take a one-faction
+                        // fast path that emits a self-referential history
+                        // entry (civil schism for War / internal reconciliation
+                        // for Alliance) instead of crashing.
+                        if (factions.Count == 1)
+                        {
+                            subject = f1.Name;
+                            detail = (kind == WorldHistoryKind.FactionWar)
+                                ? f1.Name + " splinters into civil war"
+                                : f1.Name + " reunites after internal strife";
+                            break;
+                        }
                         var f2 = factions[rng.NextInt(factions.Count)];
                         if (f1.Id == f2.Id)
                             f2 = factions[(rng.NextInt(factions.Count - 1) + 1) % factions.Count];

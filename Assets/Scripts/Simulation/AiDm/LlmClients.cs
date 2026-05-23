@@ -65,6 +65,33 @@ namespace EmberCrpg.Simulation.AiDm
         {
             return LlmHttpClientCore.CompleteHttp(_config, _http, request);
         }
+
+        /// <summary>
+        /// Codex review (PR #203 P2): a non-null `Complete().Text` is not a
+        /// reliable availability signal because the response constructor
+        /// normalises null → string.Empty. Probe the explicit HTTP status of
+        /// a small HEAD/GET against the configured endpoint instead, so
+        /// callers get a true/false grounded in network reachability + 2xx.
+        /// </summary>
+        public bool IsAvailable()
+        {
+            if (!_config.Enabled || string.IsNullOrWhiteSpace(_config.EndpointUrl))
+                return false;
+            try
+            {
+                using (var probe = new HttpRequestMessage(HttpMethod.Get, _config.EndpointUrl))
+                {
+                    var resp = _http.SendAsync(probe).GetAwaiter().GetResult();
+                    // Ollama responds 200 OK on GET to /api/generate even
+                    // without a model selected; any 2xx-3xx is "service up".
+                    return (int)resp.StatusCode >= 200 && (int)resp.StatusCode < 400;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 
     /// <summary>

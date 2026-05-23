@@ -32,9 +32,14 @@ namespace EmberCrpg.Presentation.Ember.Forge
             {
                 if (cancellationToken.IsCancellationRequested) return;
                 ComfyUiAvailable = new ComfyUiAssetForge(_comfyUiUrl).IsAvailable();
+                // Codex review (PR #203 P2): use the explicit IsAvailable()
+                // probe instead of (.Complete().Text != null) — the latter is
+                // always true because LlmResponse normalises null Text to
+                // string.Empty, which falsely reports Ollama as up when the
+                // HTTP call actually failed.
                 OllamaAvailable = new EmberCrpg.Simulation.AiDm.LocalQwenClient(
                     new EmberCrpg.Simulation.AiDm.LlmClientConfig(EmberCrpg.Domain.AiDm.LlmProviderKind.LocalQwen, _ollamaUrl, string.Empty, true))
-                    .Complete(new EmberCrpg.Domain.AiDm.LlmRequest("health", "forge_bootstrap", null, 1, 1UL)).Text != null;
+                    .IsAvailable();
             }, cancellationToken).ConfigureAwait(false);
         }
     }
