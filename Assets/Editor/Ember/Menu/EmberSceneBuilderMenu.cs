@@ -46,10 +46,14 @@ namespace EmberCrpg.Editor.Ember.Menu
         [MenuItem(Root + "Faz 12 — Tavern Flavour (LLM)")]
         public static void BuildFaz12() => RunRecipe(new Faz12LlmFlavourSceneRecipe());
 
+        [MenuItem(Root + "Character Creation")]
+        public static void BuildCharacterCreation() => RunUiRecipe(new CharacterCreationSceneRecipe());
+
         [MenuItem(Root + "All — Build every faz scene")]
         public static void BuildAll()
         {
             SpriteRegistryAutoBuilder.Build();
+            RunUiRecipe(new CharacterCreationSceneRecipe());
             RunRecipe(new Faz3SmithingSceneRecipe());
             RunRecipe(new Faz4ColonyNeedsSceneRecipe());
             RunRecipe(new Faz5FarmSceneRecipe());
@@ -71,6 +75,15 @@ namespace EmberCrpg.Editor.Ember.Menu
             // AAA Polish: Bake NavMesh
             UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
             
+            var path = EmberSceneSavePolicy.ResolveScenePath(recipe.SceneName);
+            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), path);
+            AssetDatabase.Refresh();
+        }
+
+        private static void RunUiRecipe(IEmberSceneRecipe recipe)
+        {
+            EmberSceneFactory.CreateEmpty();
+            recipe.Build();
             var path = EmberSceneSavePolicy.ResolveScenePath(recipe.SceneName);
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), path);
             AssetDatabase.Refresh();

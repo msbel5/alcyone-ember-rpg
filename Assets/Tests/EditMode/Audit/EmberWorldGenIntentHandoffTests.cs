@@ -159,5 +159,19 @@ namespace EmberCrpg.Tests.EditMode.Audit
             Assert.That(intent.Start,   Is.EqualTo(string.Empty));
             Assert.That(intent.IsEmpty, Is.True);
         }
+
+        [Test]
+        public void Intent_WithCharacter_CarriesClassBirthsignNameAndAnswers()
+        {
+            var intent = new EmberWorldGenIntent("grim", "mage", "capital")
+                .WithCharacter("Mami", "mage", "the_lover", new[] { "a", "c" });
+
+            Assert.That(intent.Mood, Is.EqualTo("grim"));
+            Assert.That(intent.PlayerName, Is.EqualTo("Mami"));
+            Assert.That(intent.CharacterClassId, Is.EqualTo("mage"));
+            Assert.That(intent.BirthsignId, Is.EqualTo("the_lover"));
+            Assert.That(intent.AnswerChoiceIds, Is.EqualTo(new[] { "a", "c" }));
+            Assert.That(intent.IsEmpty, Is.False);
+        }
     }
 }

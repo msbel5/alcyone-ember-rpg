@@ -80,6 +80,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             if (pending != null && !pending.IsEmpty)
             {
                 _commands?.SeedWorld(pending.Mood, pending.Calling, pending.Start);
+                if (_adapter is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter domainAdapter)
+                    domainAdapter.ApplyCharacterCreation(pending.PlayerName, pending.CharacterClassId, pending.BirthsignId);
                 EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending = null;
             }
 

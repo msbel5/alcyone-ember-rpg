@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Combat;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
@@ -373,6 +374,40 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 $"regions={generated.Regions.Count} settlements={generated.Settlements.Count} " +
                 $"npcs={generated.Npcs.Count} pop={generated.TotalPopulation:N0} " +
                 $"history={generated.History.Count} startingRegion={StartingRegion} startingSettlement={StartingSettlement} startingFaction={StartingFaction}");
+        }
+
+        public void ApplyCharacterCreation(string playerName, string classId, string birthsignId)
+        {
+            if (_world.Actors == null || !_world.Actors.TryFirstByRole(ActorRole.Player, out var player) || player == null)
+                return;
+
+            var klass = CharacterCreationCatalog.GetClass(classId);
+            var sign = CharacterCreationCatalog.GetBirthsign(birthsignId);
+            var stats = sign.ApplyTo(klass.PrimaryStats);
+            var vitals = new ActorVitals(
+                new VitalStat(30 + stats.End / 2, 30 + stats.End / 2),
+                new VitalStat(30 + stats.Mig / 2, 30 + stats.Mig / 2),
+                new VitalStat(20 + stats.Mnd / 2, 20 + stats.Mnd / 2));
+
+            var replacement = new ActorRecord(
+                player.Id,
+                string.IsNullOrWhiteSpace(playerName) ? player.Name : playerName.Trim(),
+                ActorRole.Player,
+                stats,
+                vitals,
+                player.Position,
+                accuracy: player.Accuracy,
+                dodge: player.Dodge,
+                armor: player.Armor,
+                baseDamage: player.BaseDamage,
+                topicIds: player.TopicIds,
+                jobPreferences: player.JobPreferences,
+                scheduleState: player.ScheduleState,
+                needs: player.Needs,
+                mood: player.Mood,
+                memory: player.Memory);
+            _world.ReplaceActorView(ActorRole.Player, replacement);
+            _lastCombatLine = $"{replacement.Name} begins as {klass.Name} under {sign.Name}.";
         }
 
         private static RegionId SelectStartingRegion(

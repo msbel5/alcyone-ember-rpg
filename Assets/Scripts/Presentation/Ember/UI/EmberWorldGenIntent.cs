@@ -17,15 +17,46 @@ namespace EmberCrpg.Presentation.Ember.UI
         public string Mood { get; }
         public string Calling { get; }
         public string Start { get; }
+        public string PlayerName { get; }
+        public string CharacterClassId { get; }
+        public string BirthsignId { get; }
+        public string[] AnswerChoiceIds { get; }
 
         public EmberWorldGenIntent(string mood, string calling, string start)
+            : this(mood, calling, start, string.Empty, string.Empty, string.Empty, null)
+        {
+        }
+
+        public EmberWorldGenIntent(
+            string mood,
+            string calling,
+            string start,
+            string playerName,
+            string characterClassId,
+            string birthsignId,
+            string[] answerChoiceIds)
         {
             Mood = mood ?? string.Empty;
             Calling = calling ?? string.Empty;
             Start = start ?? string.Empty;
+            PlayerName = playerName ?? string.Empty;
+            CharacterClassId = characterClassId ?? string.Empty;
+            BirthsignId = birthsignId ?? string.Empty;
+            AnswerChoiceIds = answerChoiceIds ?? new string[0];
         }
 
         public bool IsEmpty =>
-            string.IsNullOrEmpty(Mood) && string.IsNullOrEmpty(Calling) && string.IsNullOrEmpty(Start);
+            string.IsNullOrEmpty(Mood)
+            && string.IsNullOrEmpty(Calling)
+            && string.IsNullOrEmpty(Start)
+            && string.IsNullOrEmpty(PlayerName)
+            && string.IsNullOrEmpty(CharacterClassId)
+            && string.IsNullOrEmpty(BirthsignId)
+            && AnswerChoiceIds.Length == 0;
+
+        public EmberWorldGenIntent WithCharacter(string playerName, string characterClassId, string birthsignId, string[] answerChoiceIds)
+        {
+            return new EmberWorldGenIntent(Mood, Calling, Start, playerName, characterClassId, birthsignId, answerChoiceIds);
+        }
     }
 }
