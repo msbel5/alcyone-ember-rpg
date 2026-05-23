@@ -31,7 +31,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _pendingFate = string.Empty;
         private bool _isFateThinking;
         private bool _isDialogThinking;
-        private EmberCrpg.Simulation.Rng.XorShiftRng _meleeRng;
         private const ulong RegionSiteOffset = 100_000UL;
         private const ulong SettlementSiteOffset = 200_000UL;
         private const ulong GeneratedNpcActorOffset = 10_000UL;
@@ -855,12 +854,19 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // per adapter; reload meant identical seed → identical first
             // strike post-load, but a save mid-fight would re-roll.) Now
             // the seed advances with simulation time.
-            if (_meleeRng == null)
-            {
-                uint timeSeed = (uint)(_world.Time.TotalMinutes & 0xFFFFFFFFL);
-                _meleeRng = new EmberCrpg.Simulation.Rng.XorShiftRng(timeSeed ^ 0xE3B6_1EE7u);
-            }
-            var rng = _meleeRng;
+            // Codex review (PR #203 P1): persisting _meleeRng on the adapter
+            // means save/load loses RNG state. Re-derive a fresh RNG per
+            // strike from (world.Time + world.Events.Count) so two sessions
+            // restored from the same snapshot produce the same next roll.
+            // The event-count XOR advances each strike (a CombatResolved
+            // event lands every Resolve call), so distinct strikes in the
+            // same tick still produce distinct rolls — same property the
+            // cached-RNG path had — while remaining deterministic across
+            // save/load.
+            uint timeSeed = (uint)(_world.Time.TotalMinutes & 0xFFFFFFFFL);
+            uint eventSeed = (uint)((_world.Events?.Events?.Count ?? 0) & 0xFFFFFFFFL);
+            var rng = new EmberCrpg.Simulation.Rng.XorShiftRng(
+                (timeSeed * 2654435761u) ^ (eventSeed * 1597334677u) ^ 0xE3B6_1EE7u);
             // Codex audit (seventh pass A-P2 #6): previously hard-coded
             // SiteId(1UL) so every combat event was logged under a synthetic
             // location. Derive the site from the actual world: closest
