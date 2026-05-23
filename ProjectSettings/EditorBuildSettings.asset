@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Ember/MainMenu.unity
     guid: 9ef86c3e6107db341a85e5818a35fb5f
   - enabled: 1
+    path: Assets/Scenes/Ember/CharacterCreation.unity
+    guid: bea151148587b664e93f3c57ee45598d
+  - enabled: 1
     path: Assets/Scenes/Ember/Faz10OracleShrine.unity
     guid: 7f158263783ded04db12051cf52370b5
   - enabled: 1
