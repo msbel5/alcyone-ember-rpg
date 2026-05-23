@@ -22,6 +22,9 @@ namespace EmberCrpg.Presentation.Ember.Camera
         [Header("Look")]
         [SerializeField] private float _mouseSensitivity = 4.5f; // Increased from 2.1
         [SerializeField] private float _lookSmoothing = 0.02f; // Reduced from 0.05 for snappier feel
+        [SerializeField] private AnimationCurve _mouseCurve = AnimationCurve.Linear(0, 0, 1, 1);
+        [SerializeField] private float _mouseCurveStrength = 0.5f;
+
 [SerializeField] private float _pitchMinDegrees = -85f;
         [SerializeField] private float _pitchMaxDegrees = 85f;
 
@@ -29,6 +32,11 @@ namespace EmberCrpg.Presentation.Ember.Camera
         [SerializeField] private float _bobFrequency = 1.1f;
         [SerializeField] private float _bobVerticalAmplitude = 0.015f;
         [SerializeField] private float _bobHorizontalAmplitude = 0.008f;
+
+        [Header("Footsteps")]
+        [SerializeField] private float _footstepDistance = 2.2f;
+        private float _distanceTravelled;
+
 
         private Transform _eye;
         private CharacterController _controller;
@@ -48,11 +56,21 @@ namespace EmberCrpg.Presentation.Ember.Camera
         // Bobbing
         private float _bobTimer;
         private Vector3 _eyeBaseLocalPos;
+        
+        private UnityEngine.Camera _cam;
+        private float _baseFov;
+        private float _fovVelocity;
+
 
         private void Awake()
         {
             _eye = transform.Find("EyeCamera") ?? GetComponentInChildren<UnityEngine.Camera>()?.transform;
-            if (_eye != null) _eyeBaseLocalPos = _eye.localPosition;
+            if (_eye != null) 
+            {
+                _eyeBaseLocalPos = _eye.localPosition;
+                _cam = _eye.GetComponent<UnityEngine.Camera>();
+                if (_cam != null) _baseFov = _cam.fieldOfView;
+            }
             _controller = GetComponent<CharacterController>();
             _yawDegrees = transform.eulerAngles.y;
         }
@@ -82,7 +100,15 @@ namespace EmberCrpg.Presentation.Ember.Camera
         {
             if (_eye == null) return;
 
-            Vector2 targetMouseDelta = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")) * _mouseSensitivity;
+            float rawX = Input.GetAxisRaw("Mouse X");
+            float rawY = Input.GetAxisRaw("Mouse Y");
+
+            // Apply Mouse Curve for non-linear response
+            float mag = new Vector2(rawX, rawY).magnitude;
+            float curvedMag = _mouseCurve.Evaluate(mag);
+            float multiplier = Mathf.Lerp(1f, curvedMag / Mathf.Max(mag, 0.001f), _mouseCurveStrength);
+
+            Vector2 targetMouseDelta = new Vector2(rawX, rawY) * _mouseSensitivity * multiplier;
             _currentMouseDelta = Vector2.SmoothDamp(_currentMouseDelta, targetMouseDelta, ref _mouseDeltaVelocity, _lookSmoothing);
 
             _yawDegrees += _currentMouseDelta.x;
@@ -96,7 +122,7 @@ namespace EmberCrpg.Presentation.Ember.Camera
         {
             float horizontal = Input.GetAxisRaw("Horizontal");
             float vertical = Input.GetAxisRaw("Vertical");
-            bool isSprinting = Input.GetKey(KeyCode.LeftShift);
+            bool isSprinting = Input.GetKey(KeyCode.LeftShift) && vertical > 0.1f;
 
             Vector3 targetInput = (transform.forward * vertical + transform.right * horizontal).normalized;
             float targetSpeed = _baseSpeed * (isSprinting ? _sprintMultiplier : 1f);
@@ -119,9 +145,32 @@ namespace EmberCrpg.Presentation.Ember.Camera
             motion.y = _verticalVelocity;
             _controller.Move(motion * Time.deltaTime);
             
-            if (_controller.isGrounded && _currentMoveVelocity.magnitude > 0.1f)
+            // FOV Kick logic
+            if (_cam != null)
             {
-                // Surface aware footstep check would go here (raycast down)
+                float targetFov = isSprinting ? _baseFov * 1.15f : _baseFov;
+                _cam.fieldOfView = Mathf.SmoothDamp(_cam.fieldOfView, targetFov, ref _fovVelocity, 0.2f);
+            }
+
+            // Footsteps stub
+            if (_controller.isGrounded && _currentMoveVelocity.magnitude > 0.5f)
+            {
+                _distanceTravelled += _currentMoveVelocity.magnitude * Time.deltaTime;
+                if (_distanceTravelled >= _footstepDistance)
+                {
+                    _distanceTravelled = 0f;
+                    EmitFootstep();
+                }
+            }
+        }
+
+        private void EmitFootstep()
+        {
+            // Raycast down for surface detection stub
+            if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 2f))
+            {
+                // In P11 we will use hit.collider to determine surface type
+                // Debug.Log($"Footstep on {hit.collider.name}");
             }
         }
 

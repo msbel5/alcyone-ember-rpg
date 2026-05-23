@@ -32,11 +32,11 @@ namespace EmberCrpg.Simulation.Process
 
             return new RecipeWorkOrderSaveData
             {
-                recipeId = order.Recipe.Id.Value,
-                siteId = order.SiteId.Value,
+                recipeId = (long)order.Recipe.Id.Value,
+                siteId = (long)order.SiteId.Value,
                 positionX = order.Position.X,
                 positionY = order.Position.Y,
-                actorId = order.ActorId.Value,
+                actorId = (long)order.ActorId.Value,
                 progressTicks = order.ProgressTicks,
             };
         }
@@ -55,7 +55,7 @@ namespace EmberCrpg.Simulation.Process
             if (resolveRecipe == null)
                 throw new ArgumentNullException(nameof(resolveRecipe));
 
-            var recipeId = new RecipeId(data.recipeId);
+            var recipeId = new RecipeId((ulong)data.recipeId);
             var recipe = resolveRecipe(recipeId);
             if (recipe == null)
                 throw new InvalidOperationException(
@@ -63,9 +63,9 @@ namespace EmberCrpg.Simulation.Process
 
             return RecipeWorkOrder.Resume(
                 recipe,
-                new SiteId(data.siteId),
+                new SiteId((ulong)data.siteId),
                 new EmberCrpg.Domain.Actors.GridPosition(data.positionX, data.positionY),
-                new ActorId(data.actorId),
+                new ActorId((ulong)data.actorId),
                 data.progressTicks);
         }
 

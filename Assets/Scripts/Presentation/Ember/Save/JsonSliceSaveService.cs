@@ -95,7 +95,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             // Codex audit (seventh pass B-P1 #10): SliceSaveMapper.ToWorld
             // no longer constructs the seed world (would have leaked a
             // Simulation type into Data). Build the seed here, then map.
-            var seedWorld = EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld(data.roomSeed);
+            var seedWorld = EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed);
             var world = SliceSaveMapper.ToWorld(data, seedWorld);
             _worksites = SliceSaveMapper.ToWorksiteStore(data.worksites);
             _recipeWorkOrders = ToRecipeWorkOrders(data.recipeWorkOrders);

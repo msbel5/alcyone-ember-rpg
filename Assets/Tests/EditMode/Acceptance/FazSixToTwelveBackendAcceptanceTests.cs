@@ -287,7 +287,7 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
         private static SliceWorldState RoundTrip(SliceWorldState world)
         {
             var data = SliceSaveMapper.ToData(world);
-            return SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld(data.roomSeed));
+            return SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
         }
 
         private static void ReplaceActorByRole(SliceWorldState world, ActorRecord replacement)

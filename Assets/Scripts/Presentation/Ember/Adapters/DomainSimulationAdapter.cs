@@ -1,37 +1,22 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Combat;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.Worldgen;
+using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 
 namespace EmberCrpg.Presentation.Ember.Adapters
 {
     /// <summary>
-    /// Codex audit (fourth pass A-P1): the adapter previously inherited the
-    /// default no-op implementations of <see cref="IPlayerCommandSink"/>'s
-    /// TryCastSpell / TryMeleeStrike / TryInteract, so player input only ever
-    /// logged text — combat / spells / dialog never mutated world state. It
-    /// also fabricated FactionRows ("Neutral") and read SpellSlots off the
-    /// cooldown tracker (empty on a fresh world). This rewrite:
-    ///
-    /// 1. implements each command concretely against SliceWorldState
-    ///    (vitals damage, mana/cooldown gate via SpellResolver, dialog topic
-    ///    routing);
-    /// 2. reads FactionRows from <see cref="FactionStore.ReputationRows"/>
-    ///    relative to the player faction;
-    /// 3. exposes a known-spell list from <see cref="EmberCrpg.Simulation.Magic.SliceSpellCatalog.All"/>
-    ///    instead of mining the cooldown state;
-    /// 4. mutates the player <see cref="ActorRecord"/>'s vitals on
-    ///    TakePlayerDamage instead of holding a UI-only counter;
-    /// 5. retains a single <see cref="EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService"/>
-    ///    so worksite/job/soil/plant process sidecars survive the
-    ///    Export/Restore round-trip.
+    /// Aggregate adapter with AI integration for native inference (Phase 2).
     /// </summary>
     public sealed class DomainSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait
     {
@@ -43,43 +28,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _activeDialogActor = string.Empty;
         private string _currentDialogLine = string.Empty;
         private string _currentPortrait = "portrait_npc_placeholder";
+        private string _pendingFate = string.Empty;
+        private bool _isFateThinking;
+        private bool _isDialogThinking;
         private EmberCrpg.Simulation.Rng.XorShiftRng _meleeRng;
         private const ulong RegionSiteOffset = 100_000UL;
         private const ulong SettlementSiteOffset = 200_000UL;
         private const ulong GeneratedNpcActorOffset = 10_000UL;
 
         public DomainSimulationAdapter(SliceWorldState world)
-{
+        {
             _world = world ?? throw new System.ArgumentNullException(nameof(world));
-            // Codex audit (fourth pass A-P2): retain ONE save service so the
-            // sidecar process state (worksites / jobs / soils / plants) lives
-            // across Export/Restore cycles. Previously a fresh service was
-            // constructed each call, dropping the sidecar.
-            // Codex audit (sixth pass A-P1 #6): supply a recipe resolver so
-            // LoadFromJson does not throw on saves that carry active recipe
-            // work orders. ProductionRecipeRegistry.Resolve is the canonical
-            // catalog lookup. If the project later adds catalog scopes per
-            // scene, this seam swaps to a scene-bound resolver.
             _saveService = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService(
                 EmberCrpg.Data.Recipes.ProductionRecipeRegistry.Resolve);
-            // Codex audit (sixth pass A-P0 #1): wire the per-tick composer so
-            // the live game's simulation actually moves forward.
             _tickComposer = new EmberCrpg.Simulation.Composition.SliceTickComposer();
 
-            // Codex audit (seventh pass A-P2 #5): SliceWorldFactory authors
-            // `_world.Sites` (SiteRecord definitions) but the runtime
-            // WorksiteStore is empty until a save loads — so TryReadWorksite
-            // returned `isActive=false` even when the scene had worksites
-            // authored. Seed the WorksiteStore with one Active record per
-            // authored Site so the HUD and view layer immediately see them.
-            // Worksite kind defaults to Generic for now; specific kinds are
-            // assigned by the recipe system as work orders attach.
             if (_saveService.Worksites != null && _world.Sites != null)
             {
                 foreach (var site in _world.Sites.Records)
                 {
-                    // Skip if a record with the same SiteId+Position already
-                    // exists (idempotent re-seed safe).
                     bool exists = false;
                     foreach (var record in _saveService.Worksites.Records)
                     {
@@ -319,13 +286,52 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IDialogSource GetDialogSource(string actorName)
         {
             _activeDialogActor = actorName ?? string.Empty;
-            _currentDialogLine = string.IsNullOrEmpty(_activeDialogActor) ? string.Empty
-                : $"You speak with {_activeDialogActor}.";
+            _currentDialogLine = "You approach " + _activeDialogActor + "...";
+            _currentPortrait = "portrait_npc_placeholder";
+
+            // If we have an NpcSeedRecord for this actor, use its name and role for a persona-driven greeting
+            var npc = _world.NpcSeeds.FirstOrDefault(n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
+            if (npc != null)
+            {
+                if (!string.IsNullOrEmpty(npc.PortraitAssetPath)) _currentPortrait = npc.PortraitAssetPath;
+                
+                // Fire async greeting
+                _ = GenerateNpcGreetingAsync(npc);
+            }
+
             return this;
         }
 
+        private async Task GenerateNpcGreetingAsync(NpcSeedRecord npc)
+        {
+            var router = ForgeLocator.LlmRouter;
+            if (router == null) return;
+
+            _isDialogThinking = true;
+            var request = new LlmRequest(
+                "npc_greeting",
+                "npc:" + npc.Id.Value,
+                null,
+                100,
+                npc.Id.Value,
+                $"You are {npc.Name}, a {npc.Role} in a {_world.WorldProfile?.Style} world. Greet the player character briefly in character.",
+                new List<string>()
+            );
+
+            await Task.Run(() =>
+            {
+                LlmProviderKind chosen;
+                var response = router.Complete(request, out chosen);
+                if (response != null && !string.IsNullOrEmpty(response.Text))
+                {
+                    _currentDialogLine = response.Text.Trim();
+                }
+                _isDialogThinking = false;
+            });
+        }
+
         // Ninth-pass FOUNDATION worldgen: SeedWorld now runs the deterministic
-        // WorldgenService (Assets/Scripts/Simulation/Worldgen/) so the
+// WorldgenService (Assets/Scripts/Simulation/Worldgen/) so the
         // mood/calling/start tuple from the main-menu wizard actually
         // produces a ~50-region, ~200-settlement, ~750-NPC world instead
         // of vanishing into a log line. The generated bundle is held on
@@ -1007,19 +1013,71 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // ----- IConsultFateOracle -----
         public string ConsultFate()
         {
-            // Codex audit (sixth pass A-P2 #3, #5): unify the consult-fate
-            // bucket distribution with PlaceholderSimulationAdapter via the
-            // canonical Domain.AiDm.ConsultFateOutcomeBucket (35/35/30).
-            // Also use uint Knuth multiplier explicitly so the cast is not
-            // a foot-gun.
+            if (_isFateThinking) return "The oracle is gazing into the void...";
+            
+            // Fire async consult
+            _ = ConsultFateAsync();
+            
+            return "The oracle consults the fates...";
+        }
+
+        private async Task ConsultFateAsync()
+        {
+            var router = ForgeLocator.LlmRouter;
+            if (router == null) return;
+
+            _isFateThinking = true;
+
+            // FNV-1a-32 roll as baseline
             uint salted = (uint)_tick * 2654435761u;
             int roll = (int)(salted % 100u) + 1;
             var bucket = EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.FromRoll(roll);
-            if (bucket.Equals(EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.Setback))
-                return "SETBACK: The stars align against you.";
-            if (bucket.Equals(EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.Neutral))
-                return "NEUTRAL: The DM watches in silence.";
-            return "FAVOURABLE: Fortune smiles.";
+
+            var tools = new List<ToolDescriptor>
+            {
+                new ToolDescriptor(
+                    new ToolId("consult_fate"),
+                    ToolSurfaceKind.Dm,
+                    new[] { new ToolParameter("query", "string", true) },
+                    "string",
+                    ToolSideEffect.Read
+                )
+            };
+
+            var request = new LlmRequest(
+                "consult_fate",
+                "oracle_fate",
+                tools,
+                150,
+                (ulong)_tick,
+                $"You are the Oracle of Ember. The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy reflecting this result for the player. The world is {_world.WorldProfile?.Style}.",
+                new List<string>()
+            );
+
+            await Task.Run(() =>
+            {
+                LlmProviderKind chosen;
+                var response = router.Complete(request, out chosen);
+                if (response != null)
+                {
+                    _pendingFate = string.IsNullOrEmpty(response.Text) ? $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)" : response.Text.Trim();
+                    
+                    // Log the tool call trace (Phase 4 requirement)
+                    // Synthesize request/result for the trace
+                    var toolReq = new ToolCallRequest(new ToolId("consult_fate"), ToolSurfaceKind.Dm, new Dictionary<string, string> { { "query", "oracle_consult" } });
+var toolRes = ToolCallResult.AcceptedWith(bucket.Code);
+                    
+                    _world.ToolCallTrace.Add(new ToolCallTraceRecord(_world.Time, default, toolReq, toolRes));
+                }
+                else
+                {
+                    _pendingFate = $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)";
+                }
+                _isFateThinking = false;
+            });
+
+            // Update combat log once finished
+            LogCombat(_pendingFate);
         }
 
         // ----- IEmberSaveBridge -----

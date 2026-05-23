@@ -20,16 +20,16 @@ namespace EmberCrpg.Data.Save
     public sealed class SliceSaveData
     {
         public long totalMinutes;
-        public int roomSeed;
-        public int currentRoomId;
-        public int dungeonStartRoomId;
-        public int playerRoomId;
-        public int talkerRoomId;
-        public int merchantRoomId;
-        public int guardRoomId;
-        public int enemyRoomId;
-        public int pickupRoomId;
-        public DungeonRoomSaveData[] dungeonRooms;
+        public long roomSeed;
+        public long currentRoomId;
+        public long dungeonStartRoomId;
+        public long playerRoomId;
+        public long talkerRoomId;
+        public long merchantRoomId;
+        public long guardRoomId;
+        public long enemyRoomId;
+        public long pickupRoomId;
+public DungeonRoomSaveData[] dungeonRooms;
         public DungeonDoorSaveData[] dungeonDoors;
         public DungeonSpawnSaveData[] dungeonSpawns;
         public DungeonRoomStateSaveData[] dungeonRoomStates;
@@ -76,9 +76,9 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class NpcSeedSaveData
     {
-        public ulong id;
-        public ulong home;
-        public ulong faction;
+        public long id;
+        public long home;
+        public long faction;
         public string name;
         public int birthYear;
         public int role;
@@ -90,9 +90,9 @@ namespace EmberCrpg.Data.Save
     {
         public int style;
         public int genre;
-        public uint seed;
+        public long seed;
         public int targetPopulation;
-        public int regionCount;
+public int regionCount;
         public int factionCount;
         public int historyYears;
         public string moodKeyword;
@@ -103,7 +103,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class ItemRecordSaveData
     {
-        public ulong id;
+        public long id;
         public int material;
         public int quality;
         public int slot;
@@ -113,7 +113,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class SiteRecordSaveData
     {
-        public ulong id;
+        public long id;
         public int kind;
         public string name;
         public int minX;
@@ -125,7 +125,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class WorksiteSaveData
     {
-        public ulong siteId;
+        public long siteId;
         public int positionX;
         public int positionY;
         public int kind;
@@ -135,31 +135,31 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class RecipeWorkOrderSaveData
     {
-        public ulong recipeId;
-        public ulong siteId;
+        public long recipeId;
+        public long siteId;
         public int positionX;
         public int positionY;
-        public ulong actorId;
+        public long actorId;
         public int progressTicks;
     }
 
     [Serializable]
     public sealed class SoilComponentSaveData
     {
-        public ulong id;
-        public ulong siteId;
+        public long id;
+        public long siteId;
         public int positionX;
         public int positionY;
         public int fertility;
         public int moisture;
-        public ulong plantId;
+        public long plantId;
     }
 
     [Serializable]
     public sealed class PlantComponentSaveData
     {
-        public ulong id;
-        public ulong siteId;
+        public long id;
+        public long siteId;
         public int positionX;
         public int positionY;
         public string speciesId;
@@ -170,7 +170,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class FactionRecordSaveData
     {
-        public ulong id;
+        public long id;
         public string name;
         public string[] tags;
     }
@@ -178,15 +178,15 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class FactionReputationSaveData
     {
-        public ulong a;
-        public ulong b;
+        public long a;
+        public long b;
         public int reputation;
     }
 
     [Serializable]
     public sealed class PriceLedgerSaveData
     {
-        public ulong siteId;
+        public long siteId;
         public string itemTag;
         public int price;
     }
@@ -194,7 +194,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class StockpileSaveData
     {
-        public ulong siteId;
+        public long siteId;
         public StockpileEntrySaveData[] entries;
     }
 
@@ -208,9 +208,9 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class TradeRouteSaveData
     {
-        public ulong id;
-        public ulong originSiteId;
-        public ulong destinationSiteId;
+        public long id;
+        public long originSiteId;
+        public long destinationSiteId;
         public string itemTag;
         public int quantityPerCaravan;
         public int cadenceDays;
@@ -219,9 +219,9 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class CaravanSaveData
     {
-        public ulong id;
-        public ulong routeId;
-        public ulong currentSiteId;
+        public long id;
+        public long routeId;
+        public long currentSiteId;
         public int payloadRemaining;
         public int stepsSinceDeparture;
         public string stateCode;
@@ -232,8 +232,8 @@ namespace EmberCrpg.Data.Save
     {
         public long tickMinutes;
         public int kind;
-        public ulong actorId;
-        public ulong siteId;
+        public long actorId;
+        public long siteId;
         public string reason;
         public string[] reasonTrace;
     }
@@ -242,7 +242,7 @@ namespace EmberCrpg.Data.Save
     public sealed class ToolCallTraceSaveData
     {
         public long tickMinutes;
-        public ulong siteId;
+        public long siteId;
         public string surfaceCode;
         public string toolCode;
         public ToolCallParameterSaveData[] parameters;
@@ -287,7 +287,7 @@ namespace EmberCrpg.Data.Save
     {
         public int slot;
         public string slotCode;
-        public ulong itemId;
+        public long itemId;
     }
 
     [Serializable]
@@ -343,7 +343,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class ActorSaveData
     {
-        public ulong id;
+        public long id;
         public string name;
         public int role;
         public int positionX;
@@ -369,8 +369,8 @@ namespace EmberCrpg.Data.Save
         public ActorJobPreferenceSaveData[] jobPreferences;
         public MemoryFactSaveData[] memoryFacts;
         // Persisted schedule targets (0/empty means idle)
-        public ulong currentJobId;
-        public ulong targetSiteId;
+        public long currentJobId;
+        public long targetSiteId;
         public int targetWorksitePositionX;
         public int targetWorksitePositionY;
         // Persisted needs and mood (integers 0-100)
@@ -397,9 +397,9 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class MemoryFactSaveData
     {
-        public ulong remembererId;
+        public long remembererId;
         public string topicCode;
-        public ulong aboutActorId;
+        public long aboutActorId;
         public long recordedAtMinutes;
         public string detail;
     }
@@ -407,17 +407,17 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class JobRequestSaveData
     {
-        public ulong id;
-        public ulong recipeId;
-        public ulong siteId;
+        public long id;
+        public long recipeId;
+        public long siteId;
         public int positionX;
         public int positionY;
         public int worksiteKind;
         public int kind;
         public int priority;
         public int quantity;
-        public ulong requesterId;
-        public ulong claimedByActorId;
+        public long requesterId;
+        public long claimedByActorId;
         // PR#138 bot review fix: persist the original ClaimSequence so the
         // load path can restore the same queue order (otherwise re-claiming in
         // insertion-order assigns fresh sequences that no longer match the
@@ -435,7 +435,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class ItemSaveData
     {
-        public ulong id;
+        public long id;
         public string templateId;
         public string displayName;
         public int quantity;
@@ -465,7 +465,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class NpcMemorySaveData
     {
-        public ulong actorId;
+        public long actorId;
         public InteractionEventSaveData[] events;
         public string[] dialogueSeen;
         public TransactionSaveData[] transactions;
@@ -476,7 +476,7 @@ namespace EmberCrpg.Data.Save
     {
         public long timestampMinutes;
         public string eventType;
-        public ulong actorSeen;
+        public long actorSeen;
         public string subjectId;
         public string itemTemplateId;
         public int amount;

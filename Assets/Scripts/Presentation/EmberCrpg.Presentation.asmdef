@@ -9,9 +9,10 @@
         "Unity.TextMeshPro",
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.RenderPipelines.Core.Runtime",
-        "Unity.Cinemachine"
+        "Unity.Cinemachine",
+        "Unity.InferenceEngine"
     ],
-    "includePlatforms": [],
+"includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

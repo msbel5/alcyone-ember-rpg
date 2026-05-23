@@ -1,0 +1,2 @@
+Run Started
+Run Finished. Passed: 1378, Failed: 0

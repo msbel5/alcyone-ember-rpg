@@ -34,17 +34,17 @@ namespace EmberCrpg.Data.Save
             if (world == null) throw new ArgumentNullException(nameof(world));
             return new SliceSaveData
             {
-                totalMinutes = world.Time.TotalMinutes,
-                roomSeed = world.RoomSeed,
-                currentRoomId = world.CurrentRoomId,
-                dungeonStartRoomId = world.Dungeon?.StartRoomId ?? 0,
-                playerRoomId = world.PlayerRoomId,
-                talkerRoomId = world.TalkerRoomId,
-                merchantRoomId = world.MerchantRoomId,
-                guardRoomId = world.GuardRoomId,
-                enemyRoomId = world.EnemyRoomId,
-                pickupRoomId = world.PickupRoomId,
-                dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
+                totalMinutes = (long)world.Time.TotalMinutes,
+                roomSeed = (long)world.RoomSeed,
+                currentRoomId = (long)world.CurrentRoomId,
+                dungeonStartRoomId = (long)(world.Dungeon?.StartRoomId ?? 0),
+                playerRoomId = (long)world.PlayerRoomId,
+                talkerRoomId = (long)world.TalkerRoomId,
+                merchantRoomId = (long)world.MerchantRoomId,
+                guardRoomId = (long)world.GuardRoomId,
+                enemyRoomId = (long)world.EnemyRoomId,
+                pickupRoomId = (long)world.PickupRoomId,
+dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
                 dungeonDoors = DungeonSaveMapper.ToDoorData(world.Dungeon),
                 dungeonSpawns = DungeonSaveMapper.ToSpawnData(world.Dungeon),
                 dungeonRoomStates = DungeonSaveMapper.ToRoomStateData(world.DungeonRoomStates),
@@ -68,7 +68,7 @@ namespace EmberCrpg.Data.Save
                 llmProposalLog = ToLlmProposalLogData(world.LlmProposalLog),
                 npcSeeds = ToNpcSeedData(world.NpcSeeds),
                 worldProfile = ToWorldProfileData(world.WorldProfile),
-                inventory = ToInventoryData(world.PlayerInventory),
+inventory = ToInventoryData(world.PlayerInventory),
                 playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
                 pickups = world.Pickups.Select(ItemSaveMapper.ToData).ToArray(),
@@ -89,15 +89,15 @@ namespace EmberCrpg.Data.Save
             var world = seedWorld ?? throw new ArgumentNullException(nameof(seedWorld));
             world.Time = new EmberCrpg.Domain.Core.GameTime(data.totalMinutes);
             if (data.dungeonRooms != null && data.dungeonRooms.Length > 0)
-                world.Dungeon = DungeonSaveMapper.ToLayout(data.roomSeed, data.dungeonStartRoomId, data.dungeonRooms, data.dungeonDoors, data.dungeonSpawns);
-            world.CurrentRoomId = data.currentRoomId;
-            world.PlayerRoomId = data.playerRoomId;
-            world.TalkerRoomId = data.talkerRoomId;
-            world.MerchantRoomId = data.merchantRoomId;
-            world.GuardRoomId = data.guardRoomId;
-            world.EnemyRoomId = data.enemyRoomId;
-            world.PickupRoomId = data.pickupRoomId;
-            if (data.dungeonRoomStates != null && data.dungeonRoomStates.Length > 0)
+                world.Dungeon = DungeonSaveMapper.ToLayout((int)data.roomSeed, (int)data.dungeonStartRoomId, data.dungeonRooms, data.dungeonDoors, data.dungeonSpawns);
+            world.CurrentRoomId = (int)data.currentRoomId;
+            world.PlayerRoomId = (int)data.playerRoomId;
+            world.TalkerRoomId = (int)data.talkerRoomId;
+            world.MerchantRoomId = (int)data.merchantRoomId;
+            world.GuardRoomId = (int)data.guardRoomId;
+            world.EnemyRoomId = (int)data.enemyRoomId;
+            world.PickupRoomId = (int)data.pickupRoomId;
+if (data.dungeonRoomStates != null && data.dungeonRoomStates.Length > 0)
                 world.DungeonRoomStates = DungeonSaveMapper.ToRoomStates(data.dungeonRoomStates);
             if (data.dungeonDoorStates != null && data.dungeonDoorStates.Length > 0)
                 world.DungeonDoorStates = DungeonSaveMapper.ToDoorStates(data.dungeonDoorStates);
@@ -113,7 +113,7 @@ namespace EmberCrpg.Data.Save
                 world.ReplaceActorView(ActorRole.Guard, ActorSaveMapper.ToActor(data.guard));
                 world.ReplaceActorView(ActorRole.Enemy, ActorSaveMapper.ToActor(data.enemy));
             }
-            world.Items = ToItemStore(data.itemRecords);
+world.Items = ToItemStore(data.itemRecords);
             world.Sites = ToSiteStore(data.sites);
             world.Factions = ToFactionStore(data.factions);
             ApplyFactionReputations(world.Factions, data.factionReputations);
@@ -186,26 +186,26 @@ namespace EmberCrpg.Data.Save
             foreach (var saved in sorted)
             {
                 var request = new JobRequest(
-                    new JobId(saved.id),
-                    new RecipeId(saved.recipeId),
-                    new SiteId(saved.siteId),
+                    new JobId((ulong)saved.id),
+                    new RecipeId((ulong)saved.recipeId),
+                    new SiteId((ulong)saved.siteId),
                     new GridPosition(saved.positionX, saved.positionY),
                     (WorksiteKind)saved.worksiteKind,
                     (JobKind)saved.kind,
                     JobPriority.Active(saved.priority),
                     saved.quantity,
-                    new ActorId(saved.requesterId));
+                    new ActorId((ulong)saved.requesterId));
                 board.Add(request);
             }
 
             foreach (var saved in sorted.OrderBy(d => d.claimSequence))
             {
-                var claimedBy = new ActorId(saved.claimedByActorId);
+                var claimedBy = new ActorId((ulong)saved.claimedByActorId);
                 if (claimedBy.IsEmpty) continue;
 
                 var restored = saved.claimSequence > 0
-                    ? board.TryRestoreClaim(new JobId(saved.id), claimedBy, saved.claimSequence)
-                    : board.TryClaim(new JobId(saved.id), claimedBy, out _);
+                    ? board.TryRestoreClaim(new JobId((ulong)saved.id), claimedBy, saved.claimSequence)
+                    : board.TryClaim(new JobId((ulong)saved.id), claimedBy, out _);
                 if (!restored)
                     throw new InvalidOperationException($"JobBoard save data could not restore claim for {saved.id}.");
             }
@@ -229,12 +229,12 @@ namespace EmberCrpg.Data.Save
                     continue;
 
                 var component = new SoilComponent(
-                    new WorldComponentId(soil.id),
-                    new SiteId(soil.siteId),
+                    new WorldComponentId((ulong)soil.id),
+                    new SiteId((ulong)soil.siteId),
                     new GridPosition(soil.positionX, soil.positionY),
                     soil.fertility,
                     soil.moisture,
-                    new WorldComponentId(soil.plantId));
+                    new WorldComponentId((ulong)soil.plantId));
                 store.Add(component.Id, component);
             }
 
@@ -257,8 +257,8 @@ namespace EmberCrpg.Data.Save
                     continue;
 
                 var component = new PlantComponent(
-                    new WorldComponentId(plant.id),
-                    new SiteId(plant.siteId),
+                    new WorldComponentId((ulong)plant.id),
+                    new SiteId((ulong)plant.siteId),
                     new GridPosition(plant.positionX, plant.positionY),
                     plant.speciesId,
                     new PlantStageId(plant.stageId),
@@ -273,13 +273,13 @@ namespace EmberCrpg.Data.Save
         {
             return new SoilComponentSaveData
             {
-                id = soil.Id.Value,
-                siteId = soil.SiteId.Value,
+                id = (long)soil.Id.Value,
+                siteId = (long)soil.SiteId.Value,
                 positionX = soil.Position.X,
                 positionY = soil.Position.Y,
                 fertility = soil.Fertility,
                 moisture = soil.Moisture,
-                plantId = soil.PlantId.Value,
+                plantId = (long)soil.PlantId.Value,
             };
         }
 
@@ -287,8 +287,8 @@ namespace EmberCrpg.Data.Save
         {
             return new PlantComponentSaveData
             {
-                id = plant.Id.Value,
-                siteId = plant.SiteId.Value,
+                id = (long)plant.Id.Value,
+                siteId = (long)plant.SiteId.Value,
                 positionX = plant.Position.X,
                 positionY = plant.Position.Y,
                 speciesId = plant.SpeciesId,
@@ -301,17 +301,17 @@ namespace EmberCrpg.Data.Save
         {
             return new JobRequestSaveData
             {
-                id = request.Id.Value,
-                recipeId = request.RecipeId.Value,
-                siteId = request.SiteId.Value,
+                id = (long)request.Id.Value,
+                recipeId = (long)request.RecipeId.Value,
+                siteId = (long)request.SiteId.Value,
                 positionX = request.WorksitePosition.X,
                 positionY = request.WorksitePosition.Y,
                 worksiteKind = (int)request.WorksiteKind,
                 kind = (int)request.Kind,
                 priority = request.Priority.Value,
                 quantity = request.Quantity,
-                requesterId = request.RequesterId.Value,
-                claimedByActorId = board.GetClaimedBy(request.Id).Value,
+                requesterId = (long)request.RequesterId.Value,
+                claimedByActorId = (long)board.GetClaimedBy(request.Id).Value,
                 claimSequence = board.GetClaimSequence(request.Id),
             };
         }
@@ -341,7 +341,7 @@ namespace EmberCrpg.Data.Save
         {
             return new ItemRecordSaveData
             {
-                id = record.Id.Value,
+                id = (long)record.Id.Value,
                 material = (int)record.Material,
                 quality = (int)record.Quality,
                 slot = (int)record.Slot,
@@ -355,7 +355,7 @@ namespace EmberCrpg.Data.Save
             foreach (var record in data ?? Array.Empty<ItemRecordSaveData>())
             {
                 if (record != null)
-                    store.Add(new ItemRecord(new ItemId(record.id), (ItemMaterial)record.material, (ItemQuality)record.quality, ToEquipmentSlot(record.slotCode, record.slot)));
+                    store.Add(new ItemRecord(new ItemId((ulong)record.id), (ItemMaterial)record.material, (ItemQuality)record.quality, ToEquipmentSlot(record.slotCode, record.slot)));
             }
             return store;
         }
@@ -369,7 +369,7 @@ namespace EmberCrpg.Data.Save
         {
             return new SiteRecordSaveData
             {
-                id = record.Id.Value,
+                id = (long)record.Id.Value,
                 kind = (int)record.Kind,
                 name = record.Name,
                 minX = record.MinBound.X,
@@ -387,7 +387,7 @@ namespace EmberCrpg.Data.Save
                 if (record != null)
                 {
                     store.Add(new SiteRecord(
-                        new SiteId(record.id),
+                        new SiteId((ulong)record.id),
                         (SiteKind)record.kind,
                         record.name,
                         new GridPosition(record.minX, record.minY),
@@ -401,7 +401,7 @@ namespace EmberCrpg.Data.Save
         {
             return new WorksiteSaveData
             {
-                siteId = record.SiteId.Value,
+                siteId = (long)record.SiteId.Value,
                 positionX = record.Position.X,
                 positionY = record.Position.Y,
                 kind = (int)record.Kind,
@@ -412,7 +412,7 @@ namespace EmberCrpg.Data.Save
         private static WorksiteRecord ToWorksiteRecord(WorksiteSaveData data)
         {
             return new WorksiteRecord(
-                new SiteId(data.siteId),
+                new SiteId((ulong)data.siteId),
                 new GridPosition(data.positionX, data.positionY),
                 (WorksiteKind)data.kind,
                 data.isActive);
@@ -427,7 +427,7 @@ namespace EmberCrpg.Data.Save
         {
             return new FactionRecordSaveData
             {
-                id = record.Id.Value,
+                id = (long)record.Id.Value,
                 name = record.Name,
                 tags = record.Tags.ToArray(),
             };
@@ -439,7 +439,7 @@ namespace EmberCrpg.Data.Save
             foreach (var record in data ?? Array.Empty<FactionRecordSaveData>())
             {
                 if (record != null)
-                    store.Add(new FactionRecord(new FactionId(record.id), record.name, record.tags ?? Array.Empty<string>()));
+                    store.Add(new FactionRecord(new FactionId((ulong)record.id), record.name, record.tags ?? Array.Empty<string>()));
             }
             return store;
         }
@@ -449,8 +449,8 @@ namespace EmberCrpg.Data.Save
             return (store?.ReputationRows ?? Array.Empty<FactionReputationRow>())
                 .Select(row => new FactionReputationSaveData
                 {
-                    a = row.A.Value,
-                    b = row.B.Value,
+                    a = (long)row.A.Value,
+                    b = (long)row.B.Value,
                     reputation = row.Reputation.Value,
                 })
                 .ToArray();
@@ -463,9 +463,9 @@ namespace EmberCrpg.Data.Save
 
             foreach (var row in data ?? Array.Empty<FactionReputationSaveData>())
             {
-                if (row == null || row.a == 0UL || row.b == 0UL || row.a == row.b)
+                if (row == null || row.a == 0L || row.b == 0L || row.a == row.b)
                     continue;
-                store.WithReputation(new FactionId(row.a), new FactionId(row.b), new FactionReputation(row.reputation));
+                store.WithReputation(new FactionId((ulong)row.a), new FactionId((ulong)row.b), new FactionReputation(row.reputation));
             }
         }
 
@@ -474,7 +474,7 @@ namespace EmberCrpg.Data.Save
             return (ledger?.Entries ?? Array.Empty<PriceLedgerEntry>())
                 .Select(row => new PriceLedgerSaveData
                 {
-                    siteId = row.SiteId.Value,
+                    siteId = (long)row.SiteId.Value,
                     itemTag = row.ItemTag,
                     price = row.Price,
                 })
@@ -486,9 +486,9 @@ namespace EmberCrpg.Data.Save
             var ledger = new PriceLedger();
             foreach (var row in data ?? Array.Empty<PriceLedgerSaveData>())
             {
-                if (row == null || row.siteId == 0UL || string.IsNullOrWhiteSpace(row.itemTag))
+                if (row == null || row.siteId == 0L || string.IsNullOrWhiteSpace(row.itemTag))
                     continue;
-                ledger.SetPrice(new SiteId(row.siteId), row.itemTag, row.price);
+                ledger.SetPrice(new SiteId((ulong)row.siteId), row.itemTag, row.price);
             }
 
             return ledger;
@@ -500,7 +500,7 @@ namespace EmberCrpg.Data.Save
                 .Where(stockpile => stockpile != null)
                 .Select(stockpile => new StockpileSaveData
                 {
-                    siteId = stockpile.SiteId.Value,
+                    siteId = (long)stockpile.SiteId.Value,
                     entries = stockpile.Entries.Select(entry => new StockpileEntrySaveData
                     {
                         itemTag = entry.Key,
@@ -515,9 +515,9 @@ namespace EmberCrpg.Data.Save
             var stockpiles = new List<StockpileComponent>();
             foreach (var row in data ?? Array.Empty<StockpileSaveData>())
             {
-                if (row == null || row.siteId == 0UL)
+                if (row == null || row.siteId == 0L)
                     continue;
-                var stockpile = new StockpileComponent(new SiteId(row.siteId));
+                var stockpile = new StockpileComponent(new SiteId((ulong)row.siteId));
                 foreach (var entry in row.entries ?? Array.Empty<StockpileEntrySaveData>())
                 {
                     if (entry == null || string.IsNullOrWhiteSpace(entry.itemTag) || entry.count <= 0)
@@ -536,9 +536,9 @@ namespace EmberCrpg.Data.Save
                 .Where(route => route != null)
                 .Select(route => new TradeRouteSaveData
                 {
-                    id = route.Id.Value,
-                    originSiteId = route.OriginSiteId.Value,
-                    destinationSiteId = route.DestinationSiteId.Value,
+                    id = (long)route.Id.Value,
+                    originSiteId = (long)route.OriginSiteId.Value,
+                    destinationSiteId = (long)route.DestinationSiteId.Value,
                     itemTag = route.ItemTag,
                     quantityPerCaravan = route.QuantityPerCaravan,
                     cadenceDays = route.CadenceDays,
@@ -549,11 +549,11 @@ namespace EmberCrpg.Data.Save
         private static List<TradeRouteDef> ToTradeRoutes(TradeRouteSaveData[] data)
         {
             return (data ?? Array.Empty<TradeRouteSaveData>())
-                .Where(row => row != null && row.id != 0UL)
+                .Where(row => row != null && row.id != 0L)
                 .Select(row => new TradeRouteDef(
-                    new TradeRouteId(row.id),
-                    new SiteId(row.originSiteId),
-                    new SiteId(row.destinationSiteId),
+                    new TradeRouteId((ulong)row.id),
+                    new SiteId((ulong)row.originSiteId),
+                    new SiteId((ulong)row.destinationSiteId),
                     row.itemTag,
                     row.quantityPerCaravan,
                     row.cadenceDays))
@@ -566,9 +566,9 @@ namespace EmberCrpg.Data.Save
                 .Where(caravan => caravan != null)
                 .Select(caravan => new CaravanSaveData
                 {
-                    id = caravan.Id.Value,
-                    routeId = caravan.RouteId.Value,
-                    currentSiteId = caravan.CurrentSiteId.Value,
+                    id = (long)caravan.Id.Value,
+                    routeId = (long)caravan.RouteId.Value,
+                    currentSiteId = (long)caravan.CurrentSiteId.Value,
                     payloadRemaining = caravan.PayloadRemaining,
                     stepsSinceDeparture = caravan.StepsSinceDeparture,
                     stateCode = caravan.State.Code,
@@ -579,11 +579,11 @@ namespace EmberCrpg.Data.Save
         private static List<CaravanInstance> ToCaravans(CaravanSaveData[] data)
         {
             return (data ?? Array.Empty<CaravanSaveData>())
-                .Where(row => row != null && row.id != 0UL)
+                .Where(row => row != null && row.id != 0L)
                 .Select(row => new CaravanInstance(
-                    new CaravanId(row.id),
-                    new TradeRouteId(row.routeId),
-                    new SiteId(row.currentSiteId),
+                    new CaravanId((ulong)row.id),
+                    new TradeRouteId((ulong)row.routeId),
+                    new SiteId((ulong)row.currentSiteId),
                     row.payloadRemaining,
                     row.stepsSinceDeparture,
                     CaravanState.FromCode(row.stateCode)))
@@ -601,8 +601,8 @@ namespace EmberCrpg.Data.Save
             {
                 tickMinutes = worldEvent.Tick.TotalMinutes,
                 kind = (int)worldEvent.Kind,
-                actorId = worldEvent.ActorId.Value,
-                siteId = worldEvent.SiteId.Value,
+                actorId = (long)worldEvent.ActorId.Value,
+                siteId = (long)worldEvent.SiteId.Value,
                 reason = worldEvent.Reason,
                 reasonTrace = worldEvent.ReasonTrace?.Causes.ToArray(),
             };
@@ -618,8 +618,8 @@ namespace EmberCrpg.Data.Save
                     log.Append(new WorldEvent(
                         new GameTime(worldEvent.tickMinutes),
                         (WorldEventKind)worldEvent.kind,
-                        new ActorId(worldEvent.actorId),
-                        new SiteId(worldEvent.siteId),
+                        new ActorId((ulong)worldEvent.actorId),
+                        new SiteId((ulong)worldEvent.siteId),
                         worldEvent.reason,
                         ToReasonTrace(worldEvent.reasonTrace)));
                 }
@@ -660,13 +660,13 @@ namespace EmberCrpg.Data.Save
 
         private static WorldProfile ToWorldProfile(WorldProfileSaveData data)
         {
-            if (data == null) return null;
+            if (data == null || data.targetPopulation <= 0) return null;
             return new WorldProfile(
-                (WorldStyle)data.style,
+(WorldStyle)data.style,
                 (WorldGenre)data.genre,
-                data.seed,
+                (uint)data.seed,
                 data.targetPopulation,
-                data.regionCount,
+data.regionCount,
                 data.factionCount,
                 data.historyYears,
                 data.moodKeyword,
@@ -678,8 +678,8 @@ namespace EmberCrpg.Data.Save
         {
             return new ToolCallTraceSaveData
             {
-                tickMinutes = tick.TotalMinutes,
-                siteId = siteId.Value,
+                tickMinutes = (long)tick.TotalMinutes,
+                siteId = (long)siteId.Value,
                 surfaceCode = request?.Surface.Code,
                 toolCode = request?.ToolId.Code,
                 parameters = ToToolCallParameterData(request?.Parameters),
@@ -707,7 +707,7 @@ namespace EmberCrpg.Data.Save
                 .Where(row => row != null)
                 .Select(row => new ToolCallTraceRecord(
                     new GameTime(row.tickMinutes < 0 ? 0 : row.tickMinutes),
-                    new SiteId(row.siteId),
+                    new SiteId((ulong)row.siteId),
                     ToToolCallRequest(row),
                     new ToolCallResult(row.accepted, row.payload, row.rejectionReason)))
                 .ToList();
@@ -778,12 +778,12 @@ namespace EmberCrpg.Data.Save
         {
             return (npcs ?? Array.Empty<NpcSeedRecord>())
                 .Where(npc => npc != null)
-                .OrderBy(npc => npc.Id.Value)
+                .OrderBy(npc => (long)npc.Id.Value)
                 .Select(npc => new NpcSeedSaveData
                 {
-                    id = npc.Id.Value,
-                    home = npc.Home.Value,
-                    faction = npc.Faction.Value,
+                    id = (long)npc.Id.Value,
+                    home = (long)npc.Home.Value,
+                    faction = (long)npc.Faction.Value,
                     name = npc.Name,
                     birthYear = npc.BirthYear,
                     role = (int)npc.Role,
@@ -796,16 +796,16 @@ namespace EmberCrpg.Data.Save
         {
             return (data ?? Array.Empty<NpcSeedSaveData>())
                 .Where(row => row != null
-                    && row.id != 0UL
-                    && row.home != 0UL
-                    && row.faction != 0UL
+                    && row.id != 0L
+                    && row.home != 0L
+                    && row.faction != 0L
                     && !string.IsNullOrWhiteSpace(row.name)
                     && row.role != (int)NpcRole.None)
                 .OrderBy(row => row.id)
                 .Select(row => new NpcSeedRecord(
-                    new NpcId(row.id),
-                    new SettlementId(row.home),
-                    new FactionId(row.faction),
+                    new NpcId((ulong)row.id),
+                    new SettlementId((ulong)row.home),
+                    new FactionId((ulong)row.faction),
                     row.name,
                     row.birthYear,
                     (NpcRole)row.role,
@@ -828,7 +828,7 @@ namespace EmberCrpg.Data.Save
                     {
                         slot = (int)pair.Key,
                         slotCode = pair.Key.Code,
-                        itemId = pair.Value.Value,
+                        itemId = (long)pair.Value.Value,
                     })
                     .ToArray(),
             };
@@ -838,7 +838,7 @@ namespace EmberCrpg.Data.Save
         {
             var equipment = new EquipmentState();
             foreach (var slot in data?.slots ?? Array.Empty<EquippedItemSaveData>())
-                equipment.Equip(ToEquipmentSlot(slot.slotCode, slot.slot), new ItemId(slot.itemId));
+                equipment.Equip(ToEquipmentSlot(slot.slotCode, slot.slot), new ItemId((ulong)slot.itemId));
             return equipment;
         }
 
@@ -853,7 +853,7 @@ namespace EmberCrpg.Data.Save
         {
             return (store ?? new NpcMemoryStore()).GetAllSorted().Select(memory => new NpcMemorySaveData
             {
-                actorId = memory.ActorId.Value,
+                actorId = (long)memory.ActorId.Value,
                 events = memory.Events.Select(ToInteractionEventData).ToArray(),
                 dialogueSeen = memory.DialogueSeen.OrderBy(topicId => topicId).ToArray(),
                 transactions = memory.Transactions.Select(ToTransactionData).ToArray(),
@@ -869,7 +869,7 @@ namespace EmberCrpg.Data.Save
 
         private static ActorMemory ToActorMemory(NpcMemorySaveData data)
         {
-            var memory = new ActorMemory(new ActorId(data.actorId));
+            var memory = new ActorMemory(new ActorId((ulong)data.actorId));
             memory.ReplaceEvents((data.events ?? Array.Empty<InteractionEventSaveData>()).Select(ToInteractionEvent));
             memory.ReplaceDialogueSeen(data.dialogueSeen);
             memory.ReplaceTransactions((data.transactions ?? Array.Empty<TransactionSaveData>()).Select(ToTransaction));
@@ -880,9 +880,9 @@ namespace EmberCrpg.Data.Save
         {
             return new InteractionEventSaveData
             {
-                timestampMinutes = interactionEvent.Timestamp.TotalMinutes,
+                timestampMinutes = (long)interactionEvent.Timestamp.TotalMinutes,
                 eventType = interactionEvent.EventType,
-                actorSeen = interactionEvent.ActorSeen.Value,
+                actorSeen = (long)interactionEvent.ActorSeen.Value,
                 subjectId = interactionEvent.SubjectId,
                 itemTemplateId = interactionEvent.ItemTemplateId,
                 amount = interactionEvent.Amount,
@@ -896,7 +896,7 @@ namespace EmberCrpg.Data.Save
             return new InteractionEvent(
                 new GameTime(data.timestampMinutes),
                 data.eventType,
-                new ActorId(data.actorSeen),
+                new ActorId((ulong)data.actorSeen),
                 data.subjectId,
                 data.itemTemplateId,
                 data.amount,
@@ -907,7 +907,7 @@ namespace EmberCrpg.Data.Save
         {
             return new TransactionSaveData
             {
-                timestampMinutes = transaction.Timestamp.TotalMinutes,
+                timestampMinutes = (long)transaction.Timestamp.TotalMinutes,
                 transactionType = transaction.TransactionType,
                 itemTemplateId = transaction.ItemTemplateId,
                 count = transaction.Count,

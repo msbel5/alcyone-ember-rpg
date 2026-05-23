@@ -1,0 +1,38 @@
+{
+    "asset": "da73eb9b9b77cd948bf7156bdc841f79",
+    "fileName": "019e530c-2230-7d79-8ce5-c17877073059.png",
+    "prompt": "gritty medieval beggar in tattered brown rags, single character centered, standing pose, front view, isolated on transparent background, high fantasy dark RPG style, painterly digital art, matches existing beggar style, no sprite sheet, no multiple poses, no background",
+    "negativePrompt": "",
+    "model": "gemini-3.1-flash",
+    "modelName": "Gemini 3.1 Nano Banana 2",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelatePixelGridSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": [
+            {
+                "doodleReferenceType": 7,
+                "doodle": [],
+                "label": "Image",
+                "strength": 0.25,
+                "invertStrength": false,
+                "assetReferenceGuid": "51d13f322f0ad5b4089fc988ed64442c",
+                "unlabeledIndex": -1
+            }
+        ]
+    },
+    "upscaleFactor": 0,
+    "dimensions": {
+        "width": 1024,
+        "height": 1024
+    },
+    "spriteSheet": false,
+    "duration": 0.0
+}
