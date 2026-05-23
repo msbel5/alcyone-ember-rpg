@@ -54,6 +54,18 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.That(recovered, Is.True);
             Assert.That(actor.Needs.Hunger.Value, Is.LessThan(80));
 
+            // Codex audit (eighth pass A-P1): Thirst now decays with ticks
+            // too, so after three days unfed the actor is also dehydrated
+            // and tired. EatMeal only restores Hunger — to exercise the
+            // post-recovery assignment branch, simulate the actor having
+            // also drunk and rested (recovery actions outside this atom's
+            // scope) so mood crosses back above ActorMood.LowMoodThreshold.
+            actor.ApplyNeeds(new ActorNeeds(
+                actor.Needs.Hunger,
+                NeedValue.Comfortable,
+                NeedValue.Comfortable));
+            new NeedsSystem().RecomputeMood(actor);
+
             // After recovery, assignment should succeed
             var assigned = assigner.TryAssignNext(actors, board, worksites, log, now, out result);
             Assert.That(assigned, Is.True);

@@ -26,11 +26,57 @@ namespace EmberCrpg.Presentation.Ember.UI
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
+            // Audit (eighth pass D-P1): when instantiated bare (no scene
+            // authoring) the screen needs a Canvas + CanvasGroup to render.
+            EnsureCanvasOnSelf();
             _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
             _canvasGroup.alpha = 0f;
             gameObject.SetActive(false);
-            
+
             BuildUI();
+            // Audit (eighth pass D-P1): when spawned by the main menu before
+            // SceneManager.LoadScene, display immediately and self-destroy on
+            // the next scene's first Update (or after a timeout).
+            gameObject.SetActive(true);
+            _canvasGroup.alpha = 1f;
+            PickRandomFlavor();
+            StartCoroutine(AutoDismissRoutine());
+        }
+
+        private IEnumerator AutoDismissRoutine()
+        {
+            var startScene = SceneManager.GetActiveScene().buildIndex;
+            float maxWait = 8f;
+            float elapsed = 0f;
+            while (elapsed < maxWait)
+            {
+                if (_spinner != null) _spinner.transform.Rotate(0, 0, -200 * Time.unscaledDeltaTime);
+                elapsed += Time.unscaledDeltaTime;
+                if (SceneManager.GetActiveScene().buildIndex != startScene)
+                {
+                    // Next scene reached; one extra frame so it can render, then dismiss.
+                    yield return null;
+                    break;
+                }
+                yield return null;
+            }
+            yield return StartCoroutine(Fade(_canvasGroup.alpha, 0f, 0.3f));
+            if (Instance == this) Instance = null;
+            Destroy(gameObject);
+        }
+
+        private void EnsureCanvasOnSelf()
+        {
+            var canvas = GetComponent<Canvas>();
+            if (canvas == null)
+            {
+                canvas = gameObject.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 5000;
+                gameObject.AddComponent<CanvasScaler>();
+                gameObject.AddComponent<GraphicRaycaster>();
+            }
         }
 
         public void LoadScene(string sceneName)

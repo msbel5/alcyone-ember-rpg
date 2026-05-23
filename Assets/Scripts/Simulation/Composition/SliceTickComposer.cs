@@ -149,12 +149,20 @@ namespace EmberCrpg.Simulation.Composition
         /// <summary>
         /// Reset the composer's tick anchor — call after a save restore so
         /// the next Advance does not double-tick the restored time.
+        ///
+        /// Codex audit (eighth pass A-P2): previously this also zeroed the
+        /// hourly accumulator, which silently dropped any overdue needs/daily
+        /// progress that had accumulated across a save/load boundary. The
+        /// _ticksSinceHourly / _ticksSinceDaily accumulators are now
+        /// preserved so the next Advance flushes the pending hourly tick
+        /// instead of restarting the gate. Callers must still invoke
+        /// ResetAnchor only after <see cref="SliceWorldState.Time"/> has
+        /// been restored — anchor reset itself does not rewind domain state.
         /// </summary>
         public void ResetAnchor()
         {
             _lastTickIndex = -1;
-            _ticksSinceHourly = 0;
-            _ticksSinceDaily = 0;
+            // _ticksSinceHourly / _ticksSinceDaily intentionally preserved.
         }
     }
 }

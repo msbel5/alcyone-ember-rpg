@@ -39,7 +39,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             if (Input.GetKeyDown(KeyCode.F9)) Load();
         }
 
-        private void Save()
+        public void Save()
         {
             var player = GameObject.Find("PlayerRig");
             if (player == null) return;
@@ -89,7 +89,7 @@ namespace EmberCrpg.Presentation.Ember.Save
                 ShowStatus("Saved.");
         }
 
-        private void Load()
+        public void Load()
         {
             string json = PlayerPrefs.GetString(SaveKey);
             if (string.IsNullOrEmpty(json))

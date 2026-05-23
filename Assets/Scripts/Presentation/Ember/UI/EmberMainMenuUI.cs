@@ -54,8 +54,22 @@ namespace EmberCrpg.Presentation.Ember.UI
             }
             else
             {
+                SpawnLoadingScreen();
                 SceneManager.LoadScene(_firstSceneName);
             }
+        }
+
+        /// <summary>
+        /// Audit (eighth pass D-P1): EmberLoadingScreen was never instantiated.
+        /// Spin one up DontDestroyOnLoad before transitioning so the next
+        /// scene's first frames are masked by the fade.
+        /// </summary>
+        private static void SpawnLoadingScreen()
+        {
+            if (EmberLoadingScreen.Instance != null) return;
+            var go = new GameObject("EmberLoadingScreen", typeof(EmberLoadingScreen));
+            // DontDestroyOnLoad is applied inside EmberLoadingScreen.Awake.
+            UnityEngine.Object.DontDestroyOnLoad(go);
         }
 
         public void Continue()
@@ -81,6 +95,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                     // player build skips this check and lets Unity surface
                     // the error its own way).
                     EmberCrpg.Presentation.Ember.Save.EmberSaveService.PreparePendingLoad(data);
+                    SpawnLoadingScreen();
                     SceneManager.LoadScene(data.sceneName);
                     return;
                 }

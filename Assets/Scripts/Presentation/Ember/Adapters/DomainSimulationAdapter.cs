@@ -533,7 +533,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 foreach (var effect in spell.Effects)
                 {
+<<<<<<< HEAD
+                    var code = effect.Kind;
+=======
                     var code = effect.Code;
+>>>>>>> origin/main
                     if (code == EmberCrpg.Domain.Magic.SpellEffectCode.RestoreHealth
                         || code == EmberCrpg.Domain.Magic.SpellEffectCode.ShieldBuff
                         || code == EmberCrpg.Domain.Magic.SpellEffectCode.RestoreMana
