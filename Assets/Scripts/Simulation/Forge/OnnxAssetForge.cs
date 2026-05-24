@@ -294,15 +294,25 @@ namespace EmberCrpg.Simulation.Forge
         private static string DeriveSiblingModel(string knownModelPath, string siblingFolderName)
         {
             if (string.IsNullOrEmpty(knownModelPath)) return string.Empty;
-            var textEncoderDir = Path.GetDirectoryName(knownModelPath);
-            var root = textEncoderDir == null ? null : Path.GetDirectoryName(textEncoderDir);
+            // Unity 6.3+ Mono is stricter than older runtimes: Path.GetDirectoryName throws
+            // ArgumentException("Invalid path") on inputs that previously returned "" (e.g. fake
+            // placeholder strings from tests like "n0"). Treat such inputs as "no sibling discoverable".
+            string textEncoderDir;
+            try { textEncoderDir = Path.GetDirectoryName(knownModelPath); }
+            catch (ArgumentException) { return string.Empty; }
+            string root;
+            try { root = textEncoderDir == null ? null : Path.GetDirectoryName(textEncoderDir); }
+            catch (ArgumentException) { return string.Empty; }
             return string.IsNullOrEmpty(root) ? string.Empty : Path.Combine(root, siblingFolderName, "model.onnx");
         }
 
         private static string DeriveTokenizerSibling(string vocabPath, string fileName)
         {
             if (string.IsNullOrEmpty(vocabPath)) return string.Empty;
-            var dir = Path.GetDirectoryName(vocabPath);
+            // See DeriveSiblingModel: Unity 6.3+ Mono throws on placeholder paths instead of returning "".
+            string dir;
+            try { dir = Path.GetDirectoryName(vocabPath); }
+            catch (ArgumentException) { return string.Empty; }
             return string.IsNullOrEmpty(dir) ? string.Empty : Path.Combine(dir, fileName);
         }
     }
