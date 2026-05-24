@@ -486,8 +486,8 @@ E. **Failure semantics**
 
 F. **Git**
 
-- [ ] One commit (or a small focused series) on `feat/visible-generation-cutover`.
-- [ ] PR opened against `codex/sdxl-pipeline-and-naming-refactor`. **Do not merge** before @msbel5 review.
+- [ ] One commit (or a small focused series) on the active work branch (today: a feature branch off `main` — `codex/sdxl-pipeline-and-naming-refactor` has been folded into `main` via PR #212 and deleted).
+- [ ] PR opened against `main`. **Do not merge** before @msbel5 review.
 - [ ] Commit message references this PRD path.
 
 G. **Report**
