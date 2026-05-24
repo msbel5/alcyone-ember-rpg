@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using System.Threading;
+using EmberCrpg.Domain.Generation;
 using EmberCrpg.Simulation.Generation;
 using NUnit.Framework;
 
@@ -19,7 +20,7 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 Assert.That(report.Missing, Is.GreaterThan(0));
                 Assert.That(report.Entries.Any(e => e.State == EntryState.Missing), Is.True);
             }
-            finally { Directory.Delete(root, true); }
+            finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
         }
 
         [Test]
@@ -50,3 +51,4 @@ namespace EmberCrpg.Tests.EditMode.Generation
         }
     }
 }
+

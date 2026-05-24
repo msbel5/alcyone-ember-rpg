@@ -210,19 +210,6 @@ namespace EmberCrpg.Simulation.Forge
             return (byte)(value * 255f);
         }
 
-        private static int ClampDimension(int value)
-        {
-            if (value < 64) return 64;
-            if (value > 1024) return 1024;
-            // SDXL Turbo VAE downsamples by 8×. Snap to the largest multiple of 8 that
-            // does not exceed the request so the decoded latent tensor
-            // (latentWidth * latentHeight * channels) lines up with the RGBA buffer
-            // we hand back. Without this, requests like 769×769 truncate to a 96-cell
-            // latent on each axis while width/height stay at 769, tripping the
-            // "VAE output size mismatch" check in DecodedNchwToRgba.
-            return (value / 8) * 8;
-        }
-
         private sealed class SdxlEncoder2Output
         {
             public SdxlEncoder2Output(float[] hiddenStates1280, float[] pooled1280)
@@ -261,5 +248,11 @@ namespace EmberCrpg.Simulation.Forge
             }
         }
 #endif
+        private static int ClampDimension(int value)
+        {
+            if (value < 64) return 64;
+            if (value > 1024) return 1024;
+            return (value / 8) * 8;
+        }
     }
 }

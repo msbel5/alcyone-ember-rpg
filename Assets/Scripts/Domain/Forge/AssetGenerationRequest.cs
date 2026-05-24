@@ -24,12 +24,15 @@ namespace EmberCrpg.Domain.Forge
             int height,
             uint seed,
             string prompt,
-            string negativePrompt)
+            string negativePrompt,
+            int timeoutSeconds = 300,
+            string modelHint = "")
         {
             if (string.IsNullOrWhiteSpace(requestId)) throw new ArgumentException("RequestId is required.", nameof(requestId));
             if (string.IsNullOrWhiteSpace(promptHash)) throw new ArgumentException("PromptHash is required.", nameof(promptHash));
             if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
             if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+            if (timeoutSeconds <= 0) throw new ArgumentOutOfRangeException(nameof(timeoutSeconds));
 
             RequestId = requestId.Trim();
             Subject = subject;
@@ -42,6 +45,8 @@ namespace EmberCrpg.Domain.Forge
             Seed = seed;
             Prompt = prompt ?? string.Empty;
             NegativePrompt = negativePrompt ?? string.Empty;
+            TimeoutSeconds = timeoutSeconds;
+            ModelHint = modelHint ?? string.Empty;
         }
 
         public string RequestId { get; }
@@ -55,5 +60,8 @@ namespace EmberCrpg.Domain.Forge
         public uint Seed { get; }
         public string Prompt { get; }
         public string NegativePrompt { get; }
+        public int TimeoutSeconds { get; }
+        public string ModelHint { get; }
     }
 }
+
