@@ -115,7 +115,20 @@ The Boot, Loading, and Worldgen screens are built against the abstraction. The e
 
 ### D2. Asset manifest — **hand-authored core + LLM-driven dynamic prompts + RGB variants**
 
-User insight: instead of pre-generating thousands of unique portraits, ship a small set of **generic NPC base silhouettes** (humanoid male/female, beast quadruped, undead, construct, fairy, dragon, etc. — these already exist in `Assets/Art/BodySilhouettes/`) and at runtime synthesize unique NPCs by combining:
+User insight: instead of pre-generating thousands of unique portraits, ship a small set of **generic NPC base silhouettes** and at runtime synthesize unique NPCs by combining them.
+
+The base set already on disk in `Assets/Art/BodySilhouettes/` (verified 2026-05-24):
+
+- `humanoid_male.png`
+- `humanoid_female.png`
+- `beast_quadruped.png`
+- `undead_humanoid.png`
+- `construct.png`
+- `aberration.png`
+
+Other archetypes such as fairy, dragon, or elemental are **not** pre-existing. When Phase 2 detects a manifest entry for an unsupported archetype it must be flagged `requires_generation` and queued through the normal Forge path (using the closest existing archetype as a seed reference) rather than assumed to be on disk. Phase 2 acceptance must cover this case explicitly.
+
+At runtime we synthesize unique NPCs by combining:
 
 1. **Base silhouette** (from the core manifest, hand-authored)
 2. **RGB recolor** (deterministic from NPC seed — palette swap on the base)
@@ -166,8 +179,8 @@ Phases 1 must merge first. Phase 2 can start in parallel. Phase 3-5 depend on 1+
 
 ## Acceptance Criteria
 
-- [ ] `start.exe` → Boot screen → if assets missing, generation screen plays through every missing asset visibly → "Continue to Main Menu"
-- [ ] Main Menu uses the new UI system
+- [ ] `start.exe` → Boot screen (new UI system) → if assets missing, generation screen plays through every missing asset visibly → "Continue to Main Menu"
+- [ ] Boot, Loading, and Worldgen screens use the new UI system end-to-end. The existing `MainMenuCanvas` and in-scene HUD stay on UGUI for v1 (see D1) — a follow-up migration PR (out of scope here) ports them once the new system is proven.
 - [ ] New Game → Loading Screen → Worldgen runs step by step, every question/dice/decision is on screen
 - [ ] Generation failures are logged to disk **and** shown in UI
 - [ ] All in-game UI (HUD, modals, panels) uses the same design tokens and prefab library
@@ -201,4 +214,4 @@ Phases 1 must merge first. Phase 2 can start in parallel. Phase 3-5 depend on 1+
 | PromptComposers | (referenced from ForgeMenu) | Builds NPC portrait prompts |
 | WorldgenService | `Assets/Scripts/Simulation/Worldgen/` | Domain logic, no view |
 | MainMenu scene | `Assets/Scenes/Ember/MainMenu.unity` | Exists with `MainMenuCanvas` |
-| AI Assistant | embedded patch applied via `AiAssistantTokenizerPatch.cs` | Stable |
+| AI Assistant | Embedded under `Packages/com.unity.ai.assistant/`; `SigLip2Text.cs` line 59 rewritten to the no-arg `SentencePieceTokenizer.Create(stream)` overload (defaults preserved). Lands via PR #207. | Stable once PR #207 merges |
