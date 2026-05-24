@@ -1,0 +1,1305 @@
+DISCOVERY_TS=1779652917
+
+
+===== preflight: git fetch/status/main/prs =====
+## docs/codex-mission-v2...origin/docs/codex-mission-v2
+ M "Assets/TextMesh Pro/Examples & Extras/Materials/Crate - URP.mat"
+ M "Assets/TextMesh Pro/Examples & Extras/Materials/Ground - URP.mat"
+ M "Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Bangers SDF Logo - URP.mat"
+ M "Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Roboto-Bold SDF - URP.mat"
+ M "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset"
+?? Assets/Scripts/Ui.meta
+?? Reports/
+32dcdf6ab86e967dec0160e5b13ab42dea6b42ed
+32dcdf6a Rescue PRD V2 + Codex mission prompt + UI foundation from closed PR #210 (#213)
+c3423c2f Reconcile codex/sdxl into main (28 add/add conflicts resolved per Plan-agent matrix) (#212)
+5db91ece docs: branch audit 2026-05-23 — 35 restored branches, all IGNORE (#206)
+18be831e fix(ai-stack+combat): drop conflicting Bcl DLLs + persist melee RNG via world state
+f25264ff fix(ai-stack): wire LLamaSharp 0.27 dep chain + update Inference API + drop partial SDXL
+{"mergeCommit":"c3423c2f041a7e482cd9fd7b8e02fb277630258f","state":"MERGED"}
+{"mergeCommit":"32dcdf6ab86e967dec0160e5b13ab42dea6b42ed","state":"MERGED"}
+[{"baseRefName":"main","headRefName":"docs/codex-mission-v2","number":214,"title":"docs: rewrite Codex mission prompt for clean post-merge starting state"}]
+
+
+===== 4.1 branch state =====
+## docs/codex-mission-v2...origin/docs/codex-mission-v2
+ M "Assets/TextMesh Pro/Examples & Extras/Materials/Crate - URP.mat"
+ M "Assets/TextMesh Pro/Examples & Extras/Materials/Ground - URP.mat"
+ M "Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Bangers SDF Logo - URP.mat"
+ M "Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Roboto-Bold SDF - URP.mat"
+ M "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset"
+?? Assets/Scripts/Ui.meta
+?? Reports/
+3584dc71 Rewrite Codex mission prompt for clean post-merge starting state
+3584dc71 Rewrite Codex mission prompt for clean post-merge starting state
+32dcdf6a Rescue PRD V2 + Codex mission prompt + UI foundation from closed PR #210 (#213)
+c3423c2f Reconcile codex/sdxl into main (28 add/add conflicts resolved per Plan-agent matrix) (#212)
+5db91ece docs: branch audit 2026-05-23 — 35 restored branches, all IGNORE (#206)
+18be831e fix(ai-stack+combat): drop conflicting Bcl DLLs + persist melee RNG via world state
+f25264ff fix(ai-stack): wire LLamaSharp 0.27 dep chain + update Inference API + drop partial SDXL
+ea8b13b0 feat(ai-stack): upgrade managed DLLs — ONNX Runtime 1.26.0 + ML Tokenizers 3.0-preview
+dd844064 feat(ai-stack): add ONNX Runtime managed binding + ML Tokenizers DLLs
+d3117c9c feat(ai-stack): ship LLamaSharp 0.27 + ONNX Runtime 1.26 DLLs + Qwen2.5-1.5B GGUF
+3e36bde0 fix(ui): wire IsThinking dialog indicator + shrink CombatHud bars to bottom strip
+ .../visible-generation-cutover-codex-mission.md    | 1231 +++++++++++++++-----
+ 1 file changed, 942 insertions(+), 289 deletions(-)
+
+
+===== 4.2 editor menus =====
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:18:        [MenuItem("Ember/Forge/Generate Fresh World Assets")]
+Assets/Editor\Ember\Menu\EmberBuildSettingsMenu.cs:10:        [MenuItem("Ember/Build/Add All Scenes To Build Settings")]
+Assets/Editor\Ember\Menu\EmberBuildSettingsMenu.cs:32:        [MenuItem("Ember/Build/Build Windows64 Player")]
+Assets/Editor\Ember\Tools\EmberScreenshotCapture.cs:23:        [MenuItem("Ember/Capture/All Faz Scene Screenshots")]
+Assets/Editor\Ember\Tools\EmberScreenshotCapture.cs:45:        [MenuItem("Ember/Capture/Active Scene Screenshot")]
+Assets/Editor\Ember\Tools\SpriteRegistryAutoBuilder.cs:19:        [MenuItem("Ember/Build/Sprite Registry From Art Folders")]
+Assets/Editor\Ember\Menu\ForgeMenu.cs:17:        [MenuItem("Ember/Forge/Generate world assets")]
+
+
+===== 4.3 scenes files =====
+Assets/Scenes\CombatPlayground.unity
+Assets/Scenes\CombatPlayground.unity.meta
+Assets/Scenes\Ember.meta
+Assets/Scenes\Ember\CharacterCreation.unity
+Assets/Scenes\Ember\CharacterCreation.unity.meta
+Assets/Scenes\Ember\ColonyNeeds.unity
+Assets/Scenes\Ember\ColonyNeeds.unity.meta
+Assets/Scenes\Ember\CombatDungeon.unity
+Assets/Scenes\Ember\CombatDungeon.unity.meta
+Assets/Scenes\Ember\Faz10OracleShrine.unity
+Assets/Scenes\Ember\Faz10OracleShrine.unity.meta
+Assets/Scenes\Ember\Faz11ShowroomOverview.unity
+Assets/Scenes\Ember\Faz11ShowroomOverview.unity.meta
+Assets/Scenes\Ember\Faz12TavernFlavour.unity
+Assets/Scenes\Ember\Faz12TavernFlavour.unity.meta
+Assets/Scenes\Ember\Faz3SmithingOverworld.unity
+Assets/Scenes\Ember\Faz3SmithingOverworld.unity.meta
+Assets/Scenes\Ember\Faz4ColonyNeeds.unity
+Assets/Scenes\Ember\Faz4ColonyNeeds.unity.meta
+Assets/Scenes\Ember\Faz5SeasonFarm.unity
+Assets/Scenes\Ember\Faz5SeasonFarm.unity.meta
+Assets/Scenes\Ember\Faz6TradeMarket.unity
+Assets/Scenes\Ember\Faz6TradeMarket.unity.meta
+Assets/Scenes\Ember\Faz7CombatDungeon.unity
+Assets/Scenes\Ember\Faz7CombatDungeon.unity.meta
+Assets/Scenes\Ember\Faz8RitualHall.unity
+Assets/Scenes\Ember\Faz8RitualHall.unity.meta
+Assets/Scenes\Ember\Faz9TavernDialog.unity
+Assets/Scenes\Ember\Faz9TavernDialog.unity.meta
+Assets/Scenes\Ember\MainMenu.unity
+Assets/Scenes\Ember\MainMenu.unity.meta
+Assets/Scenes\Ember\OracleShrine.unity
+Assets/Scenes\Ember\OracleShrine.unity.meta
+Assets/Scenes\Ember\RitualHall.unity
+Assets/Scenes\Ember\RitualHall.unity.meta
+Assets/Scenes\Ember\SeasonFarm.unity
+Assets/Scenes\Ember\SeasonFarm.unity.meta
+Assets/Scenes\Ember\ShowroomOverview.unity
+Assets/Scenes\Ember\ShowroomOverview.unity.meta
+Assets/Scenes\Ember\SmithingOverworld.unity
+Assets/Scenes\Ember\SmithingOverworld.unity.meta
+Assets/Scenes\Ember\TavernDialog.unity
+Assets/Scenes\Ember\TavernDialog.unity.meta
+Assets/Scenes\Ember\TavernFlavour.unity
+Assets/Scenes\Ember\TavernFlavour.unity.meta
+Assets/Scenes\Ember\TerrainData.meta
+Assets/Scenes\Ember\TerrainData\DungeonFloor_Data.asset
+Assets/Scenes\Ember\TerrainData\DungeonFloor_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\DungeonFloor_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\DungeonFloor_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\Field_Data.asset
+Assets/Scenes\Ember\TerrainData\Field_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\Field_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\Field_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\FlavourFloor_Data.asset
+Assets/Scenes\Ember\TerrainData\FlavourFloor_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\FlavourFloor_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\FlavourFloor_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\Floor_Data.asset
+Assets/Scenes\Ember\TerrainData\Floor_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\Floor_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\Floor_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\Ground_Data.asset
+Assets/Scenes\Ember\TerrainData\Ground_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\Ground_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\Ground_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\MarketSquare_Data.asset
+Assets/Scenes\Ember\TerrainData\MarketSquare_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\MarketSquare_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\MarketSquare_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\Path_Data.asset
+Assets/Scenes\Ember\TerrainData\Path_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\Path_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\Path_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\RitualFloor_Data.asset
+Assets/Scenes\Ember\TerrainData\RitualFloor_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\RitualFloor_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\RitualFloor_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\ShowroomFloor_Data.asset
+Assets/Scenes\Ember\TerrainData\ShowroomFloor_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\ShowroomFloor_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\ShowroomFloor_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\ShrineFloor_Data.asset
+Assets/Scenes\Ember\TerrainData\ShrineFloor_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\ShrineFloor_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\ShrineFloor_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TerrainData\TavernFloor_Data.asset
+Assets/Scenes\Ember\TerrainData\TavernFloor_Data.asset.meta
+Assets/Scenes\Ember\TerrainData\TavernFloor_Layer.terrainlayer
+Assets/Scenes\Ember\TerrainData\TavernFloor_Layer.terrainlayer.meta
+Assets/Scenes\Ember\TradeMarket.unity
+Assets/Scenes\Ember\TradeMarket.unity.meta
+Assets/Scenes\Sprint4Foundation.unity
+Assets/Scenes\Sprint4Foundation.unity.meta
+
+
+===== 4.3 ui surfaces =====
+Assets/Editor\Ember\Menu\EmberMainMenuSceneBuilder.cs
+Assets/Editor\Ember\SceneRecipes\ColonyNeedsSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\CharacterCreationSceneRecipe.cs
+Assets/Editor\Ember\Menu\EmberSceneBuilderMenu.cs
+Assets/Editor\Ember\SceneRecipes\Faz10DmQuerySceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\CombatDungeonSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\Faz11VisualLayerSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\Faz4ColonyNeedsSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\Faz3SmithingSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\Faz5FarmSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\Faz12LlmFlavourSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\Faz6TradeSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\Faz7CombatSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\Faz8MagicSceneRecipe.cs
+Assets/Editor\Ember\SceneBuilders\EmberUiBuilder.cs
+Assets/Editor\Ember\SceneRecipes\Faz9DialogSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\MainMenuSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\OracleShrineSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\RitualHallSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\SeasonFarmSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\ShowroomOverviewSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\SmithingOverworldSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\TavernDialogSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\TavernFlavourSceneRecipe.cs
+Assets/Editor\Ember\SceneRecipes\TradeMarketSceneRecipe.cs
+Assets/Scripts/Presentation\Ember\Adapters\CharacterCreationViewModel.cs
+Assets/Scenes\Ember\CharacterCreation.unity
+Assets/Scenes\Ember\ColonyNeeds.unity
+Assets/Scenes\Ember\CombatDungeon.unity
+Assets/Scripts/Presentation\Ember\Bootstrap\EmberWorldHost.cs
+Assets/Scenes\Ember\Faz10OracleShrine.unity
+Assets/Scenes\Ember\Faz11ShowroomOverview.unity
+Assets/Scripts/Presentation\Ember\Save\EmberSaveService.cs
+Assets/Scenes\Ember\Faz12TavernFlavour.unity
+Assets/Scripts/Presentation\Ember\UI\CharacterCreationUI.cs
+Assets/Scenes\Ember\Faz3SmithingOverworld.unity
+Assets/Scenes\Ember\Faz4ColonyNeeds.unity
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs
+Assets/Scenes\Ember\Faz5SeasonFarm.unity
+Assets/Scenes\Ember\Faz6TradeMarket.unity
+Assets/Scenes\Ember\Faz7CombatDungeon.unity
+Assets/Scenes\Ember\Faz8RitualHall.unity
+Assets/Scripts/Presentation\Ember\UI\DialogBoxPanel.cs
+Assets/Scenes\Ember\Faz9TavernDialog.unity
+Assets/Scenes\Ember\MainMenu.unity
+Assets/Scripts/Presentation\Ember\UI\EmberLoadingScreen.cs
+Assets/Scenes\Ember\OracleShrine.unity
+Assets/Scenes\Ember\RitualHall.unity
+Assets/Scenes\Ember\SeasonFarm.unity
+Assets/Scenes\Ember\ShowroomOverview.unity
+Assets/Scenes\Ember\SmithingOverworld.unity
+Assets/Scenes\Ember\TavernDialog.unity
+Assets/Scenes\Ember\TavernFlavour.unity
+Assets/Scripts/Presentation\Ember\UI\EmberWorldGenUI.cs
+Assets/Scenes\Ember\TradeMarket.unity
+Assets/Scripts/Presentation\Ember\UI\InventoryGrid.cs
+Assets/Scripts/Presentation\Ember\UI\PauseMenu.cs
+Assets/Scripts/Presentation\Ember\UI\UiAnimationHelper.cs
+
+
+===== 4.4 forge surface =====
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:104:                using (var sdxl = BuildSdxlForge(modelRoot))
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:122:            using (var sd15 = BuildSd15Forge(modelRoot))
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:132:        private static OnnxAssetForge BuildSdxlForge(string modelRoot)
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:135:            return new OnnxAssetForge(
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:146:                OnnxDiffusionFlavor.SdxlTurbo,
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:150:        private static OnnxAssetForge BuildSd15Forge(string modelRoot)
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:153:            var sd15 = new OnnxAssetForge(
+Assets/Editor\Ember\Forge\WorldgenSmokeTest.cs:163:                OnnxDiffusionFlavor.Sd15Lcm,
+Assets/Editor\Ember\Menu\ForgeMenu.cs:82:            var sdxl = new OnnxAssetForge(
+Assets/Editor\Ember\Menu\ForgeMenu.cs:93:                OnnxDiffusionFlavor.SdxlTurbo,
+Assets/Editor\Ember\Menu\ForgeMenu.cs:103:            var sd15 = new OnnxAssetForge(
+Assets/Editor\Ember\Menu\ForgeMenu.cs:113:                OnnxDiffusionFlavor.Sd15Lcm,
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:19://   4. Hands resolved disk paths to OnnxAssetForge + NativeLlmClient +
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:186:            // register them on the locator. ForgeBootstrap may already have run
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:210:        private static IAssetForge BuildForge(string modelRoot, out OnnxAssetForge selectedOnnx, out string failureReason)
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:218:                var sdxl = BuildSdxlForge(modelRoot, OnnxExecutionProviderPreference.PreferCuda);
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:235:            var sd15 = BuildSd15Forge(modelRoot);
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:257:        private static OnnxAssetForge BuildSdxlForge(string modelRoot, OnnxExecutionProviderPreference providerPreference)
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:271:            return new OnnxAssetForge(paths, OnnxDiffusionFlavor.SdxlTurbo, providerPreference);
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:274:        private static OnnxAssetForge BuildSd15Forge(string modelRoot)
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:287:            return new OnnxAssetForge(paths, OnnxDiffusionFlavor.Sd15Lcm, OnnxExecutionProviderPreference.CpuOnly);
+Assets/Scripts\Presentation\Ember\Forge\ForgeLocator.cs:21:        // on disk — it must NOT clobber the LLM router that ForgeBootstrap already
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:12:    public sealed class ForgeBootstrap : MonoBehaviour
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:17:        public bool OnnxForgeAvailable => _activeForge is OnnxAssetForge onnx && onnx.IsAvailable() && !onnx.PlaceholderMode;
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:20:        private OnnxAssetForge _onnxForge;
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:39:            ForgeLocator.Register(_activeForge, _nativeLlm, router);
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:59:        private static IAssetForge BuildForge(string modelRoot, out OnnxAssetForge selectedOnnx, out string failureReason)
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:68:                var sdxl = BuildSdxlForge(modelRoot, OnnxExecutionProviderPreference.PreferCuda);
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:85:            var sd15 = BuildSd15Forge(modelRoot);
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:105:            // even when OnnxAssetForge's own placeholder mode (deterministic gray PNG when
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:110:            // OnnxAssetForge.GenerateAsync will return either the placeholder PNG (when
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:113:            // for the rare case where even constructing OnnxAssetForge throws (caller can
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:114:            // wrap BuildSd15Forge in try/catch if it wants that defense).
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:119:        private static OnnxAssetForge BuildSdxlForge(string modelRoot, OnnxExecutionProviderPreference providerPreference)
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:133:            return new OnnxAssetForge(paths, OnnxDiffusionFlavor.SdxlTurbo, providerPreference);
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:136:        private static OnnxAssetForge BuildSd15Forge(string modelRoot)
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:149:            return new OnnxAssetForge(paths, OnnxDiffusionFlavor.Sd15Lcm, OnnxExecutionProviderPreference.CpuOnly);
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:12:    internal sealed class SdxlTurboPipeline : IDiffusionPipeline
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:23:        public SdxlTurboPipeline(OnnxModelBundle models, OnnxSessionFactory sessionFactory)
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:90:            var conditioning = SdxlConditioning.Concat(hidden768, encoder2.HiddenStates1280, encoder2.Pooled1280);
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:115:        private SdxlEncoder2Output EncodeText2(int[] tokens)
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:122:                return new SdxlEncoder2Output(hidden, pooled);
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:131:            SdxlConditioning conditioning,
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:226:        private sealed class SdxlEncoder2Output
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:228:            public SdxlEncoder2Output(float[] hiddenStates1280, float[] pooled1280)
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:238:        private sealed class SdxlConditioning
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:240:            private SdxlConditioning(float[] hiddenStates2048, float[] pooled1280)
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:249:            public static SdxlConditioning Concat(float[] hidden768, float[] hidden1280, float[] pooled1280)
+Assets/Scripts\Simulation\Forge\SdxlTurboPipeline.cs:260:                return new SdxlConditioning(merged, pooled1280);
+Assets/Scripts\Simulation\Forge\Sd15LcmPipeline.cs:12:    internal sealed class Sd15LcmPipeline : IDiffusionPipeline
+Assets/Scripts\Simulation\Forge\Sd15LcmPipeline.cs:23:        public Sd15LcmPipeline(OnnxModelBundle models, OnnxSessionFactory sessionFactory)
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:12:        SdxlTurbo = 0,
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:13:        Sd15Lcm = 1,
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:22:    public sealed class OnnxAssetForge : IAssetForge, IDisposable
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:32:        private readonly IDiffusionPipeline _pipeline;
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:40:        public OnnxAssetForge(string[] modelPaths, OnnxDiffusionFlavor flavor = OnnxDiffusionFlavor.SdxlTurbo)
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:45:        public OnnxAssetForge(
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:59:            _pipeline = flavor == OnnxDiffusionFlavor.SdxlTurbo
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:60:                ? (IDiffusionPipeline)new SdxlTurboPipeline(_models, sessionFactory)
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:61:                : new Sd15LcmPipeline(_models, sessionFactory);
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:151:                    var reason = Flavor == OnnxDiffusionFlavor.SdxlTurbo && OnnxSessionFactory.IsCudaProviderFailure(ex)
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:213:    internal interface IDiffusionPipeline
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:249:            if (flavor == OnnxDiffusionFlavor.SdxlTurbo)
+Assets/Scripts\Simulation\Forge\OnnxAssetForge.cs:291:            return flavor != OnnxDiffusionFlavor.SdxlTurbo || File.Exists(TextEncoder2);
+
+
+===== 4.5 prompt composers cache keys =====
+Assets/Scripts/Simulation/Forge\AssetForgeCache.cs:21:            return Path.Combine(_root, PromptComposers.CacheKey(request) + ".png");
+Assets/Scripts/Simulation/Forge\PromptComposers.cs:8:    public static class PromptComposers
+Assets/Scripts/Simulation/Forge\PromptComposers.cs:16:        public static AssetGenerationRequest NpcPortrait(NpcSeedRecord npc, WorldProfile profile)
+Assets/Scripts/Simulation/Forge\PromptComposers.cs:47:        public static string CacheKey(AssetGenerationRequest request)
+Assets/Scripts/Simulation/Forge\PromptHash.cs:6:    public static class PromptHash
+
+
+===== 4.6 worldgen domain =====
+Assets/Scripts/Simulation\AiDm\NpcMemoryLlmEnvelope.cs:14:        public static LlmRequest Build(NpcSeedRecord npc, SliceWorldState world, ToolRegistry registry, int maxTokens, ulong seed)
+Assets/Scripts/Simulation\AiDm\NpcMemoryLlmEnvelope.cs:18:            var profile = world.WorldProfile;
+Assets/Scripts/Simulation\AiDm\NpcMemoryLlmEnvelope.cs:41:        private static string StyleGuideline(WorldProfile profile)
+Assets/Scripts/Domain\Worldgen\WorldProfile.cs:6:    public sealed class WorldProfile : IEquatable<WorldProfile>
+Assets/Scripts/Domain\Worldgen\WorldProfile.cs:8:        public WorldProfile(
+Assets/Scripts/Domain\Worldgen\WorldProfile.cs:52:        public bool Equals(WorldProfile other)
+Assets/Scripts/Domain\Worldgen\WorldProfile.cs:67:        public override bool Equals(object obj) => obj is WorldProfile other && Equals(other);
+Assets/Scripts/Domain\Worldgen\WorldHistoryEvent.cs:4:// WorldHistoryEvent is the worldgen FOUNDATION's year-resolution historical
+Assets/Scripts/Domain\Worldgen\WorldHistoryEvent.cs:7:// WorldEventLog, while WorldHistoryEvent carries a year + free-form
+Assets/Scripts/Domain\Worldgen\WorldHistoryEvent.cs:16:    public sealed class WorldHistoryEvent
+Assets/Scripts/Domain\Worldgen\WorldHistoryEvent.cs:18:        public WorldHistoryEvent(int year, WorldHistoryKind kind, string subject, string detail)
+Assets/Scripts/Domain\Worldgen\WorldHistoryEvent.cs:23:                throw new ArgumentException("WorldHistoryEvent subject is required.", nameof(subject));
+Assets/Scripts/Domain\Worldgen\NpcSeedRecord.cs:5:// NpcSeedRecord is the worldgen FOUNDATION's per-NPC payload — one of the
+Assets/Scripts/Domain\Worldgen\NpcSeedRecord.cs:18:    public sealed class NpcSeedRecord
+Assets/Scripts/Domain\Worldgen\NpcSeedRecord.cs:20:        public NpcSeedRecord(NpcId id, SettlementId home, FactionId faction, string name, int birthYear, NpcRole role)
+Assets/Scripts/Domain\Worldgen\NpcSeedRecord.cs:25:        public NpcSeedRecord(NpcId id, SettlementId home, FactionId faction, string name, int birthYear, NpcRole role, string portraitAssetPath)
+Assets/Scripts/Domain\Worldgen\NpcSeedRecord.cs:28:                throw new ArgumentException("NpcId.Empty cannot back an NpcSeedRecord.", nameof(id));
+Assets/Scripts/Domain\Worldgen\NpcSeedRecord.cs:30:                throw new ArgumentException("SettlementId.Empty cannot back an NpcSeedRecord — every NPC lives in a settlement.", nameof(home));
+Assets/Scripts/Domain\Worldgen\NpcSeedRecord.cs:32:                throw new ArgumentException("FactionId.Empty cannot back an NpcSeedRecord — factionless NPCs require a dedicated sentinel.", nameof(faction));
+Assets/Scripts/Domain\Worldgen\WorldgenEnums.cs:49:    /// Faz-N follow-up that hydrates an NpcSeedRecord into a runtime
+Assets/Scripts/Domain\Worldgen\NpcId.cs:8:// world. The Faz-N follow-up that "hydrates" an NpcSeedRecord into a real
+Assets/Scripts/Domain\Forge\PromptTemplate.cs:17:        public string Interpolate(WorldProfile profile, NpcSeedRecord npc)
+Assets/Scripts/Domain\Forge\PromptTemplate.cs:27:        public string Interpolate(WorldProfile profile, RegionRecord region)
+Assets/Scripts/Domain\Forge\PromptTemplate.cs:36:        public string Interpolate(WorldProfile profile, ItemRecord item)
+Assets/Scripts/Domain\Forge\PromptTemplate.cs:47:        private string ReplaceCommon(WorldProfile profile)
+Assets/Scripts/Domain\Worldgen\SettlementRecord.cs:4:// SettlementRecord is the worldgen FOUNDATION's per-settlement payload —
+Assets/Scripts/Domain\Worldgen\SettlementRecord.cs:13:    public sealed class SettlementRecord
+Assets/Scripts/Domain\Worldgen\SettlementRecord.cs:15:        public SettlementRecord(SettlementId id, RegionId region, string name, int population, SettlementSize size)
+Assets/Scripts/Domain\Worldgen\SettlementRecord.cs:18:                throw new ArgumentException("SettlementId.Empty cannot back a SettlementRecord.", nameof(id));
+Assets/Scripts/Domain\Worldgen\SettlementRecord.cs:20:                throw new ArgumentException("RegionId.Empty cannot back a SettlementRecord — every settlement lives inside a region.", nameof(region));
+Assets/Scripts/Domain\Worldgen\SettlementId.cs:6:// sentinel, value-typed, pure Domain, no Unity. SettlementRecord pins this
+Assets/Scripts/Domain\Worldgen\RegionRecord.cs:4:// RegionRecord is the worldgen FOUNDATION's per-region payload. Mirrors
+Assets/Scripts/Domain\Worldgen\RegionRecord.cs:13:    public sealed class RegionRecord
+Assets/Scripts/Domain\Worldgen\RegionRecord.cs:15:        public RegionRecord(RegionId id, string name, int populationLow, int populationHigh, BiomeKind biome)
+Assets/Scripts/Domain\Worldgen\RegionRecord.cs:18:                throw new ArgumentException("RegionId.Empty cannot back a RegionRecord.", nameof(id));
+Assets/Scripts/Domain\Worldgen\RegionId.cs:5:// It mirrors ActorId / SiteId / FactionId so RegionRecord and downstream
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:9:// WorldgenService is the FOUNDATION's deterministic seed-to-world function.
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:11:// Outputs: a GeneratedWorld bundle (regions, settlements, factions, faction
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:18:// byte-identical GeneratedWorld. The implementation uses ONE XorShiftRng
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:30:    public static class WorldgenService
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:56:        public static GeneratedWorld Generate(uint seed, WorldgenParameters parameters)
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:81:            return new GeneratedWorld(seed, regions, settlements, factions, relations, npcs, history);
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:86:        private static List<RegionRecord> GenerateRegions(IDeterministicRng rng, WorldgenParameters parameters)
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:89:            var regions = new List<RegionRecord>(parameters.RegionCount);
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:106:                regions.Add(new RegionRecord(new RegionId((ulong)(i + 1)), name, low, high, biome));
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:183:        private static List<SettlementRecord> GenerateSettlements(
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:186:            IReadOnlyList<RegionRecord> regions)
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:189:            var settlements = new List<SettlementRecord>(parameters.SettlementCount);
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:225:        private static List<SettlementRecord> NormalizePopulation(List<SettlementRecord> settlements, int targetPopulation)
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:232:            var normalized = new List<SettlementRecord>(settlements.Count);
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:239:                normalized.Add(new SettlementRecord(s.Id, s.Region, s.Name, population, s.Size));
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:253:                    normalized[index] = new SettlementRecord(s.Id, s.Region, s.Name, population, s.Size);
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:262:        private static SettlementRecord MakeSettlement(
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:265:            IReadOnlyList<RegionRecord> regions,
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:298:            return new SettlementRecord(id, region.Id, name, population, size);
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:350:        private static List<NpcSeedRecord> GenerateNpcs(
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:353:            IReadOnlyList<SettlementRecord> settlements,
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:356:            var npcs = new List<NpcSeedRecord>(parameters.NpcCount);
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:440:                    npcs.Add(new NpcSeedRecord(
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:494:        private static List<WorldHistoryEvent> GenerateHistory(
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:498:            IReadOnlyList<SettlementRecord> settlements)
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:503:            var history = new List<WorldHistoryEvent>(parameters.HistoryYears);
+Assets/Scripts/Simulation\Worldgen\WorldgenService.cs:558:                history.Add(new WorldHistoryEvent(year, kind, subject, detail));
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:9:// GeneratedWorld is the immutable output bundle of WorldgenService.Generate.
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:22:    /// <summary>Initial reputation seed for a faction pair emitted by WorldgenService.</summary>
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:83:    /// Immutable bundle of records produced by <see cref="WorldgenService.Generate"/>.
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:88:    public sealed class GeneratedWorld
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:90:        public GeneratedWorld(
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:92:            IReadOnlyList<RegionRecord> regions,
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:93:            IReadOnlyList<SettlementRecord> settlements,
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:96:            IReadOnlyList<NpcSeedRecord> npcs,
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:97:            IReadOnlyList<WorldHistoryEvent> history)
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:116:        public IReadOnlyList<RegionRecord> Regions { get; }
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:117:        public IReadOnlyList<SettlementRecord> Settlements { get; }
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:120:        public IReadOnlyList<NpcSeedRecord> Npcs { get; }
+Assets/Scripts/Simulation\Worldgen\GeneratedWorld.cs:121:        public IReadOnlyList<WorldHistoryEvent> History { get; }
+Assets/Scripts/Domain\World\SliceWorldState.cs:46:        public List<NpcSeedRecord> NpcSeeds = new List<NpcSeedRecord>();
+Assets/Scripts/Domain\World\SliceWorldState.cs:47:        public WorldProfile WorldProfile;
+Assets/Scripts/Simulation\Forge\PromptComposers.cs:16:        public static AssetGenerationRequest NpcPortrait(NpcSeedRecord npc, WorldProfile profile)
+Assets/Scripts/Simulation\Forge\PromptComposers.cs:26:        public static AssetGenerationRequest RegionEstablishingShot(RegionRecord region, WorldProfile profile)
+Assets/Scripts/Simulation\Forge\PromptComposers.cs:36:        public static AssetGenerationRequest ItemIcon(ItemRecord item, WorldProfile profile)
+Assets/Scripts/Simulation\Forge\PromptComposers.cs:53:        private static AssetGenerationRequest Build(string requestId, AssetSubjectKind subject, WorldProfile profile, string prompt, string negative, uint seed, int width, int height)
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:82:                var profile = _world.WorldProfile;
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:291:            // If we have an NpcSeedRecord for this actor, use its name and role for a persona-driven greeting
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:304:        private async Task GenerateNpcGreetingAsync(NpcSeedRecord npc)
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:316:                $"You are {npc.Name}, a {npc.Role} in a {_world.WorldProfile?.Style} world. Greet the player character briefly in character.",
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:333:// WorldgenService (Assets/Scripts/Simulation/Worldgen/) so the
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:339:        public EmberCrpg.Simulation.Worldgen.GeneratedWorld GeneratedWorld { get; private set; }
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:358:            var generated = EmberCrpg.Simulation.Worldgen.WorldgenService.Generate(
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:361:            GeneratedWorld = generated;
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:366:            _world.WorldProfile = new WorldProfile(
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:377:            HydrateGeneratedWorld(generated, preferredSize);
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:421:            EmberCrpg.Simulation.Worldgen.GeneratedWorld generated,
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:439:            EmberCrpg.Simulation.Worldgen.GeneratedWorld generated,
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:460:        private static FactionId SelectStartingFaction(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated, string calling)
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:479:        private void HydrateGeneratedWorld(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated, SettlementSize preferredSize)
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:488:        private void HydrateSites(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:513:        private void HydrateFactions(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:532:        private void HydrateNpcs(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:556:        private void HydrateHistory(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+Assets/Scripts/Presentation\Ember\Adapters\DomainSimulationAdapter.cs:1067:                $"You are the Oracle of Ember. The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy reflecting this result for the player. The world is {_world.WorldProfile?.Style}.",
+
+
+===== 4.7 llm surface =====
+Assets/Scripts\Presentation\Ember\Forge\ModelBootstrap.cs:19://   4. Hands resolved disk paths to OnnxAssetForge + NativeLlmClient +
+Assets/Scripts\Presentation\Ember\Forge\ForgeLocator.cs:9:        public static NativeLlmClient NativeLlm { get; private set; }
+Assets/Scripts\Presentation\Ember\Forge\ForgeLocator.cs:10:        public static LlmRoutingService LlmRouter { get; private set; }
+Assets/Scripts\Presentation\Ember\Forge\ForgeLocator.cs:13:        public static void Register(IAssetForge forge, NativeLlmClient llm, LlmRoutingService router)
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:19:        private NativeLlmClient _nativeLlm;
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:30:            _nativeLlm = new NativeLlmClient(modelRoot, fallback: null);
+Assets/Scripts\Presentation\Ember\Forge\ForgeBootstrap.cs:34:            var router = new LlmRoutingService(
+Assets/Scripts\Simulation\AiDm\LlmClients.cs:10:    /// Codex audit (D-P3): currently consumed only by LocalQwenClient /
+Assets/Scripts\Simulation\AiDm\LlmClients.cs:17:    // related public types — LlmClientConfig, LocalQwenClient, CloudLlmClient
+Assets/Scripts\Simulation\AiDm\LlmClients.cs:45:    /// gated on the Faz 12 LLM tool-calling sprint where LlmRoutingService
+Assets/Scripts\Simulation\AiDm\LlmClients.cs:49:    public sealed class LocalQwenClient
+Assets/Scripts\Simulation\AiDm\LlmClients.cs:56:        public LocalQwenClient(LlmClientConfig config, HttpClient http = null)
+Assets/Scripts\Simulation\AiDm\LlmClients.cs:101:    /// is wired today; experimental alongside <see cref="LocalQwenClient"/>.
+Assets/Scripts\Simulation\AiDm\LlmClients.cs:103:    /// LlmRoutingService picks it up from configuration. The integration
+Assets/Scripts\Simulation\AiDm\LlmRoutingService.cs:12:    public sealed class LlmRoutingService
+Assets/Scripts\Simulation\AiDm\LlmRoutingService.cs:18:        public LlmRoutingService(LlmDispatch local, LlmDispatch cloud)
+Assets/Scripts\Simulation\AiDm\LlmRoutingService.cs:29:        public LlmRoutingService(LlmDispatch local, LlmDispatch cloud, LlmProviderKind cloudKind)
+Assets/Scripts\Simulation\AiDm\NarrationServices.cs:13:    // LlmRoutingService + FlavourBudget dependency surface and the same
+Assets/Scripts\Simulation\AiDm\NarrationServices.cs:22:        private readonly LlmRoutingService _routing;
+Assets/Scripts\Simulation\AiDm\NarrationServices.cs:25:        public NpcFlavourService(LlmRoutingService routing, FlavourBudget budget)
+Assets/Scripts\Simulation\AiDm\NarrationServices.cs:43:    /// DM-side narrator. Wraps LlmRoutingService and appends a structured
+Assets/Scripts\Simulation\AiDm\NarrationServices.cs:54:        private readonly LlmRoutingService _routing;
+Assets/Scripts\Simulation\AiDm\NarrationServices.cs:56:        public DmNarrationService(LlmRoutingService routing)
+Assets/Scripts\Simulation\AiDm\NativeLlmClient.cs:17:    /// Falls back to another client (e.g. LocalQwenClient) if native is unavailable.
+Assets/Scripts\Simulation\AiDm\NativeLlmClient.cs:19:    public sealed class NativeLlmClient : IDisposable
+Assets/Scripts\Simulation\AiDm\NativeLlmClient.cs:25:        private readonly LocalQwenClient _fallback;
+Assets/Scripts\Simulation\AiDm\NativeLlmClient.cs:38:        /// Constructs a NativeLlmClient with a concrete on-disk model path.
+Assets/Scripts\Simulation\AiDm\NativeLlmClient.cs:41:        public NativeLlmClient(string modelDirectory, LocalQwenClient fallback, string downloadUrl = DefaultDownloadUrl)
+Assets/Scripts\Simulation\AiDm\NativeLlmClient.cs:51:        public static NativeLlmClient FromModelFile(string modelFilePath, LocalQwenClient fallback, string downloadUrl = DefaultDownloadUrl)
+Assets/Scripts\Simulation\AiDm\NativeLlmClient.cs:53:            return new NativeLlmClient(modelFilePath, fallback, downloadUrl, modelPathIsFile: true);
+Assets/Scripts\Simulation\AiDm\NativeLlmClient.cs:56:        private NativeLlmClient(string modelPath, LocalQwenClient fallback, string downloadUrl, bool modelPathIsFile)
+Assets/Scripts\Simulation\AiDm\ToolUseService.cs:10:    public sealed class ToolUseService
+Assets/Scripts\Simulation\AiDm\ToolUseService.cs:16:        public ToolUseService(ToolRegistry registry)
+
+
+===== 4.8 existing character creation =====
+Assets/Scenes\Ember\CharacterCreation.unity:133:  m_Name: CharacterCreationCanvas
+Assets/Scenes\Ember\CharacterCreation.unity:150:  m_EditorClassIdentifier: EmberCrpg.Presentation::EmberCrpg.Presentation.Ember.UI.CharacterCreationUI
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:3:using EmberCrpg.Domain.CharacterCreation;
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:5:namespace EmberCrpg.Simulation.CharacterCreation
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:7:    public sealed class CharacterCreationService
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:9:        private readonly IReadOnlyList<CharacterClass> _classes;
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:10:        private readonly IReadOnlyList<CreationQuestion> _questions;
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:12:        public CharacterCreationService(
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:13:            IReadOnlyList<CharacterClass> classes = null,
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:14:            IReadOnlyList<CreationQuestion> questions = null)
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:16:            _classes = classes ?? CharacterCreationCatalog.Classes;
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:17:            _questions = questions ?? CharacterCreationCatalog.Questions;
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:20:        public CharacterClass SuggestClass(IReadOnlyList<string> answerChoiceIds)
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:23:            CharacterClass best = _classes[0];
+Assets/Scripts\Simulation\CharacterCreation\CharacterCreationService.cs:37:        public CharacterClass ResolveOverride(string classId, IReadOnlyList<string> answerChoiceIds)
+Assets/Scripts\Domain\Actors\EmberStatBlock.cs:34:        public int Get(EmberAttribute attribute)
+Assets/Scripts\Domain\Actors\EmberStatBlock.cs:38:                case EmberAttribute.Mig: return Mig;
+Assets/Scripts\Domain\Actors\EmberStatBlock.cs:39:                case EmberAttribute.Agi: return Agi;
+Assets/Scripts\Domain\Actors\EmberStatBlock.cs:40:                case EmberAttribute.End: return End;
+Assets/Scripts\Domain\Actors\EmberStatBlock.cs:41:                case EmberAttribute.Mnd: return Mnd;
+Assets/Scripts\Domain\Actors\EmberStatBlock.cs:42:                case EmberAttribute.Ins: return Ins;
+Assets/Scripts\Domain\Actors\EmberStatBlock.cs:43:                case EmberAttribute.Pre: return Pre;
+Assets/Scripts\Domain\Actors\EmberAttribute.cs:2:// EmberAttribute defines Sprint 1's six-stat kernel only.
+Assets/Scripts\Domain\Actors\EmberAttribute.cs:9:    public enum EmberAttribute
+Assets/Scripts\Presentation\Ember\UI\EmberWorldGenUI.cs:147:            UnityEngine.SceneManagement.SceneManager.LoadScene("CharacterCreation");
+Assets/Scripts\Presentation\Ember\UI\EmberWorldGenIntent.cs:21:        public string CharacterClassId { get; }
+Assets/Scripts\Presentation\Ember\UI\EmberWorldGenIntent.cs:22:        public string BirthsignId { get; }
+Assets/Scripts\Presentation\Ember\UI\EmberWorldGenIntent.cs:43:            CharacterClassId = characterClassId ?? string.Empty;
+Assets/Scripts\Presentation\Ember\UI\EmberWorldGenIntent.cs:44:            BirthsignId = birthsignId ?? string.Empty;
+Assets/Scripts\Presentation\Ember\UI\EmberWorldGenIntent.cs:53:            && string.IsNullOrEmpty(CharacterClassId)
+Assets/Scripts\Presentation\Ember\UI\EmberWorldGenIntent.cs:54:            && string.IsNullOrEmpty(BirthsignId)
+Assets/Scripts\Presentation\Ember\UI\CharacterCreationUI.cs:11:    public sealed class CharacterCreationUI : MonoBehaviour
+Assets/Scripts\Presentation\Ember\UI\CharacterCreationUI.cs:17:        private readonly CharacterCreationViewModel _viewModel = new CharacterCreationViewModel();
+Assets/Scripts\Presentation\Ember\UI\CharacterCreationUI.cs:83:                ShowBirthsignStep();
+Assets/Scripts\Presentation\Ember\UI\CharacterCreationUI.cs:87:        private void ShowBirthsignStep()
+Assets/Scripts\Presentation\Ember\UI\CharacterCreationUI.cs:90:            CreateLabel("Birthsign");
+Assets/Scripts\Presentation\Ember\UI\CharacterCreationUI.cs:91:            foreach (var sign in _viewModel.Birthsigns)
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:4:using EmberCrpg.Domain.CharacterCreation;
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:5:using EmberCrpg.Simulation.CharacterCreation;
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:9:    public sealed class CharacterCreationViewModel
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:11:        private readonly CharacterCreationService _service = new CharacterCreationService();
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:13:        public IReadOnlyList<CharacterCreationBirthsignRow> Birthsigns { get; } =
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:14:            CharacterCreationCatalog.Birthsigns
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:15:                .Select(sign => new CharacterCreationBirthsignRow(sign.Id, sign.Name, sign.PassiveBonus))
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:18:        public IReadOnlyList<CharacterCreationQuestionRow> Questions { get; } =
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:19:            CharacterCreationCatalog.Questions
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:20:                .Select(question => new CharacterCreationQuestionRow(
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:24:                        .Select(choice => new CharacterCreationChoiceRow(choice.Id, choice.Text))
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:28:        public IReadOnlyList<CharacterCreationClassRow> Classes { get; } =
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:29:            CharacterCreationCatalog.Classes
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:30:                .Select(klass => new CharacterCreationClassRow(klass.Id, klass.Name))
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:33:        public CharacterCreationClassRow SuggestClass(IReadOnlyList<string> answers)
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:36:            return new CharacterCreationClassRow(suggested.Id, suggested.Name);
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:40:    public readonly struct CharacterCreationBirthsignRow
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:42:        public CharacterCreationBirthsignRow(string id, string name, string passiveBonus)
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:54:    public readonly struct CharacterCreationQuestionRow
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:56:        public CharacterCreationQuestionRow(string id, string prompt, IReadOnlyList<CharacterCreationChoiceRow> choices)
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:60:            Choices = choices ?? Array.Empty<CharacterCreationChoiceRow>();
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:65:        public IReadOnlyList<CharacterCreationChoiceRow> Choices { get; }
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:68:    public readonly struct CharacterCreationChoiceRow
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:70:        public CharacterCreationChoiceRow(string id, string text)
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:80:    public readonly struct CharacterCreationClassRow
+Assets/Scripts\Presentation\Ember\Adapters\CharacterCreationViewModel.cs:82:        public CharacterCreationClassRow(string id, string name)
+Assets/Scripts\Presentation\Ember\Bootstrap\EmberWorldHost.cs:84:                    domainAdapter.ApplyCharacterCreation(pending.PlayerName, pending.CharacterClassId, pending.BirthsignId);
+Assets/Scripts\Presentation\Ember\Adapters\DomainSimulationAdapter.cs:6:using EmberCrpg.Domain.CharacterCreation;
+Assets/Scripts\Presentation\Ember\Adapters\DomainSimulationAdapter.cs:386:        public void ApplyCharacterCreation(string playerName, string classId, string birthsignId)
+Assets/Scripts\Presentation\Ember\Adapters\DomainSimulationAdapter.cs:391:            var klass = CharacterCreationCatalog.GetClass(classId);
+Assets/Scripts\Presentation\Ember\Adapters\DomainSimulationAdapter.cs:392:            var sign = CharacterCreationCatalog.GetBirthsign(birthsignId);
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:18:        private const int PrimaryAttributeDivisor = 2;
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:19:        private const int SecondaryAttributeDivisor = 4;
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:38:            var primaryAttributeBonus = GetPrimaryAttribute(caster.Stats, spell.School) / PrimaryAttributeDivisor;
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:39:            var secondaryAttributeBonus = GetSecondaryAttribute(caster.Stats, spell.School) / SecondaryAttributeDivisor;
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:46:                + primaryAttributeBonus
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:47:                + secondaryAttributeBonus
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:58:                primaryAttributeBonus,
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:59:                secondaryAttributeBonus,
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:67:        private static int GetPrimaryAttribute(EmberStatBlock stats, MagicSchool school)
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceService.cs:84:        private static int GetSecondaryAttribute(EmberStatBlock stats, MagicSchool school)
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:20:            int primaryAttributeBonus,
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:21:            int secondaryAttributeBonus,
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:33:            PrimaryAttributeBonus = primaryAttributeBonus;
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:34:            SecondaryAttributeBonus = secondaryAttributeBonus;
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:47:        public int PrimaryAttributeBonus { get; }
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:48:        public int SecondaryAttributeBonus { get; }
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:59:            int primaryAttributeBonus,
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:60:            int secondaryAttributeBonus,
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:73:                primaryAttributeBonus,
+Assets/Scripts\Simulation\Magic\SpellSuccessChanceResult.cs:74:                secondaryAttributeBonus,
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:6:namespace EmberCrpg.Domain.CharacterCreation
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:8:    public sealed class CharacterClass
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:10:        public CharacterClass(string id, string name, EmberStatBlock primaryStats, IEnumerable<string> minorSkills, IEnumerable<string> startingEquipment)
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:17:            MinorSkills = Wrap(minorSkills);
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:24:        public IReadOnlyList<string> MinorSkills { get; }
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:39:    public sealed class Birthsign
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:41:        public Birthsign(string id, string name, EmberAttribute attribute, int delta)
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:43:            if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Birthsign id is required.", nameof(id));
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:44:            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Birthsign name is required.", nameof(name));
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:45:            if (delta == 0) throw new ArgumentOutOfRangeException(nameof(delta), delta, "Birthsign delta cannot be zero.");
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:48:            Attribute = attribute;
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:54:        public EmberAttribute Attribute { get; }
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:56:        public string PassiveBonus => Attribute + (Delta > 0 ? "+" : string.Empty) + Delta;
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:61:                Apply(stats.Mig, EmberAttribute.Mig),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:62:                Apply(stats.Agi, EmberAttribute.Agi),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:63:                Apply(stats.End, EmberAttribute.End),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:64:                Apply(stats.Mnd, EmberAttribute.Mnd),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:65:                Apply(stats.Ins, EmberAttribute.Ins),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:66:                Apply(stats.Pre, EmberAttribute.Pre));
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:69:        private int Apply(int value, EmberAttribute attribute)
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:71:            if (attribute != Attribute) return value;
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:103:    public sealed class CreationQuestion
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationPrimitives.cs:105:        public CreationQuestion(string id, string prompt, IEnumerable<CreationChoice> choices)
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:5:namespace EmberCrpg.Domain.CharacterCreation
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:7:    public static class CharacterCreationCatalog
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:9:        public static IReadOnlyList<CharacterClass> Classes { get; } = new ReadOnlyCollection<CharacterClass>(new[]
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:11:            new CharacterClass("warrior", "Warrior", new EmberStatBlock(70, 45, 65, 30, 40, 45),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:13:            new CharacterClass("mage", "Mage", new EmberStatBlock(25, 40, 35, 75, 65, 45),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:15:            new CharacterClass("rogue", "Rogue", new EmberStatBlock(35, 75, 40, 45, 65, 55),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:17:            new CharacterClass("scholar", "Scholar", new EmberStatBlock(25, 35, 40, 70, 75, 50),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:19:            new CharacterClass("diplomat", "Diplomat", new EmberStatBlock(35, 45, 45, 55, 60, 75),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:21:            new CharacterClass("wanderer", "Wanderer", new EmberStatBlock(50, 60, 55, 40, 65, 40),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:25:        public static IReadOnlyList<Birthsign> Birthsigns { get; } = new ReadOnlyCollection<Birthsign>(new[]
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:27:            new Birthsign("the_tower", "The Tower", EmberAttribute.End, 4),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:28:            new Birthsign("the_lover", "The Lover", EmberAttribute.Pre, 4),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:29:            new Birthsign("the_lady", "The Lady", EmberAttribute.Ins, 4),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:30:            new Birthsign("the_atronach", "The Atronach", EmberAttribute.Mnd, 6),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:31:            new Birthsign("the_warrior", "The Warrior", EmberAttribute.Mig, 5),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:32:            new Birthsign("the_mage", "The Mage", EmberAttribute.Mnd, 5),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:33:            new Birthsign("the_thief", "The Thief", EmberAttribute.Agi, 5),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:34:            new Birthsign("the_serpent", "The Serpent", EmberAttribute.Agi, 3),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:35:            new Birthsign("the_steed", "The Steed", EmberAttribute.Agi, 4),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:36:            new Birthsign("the_ritual", "The Ritual", EmberAttribute.Pre, 3),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:37:            new Birthsign("the_shadow", "The Shadow", EmberAttribute.Ins, 3),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:38:            new Birthsign("the_lord", "The Lord", EmberAttribute.End, 5),
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:41:        public static IReadOnlyList<CreationQuestion> Questions { get; } = new ReadOnlyCollection<CreationQuestion>(new[]
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:85:        public static CharacterClass GetClass(string id) => Find(Classes, id) ?? Classes[0];
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:86:        public static Birthsign GetBirthsign(string id) => Find(Birthsigns, id) ?? Birthsigns[0];
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:92:                var value = row is CharacterClass c ? c.Id : ((Birthsign)(object)row).Id;
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:99:        private static CreationQuestion Question(string id, string prompt, params CreationChoice[] choices)
+Assets/Scripts\Domain\CharacterCreation\CharacterCreationCatalog.cs:101:            return new CreationQuestion(id, prompt, choices);
+Assets/Scripts\Domain\Process\RecipeDef.cs:41:            SkillTag = skillTag.Trim();
+Assets/Scripts\Domain\Process\RecipeDef.cs:60:        public string SkillTag { get; }
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:2:using EmberCrpg.Domain.CharacterCreation;
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:5:namespace EmberCrpg.Tests.EditMode.CharacterCreation
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:7:    public sealed class BirthsignBonusTests
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:9:        [TestCase("the_tower", EmberAttribute.End, 4)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:10:        [TestCase("the_lover", EmberAttribute.Pre, 4)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:11:        [TestCase("the_lady", EmberAttribute.Ins, 4)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:12:        [TestCase("the_atronach", EmberAttribute.Mnd, 6)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:13:        [TestCase("the_warrior", EmberAttribute.Mig, 5)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:14:        [TestCase("the_mage", EmberAttribute.Mnd, 5)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:15:        [TestCase("the_thief", EmberAttribute.Agi, 5)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:16:        [TestCase("the_serpent", EmberAttribute.Agi, 3)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:17:        [TestCase("the_steed", EmberAttribute.Agi, 4)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:18:        [TestCase("the_ritual", EmberAttribute.Pre, 3)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:19:        [TestCase("the_shadow", EmberAttribute.Ins, 3)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:20:        [TestCase("the_lord", EmberAttribute.End, 5)]
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:21:        public void Birthsign_AppliesExactSingleStatDelta(string id, EmberAttribute attribute, int delta)
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:24:            var sign = CharacterCreationCatalog.GetBirthsign(id);
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:28:            foreach (EmberAttribute other in System.Enum.GetValues(typeof(EmberAttribute)))
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:36:        public void CatalogShipsTwelveBirthsigns()
+Assets/Tests\EditMode\CharacterCreation\BirthsignBonusTests.cs:38:            Assert.That(CharacterCreationCatalog.Birthsigns.Count, Is.EqualTo(12));
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:1:using EmberCrpg.Domain.CharacterCreation;
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:2:using EmberCrpg.Simulation.CharacterCreation;
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:5:namespace EmberCrpg.Tests.EditMode.CharacterCreation
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:7:    public sealed class CharacterCreationServiceTests
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:12:            var service = new CharacterCreationService();
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:25:            var service = new CharacterCreationService();
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:36:            var service = new CharacterCreationService();
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:39:            var firstChoice = CharacterCreationCatalog.Questions[0].FindChoice("a");
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:48:            var service = new CharacterCreationService();
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:51:            foreach (var klass in CharacterCreationCatalog.Classes)
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:58:            Assert.That(CharacterCreationCatalog.Classes.Count, Is.EqualTo(6));
+Assets/Tests\EditMode\CharacterCreation\CharacterCreationServiceTests.cs:59:            Assert.That(CharacterCreationCatalog.Questions.Count, Is.EqualTo(10));
+Assets/Tests\EditMode\Actors\EmberStatBlockTests.cs:27:        public void Get_ReturnsSelectedAttribute()
+Assets/Tests\EditMode\Actors\EmberStatBlockTests.cs:30:            Assert.That(stats.Get(EmberAttribute.Ins), Is.EqualTo(14));
+Assets/Tests\EditMode\Audit\CharacterCreationUiArchitectureTests.cs:6:    public sealed class CharacterCreationUiArchitectureTests
+Assets/Tests\EditMode\Audit\CharacterCreationUiArchitectureTests.cs:9:        public void CharacterCreationUi_DoesNotImportDomainOrSimulation()
+Assets/Tests\EditMode\Audit\CharacterCreationUiArchitectureTests.cs:11:            var source = File.ReadAllText(FindProjectFile("Assets", "Scripts", "Presentation", "Ember", "UI", "CharacterCreationUI.cs"));
+Assets/Tests\EditMode\Audit\EmberWorldGenIntentHandoffTests.cs:164:        public void Intent_WithCharacter_CarriesClassBirthsignNameAndAnswers()
+Assets/Tests\EditMode\Audit\EmberWorldGenIntentHandoffTests.cs:171:            Assert.That(intent.CharacterClassId, Is.EqualTo("mage"));
+Assets/Tests\EditMode\Audit\EmberWorldGenIntentHandoffTests.cs:172:            Assert.That(intent.BirthsignId, Is.EqualTo("the_lover"));
+Assets/Tests\EditMode\Process\RecipeDefTests.cs:31:            Assert.That(recipe.SkillTag, Is.EqualTo("smelting"));
+Assets/Tests\EditMode\Process\RecipeDefTests.cs:41:        public void Constructor_TrimsWorksiteAndSkillTags()
+Assets/Tests\EditMode\Process\RecipeDefTests.cs:46:            Assert.That(recipe.SkillTag, Is.EqualTo("smelting"));
+Assets/Tests\EditMode\Process\RecipeDefTests.cs:62:        public void Constructor_RejectsBlankWorksiteOrSkillTags()
+Assets/Tests\EditMode\Process\RecipeDefTests.cs:183:            Assert.That(recipe.SkillTag, Is.EqualTo("smelting"));
+Assets/Tests\EditMode\Magic\SpellCastRollServiceTests.cs:110:            Assert.That(result.Chance.PrimaryAttributeBonus, Is.EqualTo(expectedChance.PrimaryAttributeBonus));
+Assets/Tests\EditMode\Magic\SpellCastRollServiceTests.cs:111:            Assert.That(result.Chance.SecondaryAttributeBonus, Is.EqualTo(expectedChance.SecondaryAttributeBonus));
+Assets/Tests\EditMode\Magic\SpellSuccessChanceServiceTests.cs:92:        public void Calculate_DestructionSpell_UsesMindAsPrimaryAttribute()
+Assets/Tests\EditMode\Magic\SpellSuccessChanceServiceTests.cs:102:            Assert.That(mindResult.PrimaryAttributeBonus, Is.EqualTo(40));
+Assets/Tests\EditMode\Magic\SpellSuccessChanceServiceTests.cs:103:            Assert.That(mindResult.SecondaryAttributeBonus, Is.EqualTo(5));
+Assets/Tests\EditMode\Magic\SpellSuccessChanceServiceTests.cs:108:        public void Calculate_RestorationSpell_UsesInsightAsPrimaryAttribute()
+Assets/Tests\EditMode\Magic\SpellSuccessChanceServiceTests.cs:118:            Assert.That(insightResult.PrimaryAttributeBonus, Is.EqualTo(40));
+Assets/Tests\EditMode\Magic\SpellSuccessChanceServiceTests.cs:119:            Assert.That(insightResult.SecondaryAttributeBonus, Is.EqualTo(5));
+Assets/Tests\EditMode\Magic\SpellSuccessChanceServiceTests.cs:134:            Assert.That(result.PrimaryAttributeBonus, Is.EqualTo(30));
+Assets/Tests\EditMode\Magic\SpellSuccessChanceServiceTests.cs:135:            Assert.That(result.SecondaryAttributeBonus, Is.EqualTo(11));
+
+
+===== 4.9 mcp rg presence =====
+False
+False
+
+
+===== 4.10 reference ember-rpg =====
+D:\projects\ember-rpg\README.md:7:- Godot 4.6 client for title, creation, gameplay, save/load, and semantic desktop proof
+D:\projects\ember-rpg\README.md:48:- [godot-crpg-shell-authority](C:/Users/msbel/projects/ember-rpg/.agents/skills/godot-crpg-shell-authority/SKILL.md): project-local shell authority checklist for any Godot shell rewrite or review
+D:\projects\ember-rpg\README.md:55:- Backend targeted pytest for campaign creation, save/load, and runtime projections
+D:\projects\ember-rpg\docs\doc_registry.json:26:    "PRD_character_creation_v2.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:27:      "owner": "client_creation_ux",
+D:\projects\ember-rpg\docs\doc_registry.json:31:        "godot-client/scripts/ui/creation_wizard.gd",
+D:\projects\ember-rpg\docs\doc_registry.json:32:        "frp-backend/engine/core/character_creation.py"
+D:\projects\ember-rpg\docs\doc_registry.json:35:      "note": "Canonical immersive six-stage creation UX for genre choice, questions, history reveal, stat rolling, build, and dossier."
+D:\projects\ember-rpg\docs\doc_registry.json:37:    "PRD_creation_surface_v2.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:38:      "owner": "client_creation",
+D:\projects\ember-rpg\docs\doc_registry.json:40:      "runtime_surface": ["frp-backend/engine/core/character_creation.py", "godot-client/scenes/title_screen.gd"],
+D:\projects\ember-rpg\docs\doc_registry.json:42:        "docs/deprecated/prd/PRD_character_system.md",
+D:\projects\ember-rpg\docs\doc_registry.json:45:      "note": "Authoritative commander identity and full-shell creation workspace contract."
+D:\projects\ember-rpg\docs\doc_registry.json:59:      "note": "Canonical actor state for avatar, NPC, creature, injuries, skills, and command continuity."
+D:\projects\ember-rpg\docs\doc_registry.json:75:      "note": "Canonical class leveling plus DF-style skill growth and rust."
+D:\projects\ember-rpg\docs\doc_registry.json:253:      "note": "Canonical Godot contract for creation, campaign runtime, and UI authority boundaries."
+D:\projects\ember-rpg\docs\doc_registry.json:258:      "runtime_surface": ["frp-backend/engine/data_loader.py", "frp-backend/engine/worldgen/registries.py"],
+D:\projects\ember-rpg\docs\doc_registry.json:437:    "PRD_frontend_character_creation_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:442:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:445:      "note": "Frontend shell PRD for frontend character creation v1."
+D:\projects\ember-rpg\docs\doc_registry.json:447:    "PRD_frontend_character_record_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:456:      "note": "Frontend shell PRD for frontend character record v1."
+D:\projects\ember-rpg\docs\doc_registry.json:469:    "PRD_frontend_creation_abilities_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:474:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:477:      "note": "Frontend shell PRD for frontend creation abilities v1."
+D:\projects\ember-rpg\docs\doc_registry.json:479:    "PRD_frontend_creation_alignment_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:484:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:487:      "note": "Frontend shell PRD for frontend creation alignment v1."
+D:\projects\ember-rpg\docs\doc_registry.json:489:    "PRD_frontend_creation_class_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:494:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:497:      "note": "Frontend shell PRD for frontend creation class v1."
+D:\projects\ember-rpg\docs\doc_registry.json:499:    "PRD_frontend_creation_finalize_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:504:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:507:      "note": "Frontend shell PRD for frontend creation finalize v1."
+D:\projects\ember-rpg\docs\doc_registry.json:509:    "PRD_frontend_creation_gender_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:514:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:517:      "note": "Frontend shell PRD for frontend creation gender v1."
+D:\projects\ember-rpg\docs\doc_registry.json:519:    "PRD_frontend_creation_name_bio_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:524:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:527:      "note": "Frontend shell PRD for frontend creation name bio v1."
+D:\projects\ember-rpg\docs\doc_registry.json:529:    "PRD_frontend_creation_portrait_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:534:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:537:      "note": "Frontend shell PRD for frontend creation portrait v1."
+D:\projects\ember-rpg\docs\doc_registry.json:539:    "PRD_frontend_creation_proficiencies_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:544:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:547:      "note": "Frontend shell PRD for frontend creation proficiencies v1."
+D:\projects\ember-rpg\docs\doc_registry.json:549:    "PRD_frontend_creation_race_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:554:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:557:      "note": "Frontend shell PRD for frontend creation race v1."
+D:\projects\ember-rpg\docs\doc_registry.json:559:    "PRD_frontend_creation_skills_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:564:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:567:      "note": "Frontend shell PRD for frontend creation skills v1."
+D:\projects\ember-rpg\docs\doc_registry.json:569:    "PRD_frontend_creation_sound_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:574:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:577:      "note": "Frontend shell PRD for frontend creation sound v1."
+D:\projects\ember-rpg\docs\doc_registry.json:579:    "PRD_frontend_creation_spells_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:584:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:587:      "note": "Frontend shell PRD for frontend creation spells v1."
+D:\projects\ember-rpg\docs\doc_registry.json:611:    "PRD_frontend_dual_class_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:620:      "note": "Frontend shell PRD for frontend dual class v1."
+D:\projects\ember-rpg\docs\doc_registry.json:682:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:692:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:724:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:729:    "PRD_frontend_party_portraits_v1.md": {
+D:\projects\ember-rpg\docs\doc_registry.json:738:      "note": "Frontend shell PRD for frontend party portraits v1."
+D:\projects\ember-rpg\docs\doc_registry.json:800:        "godot-client/scripts/ui/creation_wizard.gd"
+D:\projects\ember-rpg\docs\doc_registry.json:893:      "runtime_surface": ["frp-backend/engine/kernel/actor_records.py", "frp-backend/data/classes.json"],
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:154:Bu yüzey ile daha sonra oyun içindeki **karakter sayfası aynı aileden** olmalı. Yani creation ve in-game sheet ortak bir görsel dil paylaşmalı.
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:161:Fallout 1’de creation ve later character sheet aynı bilgi mantığını paylaşıyor. Ember’de bunu daha da ileri götür:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:164:- creation mode
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:193:- skills / disciplines / spells listesi
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:206:- class / calling
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:207:- attributes dağıtımı
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:208:- 3–5 tag skill / focus discipline
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:255:- skill check feedback
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:267:- character
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:360:Çünkü “armor her yere olacak” dedin; o yüzden combat hedefleme ve character sheet bunu desteklemeli.
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:671:- bazı cevaplar stat/skill yüzünden görünmez
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:765:- gated answer (skill / trust / faction)
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:907:- optional: lore density / inspect verbosity / dice transparency
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:973:- character dossier
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1024:- S skills/field arts
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1053:class_name ShellState
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1125:- skill_used
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1150:- skill gate
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1158:Unique portrait yoksa scene crop frame kullanılmalıdır.
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1165:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1166:class KnowledgeTopic:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1173:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1174:class TopicResponse:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1184:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1185:class ConversationSession:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1207:- generic NPC ile konuşurken portrait yoksa framed scene-crop görünür
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1227:- question classification
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1235:- dynamic canon creation
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1243:Oyuncu serbest soru sorabilir veya hazır prompt seçebilir:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1297:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1298:class KnownFact:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1307:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1308:class InsightAnswer:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1312:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1313:class ReflectionBundle:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1328:  question_chip_row.tscn
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1355:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1356:class WorldSite:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1364:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1365:class LocalMapFloor:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1371:@dataclass
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1372:class RestOption:
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1428:# 10. AI codegen prompt paketi
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1434:"Create a Godot 4.6 conversation overlay for a CRPG with two modes: portrait dialogue and portraitless scene-crop dialogue. Layout: speaker frame, NPC text, response list, side actions (Ask About, Trade, Transcript, Leave). Responses can carry metadata tags like Threaten, Charm, Lore, Arcana. Include keyboard navigation and callbacks for opening trade and ask-about modals." 
+D:\projects\ember-rpg\docs\ember_fallout_inspired_surface_prd_tr.md:1443:"Build a Godot 4.6 character dossier scene reused for both character creation and in-game character sheet. Left column attributes, middle paper doll with full body armor slots plus magic attunement slots, right column skills/spells, bottom explanation card. Include mode switching between creation mode and runtime mode." 
+D:\projects\ember-rpg\frp-backend\bridge.py:47:class EmbeddedBridge:
+D:\projects\ember-rpg\frp-backend\bridge.py:76:        if method == "creation_catalog":
+D:\projects\ember-rpg\frp-backend\bridge.py:77:            return self._get("/game/campaigns/creation/catalog")
+D:\projects\ember-rpg\frp-backend\bridge.py:78:        if method == "creation_start":
+D:\projects\ember-rpg\frp-backend\bridge.py:79:            return self._post("/game/campaigns/creation/start", args)
+D:\projects\ember-rpg\frp-backend\bridge.py:80:        if method == "creation_answer":
+D:\projects\ember-rpg\frp-backend\bridge.py:81:            cid = args.pop("creation_id", "")
+D:\projects\ember-rpg\frp-backend\bridge.py:82:            return self._post(f"/game/campaigns/creation/{cid}/answer", args)
+D:\projects\ember-rpg\frp-backend\bridge.py:83:        if method == "creation_reroll":
+D:\projects\ember-rpg\frp-backend\bridge.py:84:            return self._post(f"/game/campaigns/creation/{args.get('creation_id', '')}/reroll", {})
+D:\projects\ember-rpg\frp-backend\bridge.py:85:        if method == "creation_save_roll":
+D:\projects\ember-rpg\frp-backend\bridge.py:86:            return self._post(f"/game/campaigns/creation/{args.get('creation_id', '')}/save-roll", {})
+D:\projects\ember-rpg\frp-backend\bridge.py:87:        if method == "creation_swap_roll":
+D:\projects\ember-rpg\frp-backend\bridge.py:88:            return self._post(f"/game/campaigns/creation/{args.get('creation_id', '')}/swap-roll", {})
+D:\projects\ember-rpg\frp-backend\bridge.py:89:        if method == "creation_finalize":
+D:\projects\ember-rpg\frp-backend\bridge.py:90:            cid = args.pop("creation_id", "")
+D:\projects\ember-rpg\frp-backend\bridge.py:91:            return self._post(f"/game/campaigns/creation/{cid}/finalize", args)
+D:\projects\ember-rpg\docs\runtime_module_map.md:9:- `frp-backend/engine/api/campaign/advisor.py`: Advisor runtime currently centralizes deterministic intent classification, grounded response assembly, and response-only command wiring until a later cleanup splits it into smaller policy slices.
+D:\projects\ember-rpg\docs\runtime_module_map.md:15:- `frp-backend/engine/api/campaign/runtime.py`: Campaign runtime remains the rescue-phase orchestration seam for creation finalization, save/load hydration, command dispatch, and runtime mode payload shaping until the post-rescue runtime split lands.
+D:\projects\ember-rpg\docs\runtime_module_map.md:22:- `frp-backend/engine/kernel/store.py`: Store kernel still centralizes merchant stock generation, barter price shaping, and service availability until commerce slices split further.
+D:\projects\ember-rpg\docs\runtime_module_map.md:23:- `frp-backend/engine/map/__init__.py`: Map generation package still centralizes multiple generators.
+D:\projects\ember-rpg\docs\runtime_module_map.md:24:- `frp-backend/engine/world/interactions_runtime.py`: Interaction runtime now centralizes skilldex derivation, canonical interaction descriptors, and structured interaction execution until shell and projection slices settle.
+D:\projects\ember-rpg\docs\runtime_module_map.md:25:- `frp-backend/tools/content_orchestrator.py`: Content orchestrator bundles world-building generation pipeline.
+D:\projects\ember-rpg\docs\runtime_module_map.md:28:- `godot-client/scripts/ui/creation_wizard.gd`: Creation wizard still owns the transitional multi-step shell flow until the UI rewrite lands.
+D:\projects\ember-rpg\docs\runtime_module_map.md:67:| `frp-backend/engine/api/campaign/settlement.py` | 261 | - | _build_progression_summary, build_settlement_state, build_character_sheet, current_player_turn_resources |
+D:\projects\ember-rpg\docs\runtime_module_map.md:71:| `frp-backend/engine/api/campaign/world.py` | 359 | - | build_world, derive_creation_world_seed, choose_starting_settlement, region_payload |
+D:\projects\ember-rpg\docs\runtime_module_map.md:75:| `frp-backend/engine/api/campaign_routes.py` | 294 | - | get_campaign_client_health, _creation_response, get_campaign_creation_catalog, start_campaign_creation |
+D:\projects\ember-rpg\docs\runtime_module_map.md:95:| `frp-backend/engine/data/classes.py` | 212 | - | _normalize_class_id, _normalize_class_keyed_list_map, _normalize_class_keyed_int_map, get_class |
+D:\projects\ember-rpg\docs\runtime_module_map.md:96:| `frp-backend/engine/data/runtime.py` | 130 | - | _normalize_class_key, _normalize_class_value_map, get_xp_thresholds, get_hp_per_level |
+D:\projects\ember-rpg\docs\runtime_module_map.md:104:| `frp-backend/engine/kernel/actor_records.py` | 705 | ActorRecord (53) | actor_record_from_entity, actor_record_from_character, sync_body_state_to_tracker, _turn_resources_from_legacy_points |
+D:\projects\ember-rpg\docs\runtime_module_map.md:116:| `frp-backend/engine/kernel/creation.py` | 37 | - | - |
+D:\projects\ember-rpg\docs\runtime_module_map.md:117:| `frp-backend/engine/kernel/creation_catalog.py` | 259 | - | _creation_reg, _default_class_id, _default_adapter_id, _default_profile_id |
+D:\projects\ember-rpg\docs\runtime_module_map.md:118:| `frp-backend/engine/kernel/creation_state.py` | 323 | CreationState (21) | - |
+D:\projects\ember-rpg\docs\runtime_module_map.md:130:| `frp-backend/engine/kernel/jobs_types.py` | 220 | MaterialRequirement (2), ProductOutput (2), JobRecord (5), ReactionDef (2) | _load_skill_data, _load_quality_levels, _load_room_zones |
+D:\projects\ember-rpg\docs\runtime_module_map.md:150:| `frp-backend/engine/llm/cli_provider.py` | 51 | CopilotCLIError (0) | _render_prompt, complete_with_copilot_cli |
+D:\projects\ember-rpg\docs\runtime_module_map.md:175:| `frp-backend/engine/world/interactions_runtime.py` | 565 | InteractionHandler (2) | classify_targets, interaction_type_id, parse_interaction_type, interaction_label |
+D:\projects\ember-rpg\docs\runtime_module_map.md:192:| `frp-backend/engine/world/skill_checks.py` | 290 | SkillCheckResult (0) | get_dc_description, ability_modifier, passive_score, roll_d20 |
+D:\projects\ember-rpg\docs\runtime_module_map.md:196:| `frp-backend/engine/worldgen/__init__.py` | 60 | - | - |
+D:\projects\ember-rpg\docs\runtime_module_map.md:197:| `frp-backend/engine/worldgen/economy.py` | 79 | - | _resource_seed, initialize_region_economy, _trade_routes, _scarcity |
+D:\projects\ember-rpg\docs\runtime_module_map.md:198:| `frp-backend/engine/worldgen/models.py` | 233 | WorldProfile (1), TectonicPlate (1), SpeciesLineage (1), FactionSeed (1) | _serialize |
+D:\projects\ember-rpg\docs\runtime_module_map.md:199:| `frp-backend/engine/worldgen/npc_authored.py` | 134 | - | role_family_candidates, choose_authored_location_id, authored_npc_for_role, authored_candidates_for_role |
+D:\projects\ember-rpg\docs\runtime_module_map.md:200:| `frp-backend/engine/worldgen/npc_generator.py` | 382 | - | _role_template, _interior_anchor, _template_anchor_slots, _spread_anchor_slots |
+D:\projects\ember-rpg\docs\runtime_module_map.md:201:| `frp-backend/engine/worldgen/pipeline.py` | 38 | - | initialize_simulation, tick_global |
+D:\projects\ember-rpg\docs\runtime_module_map.md:202:| `frp-backend/engine/worldgen/quest_generator.py` | 86 | - | _pick_giver, _reward_for, generate_quest_offers |
+D:\projects\ember-rpg\docs\runtime_module_map.md:203:| `frp-backend/engine/worldgen/registries.py` | 176 | - | _normalized_map, load_world_profiles, load_world_biomes, load_species_templates |
+D:\projects\ember-rpg\docs\runtime_module_map.md:204:| `frp-backend/engine/worldgen/settlement_generator.py` | 288 | - | _region_lookup, _ground_for_biome, _carve_square, _can_place |
+D:\projects\ember-rpg\docs\runtime_module_map.md:205:| `frp-backend/engine/worldgen/terrain_generator.py` | 355 | _NoiseField (2) | _clamp, _round_grid, _fallback_noise, _plate_seed_points |
+D:\projects\ember-rpg\docs\runtime_module_map.md:206:| `frp-backend/engine/worldgen/world_history.py` | 126 | - | _history_years, simulate_history |
+D:\projects\ember-rpg\docs\runtime_module_map.md:207:| `frp-backend/engine/worldgen/world_macro.py` | 256 | - | clamp, round_grid, noise, plate_seed_points |
+D:\projects\ember-rpg\docs\runtime_module_map.md:208:| `frp-backend/engine/worldgen/world_regions.py` | 125 | - | region_lookup, generate_settlement_layout, realize_region, validate_region_snapshot |
+D:\projects\ember-rpg\docs\runtime_module_map.md:209:| `frp-backend/engine/worldgen/world_seed.py` | 63 | WorldSeed (12) | _stable_seed_from_text, stable_seed_from_parts |
+D:\projects\ember-rpg\docs\runtime_module_map.md:210:| `frp-backend/engine/worldgen/world_society.py` | 422 | - | seed_species, adapt_species, seed_civilizations, region_grid_position |
+D:\projects\ember-rpg\docs\runtime_module_map.md:211:| `frp-backend/engine/worldgen/world_tick.py` | 249 | - | _season_for_day, _weather_for, _build_region_state, initialize_simulation |
+D:\projects\ember-rpg\docs\runtime_module_map.md:234:| `godot-client/scripts/pov_renderer.gd` | 414 | - | _ready, set_location_type, _load_ai_background, update_player |
+D:\projects\ember-rpg\docs\runtime_module_map.md:237:| `godot-client/scripts/ui/ask_dm_panel.gd` | 88 | AskDmPanelWidget (0) | _ready, set_waiting, set_view, set_prompt |
+D:\projects\ember-rpg\docs\runtime_module_map.md:238:| `godot-client/scripts/ui/character_panel.gd` | 175 | CharacterPanelWidget (0) | _ready, _on_character_sheet_updated, _refresh, _build_sheet_text |
+D:\projects\ember-rpg\docs\runtime_module_map.md:240:| `godot-client/scripts/ui/creation_catalog.gd` | 129 | CreationCatalog (0) | - |
+D:\projects\ember-rpg\docs\runtime_module_map.md:241:| `godot-client/scripts/ui/creation_step_build_dossier.gd` | 402 | CreationStepBuildDossier (0) | - |
+D:\projects\ember-rpg\docs\runtime_module_map.md:242:| `godot-client/scripts/ui/creation_step_genre_question.gd` | 303 | CreationStepGenreQuestion (0) | - |
+D:\projects\ember-rpg\docs\runtime_module_map.md:243:| `godot-client/scripts/ui/creation_step_history_roll.gd` | 233 | CreationStepHistoryRoll (0) | - |
+D:\projects\ember-rpg\docs\runtime_module_map.md:244:| `godot-client/scripts/ui/creation_wizard.gd` | 625 | CreationWizard (0) | _ready, open, close, set_catalog |
+D:\projects\ember-rpg\docs\runtime_module_map.md:245:| `godot-client/scripts/ui/creation_wizard_state.gd` | 138 | CreationWizardState (0) | - |
+D:\projects\ember-rpg\docs\runtime_module_map.md:288:| `godot-client/tests/manual/capture_creation_proof.gd` | 127 | - | _initialize |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:33:| `docs/prd/active/PRD_character_creation_v2.md` | `client_creation_ux` | CLIENT:CREATION:UX, GEMRB:M16, DF:M12 | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd`, `frp-backend/engine/core/character_creation.py` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:36:| `docs/prd/active/PRD_creation_surface_v2.md` | `client_creation` | EMBER:CREATION, GEMRB:M16, DF:M03 | `frp-backend/engine/core/character_creation.py`, `godot-client/scenes/title_screen.gd` | `docs/deprecated/prd/PRD_character_system.md`, `docs/deprecated/prd/PRD_game_flow_architecture.md` |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:44:| `docs/prd/active/PRD_frontend_character_creation_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:45:| `docs/prd/active/PRD_frontend_character_record_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/game_session.gd`, `godot-client/autoloads/game_state.gd`, `godot-client/scripts/world/world_view.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:47:| `docs/prd/active/PRD_frontend_creation_abilities_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:48:| `docs/prd/active/PRD_frontend_creation_alignment_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:49:| `docs/prd/active/PRD_frontend_creation_class_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:50:| `docs/prd/active/PRD_frontend_creation_finalize_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:51:| `docs/prd/active/PRD_frontend_creation_gender_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:52:| `docs/prd/active/PRD_frontend_creation_name_bio_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:53:| `docs/prd/active/PRD_frontend_creation_portrait_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:54:| `docs/prd/active/PRD_frontend_creation_proficiencies_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:55:| `docs/prd/active/PRD_frontend_creation_race_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:56:| `docs/prd/active/PRD_frontend_creation_skills_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:57:| `docs/prd/active/PRD_frontend_creation_sound_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:58:| `docs/prd/active/PRD_frontend_creation_spells_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:61:| `docs/prd/active/PRD_frontend_dual_class_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/game_session.gd`, `godot-client/autoloads/game_state.gd`, `godot-client/scripts/world/world_view.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:67:| `docs/prd/active/PRD_frontend_load_ui_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:68:| `docs/prd/active/PRD_frontend_loading_screen_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:71:| `docs/prd/active/PRD_frontend_options_menu_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:72:| `docs/prd/active/PRD_frontend_party_portraits_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/game_session.gd`, `godot-client/autoloads/game_state.gd`, `godot-client/scripts/world/world_view.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:78:| `docs/prd/active/PRD_frontend_title_menu_v1.md` | `client_frontend` | CLIENT:UX | `godot-client/scenes/title_screen.gd`, `godot-client/scripts/ui/creation_wizard.gd` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:103:| `docs/prd/active/PRD_stat_unification_v1.md` | `kernel_actor` | DF:M02, GEMRB:M01 | `frp-backend/engine/kernel/actor_records.py`, `frp-backend/data/classes.json` | - |
+D:\projects\ember-rpg\docs\PRD_IMPLEMENTATION_MATRIX.md:108:| `docs/prd/active/PRD_world_data_registries_v1.md` | `data_registries` | DATA:REGISTRY, DF:M14 | `frp-backend/engine/data_loader.py`, `frp-backend/engine/worldgen/registries.py` | - |
+D:\projects\ember-rpg\godot-client\README.md:3:Godot 4.6 player-facing client for Ember RPG. This is the active shipped surface for title, creation, gameplay, save/load, and semantic UI proof.
+
+
+===== 4.10 reference daggerfall =====
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ImportedComponentAttribute.cs:26:    /// If a prefab is marked with this attribute, the bundled clone is stripped of any instance of the Monobehaviour and its data
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\DisplayNameAttribute.cs:6:    /// Use this attribute to change the label of a field displayed in the inspector.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\DisplayNameAttribute.cs:17:        /// Creates a new attribute.
+D:\projects\examples\daggerfall-unity-master\Assets\Standard Assets\Environment\Water\Water\Scripts\Water.cs:234:            dest.backgroundColor = src.backgroundColor;
+D:\projects\examples\daggerfall-unity-master\Assets\Standard Assets\Environment\Water\Water\Scripts\PlanarReflection.cs:45:            reflectCamera.backgroundColor = clearColor;
+D:\projects\examples\daggerfall-unity-master\Assets\Standard Assets\Environment\Water\Water\Scripts\PlanarReflection.cs:62:            cam.backgroundColor = Color.black;
+D:\projects\examples\daggerfall-unity-master\Assets\Standard Assets\Environment\Water\Water\Scripts\PlanarReflection.cs:153:            reflectCamera.backgroundColor = clearColor;
+D:\projects\examples\daggerfall-unity-master\Assets\Standard Assets\Environment\Water\Water\Scripts\PlanarReflection.cs:209:            helperCam.backgroundColor = Color.black;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\TrackballAttribute.cs:6:    /// Use this attribute to draw a trackball in the inspector.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\TrackballAttribute.cs:44:        /// Creates a new attribute.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\PostProcessAttribute.cs:6:    /// Use this attribute to associate a <see cref="PostProcessEffectSettings"/> to a
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\PostProcessAttribute.cs:37:        /// Creates a new attribute.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\MinMaxAttribute.cs:6:    /// Use this attribute to specify a range between a min and a max value.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\MinMaxAttribute.cs:22:        /// Creates a new attribute.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\MinAttribute.cs:6:    /// Use this attribute to clamp floating point values to a minimum value in the inspector.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\MinAttribute.cs:17:        /// Creates a new attribute.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\MaxAttribute.cs:6:    /// Use this attribute to clamp floating point values to a maximum value in the inspector.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Attributes\MaxAttribute.cs:17:        /// Creates a new attribute.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessBundle.cs:7:    /// A tuple-like class that holds reference to an effect settings and its associated attribute
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessBundle.cs:13:        /// The attribute set on the effect.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessBundle.cs:15:        public PostProcessAttribute attribute { get; private set; }
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessBundle.cs:28:                    Assert.IsNotNull(attribute.renderer);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessBundle.cs:29:                    var rendererType = attribute.renderer;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessBundle.cs:48:            attribute = settings.GetType().GetAttribute<PostProcessAttribute>();
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditorObjectData.cs:18:        public static List<uint> shopShelvesObjectGroupIndices = new List<uint> { 5, 6, 11, 12, 13, 14, 15, 16, 17, 18, 19, 26, 28, 29, 31, 35, 36, 37, 40, 41, 42, 44, 46, 47, 48, 49, 808 };
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditorObjectData.cs:19:        public static List<uint> houseContainerObjectGroupIndices = new List<uint> { 3, 4, 7, 8, 27, 32, 33, 34, 35, 37, 38, 50, 51 };
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditorObjectData.cs:20:        public static List<uint> houseFireplaceObjectGroupIndices = new List<uint> { 41116, 41117 };
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectBaseEditor.cs:135:            // Add tooltip if it's missing and an attribute is available
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectBaseEditor.cs:143:            // Look for a compatible attribute decorator
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectBaseEditor.cs:145:            Attribute attribute = null;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectBaseEditor.cs:147:            foreach (var attr in property.attributes)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectBaseEditor.cs:153:                    attribute = attr;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectBaseEditor.cs:177:                if (decorator.OnGUI(property.value, property.overrideState, title, attribute))
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectBaseEditor.cs:196:                        if (decorator.OnGUI(property.value, property.overrideState, title, attribute))
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditor.cs:34:                lightBG.normal.background = WorldDataEditorBuildingHelper.CreateColorTexture(1, 1, new Color(0.35f, 0.35f, 0.35f, 1.0f));
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditor.cs:35:                lightMedBG.normal.background = WorldDataEditorBuildingHelper.CreateColorTexture(1, 1, new Color(0.25f, 0.25f, 0.25f, 1.0f));
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditor.cs:39:                lightBG.normal.background = WorldDataEditorBuildingHelper.CreateColorTexture(1, 1, new Color(0.98f, 0.98f, 0.98f, 1.0f));
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditor.cs:40:                lightMedBG.normal.background = WorldDataEditorBuildingHelper.CreateColorTexture(1, 1, new Color(0.9f, 0.9f, 0.9f, 1.0f));
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditor.cs:287:                            else if (WorldDataEditorObjectData.shopShelvesObjectGroupIndices.Contains(uint.Parse(data.id) - WorldDataEditorObjectData.containerObjectGroupOffset))
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditor.cs:292:                                    WorldDataEditorObjectData.houseContainerObjectGroupIndices.Contains(uint.Parse(data.id) - WorldDataEditorObjectData.containerObjectGroupOffset))
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\WorldDataEditor\Editor\WorldDataEditor.cs:296:                            else if (WorldDataEditorObjectData.houseFireplaceObjectGroupIndices.Contains(uint.Parse(data.id)))
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessLayer.cs:339:            var effects = m_Bundles.Where(kvp => kvp.Value.attribute.eventType == evt && !kvp.Value.attribute.builtinEffect)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessLayer.cs:843:                    if (item.bundle.attribute.allowInSceneView && enabledAndSupported)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessLayer.cs:1118:                    if (!context.isSceneView || (context.isSceneView && effect.attribute.allowInSceneView))
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\PostProcessLayer.cs:1371:            if (m_IsRenderingInSceneView && !effect.attribute.allowInSceneView)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\Styling.cs:46:        /// Color of effect header backgrounds.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\Styling.cs:77:                background = RuntimeUtilities.transparentTexture,
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\Styling.cs:83:                background = RuntimeUtilities.transparentTexture,
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\SerializedParameterOverride.cs:24:        /// An array of all attributes set on the original parameter.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\SerializedParameterOverride.cs:26:        public Attribute[] attributes { get; private set; }
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\SerializedParameterOverride.cs:38:        internal SerializedParameterOverride(SerializedProperty property, Attribute[] attributes)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\SerializedParameterOverride.cs:48:            this.attributes = attributes;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\SerializedParameterOverride.cs:52:        /// Gets the attribute of type <c>T</c> from the original parameter.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\SerializedParameterOverride.cs:54:        /// <typeparam name="T">The type of attribute to look for</typeparam>
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\SerializedParameterOverride.cs:55:        /// <returns>And attribute or type <c>T</c>, or <c>null</c> if none has been found</returns>
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\SerializedParameterOverride.cs:59:            return (T)attributes.FirstOrDefault(x => x is T);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:89:            // Look for all the valid attribute decorators
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:101:                s_AttributeDecorators.Add(attr.attributeType, decorator);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:105:        internal static AttributeDecorator GetDecorator(Type attributeType)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:108:            return !s_AttributeDecorators.TryGetValue(attributeType, out decorator)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:203:            var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:205:            var labelRect = backgroundRect;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:209:            var foldoutRect = backgroundRect;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:215:            backgroundRect.xMin = 0f;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:216:            backgroundRect.width += 4f;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:219:            EditorGUI.DrawRect(backgroundRect, Styling.headerBackground);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:228:            if (e.type == EventType.MouseDown && backgroundRect.Contains(e.mousePosition) && e.button == 0)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:243:            var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:245:            var labelRect = backgroundRect;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:249:            var foldoutRect = backgroundRect;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:254:            var toggleRect = backgroundRect;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:268:            backgroundRect.xMin = 0f;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:269:            backgroundRect.width += 4f;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Utils\EditorUtilities.cs:272:            EditorGUI.DrawRect(backgroundRect, Styling.headerBackground);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessLayerEditor.cs:317:                                EditorGUI.LabelField(rect, sbr.bundle.attribute.menuItem);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectEditor.cs:84:            var attributes = RuntimeUtilities.GetMemberAttributes(expr);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\PostProcessEffectEditor.cs:85:            return new SerializedParameterOverride(property, attributes);
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\Mod.cs:83:        /// and methods marked with the <see cref="Invoke"/> attribute will be called at the specified state.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Tools\ProfileFactory.cs:10:    /// An utility class to help the creation of new post-processing profile assets.
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModLoaderInterfaceWindow.cs:69:    readonly Color backgroundColor = new Color(0, 0, 0, 0.7f);
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModLoaderInterfaceWindow.cs:100:        ModListPanel.BackgroundColor = backgroundColor;
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModLoaderInterfaceWindow.cs:187:        ModPanel.BackgroundColor = backgroundColor;
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModTypes.cs:148:    /// Options for a mod setup intro point, meaning a method with the <see cref="Invoke"/> attribute.
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModTypes.cs:188:    /// Data passed to methods with the <see cref="Invoke"/> attribute when they are invoked by the Mod Manager.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Effects\DefaultPostProcessEffectEditor.cs:36:                var attributes = field.GetCustomAttributes(false).Cast<Attribute>().ToArray();
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Effects\DefaultPostProcessEffectEditor.cs:37:                var parameter = new SerializedParameterOverride(property, attributes);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\EffectListEditor.cs:70:                var attribute = editorType.GetAttribute<PostProcessEditorAttribute>();
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\EffectListEditor.cs:71:                m_EditorTypes.Add(attribute.settingsType, editorType);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\TextureFormatUtilities.cs:129:            var attributes = (ObsoleteAttribute[])fieldInfo.GetCustomAttributes(typeof(ObsoleteAttribute), false);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\TextureFormatUtilities.cs:130:            return attributes != null && attributes.Length > 0;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\RuntimeUtilities.cs:249:                s_FullscreenTriangle.SetIndices(new[] { 0, 1, 2 }, MeshTopology.Triangles, 0, false);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\RuntimeUtilities.cs:1188:        /// Helper method to get the first attribute of type <c>T</c> on a given type.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\RuntimeUtilities.cs:1190:        /// <typeparam name="T">The attribute type to look for</typeparam>
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\RuntimeUtilities.cs:1192:        /// <returns>The attribute found</returns>
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\RuntimeUtilities.cs:1200:        /// Returns all attributes set on a specific member.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\RuntimeUtilities.cs:1205:        /// <returns>An array of attributes</returns>
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Utils\RuntimeUtilities.cs:1207:        /// This method doesn't return inherited attributes, only explicit ones.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\TrackballDecorator.cs:21:        public override bool OnGUI(SerializedProperty property, SerializedProperty overrideState, GUIContent title, Attribute attribute)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\TrackballDecorator.cs:31:                    DrawWheel(ref value, overrideState.boolValue, (TrackballAttribute)attribute);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:9:        public override bool OnGUI(SerializedProperty property, SerializedProperty overrideState, GUIContent title, Attribute attribute)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:11:            var attr = (RangeAttribute)attribute;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:32:        public override bool OnGUI(SerializedProperty property, SerializedProperty overrideState, GUIContent title, Attribute attribute)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:34:            var attr = (UnityEngine.Rendering.PostProcessing.MinAttribute)attribute;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:57:        public override bool OnGUI(SerializedProperty property, SerializedProperty overrideState, GUIContent title, Attribute attribute)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:59:            var attr = (UnityEngine.Rendering.PostProcessing.MaxAttribute)attribute;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:82:        public override bool OnGUI(SerializedProperty property, SerializedProperty overrideState, GUIContent title, Attribute attribute)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:84:            var attr = (UnityEngine.Rendering.PostProcessing.MinMaxAttribute)attribute;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:115:        public override bool OnGUI(SerializedProperty property, SerializedProperty overrideState, GUIContent title, Attribute attribute)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\Decorators.cs:117:            var attr = (ColorUsageAttribute)attribute;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\AttributeDecorator.cs:7:    /// The base abstract class for all attribute decorators.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\AttributeDecorator.cs:29:        /// <param name="attribute">A reference to the property attribute set on the original field
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Decorators\AttributeDecorator.cs:33:        public abstract bool OnGUI(SerializedProperty property, SerializedProperty overrideState, GUIContent title, Attribute attribute);
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\PostProcessEditorAttribute.cs:7:    /// for. When you make a custom editor for an effect, you need put this attribute on the editor
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\PostProcessEditorAttribute.cs:20:        /// Creates a new attribute.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\DecoratorAttribute.cs:6:    /// Tells a <see cref="AttributeDecorator"/> class which inspector attribute it's a decorator
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\DecoratorAttribute.cs:14:        /// The attribute type that this decorator can inspect.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\DecoratorAttribute.cs:16:        public readonly Type attributeType;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\DecoratorAttribute.cs:19:        /// Creates a new attribute.
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\DecoratorAttribute.cs:21:        /// <param name="attributeType">The type that this decorator can inspect</param>
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\DecoratorAttribute.cs:22:        public DecoratorAttribute(Type attributeType)
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Editor\Attributes\DecoratorAttribute.cs:24:            this.attributeType = attributeType;
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Effects\Grain.cs:62:            // Chosen by a fair dice roll
+D:\projects\examples\daggerfall-unity-master\Packages\com.unity.postprocessing\PostProcessing\Runtime\Effects\FastApproximateAntialiasing.cs:25:        [Tooltip("Keep alpha channel. This will slightly lower the effect quality but allows rendering against a transparent background.")]
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BlocksFile.cs:1294:                    // Set target and and parent indices
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\ClassFile.cs:146:            // Read primary skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\ClassFile.cs:151:            // Read major skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\ClassFile.cs:156:            // Read minor skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\ClassFile.cs:176:            // Read attributes
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:28:        const int questionCount = 12;
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:35:        string questionsStr = string.Empty;
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:36:        Question[] questions = new Question[questionCount];
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:55:            questionsStr = System.Text.Encoding.UTF8.GetString(txtFile.GetBytes());
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:57:            // Parse text into questions
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:58:            StringReader reader = new StringReader(questionsStr);
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:60:            for (int i = 0; i < questionCount; i++)
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:62:                questions[i] = new Question();
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:68:                // If we haven't parsed the first question yet, allow users to specify a custom backstory string id
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:80:                        // Find the next non-empty line, which should be question 1
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:92:                // Parse question text
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:95:                    // Check if the next line is part of the question
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:96:                    if (j == 0) // first question line should lead with a number followed by a '.'
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:98:                        questions[i].Text[j] = curLine.Split(new[] { '.' }, 2)[1].Trim();
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:102:                        questions[i].Text[j] = curLine.Trim();
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:110:                // Parse answers to the current question
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:124:                    questions[i].Answers.Add(ans);
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:135:            // Initialize question token lists
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:172:            List<int>[] tokenLists = new List<int>[questionCount * 2];
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:193:                    int questionInd;
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:197:                    if (!int.TryParse(index, out questionInd))
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:199:                        Debug.LogError("GenerateBackstory: Invalid question index.");
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:206:                        tokenLists[questionInd].Add(int.Parse(splitStr[1]));
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:238:                AnswerEffects.Add(effect + " " + index); // Tag text macros with question numbers
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:257:                DFCareer.Skills skill = (DFCareer.Skills)parseResult;
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:260:                    short startValue = playerEntity.Skills.GetPermanentSkillValue(skill);
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:261:                    playerEntity.Skills.SetPermanentSkillValue(skill, (short)(startValue + modValue));
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:265:                    Debug.LogError("CreateCharBiography: Invalid skill adjustment value.");
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:463:            int skillCount = (int)DFCareer.Skills.Count;
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:464:            int[] skills = new int[skillCount];
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:466:            // Apply only skill effects
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:473:                if (int.TryParse(tokens[0], out parseResult) && parseResult >= 0 && parseResult < skillCount)
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:478:                        skills[parseResult] += modValue;
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:482:                        Debug.LogError("CreateCharBiography: Invalid skill adjustment value.");
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:487:            return skills;
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\BiogFile.cs:567:            get { return questions; }
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFMesh.cs:24:    ///  the first three points (indices 0, 1, 2), then increment the second two point indices (0, 2, 3, then 0, 3, 4, and so on)
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:337:            Panel background = new Panel();
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:338:            background.Position = new Vector2(x, y - 0.5f);
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:339:            background.Size = new Vector2(columnWidth, 6.5f);
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:340:            AddAtNextPosition((int)background.Size.y, background);
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:349:            background.Components.Add(textLabel);
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:367:            Panel background = DaggerfallUI.AddPanel(new Rect(x + margin, y, columnWidth - margin * 2, height));
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:368:            background.BackgroundColor = sectionDescriptionBackgroundColor;
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:369:            background.Outline.Enabled = true;
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:370:            background.Outline.Color = sectionDescriptionOutlineColor;
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:371:            background.Outline.Thickness = 1;
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:372:            background.Components.Add(textLabel);
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:373:            AddAtNextPosition(height, background);
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:394:        /// <param name="backgroundColor">Color of button.</param>
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:396:        private Button GetButton (string label, HorizontalAlignment alignment, Color backgroundColor)
+D:\projects\examples\daggerfall-unity-master\Assets\Game\Addons\ModSupport\ModSettings\ModSettingsWindow.cs:403:                BackgroundColor = backgroundColor,
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:47:        // Primary skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:52:        // Major skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:57:        // Minor skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:183:            // Primary skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:189:            // Major skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:195:            // Minor skills
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:222:            // Base attributes like STR, END, etc.
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:444:        /// The indices below match those in BIOG*.TXT files and CLASS*.CFG files.
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:445:        /// Likely to be the same indices using internally by the game.
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:486:            Count = 35, // Not a valid skill
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFCareer.cs:504:        /// Magic skills only - values match main skills enum.
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\API\DFBlock.cs:809:            /// <summary>List of 750 sequential model indices.</summary>
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\MeshReader.cs:117:            LoadIndices(ref modelData);
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\MeshReader.cs:195:                    triangles[t] = model.Indices[sub.StartIndex + t];
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\MeshReader.cs:275:                    triangles[t] = combinedModel.Indices[sub.StartIndex + t];
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\MeshReader.cs:352:            // Indices
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\MeshReader.cs:353:            int[] indices = new int[6]
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\MeshReader.cs:382:            mesh.triangles = indices;
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\MeshReader.cs:409:            // Indices
+D:\projects\examples\daggerfall-unity-master\Assets\Scripts\MeshReader.cs:410:            int[] indices = new int[6]
+
+
+===== 4.10 reference openmw =====
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:4:#include <components/esm3/loadcell.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:6:#include <components/esmloader/esmdata.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:7:#include <components/esmloader/load.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:8:#include <components/fallback/fallback.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:9:#include <components/fallback/validate.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:15:#include <components/resource/bgsmfilemanager.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:16:#include <components/resource/bulletshape.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:17:#include <components/resource/bulletshapemanager.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:18:#include <components/resource/foreachbulletobject.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:19:#include <components/resource/imagemanager.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:20:#include <components/resource/niffilemanager.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:21:#include <components/resource/scenemanager.hpp>
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:74:        addOption("fallback-archive",
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:75:            bpo::value<StringsVector>()->default_value(StringsVector(), "fallback-archive")->multitoken()->composing(),
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:76:            "set fallback BSA archives (later archives have higher priority)");
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:78:        addOption("content", bpo::value<StringsVector>()->default_value(StringsVector(), "")->multitoken()->composing(),
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:79:            "content file(s): esm/esp, or omwgame/omwaddon/omwscripts");
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:88:        addOption("fallback",
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:90:            "fallback values");
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:145:        const auto& resDir = variables["resources"].as<Files::MaybeQuotedPath>();
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:149:        const auto& archives = variables["fallback-archive"].as<StringsVector>();
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:150:        StringsVector contentFiles{ "builtin.omwscripts" };
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:151:        const auto& configContentFiles = variables["content"].as<StringsVector>();
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:152:        contentFiles.insert(contentFiles.end(), configContentFiles.begin(), configContentFiles.end());
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:154:        Fallback::Map::init(variables["fallback"].as<Fallback::FallbackMap>().mMap);
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:160:        Settings::Manager::load(config);
+D:\projects\examples\openmw-master\apps\bulletobjecttool\main.cpp:172:            = EsmLoader::loadEsmData(query, contentFiles, fileCollections, readers, &encoder);
+D:\projects\examples\openmw-master\apps\benchmarks\settings\access.cpp:152:    parser.loadSettingsFile(settingsDefaultPath, Settings::Manager::mDefaultSettings);
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:7:#include <components/esm4/loadachr.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:8:#include <components/esm4/loadacti.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:9:#include <components/esm4/loadalch.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:10:#include <components/esm4/loadaloc.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:11:#include <components/esm4/loadammo.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:12:#include <components/esm4/loadanio.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:13:#include <components/esm4/loadappa.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:14:#include <components/esm4/loadarma.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:15:#include <components/esm4/loadarmo.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:16:#include <components/esm4/loadaspc.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:17:#include <components/esm4/loadbook.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:18:#include <components/esm4/loadbptd.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:19:#include <components/esm4/loadcell.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:20:#include <components/esm4/loadclas.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:21:#include <components/esm4/loadclfm.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:22:#include <components/esm4/loadclot.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:23:#include <components/esm4/loadcont.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:24:#include <components/esm4/loadcrea.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:25:#include <components/esm4/loaddial.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:26:#include <components/esm4/loaddobj.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:27:#include <components/esm4/loaddoor.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:28:#include <components/esm4/loadeyes.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:29:#include <components/esm4/loadflor.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:30:#include <components/esm4/loadflst.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:31:#include <components/esm4/loadfurn.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:32:#include <components/esm4/loadglob.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:33:#include <components/esm4/loadgras.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:34:#include <components/esm4/loadgrup.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:35:#include <components/esm4/loadhair.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:36:#include <components/esm4/loadhdpt.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:37:#include <components/esm4/loadidle.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:38:#include <components/esm4/loadidlm.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:39:#include <components/esm4/loadimod.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:40:#include <components/esm4/loadinfo.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:41:#include <components/esm4/loadingr.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:42:#include <components/esm4/loadkeym.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:43:#include <components/esm4/loadland.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:44:#include <components/esm4/loadlgtm.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:45:#include <components/esm4/loadligh.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:46:#include <components/esm4/loadltex.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:47:#include <components/esm4/loadlvlc.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:48:#include <components/esm4/loadlvli.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:49:#include <components/esm4/loadlvln.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:50:#include <components/esm4/loadmato.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:51:#include <components/esm4/loadmisc.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:52:#include <components/esm4/loadmset.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:53:#include <components/esm4/loadmstt.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:54:#include <components/esm4/loadmusc.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:55:#include <components/esm4/loadnavi.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:56:#include <components/esm4/loadnavm.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:57:#include <components/esm4/loadnote.hpp>
+D:\projects\examples\openmw-master\apps\components_tests\esm4\includes.cpp:58:#include <components/esm4/loadnpc.hpp>
+
+
+===== 4.10 reference dwarf fortress =====
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\command line.txt:15:This will open a silent, introless dwarf fortress, generate a world with the given id number and seed, export the region files and a picture, and finally quit.  The window remains open so you can see what's going on.  You can still abort world generation while it is running.  If you attempt to create a world number that already exists, it will abort immediately.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\data\init\d_init.txt:23:Set this to YES if you want Dwarf Fortress to show the warning window for embark site selection even if there are no issues (as a way of confirming your choice).
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\data\init\d_init.txt:31:You can change the option below to ALWAYS and NO.  More restrictive world parameter settings override these.  ALWAYS lets you see the features in the Local view during embark, and NO stops you from looking for features in the site finder (though if you really want to stop the finder, it might be better for you to generate worlds that restrict the use of this feature completely, in which case you don't need to change the settings here).
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\data\init\d_init.txt:247:This allows you to control the number of babies+children in your fortress.  The first number is an absolute cap on the number of babies+children.  The second is a percentage of the current number of adults in your fortress (the default is the essentially meaningless 1000% here).  The lower number is used as the cap.  The cap only prevents further pregnancies, so migrant children, multiple births and existing pregnancies from old saves can still push you over the cap.  Setting either number to zero will disallow pregnancies in the fortress.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\data\init\d_init.txt:282:If you'd prefer to leave the history behind every engraving for your adventurers to discover, then set this to NO.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\data\init\init.txt:103:This controls the number of milliseconds that must pass before input works again after the view recenters on an event in dwarf mode.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:1716:		[UBIQUITOUS] -- creature will occur in absolutely every region that is a biome match (does not apply to evil/good)
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:1854:		new historical events: change creature type, hist figure revived
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:1856:		new site names "hamlet" "town" "fortress" "labyrinth" "lair" "shrine"
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:1975:			Limits overall number of sites to this.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:2390:		<placement> can run from 0 to 1000.  0 (the default) means the entity's sites won't be listed for adventure mode character creation.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:2393:	[DEFAULT_SITE_TYPE:<site>]
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:2395:		<site> is one of:
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:2402:	[LIKES_SITE:<site>]
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:2404:	[TOLERATES_SITE:<site>]
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:2433:		How many members the entity can have during world generation in a single site.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\file changes.txt:2444:		It will currently place the total of these numbers or 50 civilizations, whichever is lower.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\optipng license.txt:5:warranty.  In no event will the author(s) be held liable for any damages
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\raw\graphics\graphics_example.txt:152:You can also use the entity/site link tokens in place of the profession tokens:
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\readme.txt:7:Copyright (c) 2002-2020.  All rights are retained by Tarn Adams, save the following:  you may redistribute the unmodified binary and accompanying files, provided you do so free of charge.  You may distribute modified text files from the data and raw folders (see the readme.txt in those folders for more information).  We'd appreciate it if you credit yourself or an alias somewhere for any modifications to prevent confusion with vanilla DF (it helps with bug reports).  If you'd like to distribute a modified version of the game or portion of the archive and are worried about copyright infringement, please contact Tarn Adams at toadyone@bay12games.com.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\raw\objects\body_default.txt:101:	[BP:NK7:seventh neck:STP][CON:UB][CATEGORY:NECK]
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\raw\objects\body_default.txt:115:	[BP:HD7:seventh head:STP][CON:NK7][HEAD][CATEGORY:HEAD]
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\raw\objects\body_default.txt:1017:	[BP:ARM7:seventh arm:STP][CON_CAT:HEAD][LIMB][CATEGORY:ARM]
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:8:(1) Copy the relevant region folder in "data/save" to a safe location.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:9:(2) When you want to reuse it, copy that region back to "data/save".  Do *NOT* overwrite an old folder, as it might leave residual files.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:20:(2) Copy "data/save" from the old folder into the new folder, or copy over the relevant region folders you've saved to "data/save".  Keep a backup in case something is wrong with the new version.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:85:	(*) Fixed crash related to deleting zones in adv mode site planning
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:88:	(*) Fixed w.g. crash related to imprisonment by civilizations that have lost their capitals
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:154:The main new bit in adventure mode is right in the beginning - well, not quite.  Don't be fooled by the first character creation screen (which is unchanged), you'll get to the good stuff right after.  There are a lot of new options there (starting background, religion, starting site selection, equipment including quality, mounts/pets), including the option to make party members, who can be from different civilization.  Mounts greatly speed up travel if everybody has one (make sure the mount is their pet.)  If you forget a mount or meet with tragedy, you can claim a new mount generally from the pastures of human cities, or wherever tame animals can be found.  You do not have to purchase them currently.  Just press 'h' near one (the same key you use to mount and lead animals.)  If the wrong party member claims it, that party member can give it to the right one as a gift (a new conversation option which can be applied to anybody.)  Pack animals (including many mounts) can also carry items.  Press 'p' to place an item on a creature.  This can greatly increase your capacity to carry food or treasure.  If you claim a pet that is unnamed, you can name them as a conversation option (with the pet.)
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:176:	(*) Various villainous activity in world generation, in play off-site, and (more limited) in fort mode, world generation surveillance, interrogation and punishment.  Historical plots include theft, sabotage, abduction, assassination, coups, corrupt advancement promises, embezzlement, starting wars, and framing enemies.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:180:	(*) Various religious interactions (shrine building, sermons, persecution) in world generation, lots of religious demographics tracking which influences shrine creation, religious sites and sermons influencing membership numbers, holy cities and a few levels of priest
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:182:	(*) Dwarves can trigger dig-deep disasters in world generation, with repercussions coming to other sites, including fort mode
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:191:	(*) Bogeyman limited to a few regions and given new powers
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:192:	(*) Fixed error where bandit groups would be deleted prematurely in worldgen
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:206:	(*) Removed intermittent lag from off-site conceptions and births (added seasonal unit offloading)
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:207:	(*) Made squad orders respect successful site conquest (so new members don't try to reconquer)
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:219:There are now peaceful and not-so-peaceful ways of expanding your influence in the world.  Once a site becomes linked to you (through prosperity or by conquest; you'll see a message), you can send a messenger there to request workers, or send dwarves from the fort out to such sites (from v-p).  This only works on historical figures, so you might find you don't have off-site workers available at first, though some sites do have them.  This release should also improve the issues dwarves were having with negative thoughts, and they can also now experience permanent changes in their personalities and intellectual values due to events in their lives.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:221:Note: Insurrections were such a problem in sites that I had to turn them off for your fortress's holdings; we'll get back to that later.  It wasn't even the insurrections, really; the dwarves were bailing on the occupation immediately because they were afraid of insurrections.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:224:	(*) Your civilization will send out groups to found sites near prosperous fortresses
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:225:	(*) Existing sites near prosperous fortresses will associate themselves to those fortresses
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:226:	(*) Added ability to take over sites and install administrators
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:228:	(*) Can send workers off-site and send out messengers to request their return
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:290:	(*) Fixed crash from demanding tribute from parentless site entities
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:296:	(*) Stopped every tribute rejection from being attached to your fort's history
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:309:	(*) Fixed crash from exploring entity-free site
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:325:Here's the first substantial update to the fortress's world map screen.  New raid options are available, and it shouldn't be hard for you to antagonize your neighbors now if that's what you want to do.  Use the 'd'etails option when preparing the raid to set what sorts of actions you'd like your raiders to perform.  Skills and equipment matter, and skills can be improved during missions.  The skill of your best tactician is important (you'll see feedback in the mission report.)  If you demand tribute on an ongoing basis and the target site agrees to your demands, you'll receive something like a merchant caravan on an annual basis a few seasons after the initial demand.  They'll drop goods off at your depot and depart.  These goods can be carried off immediately for storage, but there's a new report so you can look at a complete list of what was delivered; the same is true of spoils from raids.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:330:	(*) Can pillage and raze and demand tribute from other sites
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:332:	(*) Military tactics skill is now gained and matters in off-site battles
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:347:	(*) Made non-historical populations defend sites post w.g.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:348:	(*) Made off-site raid stealth success depend on site
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:349:	(*) Fixed broken flags on merchant historical event
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:353:	(*) Stopped unintelligent creatures associated to civilizations, like domestic animals, from worshipping gods when given historical status
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:381:	(*) Stopped displayed artifacts from duplicating on retirement/offloading of site
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:392:	(*) Prevented unirrigated etc. top-left corners etc. from stopping planting in farms
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:398:	(*) Properly saved freeing hf in relevant historical event (Quietust)
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:399:	(*) Fixed a few cases of historical event for identities reporting wrong historical figure
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:418:	(*) Made dwarven off-site squads stranded during preparation return to the fort
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:435:	(*) Fixed world gen crash associated to agents checking on site government after it collapses
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:445:This is the artifact release, featuring the ability to send your dwarves off to cause trouble in the world, improved kobold sites, cover identities, artifact questers, and a bit of artifact diplomacy.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:447:In fort mode, the 'c' screen which used to list civilizations still does that as a suboption, but its main purpose now is to show the world map and allow you to interact with it.  You can either raid a neighbor generally, or send off squads to recover specific artifacts or rescue particular people (in which case, the squads will still bring back other artifacts and prisoners, but focus on the goal.)  A squad questing after an artifact will seek out information if the first site doesn't work out, and this might take several months, so be prepared.  Squads can also be captured during raids, though typically someone will return to tell the tale.  When squads return, a report will become available; a yellow 'R' will appear over on the left margin, and pressing 'r' will let you see it.  Sometimes reports are quite lengthy as squads stumble from tavern to tavern; you can press enter to skip to the end of the path animation.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:449:There are some rough edges here!  Be sure not to send off your commander if you are planning to reorganize your military, as they are the only one with the power to assign new squads and cannot do so while off the map.  There was a last-minute hiccup with artifacts known to be held by people (rather than stored on sites); these fort-mode missions will be fruitless for the moment; the most common instance here is books authored by people that then hang on to them, so don't try to steal their books!  It says on the map screen when an artifact is held by somebody, so it should be easy to avoid.  Raids do not bring back non-artifacts or build skills; these issues may or may not be addressed in the short-term depending on difficulties that arise.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:453:In adventure mode, you can assume a cover identity.  You do this from the 'k' conversation menu (if you are already talking to somebody, it'll be hidden in "start new conversation".)  If you choose to link your identity to a civilization, you'll be carrying that baggage with you, especially when you are being interrogated by goblin guards, so one should be prudent.  To turn off the identity, go back to the "assume an identity" menu and choose the 'x' "no identity" option.  You can also reuse existing identities from this menu.
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:468:	(*) Ability to send out squads to raid sites, rescuing prisoners and recovering artifacts
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:469:	(*) Display cases and pedestals, museum zones, both in forts and other sites
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:471:	(*) Artifacts created during worldgen: dwarf moods, named heroic objects, holy relics, heirlooms
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:472:	(*) New artifact events in play and worldgen: questers seek artifacts and ask for or steal them, invaders demand artifacts
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:473:	(*) New historical events associated to the creation of artifacts (used in fort and worldgen)
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:474:	(*) Agents used by civilizations to gather information, can assume cover identities
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:475:	(*) Improved kobold site maps
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:476:	(*) Goblin site denizens demand an identity instead of immediately attacking every stranger
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:487:	(*) Fixed bug preventing monster slayers from visiting those forts with monsters to slay
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:499:	(*) Stopped natural animals from w.g. rampaging through sites owned by entities at peace with wildlife
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:515:	(*) Fixed problem with worldgen trade causing world histories to diverge
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:518:	(*) Stopped babies/children from competing in w.g. events
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:539:	(*) Allowed new citizens with some previously site-wide occupations to be reassigned
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:540:	(*) Allowed some site-wide occupations for dwarves
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:559:	(*) Fixed material overcount in adv site work menu
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:580:	(*) Reported site of adventurer masterpieces correctly
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:590:	(*) Stopped zone corruption problem from adventure sites (caused crashes)
+D:\projects\examples\dwarf-fortress-legacy\dwarf-fortress-legacy\release notes.txt:592:	(*) Stopped certain site build orders from skipping the collapse check
+
+
+===== 4.10 reference gemrb =====
+D:\projects\examples\gemrb-master\gemrb-master\platforms\apple\AppleLogger.h:8:#include "Logging/Loggers/Stdio.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\apple\AppleLogger.h:12:class GEM_EXPORT AppleLogger : public Logger::LogWriter {
+D:\projects\examples\gemrb-master\gemrb-master\platforms\apple\AppleLogger.h:14:	AppleLogger();
+D:\projects\examples\gemrb-master\gemrb-master\platforms\apple\AppleLogger.h:17:	void WriteLogMessage(const Logger::LogMessage& msg) override;
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\GemRB.cpp:10:#include "Logging/Loggers/Stdio.h"
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\GemRB.cpp:11:#include "Logging/Logging.h"
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\GemRB.cpp:39:		if (cfg.Logging) {
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\GemRB.cpp:40:			ToggleLogging(cfg.Logging);
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\GemRB.cpp:43:		if (cfg.LogColor >= 0 && cfg.LogColor < int(ANSIColor::count)) {
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\GemRB.cpp:44:			AddLogWriter(createStdioLogWriter(ANSIColor(cfg.LogColor)));
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\GemRB.cpp:46:			AddLogWriter(createStdioLogWriter());
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\GemRB.cpp:54:		Log(FATAL, "Main", "Aborting due to fatal error... {}", cie);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.cpp:5:#include "AndroidLogger.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.cpp:11:void AndroidLogger::WriteLogMessage(const Logger::LogMessage& msg)
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.cpp:13:	android_LogPriority priority = ANDROID_LOG_INFO;
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.cpp:31:Logger::WriterPtr createAndroidLogger()
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.cpp:33:	return Logger::WriterPtr(new AndroidLogger());
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\tests\IDSImporter\Test_IDSImporter.cpp:64:	GTEST_SKIP() << "Not working on native Windows.";
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\core\Animation.cpp:12:#include "Logging/Logging.h"
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\core\Animation.cpp:58:		Log(MESSAGE, "Sprite2D", "Frame fetched while animation is inactive1!");
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\core\Animation.cpp:74:		Log(MESSAGE, "Sprite2D", "Frame fetched while animation is inactive2!");
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\core\Animation.cpp:129:		Log(MESSAGE, "Sprite2D", "Frame fetched while animation is inactive!");
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:31:	{ 874, "windows-874" }, /* ANSI/OEM Thai (same as 28605, ISO 8859-15); Thai (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:36:	{ 1250, "windows-1250" }, /* ANSI Central European; Central European (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:37:	{ 1251, "windows-1251" }, /* ANSI Cyrillic; Cyrillic (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:38:	{ 1252, "windows-1252" }, /* ANSI Latin 1; Western European (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:39:	{ 1253, "windows-1253" }, /* ANSI Greek; Greek (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:40:	{ 1254, "windows-1254" }, /* ANSI Turkish; Turkish (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:41:	{ 1255, "windows-1255" }, /* ANSI Hebrew; Hebrew (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:42:	{ 1256, "windows-1256" }, /* ANSI Arabic; Arabic (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:43:	{ 1257, "windows-1257" }, /* ANSI Baltic; Baltic (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:44:	{ 1258, "windows-1258" }, /* ANSI/OEM Vietnamese; Vietnamese (Windows) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:62:	{ 38598, "iso-8859-8-i" }, /* ISO 8859-8 Hebrew; Hebrew (ISO-Logical) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:70:	{ 54936, "GB18030" }, /* Windows XP and later: GB18030 Simplified Chinese (4 byte); Chinese Simplified (GB18030) */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\CodepageToIconvMap.cpp:71:	{ 65001, "utf-8" }, /* Opt-in on Windows 11 or later. */
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.h:8:#include "Logging/Logger.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.h:12:class GEM_EXPORT AndroidLogger : public Logger::LogWriter {
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.h:14:	void WriteLogMessage(const Logger::LogMessage& msg) override;
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\AndroidLogger.h:17:Logger::WriterPtr createAndroidLogger();
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.h:8:#include "Logging/Logger.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.h:12:class GEM_EXPORT VitaLogger : public Logger::LogWriter {
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.h:14:	VitaLogger(log_level level)
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.h:15:		: Logger::LogWriter(level) {};
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.h:18:	void LogInternal(log_level, const char*, const char*, log_color) override;
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.h:21:Logger::WriterPtr createVitaLogger();
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.cpp:5:#include "VitaLogger.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.cpp:13:void VitaLogger::LogInternal(log_level level, const char* owner, const char* message, log_color /*color*/)
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.cpp:18:Logger::WriterPtr createVitaLogger()
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\VitaLogger.cpp:20:	return Logger::WriterPtr(new VitaLogger());
+D:\projects\examples\gemrb-master\gemrb-master\platforms\apple\CocoaWrapper\ios\GEM_ConfController.h:35:		UIBarButtonItem* editorButton;
+D:\projects\examples\gemrb-master\gemrb-master\platforms\apple\CocoaWrapper\ios\GEM_ConfController.h:36:		UIBarButtonItem* playButton;
+D:\projects\examples\gemrb-master\gemrb-master\platforms\apple\CocoaWrapper\ios\GEM_ConfController.h:43:	@property(nonatomic, retain) IBOutlet UIBarButtonItem* playButton;
+D:\projects\examples\gemrb-master\gemrb-master\tools\manhole.py:6:# using ssh. To use it, put it in the GUIScript directory and then add the
+D:\projects\examples\gemrb-master\gemrb-master\platforms\apple\CocoaWrapper\ios\GEM_AppDelegate.h:18:	UIWindow* configWin;
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\GemRB.cpp:8:#include "VitaLogger.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\GemRB.cpp:64:	AddLogWriter(createVitaLogger());
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\GemRB.cpp:65:	ToggleLogging(true);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\GemRB.cpp:78:		Log(FATAL, "Main", "Aborting due to fatal error... {}", cie);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\GemRB.cpp:79:		ToggleLogging(false);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\vita\GemRB.cpp:125:	ToggleLogging(false);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:12:#include "Logging/Loggers/Stdio.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:13:#include "Logging/Logging.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:19:void SetupLogging(const CoreSettings& cfg)
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:21:	if (cfg.Logging) {
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:22:		ToggleLogging(cfg.Logging);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:25:	if (cfg.LogColor >= 0 && cfg.LogColor < int(ANSIColor::count)) {
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:26:		AddLogWriter(createStdioLogWriter(ANSIColor(cfg.LogColor)));
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:28:		AddLogWriter(createStdioLogWriter());
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:44:		SetupLogging(cfg);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:51:		Log(FATAL, "Main", "Aborting due to fatal error... {}", cie);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\windows\GemRB.cpp:58:	ToggleLogging(false); // Windows build will hang if we leave the logging thread running
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\includes\CocoaWrapper.h:25:	NSWindow* _configWindow;
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\includes\CocoaWrapper.h:27:	BOOL _showConfigWindow;
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\includes\CocoaWrapper.h:29:@property(nonatomic, retain) IBOutlet NSWindow* configWindow;
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\GemRB.cpp:7:#include "AndroidLogger.h"
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\GemRB.cpp:52:	AddLogWriter(createAndroidLogger());
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\GemRB.cpp:53:	ToggleLogging(true);
+D:\projects\examples\gemrb-master\gemrb-master\platforms\android\GemRB.cpp:64:		Log(FATAL, "Main", "Aborting due to fatal error... {}", cie);
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\tests\core\Test_Map.cpp:11:#include "../../core/Logging/Loggers/Stdio.h"
+D:\projects\examples\gemrb-master\gemrb-master\gemrb\tests\core\Test_Map.cpp:12:#include "../../core/Logging/Logging.h"
+
+
+===== 4.11 unity compile smoke command =====
+& "E:\Program Files\Unity\Hub\Editor\6000.3.13f1\Editor\Unity.exe" -batchmode -projectPath "C:\Users\msbel\projects\alcyone-ember-rpg" -quit -logFile "C:\Users\msbel\projects\alcyone-ember-rpg\Reports\unity_compile_preflight.log"
+
+
+===== 4.11 unity compile smoke result =====
+UNITY_EXIT_CODE=0
+Built from '6000.3/staging' branch; Version is '6000.3.13f1 (8c4f11e4fb20) revision 9195281'; Using compiler version '194234433'; Build Type 'Release'
+Duplicate assembly 'Microsoft.Bcl.AsyncInterfaces.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.Bcl.AsyncInterfaces.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.Extensions.Logging.Abstractions.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Extensions.Logging.Abstractions.dll, AssemblyName=Microsoft.Extensions.Logging.Abstractions, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60' and ignoring 'Assets/Plugins/NuGet/Microsoft.Extensions.Logging.Abstractions.dll, AssemblyName=Microsoft.Extensions.Logging.Abstractions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60'.Duplicate assembly 'System.Reflection.Metadata.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Reflection.Metadata.dll, AssemblyName=System.Reflection.Metadata, Version=10.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Assets/Plugins/NuGet/System.Reflection.Metadata.dll, AssemblyName=System.Reflection.Metadata, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Text.Json.dll' with different versions detected, using 'Assets/Plugins/x86_64/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Text.Json.dll' with different versions detected, using 'Assets/Plugins/x86_64/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Text.Encodings.Web.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Text.Encodings.Web.dll, AssemblyName=System.Text.Encodings.Web, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/System.Text.Encodings.Web.dll, AssemblyName=System.Text.Encodings.Web, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.CodeAnalysis.CSharp.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.CodeAnalysis.CSharp.dll, AssemblyName=Microsoft.CodeAnalysis.CSharp, Version=4.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' and ignoring 'Packages/com.unity.ai.assistant/Plugins/CodeAnalysis/Microsoft.CodeAnalysis.CSharp.dll, AssemblyName=Microsoft.CodeAnalysis.CSharp, Version=3.11.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Duplicate assembly 'System.Collections.Immutable.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Collections.Immutable.dll, AssemblyName=System.Collections.Immutable, Version=10.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Assets/Plugins/NuGet/System.Collections.Immutable.dll, AssemblyName=System.Collections.Immutable, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'Microsoft.CodeAnalysis.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.CodeAnalysis.dll, AssemblyName=Microsoft.CodeAnalysis, Version=4.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' and ignoring 'Packages/com.unity.ai.assistant/Plugins/CodeAnalysis/Microsoft.CodeAnalysis.dll, AssemblyName=Microsoft.CodeAnalysis, Version=3.11.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Duplicate assembly 'Microsoft.Bcl.Memory.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.Bcl.Memory.dll, AssemblyName=Microsoft.Bcl.Memory, Version=10.0.0.3, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/Microsoft.Bcl.Memory.dll, AssemblyName=Microsoft.Bcl.Memory, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 5.26 ms, found 8 plugins.
+*** Tundra build success (7.97 seconds), 38 items updated, 1386 evaluated
+Duplicate assembly 'Microsoft.Bcl.AsyncInterfaces.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.Bcl.AsyncInterfaces.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.Extensions.Logging.Abstractions.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Extensions.Logging.Abstractions.dll, AssemblyName=Microsoft.Extensions.Logging.Abstractions, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60' and ignoring 'Assets/Plugins/NuGet/Microsoft.Extensions.Logging.Abstractions.dll, AssemblyName=Microsoft.Extensions.Logging.Abstractions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60'.Duplicate assembly 'System.Reflection.Metadata.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Reflection.Metadata.dll, AssemblyName=System.Reflection.Metadata, Version=10.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Assets/Plugins/NuGet/System.Reflection.Metadata.dll, AssemblyName=System.Reflection.Metadata, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Text.Json.dll' with different versions detected, using 'Assets/Plugins/x86_64/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Text.Json.dll' with different versions detected, using 'Assets/Plugins/x86_64/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Text.Encodings.Web.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Text.Encodings.Web.dll, AssemblyName=System.Text.Encodings.Web, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/System.Text.Encodings.Web.dll, AssemblyName=System.Text.Encodings.Web, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.CodeAnalysis.CSharp.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.CodeAnalysis.CSharp.dll, AssemblyName=Microsoft.CodeAnalysis.CSharp, Version=4.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' and ignoring 'Packages/com.unity.ai.assistant/Plugins/CodeAnalysis/Microsoft.CodeAnalysis.CSharp.dll, AssemblyName=Microsoft.CodeAnalysis.CSharp, Version=3.11.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Duplicate assembly 'System.Collections.Immutable.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Collections.Immutable.dll, AssemblyName=System.Collections.Immutable, Version=10.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Assets/Plugins/NuGet/System.Collections.Immutable.dll, AssemblyName=System.Collections.Immutable, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'Microsoft.CodeAnalysis.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.CodeAnalysis.dll, AssemblyName=Microsoft.CodeAnalysis, Version=4.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' and ignoring 'Packages/com.unity.ai.assistant/Plugins/CodeAnalysis/Microsoft.CodeAnalysis.dll, AssemblyName=Microsoft.CodeAnalysis, Version=3.11.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Duplicate assembly 'Microsoft.Bcl.Memory.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.Bcl.Memory.dll, AssemblyName=Microsoft.Bcl.Memory, Version=10.0.0.3, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/Microsoft.Bcl.Memory.dll, AssemblyName=Microsoft.Bcl.Memory, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.- Loaded All Assemblies, in 19.818 seconds
+Duplicate assembly 'Microsoft.Bcl.AsyncInterfaces.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.Bcl.AsyncInterfaces.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.Extensions.Logging.Abstractions.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Extensions.Logging.Abstractions.dll, AssemblyName=Microsoft.Extensions.Logging.Abstractions, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60' and ignoring 'Assets/Plugins/NuGet/Microsoft.Extensions.Logging.Abstractions.dll, AssemblyName=Microsoft.Extensions.Logging.Abstractions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60'.Duplicate assembly 'System.Reflection.Metadata.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Reflection.Metadata.dll, AssemblyName=System.Reflection.Metadata, Version=10.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Assets/Plugins/NuGet/System.Reflection.Metadata.dll, AssemblyName=System.Reflection.Metadata, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Text.Json.dll' with different versions detected, using 'Assets/Plugins/x86_64/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Text.Json.dll' with different versions detected, using 'Assets/Plugins/x86_64/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Text.Encodings.Web.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Text.Encodings.Web.dll, AssemblyName=System.Text.Encodings.Web, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/System.Text.Encodings.Web.dll, AssemblyName=System.Text.Encodings.Web, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.CodeAnalysis.CSharp.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.CodeAnalysis.CSharp.dll, AssemblyName=Microsoft.CodeAnalysis.CSharp, Version=4.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' and ignoring 'Packages/com.unity.ai.assistant/Plugins/CodeAnalysis/Microsoft.CodeAnalysis.CSharp.dll, AssemblyName=Microsoft.CodeAnalysis.CSharp, Version=3.11.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Duplicate assembly 'System.Collections.Immutable.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Collections.Immutable.dll, AssemblyName=System.Collections.Immutable, Version=10.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Assets/Plugins/NuGet/System.Collections.Immutable.dll, AssemblyName=System.Collections.Immutable, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'Microsoft.CodeAnalysis.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.CodeAnalysis.dll, AssemblyName=Microsoft.CodeAnalysis, Version=4.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' and ignoring 'Packages/com.unity.ai.assistant/Plugins/CodeAnalysis/Microsoft.CodeAnalysis.dll, AssemblyName=Microsoft.CodeAnalysis, Version=3.11.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'.Duplicate assembly 'Microsoft.Bcl.Memory.dll' with different versions detected, using 'Assets/Plugins/NuGet/Microsoft.Bcl.Memory.dll, AssemblyName=Microsoft.Bcl.Memory, Version=10.0.0.3, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Packages/com.unity.ai.assistant/Plugins/Shared/Microsoft.Bcl.Memory.dll, AssemblyName=Microsoft.Bcl.Memory, Version=10.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.ai.assistant/Plugins/Shared/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'Microsoft.Bcl.AsyncInterfaces.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/Microsoft.Bcl.AsyncInterfaces.dll, AssemblyName=Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Duplicate assembly 'Microsoft.Extensions.Logging.Abstractions.dll' with different versions detected, using 'Assets/Plugins/x86_64/Microsoft.Extensions.Logging.Abstractions.dll, AssemblyName=Microsoft.Extensions.Logging.Abstractions, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60' and ignoring 'Assets/Plugins/NuGet/Microsoft.Extensions.Logging.Abstractions.dll, AssemblyName=Microsoft.Extensions.Logging.Abstractions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60'.Duplicate assembly 'System.Text.Json.dll' with different versions detected, using 'Assets/Plugins/x86_64/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' and ignoring 'Assets/Plugins/NuGet/System.Text.Json.dll, AssemblyName=System.Text.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'.Refreshing native plugins compatible for Editor in 5.71 ms, found 8 plugins.
+Start importing Packages/com.unity.render-pipelines.core/Tests/Editor/UnifiedRayTracing/TraceRays.urtshader using Guid(1142bbad8b9e8c44c83a9775ff120d37) (ScriptedImporter)Launched and connected shader compiler UnityShaderCompiler.exe after 0.07 seconds
+
+
+===== 4.12 Unity MCP status =====
+MCP Unity tools not exposed in current Codex tool list; headless Unity used.
