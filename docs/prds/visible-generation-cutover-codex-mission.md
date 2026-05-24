@@ -1,14 +1,16 @@
-# Codex Mission: Visible Generation & Consistent UI Cutover
+# Codex Mission — Ember CRPG: Visible Generation & Consistent UI Cutover
 
-> This file is the copy-paste prompt for handing the cutover off to Codex.
-> The full PRD it executes is `docs/prds/visible-generation-cutover.md`.
-> @msbel5 approved Codex single-mission execution on 2026-05-24.
+> Copy-paste this whole file into Codex Desktop as the initial prompt.
+> The full spec is `docs/prds/visible-generation-cutover.md` (same branch).
+> Approved by @msbel5: single-mission, single-branch, single-PR cutover.
 
 ---
 
-Codex, görev: Ember CRPG'ye **visible asset generation + consistent UI cutover** gerçekleştir.
+Codex, görev: Ember CRPG'ye **görünür asset generation + tutarlı UI cutover**'ı gerçekleştir.
 
-Bu tek sprint değil, cutover projesi. Yarım bırakma: oku, planla, testleri yaz, kodu yaz, test et, Windows build üret, kanıt rapor yaz, GitHub'a pushla.
+Bu tek sprint değil, **cutover projesi**. Yarım bırakma: oku → planla → testleri yaz → kodu yaz → test et → Windows64 build üret → kullanıcı için kanıt rapor yaz → GitHub'a pushla.
+
+Çıktın **tek bir PR** olsun (PR #210, zaten draft, bu branch'te) ve `Reports/visible-generation-cutover_<unix>.md` kanıt raporu olsun.
 
 ================================================================================
 0. ÇALIŞMA KLASÖRÜ / REPO / BRANCH
@@ -21,33 +23,37 @@ C:\Users\msbel\projects\alcyone-ember-rpg
 Canonical GitHub repo:
 msbel5/alcyone-ember-rpg
 
-Base branch (acts as "main"):
-codex/sdxl-pipeline-and-naming-refactor
+Base branch when you start:
+main      (after PR #212 "codex/sdxl → main reconcile" merges)
 
-Your work branch (already created, contains the PRD):
+Your work branch:
 feat/visible-generation-cutover
 
-Unity Editor (project-pinned):
-6000.3.13f1
+Active PR for your work:
+#210 (draft)
 
-Unity Editor install location (this developer):
+Unity Editor version (project-pinned):
+6000.3.13f1  — see ProjectSettings/ProjectVersion.txt
+
+Unity Editor install location on this developer's machine:
 E:\Program Files\Unity\Hub\Editor\6000.3.13f1\Editor\Unity.exe
 ```
 
-Reference files (read, do not modify until §3 finishes):
+**Pre-flight check before you start writing any code:**
 
-- `docs/prds/visible-generation-cutover.md` — the PRD, 17 sections, drives every decision
-- `Assets/Scripts/Simulation/Forge/OnnxAssetForge.cs` — domain forge (PR #207 fix applied)
-- `Assets/Scripts/Presentation/Ember/Forge/ForgeBootstrap.cs` — runtime locator registration
-- `Assets/Editor/Ember/Menu/ForgeMenu.cs` — editor batch generation (existing, do not change)
-- `Assets/Scripts/Ui/Foundation/` (this branch only, **uncommitted**) — IUiSurface, IUiPanel, UiTokens, UiSurfaceLocator, asmdef. Use them or rewrite to equivalent quality.
-- `Assets/Art/BodySilhouettes/` — 6 PNG silhouettes (humanoid_male, humanoid_female, beast_quadruped, undead_humanoid, construct, aberration). Only these exist on disk.
-- `Packages/com.unity.ai.assistant/` — embedded package with SigLip2Text.cs:59 patched (PR #207 merged). Do not change.
+```bash
+# These two MUST be true. If not, stop and post a PR #210 comment "BLOCKED: <reason>".
+git fetch origin
+git log -1 --format=%H origin/main                # must equal a merged PR #212 head
+gh pr view 212 --json state --jq '.state'         # must be "MERGED"
 
-Reference but **do not** clone or lift code from:
-
-- `C:\Users\msbel\alcyone-project\alcyone-mind\` — separate project, different domain
-- Any other repo on the machine
+# Then rebase your branch onto main (Codex's PR base):
+git checkout feat/visible-generation-cutover
+git rebase origin/main                            # resolve conflicts using PRD §5 file map
+git push --force-with-lease origin feat/visible-generation-cutover
+# Switch PR #210's base branch from codex/sdxl-pipeline-and-naming-refactor → main:
+gh pr edit 210 --base main
+```
 
 ================================================================================
 1. VİZYON / KARAR
@@ -55,75 +61,156 @@ Reference but **do not** clone or lift code from:
 
 Bkz `docs/prds/visible-generation-cutover.md` §1. Özet:
 
-- Asset generation şu an sessiz; kullanıcı 800 asset'in hangi 750'sinin bittiğini, hangi 50'sinin neden patladığını bilmiyor.
-- Worldgen "soru sorduğunu" söylüyor ama hiç soru ekrana çıkmıyor; skill seçimi yok, zar atma görünmüyor, dünya log'u akmıyor.
-- Character Creation bombos.
-- Tek hedef: `start.exe` → Boot → AssetGen visible → MainMenu → New Game → CharacterCreation visible → LoadingScreen → Worldgen visible → game scene.
+- Asset generation şu an sessiz. Kullanıcı 800 asset'in hangi 750'sinin bittiğini, hangi 50'sinin neden patladığını bilmiyor.
+- Worldgen "soru sorduğunu" söylüyor ama hiç soru ekrana çıkmıyor.
+- CharacterCreation "bombos" — kullanıcı skill seçemiyor, zar atamıyor, dünya log'unu okuyamıyor.
 
-Phase'lara bölmek YOK. Tek branch (`feat/visible-generation-cutover`), tek PR.
+**Cutover:** `start.exe` → Boot → AssetGen (visible) → MainMenu → New Game → CharacterCreation (visible) → LoadingScreen → Worldgen (visible) → game scene. **Tek branch, tek PR.**
 
-================================================================================
-2. MEVCUT REPO DURUMU
-================================================================================
-
-Bkz PRD §2 (tablo). Özet:
-
-- PR #207 (ai.assistant embed + Forge Path fix) ve PR #208 (eski PRD) merge edildi.
-- Console: 0 error, 5 known benign warnings.
-- feat/visible-generation-cutover branch'inde 5 foundation .cs dosyası uncommitted bekliyor.
-- Unity-MCP `grep` tool kırık: ai.assistant ThirdParty~/ripgrep silindi (§14.4 fix).
+Phase'lara bölme YOK. Aynı PR'da hepsi.
 
 ================================================================================
-3. ÖNCE READ-ONLY KEŞİF YAP
+2. NEYIN ZATEN DOĞRU OLDUĞU (don't re-discover)
 ================================================================================
 
-PRD §3'teki 7 komutu çalıştır. Çıktıları kickoff raporuna paste et (`Reports/visible-generation-cutover-kickoff_<unix>.md`).
+| | |
+|---|---|
+| Unity 6.3.13f1 compile geçiyor (0 error, 5 known benign warnings) | ✅ |
+| `Packages/com.unity.ai.assistant/` embedded + `SigLip2Text.cs:59` patched | ✅ PR #207 |
+| `OnnxAssetForge.cs` PR #207 Path.GetDirectoryName try/catch (line 302/305/315) | ✅ |
+| `ForgeBootstrap.BuildForge` SD15 instance preserved when TryWarmup fails | ✅ PR #212 |
+| `ClampDimension` snaps to multiple of 8 in both SDXL + SD1.5 pipelines | ✅ PR #212 |
+| CI workflow checkout uses `lfs: true` (DLLs resolve correctly) | ✅ PR #212 |
+| `USE_ONNX_RUNTIME` scripting define present in ProjectSettings.asset | ✅ |
+| 6 base silhouettes on disk: `Assets/Art/BodySilhouettes/{humanoid_male,humanoid_female,beast_quadruped,undead_humanoid,construct,aberration}.png` | ✅ |
+| Forge domain (`OnnxModelBundle`, `IDiffusionPipeline`, `SdxlTurboPipeline`, `Sd15LcmPipeline`, `OnnxSessionFactory`, `OnnxPngEncoder`, `PromptComposers`) | ✅ |
+| `ForgeBootstrap` MonoBehaviour + `ForgeLocator` runtime DI | ✅ |
+| `Assets/Scripts/Ui/Foundation/{IUiSurface,IUiPanel,UiTokens,UiSurfaceLocator}` scaffolding (uncommitted on this branch — use as-is or rewrite to equivalent quality) | 📝 |
 
-**Hiçbir dosyaya dokunma** kickoff raporu yazılana kadar.
+You **do not** need to re-prove any of the above. Build on it.
 
 ================================================================================
-4. HEDEF AKIŞ
+3. ZORUNLU READ-ONLY KEŞİF (run first, paste outputs into the kickoff report)
 ================================================================================
 
-PRD §4'te 7 adım. Her birini implementli ve test et.
+```bash
+# 3.1 Branch + base state
+git status
+git log --oneline origin/main..HEAD                  # commits unique to this branch
+git log --oneline -10                                 # recent local commits
+
+# 3.2 Ember editor menu surface (the user does not know what is in there)
+grep -rn "MenuItem.*Ember" Assets/Editor/ | sort
+
+# 3.3 Existing scenes (you must NOT migrate MainMenu/HUD/dialog UGUI in v1)
+find Assets/Scenes -name "*.unity" | sort
+grep -l "MainMenuCanvas\|UIDocument" Assets/Scenes/Ember/*.unity 2>/dev/null
+
+# 3.4 ForgeLocator registration order (where to hook generation triggers)
+grep -rn "ForgeLocator\.Register\|ForgeLocator\.Current" Assets/Scripts/
+
+# 3.5 PromptComposers static surface (what already exists for NPC portraits)
+grep -A10 "public static.*PromptComposers" Assets/Scripts/Simulation/Forge/PromptComposers.cs
+
+# 3.6 Worldgen domain events you must surface in the UI
+grep -rn "event \|EventHandler\|public.*Action<" Assets/Scripts/Simulation/Worldgen/ | head -30
+
+# 3.7 NativeLlmClient surface (for NpcPromptJson — §9)
+grep -n "public" Assets/Scripts/Simulation/AiDm/NativeLlmClient.cs | head -20
+
+# 3.8 Confirm Unity-MCP grep regression
+test -f Packages/com.unity.ai.assistant/ThirdParty~/ripgrep/rg_win.exe \
+  && echo "rg present" \
+  || echo "rg ABSENT — §14.4 fix needed"
+```
+
+**No file changes** until those 8 outputs are in your kickoff report
+(`Reports/visible-generation-cutover-kickoff_<unix>.md`).
+
+================================================================================
+4. HEDEF AKIŞ (the user-visible end state)
+================================================================================
+
+`start.exe` → `Boot.unity` (Build Settings index 0) → `BootBootstrap.Awake` mounts the new UI surface and runs `AssetManifestScanner` → if everything cached, 1 second "Ready" log → `MainMenu.unity`.
+
+If anything missing: **AssetGenerationScreen** plays sequentially through every missing entry. Per entry: current label, current prompt, thumbnail-as-it-bakes, progress 0..1, per-step log line. Failures: red icon, `[error]` log line, append row to `Logs/generation-failures.json`, **continue**. End-of-loop screen says "Generation complete: X/Y succeeded. Z failed (see Logs/...)." with `Continue to Main Menu` button.
+
+`New Game` button → second AssetGenerationScreen pass scoped to the chosen scenario's manifest entries → `CharacterCreation.unity` with a new overlay canvas. Steps:
+
+1. **SkillPickStep** — modal, 12 skills, pick 3, log `[choice] Picked: stealth, smithing, lore.`
+2. **AttributeRollStep** — for each of 6 attributes, **DiceRollWidget** rolls 4d6-drop-lowest. User sees 4 dice spin, lowest grayed out, sum displayed. Log `[roll] STR = 4+5+6+(2) = 15.`
+3. **BackgroundChooseStep** — modal, 8 backgrounds, one-line flavor, pick one. Log `[choice] Background: smuggler.`
+4. **PortraitPreviewStep** — composes `NpcPromptJson` from picks + world style, requests LLM via NativeLlmClient, validates JSON strict-mode, renders portrait (chosen archetype silhouette + RGB recolor + optional ONNX refinement). User can re-roll ≤3 times then locks.
+
+`Begin Game` → **LoadingScreen** with **WorldgenView** overlay: every domain event becomes a log line. RegionGenerated, SettlementSeeded, NpcSeeded (with the LLM JSON inline pretty-printed), DiceRolled (reason + face + value), QuestionRaised (modal pause; user picks; log the choice), Failure. Auto-advance toggle + manual `Continue`. WorldgenView log slot is a virtualized scroll list (10k+ lines).
+
+When `WorldgenService` completes → "World ready — entering {startScene}" → 1s → `SceneManager.LoadSceneAsync(startScene)`.
+
+**Same UI tokens, same prefab library, same theme on every screen.**
 
 ================================================================================
 5. MİMARİ KURALLAR
 ================================================================================
 
-PRD §5'teki dosya struktur tablosunu birebir uygula. SOLID. 800 satırlık tek dosya YOK. Her class bir dosyada (trivial DTO'lar hariç).
+SOLID. Her dosya bir iş yapar. 800 satırlık tek dosya YOK. 200 satırı geçen bir dosya varsa neden olduğunu inline yorum olarak yaz.
+
+PRD §5'teki dosya struktur tablosu **birebir**. Sapacaksan PR yorumunda gerekçeli yaz.
 
 Composition root invariants:
 
-- Game code asla `new UiToolkitSurface()` veya `new OnnxAssetForge(...)` etmez. Her zaman `UiSurfaceLocator.Current`, `ForgeLocator.Current`, `LlmRoutingService` üzerinden.
-- Static asset prompts designer-authored (`StaticPromptCatalog`). LLM static prompt yazmıyor.
-- LLM yalnızca `NpcPromptJson` (PRD §9 schema) üretiyor; `NpcPromptJsonValidator` strict mode reddediyorsa retry 1x, sonra deterministic default.
-- Failure policy: skip + log + continue. `Logs/generation-failures.json` JSON-lines, append-only. Pipeline **asla throw etmez**.
-- Long IO: `CancellationToken` + timeout zorunlu. Forge timeout default 5 dk/asset (`AssetGenerationRequest.TimeoutSeconds` field ekle).
-- Module-level mutable global yok; locator'lar tek referans, register-once + clear-on-dispose.
+- Game code **asla** `new UiToolkitSurface(...)` veya `new OnnxAssetForge(...)` etmez. Her zaman:
+  - `UiSurfaceLocator.Current`
+  - `ForgeLocator.Current`
+  - `LlmRoutingService` (zaten var)
+- **Static asset prompts designer-authored** (`StaticPromptCatalog`). LLM static prompt yazmıyor. Bu kural sert: bir LLM çağrısı static prompt üretiyorsa kod review reddeder.
+- LLM **yalnızca** `NpcPromptJson` üretir (PRD §9). `NpcPromptJsonValidator` strict mode reddederse retry 1×, sonra deterministic default JSON (`DeriveDefaultJsonFromSeed(npcSeed)`).
+- **Failure policy: skip + log + continue.** `Logs/generation-failures.json` JSON-lines, append-only. Pipeline **asla throw etmez**. Throwing aborts the boot — that is the bug, not the feature.
+- Long IO: `CancellationToken` + timeout zorunlu. Forge default 5 dk/asset (`AssetGenerationRequest.TimeoutSeconds` field ekle, OnnxAssetForge respect etsin).
+- Module-level mutable global yok. Locator'lar register-once + clear-on-dispose.
 
 ================================================================================
-6. UI BACKEND
+6. UI BACKEND STRATEJİSİ
 ================================================================================
 
-PRD §6:
+Default backend: **UI Toolkit** (Unity 6 native, USS, UXML). Boot + Loading + Worldgen + CharacterCreation overlay buradan inşa edilir.
 
-- Default: UI Toolkit (Boot, Loading, Worldgen, CharacterCreation overlay).
-- Mevcut UGUI canvas (MainMenuCanvas, HUD, dialog) **DOKUNULMAZ** v1'de.
-- Abstraction (`IUiSurface`/`IUiPanel`) zorunlu — gelecek Unity LTS UI Toolkit'i kırarsa backend swap yapılabilsin.
+**Mevcut UGUI canvas'ları (MainMenuCanvas, in-scene HUD, dialog) DOKUNULMAZ** v1'de. Sadece `Boot.unity` yeni; `CharacterCreation.unity` yeni bir overlay GameObject alır (mevcut canvas üstte; overlay daha yüksek sorting layer'da).
+
+**Abstraction katmanı zorunlu** (`IUiSurface` / `IUiPanel` / `UiTokens`) tek backend yollamış olsak bile. Gelecek Unity LTS UI Toolkit'i kırarsa, ikinci bir backend (UGUI veya Web/CSS via Noesis/ReactUnity) eklenir; **hiçbir screen rewrite olmaz**. Maliyet ~70 satır, kazanç teknik bağımsızlık.
+
+Tokens: `Assets/Manifests/DefaultUiTokens.asset` (UiTokens ScriptableObject instance). Dark default. Bir extra theme = duplicate asset.
 
 ================================================================================
 7. ASSET MANIFEST
 ================================================================================
 
-PRD §7:
+İki manifest, ikisi de hand-authored ScriptableObject, ikisi de git'te.
 
-- `Assets/Manifests/CoreAssetManifest.asset` — ~50 entry hand-authored. PRD §7.1 kategoriler.
-- `Assets/Manifests/GenericNpcBaseManifest.asset` — 6 verified silhouette + 3 requires_generation (fairy, dragon, elemental).
-- `AssetManifestScanner.ScanAsync()` → `ManifestScanReport` (PRD §7.3 record şeması).
-- Idempotent: iki scan disk değişmeden identical report.
+### 7.1 CoreAssetManifest.asset
 
-**Silhouette listesi**: sadece on-disk olanları `silhouettePath` ile doldur. fairy/dragon/elemental için `silhouettePath = ""`, `requiresGeneration = true`. Codex PR #208 yorumu (P2) bunu vurguladı, atla.
+~50 entry, oyunun açılması için gerekli. PRD §7.1 kategori dağılımı:
+
+| Kategori | ~Adet | Örnekler |
+|---|---|---|
+| UI ikonları | 15 | new_game, settings, dice, skill, attack, defend, equip, drop |
+| Fontlar | 3 | body, heading, monospace (referans, generate edilmez) |
+| Generic silhouettes | 6 | on-disk PNG'ler (referans, generate edilmez) |
+| Item icon örnekleri | 10 | sword, bow, staff, potion, scroll, key, ring, helm, boots, shield |
+| Spell icon örnekleri | 6 | sleep, heal, fire, ice, shield_spell, lightning |
+| Core sesler | 5 | ui_click, ui_hover, dice_roll, level_up, error |
+| Logo/splash | 3 | logo_full, logo_compact, splash_background |
+
+Entry alanları: `id`, `category`, `expectedPath` (Assets/-relative), `staticPromptKey`, `dimensions` (W,H), `requiresGeneration` (bool).
+
+### 7.2 GenericNpcBaseManifest.asset
+
+Per-archetype entry: `archetypeId`, `silhouettePath`, `huePaletteMin/Max`, `saturationRange`, `lightnessRange`, `notes`.
+
+**Sadece on-disk olan 6 silhouette** valid `silhouettePath` ile gelir. fairy/dragon/elemental gibi PRD §2'de listelenmemiş archetype'lar `silhouettePath = ""` + `requiresGeneration = true`. (Codex PR #208 yorumu — atla.)
+
+### 7.3 Scanner
+
+`AssetManifestScanner.ScanAsync(core, npcBase, AssetForgeCache, ct) → ManifestScanReport`. Idempotent. PRD §7.3 record şeması.
 
 ================================================================================
 8. STATIC PROMPT KALİTESİ
@@ -131,15 +218,16 @@ PRD §7:
 
 PRD §8. Her static prompt:
 
-- `EmberStyleHeader` const ile başlar (örnek: `"dark-fantasy ember-warm palette, painterly low-saturation, 1024x1024, transparent background, single subject centered"`)
-- Konkret nouns/adjectives ("a wrought-iron longsword with rune-etched fuller, hilt wrapped in oxblood leather", NOT "a sword")
-- Negative constraints ("no text, no watermark, no border, no UI elements")
-- Reproducible: `(prompt, seed, dimensions, model)` → same image
+- `EmberStyleHeader` const ile başlar. Önerilen:
+  > `"dark-fantasy ember-warm palette, painterly low-saturation, 1024x1024, transparent background, single subject centered"`
+- Konkret nouns/adjectives. **İYİ**: `"a wrought-iron longsword with rune-etched fuller, hilt wrapped in oxblood leather"`. **KÖTÜ**: `"a sword"`.
+- Negative constraints: `"no text, no watermark, no border, no UI elements"`.
+- Reproducible: `(prompt, seed, dimensions, model)` → same image.
 
-Kalite gate: 3 sample render üret (UI icons + silhouette + item örneği), report'a path koy. @msbel5 subjective review eder.
+Kalite gate: 3 sample render üret (1 UI icon + 1 silhouette + 1 item), `Reports/screens/sample_{id}.png` paste, @msbel5 subjective review eder.
 
 ================================================================================
-9. LLM JSON CONTRACT
+9. LLM JSON CONTRACT (dynamic NPC portraits)
 ================================================================================
 
 PRD §9. Schema:
@@ -157,115 +245,255 @@ PRD §9. Schema:
 }
 ```
 
-Validator strict:
+`NpcPromptJsonValidator` strict:
 
-- `archetype_id` ∈ `GenericNpcBaseManifest` entries
-- Hue ∈ [0, 360)
-- String arrays max 5, each max 40 chars, ASCII only
+- `archetype_id` ∈ `GenericNpcBaseManifest`
+- Hue ∈ [0, 360), integer
+- String arrays max 5 entries × max 40 chars each, ASCII only
 - Unknown fields → reject
-- Validation fail → retry 1x with "the previous response was invalid because <reason>; respond ONLY with valid JSON"
-- Second fail → deterministic default JSON derived from NPC seed
+- Validation fail → retry 1× with `"the previous response was invalid because <reason>; respond ONLY with valid JSON"`
+- Second fail → `DeriveDefaultJsonFromSeed(npcSeed)` (deterministic)
 
-Composer (`LlmPromptComposer.Compose(NpcPromptJson) → string`) deterministic. JSON sonrası LLM çağrısı yok.
-
-================================================================================
-10. BOOT / LOADING / WORLDGEN / CHAR CREATION
-================================================================================
-
-PRD §10-13 ve §5 dosya struktur tablosu. Her birini implementli + PlayMode test ile kanıtla.
-
-**Önemli**: CharacterCreation §12'de 4 adım: SkillPickStep → AttributeRollStep (dice animation, 4d6-drop-lowest visible) → BackgroundChooseStep → PortraitPreviewStep. Her step log line üretir. **Bu @msbel5'in en çok eksik bulduğu yer; budamak yasak.**
-
-Worldgen §13'te her domain event UI'a yansır: RegionGenerated, SettlementSeeded, NpcSeeded (LLM JSON inline log), DiceRolled, QuestionRaised (modal pause, user pick), Failure.
+`LlmPromptComposer.Compose(NpcPromptJson) → string`. **Deterministic**. JSON'dan sonra LLM çağrısı YOK.
 
 ================================================================================
-11. EDITOR MENUS & MAINTENANCE
+10. BOOT FLOW
 ================================================================================
 
-PRD §14:
+PRD §10. Yeni scene `Assets/Scenes/Ember/Boot.unity` Build Settings index 0.
 
-- Yeni menu: `Ember/Forge/Scan Missing Assets`, `Ember/Forge/Generate Core (Editor preview)`
-- Build Settings: `Boot.unity` index 0; `Ember/Build/Add All Scenes To Build Settings` Boot'u 0'da tutmalı re-run sonrası.
-- §14.4 rg regression: zip + InitializeOnLoad unzip script. Alternative: `rg.cmd` stub yapan `where rg`. Hangisi implementation review'da daha basit kazanır.
+`BootBootstrap.Awake` sırası:
 
-================================================================================
-12. TESTLERİ ÖNCE YAZ
-================================================================================
-
-PRD §15. EditMode + PlayMode hepsi.
-
-Tests must pass before any commit to `feat/visible-generation-cutover`.
-
-================================================================================
-13. WINDOWS BUILD ACCEPTANCE
-================================================================================
-
-PRD §16 → menüden `Ember/Build/Build Windows64 Player` çalıştır → `Builds/Windows64/alcyone-ember-rpg.exe` üret → çift tıkla → §16-B Boot flow + §16-C New Game flow + §16-E failure semantics manual test.
-
-Her acceptance maddesi için kanıt:
-
-- Compile: 0 error log
-- Test pass: Unity test runner output paste
-- Boot/New Game/Worldgen visible: screenshot paths (`Reports/screens/{stage}_{ts}.png`)
-- Failure: log file diff (3 deliberate failures injected, 3 rows in `Logs/generation-failures.json`)
+1. `UiSurfaceLocator.Current` null ise default `UiToolkitSurface` instantiate + register.
+2. `UiSurfaceLocator.Current.Mount("BootScreen")` → panel handle.
+3. `AssetManifestScanner.ScanAsync(...)` → live slots: `total`, `cached`, `missing`.
+4. `Missing == 0 && RequiresGeneration == 0` → 1s `[ok] Ready` → `SceneManager.LoadSceneAsync("MainMenu")`.
+5. Aksi → `VisibleGenerationPipeline.RunAsync(missingEntries, ct)`:
+   - `OnEntryStart(entry)` → log `[gen] {entryId} — {prompt[0..80]}…`
+   - `OnEntryProgress(entry, t)` → progress slot
+   - Bytes geldikçe decode et + `current_thumbnail` slot'a push et (kullanıcı resmi görür yaratılırken)
+   - `OnEntrySuccess(entry, elapsed)` → log `[ok] {entryId} ({elapsedMs}ms)` + small thumbnail grid'e ekle
+   - `OnEntryFailure(entry, reason)` → log `[error] {entryId} — {reason}` + JSON-lines satırı + **continue**
+6. Loop bitti → "Generation complete: {ok}/{total}. {failed} failed (see Logs/generation-failures.json)." + `Continue` button → MainMenu.
 
 ================================================================================
-14. ACCEPTANCE (BLOCKING)
+11. LOADINGSCREEN
 ================================================================================
 
-PRD §16 A-G hepsi yeşil olmadan PR draft'tan çıkmaz.
+PRD §11. Static façade:
+
+```csharp
+public static class LoadingScreen
+{
+    public static void Show(string title, string subtitle);
+    public static void SetProgress(float normalized, string currentLabel);
+    public static void LogLine(UiLogSeverity severity, string line);
+    public static void ShowThumbnail(Texture2D texture, string caption);
+    public static void Hide();
+}
+```
+
+Backed by `LoadingScreenController` (MonoBehaviour, `DontDestroyOnLoad`, locator-registered). Boot'un "Loading MainMenu…" beat'inde + New Game worldgen narrasyonunda + her scene transition'da kullanılır. **Tek implementation, tek API.**
 
 ================================================================================
-15. GIT
+12. NEW GAME + CHARACTERCREATION
 ================================================================================
 
-- Branch: `feat/visible-generation-cutover` (zaten oluşturuldu, PRD commit'i mevcut)
-- Commit'ler: küçük focused (örn. `manifest scaffold`, `boot scene + asset gen screen`, `worldgen overlay`, `character creation steps`, `tests`) — ama hepsi aynı branch'te.
-- PR: tek PR (`PR #210` zaten draft açıldı, bu branch ona bağlı). Acceptance yeşilse draft'tan "Ready for review"a al.
-- Push --force YOK (önceki history düzeltme ihtiyacı varsa @msbel5 sor).
-- `.gitignore` `Packages/*/` rule'una sadece ai.assistant exception eklendi (PR #207). Başka exception ekleme.
-- `git push` sıradan; force gerekirse `--force-with-lease` + @msbel5 onayı.
+PRD §12. Mevcut `New Game` button click handler değiştirilmez — yeni bir subscriber eklenir.
+
+CharacterCreation.unity'ye yeni GameObject `UiCanvasOverlay` (yüksek sorting layer). `CharacterCreationController` step'leri sırayla yönetir (PRD §12 listesi). Her step **kendi modal panelini** mount eder (`UiSurfaceLocator.Current.Mount(...)`), kullanıcı seçim yapar, controller advance eder. Log slot her seçimi/zarı yansıtır.
+
+`Begin Game` → `LoadingScreen.Show("Building world…", "")` → `WorldgenViewController.Mount(loadingScreen)` → `WorldgenService.RunAsync(...)`.
 
 ================================================================================
-16. REPORT
+13. WORLDGEN VISIBLE
 ================================================================================
 
-Final report: `Reports/visible-generation-cutover_<unix>.md`
+PRD §13. `WorldgenService` (domain) **değişmez**. Sadece event subscriber eklenir.
 
-İçerik:
+Event-to-UI mapping (PRD §13'te tam liste):
 
-- Commit shas (ordered list)
-- Files changed: count + path tree (örnek: `find Assets/Scripts/Ui Assets/Scripts/Generation Assets/Scenes/Ember -name "*.cs" -newer …` çıktısı)
-- Tests run + result: EditMode pass/fail/skip, PlayMode pass/fail/skip, output paste
-- §3 discovery commands + outputs
-- §16 acceptance items, each with ✅/❌ + evidence path
-- Screenshot paths (Boot screen, AssetGen with 3 fake failures, CharacterCreation each step, Worldgen with question modal)
-- Failure log diff (before/after deliberate failure injection)
-- Recommended next step
+- `RegionGenerated` → `[region] Generated {regionId}` + small map sketch slot update
+- `SettlementSeeded` → `[settlement] {regionId}/{settlementId}`
+- `NpcSeeded` → `[npc] {npcSeed.Name} — {archetype}` + JSON inline pretty (`[llm-json] {...}`)
+- `DiceRolled` → `[dice] {reason}: d{faces} = {value}`
+- `QuestionRaised` → modal pause; user picks option; log `[choice] {question.Id}: {answer}`. Auto-advance ON ise 1.5s preview sonrası ilk seçeneği tıklar.
+- `Failure` → red log line + JSON-lines row
 
-**Tokens / secrets**: yazma, hash redact. `QA_FIGMA_TOKEN` ve benzeri env vars asla loglanmaz.
+`WorldgenLogPanel` virtualized scroll (10k+ lines). Pause auto-scroll button.
+
+Worldgen complete → "World ready — entering {startScene}" → 1s → `SceneManager.LoadSceneAsync(startScene)`.
 
 ================================================================================
-17. ÇALIŞMA STİLİ
+14. EDITOR MENUS + MAINTENANCE
 ================================================================================
 
-- Önce kısa plan ver (en fazla 20 satır).
-- Onay beklemeden read-only discovery (PRD §3) yapabilirsin.
-- Production değişiklikten önce planı netleştir; planın PRD'den farklılaşıyorsa neden olduğunu yaz.
-- Sonra test yaz, sonra kod yaz, sonra commit.
-- Büyük tek dosya yazma. 200 satır geçen .cs varsa "neden böyle" not düş.
-- SOLID uygula.
-- Küçük modüller, küçük testler.
-- Gereksiz açıklama yapma. Komut/test/sonuç odaklı ol.
-- "Yaptım" deme; kanıt koy (komut + çıktı + screenshot path + test sonucu).
-- Eğer blocked ise açıkça `BLOCKED:` yaz, fallback varsa uygula, yoksa @msbel5'i mention'la.
-- Trading bot / OpenClaw / dış sistemlere dokunma.
-- Existing scene canvases (MainMenu, HUD, dialog) **UGUI** kal v1'de. Sadece `Boot.unity` yeni; `CharacterCreation.unity` overlay alır.
-- `.git push --force` YOK. Lütfen.
-- `.gitignore Packages/*/` rule'una başka exception ekleme.
-- Static asset prompts: hand-authored. LLM yazmıyor.
-- LLM JSON contract dışında LLM'i dynamic NPC için kullan, başka yerde değil.
+### 14.1 New editor menu entries
+
+- `Ember/Forge/Scan Missing Assets` — Editor'de `AssetManifestScanner` çalıştırır, `ManifestScanReport`'u Console'a tablo olarak basar.
+- `Ember/Forge/Generate Core (Editor preview)` — §10 boot flow'unu Editor Game view'inde oynatır (restart gerekmez).
+
+### 14.2 Existing menus (untouched)
+
+`Ember/Build Scene/*`, `Ember/Build/*`, `Ember/Capture/*`, `Ember/Forge/Generate world assets`, `Ember/Forge/Generate Fresh World Assets` — none modified.
+
+### 14.3 Build Settings
+
+`Boot.unity` index 0. `Ember/Build/Add All Scenes To Build Settings` re-run sonrası Boot 0'da kalmalı (idempotent).
+
+### 14.4 Unity-MCP rg regression fix
+
+`Packages/com.unity.ai.assistant/ThirdParty~/ripgrep/rg_win.exe` PR #207 sırasında `~` folder trimi ile silindi (114 MB hard limit). İki seçenekten biri:
+
+**A. ZIP + InitializeOnLoad unzip** (önerilen): `Packages/com.unity.ai.assistant/ThirdParty~/ripgrep/rg_win.exe.gz` (~2 MB) commit; `Assets/Editor/Ember/Patches/RestoreRipgrep.cs` `[InitializeOnLoad]` Editor compile'ında unzip eder hedefe.
+
+**B. Stub `rg.cmd`** sistem PATH'inden çağırır (`where rg`); rg sistemde yoksa graceful fallback.
+
+Implementation review'da hangi daha basit kazanır, gerekçeli karar.
+
+================================================================================
+15. TESTLER (BEFORE CODE, EVERY TIME)
+================================================================================
+
+PRD §15. EditMode + PlayMode.
+
+### EditMode (must pass)
+
+```
+UiTokensTests                       — every color non-default, severity→color map covers enum
+UiSurfaceLocatorTests               — Register/Clear, double-register throws, Current returns last
+CoreAssetManifestTests              — loads, every entry non-empty staticPromptKey, no duplicate id
+GenericNpcBaseManifestTests         — on-disk silhouettes have entries; requiresGeneration entries empty path
+AssetManifestScannerTests           — empty cache → all Missing; full cache → all Cached; idempotent
+StaticPromptCatalogTests            — every key resolves; every prompt starts with EmberStyleHeader; non-empty
+NpcPromptJsonValidatorTests         — valid accepts; unknown field rejects; out-of-range hue rejects; oversize rejects; non-ASCII rejects
+GenerationFailureLogTests           — append grows file by 1 valid JSON line; reopen preserves
+VisibleGenerationPipelineTests      — fake forge + 3 entries → events fire in order; one failure does not stop loop
+```
+
+### PlayMode (must pass)
+
+```
+BootSceneTest                       — load Boot.unity with fake IAssetForge → mount, 3 fake entries, 3 success lines, transition to MainMenu
+LoadingScreenApiContractTest        — Show → SetProgress → LogLine → ShowThumbnail → Hide round-trip; DontDestroyOnLoad survives a LoadScene
+CharacterCreationFlowTest           — load CharacterCreation.unity, drive controller.Advance() through 4 steps; log slot has 1 line per choice + 1 per attribute roll
+WorldgenViewVisibleTest             — mock worldgen with 2 regions, 3 settlements, 5 NPCs, 1 question; log line counts correct; modal opens; advances on Answer(1)
+```
+
+### Forge regression
+
+PR #207 + PR #212 fix'leri (OnnxAssetForge_DeterministicSeed_ProducesSameOutput, OnnxAssetForge_DifferentSeed_ProducesDifferentOutput, +SDXL/SD15 ClampDimension snap) yeşil kalmalı.
+
+================================================================================
+16. ACCEPTANCE (BLOCKING — PR #210 ready-for-review öncesi her madde ✅)
+================================================================================
+
+**A. Compile / static**
+
+- [ ] Unity 6.3.13f1: 0 compile error, max 5 önceden bilinen warning
+- [ ] EditMode + PlayMode tests yeşil (§15)
+- [ ] Unity-MCP `grep` tool çalışıyor (§14.4 fix verify)
+
+**B. Boot flow (visible)**
+
+- [ ] `Builds/Windows64/alcyone-ember-rpg.exe` çift tıkla → Boot scene first
+- [ ] `Logs/generation-failures.json` silinmiş + cache boş iken: boot screen 50 core entry'yi visible işler (prompt + thumbnail + log + status icon)
+- [ ] Cache full iken: `cached = X/X`, ≤1s, `Ready`, MainMenu
+- [ ] Forge'a deliberate exception inject → entry red + JSON-lines + **loop continues**
+
+**C. New Game flow (visible)**
+
+- [ ] `New Game` → (scenario gen if needed) → CharacterCreation modal sequence
+- [ ] Skill pick → 6 attribute roll (dice animation + drop-lowest grayed + sum) → background pick → portrait preview with LLM JSON visible in log
+- [ ] `Begin Game` → LoadingScreen worldgen log scrolling with regions + settlements + NPCs + at least 1 question modal
+
+**D. UI consistency**
+
+- [ ] Boot / Loading / CharacterCreation overlay / Worldgen overlay — hepsi `UiTokens`'tan stil alır
+- [ ] Bir token (örn. `Accent`) değiştirildiğinde 4 screen aynı anda değişir (manuel verify)
+- [ ] `Assets/Scripts/Ui/Backends/` dışında UI Toolkit veya UGUI types'a direct referans YOK
+
+**E. Failure semantics**
+
+- [ ] 3 silhouette PNG'i geçici rename → 3 red log + 3 JSON-lines satır + boot devam ediyor (halt yok)
+
+**F. Git**
+
+- [ ] `feat/visible-generation-cutover` üzerinde küçük focused commit'ler (örn: "manifest scaffold", "boot scene + asset gen", "worldgen overlay", "char creation steps", "tests")
+- [ ] PR #210 draft → Ready for review (yalnızca acceptance §16 hepsi ✅ olunca)
+- [ ] **DO NOT MERGE** — @msbel5 review eder
+- [ ] Hiç `git push --force` çalıştırılmadı (rebase ihtiyacı varsa: önce @msbel5 yorum, sonra `--force-with-lease`)
+
+**G. Report**
+
+- [ ] `Reports/visible-generation-cutover_<unix>.md` yazıldı + commit'lendi + içerikte §17 gerekleri
+
+================================================================================
+17. ÇALIŞMA STİLİ + REPORT
+================================================================================
+
+### Hard rules
+
+- Önce kısa plan (≤20 satır), sonra §3 read-only discovery, sonra kickoff report, sonra test, sonra kod, sonra commit. **Bu sırayı bozma.**
+- 200 satırı geçen .cs dosyasının başına `// Why this file is intentionally long: <reason>` yorum.
+- Static asset prompts: hand-authored. LLM yazmıyor. Bu sert sınır.
+- LLM yalnızca `NpcPromptJson` schema (§9). Free-text LLM çağrısı yok.
+- Failure: skip + log + continue. **Throw aborts the boot.** Throwing = bug.
+- `CancellationToken` + timeout her async IO için.
+- Existing UGUI canvases (MainMenu, HUD, dialog) DOKUNULMAZ. Sadece `Boot.unity` yeni; `CharacterCreation.unity` overlay alır.
+- `git push --force` YOK (rebase için → @msbel5 onayı → `--force-with-lease`).
+- `.gitignore Packages/*/` rule + ai.assistant exception DOKUNULMAZ.
+- Trading bot, OpenClaw, external systems, embedded ai.assistant DLL'leri: DOKUNULMAZ.
+- "Yaptım" deme. Komut + çıktı + screenshot path + test sayısı koy. **Her iddianın kanıtı reportta var.**
+- BLOCKED isen: PR #210 yorumu olarak `BLOCKED: <one-line question>` yaz, fallback varsa uygula, yoksa @msbel5 mention.
+
+### Final report template (`Reports/visible-generation-cutover_<unix>.md`)
+
+```markdown
+# Visible Generation Cutover — Final Report
+
+## Commits (ordered)
+<list of SHAs + one-line subjects>
+
+## Files (count + path tree)
+<output of: git diff --stat origin/main..HEAD | tail>
+
+## §3 Discovery output
+<paste of every command from §3 + its output>
+
+## Tests
+- EditMode: <pass>/<total>, <fail count> failing, output paste below
+- PlayMode: <pass>/<total>, <fail count> failing, output paste below
+- Forge regression suite: <pass count>/24 (target: 24/24)
+
+## §16 Acceptance (every item ✅ or ❌ with evidence path)
+A. Compile/static ...
+B. Boot flow ...
+C. New Game flow ...
+D. UI consistency ...
+E. Failure semantics ...
+F. Git ...
+G. Report ...
+
+## Screenshots (paths)
+- Boot screen: Reports/screens/boot_{ts}.png
+- AssetGen (3 deliberate failures): Reports/screens/assetgen_failures_{ts}.png
+- CharacterCreation skill pick: Reports/screens/cc_skill_{ts}.png
+- CharacterCreation dice roll: Reports/screens/cc_dice_{ts}.png
+- CharacterCreation portrait preview: Reports/screens/cc_portrait_{ts}.png
+- Worldgen question modal: Reports/screens/worldgen_question_{ts}.png
+
+## Failure log diff
+- before/after deliberate failure injection: Reports/diffs/failure_log_{ts}.diff
+
+## Recommended next step
+<one paragraph: what should @msbel5 do after merging this PR>
+```
+
+### Tokens / secrets
+
+Asla yazma. `QA_FIGMA_TOKEN`, Unity license, GitHub PAT, environment values → loglanmaz; report'ta `<set>` veya hash redact.
 
 ---
 
-**Eğer PRD'de cevaplanmamış bir nokta varsa, PR #210 yorumu olarak yaz; @msbel5 yanıtlasın; bu PR'ı kullanarak resolve et — yarım iş bırakma.**
+**Eğer PRD'de cevaplanmamış bir nokta varsa: PR #210 yorumu olarak `BLOCKED: <question>` yaz; @msbel5 yanıtlasın; bu PR'da resolve et — yarım iş bırakma.**
