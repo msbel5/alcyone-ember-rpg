@@ -1,0 +1,16 @@
+{
+    "name": "EmberCrpg.Ui.Backends.UiToolkit",
+    "rootNamespace": "EmberCrpg.Ui.Backends.UiToolkit",
+    "references": [
+        "EmberCrpg.Ui.Foundation"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

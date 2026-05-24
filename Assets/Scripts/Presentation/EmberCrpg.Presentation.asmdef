@@ -6,6 +6,8 @@
         "EmberCrpg.Simulation",
         "EmberCrpg.Data",
         "EmberCrpg.Data.SliceJson",
+        "EmberCrpg.Ui.Foundation",
+        "EmberCrpg.Ui.Backends.UiToolkit",
         "Unity.TextMeshPro",
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.RenderPipelines.Core.Runtime",

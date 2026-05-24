@@ -2,6 +2,7 @@ using EmberCrpg.Presentation.Ember.CharacterCreation;
 using EmberCrpg.Tests.PlayMode.Support;
 using EmberCrpg.Ui.Foundation;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EmberCrpg.Tests.PlayMode.CharacterCreation
 {
@@ -28,7 +29,7 @@ namespace EmberCrpg.Tests.PlayMode.CharacterCreation
             Assert.That(controller.CanAdvance, Is.True);
             controller.Continue();
             Assert.That(controller.RollAllAttributes().Count, Is.EqualTo(6));
-            Assert.That(controller.LogLines.FindAll(l => l.StartsWith("[roll]")).Count, Is.EqualTo(6));
+            Assert.That(controller.LogLines.Count(l => l.StartsWith("[roll]")), Is.EqualTo(6));
             controller.ChooseBackground("smuggler");
             controller.Continue();
             Assert.That(controller.PortraitJson, Does.Contain("archetype_id"));
