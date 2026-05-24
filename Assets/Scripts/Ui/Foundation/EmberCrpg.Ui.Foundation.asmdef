@@ -1,0 +1,15 @@
+{
+    "name": "EmberCrpg.Ui.Foundation",
+    "rootNamespace": "EmberCrpg.Ui.Foundation",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "noEngineReferences": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
