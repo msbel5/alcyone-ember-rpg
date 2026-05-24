@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using EmberCrpg.Domain.Forge;
 using EmberCrpg.Domain.Generation;
 using EmberCrpg.Presentation.Ember.Forge;
+using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Simulation.Generation;
-using EmberCrpg.Ui.Backends.UiToolkit;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -22,7 +22,7 @@ namespace EmberCrpg.Presentation.Ember.Boot
             EnsureSurface();
             var forge = ForgeLocator.AssetForge ?? new SkipAssetForge();
             var result = await RunAsync(forge, Application.dataPath, _nextScene, CancellationToken.None);
-            if (!string.IsNullOrEmpty(result.RequestedScene)) SceneManager.LoadSceneAsync(result.RequestedScene);
+            if (!string.IsNullOrEmpty(result.RequestedScene)) _ = SceneManager.LoadSceneAsync(result.RequestedScene);
         }
 
         public static Task<BootFlowResult> RunForTestsAsync(IAssetForge forge)
@@ -45,17 +45,14 @@ namespace EmberCrpg.Presentation.Ember.Boot
             pipeline.EntryStarted += e => { started++; panel?.LogLine("log", UiLogSeverity.Info, "[start] " + e.Id); };
             pipeline.EntrySucceeded += (e, bytes, ms) => { succeeded++; panel?.LogLine("log", UiLogSeverity.Success, "[ok] " + e.Id); };
             pipeline.EntryFailed += (e, reason, ex) => { failed++; panel?.LogLine("log", UiLogSeverity.Error, "[error] " + e.Id + " " + reason); };
-            await pipeline.RunAsync(entries, ct).ConfigureAwait(false);
+            await pipeline.RunAsync(entries, ct);
             panel?.LogLine("log", UiLogSeverity.Success, "Generation complete: " + succeeded + "/" + started + " succeeded, " + failed + " failed.");
             return new BootFlowResult(started, succeeded, failed, nextScene);
         }
 
         private static void EnsureSurface()
         {
-            if (UiSurfaceLocator.Current != null) return;
-            var go = new GameObject("UiToolkitSurface");
-            DontDestroyOnLoad(go);
-            go.AddComponent<UiToolkitSurface>();
+            VisibleUiSurface.Ensure();
         }
 
         private sealed class SkipAssetForge : IAssetForge

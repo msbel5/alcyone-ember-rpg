@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
@@ -65,12 +64,16 @@ namespace EmberCrpg.Simulation.Memory
             if (memory == null || count <= 0)
                 return new string[0];
 
-            return memory.Events
-                .OrderByDescending(row => row.Timestamp.TotalMinutes)
-                .Take(count)
-                .OrderBy(row => row.Timestamp.TotalMinutes)
-                .Select(row => $"{row.Timestamp.TotalMinutes}:{row.EventType}:{row.SubjectId}:{row.ItemTemplateId}:{row.Amount}")
-                .ToArray();
+            var ordered = new List<InteractionEvent>(memory.Events);
+            ordered.Sort((left, right) => left.Timestamp.TotalMinutes.CompareTo(right.Timestamp.TotalMinutes));
+            var start = Math.Max(0, ordered.Count - count);
+            var result = new string[ordered.Count - start];
+            for (int i = start; i < ordered.Count; i++)
+            {
+                var row = ordered[i];
+                result[i - start] = $"{row.Timestamp.TotalMinutes}:{row.EventType}:{row.SubjectId}:{row.ItemTemplateId}:{row.Amount}";
+            }
+            return result;
         }
     }
 }

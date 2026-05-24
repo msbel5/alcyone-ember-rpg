@@ -18,13 +18,15 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         {
             if (_tokens == null) _tokens = ScriptableObject.CreateInstance<UiTokens>();
             var document = GetComponent<UIDocument>();
-            _root = document != null ? document.rootVisualElement : null;
+            if (document == null) document = gameObject.AddComponent<UIDocument>();
+            if (document.panelSettings == null) document.panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            _root = document.rootVisualElement;
             if (UiSurfaceLocator.Current == null) UiSurfaceLocator.Register(this);
         }
 
         private void OnDestroy()
         {
-            if (UiSurfaceLocator.Current == this) UiSurfaceLocator.Clear();
+            if (ReferenceEquals(UiSurfaceLocator.Current, this)) UiSurfaceLocator.Clear();
         }
 
         public IUiPanel Mount(string panelId)

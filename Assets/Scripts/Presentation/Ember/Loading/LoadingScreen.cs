@@ -1,4 +1,5 @@
 using EmberCrpg.Ui.Foundation;
+using EmberCrpg.Presentation.Ember.UI;
 using UnityEngine;
 
 namespace EmberCrpg.Presentation.Ember.Loading
@@ -34,6 +35,7 @@ namespace EmberCrpg.Presentation.Ember.Loading
 
         private static LoadingScreenController EnsureController()
         {
+            VisibleUiSurface.Ensure();
             if (_controller != null) return _controller;
             var go = new GameObject("LoadingScreenController");
             Object.DontDestroyOnLoad(go);

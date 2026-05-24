@@ -38,7 +38,8 @@ namespace EmberCrpg.Tests.PlayMode.Loading
             LoadingScreen.Hide();
             LoadingScreen.Show("Loading", "Again");
             Assert.That(Object.FindObjectsByType<LoadingScreenController>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
-            yield return SceneManager.CreateScene("LoadingScreenApiContractTest").IsValid();
+            SceneManager.CreateScene("LoadingScreenApiContractTest");
+            yield return null;
         }
     }
 }

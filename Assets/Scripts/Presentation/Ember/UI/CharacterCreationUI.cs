@@ -1,4 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
+using EmberCrpg.Presentation.Ember.Loading;
+using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Presentation.Ember.Adapters;
 using TMPro;
 using UnityEngine;
@@ -143,6 +146,29 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             var pending = EmberWorldGenIntent.Pending ?? new EmberWorldGenIntent(string.Empty, string.Empty, string.Empty);
             EmberWorldGenIntent.Pending = pending.WithCharacter(_playerName, _selectedClassId, _birthsignId, _answers.ToArray());
+            StartCoroutine(BeginVisibleWorldgen());
+        }
+
+        private IEnumerator BeginVisibleWorldgen()
+        {
+            VisibleUiSurface.Ensure();
+            LoadingScreen.Show("Building world...", EmberWorldGenIntent.Pending?.Mood ?? string.Empty);
+            LoadingScreen.SetProgress(0.1f, "Projecting visible worldgen events");
+            LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Info, "[start] Visible world generation");
+
+            var go = new GameObject("WorldgenViewController");
+            DontDestroyOnLoad(go);
+            var view = go.AddComponent<WorldgenViewController>();
+            view.Configure(_firstSceneName);
+            view.Play(WorldgenEventProjector.CreateMockEvents(2, 3, 5, includeQuestion: true, includeFailure: false));
+            if (view.QuestionOpen)
+            {
+                yield return new WaitForSeconds(1.5f);
+                view.AnswerQuestion(0);
+            }
+
+            LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
+            yield return new WaitForSeconds(1f);
             SceneManager.LoadScene(_firstSceneName);
         }
 

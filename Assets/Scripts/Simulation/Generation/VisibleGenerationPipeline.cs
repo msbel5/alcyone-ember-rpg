@@ -65,7 +65,7 @@ namespace EmberCrpg.Simulation.Generation
                     using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                     {
                         timeout.CancelAfter(TimeSpan.FromSeconds(entry.TimeoutSeconds));
-                        var result = await _forge.GenerateAsync(ToRequest(entry, prompt, promptHash), timeout.Token).ConfigureAwait(false);
+                        var result = await _forge.GenerateAsync(ToRequest(entry, prompt, promptHash), timeout.Token);
                         var elapsed = (long)(DateTime.UtcNow - started).TotalMilliseconds;
                         if (result.Success)
                         {
