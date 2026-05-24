@@ -100,8 +100,20 @@ namespace EmberCrpg.Presentation.Ember.Forge
                     ? "sd15_model_files_missing"
                     : failureReason + "|sd15_model_files_missing";
 
-            sd15.Dispose();
-            return new ExplicitFailureAssetForge(failureReason);
+            // P1 fix (Codex review on PR #212): previously we disposed sd15 and returned
+            // ExplicitFailureAssetForge here, which forced every generation request to hard-fail
+            // even when OnnxAssetForge's own placeholder mode (deterministic gray PNG when
+            // USE_ONNX_RUNTIME is undefined or model files are missing) would have produced
+            // valid output. CI environments and offline dev setups without the ONNX runtime
+            // native libraries rely on placeholder mode to keep the bootstrap and Visible
+            // Generation flow working. Keep the SD15 instance so callers degrade gracefully —
+            // OnnxAssetForge.GenerateAsync will return either the placeholder PNG (when
+            // _placeholderMode is set) or a structured failure result (when _hardFailureReason
+            // is set), neither of which throws. ExplicitFailureAssetForge stays available
+            // for the rare case where even constructing OnnxAssetForge throws (caller can
+            // wrap BuildSd15Forge in try/catch if it wants that defense).
+            selectedOnnx = sd15;
+            return sd15;
         }
 
         private static OnnxAssetForge BuildSdxlForge(string modelRoot, OnnxExecutionProviderPreference providerPreference)
