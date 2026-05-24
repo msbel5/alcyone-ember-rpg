@@ -30,7 +30,7 @@ Sub-folders:
 
 If you are adding a new gameplay-visible feature, it lives here.
 
-## 2. `VisualLayer/` — Faz-11 snapshot DTOs (Captain-owned)
+## 2. `Visual/` — Faz-11 snapshot DTOs (Captain-owned)
 
 Pure read-model rows that Captain's domain produces and Unity consumes.
 Methods like `JobDebugSnapshot.FromStores(...)`,
@@ -46,12 +46,12 @@ DO NOT add MonoBehaviour scripts here — these are pure C# DTOs.
 
 ## 3. `Sprint4/` — legacy combat foundation (Sprint 4 era, deprecated)
 
-`Sprint4PlayerController`, `Sprint4CameraRig`, `Sprint4AnimatorDriver`,
-`Sprint4CombatInputAdapter`, `Sprint4FoundationBootstrap`,
-`Sprint4UnityConversions`. Wired exclusively into `Assets/Scenes/Sprint4Foundation.unity`.
+`CombatPlaygroundController`, `CombatPlaygroundCameraRig`, `CombatAnimatorDriver`,
+`CombatInputAdapter`, `CombatPlaygroundBootstrap`,
+`CombatUnityConversions`. Wired exclusively into `Assets/Scenes/CombatPlayground.unity`.
 
 Superseded by `Ember.Camera.EmberFirstPersonController`. Do not extend.
-Will be removed once the Sprint4Foundation scene is retired.
+Will be removed once the CombatPlayground scene is retired.
 
 ## 4. Root files (`Slice*.cs`, `InventoryEquipmentFormatter.cs`) — Sprint 1/2 vertical slice
 
@@ -70,7 +70,7 @@ as part of the simulation core, not as a slice-era artifact.
 > HUD." → `Ember/` (matching sub-folder).
 >
 > "I'm adding a pure data row that maps domain state to a row UI panels
-> can consume." → `VisualLayer/`.
+> can consume." → `Visual/`.
 >
 > "I'm editing `Sprint4*.cs`." → Don't. Open an issue first; the file is
 > deprecated.
@@ -79,7 +79,7 @@ as part of the simulation core, not as a slice-era artifact.
 
 ## Conflict avoidance
 
-- Two first-person controllers exist (`Sprint4CameraRig` and
+- Two first-person controllers exist (`CombatPlaygroundCameraRig` and
   `Ember.Camera.EmberFirstPersonController`). Only one runs per scene
   because each is referenced by a distinct scene's GameObject hierarchy.
   Never put both controllers in the same scene.

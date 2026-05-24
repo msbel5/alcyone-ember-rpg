@@ -7,63 +7,62 @@ using UnityEditor.SceneManagement;
 
 namespace EmberCrpg.Editor.Ember.Menu
 {
-    /// <summary>
-    /// One MenuItem per faz recipe. Each entry creates a fresh empty scene, runs the
-    /// recipe, then saves to <see cref="EmberSceneSavePolicy.ResolveScenePath"/>.
-    /// Menu code is intentionally thin so test/automation can call recipes directly.
-    /// </summary>
     public static class EmberSceneBuilderMenu
     {
         private const string Root = "Ember/Build Scene/";
 
-        [MenuItem(Root + "Faz 3 — Smithing Overworld")]
-        public static void BuildFaz3() => RunRecipe(new Faz3SmithingSceneRecipe());
-
-        [MenuItem(Root + "Faz 4 — Colony Needs")]
-        public static void BuildFaz4() => RunRecipe(new Faz4ColonyNeedsSceneRecipe());
-
-        [MenuItem(Root + "Faz 5 — Season Farm")]
-        public static void BuildFaz5() => RunRecipe(new Faz5FarmSceneRecipe());
-
-        [MenuItem(Root + "Faz 6 — Trade Market")]
-        public static void BuildFaz6() => RunRecipe(new Faz6TradeSceneRecipe());
-
-        [MenuItem(Root + "Faz 7 — Combat Dungeon")]
-        public static void BuildFaz7() => RunRecipe(new Faz7CombatSceneRecipe());
-
-        [MenuItem(Root + "Faz 8 — Ritual Hall")]
-        public static void BuildFaz8() => RunRecipe(new Faz8MagicSceneRecipe());
-
-        [MenuItem(Root + "Faz 9 — Tavern Dialog")]
-        public static void BuildFaz9() => RunRecipe(new Faz9DialogSceneRecipe());
-
-        [MenuItem(Root + "Faz 10 — Oracle Shrine")]
-        public static void BuildFaz10() => RunRecipe(new Faz10DmQuerySceneRecipe());
-
-        [MenuItem(Root + "Faz 11 — Showroom Overview")]
-        public static void BuildFaz11() => RunRecipe(new Faz11VisualLayerSceneRecipe());
-
-        [MenuItem(Root + "Faz 12 — Tavern Flavour (LLM)")]
-        public static void BuildFaz12() => RunRecipe(new Faz12LlmFlavourSceneRecipe());
+        [MenuItem(Root + "Main Menu")]
+        public static void BuildMainMenu() => RunUiRecipe(new MainMenuSceneRecipe());
 
         [MenuItem(Root + "Character Creation")]
         public static void BuildCharacterCreation() => RunUiRecipe(new CharacterCreationSceneRecipe());
 
-        [MenuItem(Root + "All — Build every faz scene")]
+        [MenuItem(Root + "3. Smithing Overworld")]
+        public static void BuildScene3() => RunRecipe(new SmithingOverworldSceneRecipe());
+
+        [MenuItem(Root + "4. Colony Needs")]
+        public static void BuildScene4() => RunRecipe(new ColonyNeedsSceneRecipe());
+
+        [MenuItem(Root + "5. Season Farm")]
+        public static void BuildScene5() => RunRecipe(new SeasonFarmSceneRecipe());
+
+        [MenuItem(Root + "6. Trade Market")]
+        public static void BuildScene6() => RunRecipe(new TradeMarketSceneRecipe());
+
+        [MenuItem(Root + "7. Combat Dungeon")]
+        public static void BuildScene7() => RunRecipe(new CombatDungeonSceneRecipe());
+
+        [MenuItem(Root + "8. Ritual Hall")]
+        public static void BuildScene8() => RunRecipe(new RitualHallSceneRecipe());
+
+        [MenuItem(Root + "9. Tavern Dialog")]
+        public static void BuildScene9() => RunRecipe(new TavernDialogSceneRecipe());
+
+        [MenuItem(Root + "10. Oracle Shrine")]
+        public static void BuildScene10() => RunRecipe(new OracleShrineSceneRecipe());
+
+        [MenuItem(Root + "11. Showroom Overview")]
+        public static void BuildScene11() => RunRecipe(new ShowroomOverviewSceneRecipe());
+
+        [MenuItem(Root + "12. Tavern Flavour")]
+        public static void BuildScene12() => RunRecipe(new TavernFlavourSceneRecipe());
+
+        [MenuItem(Root + "All — Rebuild every gameplay scene")]
         public static void BuildAll()
         {
             SpriteRegistryAutoBuilder.Build();
+            RunUiRecipe(new MainMenuSceneRecipe());
             RunUiRecipe(new CharacterCreationSceneRecipe());
-            RunRecipe(new Faz3SmithingSceneRecipe());
-            RunRecipe(new Faz4ColonyNeedsSceneRecipe());
-            RunRecipe(new Faz5FarmSceneRecipe());
-            RunRecipe(new Faz6TradeSceneRecipe());
-            RunRecipe(new Faz7CombatSceneRecipe());
-            RunRecipe(new Faz8MagicSceneRecipe());
-            RunRecipe(new Faz9DialogSceneRecipe());
-            RunRecipe(new Faz10DmQuerySceneRecipe());
-            RunRecipe(new Faz11VisualLayerSceneRecipe());
-            RunRecipe(new Faz12LlmFlavourSceneRecipe());
+            RunRecipe(new SmithingOverworldSceneRecipe());
+            RunRecipe(new ColonyNeedsSceneRecipe());
+            RunRecipe(new SeasonFarmSceneRecipe());
+            RunRecipe(new TradeMarketSceneRecipe());
+            RunRecipe(new CombatDungeonSceneRecipe());
+            RunRecipe(new RitualHallSceneRecipe());
+            RunRecipe(new TavernDialogSceneRecipe());
+            RunRecipe(new OracleShrineSceneRecipe());
+            RunRecipe(new ShowroomOverviewSceneRecipe());
+            RunRecipe(new TavernFlavourSceneRecipe());
         }
 
         public static void RunRecipe(IEmberSceneRecipe recipe)
@@ -71,18 +70,11 @@ namespace EmberCrpg.Editor.Ember.Menu
             EmberSceneFactory.CreateEmpty();
             recipe.Build();
             EmberRuntimeHostBuilder.EnsureHost();
-            
-            // AAA Polish: Bake NavMesh.
-            // Unity 6 deprecated UnityEditor.AI.NavMeshBuilder in favor of the
-            // com.unity.ai.navigation package's NavMeshSurface component.
-            // Until that package lands in manifest.json (tracked under the
-            // Faz 14 navigation sprint), keep the legacy synchronous bake —
-            // it still works and produces the same NavMesh.asset. The pragma
-            // silences the CS0618 warning so the build stays green.
+
 #pragma warning disable CS0618
             UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
 #pragma warning restore CS0618
-            
+
             var path = EmberSceneSavePolicy.ResolveScenePath(recipe.SceneName);
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), path);
             AssetDatabase.Refresh();
@@ -96,5 +88,5 @@ namespace EmberCrpg.Editor.Ember.Menu
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), path);
             AssetDatabase.Refresh();
         }
-}
+    }
 }

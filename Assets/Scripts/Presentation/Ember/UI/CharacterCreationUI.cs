@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI
     public sealed class CharacterCreationUI : MonoBehaviour
     {
         [SerializeField] private TMP_FontAsset _font;
-        [SerializeField] private string _firstSceneName = "Faz3SmithingOverworld";
+        [SerializeField] private string _firstSceneName = "SmithingOverworld";
 
         private readonly List<string> _answers = new List<string>();
         private readonly CharacterCreationViewModel _viewModel = new CharacterCreationViewModel();

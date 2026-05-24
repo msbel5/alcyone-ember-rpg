@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using EmberCrpg.Domain.AiDm;
-using EmberCrpg.Presentation.VisualLayer;
+using EmberCrpg.Presentation.Visual;
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer

@@ -52,6 +52,11 @@ Builds/
 Assets/AI Toolkit/Temp/
 Assets/AI Toolkit/Temp.meta
 
+# SDXL Turbo external-data shards exceed GitHub LFS' 2GB per-object limit.
+# Keep them local or download them during model bootstrap; do not publish them.
+Assets/StreamingAssets/Models/sdxl-turbo/unet/model.onnx.data
+Assets/StreamingAssets/Models/sdxl-turbo/text_encoder_2/model.onnx.data
+
 # Unity Performance Testing auto-generated run info (rewritten on every test run
 # with whichever packages happen to be installed locally — including dev-only
 # `com.unity.ai.assistant`. Keep it out of git so CI/Mami machines don't diff.)
@@ -64,3 +69,20 @@ Assets/Resources/PerformanceTestRunInfo.json.meta
 Packages/*/
 !Packages/manifest.json
 !Packages/packages-lock.json
+
+# Embedded Unity AI Assistant package — required for the project to compile under Unity 6.3+
+# because the registry version 2.9.0-pre.2 calls Microsoft.ML.Tokenizers 2.0.25 API
+# (SentencePieceTokenizer.Create(stream, addBeginOfSentence, addEndOfSentence)) which the
+# project's bundled 3.0.26 (used by LLamaSharp) no longer provides. Patched in-place on the
+# SigLip2Text.cs line; behavior preserved (defaults already false). Track this package despite
+# the blanket Packages/*/ rule below.
+!Packages/com.unity.ai.assistant/
+!Packages/com.unity.ai.assistant/**
+
+# Unity convention: any folder suffixed with ~ is ignored by Unity (docs, build
+# artifacts, third-party binaries). Skip them in the embedded ai.assistant too —
+# RelayApp~ alone contains a 114 MB relay_win.exe that exceeds GitHub's hard
+# 100 MB file size limit, and the chat UI degrades to its built-in fallback
+# without those binaries.
+Packages/com.unity.ai.assistant/*~/
+Packages/com.unity.ai.assistant/*~

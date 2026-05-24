@@ -95,16 +95,16 @@ namespace EmberCrpg.Editor.Ember.Tools
 
         private static IEnumerable<IEmberSceneRecipe> AllRecipes()
         {
-            yield return new Faz3SmithingSceneRecipe();
-            yield return new Faz4ColonyNeedsSceneRecipe();
-            yield return new Faz5FarmSceneRecipe();
-            yield return new Faz6TradeSceneRecipe();
-            yield return new Faz7CombatSceneRecipe();
-            yield return new Faz8MagicSceneRecipe();
-            yield return new Faz9DialogSceneRecipe();
-            yield return new Faz10DmQuerySceneRecipe();
-            yield return new Faz11VisualLayerSceneRecipe();
-            yield return new Faz12LlmFlavourSceneRecipe();
+            yield return new SmithingOverworldSceneRecipe();
+            yield return new ColonyNeedsSceneRecipe();
+            yield return new SeasonFarmSceneRecipe();
+            yield return new TradeMarketSceneRecipe();
+            yield return new CombatDungeonSceneRecipe();
+            yield return new RitualHallSceneRecipe();
+            yield return new TavernDialogSceneRecipe();
+            yield return new OracleShrineSceneRecipe();
+            yield return new ShowroomOverviewSceneRecipe();
+            yield return new TavernFlavourSceneRecipe();
         }
     }
 }
