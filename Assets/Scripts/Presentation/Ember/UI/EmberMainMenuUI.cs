@@ -7,7 +7,7 @@ namespace EmberCrpg.Presentation.Ember.UI
 {
     public sealed class EmberMainMenuUI : MonoBehaviour
     {
-        [SerializeField] private string _firstSceneName = "Faz3SmithingOverworld";
+        [SerializeField] private string _firstSceneName = "SmithingOverworld";
 
         private void Awake()
         {

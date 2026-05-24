@@ -69,7 +69,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          lfs: false
+          lfs: true   # required: embedded ai.assistant DLLs (AiEditorToolsSdk.dll, etc.) are LFS-tracked
 
       - name: Cache Unity Library
         uses: actions/cache@v4
@@ -132,6 +132,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true   # required: embedded ai.assistant DLLs (AiEditorToolsSdk.dll, etc.) are LFS-tracked
 
       - name: Cache Unity Library
         uses: actions/cache@v4
@@ -178,6 +180,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true   # required: embedded ai.assistant DLLs (AiEditorToolsSdk.dll, etc.) are LFS-tracked
 
       - name: Cache Unity Library
         uses: actions/cache@v4
