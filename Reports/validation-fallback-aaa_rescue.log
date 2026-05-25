@@ -1,0 +1,66 @@
+=== Alcyone Ember RPG validation ===
+timestamp_utc=2026-05-25T13:14:44Z
+root=/mnt/c/Users/msbel/projects/alcyone-ember-rpg
+mode=fallback
+output_dir=/mnt/c/Users/msbel/projects/alcyone-ember-rpg/validation-output
+dotnet_cli=/mnt/c/Program Files/dotnet/dotnet.exe
+git_head=d0cc9d73
+
+STATUS unity_editor=BLOCKED reason=not_found
+STATUS fallback_harness=RUNNING note='Pure C# NUnit harness; not a Unity EditMode run.'
+.NET SDK:
+ Version:           8.0.421
+ Commit:            f16c270f6c
+ Workload version:  8.0.400-manifests.83eddae2
+ MSBuild version:   17.11.48+02bf66295
+
+Çalışma Zamanı Ortamı:
+ OS Name:     Windows
+ OS Version:  10.0.26200
+ OS Platform: Windows
+ RID:         win-x64
+ Base Path:   C:\Program Files\dotnet\sdk\8.0.421\
+
+.NET iş yükleri yüklendi:
+Yeni bildirimler yüklenirken loose manifests kullanılacak şekilde yapılandırıldı.
+Görüntülenecek yüklü iş yükü yok.
+
+Host:
+  Version:      8.0.27
+  Architecture: x64
+  Commit:       a6bde67c45
+
+.NET SDKs installed:
+  3.1.426 [C:\Program Files\dotnet\sdk]
+  8.0.421 [C:\Program Files\dotnet\sdk]
+
+.NET runtimes installed:
+  Microsoft.AspNetCore.App 3.1.32 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
+  Microsoft.AspNetCore.App 5.0.17 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
+  Microsoft.AspNetCore.App 8.0.27 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
+  Microsoft.NETCore.App 2.1.30 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 3.1.32 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 5.0.17 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 6.0.15 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 6.0.16 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 6.0.36 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 8.0.21 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 8.0.27 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.WindowsDesktop.App 3.1.32 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
+  Microsoft.WindowsDesktop.App 5.0.17 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
+
+command: '/mnt/c/Program Files/dotnet/dotnet.exe' test 'C:\Users\msbel\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj' --configuration Release --nologo --results-directory 'C:\Users\msbel\projects\alcyone-ember-rpg\validation-output\fallback-test-results' --logger 'trx;LogFileName=fallback.trx'
+  Geri yüklenecek projeler belirleniyor...
+  Geri yükleme için tüm projeler güncel.
+  ValidationFallbackHarness -> C:\Users\msbel\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+C:\Users\msbel\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll (.NETCoreApp,Version=v8.0) için test çalıştırması
+Toplam 1 test dosyası belirtilen desenle eşleşti.
+  Atlandı Encode_RealModel_DimensionMatches [21 ms]
+  Atlandı OnnxAssetForge_RealModels_DimensionMatchesRequest [< 1 ms]
+  Atlandı SdxlTurbo_GeneratedPng_HasValidHeader [< 1 ms]
+Sonuç Dosyası: C:\Users\msbel\projects\alcyone-ember-rpg\validation-output\fallback-test-results\fallback.trx
+
+Başarılı!  - Başarısız:     0, Başarılı:  1420, Atlanan:     3, Toplam:  1423, Süre: 883 ms - ValidationFallbackHarness.dll (net8.0)
+fallback_exit_code=0
+fallback_trx=/mnt/c/Users/msbel/projects/alcyone-ember-rpg/validation-output/fallback-test-results/fallback.trx
+PASS fallback_harness
