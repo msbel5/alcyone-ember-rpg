@@ -11,8 +11,7 @@
         "Unity.TextMeshPro",
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.RenderPipelines.Core.Runtime",
-        "Unity.Cinemachine",
-        "Unity.InferenceEngine"
+        "Unity.Cinemachine"
     ],
 "includePlatforms": [],
     "excludePlatforms": [],

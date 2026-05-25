@@ -4,7 +4,9 @@
     "references": [
         "Unity.AI.Tracing"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": true,
     "overrideReferences": true,
@@ -12,7 +14,7 @@
         "System.Runtime.CompilerServices.Unsafe.dll",
         "Newtonsoft.Json.dll"
     ],
-    "autoReferenced": true,
+    "autoReferenced": false,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false

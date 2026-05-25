@@ -591,11 +591,13 @@ PlayerSettings:
     Standalone: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY;USE_ONNX_RUNTIME
   additionalCompilerArguments: {}
   platformArchitecture: {}
-  scriptingBackend: {}
+  scriptingBackend:
+    Standalone: 0
   il2cppCompilerConfiguration: {}
   il2cppCodeGeneration: {}
   il2cppStacktraceInformation: {}
-  managedStrippingLevel: {}
+  managedStrippingLevel:
+    Standalone: 0
   incrementalIl2cppBuild: {}
   suppressCommonWarnings: 1
   allowUnsafeCode: 0

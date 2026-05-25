@@ -38,7 +38,7 @@ namespace EmberCrpg.Presentation.Ember.Loading
             VisibleUiSurface.Ensure();
             if (_controller != null) return _controller;
             var go = new GameObject("LoadingScreenController");
-            Object.DontDestroyOnLoad(go);
+            if (Application.isPlaying) Object.DontDestroyOnLoad(go);
             _controller = go.AddComponent<LoadingScreenController>();
             return _controller;
         }

@@ -54,7 +54,9 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 {
                     cts.Cancel();
                     var pipeline = new VisibleGenerationPipeline(root, new FakeForge(""), StaticPromptCatalog.CreateDefault(), new GenerationFailureLog(Path.Combine(root, "Logs", "generation-failures.json")));
-                    Assert.ThrowsAsync<OperationCanceledException>(() => pipeline.RunAsync(entries, cts.Token));
+                    Assert.That(
+                        async () => await pipeline.RunAsync(entries, cts.Token),
+                        Throws.InstanceOf<OperationCanceledException>());
                 }
             }
             finally { if (Directory.Exists(root)) Directory.Delete(root, true); }

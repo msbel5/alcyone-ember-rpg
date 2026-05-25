@@ -47,6 +47,8 @@ namespace EmberCrpg.Presentation.Ember.Boot
             pipeline.EntryFailed += (e, reason, ex) => { failed++; panel?.LogLine("log", UiLogSeverity.Error, "[error] " + e.Id + " " + reason); };
             await pipeline.RunAsync(entries, ct);
             panel?.LogLine("log", UiLogSeverity.Success, "Generation complete: " + succeeded + "/" + started + " succeeded, " + failed + " failed.");
+            await Task.Delay(2500, ct);
+            if (panel != null) UiSurfaceLocator.Current?.Unmount(panel);
             return new BootFlowResult(started, succeeded, failed, nextScene);
         }
 

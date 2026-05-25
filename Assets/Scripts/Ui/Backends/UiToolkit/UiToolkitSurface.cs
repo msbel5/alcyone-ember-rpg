@@ -19,7 +19,11 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             if (_tokens == null) _tokens = ScriptableObject.CreateInstance<UiTokens>();
             var document = GetComponent<UIDocument>();
             if (document == null) document = gameObject.AddComponent<UIDocument>();
-            if (document.panelSettings == null) document.panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            if (document.panelSettings == null)
+            {
+                document.panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+                document.panelSettings.themeStyleSheet = Resources.Load<ThemeStyleSheet>("DefaultRuntimeTheme");
+            }
             _root = document.rootVisualElement;
             if (UiSurfaceLocator.Current == null) UiSurfaceLocator.Register(this);
         }

@@ -3,6 +3,7 @@ using EmberCrpg.Presentation.Ember.Loading;
 using EmberCrpg.Tests.PlayMode.Support;
 using EmberCrpg.Ui.Foundation;
 using NUnit.Framework;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -38,7 +39,8 @@ namespace EmberCrpg.Tests.PlayMode.Loading
             LoadingScreen.Hide();
             LoadingScreen.Show("Loading", "Again");
             Assert.That(Object.FindObjectsByType<LoadingScreenController>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
-            SceneManager.CreateScene("LoadingScreenApiContractTest");
+            if (Application.isPlaying) SceneManager.CreateScene("LoadingScreenApiContractTest");
+            else EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             yield return null;
         }
     }
