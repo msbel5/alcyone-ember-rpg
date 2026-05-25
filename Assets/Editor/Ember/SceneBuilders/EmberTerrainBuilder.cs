@@ -24,11 +24,18 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             terrainData.heightmapResolution = 33;
             terrainData.size = new Vector3(sizeMeters, 10f, sizeMeters);
             
+            var texture = EmberMaterialFactory.ResolveMainTexture(material);
+            if (texture == null)
+            {
+                material = EmberSceneMaterialLibrary.Floor();
+                texture = EmberMaterialFactory.ResolveMainTexture(material);
+            }
+
             // Create TerrainLayer from material
-            if (material != null && material.mainTexture != null)
+            if (texture != null)
             {
                 var layer = new TerrainLayer();
-                layer.diffuseTexture = (Texture2D)material.mainTexture;
+                layer.diffuseTexture = texture;
                 layer.tileSize = new Vector2(5f, 5f);
                 
                 string layerPath = Path.Combine(terrainDir, name + "_Layer.terrainlayer");
@@ -67,10 +74,11 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             float halfD = depth / 2f;
             float halfH = height / 2f;
 
-            BuildWall(center + new Vector3(0, halfH, halfD), new Vector3(width, height, 0.1f), wallMat, "Wall_North").transform.SetParent(root.transform);
-            BuildWall(center + new Vector3(0, halfH, -halfD), new Vector3(width, height, 0.1f), wallMat, "Wall_South").transform.SetParent(root.transform);
-            BuildWall(center + new Vector3(halfW, halfH, 0), new Vector3(0.1f, height, depth), wallMat, "Wall_East").transform.SetParent(root.transform);
-            BuildWall(center + new Vector3(-halfW, halfH, 0), new Vector3(0.1f, height, depth), wallMat, "Wall_West").transform.SetParent(root.transform);
+            var safeWall = wallMat != null ? wallMat : EmberSceneMaterialLibrary.Wall();
+            BuildWall(center + new Vector3(0, halfH, halfD), new Vector3(width, height, 0.1f), safeWall, "Wall_North").transform.SetParent(root.transform);
+            BuildWall(center + new Vector3(0, halfH, -halfD), new Vector3(width, height, 0.1f), safeWall, "Wall_South").transform.SetParent(root.transform);
+            BuildWall(center + new Vector3(halfW, halfH, 0), new Vector3(0.1f, height, depth), safeWall, "Wall_East").transform.SetParent(root.transform);
+            BuildWall(center + new Vector3(-halfW, halfH, 0), new Vector3(0.1f, height, depth), safeWall, "Wall_West").transform.SetParent(root.transform);
 
             return root;
         }
@@ -87,10 +95,10 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             go.transform.localScale = sizeMeters;
             var renderer = go.GetComponent<MeshRenderer>();
             
-            if (renderer != null && material != null)
+            if (renderer != null)
             {
                 // Create a material instance so we can tile based on wall size
-                var mat = new Material(material);
+                var mat = new Material(material != null ? material : EmberSceneMaterialLibrary.Wall());
                 float tileX = sizeMeters.x > sizeMeters.z ? sizeMeters.x : sizeMeters.z;
                 float tileY = sizeMeters.y;
                 
@@ -118,4 +126,3 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
 
     }
 }
-

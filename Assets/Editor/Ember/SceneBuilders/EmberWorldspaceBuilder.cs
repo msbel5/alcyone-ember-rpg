@@ -1,6 +1,7 @@
 using EmberCrpg.Editor.Ember.Common;
 using UnityEditor;
 using UnityEngine;
+using System.IO;
 
 namespace EmberCrpg.Editor.Ember.SceneBuilders
 {
@@ -30,6 +31,7 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             var renderer = billboardChild.AddComponent<SpriteRenderer>();
             renderer.sprite = LoadSpriteByName(spriteName);
             renderer.sortingOrder = 10;
+            FitBillboardToPlayableHeight(billboardChild.transform, renderer, 2.1f);
             AddRuntimeComponent(billboardChild, "EmberCrpg.Presentation.Ember.Views.CameraFacingBillboard");
             var actorView = AddRuntimeComponent(go, "EmberCrpg.Presentation.Ember.Views.ActorView");
             // Codex audit (seventh pass A-P1 #3): serialize the stable domain
@@ -63,14 +65,25 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             if (parent != null) go.transform.SetParent(parent, worldPositionStays: false);
             go.transform.position = worldPosition;
             go.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
+            var renderer = go.GetComponent<MeshRenderer>();
+            if (renderer != null) renderer.sharedMaterial = EmberSceneMaterialLibrary.Prop();
             AddRuntimeComponent(go, "EmberCrpg.Presentation.Ember.Views.WorksiteView");
             return go;
+        }
+
+        private static void FitBillboardToPlayableHeight(Transform transform, SpriteRenderer renderer, float targetHeight)
+        {
+            if (renderer == null || renderer.sprite == null) return;
+            var spriteHeight = renderer.sprite.bounds.size.y;
+            if (spriteHeight <= 0.001f) return;
+            var scale = Mathf.Clamp(targetHeight / spriteHeight, 0.02f, 3f);
+            transform.localScale = new Vector3(scale, scale, scale);
         }
 
         private static Sprite LoadSpriteByName(string spriteName)
         {
             if (string.IsNullOrEmpty(spriteName)) return null;
-            var path = $"{EmberAssetPaths.CharactersDir}/{spriteName}.png";
+            var path = ResolveSpritePath(spriteName);
             
             // Try to load as a single sprite first
             var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
@@ -83,6 +96,37 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
                 if (asset is Sprite s) return s;
             }
             return null;
+        }
+
+        private static string ResolveSpritePath(string spriteName)
+        {
+            var candidate = $"{EmberAssetPaths.CharactersDir}/{spriteName}.png";
+            if (IsUsableSprite(candidate)) return candidate;
+
+            var alias = ResolveSpriteAlias(spriteName);
+            var aliasPath = $"{EmberAssetPaths.CharactersDir}/{alias}.png";
+            return IsUsableSprite(aliasPath) ? aliasPath : candidate;
+        }
+
+        private static bool IsUsableSprite(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return false;
+            return new FileInfo(path).Length >= 4096;
+        }
+
+        private static string ResolveSpriteAlias(string spriteName)
+        {
+            switch (spriteName)
+            {
+                case "bandit": return "bandit_fixed";
+                case "goblin": return "goblin_fixed";
+                case "guard": return "knight";
+                case "mage": return "sage";
+                case "merchant": return "innkeeper";
+                case "rogue": return "thief";
+                case "warrior": return "blacksmith";
+                default: return "blacksmith";
+            }
         }
 
         private static Component AddRuntimeComponent(GameObject host, string fullName)

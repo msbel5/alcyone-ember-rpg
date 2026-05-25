@@ -70,6 +70,7 @@ namespace EmberCrpg.Editor.Ember.Menu
             EmberSceneFactory.CreateEmpty();
             recipe.Build();
             EmberRuntimeHostBuilder.EnsureHost();
+            EmberSceneSurfaceSanitizer.ApplyToOpenScene();
 
 #pragma warning disable CS0618
             UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
@@ -84,6 +85,7 @@ namespace EmberCrpg.Editor.Ember.Menu
         {
             EmberSceneFactory.CreateEmpty();
             recipe.Build();
+            EmberSceneSurfaceSanitizer.ApplyToOpenScene();
             var path = EmberSceneSavePolicy.ResolveScenePath(recipe.SceneName);
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), path);
             AssetDatabase.Refresh();

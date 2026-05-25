@@ -21,6 +21,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         public string CharacterClassId { get; }
         public string BirthsignId { get; }
         public string[] AnswerChoiceIds { get; }
+        public string PortraitJson { get; }
 
         public EmberWorldGenIntent(string mood, string calling, string start)
             : this(mood, calling, start, string.Empty, string.Empty, string.Empty, null)
@@ -35,6 +36,19 @@ namespace EmberCrpg.Presentation.Ember.UI
             string characterClassId,
             string birthsignId,
             string[] answerChoiceIds)
+            : this(mood, calling, start, playerName, characterClassId, birthsignId, answerChoiceIds, string.Empty)
+        {
+        }
+
+        public EmberWorldGenIntent(
+            string mood,
+            string calling,
+            string start,
+            string playerName,
+            string characterClassId,
+            string birthsignId,
+            string[] answerChoiceIds,
+            string portraitJson)
         {
             Mood = mood ?? string.Empty;
             Calling = calling ?? string.Empty;
@@ -43,6 +57,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             CharacterClassId = characterClassId ?? string.Empty;
             BirthsignId = birthsignId ?? string.Empty;
             AnswerChoiceIds = answerChoiceIds ?? new string[0];
+            PortraitJson = portraitJson ?? string.Empty;
         }
 
         public bool IsEmpty =>
@@ -52,11 +67,17 @@ namespace EmberCrpg.Presentation.Ember.UI
             && string.IsNullOrEmpty(PlayerName)
             && string.IsNullOrEmpty(CharacterClassId)
             && string.IsNullOrEmpty(BirthsignId)
+            && string.IsNullOrEmpty(PortraitJson)
             && AnswerChoiceIds.Length == 0;
 
         public EmberWorldGenIntent WithCharacter(string playerName, string characterClassId, string birthsignId, string[] answerChoiceIds)
         {
-            return new EmberWorldGenIntent(Mood, Calling, Start, playerName, characterClassId, birthsignId, answerChoiceIds);
+            return new EmberWorldGenIntent(Mood, Calling, Start, playerName, characterClassId, birthsignId, answerChoiceIds, PortraitJson);
+        }
+
+        public EmberWorldGenIntent WithPortraitJson(string portraitJson)
+        {
+            return new EmberWorldGenIntent(Mood, Calling, Start, PlayerName, CharacterClassId, BirthsignId, AnswerChoiceIds, portraitJson);
         }
     }
 }

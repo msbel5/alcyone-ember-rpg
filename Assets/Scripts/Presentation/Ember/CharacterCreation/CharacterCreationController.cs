@@ -69,6 +69,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private string _firstSceneName = "SmithingOverworld";
         private int _rerollsRemaining = 3;
         private bool _storyLaunched;
+        private Func<uint, string, string> _portraitJsonProvider;
 
         public IReadOnlyList<string> LogLines => _logLines;
         public CreationStep CurrentStep => _step;
@@ -78,6 +79,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         public bool CanRerollPortrait => _rerollsRemaining > 0;
         public bool CanAdvance => ComputeCanAdvance();
         public bool AutoLaunchWorldgen { get; set; } = true;
+
+        public void SetPortraitJsonProvider(Func<uint, string, string> provider)
+        {
+            _portraitJsonProvider = provider;
+        }
 
         public static CharacterCreationController CreateForTests(uint seed, string llmJson)
         {
@@ -425,7 +431,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 _commanderName,
                 _selectedClassId,
                 _selectedAlignmentId,
-                _answerChoiceIds.ToArray());
+                _answerChoiceIds.ToArray(),
+                PortraitJson);
             if (AutoLaunchWorldgen && Application.isPlaying)
                 StartCoroutine(BeginVisibleWorldgen());
             Render();
@@ -561,11 +568,28 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         private void GeneratePortrait()
         {
-            if (!NpcPromptJsonValidator.TryValidate(_llmJson, GenericNpcBaseManifest.CreateDefault(), out var json, out _))
-                json = NpcPromptJsonDefaults.FromSeed(_seed + (uint)(3 - _rerollsRemaining), GenericNpcBaseManifest.CreateDefault());
+            var manifest = GenericNpcBaseManifest.CreateDefault();
+            var raw = string.IsNullOrWhiteSpace(_llmJson) ? RequestPortraitJson(string.Empty) : _llmJson;
+            if (!NpcPromptJsonValidator.TryValidate(raw, manifest, out var json, out var reason))
+            {
+                raw = RequestPortraitJson(reason);
+                if (!NpcPromptJsonValidator.TryValidate(raw, manifest, out json, out reason))
+                {
+                    json = NpcPromptJsonDefaults.FromSeed(_seed + (uint)(3 - _rerollsRemaining), manifest);
+                    AddLog("[portrait] LLM invalid twice; deterministic fallback used: " + reason + ".");
+                }
+            }
+
             PortraitJson = json.ToCanonicalJson();
             _panel?.SetText("portraitJson", PortraitJson);
             AddLog("[portrait] JSON ready.");
+        }
+
+        private string RequestPortraitJson(string correctionReason)
+        {
+            if (_portraitJsonProvider != null)
+                return _portraitJsonProvider(_seed + (uint)(3 - _rerollsRemaining), correctionReason ?? string.Empty);
+            return DefaultNpcPortraitJsonProvider.Request(_seed + (uint)(3 - _rerollsRemaining), correctionReason);
         }
 
         private void AddLog(string line)

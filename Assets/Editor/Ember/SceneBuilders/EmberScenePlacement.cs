@@ -22,9 +22,10 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
         public static Vector3 ComputePlayerSpawn(GameObject floor, float verticalOffset = 0.05f)
         {
             var floorBounds = GetFloorBounds(floor);
-            var footprintCenter = new Vector3(floorBounds.center.x, 0f, floorBounds.center.z);
-            var floorY = SampleFloorSurfaceY(floor, footprintCenter);
-            return new Vector3(footprintCenter.x, floorY + verticalOffset, footprintCenter.z);
+            var southThird = floorBounds.center.z - (floorBounds.size.z * 0.45f);
+            var footprintPoint = new Vector3(floorBounds.center.x, 0f, southThird);
+            var floorY = SampleFloorSurfaceY(floor, footprintPoint);
+            return new Vector3(footprintPoint.x, floorY + verticalOffset, footprintPoint.z);
         }
 
         public static Vector3 ComputeEastPortalSpawn(GameObject floor, float eastInset = 1.0f, float verticalOffset = 0.5f)

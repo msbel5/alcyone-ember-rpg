@@ -17,8 +17,7 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             portal.transform.localScale = new Vector3(1.5f, 2.5f, 0.2f);
 
             var renderer = portal.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = new Material(Shader.Find("Standard"));
-            renderer.sharedMaterial.color = new Color(1f, 0.84f, 0f); // Gold
+            renderer.sharedMaterial = EmberSceneMaterialLibrary.Portal();
 
             var collider = portal.GetComponent<BoxCollider>();
             if (collider != null) collider.isTrigger = true;

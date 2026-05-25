@@ -111,6 +111,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             if (_commanderName.Length > 0 && _commanderName.Length < 2)
                 builder.AppendLine("Name must be at least 2 characters.");
+            if (!ComputeCanAdvance())
+                builder.AppendLine("Continue locked: enter a name with at least 2 characters.");
             return builder.ToString();
         }
 
@@ -163,6 +165,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             builder.AppendLine("Assigned: " + string.Join(", ", StatOrder.Select(s => s + "=" + SafeStat(_assignedStats, s))));
             builder.AppendLine("Saved Pool: " + (_savedStats.Count == 0 ? "<none>" : string.Join(", ", StatOrder.Select(s => s + "=" + SafeStat(_savedStats, s)))));
             builder.AppendLine(_rollKept ? "Roll kept." : "Keep This Roll to continue.");
+            if (!ComputeCanAdvance())
+                builder.AppendLine("Continue locked: keep a roll first.");
             return builder.ToString();
         }
 
@@ -176,6 +180,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             builder.AppendLine("Skills: " + _selectedSkills.Count + "/5 selected");
             builder.AppendLine(string.Join(", ", _selectedSkills.OrderBy(v => v)));
             builder.AppendLine("Use visible class/alignment/skill buttons below.");
+            if (!ComputeCanAdvance())
+                builder.AppendLine("Continue locked: choose class, alignment, and exactly 5 skills.");
             return builder.ToString();
         }
 

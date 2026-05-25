@@ -105,14 +105,21 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         {
             if (id == "LoadingScreen" || id == "BootScreen")
             {
+                Register("root", new VisualElement());
+                Register("backdrop", new Image());
                 Register("title", MakeLabel("", 30, true));
                 Register("subtitle", MakeLabel("", 16, false));
                 Register("area", MakeLabel("", 20, true));
+                Register("status", MakeLabel("", 16, true));
+                Register("loading", MakeLabel("", 16, true));
+                Register("tip", MakeLabel("", 14, false));
                 Register("current", MakeLabel("", 14, false));
                 Register("progress", new ProgressBar { lowValue = 0f, highValue = 100f });
+                Register("fade", new ProgressBar { lowValue = 0f, highValue = 100f });
                 Register("thumbnail", new Image());
                 Register("caption", MakeLabel("", 12, false));
                 Register("log", MakeLog());
+                Register("inputBlock", new VisualElement());
                 Register("continue", MakeButton("Continue"));
                 return;
             }
@@ -123,6 +130,8 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
                 Register("step", MakeLabel("", 16, true));
                 Register("progress", new ProgressBar { lowValue = 0f, highValue = 100f });
                 Register("body", new ScrollView(ScrollViewMode.Vertical));
+                Register("portraitJson", MakeLabel("", 12, false));
+                Register("skills", MakeLabel("", 12, false));
                 Register("log", MakeLog());
                 Register("back", MakeButton("Back"));
                 Register("next", MakeButton("Continue"));
