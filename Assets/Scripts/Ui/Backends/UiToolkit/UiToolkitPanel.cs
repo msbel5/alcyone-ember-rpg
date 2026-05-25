@@ -17,7 +17,6 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         public UiToolkitPanel(string id, VisualElement root, UiTokens tokens)
         {
             Id = string.IsNullOrWhiteSpace(id) ? "Panel" : id;
-            Kind = Id;
             _tokens = tokens;
             _container = new VisualElement { name = Id };
             _container.AddToClassList("ember-panel");
@@ -27,7 +26,6 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         }
 
         public string Id { get; }
-        public string Kind { get; }
 
         public void SetText(string slot, string text)
         {
@@ -91,9 +89,6 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             _buttonHandlers[key] = onClick;
             button.clicked += onClick;
         }
-
-        public void SetImage(string slot, Texture2D texture) => SetThumbnail(slot, texture);
-        public void AppendLog(string slot, UiLogSeverity severity, string line) => LogLine(slot, severity, line);
 
         public void Dispose()
         {

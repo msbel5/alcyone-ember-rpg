@@ -86,3 +86,14 @@ Packages/*/
 # without those binaries.
 Packages/com.unity.ai.assistant/*~/
 Packages/com.unity.ai.assistant/*~
+
+# CI / validation artifacts produced by Reports/* runs — keep PRD reports + screenshots, drop logs / xml / temp builds
+Reports/*.log
+Reports/*.xml
+Reports/test-results-*.xml
+Reports/test-results-*.log
+Reports/unity_compile*.log
+Reports/validation-fallback*.log
+Reports/build-windows64*.log
+Reports/build-*.log
+Reports/*.tmp
