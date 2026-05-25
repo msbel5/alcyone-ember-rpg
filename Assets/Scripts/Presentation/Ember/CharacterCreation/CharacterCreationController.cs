@@ -65,6 +65,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private int _rollSerial;
         private string _selectedClassId = string.Empty;
         private string _selectedAlignmentId = string.Empty;
+        private string _selectedBirthsignId = string.Empty;
+        private string _selectedBackgroundId = "smuggler";
         private string _suggestedClassId = "warrior";
         private string _firstSceneName = "SmithingOverworld";
         private int _rerollsRemaining = 3;
@@ -126,6 +128,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             _rollSerial = 0;
             _selectedClassId = string.Empty;
             _selectedAlignmentId = string.Empty;
+            _selectedBirthsignId = ResolveBirthsignId(_seed);
+            _selectedBackgroundId = "smuggler";
             _suggestedClassId = "warrior";
             _rerollsRemaining = 3;
             _storyLaunched = false;
@@ -359,7 +363,9 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         public void ChooseBackground(string background)
         {
-            AddLog("[choice] Background: " + (background ?? string.Empty) + ".");
+            if (!string.IsNullOrWhiteSpace(background))
+                _selectedBackgroundId = background.Trim().ToLowerInvariant();
+            AddLog("[choice] Background: " + _selectedBackgroundId + ".");
         }
 
         public void SelectClass(string classId)
@@ -430,7 +436,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 _firstSceneName,
                 _commanderName,
                 _selectedClassId,
+                _selectedBirthsignId,
                 _selectedAlignmentId,
+                _selectedBackgroundId,
+                _selectedSkills.OrderBy(v => v).ToArray(),
+                BuildAttributeRollSnapshot(),
+                _seed,
                 _answerChoiceIds.ToArray(),
                 PortraitJson);
             if (AutoLaunchWorldgen && Application.isPlaying)
@@ -596,6 +607,21 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             _logLines.Add(line);
             _panel?.LogLine("log", UiLogSeverity.Info, line);
+        }
+
+        private string[] BuildAttributeRollSnapshot()
+        {
+            var rows = new string[StatOrder.Length];
+            for (int i = 0; i < StatOrder.Length; i++)
+                rows[i] = StatOrder[i] + "=" + SafeStat(_assignedStats, StatOrder[i]);
+            return rows;
+        }
+
+        private static string ResolveBirthsignId(uint seed)
+        {
+            var rows = CharacterCreationCatalog.Birthsigns;
+            if (rows.Count == 0) return string.Empty;
+            return rows[(int)(seed % (uint)rows.Count)].Id;
         }
 
     }

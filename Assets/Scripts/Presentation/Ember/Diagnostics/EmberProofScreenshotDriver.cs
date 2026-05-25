@@ -28,6 +28,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         {
             _outputDir = ResolveOutputDir();
             Directory.CreateDirectory(_outputDir);
+            if (HasArg("--ember-rescue-proof"))
+            {
+                yield return RunRescueProof();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             yield return CaptureAfter(1.5f, "boot");
             yield return CaptureAfter(0.5f, "assetgen");
             LoadingScreen.Dismiss();
@@ -78,6 +85,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
         private static void DriveToBuildSelection(CharacterCreationController creation)
         {
+            creation.SetCommanderIdentity("Cinder Vey", "42", "proof");
             if (creation.CurrentStep == CharacterCreationController.CreationStep.CommanderIdentity)
                 creation.Continue();
             for (int i = 0; i < 10; i++)
@@ -101,10 +109,11 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 creation.Continue();
         }
 
-        private static void MountWorldgenProof()
+        private static WorldgenViewController MountWorldgenProof()
         {
             var go = new GameObject("WorldgenProofView");
             var view = go.AddComponent<WorldgenViewController>();
+            view.AutoLoadScene = false;
             view.Configure("SmithingOverworld");
             var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
             view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
@@ -114,6 +123,43 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 maxHistoryEvents: 5,
                 includeQuestionPrompt: true,
                 includeSyntheticFailure: true));
+            return view;
+        }
+
+        private IEnumerator RunRescueProof()
+        {
+            SceneManager.LoadScene("CharacterCreation");
+            yield return new WaitForSeconds(1.0f);
+            var creation = FindFirstObjectByType<CharacterCreationController>();
+            if (creation != null)
+            {
+                creation.AutoLaunchWorldgen = false;
+                DriveToBuildSelection(creation);
+            }
+            yield return CaptureFixedAfter(0.5f, "character_creation.png");
+
+            LoadingScreen.ShowForContext(new LoadingScreenContext("worldgen", "Building World", "generation"));
+            LoadingScreen.SetProgress(0.45f, "Projecting visible regions and NPC seeds");
+            LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Info, "[proof] visible worldgen loading");
+            MountWorldgenProof();
+            yield return CaptureFixedAfter(0.75f, "worldgen_loading.png");
+            LoadingScreen.Dismiss();
+
+            SceneManager.LoadScene("SmithingOverworld");
+            yield return CaptureFixedAfter(1.2f, "smithing_game.png");
+            yield return CaptureFixedAfter(0.2f, "spawn_proof.png");
+
+            SceneManager.LoadScene("TavernDialog");
+            yield return CaptureFixedAfter(1.2f, "tavern_game.png");
+        }
+
+        private IEnumerator CaptureFixedAfter(float seconds, string fileName)
+        {
+            yield return new WaitForSeconds(seconds);
+            var path = Path.Combine(_outputDir, fileName);
+            ScreenCapture.CaptureScreenshot(path);
+            Debug.Log("[EmberProofScreenshotDriver] wrote " + path);
+            yield return new WaitForSeconds(0.35f);
         }
 
         private IEnumerator CaptureAfter(float seconds, string name)

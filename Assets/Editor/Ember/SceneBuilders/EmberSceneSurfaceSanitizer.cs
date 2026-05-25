@@ -26,6 +26,7 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
         private static Material ChooseMaterial(string name, Material current)
         {
             if (name.Contains("Portal")) return EmberSceneMaterialLibrary.Portal();
+            if (current != null && !LooksDefaultWhite(current)) return current;
             if (name.Contains("Wall") || name.Contains("Boundary") || name.Contains("Backdrop")) return EmberSceneMaterialLibrary.Wall();
             if (name.Contains("Floor") || name.Contains("Ground") || name.Contains("Field") || name.Contains("Path")) return EmberSceneMaterialLibrary.Floor();
             if (current == null || LooksDefaultWhite(current)) return EmberSceneMaterialLibrary.Prop();

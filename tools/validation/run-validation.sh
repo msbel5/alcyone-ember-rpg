@@ -9,6 +9,8 @@ if [[ -n "${DOTNET_CLI:-}" ]]; then
   :
 elif command -v dotnet >/dev/null 2>&1; then
   DOTNET_CLI="$(command -v dotnet)"
+elif [[ -x "/mnt/c/Program Files/dotnet/dotnet.exe" ]]; then
+  DOTNET_CLI="/mnt/c/Program Files/dotnet/dotnet.exe"
 else
   DOTNET_CLI="/home/msbel/.dotnet/dotnet"
 fi
@@ -26,7 +28,7 @@ Runs local validation for Alcyone Ember RPG.
 - fallback: run only the pure-C# NUnit fallback harness; this is not a Unity EditMode run.
 
 Environment:
-  DOTNET_CLI              .NET CLI path for fallback (default: /home/msbel/.dotnet/dotnet)
+  DOTNET_CLI              .NET CLI path for fallback (default: PATH dotnet, Windows dotnet.exe under WSL, then /home/msbel/.dotnet/dotnet)
   UNITY_EDITOR/PATH/etc.  Unity editor binary candidates
   VALIDATION_OUTPUT_DIR   Evidence output directory (default: ./validation-output)
 USAGE

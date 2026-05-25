@@ -20,6 +20,11 @@ namespace EmberCrpg.Presentation.Ember.UI
         public string PlayerName { get; }
         public string CharacterClassId { get; }
         public string BirthsignId { get; }
+        public string AlignmentId { get; }
+        public string BackgroundId { get; }
+        public string[] SkillIds { get; }
+        public string[] AttributeRolls { get; }
+        public uint PortraitSeed { get; }
         public string[] AnswerChoiceIds { get; }
         public string PortraitJson { get; }
 
@@ -49,6 +54,37 @@ namespace EmberCrpg.Presentation.Ember.UI
             string birthsignId,
             string[] answerChoiceIds,
             string portraitJson)
+            : this(
+                mood,
+                calling,
+                start,
+                playerName,
+                characterClassId,
+                birthsignId,
+                string.Empty,
+                string.Empty,
+                null,
+                null,
+                0u,
+                answerChoiceIds,
+                portraitJson)
+        {
+        }
+
+        public EmberWorldGenIntent(
+            string mood,
+            string calling,
+            string start,
+            string playerName,
+            string characterClassId,
+            string birthsignId,
+            string alignmentId,
+            string backgroundId,
+            string[] skillIds,
+            string[] attributeRolls,
+            uint portraitSeed,
+            string[] answerChoiceIds,
+            string portraitJson)
         {
             Mood = mood ?? string.Empty;
             Calling = calling ?? string.Empty;
@@ -56,6 +92,11 @@ namespace EmberCrpg.Presentation.Ember.UI
             PlayerName = playerName ?? string.Empty;
             CharacterClassId = characterClassId ?? string.Empty;
             BirthsignId = birthsignId ?? string.Empty;
+            AlignmentId = alignmentId ?? string.Empty;
+            BackgroundId = backgroundId ?? string.Empty;
+            SkillIds = skillIds ?? new string[0];
+            AttributeRolls = attributeRolls ?? new string[0];
+            PortraitSeed = portraitSeed;
             AnswerChoiceIds = answerChoiceIds ?? new string[0];
             PortraitJson = portraitJson ?? string.Empty;
         }
@@ -67,17 +108,48 @@ namespace EmberCrpg.Presentation.Ember.UI
             && string.IsNullOrEmpty(PlayerName)
             && string.IsNullOrEmpty(CharacterClassId)
             && string.IsNullOrEmpty(BirthsignId)
+            && string.IsNullOrEmpty(AlignmentId)
+            && string.IsNullOrEmpty(BackgroundId)
             && string.IsNullOrEmpty(PortraitJson)
+            && SkillIds.Length == 0
+            && AttributeRolls.Length == 0
+            && PortraitSeed == 0u
             && AnswerChoiceIds.Length == 0;
 
         public EmberWorldGenIntent WithCharacter(string playerName, string characterClassId, string birthsignId, string[] answerChoiceIds)
         {
-            return new EmberWorldGenIntent(Mood, Calling, Start, playerName, characterClassId, birthsignId, answerChoiceIds, PortraitJson);
+            return new EmberWorldGenIntent(
+                Mood,
+                Calling,
+                Start,
+                playerName,
+                characterClassId,
+                birthsignId,
+                AlignmentId,
+                BackgroundId,
+                SkillIds,
+                AttributeRolls,
+                PortraitSeed,
+                answerChoiceIds,
+                PortraitJson);
         }
 
         public EmberWorldGenIntent WithPortraitJson(string portraitJson)
         {
-            return new EmberWorldGenIntent(Mood, Calling, Start, PlayerName, CharacterClassId, BirthsignId, AnswerChoiceIds, portraitJson);
+            return new EmberWorldGenIntent(
+                Mood,
+                Calling,
+                Start,
+                PlayerName,
+                CharacterClassId,
+                BirthsignId,
+                AlignmentId,
+                BackgroundId,
+                SkillIds,
+                AttributeRolls,
+                PortraitSeed,
+                AnswerChoiceIds,
+                portraitJson);
         }
     }
 }

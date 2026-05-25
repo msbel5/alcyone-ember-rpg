@@ -68,6 +68,7 @@ namespace EmberCrpg.Editor.Ember.Menu
         public static void RunRecipe(IEmberSceneRecipe recipe)
         {
             EmberSceneFactory.CreateEmpty();
+            EmberTerrainBuilder.BeginScene(recipe.SceneName);
             recipe.Build();
             EmberRuntimeHostBuilder.EnsureHost();
             EmberSceneSurfaceSanitizer.ApplyToOpenScene();
@@ -84,6 +85,7 @@ namespace EmberCrpg.Editor.Ember.Menu
         private static void RunUiRecipe(IEmberSceneRecipe recipe)
         {
             EmberSceneFactory.CreateEmpty();
+            EmberTerrainBuilder.BeginScene(recipe.SceneName);
             recipe.Build();
             EmberSceneSurfaceSanitizer.ApplyToOpenScene();
             var path = EmberSceneSavePolicy.ResolveScenePath(recipe.SceneName);

@@ -14,6 +14,7 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
         private readonly List<WorldgenVisibleEvent> _events = new List<WorldgenVisibleEvent>();
         private IUiPanel _panel;
         private WorldgenVisibleEvent _pendingQuestion;
+        private Coroutine _autoAdvanceRoutine;
         private float _autoAdvanceSeconds;
         private int _nextEventIndex;
         private string _startScene;
@@ -43,6 +44,11 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
             _startScene = string.IsNullOrWhiteSpace(startScene) ? "SmithingOverworld" : startScene;
             _panel = UiSurfaceLocator.Current?.Mount("WorldgenView");
             HideQuestionSlots();
+        }
+
+        private void Update()
+        {
+            TickAutoAdvance(Time.unscaledDeltaTime);
         }
 
         private void OnDestroy()
@@ -75,6 +81,7 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
             HideQuestionSlots();
             _pendingQuestion = null;
             _autoAdvanceSeconds = 0f;
+            _autoAdvanceRoutine = null;
             PumpEventsUntilPause();
         }
 
@@ -104,6 +111,7 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
                     _panel?.SetButtonHandler(slot, () => AnswerQuestion(captured));
                     _panel?.SetVisible(slot, true);
                 }
+                StartAutoAdvanceIfNeeded();
                 return;
             }
             if (ev.Kind == WorldgenVisibleEventKind.Failure)
@@ -133,6 +141,20 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
                 Handle(ev);
                 if (_pendingQuestion != null) return;
             }
+        }
+
+        private void StartAutoAdvanceIfNeeded()
+        {
+            if (!AutoAdvance || !Application.isPlaying || _autoAdvanceRoutine != null) return;
+            _autoAdvanceRoutine = StartCoroutine(AutoAdvanceAfterDelay());
+        }
+
+        private System.Collections.IEnumerator AutoAdvanceAfterDelay()
+        {
+            yield return new WaitForSecondsRealtime(1.5f);
+            if (AutoAdvance && _pendingQuestion != null)
+                AnswerQuestion(0);
+            _autoAdvanceRoutine = null;
         }
 
         private System.Collections.IEnumerator LoadStartSceneAfterPause()

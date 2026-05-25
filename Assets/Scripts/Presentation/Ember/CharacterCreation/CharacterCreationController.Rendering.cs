@@ -192,7 +192,9 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             builder.AppendLine("Dossier Preview");
             builder.AppendLine("Name: " + _commanderName);
             builder.AppendLine("Class: " + selectedClass.Name);
+            builder.AppendLine("Birthsign: " + _selectedBirthsignId);
             builder.AppendLine("Alignment: " + AlignmentName(_selectedAlignmentId));
+            builder.AppendLine("Background: " + _selectedBackgroundId);
             builder.AppendLine("Stats: " + string.Join(", ", StatOrder.Select(s => s + " " + SafeStat(_assignedStats, s))));
             builder.AppendLine("Skills: " + string.Join(", ", _selectedSkills.OrderBy(v => v)));
             builder.AppendLine("Starting Equipment: " + string.Join(", ", selectedClass.StartingEquipment));
@@ -283,6 +285,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             DontDestroyOnLoad(go);
             var view = go.AddComponent<WorldgenViewController>();
             view.Configure(_firstSceneName);
+            view.AutoAdvance = true;
             view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
                 maxRegions: 8,
                 maxSettlements: 12,

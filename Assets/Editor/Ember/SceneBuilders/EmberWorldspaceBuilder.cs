@@ -58,16 +58,37 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
         public static GameObject SpawnWorksiteMarker(
             string siteName,
             Vector3 worldPosition,
-            Transform parent = null)
+            Transform parent = null,
+            Material material = null,
+            Vector3? scale = null)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = siteName;
             if (parent != null) go.transform.SetParent(parent, worldPositionStays: false);
             go.transform.position = worldPosition;
-            go.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
+            go.transform.localScale = scale ?? new Vector3(1.5f, 1.5f, 1.5f);
             var renderer = go.GetComponent<MeshRenderer>();
-            if (renderer != null) renderer.sharedMaterial = EmberSceneMaterialLibrary.Prop();
+            if (renderer != null) renderer.sharedMaterial = material != null ? material : EmberSceneMaterialLibrary.Prop();
             AddRuntimeComponent(go, "EmberCrpg.Presentation.Ember.Views.WorksiteView");
+            return go;
+        }
+
+        public static GameObject SpawnDecorSprite(
+            string decorName,
+            string assetPath,
+            Vector3 worldPosition,
+            float targetHeight,
+            Transform parent = null)
+        {
+            var go = new GameObject(decorName);
+            if (parent != null) go.transform.SetParent(parent, worldPositionStays: false);
+            go.transform.position = worldPosition;
+
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = LoadSpriteAtPath(assetPath);
+            renderer.sortingOrder = 8;
+            FitBillboardToPlayableHeight(go.transform, renderer, targetHeight);
+            AddRuntimeComponent(go, "EmberCrpg.Presentation.Ember.Views.CameraFacingBillboard");
             return go;
         }
 
@@ -84,12 +105,16 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
         {
             if (string.IsNullOrEmpty(spriteName)) return null;
             var path = ResolveSpritePath(spriteName);
-            
-            // Try to load as a single sprite first
+            return LoadSpriteAtPath(path);
+        }
+
+        private static Sprite LoadSpriteAtPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+
             var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
             if (sprite != null) return sprite;
 
-            // For Multiple/Sliced, load all sub-assets and return the first sprite
             var all = AssetDatabase.LoadAllAssetsAtPath(path);
             foreach (var asset in all)
             {

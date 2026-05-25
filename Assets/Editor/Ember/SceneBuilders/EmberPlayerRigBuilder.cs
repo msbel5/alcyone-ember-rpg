@@ -21,6 +21,9 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             var rig = new GameObject("PlayerRig");
             rig.transform.SetPositionAndRotation(spawnPosition, spawnRotation);
 
+            var spawnMarker = new GameObject("PlayerSpawn");
+            spawnMarker.transform.SetPositionAndRotation(spawnPosition, spawnRotation);
+
             var controller = rig.AddComponent<CharacterController>();
             controller.height = DefaultCapsuleHeight;
             controller.radius = DefaultCapsuleRadius;
@@ -45,6 +48,9 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
                 farClip: 500f,
                 localEyePosition: new Vector3(0f, DefaultCapsuleHeight * 0.95f, 0f));
 
+            var heroAnchor = new GameObject("HeroCameraAnchor");
+            heroAnchor.transform.SetPositionAndRotation(eyeCamera.transform.position, eyeCamera.transform.rotation);
+
             // AAA Polish: We'll skip CinemachineBrain for now as it overrides manual EyeCamera rotation
             // and the user wants manual look control back.
             // eyeCamera.gameObject.AddComponent<CinemachineBrain>();
@@ -67,7 +73,7 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
                 var volume = volumeGo.GetComponent<Volume>();
                 volume.isGlobal = true;
                 volume.priority = 1;
-                
+
                 string profilePath = "Assets/Settings/EmberGlobalVolumeProfile.asset";
                 volume.sharedProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath);
             }
@@ -77,7 +83,7 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             AddScriptByName(rig, "EmberPlayerInventoryToggle");
             AddScriptByName(rig, "EmberPlayerSpellCaster");
             AddScriptByName(rig, "EmberPlayerMeleeSwing");
-            
+
             return rig;
         }
 
@@ -90,9 +96,8 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
                 type = System.Type.GetType($"EmberCrpg.Presentation.Ember.Combat.{scriptName}, EmberCrpg.Presentation");
             if (type == null)
                 type = System.Type.GetType($"EmberCrpg.Presentation.Ember.UI.{scriptName}, EmberCrpg.Presentation");
-            
+
             if (type != null) host.AddComponent(type);
         }
     }
 }
-
