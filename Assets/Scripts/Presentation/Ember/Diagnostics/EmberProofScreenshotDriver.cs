@@ -1,9 +1,11 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
+using EmberCrpg.Presentation.Ember.CharacterCreation;
+using EmberCrpg.Presentation.Ember.Loading;
 using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Presentation.Ember.UI;
+using EmberCrpg.Simulation.Worldgen;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -26,17 +28,77 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         {
             _outputDir = ResolveOutputDir();
             Directory.CreateDirectory(_outputDir);
-            yield return CaptureAfter(1.5f, "proof_01_boot_or_mainmenu");
-            yield return CaptureAfter(2.0f, "proof_02_mainmenu");
+            yield return CaptureAfter(1.5f, "boot");
+            yield return CaptureAfter(0.5f, "assetgen");
+            LoadingScreen.Dismiss();
+            yield return new WaitForSeconds(0.4f);
 
-            var menu = FindFirstObjectByType<EmberMainMenuUI>();
-            if (menu != null) menu.NewGame();
-            yield return CaptureAfter(3.0f, "proof_03_after_new_game");
-            yield return CaptureAfter(2.0f, "proof_04_scene_" + SceneManager.GetActiveScene().name);
+            SceneManager.LoadScene("MainMenu");
+            yield return CaptureAfter(1.0f, "mainmenu");
+
+            SceneManager.LoadScene("CharacterCreation");
+            yield return new WaitForSeconds(1.0f);
+            var creation = FindFirstObjectByType<CharacterCreationController>();
+            if (creation != null)
+            {
+                creation.AutoLaunchWorldgen = false;
+                DriveToBuildSelection(creation);
+            }
+            yield return CaptureAfter(0.5f, "cc_skill");
+
+            if (creation != null)
+            {
+                creation.Back();
+                yield return null;
+            }
+            yield return CaptureAfter(0.5f, "cc_dice");
+
+            if (creation != null)
+            {
+                DriveToDossier(creation);
+                yield return null;
+            }
+            yield return CaptureAfter(0.5f, "cc_portrait");
+
+            if (creation != null)
+            {
+                Destroy(creation.gameObject);
+                yield return null;
+            }
+
             MountWorldgenProof();
-            yield return CaptureAfter(1.0f, "proof_05_worldgen_log");
+            yield return CaptureAfter(1.0f, "worldgen_question");
+            var worldgen = FindFirstObjectByType<WorldgenViewController>();
+            if (worldgen != null && worldgen.QuestionOpen)
+                worldgen.AnswerQuestion(0);
+            yield return CaptureAfter(0.5f, "assetgen_failures");
 
             if (HasArg("--ember-proof-quit")) Application.Quit();
+        }
+
+        private static void DriveToBuildSelection(CharacterCreationController creation)
+        {
+            if (creation.CurrentStep == CharacterCreationController.CreationStep.CommanderIdentity)
+                creation.Continue();
+            for (int i = 0; i < 10; i++)
+                creation.SelectAnswerByIndex(i % 3);
+            creation.SkipHistoryReveal();
+            creation.Continue();
+            creation.RollAllAttributes();
+            creation.KeepThisRoll();
+            creation.Continue();
+            creation.SelectClass("mage");
+            creation.SelectAlignment("neutral_good");
+            creation.ToggleSkill("insight");
+            creation.ToggleSkill("deception");
+        }
+
+        private static void DriveToDossier(CharacterCreationController creation)
+        {
+            if (creation.CurrentStep == CharacterCreationController.CreationStep.StatRolling)
+                creation.Continue();
+            if (creation.CurrentStep == CharacterCreationController.CreationStep.BuildSelection && creation.CanAdvance)
+                creation.Continue();
         }
 
         private static void MountWorldgenProof()
@@ -44,17 +106,14 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             var go = new GameObject("WorldgenProofView");
             var view = go.AddComponent<WorldgenViewController>();
             view.Configure("SmithingOverworld");
-            view.Play(new List<WorldgenVisibleEvent>
-            {
-                WorldgenVisibleEvent.Region("ash-coast"),
-                WorldgenVisibleEvent.Settlement("cinderwatch", "ash-coast"),
-                WorldgenVisibleEvent.Npc("npc-smith-001", "{\"archetype_id\":\"humanoid_male\",\"world_style_anchor\":\"ember-warm\"}"),
-                WorldgenVisibleEvent.Dice("first omen", 20, 13),
-                WorldgenVisibleEvent.Question("q-start", "Choose the first road.", new[] { "north", "below" }),
-                WorldgenVisibleEvent.Failure("sample_generation_failure"),
-                WorldgenVisibleEvent.Completed("World built. Regions: 1, Settlements: 1, NPCs: 1. 1 failures."),
-            });
-            view.AnswerQuestion(0);
+            var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
+            view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
+                maxRegions: 2,
+                maxSettlements: 3,
+                maxNpcs: 5,
+                maxHistoryEvents: 5,
+                includeQuestionPrompt: true,
+                includeSyntheticFailure: true));
         }
 
         private IEnumerator CaptureAfter(float seconds, string name)

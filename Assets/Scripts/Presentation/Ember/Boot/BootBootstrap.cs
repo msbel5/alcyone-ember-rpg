@@ -4,10 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using EmberCrpg.Domain.Forge;
 using EmberCrpg.Domain.Generation;
-using EmberCrpg.Presentation.Ember.Forge;
+using EmberCrpg.Presentation.Ember.Loading;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Simulation.Generation;
-using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -20,8 +19,9 @@ namespace EmberCrpg.Presentation.Ember.Boot
         private async void Awake()
         {
             EnsureSurface();
-            var forge = ForgeLocator.AssetForge ?? new SkipAssetForge();
-            var result = await RunAsync(forge, Application.dataPath, _nextScene, CancellationToken.None);
+            EnsureForgeBootstrap();
+            var forge = EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge ?? new SkipAssetForge();
+            var result = await RunAsync(forge, RuntimeRoot(), _nextScene, CancellationToken.None);
             if (!string.IsNullOrEmpty(result.RequestedScene)) _ = SceneManager.LoadSceneAsync(result.RequestedScene);
         }
 
@@ -33,28 +33,91 @@ namespace EmberCrpg.Presentation.Ember.Boot
 
         private static async Task<BootFlowResult> RunAsync(IAssetForge forge, string root, string nextScene, CancellationToken ct, int maxEntries = int.MaxValue)
         {
-            var panel = UiSurfaceLocator.Current?.Mount("BootScreen");
+            LoadingScreen.ShowForContext(new LoadingScreenContext("boot", "Ember Boot", "area_transition"));
+            LoadingScreen.SetInputBlocking(true);
+            LoadingScreen.SetProgress(0f, "Scanning core manifests");
+            LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Info, "[boot] visible generation starting");
             var manifest = CoreAssetManifest.CreateDefault();
-            var entries = new System.Collections.Generic.List<ManifestEntry>();
+            var entries = new System.Collections.Generic.List<ManifestEntry>(manifest.Entries.Count);
             for (int i = 0; i < manifest.Entries.Count && entries.Count < maxEntries; i++)
-                if (manifest.Entries[i].RequiresGeneration) entries.Add(manifest.Entries[i]);
+                entries.Add(manifest.Entries[i]);
 
             var log = new GenerationFailureLog(Path.Combine(root, "Logs", "generation-failures.json"));
-            var pipeline = new VisibleGenerationPipeline(root, forge, StaticPromptCatalog.CreateDefault(), log);
-            int started = 0, succeeded = 0, failed = 0;
-            pipeline.EntryStarted += e => { started++; panel?.LogLine("log", UiLogSeverity.Info, "[start] " + e.Id); };
-            pipeline.EntrySucceeded += (e, bytes, ms) => { succeeded++; panel?.LogLine("log", UiLogSeverity.Success, "[ok] " + e.Id); };
-            pipeline.EntryFailed += (e, reason, ex) => { failed++; panel?.LogLine("log", UiLogSeverity.Error, "[error] " + e.Id + " " + reason); };
-            await pipeline.RunAsync(entries, ct);
-            panel?.LogLine("log", UiLogSeverity.Success, "Generation complete: " + succeeded + "/" + started + " succeeded, " + failed + " failed.");
+            var flow = new VisibleGenerationFlow(root, forge, StaticPromptCatalog.CreateDefault(), log);
+
+            int scanned = 0;
+            int started = 0;
+            int succeeded = 0;
+            int failed = 0;
+
+            flow.ScanRow += (row, entry) =>
+            {
+                scanned++;
+                LoadingScreen.SetProgress(entries.Count == 0 ? 1f : (float)scanned / entries.Count, "Scan " + row.EntryId);
+                var severity = row.State == EntryState.RequiresGeneration ? EmberCrpg.Ui.Foundation.UiLogSeverity.Warning : EmberCrpg.Ui.Foundation.UiLogSeverity.Info;
+                LoadingScreen.LogLine(severity, "[scan] " + row.EntryId + " => " + row.State.ToString().ToLowerInvariant());
+            };
+            flow.ScanThumbnail += (row, entry, bytes) =>
+            {
+                LoadingScreen.ShowThumbnail(ToTexture(bytes), row.EntryId + " (cached)");
+            };
+            flow.EntryStarted += e =>
+            {
+                started++;
+                LoadingScreen.SetProgress(0.5f + (entries.Count == 0 ? 0f : 0.5f * ((float)(started - 1) / entries.Count)), "Generating " + e.Id);
+                LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Info, "[start] " + e.Id + " " + e.Width + "x" + e.Height + " model=" + e.ModelHint);
+            };
+            flow.EntrySucceeded += (e, bytes, ms) =>
+            {
+                succeeded++;
+                LoadingScreen.SetProgress(0.5f + (entries.Count == 0 ? 0f : 0.5f * ((float)started / entries.Count)), "Generated " + e.Id);
+                LoadingScreen.ShowThumbnail(ToTexture(bytes), e.Id + " (" + ms + "ms)");
+                LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Success, "[ok] " + e.Id + " " + ms + "ms");
+            };
+            flow.EntryFailed += (e, reason, ex) =>
+            {
+                failed++;
+                LoadingScreen.SetProgress(0.5f + (entries.Count == 0 ? 0f : 0.5f * ((float)started / entries.Count)), "Skipped " + e.Id);
+                LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Error, "[error] " + e.Id + " " + reason + (string.IsNullOrEmpty(ex) ? string.Empty : " (" + ex + ")"));
+            };
+
+            var result = await flow.RunCoreAssetTopUpAsync(entries, ct, maxEntries);
+            succeeded = result.SucceededGeneration;
+            failed = result.FailedGeneration;
+            started = result.StartedGeneration;
+            LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Success, "Generation complete: " + succeeded + "/" + started + " succeeded, " + failed + " failed.");
+            LoadingScreen.SetProgress(1f, "Entering main menu");
             await Task.Delay(2500, ct);
-            if (panel != null) UiSurfaceLocator.Current?.Unmount(panel);
+            LoadingScreen.Dismiss();
             return new BootFlowResult(started, succeeded, failed, nextScene);
         }
 
         private static void EnsureSurface()
         {
             VisibleUiSurface.Ensure();
+        }
+
+        private static void EnsureForgeBootstrap()
+        {
+            if (EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge != null) return;
+            var existing = FindFirstObjectByType<EmberCrpg.Presentation.Ember.Forge.ForgeBootstrap>();
+            if (existing != null) return;
+            var go = new GameObject("ForgeBootstrap");
+            DontDestroyOnLoad(go);
+            go.AddComponent<EmberCrpg.Presentation.Ember.Forge.ForgeBootstrap>();
+        }
+
+        private static Texture2D ToTexture(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0) return null;
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            return texture.LoadImage(bytes) ? texture : null;
+        }
+
+        private static string RuntimeRoot()
+        {
+            var parent = Directory.GetParent(Application.dataPath);
+            return parent != null ? parent.FullName : Application.dataPath;
         }
 
         private sealed class SkipAssetForge : IAssetForge

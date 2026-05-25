@@ -31,17 +31,44 @@ namespace EmberCrpg.Tests.PlayMode.Loading
         [UnityTest]
         public IEnumerator ShowUpdateThumbnailHide_RoundTripsAndReusesController()
         {
-            LoadingScreen.Show("Loading", "World");
+            LoadingScreen.ShowForContext(new LoadingScreenContext("ar1000", "Candlekeep", "load"));
             LoadingScreen.SetProgress(0.3f, "Step A");
             LoadingScreen.LogLine(UiLogSeverity.Info, "x");
             LoadingScreen.ShowThumbnail(new Texture2D(2, 2), "y");
+            LoadingScreen.SetInputBlocking(true);
+            LoadingScreen.StartTipRotation();
+            LoadingScreen.TickEllipsisAnimation(0.5f);
+            LoadingScreen.SetLoadingType("save");
+            Assert.That(LoadingScreen.BuildLoadingLabelText(), Does.StartWith("Saving"));
+            var context = LoadingScreen.GetLoadingContext();
+            Assert.That(context.AreaId, Is.EqualTo("ar1000"));
+            Assert.That(context.AreaName, Is.EqualTo("Candlekeep"));
+            Assert.That(LoadingScreen.IsVisibleLoading(), Is.True);
             Assert.That(Object.FindObjectsByType<LoadingScreenController>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
-            LoadingScreen.Hide();
+            LoadingScreen.Dismiss();
+            yield return new WaitForSecondsRealtime(0.35f);
+            Assert.That(LoadingScreen.IsVisibleLoading(), Is.False);
             LoadingScreen.Show("Loading", "Again");
             Assert.That(Object.FindObjectsByType<LoadingScreenController>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
             if (Application.isPlaying) SceneManager.CreateScene("LoadingScreenApiContractTest");
             else EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator LoadingLabel_EllipsisCycles()
+        {
+            LoadingScreen.ShowForContext(new LoadingScreenContext("boot", "Boot", "load"));
+            var first = LoadingScreen.BuildLoadingLabelText();
+            LoadingScreen.TickEllipsisAnimation(0.5f);
+            var second = LoadingScreen.BuildLoadingLabelText();
+            LoadingScreen.TickEllipsisAnimation(0.5f);
+            var third = LoadingScreen.BuildLoadingLabelText();
+            Assert.That(first, Does.StartWith("Loading"));
+            Assert.That(second, Is.Not.EqualTo(first));
+            Assert.That(third, Is.Not.EqualTo(second));
+            LoadingScreen.Dismiss();
+            yield return new WaitForSecondsRealtime(0.35f);
         }
     }
 }

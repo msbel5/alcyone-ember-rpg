@@ -1,3 +1,6 @@
+// Why this file is intentionally long: it implements the full PRD loading-screen lifecycle, visible progress, tips, backdrop, and fade behavior.
+using System;
+using System.Collections.Generic;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 
@@ -5,38 +8,298 @@ namespace EmberCrpg.Presentation.Ember.Loading
 {
     public sealed class LoadingScreenController : MonoBehaviour
     {
+        private const float TipRotationSeconds = 4f;
+        private const float EllipsisCycleSeconds = 0.5f;
+        private const float FadeInSeconds = 0.2f;
+        private const float FadeOutSeconds = 0.3f;
+
+        private static readonly string[] LoadingTips =
+        {
+            "Press Space to pause time in the middle of combat.",
+            "Right-click a spell icon to inspect its details.",
+            "Rest replenishes spells and health, but travel at night is risky.",
+            "Some enemies ignore weak enchantment tiers.",
+            "Check your journal for quest updates.",
+            "Save often and keep multiple slots."
+        };
+
         private IUiPanel _panel;
+        private LoadingScreenContext _context = new LoadingScreenContext(string.Empty, string.Empty, "load");
+        private float _progress;
+        private int _currentTipIndex;
+        private int _ellipsisFrame;
+        private float _tipTimer;
+        private float _ellipsisTimer;
+        private bool _tipRotationRunning;
+        private bool _inputBlocked;
+        private bool _visible;
+        private bool _fadingIn;
+        private bool _fadingOut;
+        private float _fadeTimer;
+        private string _title = "Loading";
+        private readonly HashSet<string> _missingBackdropLogged = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public event Action<Dictionary<string, string>> Shown;
+        public event Action Dismissed;
+
+        private void Update()
+        {
+            if (!_visible) return;
+
+            var delta = Time.unscaledDeltaTime;
+            if (_tipRotationRunning)
+            {
+                _tipTimer += delta;
+                if (_tipTimer >= TipRotationSeconds)
+                {
+                    _tipTimer = 0f;
+                    AdvanceTip();
+                }
+            }
+
+            TickEllipsisAnimation(delta);
+            TickFade(delta);
+        }
 
         public void Show(string title, string subtitle)
         {
+            SetTitle(title);
+            SetAreaName(subtitle);
+            ShowForContext(new LoadingScreenContext(string.Empty, subtitle, "load"));
+        }
+
+        public void ShowForContext(LoadingScreenContext context)
+        {
             if (_panel == null) _panel = UiSurfaceLocator.Current?.Mount("LoadingScreen");
-            _panel?.SetText("title", title);
-            _panel?.SetText("subtitle", subtitle);
+            _context = context ?? new LoadingScreenContext(string.Empty, string.Empty, "load");
+            _visible = true;
+            _fadingOut = false;
+            SetInputBlocking(true);
+            SetLoadingType(_context.LoadingType);
+            SetAreaName(_context.AreaName);
+            var texture = LoadBackdropForArea(_context.AreaId);
+            ApplyBackdrop(texture);
             _panel?.SetVisible("root", true);
+            StartTipRotation();
+            FadeIn();
+            Shown?.Invoke(_context.ToDictionary());
         }
 
         public void SetProgress(float normalized, string currentLabel)
         {
-            _panel?.SetProgress("progress", normalized);
-            _panel?.SetText("current", currentLabel);
+            _progress = Mathf.Clamp01(normalized);
+            _panel?.SetProgress("progress", _progress);
+            _panel?.SetText("current", currentLabel ?? string.Empty);
         }
 
         public void LogLine(UiLogSeverity severity, string line)
         {
-            _panel?.LogLine("log", severity, line);
+            _panel?.LogLine("log", severity, line ?? string.Empty);
         }
 
         public void ShowThumbnail(Texture2D texture, string caption)
         {
             _panel?.SetThumbnail("thumbnail", texture);
-            _panel?.SetText("caption", caption);
+            _panel?.SetText("caption", caption ?? string.Empty);
+        }
+
+        public void Dismiss()
+        {
+            if (_panel == null) return;
+            if (!_visible)
+            {
+                HideInternal();
+                return;
+            }
+
+            StopTipRotation();
+            if (Application.isBatchMode)
+            {
+                HideInternal();
+                return;
+            }
+
+            FadeOut();
+        }
+
+        public bool IsVisibleLoading()
+        {
+            return _visible;
+        }
+
+        public void SetLoadingContext(LoadingScreenContext context)
+        {
+            _context = context ?? new LoadingScreenContext(string.Empty, string.Empty, "load");
+            SetAreaId(_context.AreaId);
+            SetAreaName(_context.AreaName);
+            SetLoadingType(_context.LoadingType);
+        }
+
+        public LoadingScreenContext GetLoadingContext()
+        {
+            return _context;
+        }
+
+        public void SetAreaId(string areaId)
+        {
+            _context = _context.WithAreaId(areaId ?? string.Empty);
+            ApplyBackdrop(LoadBackdropForArea(_context.AreaId));
+        }
+
+        public void SetAreaName(string areaName)
+        {
+            _context = _context.WithAreaName(areaName ?? string.Empty);
+            _panel?.SetText("area", _context.AreaName);
+            _panel?.SetText("subtitle", _context.AreaName);
+        }
+
+        public void SetLoadingType(string loadingType)
+        {
+            _context = _context.WithLoadingType(loadingType);
+            _panel?.SetText("title", _title);
+            _panel?.SetText("status", StatusPrefixFor(_context.LoadingType));
+            _panel?.SetText("loading", BuildLoadingLabelText());
+        }
+
+        public Texture2D LoadBackdropForArea(string areaId)
+        {
+            if (string.IsNullOrWhiteSpace(areaId))
+                return Resources.Load<Texture2D>("Loading/generic");
+
+            var normalized = areaId.Trim();
+            var specific = Resources.Load<Texture2D>("Loading/" + normalized);
+            if (specific != null) return specific;
+
+            if (_missingBackdropLogged.Add(normalized))
+                Debug.LogWarning("[LoadingScreen] Missing backdrop for area '" + normalized + "', using generic fallback.");
+
+            return Resources.Load<Texture2D>("Loading/generic");
+        }
+
+        public void ApplyBackdrop(Texture2D texture)
+        {
+            _panel?.SetThumbnail("backdrop", texture);
+        }
+
+        public void StartTipRotation()
+        {
+            _tipRotationRunning = true;
+            _tipTimer = 0f;
+            _panel?.SetText("tip", GetCurrentTip());
+        }
+
+        public void StopTipRotation()
+        {
+            _tipRotationRunning = false;
+        }
+
+        public void AdvanceTip()
+        {
+            _currentTipIndex = (_currentTipIndex + 1) % LoadingTips.Length;
+            _panel?.SetText("tip", GetCurrentTip());
+        }
+
+        public string GetCurrentTip()
+        {
+            return LoadingTips[_currentTipIndex];
+        }
+
+        public float GetProgress()
+        {
+            return _progress;
+        }
+
+        public void TickEllipsisAnimation(float deltaTime)
+        {
+            if (!_visible) return;
+
+            _ellipsisTimer += Mathf.Max(0f, deltaTime);
+            if (_ellipsisTimer >= EllipsisCycleSeconds)
+            {
+                _ellipsisTimer = 0f;
+                _ellipsisFrame = (_ellipsisFrame + 1) % 4;
+                _panel?.SetText("loading", BuildLoadingLabelText());
+            }
+        }
+
+        public string BuildLoadingLabelText()
+        {
+            return StatusPrefixFor(_context.LoadingType) + new string('.', _ellipsisFrame);
+        }
+
+        public void FadeIn()
+        {
+            _fadingOut = false;
+            _fadingIn = true;
+            _fadeTimer = 0f;
+            _panel?.SetProgress("fade", 0f);
+        }
+
+        public void FadeOut()
+        {
+            _fadingIn = false;
+            _fadingOut = true;
+            _fadeTimer = 0f;
+        }
+
+        public void SetInputBlocking(bool blocked)
+        {
+            _inputBlocked = blocked;
+            _panel?.SetVisible("inputBlock", blocked);
+        }
+
+        public void SetTitle(string title)
+        {
+            _title = string.IsNullOrWhiteSpace(title) ? "Loading" : title;
+            _panel?.SetText("title", _title);
         }
 
         public void Hide()
         {
-            if (_panel == null) return;
-            UiSurfaceLocator.Current?.Unmount(_panel);
+            Dismiss();
+        }
+
+        private void TickFade(float delta)
+        {
+            if (_fadingIn)
+            {
+                _fadeTimer += delta;
+                var alpha = FadeInSeconds <= 0f ? 1f : Mathf.Clamp01(_fadeTimer / FadeInSeconds);
+                _panel?.SetProgress("fade", alpha);
+                if (_fadeTimer >= FadeInSeconds)
+                {
+                    _fadingIn = false;
+                    _panel?.SetProgress("fade", 1f);
+                }
+            }
+
+            if (_fadingOut)
+            {
+                _fadeTimer += delta;
+                var alpha = FadeOutSeconds <= 0f ? 0f : 1f - Mathf.Clamp01(_fadeTimer / FadeOutSeconds);
+                _panel?.SetProgress("fade", alpha);
+                if (_fadeTimer >= FadeOutSeconds)
+                {
+                    _fadingOut = false;
+                    HideInternal();
+                }
+            }
+        }
+
+        private void HideInternal()
+        {
+            _visible = false;
+            SetInputBlocking(false);
+            if (_panel != null) UiSurfaceLocator.Current?.Unmount(_panel);
             _panel = null;
+            Dismissed?.Invoke();
+        }
+
+        private static string StatusPrefixFor(string loadingType)
+        {
+            if (string.Equals(loadingType, "save", StringComparison.OrdinalIgnoreCase)) return "Saving";
+            if (string.Equals(loadingType, "area_transition", StringComparison.OrdinalIgnoreCase)) return "Entering area";
+            return "Loading";
         }
     }
 }

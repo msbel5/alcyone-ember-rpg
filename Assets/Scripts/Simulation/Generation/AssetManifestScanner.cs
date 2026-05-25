@@ -20,14 +20,25 @@ namespace EmberCrpg.Simulation.Generation
                 var entry = entries[i];
                 var fullPath = Resolve(projectRoot, entry.ExpectedPath);
                 if (File.Exists(fullPath)) rows.Add(new EntryRow(entry.Id, entry.Category, entry.ExpectedPath, EntryState.Cached, "cached"));
-                else rows.Add(new EntryRow(entry.Id, entry.Category, entry.ExpectedPath, entry.RequiresGeneration ? EntryState.Missing : EntryState.Missing, entry.RequiresGeneration ? "requires_generation" : "missing_non_generated_asset"));
+                else rows.Add(new EntryRow(entry.Id, entry.Category, entry.ExpectedPath, entry.RequiresGeneration ? EntryState.RequiresGeneration : EntryState.Missing, entry.RequiresGeneration ? "requires_generation" : "missing_non_generated_asset"));
             }
             return Task.FromResult(new ManifestScanReport(rows));
         }
 
         public static string Resolve(string projectRoot, string assetsRelativePath)
         {
-            return Path.Combine(projectRoot, assetsRelativePath.Replace('/', Path.DirectorySeparatorChar));
+            var normalized = (assetsRelativePath ?? string.Empty).Replace('/', Path.DirectorySeparatorChar);
+            if (Path.IsPathRooted(normalized)) return normalized;
+
+            var root = Path.GetFullPath(projectRoot);
+            if (normalized.StartsWith("Assets" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)), "Assets", StringComparison.OrdinalIgnoreCase))
+            {
+                var parent = Directory.GetParent(root);
+                if (parent != null) return Path.Combine(parent.FullName, normalized);
+            }
+
+            return Path.Combine(root, normalized);
         }
     }
 }

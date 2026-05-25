@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EmberCrpg.Presentation.Ember.Worldgen;
+using EmberCrpg.Simulation.Worldgen;
 using EmberCrpg.Tests.PlayMode.Support;
 using EmberCrpg.Ui.Foundation;
 using NUnit.Framework;
@@ -32,6 +33,33 @@ namespace EmberCrpg.Tests.PlayMode.Worldgen
             view.Play(new List<WorldgenVisibleEvent> { WorldgenVisibleEvent.Question("q2", "Pick", new[] { "a", "b" }) });
             view.TickAutoAdvance(1.6f);
             Assert.That(view.LogLines.Any(l => l.Contains("q2")), Is.True);
+            Assert.That(view.FailureJsonLines.Count, Is.EqualTo(1));
+            Assert.That(view.FailureJsonLines[0], Does.Contain("\"continue\":true"));
+            Assert.That(view.RequestedScene, Is.EqualTo("SmithingOverworld"));
+        }
+
+        [Test]
+        public void ViewProjectsGeneratedWorldAndAppendsFailureJsonLinesWhileContinuing()
+        {
+            var view = WorldgenViewController.CreateForTests("SmithingOverworld");
+            view.AutoScroll = false;
+
+            var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
+            view.PlayFromGeneratedWorld(
+                world,
+                new WorldgenProjectionOptions(
+                    maxRegions: 2,
+                    maxSettlements: 2,
+                    maxNpcs: 2,
+                    maxHistoryEvents: 3,
+                    includeQuestionPrompt: false,
+                    includeSyntheticFailure: true));
+
+            Assert.That(view.AutoScroll, Is.False);
+            Assert.That(view.FailureJsonLines.Count, Is.EqualTo(1));
+            Assert.That(view.LogLines.Any(l => l.StartsWith("[failure-jsonl]")), Is.True);
+            Assert.That(view.LogLines.Any(l => l.StartsWith("[done]")), Is.True);
+            Assert.That(view.StartSceneRequested, Is.True);
             Assert.That(view.RequestedScene, Is.EqualTo("SmithingOverworld"));
         }
     }

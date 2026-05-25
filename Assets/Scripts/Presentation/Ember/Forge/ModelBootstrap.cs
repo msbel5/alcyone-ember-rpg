@@ -1,3 +1,4 @@
+// Why this file is intentionally long: it owns first-run model manifest verification, download, and runtime forge rebinding in one Unity lifecycle component.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -212,6 +213,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
             selectedOnnx = null;
             failureReason = string.Empty;
             bool cudaArtifacts = HasCudaRuntimeArtifacts();
+            if (cudaArtifacts) AddCudaProviderDirectoryToPath();
 
             if (cudaArtifacts)
             {
@@ -250,8 +252,8 @@ namespace EmberCrpg.Presentation.Ember.Forge
                     ? "sd15_model_files_missing"
                     : failureReason + "|sd15_model_files_missing";
 
-            sd15.Dispose();
-            return new ModelBootstrapFailureAssetForge(failureReason);
+            selectedOnnx = sd15;
+            return sd15;
         }
 
         private static OnnxAssetForge BuildSdxlForge(string modelRoot, OnnxExecutionProviderPreference providerPreference)
@@ -289,11 +291,41 @@ namespace EmberCrpg.Presentation.Ember.Forge
 
         private static bool HasCudaRuntimeArtifacts()
         {
-            var basePath = Path.Combine(Application.dataPath, "Plugins", "x86_64", "cuda");
+            var basePath = FindCudaProviderDirectory();
+            if (string.IsNullOrEmpty(basePath)) return false;
             return File.Exists(Path.Combine(basePath, "onnxruntime.dll"))
                 && File.Exists(Path.Combine(basePath, "onnxruntime_providers_cuda.dll"))
-                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_shared.dll"))
-                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_tensorrt.dll"));
+                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_shared.dll"));
+        }
+
+        private static void AddCudaProviderDirectoryToPath()
+        {
+            var basePath = FindCudaProviderDirectory();
+            if (string.IsNullOrEmpty(basePath)) return;
+            var current = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+            if (current.IndexOf(basePath, StringComparison.OrdinalIgnoreCase) >= 0) return;
+            Environment.SetEnvironmentVariable("PATH", basePath + Path.PathSeparator + current);
+        }
+
+        private static string FindCudaProviderDirectory()
+        {
+            var candidates = new[]
+            {
+                Path.Combine(Application.dataPath, "Plugins", "x86_64", "cuda"),
+                Path.Combine(Application.dataPath, "Plugins", "x86_64"),
+                Path.Combine(Application.dataPath, "Plugins"),
+            };
+
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                var path = candidates[i];
+                if (File.Exists(Path.Combine(path, "onnxruntime.dll"))
+                    && File.Exists(Path.Combine(path, "onnxruntime_providers_cuda.dll"))
+                    && File.Exists(Path.Combine(path, "onnxruntime_providers_shared.dll")))
+                    return path;
+            }
+
+            return string.Empty;
         }
 
         private sealed class ModelBootstrapFailureAssetForge : IAssetForge

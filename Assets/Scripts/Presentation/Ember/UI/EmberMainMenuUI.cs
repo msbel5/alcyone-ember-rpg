@@ -1,4 +1,12 @@
-// Why this file is intentionally long: it owns the legacy UGUI main-menu fallback so the shipped MainMenu scene stays playable even when only the script root exists.
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using EmberCrpg.Domain.Generation;
+using EmberCrpg.Presentation.Ember.Forge;
+using EmberCrpg.Presentation.Ember.Loading;
+using EmberCrpg.Simulation.Generation;
+using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -9,212 +17,123 @@ namespace EmberCrpg.Presentation.Ember.UI
     public sealed class EmberMainMenuUI : MonoBehaviour
     {
         [SerializeField] private string _firstSceneName = "CharacterCreation";
-        private Transform _uiRoot;
+
+        private IUiPanel _titlePanel;
 
         private void Awake()
         {
-            Debug.Log("[EmberMainMenuUI] Awake called.");
             EnsureEventSystemExists();
             UnlockCursor();
-            _uiRoot = EnsureCanvasShell();
-            EnsureFallbackMenuHierarchy();
 
-            var newGameBtn = FindButton("New Game");
-            if (newGameBtn != null) 
+            var newGameButton = FindButton("New Game");
+            if (newGameButton != null)
             {
-                Debug.Log("[EmberMainMenuUI] Found New Game button.");
-                newGameBtn.onClick.AddListener(NewGame);
-            }
-            else
-            {
-                Debug.LogWarning("[EmberMainMenuUI] FAILED to find New Game button.");
+                newGameButton.onClick.AddListener(NewGame);
+                FindButton("Continue")?.onClick.AddListener(Continue);
+                FindButton("Quit")?.onClick.AddListener(Quit);
+                return;
             }
 
-            var continueBtn = FindButton("Continue");
-            if (continueBtn != null) continueBtn.onClick.AddListener(Continue);
-
-            var quitBtn = FindButton("Quit");
-            if (quitBtn != null) quitBtn.onClick.AddListener(Quit);
+            MountUiToolkitTitleMenu();
         }
 
-        private static void EnsureEventSystemExists()
+        private void OnDestroy()
         {
-            if (EventSystem.current != null) return;
-            var existing = Object.FindFirstObjectByType<EventSystem>(FindObjectsInactive.Include);
-            if (existing != null) return;
-            _ = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
-        }
-
-        private static void UnlockCursor()
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            if (_titlePanel == null) return;
+            UiSurfaceLocator.Current?.Unmount(_titlePanel);
+            _titlePanel = null;
         }
 
         public void NewGame()
         {
-            Debug.Log("[EmberMainMenuUI] NewGame invoked.");
-            var worldGen = FindDeep(transform, "WorldGenUI");
-            if (worldGen != null)
+            _ = NewGameAsync();
+        }
+
+        private async Task NewGameAsync()
+        {
+            await RunScenarioAssetTopUpAsync();
+            LoadingScreen.Dismiss();
+            await Task.Delay(350);
+            SceneManager.LoadScene(string.IsNullOrWhiteSpace(_firstSceneName) ? "CharacterCreation" : _firstSceneName);
+        }
+
+        private void MountUiToolkitTitleMenu()
+        {
+            VisibleUiSurface.Ensure();
+            _titlePanel = UiSurfaceLocator.Current?.Mount("TitleMenu");
+            _titlePanel?.SetText("version", "PR #214 visible generation cutover");
+            _titlePanel?.SetText("status", "Backend ready. Missing assets are generated visibly on New Game.");
+            _titlePanel?.SetButtonHandler("new_game", NewGame);
+            _titlePanel?.SetButtonHandler("continue", Continue);
+            _titlePanel?.SetButtonHandler("quit", Quit);
+        }
+
+        private static async Task RunScenarioAssetTopUpAsync()
+        {
+            EnsureForgeBootstrap();
+            await Task.Yield();
+
+            LoadingScreen.ShowForContext(new LoadingScreenContext("character_creation", "Preparing Character Creation", "generation"));
+            LoadingScreen.SetProgress(0f, "Scanning scenario assets");
+            LoadingScreen.LogLine(UiLogSeverity.Info, "[new-game] scanning scenario assets");
+
+            var forge = ForgeLocator.AssetForge;
+            if (forge == null || !forge.IsAvailable())
             {
-                Debug.Log("[EmberMainMenuUI] Activating WorldGenUI.");
-                worldGen.gameObject.SetActive(true);
-                FindDeep(transform, "Panel")?.gameObject.SetActive(false);
+                LoadingScreen.LogLine(UiLogSeverity.Warning, "[new-game] forge unavailable; cached assets only");
+                await Task.Delay(350);
+                return;
             }
-            else
+
+            var selected = SelectScenarioEntries(CoreAssetManifest.CreateDefault().Entries);
+            var root = RuntimeRoot();
+            var flow = new VisibleGenerationFlow(
+                root,
+                forge,
+                StaticPromptCatalog.CreateDefault(),
+                new GenerationFailureLog(Path.Combine(root, "Logs", "generation-failures.json")));
+
+            int scanned = 0;
+            int started = 0;
+            flow.ScanRow += (row, entry) =>
             {
-                Debug.LogWarning("[EmberMainMenuUI] WorldGenUI NOT found, loading scene.");
-                SpawnLoadingScreen();
-                SceneManager.LoadScene(string.IsNullOrWhiteSpace(_firstSceneName) ? "CharacterCreation" : _firstSceneName);
-            }
-        }
-
-        private Transform EnsureCanvasShell()
-        {
-            var root = transform.Find("RuntimeCanvas");
-            if (root == null)
+                scanned++;
+                LoadingScreen.SetProgress(selected.Count == 0 ? 1f : (float)scanned / selected.Count * 0.35f, "Scan " + row.EntryId);
+                LoadingScreen.LogLine(row.State == EntryState.Cached ? UiLogSeverity.Info : UiLogSeverity.Warning, "[scan] " + row.EntryId + " => " + row.State);
+            };
+            flow.ScanThumbnail += (row, entry, bytes) => LoadingScreen.ShowThumbnail(ToTexture(bytes), row.EntryId + " cached");
+            flow.EntryStarted += entry =>
             {
-                var go = new GameObject("RuntimeCanvas", typeof(RectTransform));
-                go.transform.SetParent(transform, false);
-                root = go.transform;
-            }
-
-            var rect = (RectTransform)root;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            var canvas = root.GetComponent<Canvas>();
-            if (canvas == null) canvas = root.gameObject.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 0;
-
-            var scaler = root.GetComponent<CanvasScaler>();
-            if (scaler == null) scaler = root.gameObject.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1280f, 720f);
-
-            if (root.GetComponent<GraphicRaycaster>() == null) root.gameObject.AddComponent<GraphicRaycaster>();
-            return root;
-        }
-
-        private void EnsureFallbackMenuHierarchy()
-        {
-            var root = _uiRoot == null ? transform : _uiRoot;
-            if (FindButton("New Game") != null) return;
-
-            var panel = CreateRect("Panel", root, Vector2.zero, Vector2.one);
-            var panelImage = panel.gameObject.AddComponent<Image>();
-            panelImage.color = new Color(0.07f, 0.055f, 0.045f, 0.96f);
-
-            var title = CreateText("Title", panel, "EMBER CRPG", 44, TextAnchor.MiddleCenter);
-            title.color = new Color(0.95f, 0.72f, 0.42f);
-            SetAnchored(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -132f), new Vector2(520f, 80f));
-
-            var subtitle = CreateText("Subtitle", panel, "visible generation cutover", 20, TextAnchor.MiddleCenter);
-            subtitle.color = new Color(0.72f, 0.64f, 0.54f);
-            SetAnchored(subtitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -190f), new Vector2(520f, 40f));
-
-            var buttons = CreateRect("Buttons", panel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-            buttons.sizeDelta = new Vector2(360f, 230f);
-            buttons.anchoredPosition = new Vector2(0f, -40f);
-            var layout = buttons.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 16f;
-            layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlHeight = true;
-            layout.childControlWidth = true;
-            layout.childForceExpandHeight = false;
-            layout.childForceExpandWidth = true;
-
-            CreateButton(buttons, "New Game");
-            CreateButton(buttons, "Continue");
-            CreateButton(buttons, "Quit");
-        }
-
-        private Button FindButton(string name)
-        {
-            return FindDeep(transform, name)?.GetComponent<Button>();
-        }
-
-        private static Transform FindDeep(Transform root, string name)
-        {
-            if (root == null) return null;
-            if (root.name == name) return root;
-            for (int i = 0; i < root.childCount; i++)
+                started++;
+                LoadingScreen.SetProgress(0.35f, "Generating " + entry.Id);
+                LoadingScreen.LogLine(UiLogSeverity.Info, "[start] " + entry.Id);
+            };
+            flow.EntrySucceeded += (entry, bytes, elapsedMs) =>
             {
-                var found = FindDeep(root.GetChild(i), name);
-                if (found != null) return found;
+                LoadingScreen.SetProgress(selected.Count == 0 ? 1f : 0.35f + (0.65f * started / selected.Count), "Generated " + entry.Id);
+                LoadingScreen.ShowThumbnail(ToTexture(bytes), entry.Id);
+                LoadingScreen.LogLine(UiLogSeverity.Success, "[ok] " + entry.Id + " " + elapsedMs + "ms");
+            };
+            flow.EntryFailed += (entry, reason, exceptionType) =>
+                LoadingScreen.LogLine(UiLogSeverity.Error, "[error] " + entry.Id + " " + reason);
+
+            var result = await flow.RunCoreAssetTopUpAsync(selected, CancellationToken.None);
+            LoadingScreen.SetProgress(1f, "Scenario assets ready");
+            LoadingScreen.LogLine(UiLogSeverity.Success, "[new-game] scenario top-up complete: " + result.SucceededGeneration + "/" + result.StartedGeneration + " generated");
+            await Task.Delay(300);
+        }
+
+        private static List<ManifestEntry> SelectScenarioEntries(IReadOnlyList<ManifestEntry> entries)
+        {
+            var selected = new List<ManifestEntry>();
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var entry = entries[i];
+                if (!entry.RequiresGeneration) continue;
+                if (entry.Id == "dice" || entry.Id == "skill" || entry.Id == "new_game" || entry.Id.StartsWith("logo_"))
+                    selected.Add(entry);
             }
-            return null;
-        }
-
-        private static RectTransform CreateRect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            return rect;
-        }
-
-        private static Text CreateText(string name, Transform parent, string text, int size, TextAnchor anchor)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            var label = go.GetComponent<Text>();
-            label.text = text;
-            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            label.fontSize = size;
-            label.alignment = anchor;
-            label.color = Color.white;
-            return label;
-        }
-
-        private static void CreateButton(Transform parent, string label)
-        {
-            var go = new GameObject(label, typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
-            rect.sizeDelta = new Vector2(360f, 54f);
-            go.GetComponent<Image>().color = new Color(0.18f, 0.115f, 0.075f, 0.95f);
-            var button = go.GetComponent<Button>();
-            var colors = button.colors;
-            colors.highlightedColor = new Color(0.37f, 0.22f, 0.12f, 1f);
-            colors.pressedColor = new Color(0.55f, 0.29f, 0.11f, 1f);
-            button.colors = colors;
-
-            var text = CreateText("Text", go.transform, label, 22, TextAnchor.MiddleCenter);
-            text.color = new Color(0.93f, 0.84f, 0.68f);
-            var textRect = text.rectTransform;
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
-        }
-
-        private static void SetAnchored(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size)
-        {
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.sizeDelta = size;
-            rect.anchoredPosition = position;
-        }
-
-        /// <summary>
-        /// Audit (eighth pass D-P1): EmberLoadingScreen was never instantiated.
-        /// Spin one up DontDestroyOnLoad before transitioning so the next
-        /// scene's first frames are masked by the fade.
-        /// </summary>
-        private static void SpawnLoadingScreen()
-        {
-            if (EmberLoadingScreen.Instance != null) return;
-            var go = new GameObject("EmberLoadingScreen", typeof(EmberLoadingScreen));
-            // DontDestroyOnLoad is applied inside EmberLoadingScreen.Awake.
-            UnityEngine.Object.DontDestroyOnLoad(go);
+            return selected;
         }
 
         public void Continue()
@@ -222,55 +141,16 @@ namespace EmberCrpg.Presentation.Ember.UI
             string json = PlayerPrefs.GetString("ember.save.v1");
             if (!string.IsNullOrEmpty(json))
             {
-                // Codex audit Batch 2 / Finding 4: the previous version loaded the
-                // saved scene but never pushed the deserialized SaveData into the
-                // next-scene EmberSaveService, so player transform and domain
-                // state both reset on Continue. PreparePendingLoad stashes the
-                // payload statically; the EmberSaveService.Start() in the target
-                // scene picks it up and calls RestorePosition + RestoreStateJson.
                 var data = JsonUtility.FromJson<EmberCrpg.Presentation.Ember.Save.SaveData>(json);
-                if (data != null && !string.IsNullOrEmpty(data.sceneName)
-                    && IsKnownBuildScene(data.sceneName))
+                if (data != null && !string.IsNullOrEmpty(data.sceneName) && IsKnownBuildScene(data.sceneName))
                 {
-                    // Codex audit (third pass A-P3): previously LoadScene ran
-                    // even when the saved scene was not in build settings,
-                    // which surfaces Unity's "scene not in build" error at
-                    // runtime. Validate against EditorBuildSettings (best
-                    // effort — only the Editor knows the build list, so the
-                    // player build skips this check and lets Unity surface
-                    // the error its own way).
                     EmberCrpg.Presentation.Ember.Save.EmberSaveService.PreparePendingLoad(data);
-                    SpawnLoadingScreen();
+                    LoadingScreen.ShowForContext(new LoadingScreenContext(data.sceneName, data.sceneName, "area_transition"));
                     SceneManager.LoadScene(data.sceneName);
                     return;
                 }
             }
             NewGame();
-        }
-
-        /// <summary>
-        /// Codex audit (third pass A-P3): validate scene against the build
-        /// list before LoadScene. In the Editor we check EditorBuildSettings;
-        /// in a player build we accept any name (Unity surfaces its own
-        /// "scene not in build" error if mismatched). Defensive: never blocks
-        /// the menu Continue path entirely — only an unknown Editor scene
-        /// falls back to NewGame().
-        /// </summary>
-        private static bool IsKnownBuildScene(string sceneName)
-        {
-            if (string.IsNullOrWhiteSpace(sceneName)) return false;
-#if UNITY_EDITOR
-            foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
-            {
-                if (scene == null || string.IsNullOrEmpty(scene.path)) continue;
-                var stem = System.IO.Path.GetFileNameWithoutExtension(scene.path);
-                if (string.Equals(stem, sceneName, System.StringComparison.Ordinal))
-                    return true;
-            }
-            return false;
-#else
-            return true; // Player build trusts Unity's runtime scene resolution
-#endif
         }
 
         public void Quit()
@@ -282,10 +162,64 @@ namespace EmberCrpg.Presentation.Ember.UI
 #endif
         }
 
-        // Codex audit (sixth pass B-P2 #B3): the editor-only BuildMenuScene
-        // helper used to live here behind `#if UNITY_EDITOR`. It now lives at
-        // Assets/Editor/Ember/Menu/EmberMainMenuSceneBuilder.cs in the editor
-        // asmdef, where it belongs. Runtime callers never used it, so this
-        // file is now pure runtime UI code.
+        private static void EnsureForgeBootstrap()
+        {
+            if (ForgeLocator.AssetForge != null) return;
+            if (FindFirstObjectByType<ForgeBootstrap>() != null) return;
+            var go = new GameObject("ForgeBootstrap");
+            DontDestroyOnLoad(go);
+            go.AddComponent<ForgeBootstrap>();
+        }
+
+        private static string RuntimeRoot()
+        {
+            var parent = Directory.GetParent(Application.dataPath);
+            return parent != null ? parent.FullName : Application.dataPath;
+        }
+
+        private static Texture2D ToTexture(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0) return null;
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            return texture.LoadImage(bytes) ? texture : null;
+        }
+
+        private static Button FindButton(string name)
+        {
+            var roots = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < roots.Length; i++)
+                if (roots[i].name == name && roots[i].TryGetComponent<Button>(out var button))
+                    return button;
+            return null;
+        }
+
+        private static void EnsureEventSystemExists()
+        {
+            if (EventSystem.current != null) return;
+            if (FindFirstObjectByType<EventSystem>() != null) return;
+            _ = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+        }
+
+        private static void UnlockCursor()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
+        private static bool IsKnownBuildScene(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName)) return false;
+#if UNITY_EDITOR
+            foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
+            {
+                if (scene == null || string.IsNullOrEmpty(scene.path)) continue;
+                var stem = Path.GetFileNameWithoutExtension(scene.path);
+                if (string.Equals(stem, sceneName, System.StringComparison.Ordinal)) return true;
+            }
+            return false;
+#else
+            return true;
+#endif
+        }
     }
 }

@@ -20,6 +20,8 @@ namespace EmberCrpg.Tests.PlayMode.Boot
             Assert.That(result.Succeeded, Is.GreaterThanOrEqualTo(2));
             Assert.That(result.Failed, Is.GreaterThanOrEqualTo(1));
             Assert.That(result.RequestedScene, Is.EqualTo("MainMenu"));
+            Assert.That(surface.LastPanel.LogText, Does.Contain("[scan]"));
+            Assert.That(surface.LastPanel.LogText, Does.Contain("[start]"));
             Assert.That(surface.LastPanel.LogText, Does.Contain("[error]"));
             UiSurfaceLocator.Clear();
         }

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using EmberCrpg.Domain.Worldgen;
+using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Simulation.Worldgen;
 using NUnit.Framework;
 
@@ -173,6 +175,53 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
 
             // Always pass — this is an inspection dump only.
             Assert.That(world.Settlements.Count, Is.GreaterThan(0));
+        }
+
+        /// <summary>Projecting a GeneratedWorld emits visible billboard events, NPC decision JSON, history lines, and completion.</summary>
+        [Test]
+        public void WorldgenEventProjector_ProjectsGeneratedWorldToVisibleEvents()
+        {
+            var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
+            var events = WorldgenEventProjector.Project(
+                world,
+                new WorldgenProjectionOptions(
+                    maxRegions: 3,
+                    maxSettlements: 4,
+                    maxNpcs: 5,
+                    maxHistoryEvents: 6,
+                    includeQuestionPrompt: true,
+                    includeSyntheticFailure: false));
+
+            Assert.That(events.Count, Is.GreaterThan(0));
+            Assert.That(events.Any(e => e.Kind == WorldgenVisibleEventKind.RegionGenerated), Is.True);
+            Assert.That(events.Any(e => e.Kind == WorldgenVisibleEventKind.SettlementSeeded), Is.True);
+            Assert.That(events.Any(e => e.Kind == WorldgenVisibleEventKind.NpcSeeded && e.Message.Contains("[decision-json]")), Is.True);
+            Assert.That(events.Any(e => e.Kind == WorldgenVisibleEventKind.HistoryProjected && e.Message.StartsWith("Year ")), Is.True);
+            Assert.That(events.Any(e => e.Kind == WorldgenVisibleEventKind.QuestionRaised), Is.True);
+            Assert.That(events[events.Count - 1].Kind, Is.EqualTo(WorldgenVisibleEventKind.Completed));
+        }
+
+        /// <summary>Projection can append a failure event and still complete, matching append-continue behavior.</summary>
+        [Test]
+        public void WorldgenEventProjector_CanEmitFailureAndStillComplete()
+        {
+            var world = WorldgenService.Generate(99u, WorldgenParameters.Default);
+            var events = WorldgenEventProjector.Project(
+                world,
+                new WorldgenProjectionOptions(
+                    maxRegions: 2,
+                    maxSettlements: 2,
+                    maxNpcs: 2,
+                    maxHistoryEvents: 2,
+                    includeQuestionPrompt: false,
+                    includeSyntheticFailure: true));
+
+            var failureIndex = events.FindIndex(e => e.Kind == WorldgenVisibleEventKind.Failure);
+            var completionIndex = events.FindIndex(e => e.Kind == WorldgenVisibleEventKind.Completed);
+
+            Assert.That(failureIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(completionIndex, Is.GreaterThan(failureIndex));
+            Assert.That(events[failureIndex].PayloadJson, Does.Contain("\"continue\":true"));
         }
     }
 }

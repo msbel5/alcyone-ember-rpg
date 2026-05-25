@@ -1,3 +1,4 @@
+// Why this file is intentionally long: it wires local LLM, ONNX forge selection, CUDA probing, and locator registration at Unity runtime startup.
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,6 +63,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
             failureReason = string.Empty;
 
             bool cudaArtifacts = HasCudaRuntimeArtifacts();
+            if (cudaArtifacts) AddCudaProviderDirectoryToPath();
 
             if (cudaArtifacts)
             {
@@ -151,11 +153,41 @@ namespace EmberCrpg.Presentation.Ember.Forge
 
         private static bool HasCudaRuntimeArtifacts()
         {
-            var basePath = Path.Combine(Application.dataPath, "Plugins", "x86_64", "cuda");
+            var basePath = FindCudaProviderDirectory();
+            if (string.IsNullOrEmpty(basePath)) return false;
             return File.Exists(Path.Combine(basePath, "onnxruntime.dll"))
                 && File.Exists(Path.Combine(basePath, "onnxruntime_providers_cuda.dll"))
-                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_shared.dll"))
-                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_tensorrt.dll"));
+                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_shared.dll"));
+        }
+
+        private static void AddCudaProviderDirectoryToPath()
+        {
+            var basePath = FindCudaProviderDirectory();
+            if (string.IsNullOrEmpty(basePath)) return;
+            var current = System.Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+            if (current.IndexOf(basePath, System.StringComparison.OrdinalIgnoreCase) >= 0) return;
+            System.Environment.SetEnvironmentVariable("PATH", basePath + Path.PathSeparator + current);
+        }
+
+        private static string FindCudaProviderDirectory()
+        {
+            var candidates = new[]
+            {
+                Path.Combine(Application.dataPath, "Plugins", "x86_64", "cuda"),
+                Path.Combine(Application.dataPath, "Plugins", "x86_64"),
+                Path.Combine(Application.dataPath, "Plugins"),
+            };
+
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                var path = candidates[i];
+                if (File.Exists(Path.Combine(path, "onnxruntime.dll"))
+                    && File.Exists(Path.Combine(path, "onnxruntime_providers_cuda.dll"))
+                    && File.Exists(Path.Combine(path, "onnxruntime_providers_shared.dll")))
+                    return path;
+            }
+
+            return string.Empty;
         }
 
         private async Task DetectAsync(CancellationToken cancellationToken)
