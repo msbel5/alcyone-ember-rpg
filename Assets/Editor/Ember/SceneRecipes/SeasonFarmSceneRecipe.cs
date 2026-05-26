@@ -24,6 +24,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             // Path to harvest shed
             EmberTerrainBuilder.BuildGroundPlane(new Vector3(2f, 0.01f, 0f), 10f, dirtMat, "Path");
 
+            EmberLightingBuilder.SetAmbientMood(new Color(0.40f, 0.45f, 0.45f), 1.10f);
+            EmberPostProcessBuilder.AddVolume("PostProcess_FarmDay", EmberMoodPreset.FarmDay);
+
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(1f, 1f, 0.95f),
                 intensity: 1.4f,

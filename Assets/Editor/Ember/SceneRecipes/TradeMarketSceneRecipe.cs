@@ -25,6 +25,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             // Add some background walls for context
             EmberTerrainBuilder.BuildWall(new Vector3(0, 2, 20), new Vector3(40, 4, 1), wallMat, "NorthBoundary");
 
+            EmberLightingBuilder.SetAmbientMood(new Color(0.35f, 0.32f, 0.27f), 1.05f);
+            EmberPostProcessBuilder.AddVolume("PostProcess_MarketDay", EmberMoodPreset.MarketDay);
+
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(1f, 0.95f, 0.85f),
                 intensity: 1.3f,

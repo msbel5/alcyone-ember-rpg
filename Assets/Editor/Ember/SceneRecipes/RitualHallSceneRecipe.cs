@@ -23,6 +23,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             var room = EmberTerrainBuilder.BuildRoom(Vector3.zero, 25f, 25f, 5f, floorMat, wallMat);
             var roomFloor = EmberScenePlacement.RequireRoomFloor(room);
 
+            EmberLightingBuilder.SetAmbientMood(new Color(0.22f, 0.16f, 0.10f), 0.70f);
+            EmberPostProcessBuilder.AddVolume("PostProcess_ShrineAmber", EmberMoodPreset.ShrineAmber);
+
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(0.7f, 0.8f, 1f),
                 intensity: 0.8f,

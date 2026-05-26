@@ -39,6 +39,9 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             podium.transform.localScale = new Vector3(2.5f, 0.25f, 2.5f);
             podium.GetComponent<MeshRenderer>().sharedMaterial = floorMat;
 
+            EmberLightingBuilder.SetAmbientMood(new Color(0.20f, 0.22f, 0.28f), 0.85f);
+            EmberPostProcessBuilder.AddVolume("PostProcess_OracleVision", EmberMoodPreset.OracleVision);
+
             EmberLightingBuilder.AddDirectionalSun(
                 color: new Color(0.9f, 0.95f, 1f),
                 intensity: 1.3f,
