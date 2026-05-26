@@ -81,22 +81,45 @@ The branch is **correctly named Mami-side work** (the `docs/codex-mission-v2` na
 
 Discovered while scanning `Assets/Scenes/Ember/` and `Assets/Editor/Ember/SceneRecipes/`:
 
-| Un-prefixed (AAA targets) | Faz-prefixed (older) |
-|---|---|
-| `SmithingOverworld.unity` | `Faz3SmithingOverworld.unity.meta` |
-| `ColonyNeeds.unity` | `Faz4ColonyNeeds.unity.meta` |
-| `SeasonFarm.unity` | `Faz5SeasonFarm.unity.meta` |
-| `TradeMarket.unity` | `Faz6TradeMarket.unity.meta` |
-| `CombatDungeon.unity` | `Faz7CombatDungeon.unity.meta` |
-| `RitualHall.unity` | `Faz8RitualHall.unity.meta` |
-| `TavernDialog.unity` | `Faz9TavernDialog.unity.meta` |
-| `OracleShrine.unity` | `Faz10OracleShrine.unity.meta` |
-| `ShowroomOverview.unity` | `Faz11ShowroomOverview.unity.meta` |
-| `TavernFlavour.unity` | `Faz12TavernFlavour.unity.meta` |
+| Un-prefixed (AAA targets) | Faz-prefixed (older) | Both real? |
+|---|---|---|
+| `SmithingOverworld.unity` (93KB) | `Faz3SmithingOverworld.unity` (93KB) | **Yes — both ~93KB** |
+| `ColonyNeeds.unity` | `Faz4ColonyNeeds.unity` (100KB) | Both real |
+| `SeasonFarm.unity` | `Faz5SeasonFarm.unity` (95KB) | Both real |
+| `TradeMarket.unity` | `Faz6TradeMarket.unity` (84KB) | Both real |
+| `CombatDungeon.unity` | `Faz7CombatDungeon.unity` (104KB) | Both real |
+| `RitualHall.unity` | `Faz8RitualHall.unity` (91KB) | Both real |
+| `TavernDialog.unity` | `Faz9TavernDialog.unity` (99KB) | Both real |
+| `OracleShrine.unity` | `Faz10OracleShrine.unity` (105KB) | Both real |
+| `ShowroomOverview.unity` | `Faz11ShowroomOverview.unity` (125KB) | Both real |
+| `TavernFlavour.unity` | `Faz12TavernFlavour.unity` (99KB) | Both real |
 
-The 10 AAA scene names in `aaa-scene-quality-uplift.md` §1 score table (SmithingOverworld, ColonyNeeds, SeasonFarm, TradeMarket, CombatDungeon, RitualHall, TavernDialog, OracleShrine, ShowroomOverview, TavernFlavour) match the **un-prefixed** column. The Faz-prefixed `.meta` files are leftover from the prior naming scheme.
+**Correction (later inspection):** the Faz-prefixed scenes are NOT orphan `.meta` ghosts as initially feared — they are real `.unity` files of comparable size to the un-prefixed copies, with the same mtime (May 24, 2026). This is the **rename cutover footprint** from commit `9d8c5b8b "Commit 4: Scene file renames + path rewires"`. Both copies coexist during transition.
 
-**Action implied:** delete the orphaned `Faz*.unity.meta` files in a single small commit, or confirm the prefixed scenes also exist as real `.unity` files (they don't, judging by the missing `.unity` entries — only `.meta` ghosts). This is **technical debt for a Mami janitor commit**, not the AAA uplift gate.
+**Implications:**
+1. The 10 AAA scene names in `aaa-scene-quality-uplift.md` §1 score table match the **un-prefixed** column — these are the AAA targets.
+2. The Faz-prefixed copies are likely the **pre-cutover state** kept as safety nets.
+3. **Action:** before AAA Sprint A starts, confirm with @msbel5 which set is authoritative. If un-prefixed is canonical, the Faz-prefixed set should be removed in a single janitor commit (saving ~1MB of duplicate scene data + reducing build scene confusion). Do NOT delete unilaterally — these are .unity files, not throwaway artifacts.
+
+## 5.1. Reference library presence check
+
+Vision Bible §11 promises a `references/` directory (gitignored) containing:
+- `references/daggerfall-unity-master/` (C# Daggerfall port — **closest twin to our codebase**)
+- `references/openmw-master/` (C++ Morrowind reimplementation)
+- `references/gemrb-master/` (BG/IWD/PST engine)
+- `references/dwarf-fortress-legacy/` (DF C++ snapshot)
+- `references/ember-rpg/` (our previous Godot attempt — read as anti-pattern)
+
+**Verified state on this dev machine:** `references/` **does not exist**. None of the engine references are present locally. This is a **real gap** for Faz 11 Mami work — billboard rendering, mood lighting, dungeon prop placement, and combat hit-chance math are all supposed to be informed by reading these references first per the **clean-room rule** in Vision Bible §11.
+
+**Action:** before Sprint A starts on SmithingOverworld, decide:
+- (a) clone `references/daggerfall-unity-master/` into the gitignored path so Mami can read the forge/anvil/billboard patterns, OR
+- (b) accept that the AAA uplift will be done from screenshots + general Daggerfall-Unity public-knowledge memory, NOT from reading the actual C# port, OR
+- (c) defer Sprint A until references are present.
+
+Recommendation: (a) is the canonical path per Vision Bible. (b) is the pragmatic path. (c) blocks work.
+
+`Reference/` (capital R) exists with `OldBackendData/` + `PRDs/` only — that's the Godot-era PRD library, not engine references.
 
 ---
 
@@ -158,16 +181,21 @@ The 10 AAA scene names in `aaa-scene-quality-uplift.md` §1 score table (Smithin
 |---|---|---:|---|---|
 | 1 | `aaa-scene-quality-uplift.md` is **Draft (awaiting @msbel5 approval)** for over 24 hours; Sprint A Codex mission is queued behind it. | 🟡 Moderate | @msbel5 | Approve PRD or send specific edit list so Sprint A can start. |
 | 2 | `PRD_visual_architecture_3d_billboard_v1.md` has **4 open questions** in §10 awaiting Mami answers (atlas authoring, rim-light shader, establishing-shot space skip, Boot exemption). | 🟡 Moderate | @msbel5 | Answer the 4 questions → PRD goes Approved. |
-| 3 | Orphaned `Faz*.unity.meta` ghost files (10) in `Assets/Scenes/Ember/`. | 🟢 Minor | Mami | One janitor commit: `git rm Assets/Scenes/Ember/Faz*.unity.meta`. |
+| 3 | Duplicate scene files in `Assets/Scenes/Ember/` (un-prefixed AAA targets AND Faz-prefixed pre-cutover copies, both ~100KB each). See §5. | 🟡 Moderate | @msbel5 | Confirm un-prefixed set is authoritative; then janitor commit removing `Faz*.unity` + `Faz*.unity.meta` (~1MB cleanup). Do NOT delete unilaterally. |
 | 4 | 10 AAA baseline screenshots in `docs/screenshots/` are **untracked**. These are the 82-84 reference shots that `aaa-scene-quality-uplift.md` §1 promised to replace. | 🟡 Moderate | Mami | Commit them under `Reports/screens/aaa_<scene>_baseline_<unix>.png` per AAA uplift §6 evidence convention, NOT in `docs/screenshots/`. |
 | 5 | Working tree has uncommitted material + scene mutations from prior Editor opens (Scene_Ember_Light.mat, 10 scene files, TerrainData/*). | 🟡 Moderate | Mami | Triage: keep intentional changes (terrain data, materials), discard accidental Unity auto-touches. Do NOT bulk-commit. |
 | 6 | Magic system still routes through legacy `SpellEffectCode` enum branches; agent-rules-v2 §3 requires `EffectDefinition` promotion **before** any new effect ships. Soul-acceptance lists "SpellResolver fully data-driven still queued under Faz 8 slice 2." | 🟡 Moderate | Captain | Already on Captain debt ledger; no Mami action. |
 | 7 | Mami has not yet authored a `docs/sprint-faz-11-atom-map.md` per agent-rules-v2 §7 carve-out. Captain CAN write it, but it must be Mami-consumer-cited per Rule 7. | 🟡 Moderate | Captain (with Mami consumer) | Defer until Sprint A lands one real scene proof; then write atom map referencing the proven pattern. |
 | 8 | `prd-audit-2026-05-26.md` scanned `Reference/PRDs/` only; missing the docs/ root cross-check (this document closes that gap). | 🟢 Minor | Mami | This file. ✅ |
 | 9 | No `mami/*` branch exists per Rule 7's wording ("Mami's `mami/*` PR landing a real Unity scene"). Current Mami work is on `docs/codex-mission-v2`. | 🟢 Minor | Convention | Either rename future Mami branches to `mami/aaa-sprint-a-*` or amend Rule 7 wording to allow shared cutover branches. Defer to @msbel5 preference. |
-| 10 | Daggerfall-Unity reference (`references/daggerfall-unity-master/`) is gitignored on dev machine but expected to be read before implementing billboard rendering. Need to confirm it's locally present before Sprint A starts. | 🟢 Minor | Mami | `ls references/daggerfall-unity-master/` pre-Sprint-A check. |
+| 10 | **CONFIRMED MISSING:** `references/` directory does not exist on dev machine. None of Vision Bible §11's engine references (`daggerfall-unity-master/`, `openmw-master/`, `gemrb-master/`, `dwarf-fortress-legacy/`, `ember-rpg/`) are locally present. Blocks the clean-room workflow Vision Bible §11 prescribes. See §5.1. | 🔴 Critical | @msbel5 | Decide between (a) clone `daggerfall-unity-master` locally, (b) proceed without references, or (c) defer Sprint A. |
 
-**No catastrophic drift.** Architecture is sound, layers are clean, separation of concerns is enforced. The blocker is a small set of approvals + a single janitor commit.
+**No catastrophic architecture drift.** Layers are clean, separation of concerns is enforced. The blockers are:
+- 2 PRD approvals (3D billboard + AAA uplift) awaiting @msbel5 input,
+- 1 reference-library decision (clone Daggerfall-Unity, proceed without, or defer),
+- 1 scene-duplication confirmation (un-prefixed vs Faz-prefixed authoritative).
+
+Once those 4 user inputs land, Sprint A can proceed.
 
 ---
 
@@ -181,7 +209,8 @@ This replaces the looser task list in the prior session. Each item has an explic
 | **2** | @msbel5 approves `aaa-scene-quality-uplift.md` (or sends edits). | User input. | PRD §1 Status → Approved. |
 | **3** | Mami commits this cross-check report. | None. | `git log` shows the commit. |
 | **4** | Mami janitor commit: delete orphaned `Faz*.unity.meta` ghosts; move untracked `docs/screenshots/*.png` to `Reports/screens/aaa_<scene>_baseline_<unix>.png` per AAA §6 convention. | None. | Working tree clean; baseline shots in Reports/screens/. |
-| **5** | Mami runs `ls references/daggerfall-unity-master/` confirm; if missing, request user to provide it. | Dependency check. | One-line confirmation. |
+| **5** | @msbel5 decides reference library path: (a) clone `references/daggerfall-unity-master/` locally, (b) proceed without, or (c) defer. | User input. | Decision recorded in PRD §10 or follow-up commit. |
+| **5.5** | @msbel5 confirms which scene set is authoritative (un-prefixed vs Faz-prefixed). | User input. | Decision recorded; janitor commit follows if duplicates to be removed. |
 | **6** | Mami starts **AAA Sprint A: SmithingOverworld** per `aaa-sprint-a-codex-mission.md`. | Items 1+2 approved. | One scene at UX ≥90, Playability ≥88, `Reports/screens/aaa_SmithingOverworld_<unix>.png` committed. |
 | **7** | Mami continues Sprint A: **TavernDialog**. | Item 6 done. | Same exit proof. |
 | **8** | Sprint A PR opens for @msbel5 review. | Items 6+7 done. | PR opened with both scenes' before/after evidence table. |
