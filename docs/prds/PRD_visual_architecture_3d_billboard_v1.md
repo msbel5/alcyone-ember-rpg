@@ -4,7 +4,7 @@
 **Phase:** 1
 **Author:** Alcyone (CAPTAIN), authored from `CameraFacingBillboard.cs` normative reference
 **Date:** 2026-05-26
-**Status:** Draft
+**Status:** Approved (2026-05-26 by @msbel5)
 
 > **Supersedes:**
 > - `Reference/PRDs/PRD_architecture_sprite_layers_v1.md` (Godot Texture2D paperdoll compositor)
@@ -187,13 +187,22 @@ Reference PRDs to mark **Superseded by this PRD** in their header front-matter:
 
 The old PRDs **stay in `Reference/PRDs/`** as historical record but each will receive a `> **Superseded by:** docs/prds/PRD_visual_architecture_3d_billboard_v1.md (2026-05-26)` banner during the `prd-audit-2026-05-26.md` pass.
 
-## 11. Open Questions (to resolve before Status → Approved)
+## 11. Resolved Questions (answered 2026-05-26 by @msbel5)
 
-1. Atlas authoring tool — Visible Generation Pipeline emits 832×1216 portrait strips; do we pad-to-1024 or change the FR-03 quad size? **Decision needed before Sprint A.**
-2. Per-archetype dust / silhouette outline shader — keep flat URP/Lit cutout for v1 and revisit when an art pass demands rim-light? (Default v1: keep flat.)
-3. `PrimaryHero` establishing shot — is the 1.2 s beat skippable on `Space` press? (Recommend yes, gated by `PlayerPrefs` accessibility flag.)
-4. Boot scene exception — Boot has no worldspace actors; does it still need a `PrimaryHero` cam? (Recommend no; FR-05 / FR-08 / FR-10 apply only to scenes that contain `EmberWorldspaceRoot`.)
+1. **Atlas authoring tool** — Visible Generation Pipeline generates at the **exact target size we need** via AI prompt. FR-03 quad ratio (1.0 × 0.685) stays as the canonical billboard aspect; when the pipeline needs to fill a non-portrait slot, the prompt targets that resolution directly (no pad-to-1024 step). Authoring tool is the existing `OnnxAssetForge` pipeline (SDXL Turbo + SD 1.5 fallback). If a particular generation path creates too much work, regenerate cleanly rather than retrofit.
+2. **Per-archetype dust / silhouette outline shader** — **Keep flat URP/Lit cutout for v1.** Rim-light is a Phase 2+ enhancement; revisit when an art pass clearly demands it. Standing rule per user: "do it right, but if too much work, delete and regenerate properly."
+3. **`PrimaryHero` establishing shot Space-skip** — **Yes.** The 1.2 s establishing beat is skippable on `Space` press, gated by a `PlayerPrefs` accessibility flag (default: skippable enabled).
+4. **Boot scene exception** — **No `PrimaryHero` cam in Boot.** FR-05 / FR-08 / FR-10 apply only to scenes containing `EmberWorldspaceRoot`. Boot follows best-practice for menu scenes (single full-screen Canvas at Overlay sorting layer, no worldspace camera framing).
 
----
+> **Approval banner:** approved by @msbel5 on 2026-05-26 in the design-critique session. The 8 Reference PRDs in §10 still need their `> **Superseded by:** ...` banners — that's a follow-up doc-cleanup commit and is not gating Sprint A.
 
-**Approval required from @msbel5 (Ember CAPTAIN) before this PRD moves from Draft → Approved.** Once approved, the four open questions become PR comments and the 8 Reference PRDs above get their supersede banners in a single doc-cleanup commit.
+## 12. Reference Library (Vision Bible §11 clean-room rule)
+
+User confirmed reference engines copied to `Reference/library/`:
+
+- `Reference/library/daggerfall-unity-master/` — **primary reference** for billboard rendering, dungeon prop placement, hit-chance math. Read before any Sprint A scene work.
+- `Reference/library/openmw-master/` — secondary reference for NPC schedule + faction reputation.
+- `Reference/library/gemrb-master/` — RTWP combat reference (Phase 7+).
+- `Reference/library/dwarf-fortress-legacy/` — off-world simulation tick reference.
+
+**Clean-room rule:** read, then write our own. No copy-paste from these repos (license isolation).

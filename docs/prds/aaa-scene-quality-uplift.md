@@ -1,8 +1,13 @@
 # PRD: AAA Scene Quality Uplift (post-cutover)
 
-**Status:** Draft (awaiting @msbel5 approval, scheduled after PR #214 merges)
-**Branch policy:** small focused PRs per sprint; never merge before user review
+**Status:** Approved (2026-05-26 by @msbel5) with two amendments — see §11 and §12 below.
+**Branch policy:** small focused PRs per sprint; never merge before user review. Current work continues on `docs/codex-mission-v2` (PR #214) until @msbel5 directs otherwise.
 **Trigger:** the Visible Generation Cutover (PR #214) shipped with playability rescue producing scene scores in the **80-84 / 100** range. AAA target is **90+**. This PRD plans the work to close that gap.
+
+**Critical amendments (added on approval, 2026-05-26):**
+
+- **§11 Scoring rubric rework** — the 80-84 baseline numbers were inflated. Per `docs/prds/design-critique-2026-05-26.md`, real visual quality scores are 55-80. Rubric is being recalibrated to weight visual quality more heavily.
+- **§12 Open World constraint** — game is **open world like Daggerfall**. The 10 "scenes" are not 10 standalone rooms; they are **biome / settlement / encounter templates** that compose into a procedural overland map. This re-frames Sprint A through E.
 
 ---
 
@@ -169,3 +174,72 @@ Failures halt the PR; no acceptance check is downgraded "partial pass" without a
 When @msbel5 approves this PRD: open a GitHub issue per Sprint A–E, attach the Codex mission prompt (Alcyone-Mind cutover style), and assign Codex. Each sprint PR follows the same "tests first, commit cadence numbered, evidence-only report" rules from PRD §17 of the cutover PRD.
 
 The Visible Generation pipeline from PR #214 is the **dependency** here, not a deliverable — every "missing prop / texture" the scene recipe declares queues through `VisibleGenerationPipeline` instead of being hand-painted.
+
+---
+
+## 11. Scoring rubric rework (amendment added 2026-05-26 on approval)
+
+Per `docs/prds/design-critique-2026-05-26.md`, the prior 80-84 baseline scores in §1 do not reflect visual quality at the level a player perceives. A direct read of the 4 reviewed frames produces:
+
+| Scene | Prior rubric (UX / Playability) | Honest visual quality | Why the delta |
+|---|---:|---:|---|
+| SmithingOverworld | 82 / 80 | 55 / 60 | Scene is empty — no forge, no smith, no anvil visible. |
+| TavernDialog | 84 / 82 | 70 / 75 | Billboards render correctly but no bar / hearth / tables. |
+| CombatDungeon | 84 / 82 | 65 / 75 | Enemy elevation is good; no torches / fog / cold light. |
+| ShowroomOverviewWithUI | 84 / 82 | 80 / 85 | UI data binding works; world environment still bare. |
+
+**Cause:** the prior `PlayabilityScoreTests` rubric weighted "components present" (Light exists, AudioSource exists, particle exists) too heavily, and weighted "what a player sees" too lightly. A scene with all components present but no propped focal subject still got 80+.
+
+**Rework (v2 rubric):**
+
+| Axis | Weight | Measured by |
+|---|---:|---|
+| **Focal subject readable in 1s** | 25 | Manual designer pass on captured frame (yes / partial / no) |
+| **Mood lighting correct for scene** | 20 | Manual designer pass: warm-forge / cold-dungeon / candle-tavern / amber-shrine |
+| **Dynamic element (particle + audio)** | 15 | Profiler + waveform check; ≥1 each present and active |
+| **Camera framing (rule of thirds)** | 10 | Manual designer pass on captured frame |
+| **Per-scene material variety (not gray-box)** | 15 | At least 3 distinct materials visible |
+| **NPC placement suggests routine** | 10 | At least 1 NPC anchored to a focal prop |
+| **No regression (frame budget + tests green)** | 5 | Profiler + test suite |
+
+Total: 100. AAA threshold still **≥ 90 / 100** but now reflects what a player actually sees.
+
+**Acceptance update:** §9 first item becomes "All 10 scenes score ≥ 90 on the v2 rubric in `PlayabilityScoreTests`". Old scoring rubric retained in test suite for regression comparison but not gating.
+
+---
+
+## 12. Open World constraint (amendment added 2026-05-26 on approval)
+
+**User directive:** "we want open world remember just like daggerfall."
+
+Daggerfall ships a procedurally generated overland map (≈160k km² in lore terms, 15k towns, infinite procedural dungeons) navigated via a top-down world map + fast travel + on-foot exploration. The 10 scenes named in §1 (SmithingOverworld, ColonyNeeds, SeasonFarm, ...) cannot be 10 isolated standalone rooms — they must be **biome / settlement / encounter templates** that the procedural overland map composes from.
+
+### Re-framing
+
+| §1 scene name | Open-world role |
+|---|---|
+| SmithingOverworld | Settlement focal point — every town with a "smith" tag instantiates this template at the town's forge plot. |
+| ColonyNeeds | Settlement HUD / overview overlay — appears when player enters any owned colony settlement. |
+| SeasonFarm | Biome template — agricultural land tiles around any farming settlement. |
+| TradeMarket | Settlement template — every "market" tagged settlement instantiates this. |
+| CombatDungeon | Encounter template — any procedurally generated dungeon entrance loads this template. |
+| RitualHall | Cultural site template — any settlement with a "shrine" tag has this. |
+| TavernDialog | Settlement template — every settlement with an "inn" tag has this. |
+| OracleShrine | Quest site template — placed by DM module at narratively significant overland coords. |
+| ShowroomOverview | Catalog / debug view — does NOT instantiate in player runs; editor-only showcase. |
+| TavernFlavour | Cousin of TavernDialog — reuses same template with different NPC roster. |
+
+### What this changes vs §5 sprint plan
+
+- **Sprint A through E still ships the 10 scene templates** — they're still the deliverables.
+- **New cross-sprint deliverable: Overland map system** — likely a new PRD (`PRD_overland_map_v1.md`) covering:
+  - Procedural overland map generation (region grid, biome assignment, settlement placement)
+  - Travel UI (top-down map view per Daggerfall pattern)
+  - Scene-template instantiation (when entering a settlement, load matching template + seeded prop variation)
+  - Persistence (settlements remember their state across visits per Vision Bible §4 "off-world tick")
+- **Sprint A through E scope unchanged** but each scene must be authored as **instantiable template**, not as a fixed Boot-loaded single scene. SceneRecipe.cs already supports this pattern (recipes are per-template); each AAA pass just needs to declare it cleanly.
+- **Engineering reality:** the open-world layer is a Phase 2 (post-AAA-uplift) deliverable. Sprint A through E land the templates first. The overland map system lands after Sprint E in a new sprint (Sprint F: Open World Composition).
+
+### Reference
+
+`Reference/library/daggerfall-unity-master/` (user copied 2026-05-26) is the canonical reference for the overland map generation, town composition, and dungeon procedural layout. Clean-room rule applies (read, then write our own).
