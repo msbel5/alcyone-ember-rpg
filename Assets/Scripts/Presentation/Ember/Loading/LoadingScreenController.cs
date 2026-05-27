@@ -147,18 +147,25 @@ namespace EmberCrpg.Presentation.Ember.Loading
             ApplyBackdrop(LoadBackdropForArea(_context.AreaId));
         }
 
+        // Why two writes used to land here: the panel reserved both an "area" header and a
+        // "subtitle" line, but rendering them both with the same string surfaced "Ember Boot"
+        // twice on screen. Keep the area header (typographic emphasis) and leave subtitle empty
+        // so the panel layout stays consistent without the visual duplicate.
         public void SetAreaName(string areaName)
         {
             _context = _context.WithAreaName(areaName ?? string.Empty);
             _panel?.SetText("area", _context.AreaName);
-            _panel?.SetText("subtitle", _context.AreaName);
+            _panel?.SetText("subtitle", string.Empty);
         }
 
         public void SetLoadingType(string loadingType)
         {
             _context = _context.WithLoadingType(loadingType);
             _panel?.SetText("title", _title);
-            _panel?.SetText("status", StatusPrefixFor(_context.LoadingType));
+            // The "loading" label already shows "Entering area…" (with ellipsis); writing the same
+            // prefix into "status" produced a visual duplicate. Keep status empty so the panel's
+            // status row stays a hairline gap and the loading row owns the active state.
+            _panel?.SetText("status", string.Empty);
             _panel?.SetText("loading", BuildLoadingLabelText());
         }
 

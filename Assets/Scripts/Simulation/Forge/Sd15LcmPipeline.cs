@@ -78,7 +78,10 @@ namespace EmberCrpg.Simulation.Forge
             var latents = LatentNoiseSampler.SampleGaussian(request.Seed, latentLength, SigmaMax);
 
             var sigmas = new[] { 1.0f, 0.75f, 0.5f, 0.25f, 0.0f };
-            var timesteps = new[] { 999f, 749f, 499f, 249f };
+            // 8 evenly-spaced LCM timesteps (was 4). LCM is calibrated for 1-8 steps; 8 produces
+            // noticeably better composition + colour without the 16-step law of diminishing returns.
+            // Generation time roughly doubles vs 4-step but stays under the 300s timeout.
+            var timesteps = new[] { 999f, 874f, 749f, 624f, 499f, 374f, 249f, 124f };
             const float guidanceScale = 7.5f;
 
             using (var unet = _sessionFactory.CreateSession(_models.Unet))
