@@ -73,7 +73,7 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         {
             // The slot is expected to be (or become) a VisualElement container. Children are
             // wiped and rebuilt every call so callers can re-publish as new PNGs land on disk.
-            var container = GetOrCreate(slot, () =>
+            var container = GetOrCreate(slot, _ =>
             {
                 var v = new VisualElement();
                 v.style.flexDirection = FlexDirection.Row;
