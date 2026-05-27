@@ -148,10 +148,18 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
                 Register("backdrop", backdrop);
                 Register("title", MakeLabel("EMBER CRPG", 34, true));
                 Register("subtitle", MakeLabel("Visible generation cutover", 16, false));
+                // Icon slots pair with each button row; EmberMainMenuUI populates them with the
+                // matching forge-generated PNG (new_game, continue, journal=load, settings, error=quit)
+                // as soon as those assets land in /Assets/Generated/Core/.
+                Register("icon_new_game", MakeIcon(48));
                 Register("new_game", MakeButton("New Game"));
+                Register("icon_continue", MakeIcon(48));
                 Register("continue", MakeButton("Resume"));
+                Register("icon_load", MakeIcon(48));
                 Register("load", MakeButton("Load Game"));
+                Register("icon_options", MakeIcon(48));
                 Register("options", MakeButton("Options"));
+                Register("icon_quit", MakeIcon(48));
                 Register("quit", MakeButton("Exit"));
                 Register("version", MakeLabel("", 12, false));
                 Register("status", MakeLabel("", 14, false));
@@ -230,6 +238,18 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             button.style.backgroundColor = _tokens != null ? _tokens.AccentMuted : new Color(0.35f, 0.19f, 0.08f);
             button.style.color = _tokens != null ? _tokens.Text : Color.white;
             return button;
+        }
+
+        private static Image MakeIcon(int size)
+        {
+            // Square icon used as a slot for forge-generated PNGs. Sits centred above its button
+            // row so the menu auto-decorates as new icons land in /Assets/Generated/Core/.
+            var image = new Image();
+            image.style.width = size;
+            image.style.height = size;
+            image.style.alignSelf = Align.Center;
+            image.scaleMode = ScaleMode.ScaleToFit;
+            return image;
         }
 
         private Label MakeLabel(string text, int size, bool strong)

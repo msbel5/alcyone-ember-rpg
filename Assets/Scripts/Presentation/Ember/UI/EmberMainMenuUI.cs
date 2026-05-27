@@ -35,6 +35,102 @@ namespace EmberCrpg.Presentation.Ember.UI
             }
 
             MountUiToolkitTitleMenu();
+            // Fire-and-forget background generation for the remaining manifest entries
+            // (Boot capped at 3 critical assets; the rest get generated while the player
+            // reads the menu). Refresh decorations every couple seconds so newly produced
+            // PNGs appear next to the menu without a manual reload.
+            _ = RunBackgroundGenerationAsync();
+            _decorationRefreshCoroutine = StartCoroutine(RefreshDecorationsLoop());
+        }
+
+        private System.Collections.IEnumerator _decorationRefreshCoroutine;
+
+        private System.Collections.IEnumerator RefreshDecorationsLoop()
+        {
+            // Hash-based change detection so we only rebuild the decoration strip when
+            // the generated directory actually changes.
+            string lastSignature = string.Empty;
+            for (;;)
+            {
+                yield return new UnityEngine.WaitForSecondsRealtime(2f);
+                var sig = BuildGeneratedDirectorySignature();
+                if (sig != lastSignature)
+                {
+                    lastSignature = sig;
+                    PopulateDecorations();
+                }
+            }
+        }
+
+        private static string BuildGeneratedDirectorySignature()
+        {
+            var parent = System.IO.Directory.GetParent(Application.dataPath);
+            var root = parent != null ? parent.FullName : Application.dataPath;
+            var dir = System.IO.Path.Combine(root, "Assets", "Generated", "Core");
+            if (!System.IO.Directory.Exists(dir)) return string.Empty;
+            var files = System.IO.Directory.GetFiles(dir, "*.png");
+            System.Array.Sort(files, System.StringComparer.OrdinalIgnoreCase);
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < files.Length; i++)
+            {
+                sb.Append(System.IO.Path.GetFileName(files[i]));
+                sb.Append('=');
+                sb.Append(new System.IO.FileInfo(files[i]).Length);
+                sb.Append(';');
+            }
+            return sb.ToString();
+        }
+
+        private void PopulateDecorations()
+        {
+            // Re-apply the splash backdrop (in case Boot regenerated it after MainMenu mounted)
+            // and refresh any per-button icons so the menu auto-wires every PNG that arrives.
+            ApplyGeneratedBackdrop();
+            ApplyButtonIcons();
+        }
+
+        private void ApplyButtonIcons()
+        {
+            if (_titlePanel == null) return;
+            // Map button slot -> manifest entry id so each newly-generated icon snaps to its slot.
+            TryApplyIcon("icon_new_game", "new_game");
+            TryApplyIcon("icon_continue", "continue");
+            TryApplyIcon("icon_load", "journal");
+            TryApplyIcon("icon_options", "settings");
+            TryApplyIcon("icon_quit", "error");
+        }
+
+        private void TryApplyIcon(string slot, string entryId)
+        {
+            var tex = LoadGeneratedTexture(entryId);
+            if (tex != null) _titlePanel.SetThumbnail(slot, tex);
+        }
+
+        private static async System.Threading.Tasks.Task RunBackgroundGenerationAsync()
+        {
+            try
+            {
+                EnsureForgeBootstrap();
+                // Yield until ForgeLocator.AssetForge is populated; otherwise we'd race ahead with
+                // a null forge (same trap Boot had).
+                for (int waited = 0; waited < 180 && ForgeLocator.AssetForge == null; waited++)
+                    await System.Threading.Tasks.Task.Yield();
+                var forge = ForgeLocator.AssetForge;
+                if (forge == null) return;
+
+                var parent = System.IO.Directory.GetParent(Application.dataPath);
+                var root = parent != null ? parent.FullName : Application.dataPath;
+                var manifest = CoreAssetManifest.CreateDefault();
+                var failureLog = new GenerationFailureLog(System.IO.Path.Combine(root, "Logs", "generation-failures.json"));
+                var flow = new VisibleGenerationFlow(root, forge, StaticPromptCatalog.CreateDefault(), failureLog);
+                // No max cap — the manifest is finite (~34 entries) and the pipeline auto-skips
+                // cached entries, so the cost is bounded by the missing icons only.
+                await flow.RunCoreAssetTopUpAsync(manifest.Entries, System.Threading.CancellationToken.None);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("[MainMenu] background asset top-up failed: " + ex.Message);
+            }
         }
 
         private void OnDestroy()
