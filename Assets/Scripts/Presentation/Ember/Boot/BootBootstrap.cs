@@ -20,6 +20,11 @@ namespace EmberCrpg.Presentation.Ember.Boot
         {
             EnsureSurface();
             EnsureForgeBootstrap();
+            // ForgeBootstrap.Awake runs the frame after the GameObject is added, so we have to
+            // yield until ForgeLocator.AssetForge is registered (max ~3s); otherwise the asset
+            // forge resolves to SkipAssetForge and the visible generation pipeline silently no-ops.
+            for (int waited = 0; waited < 180 && EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge == null; waited++)
+                await System.Threading.Tasks.Task.Yield();
             var forge = EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge ?? new SkipAssetForge();
             // Limit Boot's blocking generation to the first 3 entries (splash_background, logo_full,
             // logo_compact). Remaining icons/items/spells generate visibly on-demand later so the
