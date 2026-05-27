@@ -17,6 +17,11 @@ namespace EmberCrpg.Simulation.Generation
         public static CoreAssetManifest CreateDefault()
         {
             var entries = new List<ManifestEntry>();
+            // Critical visual assets first so the menu/loading screens get backdrops even if later
+            // generation stalls or hits the timeout. Order: splash, logos, then UI icons, items, spells.
+            entries.Add(new ManifestEntry("splash_background", "splash", "Assets/Generated/Core/splash_background.png", "splash_background", 1280, 720, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("logo_full", "logo", "Assets/Generated/Core/logo_full.png", "logo_full", 256, 128, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("logo_compact", "logo", "Assets/Generated/Core/logo_compact.png", "logo_compact", 128, 128, true, 300, "sd15-lcm"));
             AddMany(entries, "ui", 64, 64, true, "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
             entries.Add(new ManifestEntry("font_body", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_heading", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
@@ -30,14 +35,9 @@ namespace EmberCrpg.Simulation.Generation
             AddMany(entries, "item", 128, 128, true, "sword", "bow", "staff", "potion", "scroll", "key", "ring", "helm", "boots", "shield");
             AddMany(entries, "spell", 96, 96, true, "sleep", "heal", "fire", "ice", "shield", "lightning");
             AddSound(entries, "ui_click"); AddSound(entries, "ui_hover"); AddSound(entries, "dice_roll"); AddSound(entries, "level_up"); AddSound(entries, "error");
-            entries.Add(new ManifestEntry("logo_full", "logo", "Assets/Generated/Core/logo_full.png", "logo_full", 256, 128, true, 300, "sd15-lcm"));
-            entries.Add(new ManifestEntry("logo_compact", "logo", "Assets/Generated/Core/logo_compact.png", "logo_compact", 128, 128, true, 300, "sd15-lcm"));
-            // Fix 2026-05-27: was sdxl-turbo @ 1920x1080 — that path requires cuDNN 9
-            // which is not present on every dev machine, blocking Boot for users who
-            // never installed cudnn64_9.dll. sd15-lcm @ 1280x720 produces a serviceable
-            // splash without the CUDA dependency. Re-up to SDXL turbo when the cuDNN
-            // install is part of the standard machine setup.
-            entries.Add(new ManifestEntry("splash_background", "splash", "Assets/Generated/Core/splash_background.png", "splash_background", 1280, 720, true, 300, "sd15-lcm"));
+            // logos + splash moved to top of list (above) so menus get visuals before later stalls.
+            // splash uses sd15-lcm @ 1280x720 to skip the cuDNN 9 dependency; re-up to sdxl-turbo
+            // when cudnn64_9.dll is part of the standard machine setup.
             return new CoreAssetManifest(entries);
         }
 
