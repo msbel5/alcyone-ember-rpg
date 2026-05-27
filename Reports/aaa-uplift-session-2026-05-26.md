@@ -31,13 +31,15 @@ Pushed **9 commits** to PR #214 totalling visual architecture PRDs + AAA scene b
 
 1. **Open Unity Editor**, click `Ember/Build Scene/All — Rebuild every gameplay scene` → all 10 .unity files regenerated with new mood lighting + particles + post-process volumes.
 2. Click `Ember/Build/Build Windows64 Player` → smoke-test the playable `.exe`.
-3. Live LLM per-NPC dialog: backend wired (`NativeLlmClient`, `NpcFlavourService`, `IDialogSource.IsThinking` already plumbed into `DialogBoxPanel`). The production caller wiring lives in `DomainSimulationAdapter` (existing) — soul-acceptance proved R-key ConsultFate fires real LLM; per-NPC Ask-About LLM is the **Faz 12 production wire** still queued per `docs/sprint-faz-12-atom-map.md`.
+3. Live LLM per-NPC dialog: ✅ **SHIPPED 2026-05-27 commit `63fcf835`**. `DomainSimulationAdapter.SelectTopic` now fires `GenerateNpcTopicAnswerAsync` via `ForgeLocator.LlmRouter` (same `NativeLlmClient` + qwen2.5-1.5b path soul-acceptance Phase 4 already proved on R-key ConsultFate). Deterministic AskAboutTopic.Answer remains as offline fallback. `DialogBoxPanel.IsThinking` indicator already plumbed.
 
 ---
 
 ## 2. PR #214 commit chain (this session)
 
 ```
+63fcf835 feat(llm): Faz 12 production wire — live LLM topic-answer in Ask-About
+e698a396 report: aaa visual uplift session 2026-05-26 (final)
 e1a9bee8 docs(prd): PRD-Overland-Map v1 — Daggerfall-style procedural open world
 022750ce feat(scenes): AAA mood lighting + particles + post-process per scene
 48ebb5b2 docs(prd): PRD-3D-Billboard approved + AAA-uplift approved with 2 amendments
@@ -129,7 +131,7 @@ Clean-room rule honored: zero copy-paste, only architectural pattern reading.
 
 1. **No Unity Editor binary on dev machine** (`/c/Program Files/Unity/Hub/Editor/` empty). All `.unity` scene materialization must be done by the user opening Unity 6.3.13f1 and running the Ember/Build Scene menu.
 2. **No Windows64 `.exe` build** for the same reason. `Ember/Build/Build Windows64 Player` menu item exists — user-runnable.
-3. **Live LLM in per-NPC dialog: backend ready, production runtime wire pending**. `NarrationServices.cs` source comment confirms "no production caller exists at HEAD. Backend-only by design until the AI/DM scene host attaches it in Faz 12 (per docs/sprint-faz-12-atom-map.md row 11)." Soul-acceptance Phase 4 proved R-key ConsultFate fires real LLM; the Ask-About per-NPC LLM path is the Faz 12 sprint deliverable.
+3. ~~Live LLM in per-NPC dialog: backend ready, production runtime wire pending.~~ **CLOSED 2026-05-27 commit `63fcf835`.** `DomainSimulationAdapter.SelectTopic` extended with `GenerateNpcTopicAnswerAsync`. Player picks Ask-About topic → DialogBoxPanel shows "thinking…" → LLM returns persona-shaped 1-2 sentence answer → panel renders it. Deterministic `AskAboutTopic.Answer` remains the offline fallback so the panel never goes blank.
 4. **No fresh screenshots after AAA scene rebuild**. Cannot capture without Unity Editor open. Existing `Reports/screens/aaa_*_1779715425.png` baselines remain in repo; new captures land when user runs the rebuild.
 5. **GitHub Actions LFS budget exceeded** — CI EditMode/PlayMode/Build jobs fail at checkout step. Requires GitHub LFS budget upgrade by @msbel5 (account-level setting, not code).
 6. **3 scenes still skipped in baseline** (`Encode_RealModel_DimensionMatches`, `OnnxAssetForge_RealModels_DimensionMatchesRequest`, `SdxlTurbo_GeneratedPng_HasValidHeader`) — these require real ONNX model files locally; expected behavior for fallback mode.
@@ -172,4 +174,4 @@ Project size after janitor cleanup: ~16 GB (down from 29 GB earlier in week than
 
 ---
 
-**End of report. Branch state: `docs/codex-mission-v2` @ e1a9bee8. Tests green. No merge.**
+**End of report. Branch state: `docs/codex-mission-v2` @ `63fcf835`. Tests green (fallback 1420/0/3). No merge. Live LLM per-NPC Ask-About wire shipped.**
