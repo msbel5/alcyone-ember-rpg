@@ -32,7 +32,12 @@ namespace EmberCrpg.Simulation.Generation
             AddSound(entries, "ui_click"); AddSound(entries, "ui_hover"); AddSound(entries, "dice_roll"); AddSound(entries, "level_up"); AddSound(entries, "error");
             entries.Add(new ManifestEntry("logo_full", "logo", "Assets/Generated/Core/logo_full.png", "logo_full", 256, 128, true, 300, "sd15-lcm"));
             entries.Add(new ManifestEntry("logo_compact", "logo", "Assets/Generated/Core/logo_compact.png", "logo_compact", 128, 128, true, 300, "sd15-lcm"));
-            entries.Add(new ManifestEntry("splash_background", "splash", "Assets/Generated/Core/splash_background.png", "splash_background", 1920, 1080, true, 300, "sdxl-turbo"));
+            // Fix 2026-05-27: was sdxl-turbo @ 1920x1080 — that path requires cuDNN 9
+            // which is not present on every dev machine, blocking Boot for users who
+            // never installed cudnn64_9.dll. sd15-lcm @ 1280x720 produces a serviceable
+            // splash without the CUDA dependency. Re-up to SDXL turbo when the cuDNN
+            // install is part of the standard machine setup.
+            entries.Add(new ManifestEntry("splash_background", "splash", "Assets/Generated/Core/splash_background.png", "splash_background", 1280, 720, true, 300, "sd15-lcm"));
             return new CoreAssetManifest(entries);
         }
 
