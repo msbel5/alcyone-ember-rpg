@@ -144,10 +144,10 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
                 Register("title", MakeLabel("EMBER CRPG", 34, true));
                 Register("subtitle", MakeLabel("Visible generation cutover", 16, false));
                 Register("new_game", MakeButton("New Game"));
-                Register("continue", MakeButton("Continue"));
-                Register("load", MakeButton("Load"));
+                Register("continue", MakeButton("Resume"));
+                Register("load", MakeButton("Load Game"));
                 Register("options", MakeButton("Options"));
-                Register("quit", MakeButton("Quit"));
+                Register("quit", MakeButton("Exit"));
                 Register("version", MakeLabel("", 12, false));
                 Register("status", MakeLabel("", 14, false));
                 return;

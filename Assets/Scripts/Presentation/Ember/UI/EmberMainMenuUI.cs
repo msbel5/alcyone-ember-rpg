@@ -65,8 +65,29 @@ namespace EmberCrpg.Presentation.Ember.UI
             _titlePanel?.SetText("status", "Backend ready. Missing assets are generated visibly on New Game.");
             _titlePanel?.SetButtonHandler("new_game", NewGame);
             _titlePanel?.SetButtonHandler("continue", Continue);
+            _titlePanel?.SetButtonHandler("load", LoadGame);
+            _titlePanel?.SetButtonHandler("options", OpenOptions);
             _titlePanel?.SetButtonHandler("quit", Quit);
             ApplyGeneratedBackdrop();
+        }
+
+        public void LoadGame()
+        {
+            // Wire to PlayerPrefs check; if no save exists, fall back to Continue's no-save path.
+            string json = PlayerPrefs.GetString("ember.save.v1");
+            if (string.IsNullOrEmpty(json))
+            {
+                _titlePanel?.SetText("status", "No saves yet — starting a new game.");
+                NewGame();
+                return;
+            }
+            Continue();
+        }
+
+        public void OpenOptions()
+        {
+            // Placeholder until the Options panel ships; status row gives visible feedback.
+            _titlePanel?.SetText("status", "Options panel coming soon. Audio/Graphics/Controls planned for the next sprint.");
         }
 
         private void ApplyGeneratedBackdrop()
