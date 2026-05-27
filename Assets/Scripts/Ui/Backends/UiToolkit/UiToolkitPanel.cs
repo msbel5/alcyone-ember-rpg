@@ -101,7 +101,12 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             if (id == "LoadingScreen" || id == "BootScreen")
             {
                 Register("root", new VisualElement());
-                Register("backdrop", new Image());
+                // Same full-bleed setup as TitleMenu so the loading backdrop fills the panel.
+                var loadingBackdrop = new Image();
+                loadingBackdrop.style.position = Position.Absolute;
+                loadingBackdrop.style.left = 0; loadingBackdrop.style.right = 0; loadingBackdrop.style.top = 0; loadingBackdrop.style.bottom = 0;
+                loadingBackdrop.scaleMode = ScaleMode.ScaleAndCrop;
+                Register("backdrop", loadingBackdrop);
                 Register("title", MakeLabel("", 30, true));
                 Register("subtitle", MakeLabel("", 16, false));
                 Register("area", MakeLabel("", 20, true));
