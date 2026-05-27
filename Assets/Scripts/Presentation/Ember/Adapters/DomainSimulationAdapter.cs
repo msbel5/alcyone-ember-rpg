@@ -6,6 +6,7 @@ using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Combat;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.Worldgen;
