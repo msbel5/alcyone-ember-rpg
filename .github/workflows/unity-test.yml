@@ -69,7 +69,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          lfs: true   # required: embedded ai.assistant DLLs (AiEditorToolsSdk.dll, etc.) are LFS-tracked
+          # LFS account budget keeps getting exhausted; checkout without it (PR #214 EditMode
+          # run failed with "exceeded its LFS budget"). EditMode tests only need source code
+          # — the ai.assistant DLLs are referenced as assets but Unity tolerates missing LFS
+          # pointer files in batchmode (logs warnings, continues). PlayMode/build jobs that
+          # truly need binaries should restore LFS in a tolerant follow-up step.
+          lfs: false
 
       - name: Cache Unity Library
         uses: actions/cache@v4
@@ -133,7 +138,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          lfs: true   # required: embedded ai.assistant DLLs (AiEditorToolsSdk.dll, etc.) are LFS-tracked
+          # LFS account budget keeps getting exhausted; checkout without it (PR #214 EditMode
+          # run failed with "exceeded its LFS budget"). EditMode tests only need source code
+          # — the ai.assistant DLLs are referenced as assets but Unity tolerates missing LFS
+          # pointer files in batchmode (logs warnings, continues). PlayMode/build jobs that
+          # truly need binaries should restore LFS in a tolerant follow-up step.
+          lfs: false
 
       - name: Cache Unity Library
         uses: actions/cache@v4
@@ -181,7 +191,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          lfs: true   # required: embedded ai.assistant DLLs (AiEditorToolsSdk.dll, etc.) are LFS-tracked
+          # LFS account budget keeps getting exhausted; checkout without it (PR #214 EditMode
+          # run failed with "exceeded its LFS budget"). EditMode tests only need source code
+          # — the ai.assistant DLLs are referenced as assets but Unity tolerates missing LFS
+          # pointer files in batchmode (logs warnings, continues). PlayMode/build jobs that
+          # truly need binaries should restore LFS in a tolerant follow-up step.
+          lfs: false
 
       - name: Cache Unity Library
         uses: actions/cache@v4
