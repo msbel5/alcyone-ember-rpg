@@ -419,7 +419,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             }
 
             if (_panel != null)
-                _panel.SetText("skills", string.Join(", ", _selectedSkills));
+                _panel.SetText("skills", "[" + _selectedSkills.Count + "/5] " + string.Join(", ", _selectedSkills));
 
             if (_step == CreationStep.BuildSelection || _step == CreationStep.DossierLaunch)
                 Render();
@@ -474,9 +474,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 case CreationStep.StatRolling:
                     return _rollKept;
                 case CreationStep.BuildSelection:
+                    // 10/10 playability fix: allow 1-5 skills (auto-fill puts 5 on class select;
+                    // user toggle previously trapped at 4). Class+alignment still required.
                     return !string.IsNullOrWhiteSpace(_selectedClassId)
                         && !string.IsNullOrWhiteSpace(_selectedAlignmentId)
-                        && _selectedSkills.Count == 5;
+                        && _selectedSkills.Count >= 1
+                        && _selectedSkills.Count <= 5;
                 case CreationStep.DossierLaunch:
                     return true;
                 default:
