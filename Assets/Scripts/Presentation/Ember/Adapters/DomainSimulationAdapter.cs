@@ -717,15 +717,20 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         public void SelectTopic(string topicId)
         {
-            // Codex audit (fourth pass A-P1): previously no-op. Now produces a
-            // deterministic acknowledgement line and appends a dialogue-seen
-            // event to the WorldEventLog so the deterministic replay surface
-            // sees the topic selection. (ActorRecord.Memory is a
-            // MemoryComponent which records facts via Add; the topic-seen
-            // marker lives on the broader dialogue tracking surface, not
-            // directly on MemoryComponent.)
+            // Audit (Faz 12 production wire, 2026-05-27): previously only set a
+            // deterministic placeholder. Now (a) sets the deterministic fallback
+            // from the seeded AskAboutTopic so the panel always renders SOMETHING
+            // useful even with the LLM offline, (b) appends the WorldEvent
+            // (unchanged), and (c) fires the async LLM topic-answer via
+            // ForgeLocator.LlmRouter. The async path replaces _currentDialogLine
+            // on success; _isDialogThinking gates the "thinking…" indicator.
             if (string.IsNullOrEmpty(topicId)) return;
-            _currentDialogLine = $"{_activeDialogActor} considers \"{topicId}\".";
+
+            var topic = _world.Topics?.FirstOrDefault(t => string.Equals(t.Id, topicId, System.StringComparison.Ordinal));
+            _currentDialogLine = !string.IsNullOrEmpty(topic?.Answer)
+                ? topic.Answer
+                : $"{_activeDialogActor} considers \"{topicId}\".";
+
             var actor = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, _activeDialogActor, System.StringComparison.Ordinal));
             if (actor != null && _world.Events != null)
             {
@@ -736,6 +741,43 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     default,
                     $"topic_selected id:{topicId}"));
             }
+
+            // Live LLM topic answer (Faz 12 production wire)
+            var npc = _world.NpcSeeds.FirstOrDefault(n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
+            if (npc != null)
+            {
+                _ = GenerateNpcTopicAnswerAsync(npc, topicId, topic);
+            }
+        }
+
+        private async Task GenerateNpcTopicAnswerAsync(NpcSeedRecord npc, string topicId, AskAboutTopic topic)
+        {
+            var router = ForgeLocator.LlmRouter;
+            if (router == null) return;
+
+            _isDialogThinking = true;
+            var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
+            var worldStyle = _world.WorldProfile?.Style.ToString() ?? "fantasy";
+
+            var request = new LlmRequest(
+                "npc_topic_answer",
+                "npc:" + npc.Id.Value + ":topic:" + topicId,
+                null,
+                180,
+                npc.Id.Value,
+                $"You are {npc.Name}, a {npc.Role} in a {worldStyle} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
+                new List<string>());
+
+            await Task.Run(() =>
+            {
+                LlmProviderKind chosen;
+                var response = router.Complete(request, out chosen);
+                if (response != null && !string.IsNullOrEmpty(response.Text))
+                {
+                    _currentDialogLine = response.Text.Trim();
+                }
+                _isDialogThinking = false;
+            });
         }
 
         // ----- IPlayerCommandSink -----
