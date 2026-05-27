@@ -28,6 +28,7 @@ namespace EmberCrpg.Tests.PlayMode.Support
         public void SetProgress(string slot, float normalized) { }
         public void LogLine(string slot, UiLogSeverity severity, string line) { LogText += "[" + severity.ToString().ToLowerInvariant() + "] " + line + "\n"; }
         public void SetThumbnail(string slot, Texture2D texture) { }
+        public void SetThumbnailGrid(string slot, System.Collections.Generic.IReadOnlyList<Texture2D> textures) { }
         public void SetVisible(string slot, bool visible) { }
         public void SetButtonHandler(string slot, Action onClick) { }
         public void SetImage(string slot, Texture2D texture) => SetThumbnail(slot, texture);

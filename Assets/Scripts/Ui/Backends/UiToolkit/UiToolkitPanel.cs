@@ -69,6 +69,37 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             GetTyped<Image>(slot, () => new Image()).image = texture;
         }
 
+        public void SetThumbnailGrid(string slot, System.Collections.Generic.IReadOnlyList<Texture2D> textures)
+        {
+            // The slot is expected to be (or become) a VisualElement container. Children are
+            // wiped and rebuilt every call so callers can re-publish as new PNGs land on disk.
+            var container = GetOrCreate(slot, () =>
+            {
+                var v = new VisualElement();
+                v.style.flexDirection = FlexDirection.Row;
+                v.style.flexWrap = Wrap.Wrap;
+                v.style.justifyContent = Justify.Center;
+                v.style.marginTop = 8;
+                return v;
+            });
+            container.Clear();
+            if (textures == null) return;
+            for (int i = 0; i < textures.Count; i++)
+            {
+                var tex = textures[i];
+                if (tex == null) continue;
+                var img = new Image { image = tex };
+                img.style.width = 40;
+                img.style.height = 40;
+                img.style.marginLeft = 3;
+                img.style.marginRight = 3;
+                img.style.marginTop = 3;
+                img.style.marginBottom = 3;
+                img.scaleMode = ScaleMode.ScaleToFit;
+                container.Add(img);
+            }
+        }
+
         public void SetVisible(string slot, bool visible)
         {
             GetOrCreate(slot, CreateForSlot).style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
@@ -161,6 +192,14 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
                 Register("options", MakeButton("Options"));
                 Register("icon_quit", MakeIcon(48));
                 Register("quit", MakeButton("Exit"));
+                // "Auto-wire decorator" — every forge-generated PNG that isn't already pinned
+                // to a named icon slot lands in this strip so no asset is forgotten.
+                var decorationStrip = new VisualElement();
+                decorationStrip.style.flexDirection = FlexDirection.Row;
+                decorationStrip.style.flexWrap = Wrap.Wrap;
+                decorationStrip.style.justifyContent = Justify.Center;
+                decorationStrip.style.marginTop = 12;
+                Register("decoration_strip", decorationStrip);
                 Register("version", MakeLabel("", 12, false));
                 Register("status", MakeLabel("", 14, false));
                 return;

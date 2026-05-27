@@ -43,6 +43,11 @@ namespace EmberCrpg.Ui.Foundation
         /// <summary>Update an image / thumbnail slot. Pass <c>null</c> to clear.</summary>
         void SetThumbnail(string slot, Texture2D texture);
 
+        /// <summary>Fill a container slot with a grid/row of thumbnails. Backends clear previous
+        /// children before adding the new images so this is safe to call repeatedly as new
+        /// forge-generated assets arrive.</summary>
+        void SetThumbnailGrid(string slot, System.Collections.Generic.IReadOnlyList<Texture2D> textures);
+
         /// <summary>Show or hide a slot.</summary>
         void SetVisible(string slot, bool visible);
 

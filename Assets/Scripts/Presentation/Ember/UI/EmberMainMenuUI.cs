@@ -43,7 +43,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             _decorationRefreshCoroutine = StartCoroutine(RefreshDecorationsLoop());
         }
 
-        private System.Collections.IEnumerator _decorationRefreshCoroutine;
+        private UnityEngine.Coroutine _decorationRefreshCoroutine;
 
         private System.Collections.IEnumerator RefreshDecorationsLoop()
         {
@@ -87,6 +87,38 @@ namespace EmberCrpg.Presentation.Ember.UI
             // and refresh any per-button icons so the menu auto-wires every PNG that arrives.
             ApplyGeneratedBackdrop();
             ApplyButtonIcons();
+            ApplyAutoDecorationStrip();
+        }
+
+        // Entry ids that are already wired to a named icon slot above each menu button.
+        // Anything else in the generated directory gets dropped into decoration_strip.
+        private static readonly System.Collections.Generic.HashSet<string> PinnedIconEntryIds =
+            new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+            {
+                "splash_background", "logo_full", "logo_compact",
+                "new_game", "continue", "journal", "settings", "error",
+            };
+
+        private void ApplyAutoDecorationStrip()
+        {
+            if (_titlePanel == null) return;
+            var parent = System.IO.Directory.GetParent(Application.dataPath);
+            var root = parent != null ? parent.FullName : Application.dataPath;
+            var dir = System.IO.Path.Combine(root, "Assets", "Generated", "Core");
+            if (!System.IO.Directory.Exists(dir))
+            {
+                _titlePanel.SetThumbnailGrid("decoration_strip", System.Array.Empty<Texture2D>());
+                return;
+            }
+            var textures = new System.Collections.Generic.List<Texture2D>();
+            foreach (var path in System.IO.Directory.GetFiles(dir, "*.png"))
+            {
+                var entryId = System.IO.Path.GetFileNameWithoutExtension(path);
+                if (PinnedIconEntryIds.Contains(entryId)) continue;
+                var tex = LoadGeneratedTexture(entryId);
+                if (tex != null) textures.Add(tex);
+            }
+            _titlePanel.SetThumbnailGrid("decoration_strip", textures);
         }
 
         private void ApplyButtonIcons()
