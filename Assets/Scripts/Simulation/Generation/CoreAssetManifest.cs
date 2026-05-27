@@ -19,7 +19,9 @@ namespace EmberCrpg.Simulation.Generation
             var entries = new List<ManifestEntry>();
             // Critical visual assets first so the menu/loading screens get backdrops even if later
             // generation stalls or hits the timeout. Order: splash, logos, then UI icons, items, spells.
-            entries.Add(new ManifestEntry("splash_background", "splash", "Assets/Generated/Core/splash_background.png", "splash_background", 1280, 720, true, 300, "sd15-lcm"));
+            // SD 1.5 LCM requires width/height divisible by 64. 720 was not; ONNX inference threw.
+            // 768x512 (3:2) generates reliably and ScaleAndCrop fills 16:9 backdrops without artefacts.
+            entries.Add(new ManifestEntry("splash_background", "splash", "Assets/Generated/Core/splash_background.png", "splash_background", 768, 512, true, 300, "sd15-lcm"));
             entries.Add(new ManifestEntry("logo_full", "logo", "Assets/Generated/Core/logo_full.png", "logo_full", 256, 128, true, 300, "sd15-lcm"));
             entries.Add(new ManifestEntry("logo_compact", "logo", "Assets/Generated/Core/logo_compact.png", "logo_compact", 128, 128, true, 300, "sd15-lcm"));
             AddMany(entries, "ui", 64, 64, true, "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
