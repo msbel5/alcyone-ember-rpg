@@ -181,7 +181,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             builder.AppendLine(string.Join(", ", _selectedSkills.OrderBy(v => v)));
             builder.AppendLine("Use visible class/alignment/skill buttons below.");
             if (!ComputeCanAdvance())
-                builder.AppendLine("Continue locked: choose class, alignment, and exactly 5 skills.");
+                builder.AppendLine("Continue locked: choose class, alignment, and at least 1 skill (up to 5).");
             return builder.ToString();
         }
 
