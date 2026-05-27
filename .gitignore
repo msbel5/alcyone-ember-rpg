@@ -97,3 +97,8 @@ Reports/validation-fallback*.log
 Reports/build-windows64*.log
 Reports/build-*.log
 Reports/*.tmp
+
+# cuDNN 9 redistributable DLLs are huge (~830MB). Devs install locally
+# from https://developer.nvidia.com/cudnn-9-archive and copy into
+# Assets/Plugins/x86_64/cuda/. The forge picks them up at runtime.
+Assets/Plugins/x86_64/cuda/cudnn*.dll
