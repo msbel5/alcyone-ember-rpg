@@ -77,7 +77,9 @@ namespace EmberCrpg.Simulation.Forge
             var negativeHidden = EncodeText(negativeTokens);
             var latents = LatentNoiseSampler.SampleGaussian(request.Seed, latentLength, SigmaMax);
 
-            var sigmas = new[] { 1.0f, 0.75f, 0.5f, 0.25f, 0.0f };
+            // 9 sigmas paired with 8 timesteps so the loop's sigmas[step+1] lookup stays in range.
+            // (4-step path used 5 sigmas; 8-step path needs 9.) Evenly-spaced over the noise range.
+            var sigmas = new[] { 1.0f, 0.875f, 0.75f, 0.625f, 0.5f, 0.375f, 0.25f, 0.125f, 0.0f };
             // 8 evenly-spaced LCM timesteps (was 4). LCM is calibrated for 1-8 steps; 8 produces
             // noticeably better composition + colour without the 16-step law of diminishing returns.
             // Generation time roughly doubles vs 4-step but stays under the 300s timeout.
