@@ -21,7 +21,10 @@ namespace EmberCrpg.Presentation.Ember.Boot
             EnsureSurface();
             EnsureForgeBootstrap();
             var forge = EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge ?? new SkipAssetForge();
-            var result = await RunAsync(forge, RuntimeRoot(), _nextScene, CancellationToken.None);
+            // Limit Boot's blocking generation to the first 3 entries (splash_background, logo_full,
+            // logo_compact). Remaining icons/items/spells generate visibly on-demand later so the
+            // player isn't trapped on Boot waiting for ~34 SD15-LCM inferences in a row.
+            var result = await RunAsync(forge, RuntimeRoot(), _nextScene, CancellationToken.None, maxEntries: 3);
             if (!string.IsNullOrEmpty(result.RequestedScene))
             {
                 var op = SceneManager.LoadSceneAsync(result.RequestedScene);
