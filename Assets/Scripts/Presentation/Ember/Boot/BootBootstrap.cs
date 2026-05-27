@@ -22,7 +22,16 @@ namespace EmberCrpg.Presentation.Ember.Boot
             EnsureForgeBootstrap();
             var forge = EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge ?? new SkipAssetForge();
             var result = await RunAsync(forge, RuntimeRoot(), _nextScene, CancellationToken.None);
-            if (!string.IsNullOrEmpty(result.RequestedScene)) _ = SceneManager.LoadSceneAsync(result.RequestedScene);
+            if (!string.IsNullOrEmpty(result.RequestedScene))
+            {
+                var op = SceneManager.LoadSceneAsync(result.RequestedScene);
+                if (op != null)
+                {
+                    while (!op.isDone) await System.Threading.Tasks.Task.Yield();
+                }
+                // Boot finished + target scene loaded; release the loading overlay so the menu is visible.
+                EmberCrpg.Presentation.Ember.Loading.LoadingScreen.Dismiss();
+            }
         }
 
         public static Task<BootFlowResult> RunForTestsAsync(IAssetForge forge)

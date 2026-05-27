@@ -1,6 +1,7 @@
 // Why this file is intentionally long: it implements the full PRD loading-screen lifecycle, visible progress, tips, backdrop, and fade behavior.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 
@@ -164,16 +165,68 @@ namespace EmberCrpg.Presentation.Ember.Loading
         public Texture2D LoadBackdropForArea(string areaId)
         {
             if (string.IsNullOrWhiteSpace(areaId))
-                return Resources.Load<Texture2D>("Loading/generic");
+                return TryLoadGeneratedTexture("splash_background") ?? Resources.Load<Texture2D>("Loading/generic");
 
             var normalized = areaId.Trim();
             var specific = Resources.Load<Texture2D>("Loading/" + normalized);
             if (specific != null) return specific;
 
+            // Runtime fallback: pick up forge-generated PNGs from disk under <root>/Assets/Generated/Core/.
+            // Map known area ids to manifest entry ids so loading screens get a real backdrop instead of a blank.
+            var generated = TryLoadGeneratedTexture(MapAreaIdToGeneratedEntry(normalized));
+            if (generated != null) return generated;
+
+            // Last fallback: the universal splash_background if it exists.
+            var splash = TryLoadGeneratedTexture("splash_background");
+            if (splash != null) return splash;
+
             if (_missingBackdropLogged.Add(normalized))
                 Debug.LogWarning("[LoadingScreen] Missing backdrop for area '" + normalized + "', using generic fallback.");
 
             return Resources.Load<Texture2D>("Loading/generic");
+        }
+
+        private static string MapAreaIdToGeneratedEntry(string areaId)
+        {
+            // Loading contexts ("boot", "main_menu", "character_creation", "worldgen") all share splash_background
+            // until per-area generated backdrops exist; scene-name areas get their own entry if generated.
+            switch (areaId.ToLowerInvariant())
+            {
+                case "boot":
+                case "main_menu":
+                case "mainmenu":
+                case "character_creation":
+                case "worldgen":
+                    return "splash_background";
+                default:
+                    return areaId;
+            }
+        }
+
+        private static Texture2D TryLoadGeneratedTexture(string entryId)
+        {
+            if (string.IsNullOrWhiteSpace(entryId)) return null;
+            var parent = Directory.GetParent(Application.dataPath);
+            var root = parent != null ? parent.FullName : Application.dataPath;
+            var path = Path.Combine(root, "Assets", "Generated", "Core", entryId + ".png");
+            if (!File.Exists(path)) return null;
+            try
+            {
+                var bytes = File.ReadAllBytes(path);
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                if (tex.LoadImage(bytes))
+                {
+                    tex.wrapMode = TextureWrapMode.Clamp;
+                    tex.filterMode = FilterMode.Bilinear;
+                    return tex;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[LoadingScreen] Failed to load generated texture '" + entryId + "': " + ex.Message);
+                return null;
+            }
         }
 
         public void ApplyBackdrop(Texture2D texture)
