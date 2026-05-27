@@ -66,6 +66,25 @@ namespace EmberCrpg.Presentation.Ember.UI
             _titlePanel?.SetButtonHandler("new_game", NewGame);
             _titlePanel?.SetButtonHandler("continue", Continue);
             _titlePanel?.SetButtonHandler("quit", Quit);
+            ApplyGeneratedBackdrop();
+        }
+
+        private void ApplyGeneratedBackdrop()
+        {
+            if (_titlePanel == null) return;
+            var tex = LoadGeneratedTexture("splash_background");
+            if (tex != null) _titlePanel.SetThumbnail("backdrop", tex);
+        }
+
+        private static Texture2D LoadGeneratedTexture(string entryId)
+        {
+            var parent = Directory.GetParent(Application.dataPath);
+            var root = parent != null ? parent.FullName : Application.dataPath;
+            var path = Path.Combine(root, "Assets", "Generated", "Core", entryId + ".png");
+            if (!File.Exists(path)) return null;
+            var bytes = File.ReadAllBytes(path);
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            return texture.LoadImage(bytes) ? texture : null;
         }
 
         private static async Task RunScenarioAssetTopUpAsync()

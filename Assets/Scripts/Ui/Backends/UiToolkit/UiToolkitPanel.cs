@@ -135,6 +135,12 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
 
             if (id == "TitleMenu")
             {
+                // Backdrop sits behind the menu; EmberMainMenuUI fills it from forge-generated splash_background.
+                var backdrop = new Image();
+                backdrop.style.position = Position.Absolute;
+                backdrop.style.left = 0; backdrop.style.right = 0; backdrop.style.top = 0; backdrop.style.bottom = 0;
+                backdrop.scaleMode = ScaleMode.ScaleAndCrop;
+                Register("backdrop", backdrop);
                 Register("title", MakeLabel("EMBER CRPG", 34, true));
                 Register("subtitle", MakeLabel("Visible generation cutover", 16, false));
                 Register("new_game", MakeButton("New Game"));
