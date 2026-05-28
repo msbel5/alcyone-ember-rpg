@@ -373,7 +373,7 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         // Themed progress bar: dark warm track, ember-gold fill, rounded, no "%" label.
         private ProgressBar MakeProgress()
         {
-            var bar = MakeProgress();
+            var bar = new ProgressBar { lowValue = 0f, highValue = 100f };
             bar.style.height = 12;
             SetRadius(bar, _tokens != null ? _tokens.RadiusSm : 6f);
             var track = bar.Q(className: "unity-progress-bar__background");
