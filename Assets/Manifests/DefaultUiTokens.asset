@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad004c79fd60d804c96161b46b10ebcd, type: 3}
   m_Name: DefaultUiTokens
   m_EditorClassIdentifier: 
-  Accent: {r: 0.92, g: 0.55, b: 0.22, a: 1}
-  AccentMuted: {r: 0.52, g: 0.34, b: 0.22, a: 1}
-  Background: {r: 0.07, g: 0.07, b: 0.09, a: 1}
-  Panel: {r: 0.11, g: 0.12, b: 0.15, a: 1}
-  Text: {r: 0.96, g: 0.96, b: 0.98, a: 1}
-  TextMuted: {r: 0.65, g: 0.66, b: 0.72, a: 1}
-  Danger: {r: 0.94, g: 0.39, b: 0.39, a: 1}
-  Warning: {r: 0.95, g: 0.78, b: 0.34, a: 1}
+  Accent: {r: 1, g: 0.851, b: 0.298, a: 1}
+  AccentMuted: {r: 0.18, g: 0.14, b: 0.09, a: 1}
+  Background: {r: 0.051, g: 0.051, b: 0.071, a: 1}
+  Panel: {r: 0.039, g: 0.035, b: 0.031, a: 1}
+  Text: {r: 0.949, g: 0.859, b: 0.62, a: 1}
+  TextMuted: {r: 0.902, g: 0.851, b: 0.702, a: 1}
+  Danger: {r: 0.851, g: 0.2, b: 0.122, a: 1}
+  Warning: {r: 0.851, g: 0.702, b: 0.102, a: 1}
   Success: {r: 0.46, g: 0.83, b: 0.55, a: 1}

@@ -37,12 +37,21 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             {
                 case Button button:
                     button.text = text ?? string.Empty;
-                    // Selection feedback: "[X] ..." rows (class/alignment/skill) get a bright accent
-                    // background so the player can SEE what is chosen; "[ ] ..." stay muted.
+                    // Selection feedback (design system: selection is a gold OUTLINE, not a gold
+                    // flood). "[X] ..." rows get a warmer fill + bright gold hairline + ember-gold
+                    // text; "[ ] ..." stay muted panel-brown with the faint gold hairline.
                     if ((text ?? string.Empty).StartsWith("[X]", StringComparison.Ordinal))
-                        button.style.backgroundColor = _tokens != null ? _tokens.Accent : new Color(0.62f, 0.34f, 0.12f);
+                    {
+                        button.style.backgroundColor = _tokens != null ? _tokens.PanelBrownHover : new Color(0.227f, 0.18f, 0.114f);
+                        button.style.color = _tokens != null ? _tokens.EmberGold : new Color(1f, 0.851f, 0.298f);
+                        SetHairline(button, _tokens != null ? _tokens.StateSelect : new Color(0.914f, 0.788f, 0.227f));
+                    }
                     else if ((text ?? string.Empty).StartsWith("[ ]", StringComparison.Ordinal))
-                        button.style.backgroundColor = _tokens != null ? _tokens.AccentMuted : new Color(0.30f, 0.16f, 0.07f);
+                    {
+                        button.style.backgroundColor = _tokens != null ? _tokens.PanelBrown : new Color(0.18f, 0.14f, 0.09f);
+                        button.style.color = _tokens != null ? _tokens.Parchment : new Color(0.949f, 0.859f, 0.62f);
+                        SetHairline(button, _tokens != null ? _tokens.GoldHairline : new Color(0.949f, 0.859f, 0.62f, 0.22f));
+                    }
                     break;
                 case TextField field:
                     field.value = text ?? string.Empty;
@@ -364,12 +373,58 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         private Button MakeButton(string text)
         {
             var button = new Button { text = text ?? string.Empty };
-            button.style.height = 42;
+            button.style.height = 44;
             button.style.marginTop = 4;
             button.style.marginBottom = 4;
-            button.style.backgroundColor = _tokens != null ? _tokens.AccentMuted : new Color(0.35f, 0.19f, 0.08f);
-            button.style.color = _tokens != null ? _tokens.Text : Color.white;
+            button.style.fontSize = _tokens != null ? _tokens.FontSizeBody : 20f;
+            button.style.backgroundColor = _tokens != null ? _tokens.PanelBrown : new Color(0.18f, 0.14f, 0.09f);
+            button.style.color = _tokens != null ? _tokens.Parchment : new Color(0.949f, 0.859f, 0.62f);
+            // Softly-rounded warm furniture (design system): 6px corners + faint gold hairline,
+            // never sharp grey chrome. Approximates the leather-gradient direction with a solid
+            // warm fill (runtime USS has no linear-gradient).
+            SetRadius(button, _tokens != null ? _tokens.RadiusSm : 6f);
+            SetHairline(button, _tokens != null ? _tokens.GoldHairline : new Color(0.949f, 0.859f, 0.62f, 0.22f));
+            ApplyUiFont(button);
             return button;
+        }
+
+        private static Font _uiFont;
+        private static bool _uiFontLoaded;
+
+        // Lazy-load the design-system UI face (Jost) from Resources. Null-safe: if the TTF is
+        // missing the panels keep TMP's default font, so this never breaks a build.
+        private static Font UiFont()
+        {
+            if (!_uiFontLoaded)
+            {
+                _uiFontLoaded = true;
+                _uiFont = Resources.Load<Font>("Fonts/Jost");
+            }
+            return _uiFont;
+        }
+
+        private static void ApplyUiFont(VisualElement el)
+        {
+            var font = UiFont();
+            if (font != null) el.style.unityFontDefinition = font; // implicit Font -> StyleFontDefinition
+        }
+
+        // Round all four corners to the same radius.
+        private static void SetRadius(VisualElement el, float r)
+        {
+            el.style.borderTopLeftRadius = r;
+            el.style.borderTopRightRadius = r;
+            el.style.borderBottomLeftRadius = r;
+            el.style.borderBottomRightRadius = r;
+        }
+
+        // Apply a 1px hairline border in the given color on all four edges.
+        private static void SetHairline(VisualElement el, Color color)
+        {
+            el.style.borderTopWidth = 1; el.style.borderRightWidth = 1;
+            el.style.borderBottomWidth = 1; el.style.borderLeftWidth = 1;
+            el.style.borderTopColor = color; el.style.borderRightColor = color;
+            el.style.borderBottomColor = color; el.style.borderLeftColor = color;
         }
 
         private Label MakeLabel(string text, int size, bool strong)
@@ -380,6 +435,7 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             label.style.whiteSpace = WhiteSpace.Normal;
             label.style.color = _tokens != null ? _tokens.Text : Color.white;
             label.style.marginBottom = 6;
+            ApplyUiFont(label);
             return label;
         }
 

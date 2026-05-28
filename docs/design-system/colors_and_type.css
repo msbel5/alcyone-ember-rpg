@@ -1,0 +1,173 @@
+/* ============================================================
+   EMBER CRPG — Colors & Type
+   Tokens extracted from the Unity/C# presentation layer of
+   msbel5/alcyone-ember-rpg (programmatic HUD + menus) and the
+   MainMenu screenshot. Hex values are the exact translations of
+   the UnityEngine.Color floats found in the UI scripts.
+
+   FONTS: the repo ships NO font files (TMP placeholders only).
+   The faces below are Google Fonts substitutes chosen to match
+   the on-screen look (clean gold geometric wordmark) and the
+   game's Fallout-1 / Hitchhiker's narrative lineage. Swap in the
+   real .ttf once art direction lands. See README › Visual Foundations.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Cinzel:wght@500;600;700&display=swap');
+
+:root {
+  /* ---------- CORE PALETTE ---------- */
+  /* Backgrounds — two near-blacks: a cool void (menus) + a warm void (in-world panels) */
+  --void-cool:      #0D0D12;   /* main menu / boot background  (rgb 13,13,18)        */
+  --void-warm:      #0A0908;   /* character-creation panel     (0.04,0.035,0.03)     */
+  --panel-brown:    #2E2417;   /* primary button / panel fill  (0.18,0.14,0.09)      */
+  --input-brown:    #1F1A14;   /* input field fill             (0.12,0.10,0.08)      */
+  --worldgen-brown: #26201A;   /* worldgen input fill          (0.15,0.12,0.10)      */
+  --slot-grey:      #333333;   /* spell/inventory slot fill    (0.20,0.20,0.20 @ .8) */
+  --scrim:          rgba(0,0,0,0.45); /* HUD bar track / overlays                    */
+
+  /* Ember golds — the single brand accent, used sparingly on void */
+  --ember-gold:     #FFD94C;   /* EMBER wordmark               (sampled 255,217,76)  */
+  --ember-gold-2:   #FFD152;   /* title text                   (1.0,0.82,0.32)       */
+  --ember-amber:    #F1C40F;   /* dialog highlight / selection outline               */
+
+  /* Parchment / ink — text colors */
+  --parchment:      #F2DB9E;   /* pale-gold label text         (0.95,0.86,0.62)      */
+  --parchment-dim:  #E6D9B3;   /* loading flavor text          (0.90,0.85,0.70)      */
+  --ink:            #261A0D;   /* "Deep Charcoal Brown" on parchment (0.15,0.10,0.05)*/
+  --bone:           #FFFFFF;   /* white labels on dark                               */
+  --bone-dim:       rgba(255,255,255,0.40); /* placeholder / italic prompt text      */
+
+  /* ---------- SEMANTIC (vitals + state) ---------- */
+  --vital-health:   #D9331F;   /* health bar       (0.85,0.20,0.15)                  */
+  --vital-fatigue:  #D9B31A;   /* stamina/fatigue  (0.85,0.70,0.10)                  */
+  --vital-mana:     #3373F2;   /* mana             (0.20,0.45,0.95)                  */
+  --state-select:   #E9C93A;   /* active slot outline — softened from raw Color.yellow */
+
+  /* ---------- TYPE FAMILIES ---------- */
+  --font-display: 'Jost', system-ui, sans-serif;       /* wordmark, titles, buttons, labels (uppercase, tracked) */
+  --font-ui:      'Jost', system-ui, sans-serif;        /* HUD, stats, menus                                     */
+  --font-narrative: 'Spectral', Georgia, serif;         /* NPC dialogue, lore, loading flavor (Hitchhiker voice) */
+  --font-engraved: 'Cinzel', 'Jost', serif;             /* optional ceremonial alt for section/region headers    */
+
+  /* ---------- TYPE SCALE (1080p reference UI, ScaleWithScreenSize) ---------- */
+  --fs-wordmark: 92px;   /* EMBER main-menu logo                 */
+  --fs-display:  42px;   /* "Character Creation" screen title    */
+  --fs-h1:       28px;   /* step labels                          */
+  --fs-h2:       24px;   /* panel headers ("WORLD GENERATION")   */
+  --fs-body:     20px;   /* buttons / primary UI                 */
+  --fs-dialog:   18px;   /* NPC line + topics + damage log       */
+  --fs-label:    16px;   /* topic lines                          */
+  --fs-micro:    12px;   /* bar labels (HEALTH / MANA)           */
+
+  --tracking-wordmark: 0.18em;  /* the EMBER mark is widely letterspaced */
+  --tracking-label:    0.08em;
+  --leading-narrative: 1.55;
+
+  /* ---------- RADII / BORDERS / ELEVATION ---------- */
+  /* Softened, painterly direction: corners are gently rounded (worn paper &
+     carved wood, not sharp glass), fills are warm gradients, depth is soft
+     warm shadow + a gold hairline. Avoid hard 90° boxes. */
+  --radius-sm:   6px;    /* buttons, inputs, slots, chips            */
+  --radius-md:  12px;    /* panels, cards, fields cluster            */
+  --radius-lg:  20px;    /* modals (dialog, worldgen, character)     */
+  --radius-pill: 999px;  /* vitals bars read as soft capsules        */
+  --border-hair: 1px solid rgba(242,219,158,0.22);   /* faint gold hairline    */
+  --border-gold: 1px solid var(--ember-gold);
+  --inset-bar:   2px;    /* fill inset inside a vitals track                   */
+  --shadow-modal: 0 16px 44px rgba(0,0,0,0.55);      /* soft warm modal shadow   */
+  --hl-top: inset 0 1px 0 rgba(242,219,158,0.12);    /* gentle top highlight     */
+
+  /* ---------- MOTION ---------- */
+  --ease-open: cubic-bezier(0.215, 0.61, 0.355, 1);  /* EaseOutCubic */
+  --ease-close: cubic-bezier(0.55, 0.085, 0.68, 0.53);/* EaseInQuad   */
+  --dur-open: 180ms;     /* panel open: fade + scale 0.92→1   */
+  --dur-close: 120ms;    /* panel close: fade + scale →0.94   */
+  --typewriter-cps: 45;  /* dialog reveal characters/second   */
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT STYLES
+   ============================================================ */
+
+.ember-wordmark {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-wordmark);
+  letter-spacing: var(--tracking-wordmark);
+  color: var(--ember-gold);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-h1);
+  color: var(--parchment);
+  letter-spacing: 0.02em;
+}
+
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-h2);
+  color: var(--parchment);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+.ember-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-display);
+  color: var(--ember-gold-2);
+  letter-spacing: 0.04em;
+}
+
+/* NPC dialogue, lore, loading flavor — the literary voice */
+.narrative, .dialog-line, .flavor {
+  font-family: var(--font-narrative);
+  font-weight: 400;
+  font-size: var(--fs-dialog);
+  line-height: var(--leading-narrative);
+  color: var(--parchment-dim);
+}
+.flavor { font-style: italic; text-align: center; }
+
+/* Buttons — softly rounded, warm leather gradient, parchment label, uppercase */
+.btn, button.ember {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--fs-body);
+  color: var(--parchment-dim);
+  background: linear-gradient(180deg, #3a2d1c 0%, #281f13 100%);
+  border: var(--border-hair);
+  border-radius: var(--radius-sm);
+  padding: 13px 26px;
+  letter-spacing: var(--tracking-label);
+  cursor: pointer;
+  box-shadow: var(--hl-top), 0 2px 6px rgba(0,0,0,0.35);
+  transition: background var(--dur-open) var(--ease-open),
+              border-color var(--dur-open) var(--ease-open),
+              transform var(--dur-close) var(--ease-close);
+}
+.btn:hover, button.ember:hover { background: linear-gradient(180deg,#4a3a23 0%,#332817 100%); border-color: var(--ember-amber); color: var(--parchment); }
+.btn:active, button.ember:active { transform: scale(0.97); }
+
+/* Micro labels on vitals bars */
+.bar-label {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-label);
+  color: var(--bone);
+  text-transform: uppercase;
+}
+
+/* Topic / numbered-choice line (Fallout-1 dialog) */
+.topic {
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  color: var(--ink);
+}
+.topic .key { color: var(--ember-amber); }
