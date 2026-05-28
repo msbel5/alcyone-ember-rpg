@@ -44,6 +44,8 @@ namespace EmberCrpg.Ui.Foundation
         [Header("Ember Design System — golds, inks & vitals")]
         public Color EmberGold = new Color(1f, 0.851f, 0.298f, 1f);      // #FFD94C wordmark
         public Color EmberAmber = new Color(0.945f, 0.769f, 0.059f, 1f); // #F1C40F highlight/selection
+        public Color Parchment = new Color(0.949f, 0.859f, 0.62f, 1f);   // #F2DB9E pale-gold label text
+        public Color ParchmentDim = new Color(0.902f, 0.851f, 0.702f, 1f); // #E6D9B3 loading flavor text
         public Color Ink = new Color(0.149f, 0.102f, 0.051f, 1f);        // #261A0D text on parchment
         public Color Bone = new Color(1f, 1f, 1f, 1f);                   // #FFFFFF
         public Color VitalHealth = new Color(0.851f, 0.2f, 0.122f, 1f);  // #D9331F

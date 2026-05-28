@@ -406,7 +406,7 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         private static void ApplyUiFont(VisualElement el)
         {
             var font = UiFont();
-            if (font != null) el.style.unityFontDefinition = font; // implicit Font -> StyleFontDefinition
+            if (font != null) el.style.unityFont = font; // StyleFont has an implicit operator from Font
         }
 
         // Round all four corners to the same radius.
