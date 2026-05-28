@@ -87,6 +87,13 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             _clock.AdvanceTick(0);
 
+            // The CharCreation -> worldgen flow shows a DontDestroyOnLoad LoadingScreen overlay
+            // and loads this scene underneath it, but nothing dismissed the overlay once the
+            // world was live -- so the player saw a permanent "loading" screen on top of a
+            // running game (reported as "unplayable"). Now that the world is bootstrapped and
+            // the first tick has advanced, release the overlay so the Worldspace is visible.
+            EmberCrpg.Presentation.Ember.Loading.LoadingScreen.Dismiss();
+
             // Codex audit (sixth pass E-P2 #E3): if the host re-runs (additive
             // scene loading, domain reload during play, or a scene that
             // already authors EmberSaveService as a sibling component),
