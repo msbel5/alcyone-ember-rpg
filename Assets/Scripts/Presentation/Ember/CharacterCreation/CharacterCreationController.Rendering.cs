@@ -21,7 +21,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             _panel.SetText("header", "IMMERSIVE CHARACTER CREATION");
             _panel.SetText("step", StepLabel());
-            _panel.SetProgress("progress", Mathf.Clamp01((int)_step / 5f));
+            _panel.SetProgress("progress", Mathf.Clamp01((int)_step / 10f));
             _panel.SetText("next", NextButtonText());
             _panel.SetVisible("back", _step != CreationStep.CommanderIdentity);
             _panel.SetVisible("next", _step != CreationStep.Complete);
@@ -33,6 +33,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 RenderQuestionButtons();
             else if (_step == CreationStep.CommanderIdentity)
                 RenderCommanderButtons();
+            else if (_step == CreationStep.Birthsign)
+                RenderBirthsignButtons();
             else if (_step == CreationStep.StatRolling)
                 RenderStatButtons();
             else if (_step == CreationStep.BuildSelection)
@@ -45,13 +47,18 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             switch (_step)
             {
-                case CreationStep.CommanderIdentity: return "Step 0 - Commander Identity";
-                case CreationStep.PersonalityQuestions: return "Step 1 - Personality Questions";
-                case CreationStep.WorldHistoryReveal: return "Step 2 - World History Reveal";
-                case CreationStep.StatRolling: return "Step 3 - Stat Rolling";
-                case CreationStep.BuildSelection: return "Step 4 - Class Alignment Skills";
-                case CreationStep.DossierLaunch: return "Step 5 - Dossier and Launch";
-                default: return "Character Creation Complete";
+                case CreationStep.CommanderIdentity: return "Name";
+                case CreationStep.WorldMood: return "The World's Mood";
+                case CreationStep.PlayerCalling: return "Your Calling";
+                case CreationStep.FateBegins: return "Where Fate Begins";
+                case CreationStep.PersonalityQuestions: return "Trials of Character";
+                case CreationStep.WorldHistoryReveal: return "The World Awakens";
+                case CreationStep.Birthsign: return "Birthsign";
+                case CreationStep.StatRolling: return "Abilities";
+                case CreationStep.BuildSelection: return "Class, Alignment & Skills";
+                case CreationStep.Portrait: return "Portrait";
+                case CreationStep.DossierLaunch: return "Dossier";
+                default: return "Your story begins";
             }
         }
 
@@ -76,14 +83,24 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             {
                 case CreationStep.CommanderIdentity:
                     return BuildCommanderBody();
+                case CreationStep.WorldMood:
+                    return "What is the world's mood? Grim, vibrant, haunted — the canvas the Forge will paint on.";
+                case CreationStep.PlayerCalling:
+                    return "What is your calling? Smith, mage, wanderer — the role fate first knows you by.";
+                case CreationStep.FateBegins:
+                    return "Where does fate begin? A forge, a tavern, a crossroads at dusk.";
                 case CreationStep.PersonalityQuestions:
                     return BuildQuestionBody();
                 case CreationStep.WorldHistoryReveal:
                     return BuildHistoryBody();
+                case CreationStep.Birthsign:
+                    return "Under which sign were you born? It marks your blood with a gift.";
                 case CreationStep.StatRolling:
                     return BuildStatsBody();
                 case CreationStep.BuildSelection:
                     return BuildSelectionBody();
+                case CreationStep.Portrait:
+                    return "The Forge paints your likeness. Keep it, or roll the embers again.";
                 case CreationStep.DossierLaunch:
                     return BuildDossierBody();
                 default:
@@ -291,6 +308,21 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             LoadingScreen.SetProgress(view.QuestionOpen ? 0.85f : 1f, view.QuestionOpen ? "Awaiting worldgen question" : "Entering " + _firstSceneName);
             LoadingScreen.LogLine(UiLogSeverity.Success, "[worldgen] visible projection mounted");
+        }
+
+        private void RenderBirthsignButtons()
+        {
+            var signs = CharacterCreationCatalog.Birthsigns;
+            for (int i = 0; i < signs.Count; i++)
+            {
+                var sign = signs[i];
+                string slot = "birthsign_button_" + i;
+                _dynamicSlots.Add(slot);
+                bool selected = string.Equals(_selectedBirthsignId, sign.Id, StringComparison.OrdinalIgnoreCase);
+                _panel.SetText(slot, (selected ? "[X] " : "[ ] ") + sign.Name + "   " + sign.PassiveBonus);
+                _panel.SetButtonHandler(slot, () => SelectBirthsign(sign.Id));
+                _panel.SetVisible(slot, true);
+            }
         }
 
         private void RenderBuildButtons()
