@@ -80,6 +80,10 @@ namespace EmberCrpg.Presentation.Ember.Loading
             SetAreaName(_context.AreaName);
             var texture = LoadBackdropForArea(_context.AreaId);
             ApplyBackdrop(texture);
+            // Show the ember logo on every loading screen (user request). Prefer the full logo,
+            // fall back to the compact mark; both are forge-generated under Assets/Generated/Core.
+            var logo = TryLoadGeneratedTexture("logo_full") ?? TryLoadGeneratedTexture("logo_compact");
+            if (logo != null) _panel?.SetThumbnail("thumbnail", logo);
             _panel?.SetVisible("root", true);
             StartTipRotation();
             FadeIn();
