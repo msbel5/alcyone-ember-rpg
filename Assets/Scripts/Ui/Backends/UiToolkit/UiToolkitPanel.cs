@@ -183,10 +183,29 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
 
             if (id == "CharacterCreation")
             {
-                Register("header", MakeLabel("CHARACTER CREATION", 26, true));
-                Register("step", MakeLabel("", 16, true));
-                Register("progress", MakeProgress());
-                Register("body", new ScrollView(ScrollViewMode.Vertical));
+                var ccHeader = MakeLabel("CHARACTER CREATION", 26, true);
+                ccHeader.style.marginBottom = 2;
+                Register("header", ccHeader);
+
+                var ccStep = MakeLabel("", 16, true);
+                ccStep.style.marginBottom = 8;
+                Register("step", ccStep);
+
+                var ccProgress = MakeProgress();
+                ccProgress.style.marginTop = 2;
+                ccProgress.style.marginBottom = 12;
+                Register("progress", ccProgress);
+
+                // Body holds the per-stage prompt text. flexShrink=0 stops the build columns /
+                // log (both flexGrow=1) from squeezing it to zero and clipping the text; the Auto
+                // scroller hides the scrollbar unless the prompt overflows (the stray up/down
+                // widget beside the progress bar was this scrollbar showing on a one-liner).
+                var ccBody = new ScrollView(ScrollViewMode.Vertical);
+                ccBody.verticalScrollerVisibility = ScrollerVisibility.Auto;
+                ccBody.style.flexShrink = 0;
+                ccBody.style.maxHeight = 160;
+                ccBody.style.marginBottom = 10;
+                Register("body", ccBody);
 
                 // Step 4 three-column build area (SINIF / AHLAK / YETENEK). Hidden by default;
                 // RenderBuildButtons shows it and routes class_/alignment_/skill_ buttons into the
@@ -199,6 +218,22 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
                 AddBuildColumn(buildArea, "class", "SINIF");
                 AddBuildColumn(buildArea, "alignment", "AHLAK");
                 AddBuildColumn(buildArea, "skill", "YETENEK");
+
+                // Single-column stage content for the non-build stages (birthsign, world-genesis,
+                // ability-roll actions, portrait actions, questions, identity). Routing the dynamic
+                // option/action buttons here keeps them ABOVE the Back/Continue footer — the old
+                // root-append put choice buttons (e.g. "Roll Again") visually BELOW Continue.
+                var stageContent = new VisualElement();
+                stageContent.style.flexShrink = 0;
+                stageContent.style.marginBottom = 6;
+                Register("stage_content", stageContent);
+                foreach (var prefix in new[]
+                {
+                    "birthsign_button_", "mood_button_", "calling_button_", "fate_button_",
+                    "identity_button_", "answer", "roll_button", "keep_button", "swap_button",
+                    "advanced_button", "portrait_reroll_button", "portrait_lock_button",
+                })
+                    _slotPrefixParents.Add(new KeyValuePair<string, VisualElement>(prefix, stageContent));
 
                 Register("portraitJson", MakeLabel("", 12, false));
                 Register("skills", MakeLabel("", 12, false));
