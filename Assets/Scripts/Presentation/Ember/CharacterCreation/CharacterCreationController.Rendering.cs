@@ -302,6 +302,15 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             var allSkills = BuildSkillCatalog();
 
+            // Reveal the three-column build area (hidden on every other step) and label the columns.
+            // Adding build_area to the dynamic-slot set means ClearDynamicSlots hides it again when
+            // the player navigates to a different step.
+            _panel.SetVisible("build_area", true);
+            _dynamicSlots.Add("build_area");
+            _panel.SetText("class_header", "SINIF");
+            _panel.SetText("alignment_header", "AHLAK");
+            _panel.SetText("skill_header", "YETENEK (" + _selectedSkills.Count + "/5)");
+
             int classOffset = 0;
             for (int i = 0; i < CharacterCreationCatalog.Classes.Count; i++)
             {

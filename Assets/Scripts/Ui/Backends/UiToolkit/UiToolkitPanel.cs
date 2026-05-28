@@ -11,6 +11,9 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
     {
         private readonly Dictionary<string, VisualElement> _slots = new Dictionary<string, VisualElement>();
         private readonly Dictionary<string, Action> _buttonHandlers = new Dictionary<string, Action>();
+        // Slot-key prefix -> parent container. Lets dynamic slots (e.g. class_button_3) land in a
+        // specific column instead of the flat panel root, so grouped layouts don't overlap.
+        private readonly List<KeyValuePair<string, VisualElement>> _slotPrefixParents = new List<KeyValuePair<string, VisualElement>>();
         private readonly VisualElement _container;
         private readonly UiTokens _tokens;
 
@@ -34,6 +37,12 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             {
                 case Button button:
                     button.text = text ?? string.Empty;
+                    // Selection feedback: "[X] ..." rows (class/alignment/skill) get a bright accent
+                    // background so the player can SEE what is chosen; "[ ] ..." stay muted.
+                    if ((text ?? string.Empty).StartsWith("[X]", StringComparison.Ordinal))
+                        button.style.backgroundColor = _tokens != null ? _tokens.Accent : new Color(0.62f, 0.34f, 0.12f);
+                    else if ((text ?? string.Empty).StartsWith("[ ]", StringComparison.Ordinal))
+                        button.style.backgroundColor = _tokens != null ? _tokens.AccentMuted : new Color(0.30f, 0.16f, 0.07f);
                     break;
                 case TextField field:
                     field.value = text ?? string.Empty;
@@ -161,6 +170,19 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
                 Register("step", MakeLabel("", 16, true));
                 Register("progress", new ProgressBar { lowValue = 0f, highValue = 100f });
                 Register("body", new ScrollView(ScrollViewMode.Vertical));
+
+                // Step 4 three-column build area (SINIF / AHLAK / YETENEK). Hidden by default;
+                // RenderBuildButtons shows it and routes class_/alignment_/skill_ buttons into the
+                // matching column's scroll so they no longer pile into one flat overlapping stack.
+                var buildArea = new VisualElement();
+                buildArea.style.flexDirection = FlexDirection.Row;
+                buildArea.style.flexGrow = 1;
+                buildArea.style.display = DisplayStyle.None;
+                Register("build_area", buildArea);
+                AddBuildColumn(buildArea, "class", "SINIF");
+                AddBuildColumn(buildArea, "alignment", "AHLAK");
+                AddBuildColumn(buildArea, "skill", "YETENEK");
+
                 Register("portraitJson", MakeLabel("", 12, false));
                 Register("skills", MakeLabel("", 12, false));
                 Register("log", MakeLog());
@@ -272,7 +294,16 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         {
             element.name = key;
             _slots[key] = element;
-            _container.Add(element);
+            ResolveParent(key).Add(element);
+        }
+
+        // Route a slot to a registered prefix-parent (column) when its key matches; else panel root.
+        private VisualElement ResolveParent(string key)
+        {
+            for (int i = 0; i < _slotPrefixParents.Count; i++)
+                if (key.StartsWith(_slotPrefixParents[i].Key, StringComparison.Ordinal))
+                    return _slotPrefixParents[i].Value;
+            return _container;
         }
 
         // Register a slot but parent it under a specific container instead of the panel root,
@@ -283,6 +314,29 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             element.name = key;
             _slots[key] = element;
             parent.Add(element);
+        }
+
+        // Build one labelled, independently-scrolling column in the Step 4 build area and register
+        // a routing rule so "{key}_button_*" slots land inside this column's scroll view.
+        private void AddBuildColumn(VisualElement parent, string key, string headerText)
+        {
+            var column = new VisualElement();
+            column.style.flexGrow = 1;
+            column.style.flexBasis = 0;
+            column.style.flexDirection = FlexDirection.Column;
+            column.style.marginLeft = 4; column.style.marginRight = 4;
+
+            var header = MakeLabel(headerText, 18, true);
+            header.style.unityTextAlign = TextAnchor.MiddleCenter;
+            header.style.marginBottom = 6;
+            RegisterInto(column, key + "_header", header);
+
+            var scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1;
+            column.Add(scroll);
+            _slotPrefixParents.Add(new KeyValuePair<string, VisualElement>(key + "_button_", scroll));
+
+            parent.Add(column);
         }
 
         private ScrollView MakeLog()
