@@ -393,7 +393,16 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         private Button MakeButton(string text)
         {
             var button = new Button { text = text ?? string.Empty };
-            button.style.height = 44;
+            // Grow to fit content instead of clipping: long / multi-line labels
+            // (class "Name\nBest with: ...", "sleight_of_hand (Agi-based)", birthsign
+            // rows) used to overflow a fixed 44px box. minHeight + wrap + padding lets
+            // the row expand to the text while keeping the 44px touch target floor.
+            button.style.minHeight = 44;
+            button.style.whiteSpace = WhiteSpace.Normal;
+            button.style.paddingTop = 8;
+            button.style.paddingBottom = 8;
+            button.style.paddingLeft = 12;
+            button.style.paddingRight = 12;
             button.style.marginTop = 4;
             button.style.marginBottom = 4;
             button.style.fontSize = _tokens != null ? _tokens.FontSizeBody : 20f;
