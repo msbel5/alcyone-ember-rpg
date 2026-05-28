@@ -171,37 +171,58 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
 
             if (id == "TitleMenu")
             {
-                // Backdrop sits behind the menu; EmberMainMenuUI fills it from forge-generated splash_background.
+                // HTML-page layout (per approved sketch): three stacked layers —
+                //   z0 full-bleed backdrop, z1 dark overlay for readability, z2 centered content.
+                // No icons / decoration strip: the menu is splash + clean centred button column.
                 var backdrop = new Image();
                 backdrop.style.position = Position.Absolute;
                 backdrop.style.left = 0; backdrop.style.right = 0; backdrop.style.top = 0; backdrop.style.bottom = 0;
                 backdrop.scaleMode = ScaleMode.ScaleAndCrop;
                 Register("backdrop", backdrop);
-                Register("title", MakeLabel("EMBER CRPG", 34, true));
-                Register("subtitle", MakeLabel("Visible generation cutover", 16, false));
-                // Icon slots pair with each button row; EmberMainMenuUI populates them with the
-                // matching forge-generated PNG (new_game, continue, journal=load, settings, error=quit)
-                // as soon as those assets land in /Assets/Generated/Core/.
-                Register("icon_new_game", MakeIcon(48));
-                Register("new_game", MakeButton("New Game"));
-                Register("icon_continue", MakeIcon(48));
-                Register("continue", MakeButton("Resume"));
-                Register("icon_load", MakeIcon(48));
-                Register("load", MakeButton("Load Game"));
-                Register("icon_options", MakeIcon(48));
-                Register("options", MakeButton("Options"));
-                Register("icon_quit", MakeIcon(48));
-                Register("quit", MakeButton("Exit"));
-                // "Auto-wire decorator" — every forge-generated PNG that isn't already pinned
-                // to a named icon slot lands in this strip so no asset is forgotten.
-                var decorationStrip = new VisualElement();
-                decorationStrip.style.flexDirection = FlexDirection.Row;
-                decorationStrip.style.flexWrap = Wrap.Wrap;
-                decorationStrip.style.justifyContent = Justify.Center;
-                decorationStrip.style.marginTop = 12;
-                Register("decoration_strip", decorationStrip);
-                Register("version", MakeLabel("", 12, false));
-                Register("status", MakeLabel("", 14, false));
+
+                var overlay = new VisualElement();
+                overlay.style.position = Position.Absolute;
+                overlay.style.left = 0; overlay.style.right = 0; overlay.style.top = 0; overlay.style.bottom = 0;
+                overlay.style.backgroundColor = new Color(0f, 0f, 0f, 0.5f);
+                _container.Add(overlay);
+
+                var content = new VisualElement();
+                content.style.flexGrow = 1;
+                content.style.flexDirection = FlexDirection.Column;
+                content.style.alignItems = Align.Center;
+                content.style.justifyContent = Justify.Center;
+                _container.Add(content);
+
+                var title = MakeLabel("EMBER CRPG", 52, true);
+                title.style.unityTextAlign = TextAnchor.MiddleCenter;
+                RegisterInto(content, "title", title);
+                var subtitle = MakeLabel("A dark fantasy chronicle", 16, false);
+                subtitle.style.unityTextAlign = TextAnchor.MiddleCenter;
+                subtitle.style.marginBottom = 30;
+                RegisterInto(content, "subtitle", subtitle);
+
+                // Fixed-width vertical button column — buttons stretch to 380px, even spacing.
+                var buttons = new VisualElement();
+                buttons.style.width = 380;
+                buttons.style.flexDirection = FlexDirection.Column;
+                RegisterInto(buttons, "new_game", MakeButton("New Game"));
+                RegisterInto(buttons, "continue", MakeButton("Resume"));
+                RegisterInto(buttons, "load", MakeButton("Load Game"));
+                RegisterInto(buttons, "options", MakeButton("Options"));
+                RegisterInto(buttons, "quit", MakeButton("Exit"));
+                content.Add(buttons);
+
+                var status = MakeLabel("", 13, false);
+                status.style.unityTextAlign = TextAnchor.MiddleCenter;
+                status.style.marginTop = 16;
+                RegisterInto(content, "status", status);
+
+                // Version pinned to the bottom-left corner, dim.
+                var version = MakeLabel("", 12, false);
+                version.style.position = Position.Absolute;
+                version.style.left = 16; version.style.bottom = 12;
+                version.style.opacity = 0.6f;
+                Register("version", version);
                 return;
             }
 
@@ -254,6 +275,16 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             _container.Add(element);
         }
 
+        // Register a slot but parent it under a specific container instead of the panel root,
+        // so panels can build a real nested layout (header / button column / footer) instead of
+        // dumping every element into one flat stack that visually overlaps.
+        private void RegisterInto(VisualElement parent, string key, VisualElement element)
+        {
+            element.name = key;
+            _slots[key] = element;
+            parent.Add(element);
+        }
+
         private ScrollView MakeLog()
         {
             var log = new ScrollView(ScrollViewMode.Vertical);
@@ -277,18 +308,6 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             button.style.backgroundColor = _tokens != null ? _tokens.AccentMuted : new Color(0.35f, 0.19f, 0.08f);
             button.style.color = _tokens != null ? _tokens.Text : Color.white;
             return button;
-        }
-
-        private static Image MakeIcon(int size)
-        {
-            // Square icon used as a slot for forge-generated PNGs. Sits centred above its button
-            // row so the menu auto-decorates as new icons land in /Assets/Generated/Core/.
-            var image = new Image();
-            image.style.width = size;
-            image.style.height = size;
-            image.style.alignSelf = Align.Center;
-            image.scaleMode = ScaleMode.ScaleToFit;
-            return image;
         }
 
         private Label MakeLabel(string text, int size, bool strong)

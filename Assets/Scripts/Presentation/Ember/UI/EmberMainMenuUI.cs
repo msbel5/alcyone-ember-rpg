@@ -83,59 +83,9 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private void PopulateDecorations()
         {
-            // Re-apply the splash backdrop (in case Boot regenerated it after MainMenu mounted)
-            // and refresh any per-button icons so the menu auto-wires every PNG that arrives.
+            // MainMenu shows only the splash backdrop now (icons + decoration strip removed per
+            // design direction). Re-apply in case Boot regenerated splash_background after mount.
             ApplyGeneratedBackdrop();
-            ApplyButtonIcons();
-            ApplyAutoDecorationStrip();
-        }
-
-        // Entry ids that are already wired to a named icon slot above each menu button.
-        // Anything else in the generated directory gets dropped into decoration_strip.
-        private static readonly System.Collections.Generic.HashSet<string> PinnedIconEntryIds =
-            new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
-            {
-                "splash_background", "logo_full", "logo_compact",
-                "new_game", "continue", "journal", "settings", "error",
-            };
-
-        private void ApplyAutoDecorationStrip()
-        {
-            if (_titlePanel == null) return;
-            var parent = System.IO.Directory.GetParent(Application.dataPath);
-            var root = parent != null ? parent.FullName : Application.dataPath;
-            var dir = System.IO.Path.Combine(root, "Assets", "Generated", "Core");
-            if (!System.IO.Directory.Exists(dir))
-            {
-                _titlePanel.SetThumbnailGrid("decoration_strip", System.Array.Empty<Texture2D>());
-                return;
-            }
-            var textures = new System.Collections.Generic.List<Texture2D>();
-            foreach (var path in System.IO.Directory.GetFiles(dir, "*.png"))
-            {
-                var entryId = System.IO.Path.GetFileNameWithoutExtension(path);
-                if (PinnedIconEntryIds.Contains(entryId)) continue;
-                var tex = LoadGeneratedTexture(entryId);
-                if (tex != null) textures.Add(tex);
-            }
-            _titlePanel.SetThumbnailGrid("decoration_strip", textures);
-        }
-
-        private void ApplyButtonIcons()
-        {
-            if (_titlePanel == null) return;
-            // Map button slot -> manifest entry id so each newly-generated icon snaps to its slot.
-            TryApplyIcon("icon_new_game", "new_game");
-            TryApplyIcon("icon_continue", "continue");
-            TryApplyIcon("icon_load", "journal");
-            TryApplyIcon("icon_options", "settings");
-            TryApplyIcon("icon_quit", "error");
-        }
-
-        private void TryApplyIcon(string slot, string entryId)
-        {
-            var tex = LoadGeneratedTexture(entryId);
-            if (tex != null) _titlePanel.SetThumbnail(slot, tex);
         }
 
         private static async System.Threading.Tasks.Task RunBackgroundGenerationAsync()
@@ -196,7 +146,9 @@ namespace EmberCrpg.Presentation.Ember.UI
             _titlePanel?.SetButtonHandler("load", LoadGame);
             _titlePanel?.SetButtonHandler("options", OpenOptions);
             _titlePanel?.SetButtonHandler("quit", Quit);
-            ApplyGeneratedBackdrop();
+            // Pull whatever PNGs already exist on disk immediately so proof captures (and any
+            // post-Boot return-to-menu) show decorations without waiting for the 2s refresh tick.
+            PopulateDecorations();
         }
 
         public void LoadGame()
