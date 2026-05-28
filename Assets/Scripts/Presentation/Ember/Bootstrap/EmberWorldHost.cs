@@ -94,6 +94,13 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // the first tick has advanced, release the overlay so the Worldspace is visible.
             EmberCrpg.Presentation.Ember.Loading.LoadingScreen.Dismiss();
 
+            // The UI surface is DontDestroyOnLoad, so the menu-phase panels (CharacterCreation,
+            // WorldgenView, LoadingScreen) survive the scene load and stack on top of the live 3D
+            // Worldspace -- the real reason the game looked "stuck after world gen". Clearing the
+            // surface here removes those leftover panels; the Worldspace HUD is a separate system,
+            // and any in-scene panels (dialog, inventory) mount fresh on demand.
+            EmberCrpg.Ui.Foundation.UiSurfaceLocator.Current?.Clear();
+
             // Codex audit (sixth pass E-P2 #E3): if the host re-runs (additive
             // scene loading, domain reload during play, or a scene that
             // already authors EmberSaveService as a sibling component),

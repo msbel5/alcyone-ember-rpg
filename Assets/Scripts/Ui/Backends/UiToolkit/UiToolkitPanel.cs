@@ -78,6 +78,14 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             GetTyped<Image>(slot, () => new Image()).image = texture;
         }
 
+        // Show/hide the whole panel container. The surface uses this to keep one active panel
+        // (full-screen screens shouldn't stack on top of each other).
+        public void SetSurfaceVisible(bool visible)
+        {
+            if (_container != null)
+                _container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
         public void SetThumbnailGrid(string slot, System.Collections.Generic.IReadOnlyList<Texture2D> textures)
         {
             // The slot is expected to be (or become) a VisualElement container. Children are

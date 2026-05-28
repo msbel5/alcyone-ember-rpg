@@ -35,6 +35,11 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
 
         public IUiPanel Mount(string panelId)
         {
+            // Single active panel: full-screen "screens" (MainMenu, CharacterCreation, Worldgen,
+            // Loading) must not stack. Hide every previously-mounted panel so the new one owns the
+            // surface instead of piling up and overlapping (the bug where 3 panels showed at once).
+            for (int i = 0; i < _panels.Count; i++)
+                if (_panels[i] is UiToolkitPanel previous) previous.SetSurfaceVisible(false);
             var panel = new UiToolkitPanel(panelId, _root, _tokens);
             _panels.Add(panel);
             return panel;
