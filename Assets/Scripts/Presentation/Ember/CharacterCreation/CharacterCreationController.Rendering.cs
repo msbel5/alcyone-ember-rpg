@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EmberCrpg.Domain.CharacterCreation;
+using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Loading;
 using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Simulation.Worldgen;
@@ -33,6 +34,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 RenderQuestionButtons();
             else if (_step == CreationStep.CommanderIdentity)
                 RenderCommanderButtons();
+            else if (_step == CreationStep.WorldMood)
+                RenderMoodButtons();
+            else if (_step == CreationStep.PlayerCalling)
+                RenderCallingButtons();
+            else if (_step == CreationStep.FateBegins)
+                RenderFateButtons();
             else if (_step == CreationStep.Birthsign)
                 RenderBirthsignButtons();
             else if (_step == CreationStep.StatRolling)
@@ -287,10 +294,17 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             LoadingScreen.ShowForContext(new LoadingScreenContext("worldgen", "Building World", "generation"));
             LoadingScreen.SetProgress(0.1f, "Generating deterministic world");
-            LoadingScreen.LogLine(UiLogSeverity.Info, "[worldgen] seed=" + _seed + " class=" + _selectedClassId);
+            var style = MoodToStyle(_worldMood);
+            var genre = CallingToGenre(_playerCalling);
+            LoadingScreen.LogLine(UiLogSeverity.Info, "[worldgen] seed=" + _seed + " class=" + _selectedClassId
+                + " mood=" + _worldMood + " calling=" + _playerCalling + " fate=" + _fateStart
+                + " => style=" + style + " genre=" + genre);
             yield return null;
 
-            var world = WorldgenService.Generate(_seed == 0u ? 42u : _seed, WorldgenParameters.Default);
+            // World-genesis choices (stages 2-4) shape the generated world: mood selects the
+            // aesthetic style, calling selects the campaign-pressure genre. Fate flavors the
+            // start locale (logged above); the start scene stays the canonical SmithingOverworld.
+            var world = WorldgenService.Generate(_seed == 0u ? 42u : _seed, WorldgenParameters.For(style, genre));
             LoadingScreen.SetProgress(0.45f, "Projecting regions, settlements, NPC seeds, and history");
 
             var go = new GameObject("WorldgenViewController");
@@ -308,6 +322,85 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             LoadingScreen.SetProgress(view.QuestionOpen ? 0.85f : 1f, view.QuestionOpen ? "Awaiting worldgen question" : "Entering " + _firstSceneName);
             LoadingScreen.LogLine(UiLogSeverity.Success, "[worldgen] visible projection mounted");
+        }
+
+        // ----- World-genesis choice screens (stages 2-4) -----------------------------------
+        // Single-focal lists like the birthsign screen. The chosen id feeds worldgen:
+        // mood -> WorldStyle, calling -> WorldGenre (MoodToStyle / CallingToGenre below),
+        // fate -> start-locale flavor (logged in BeginVisibleWorldgen). Controller defaults
+        // keep Continue enabled before a pick, so the flow never locks on these stages.
+        private static readonly (string id, string label)[] MoodChoices =
+        {
+            ("grim", "Grim and unforgiving - a dying age of ash"),
+            ("mythic", "Mythic and ancient - the old gods still stir"),
+            ("low", "Gritty and low - mud, steel, and rumor"),
+            ("heroic", "High and heroic - banners raised against the dark"),
+        };
+
+        private static readonly (string id, string label)[] CallingChoices =
+        {
+            ("survival", "Endure the wilds - survival above all"),
+            ("intrigue", "Play the courts - politics and quiet knives"),
+            ("hunt", "Hunt what stalks - monsters in the dark"),
+            ("merchant", "Build a fortune - trade roads and coin"),
+            ("pilgrimage", "Walk the long road - faith, ruin, and relics"),
+        };
+
+        private static readonly (string id, string label)[] FateChoices =
+        {
+            ("forge", "At the forge - hammer, heat, and a trade to your name"),
+            ("tavern", "In the tavern - a stranger, a job, and a debt"),
+            ("crossroads", "At a crossroads - the open road and no master"),
+        };
+
+        private void RenderMoodButtons()
+            => RenderGenesisChoices("mood_button_", MoodChoices, _worldMood, SetWorldMood);
+
+        private void RenderCallingButtons()
+            => RenderGenesisChoices("calling_button_", CallingChoices, _playerCalling, SetPlayerCalling);
+
+        private void RenderFateButtons()
+            => RenderGenesisChoices("fate_button_", FateChoices, _fateStart, SetFateBegins);
+
+        // Shared list renderer for the three genesis stages. Mirrors RenderBirthsignButtons:
+        // one full-width row per option with a "[X]"/"[ ]" selection marker.
+        private void RenderGenesisChoices(string prefix, (string id, string label)[] options, string selectedId, Action<string> onPick)
+        {
+            for (int i = 0; i < options.Length; i++)
+            {
+                var opt = options[i];
+                string slot = prefix + i;
+                _dynamicSlots.Add(slot);
+                bool selected = string.Equals(selectedId, opt.id, StringComparison.OrdinalIgnoreCase);
+                _panel.SetText(slot, (selected ? "[X] " : "[ ] ") + opt.label);
+                _panel.SetButtonHandler(slot, () => onPick(opt.id));
+                _panel.SetVisible(slot, true);
+            }
+        }
+
+        // World-genesis id -> worldgen enums. Unknown / default ids fall to the grim-survival
+        // baseline so a never-touched stage still yields a coherent world.
+        private static WorldStyle MoodToStyle(string mood)
+        {
+            switch ((mood ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "mythic": return WorldStyle.AncientMythology;
+                case "low": return WorldStyle.LowFantasyMorrowind;
+                case "heroic": return WorldStyle.HighFantasyTolkien;
+                default: return WorldStyle.DarkFantasyGrim;
+            }
+        }
+
+        private static WorldGenre CallingToGenre(string calling)
+        {
+            switch ((calling ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "intrigue": return WorldGenre.PoliticalIntrigue;
+                case "hunt": return WorldGenre.MonsterHunt;
+                case "merchant": return WorldGenre.MerchantEmpire;
+                case "pilgrimage": return WorldGenre.Pilgrimage;
+                default: return WorldGenre.Survival;
+            }
         }
 
         private void RenderBirthsignButtons()

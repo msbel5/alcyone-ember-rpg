@@ -79,7 +79,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         // World-genesis answers (stages 2-4). Defaulted so the flow advances out of the box;
         // the player overrides them on the mood/calling/fate screens. These feed worldgen.
         private string _worldMood = "grim";
-        private string _playerCalling = "wanderer";
+        private string _playerCalling = "survival";
         private string _fateStart = "crossroads";
         private string _suggestedClassId = "warrior";
         private string _firstSceneName = "SmithingOverworld";
