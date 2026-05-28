@@ -68,7 +68,7 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
 
         public void SetProgress(string slot, float normalized)
         {
-            var bar = GetTyped<ProgressBar>(slot, () => new ProgressBar { lowValue = 0f, highValue = 100f });
+            var bar = GetTyped<ProgressBar>(slot, () => MakeProgress());
             bar.value = Mathf.Clamp01(normalized) * 100f;
         }
 
@@ -171,8 +171,8 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
                 Register("loading", MakeLabel("", 16, true));
                 Register("tip", MakeLabel("", 14, false));
                 Register("current", MakeLabel("", 14, false));
-                Register("progress", new ProgressBar { lowValue = 0f, highValue = 100f });
-                Register("fade", new ProgressBar { lowValue = 0f, highValue = 100f });
+                Register("progress", MakeProgress());
+                Register("fade", MakeProgress());
                 Register("thumbnail", new Image());
                 Register("caption", MakeLabel("", 12, false));
                 Register("log", MakeLog());
@@ -185,7 +185,7 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             {
                 Register("header", MakeLabel("CHARACTER CREATION", 26, true));
                 Register("step", MakeLabel("", 16, true));
-                Register("progress", new ProgressBar { lowValue = 0f, highValue = 100f });
+                Register("progress", MakeProgress());
                 Register("body", new ScrollView(ScrollViewMode.Vertical));
 
                 // Step 4 three-column build area (SINIF / AHLAK / YETENEK). Hidden by default;
@@ -282,7 +282,7 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
         private VisualElement CreateForSlot(string slot)
         {
             if (slot.Contains("button") || slot == "next" || slot == "back" || slot == "continue" || slot.StartsWith("answer")) return MakeButton(slot);
-            if (slot.Contains("progress")) return new ProgressBar { lowValue = 0f, highValue = 100f };
+            if (slot.Contains("progress")) return MakeProgress();
             if (slot.Contains("thumbnail") || slot.Contains("portrait") || slot.Contains("image")) return new Image();
             if (slot == "log") return MakeLog();
             return MakeLabel(string.Empty, 14, false);
@@ -368,6 +368,26 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
             log.style.paddingTop = 8;
             log.style.paddingBottom = 8;
             return log;
+        }
+
+        // Themed progress bar: dark warm track, ember-gold fill, rounded, no "%" label.
+        private ProgressBar MakeProgress()
+        {
+            var bar = MakeProgress();
+            bar.style.height = 12;
+            SetRadius(bar, _tokens != null ? _tokens.RadiusSm : 6f);
+            var track = bar.Q(className: "unity-progress-bar__background");
+            if (track != null)
+            {
+                track.style.backgroundColor = _tokens != null ? _tokens.InputBrown : new Color(0.122f, 0.102f, 0.078f);
+                SetRadius(track, _tokens != null ? _tokens.RadiusSm : 6f);
+            }
+            var fill = bar.Q(className: "unity-progress-bar__progress");
+            if (fill != null)
+                fill.style.backgroundColor = _tokens != null ? _tokens.EmberGold : new Color(1f, 0.851f, 0.298f);
+            var label = bar.Q<Label>(className: "unity-progress-bar__title");
+            if (label != null) label.style.display = DisplayStyle.None;
+            return bar;
         }
 
         private Button MakeButton(string text)

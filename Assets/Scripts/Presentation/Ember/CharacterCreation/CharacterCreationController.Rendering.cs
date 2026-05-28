@@ -172,17 +172,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         private string BuildSelectionBody()
         {
-            var builder = new StringBuilder();
-            builder.AppendLine("Class cards, alignment chart, skill grid");
-            builder.AppendLine("Suggested class: " + ClassName(_suggestedClassId));
-            builder.AppendLine("Selected class: " + (_selectedClassId.Length == 0 ? "<none>" : ClassName(_selectedClassId)));
-            builder.AppendLine("Selected alignment: " + (_selectedAlignmentId.Length == 0 ? "<none>" : AlignmentName(_selectedAlignmentId)));
-            builder.AppendLine("Skills: " + _selectedSkills.Count + "/5 selected");
-            builder.AppendLine(string.Join(", ", _selectedSkills.OrderBy(v => v)));
-            builder.AppendLine("Use visible class/alignment/skill buttons below.");
+            // The three columns below (SINIF / AHLAK / YETENEK) now carry the full picture with
+            // [X] selection markers + a live counter, so this header stays to a single line —
+            // a longer block used to crowd and overlap the columns at the top of the panel.
             if (!ComputeCanAdvance())
-                builder.AppendLine("Continue locked: choose class, alignment, and at least 1 skill (up to 5).");
-            return builder.ToString();
+                return "Choose a class, an alignment, and 1-5 skills. Continue unlocks when all three are set.";
+            return "Class, alignment and skills set. Press Continue to forge your dossier.";
         }
 
         private string BuildDossierBody()
