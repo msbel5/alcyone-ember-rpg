@@ -385,7 +385,13 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                         if (_selectedSkills.Count >= 5) break;
                     }
                 }
-                AddLog("[build] Class selected: " + klass.Name + ".");
+                // Playability: picking a class auto-fills skills but NOT alignment, so the
+                // Step 4 gate (class+alignment+skill) stayed locked and the player got stuck
+                // after only selecting a class. Default alignment to true_neutral here so one
+                // class tap satisfies the gate; the player can still pick a different alignment.
+                if (string.IsNullOrWhiteSpace(_selectedAlignmentId))
+                    _selectedAlignmentId = "true_neutral";
+                AddLog("[build] Class selected: " + klass.Name + ". Alignment defaulted to " + AlignmentName(_selectedAlignmentId) + " (changeable).");
                 Render();
                 return;
             }
