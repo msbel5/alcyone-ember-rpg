@@ -548,6 +548,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                         && !string.IsNullOrWhiteSpace(_selectedAlignmentId)
                         && _selectedSkills.Count >= 1
                         && _selectedSkills.Count <= 5;
+                case CreationStep.Portrait:
+                    return true; // portrait is optional-confirm; reroll is available but not required
                 case CreationStep.DossierLaunch:
                     return true;
                 default:

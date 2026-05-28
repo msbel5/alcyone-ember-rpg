@@ -16,7 +16,7 @@ namespace EmberCrpg.Validation.Sample
             var world = WorldgenService.Generate(42u, WorldgenParameters.For(style, genre));
             var answers = new[] { "a", "c", "a", "b", "c", "a", "b", "c", "a", "a" };
             var suggested = new CharacterCreationService().SuggestClass(answers);
-            var birthsign = CharacterCreationCatalog.GetBirthsign("the_lover");
+            var birthsign = CharacterCreationCatalog.GetBirthsign("the_beacon");
 
             Console.WriteLine(
                 $"Style={style}, Genre={genre}, {world.Regions.Count} regions, {world.Settlements.Count} settlements, " +
