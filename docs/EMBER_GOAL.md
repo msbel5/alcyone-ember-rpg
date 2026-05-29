@@ -55,7 +55,7 @@ UPDATED : 2026-05-29
 | T7 | *(LATER, after gameplay)* AI ambient sound + music generation | LATER | — |
 | H1 | Housekeeping: reconcile `Reference/` (Godot) ↔ `docs/` (Unity) PRDs via the matrix; archive stale/irrelevant PRDs; ensure each active task has a canonical Unity PRD | ONGOING | matrix current; no orphan tasks |
 
-**▶ NOW = T4 (billboard transparency).** T1 (themed floors) + T2 (generation real) DONE & build-verified:
+**▶ NOW = T5 (AI-DM conversation). T4 CHECKER FIXED** (commit fbdea443, genesis32-verified): `goblin_fixed.png` baked checker background removed → transparent; goblins render clean; **done-when criterion (3) zero magenta/checker now MET** (magenta already absent everywhere). Residual minor (NOT magenta/checker, not blocking #3): gray untextured cube props (Oracle/Showroom/TavernFlavour) + the intentional NPC-portrait placeholder — fold into a later polish pass. T1 (themed floors) + T2 (generation real) DONE & build-verified:
 genesis30 scene-tour shows ColonyNeeds + CombatDungeon rendering DISTINCT generated themed floors
 (orange placeholder gone, no magenta); the 8 `env_<scene>` floors are 8 distinct md5s, prompt-matched;
 `EmberMainMenuUI` background top-up generates them (no extra wiring), `SceneEnvironmentDresser` paints
