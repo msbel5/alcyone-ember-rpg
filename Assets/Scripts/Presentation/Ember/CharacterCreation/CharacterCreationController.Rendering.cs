@@ -7,8 +7,6 @@ using System.Text;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Loading;
-using EmberCrpg.Presentation.Ember.Worldgen;
-using EmberCrpg.Simulation.Worldgen;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 
@@ -296,39 +294,21 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         private IEnumerator BeginVisibleWorldgen()
         {
-            LoadingScreen.ShowForContext(new LoadingScreenContext("worldgen", "Building World", "generation"));
-            LoadingScreen.SetProgress(0.1f, "Generating deterministic world");
+            // Begin Your Story -> straight into the game. We intentionally do NOT mount the
+            // visible worldgen reveal panel any more: it flashed by before the player could read
+            // it. The authoritative world is generated in the target scene from
+            // EmberWorldGenIntent.Pending; here we only show a brief loading beat, then load.
+            LoadingScreen.ShowForContext(new LoadingScreenContext("worldgen", "Entering the World", "generation"));
             var style = MoodToStyle(_worldMood);
             var genre = CallingToGenre(_playerCalling);
             LoadingScreen.LogLine(UiLogSeverity.Info, "[worldgen] seed=" + _seed + " class=" + _selectedClassId
                 + " mood=" + _worldMood + " calling=" + _playerCalling + " fate=" + _fateStart
                 + " => style=" + style + " genre=" + genre);
+            LoadingScreen.SetProgress(0.6f, "Weaving your world from the embers");
             yield return null;
-
-            // World-genesis choices (stages 2-4) shape the generated world: mood selects the
-            // aesthetic style, calling selects the campaign-pressure genre. Fate flavors the
-            // start locale (logged above); the start scene stays the canonical SmithingOverworld.
-            var world = WorldgenService.Generate(_seed == 0u ? 42u : _seed, WorldgenParameters.For(style, genre));
-            LoadingScreen.SetProgress(0.45f, "Projecting regions, settlements, NPC seeds, and history");
-
-            var go = new GameObject("WorldgenViewController");
-            DontDestroyOnLoad(go);
-            var view = go.AddComponent<WorldgenViewController>();
-            view.Configure(_firstSceneName);
-            // No start-location prompt: all games begin in the same scene for now (a genre-themed
-            // start locale is a future open-world idea). The worldgen reveal streams and
-            // auto-advances straight into the start scene.
-            view.AutoAdvance = true;
-            view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
-                maxRegions: 8,
-                maxSettlements: 12,
-                maxNpcs: 16,
-                maxHistoryEvents: 20,
-                includeQuestionPrompt: false,
-                includeSyntheticFailure: false));
-
             LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
-            LoadingScreen.LogLine(UiLogSeverity.Success, "[worldgen] visible projection mounted");
+            yield return new WaitForSecondsRealtime(0.5f);
+            UnityEngine.SceneManagement.SceneManager.LoadScene(_firstSceneName);
         }
 
         // ----- World-genesis choice screens (stages 2-4) -----------------------------------
