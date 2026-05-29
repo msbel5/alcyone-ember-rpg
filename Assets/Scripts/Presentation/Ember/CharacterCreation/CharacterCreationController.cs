@@ -390,21 +390,21 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             if (_step != CreationStep.WorldMood) return;
             _worldMood = (mood ?? string.Empty).Trim();
-            Render();
+            Continue(); // click-to-advance, consistent with the personality trial
         }
 
         public void SetPlayerCalling(string calling)
         {
             if (_step != CreationStep.PlayerCalling) return;
             _playerCalling = (calling ?? string.Empty).Trim();
-            Render();
+            Continue(); // click-to-advance, consistent with the personality trial
         }
 
         public void SetFateBegins(string start)
         {
             if (_step != CreationStep.FateBegins) return;
             _fateStart = (start ?? string.Empty).Trim();
-            Render();
+            Continue(); // click-to-advance, consistent with the personality trial
         }
 
         // Birthsign is now player-picked (was auto-resolved from seed). Only honored on its stage.

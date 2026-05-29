@@ -315,29 +315,20 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             DontDestroyOnLoad(go);
             var view = go.AddComponent<WorldgenViewController>();
             view.Configure(_firstSceneName);
-            // Player answers the DM's opening worldgen question themselves (no auto-skip).
-            // Clicking an option pumps the projection to Completed, which loads the start scene.
-            view.AutoAdvance = false;
+            // No start-location prompt: all games begin in the same scene for now (a genre-themed
+            // start locale is a future open-world idea). The worldgen reveal streams and
+            // auto-advances straight into the start scene.
+            view.AutoAdvance = true;
             view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
                 maxRegions: 8,
                 maxSettlements: 12,
                 maxNpcs: 16,
                 maxHistoryEvents: 20,
-                includeQuestionPrompt: true,
+                includeQuestionPrompt: false,
                 includeSyntheticFailure: false));
 
+            LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
             LoadingScreen.LogLine(UiLogSeverity.Success, "[worldgen] visible projection mounted");
-            if (view.QuestionOpen)
-            {
-                // Reveal the worldgen panel so the player can read it and click an answer —
-                // the loading overlay would otherwise cover it and swallow the clicks. The
-                // start scene loads once they answer (Completed event -> LoadStartSceneAfterPause).
-                LoadingScreen.Dismiss();
-            }
-            else
-            {
-                LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
-            }
         }
 
         // ----- World-genesis choice screens (stages 2-4) -----------------------------------
@@ -370,25 +361,26 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         };
 
         private void RenderMoodButtons()
-            => RenderGenesisChoices("mood_button_", MoodChoices, _worldMood, SetWorldMood);
+            => RenderGenesisChoices("mood_button_", MoodChoices, SetWorldMood);
 
         private void RenderCallingButtons()
-            => RenderGenesisChoices("calling_button_", CallingChoices, _playerCalling, SetPlayerCalling);
+            => RenderGenesisChoices("calling_button_", CallingChoices, SetPlayerCalling);
 
         private void RenderFateButtons()
-            => RenderGenesisChoices("fate_button_", FateChoices, _fateStart, SetFateBegins);
+            => RenderGenesisChoices("fate_button_", FateChoices, SetFateBegins);
 
-        // Shared list renderer for the three genesis stages. Mirrors RenderBirthsignButtons:
-        // one full-width row per option with a "[X]"/"[ ]" selection marker.
-        private void RenderGenesisChoices(string prefix, (string id, string label)[] options, string selectedId, Action<string> onPick)
+        // Shared list renderer for the three genesis stages. Click-to-advance like the
+        // personality trial: "A./B./C. <label>" rows; picking one sets the value and advances
+        // immediately (no [X] marker, no separate Continue press).
+        private void RenderGenesisChoices(string prefix, (string id, string label)[] options, Action<string> onPick)
         {
             for (int i = 0; i < options.Length; i++)
             {
                 var opt = options[i];
                 string slot = prefix + i;
                 _dynamicSlots.Add(slot);
-                bool selected = string.Equals(selectedId, opt.id, StringComparison.OrdinalIgnoreCase);
-                _panel.SetText(slot, (selected ? "[X] " : "[ ] ") + opt.label);
+                string letter = ((char)('A' + i)).ToString();
+                _panel.SetText(slot, letter + ".  " + opt.label);
                 _panel.SetButtonHandler(slot, () => onPick(opt.id));
                 _panel.SetVisible(slot, true);
             }
