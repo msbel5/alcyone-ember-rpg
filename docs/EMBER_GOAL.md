@@ -42,21 +42,26 @@ BRANCH  : feat/creation-genesis  (PR #215)
 UPDATED : 2026-05-29
 ```
 
-**Phase progress: 0 / 6 proof tasks complete** (housekeeping H1 ongoing)
+**Phase progress: 2 / 6 proof tasks complete** (T1 floors + T2 generation DONE; housekeeping H1 ongoing)
 
 | # | Task | State | Proof / DoD |
 |---|------|-------|-------------|
-| T1 | **Floors: generate env textures in loading → assign to scene materials** | ▶ **NOW** | scene-tour shows themed floors, zero orange placeholder, zero magenta |
-| T2 | Prove generation is **real** (splash/logo/UI/portrait/env actually produced & bound, not fallbacks; failures surfaced in loading log) | TODO | loading screenshot + on-disk/cached generated files + bound at runtime |
-| T3 | **HUD consistency** — EmberHud (vitals pills + numbered 1–9 hotbar) in *every* scene, Canva-matched; kill CombatDungeon's divergent bottom-bar HUD | TODO | every scene's UI frame identical & matches Canva |
+| T1 | **Floors: generate env textures in loading → assign to scene materials** | ✅ DONE | genesis30 tour: ColonyNeeds + CombatDungeon render distinct generated themed floors; orange placeholder gone; no magenta |
+| T2 | Prove generation is **real** (splash/logo/UI/portrait/env actually produced & bound, not fallbacks; failures surfaced in loading log) | ✅ DONE | 8 env floors generated (8 distinct md5s, prompt-matched) + painted onto terrain in build; splash/logo/new_game also real |
+| T3 | **HUD consistency** — EmberHud (vitals pills + numbered 1–9 hotbar) in *every* scene, Canva-matched; kill CombatDungeon's divergent bottom-bar HUD | ▶ **NOW** | every scene's UI frame identical & matches Canva |
 | T4 | **Billboard transparency** — fix gray checker backing (Combat enemies) + clean cutout edges across scenes | TODO | no checker/halo on any billboard in scene-tour |
 | T5 | **AI DM conversation round-trip** — talk to the embedded LLM in-game (dialog / oracle / ask-DM), get a coherent response, offline-capable | TODO | recorded in-game exchange; verify model path + fallback |
 | T6 | **Foundation playtest + Definition of Done** — New Game → all creation stages → world → every scene; screenshot each; confirm real generation + conversation + Canva fidelity + Ember spirit | TODO | full screenshot set reviewed; sign-off |
 | T7 | *(LATER, after gameplay)* AI ambient sound + music generation | LATER | — |
 | H1 | Housekeeping: reconcile `Reference/` (Godot) ↔ `docs/` (Unity) PRDs via the matrix; archive stale/irrelevant PRDs; ensure each active task has a canonical Unity PRD | ONGOING | matrix current; no orphan tasks |
 
-**▶ NOW = T1.** Start by mapping the forge wiring (sub-steps in §5/T1), then implement per
-`docs/PRD_loading_asset_generation_v1.md`. After T1 verifies, set T1=DONE, T2=NOW, commit, record memory.
+**▶ NOW = T3 (HUD consistency).** T1 (themed floors) + T2 (generation real) DONE & build-verified:
+genesis30 scene-tour shows ColonyNeeds + CombatDungeon rendering DISTINCT generated themed floors
+(orange placeholder gone, no magenta); the 8 `env_<scene>` floors are 8 distinct md5s, prompt-matched;
+`EmberMainMenuUI` background top-up generates them (no extra wiring), `SceneEnvironmentDresser` paints
+them onto terrain at load. NEXT: unify `EmberHud` (vitals pills + numbered 1–9 hotbar) across ALL scenes —
+CombatDungeon still shows a divergent bottom-bar HUD. Also pending in P1: T4 billboard checker-backing,
+T5 AI-DM conversation, T6 full playtest. After T3 verifies, set T3=DONE, T4=NOW, commit, record memory.
 
 ### Already DONE (foundation — do NOT redo)
 - ✅ Windows64 build pipeline **fixed** (was a `GUI/Text Shader` DontSave entry in Always-Included Shaders → removed; genesis28 builds clean). Commit `af6a0d80`.
