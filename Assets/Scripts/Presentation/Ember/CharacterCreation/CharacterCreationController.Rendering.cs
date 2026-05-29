@@ -5,9 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EmberCrpg.Domain.CharacterCreation;
+using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Loading;
-using EmberCrpg.Presentation.Ember.Worldgen;
-using EmberCrpg.Simulation.Worldgen;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 
@@ -21,7 +20,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             _panel.SetText("header", "IMMERSIVE CHARACTER CREATION");
             _panel.SetText("step", StepLabel());
-            _panel.SetProgress("progress", Mathf.Clamp01((int)_step / 5f));
+            _panel.SetProgress("progress", Mathf.Clamp01((int)_step / 10f));
             _panel.SetText("next", NextButtonText());
             _panel.SetVisible("back", _step != CreationStep.CommanderIdentity);
             _panel.SetVisible("next", _step != CreationStep.Complete);
@@ -33,6 +32,14 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 RenderQuestionButtons();
             else if (_step == CreationStep.CommanderIdentity)
                 RenderCommanderButtons();
+            else if (_step == CreationStep.WorldMood)
+                RenderMoodButtons();
+            else if (_step == CreationStep.PlayerCalling)
+                RenderCallingButtons();
+            else if (_step == CreationStep.FateBegins)
+                RenderFateButtons();
+            else if (_step == CreationStep.Birthsign)
+                RenderBirthsignButtons();
             else if (_step == CreationStep.StatRolling)
                 RenderStatButtons();
             else if (_step == CreationStep.BuildSelection)
@@ -45,13 +52,18 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             switch (_step)
             {
-                case CreationStep.CommanderIdentity: return "Step 0 - Commander Identity";
-                case CreationStep.PersonalityQuestions: return "Step 1 - Personality Questions";
-                case CreationStep.WorldHistoryReveal: return "Step 2 - World History Reveal";
-                case CreationStep.StatRolling: return "Step 3 - Stat Rolling";
-                case CreationStep.BuildSelection: return "Step 4 - Class Alignment Skills";
-                case CreationStep.DossierLaunch: return "Step 5 - Dossier and Launch";
-                default: return "Character Creation Complete";
+                case CreationStep.CommanderIdentity: return "Name";
+                case CreationStep.WorldMood: return "The World's Mood";
+                case CreationStep.PlayerCalling: return "Your Calling";
+                case CreationStep.FateBegins: return "Where Fate Begins";
+                case CreationStep.PersonalityQuestions: return "Trials of Character";
+                case CreationStep.WorldHistoryReveal: return "The World Awakens";
+                case CreationStep.Birthsign: return "Birthsign";
+                case CreationStep.StatRolling: return "Abilities";
+                case CreationStep.BuildSelection: return "Class, Alignment & Skills";
+                case CreationStep.Portrait: return "Portrait";
+                case CreationStep.DossierLaunch: return "Dossier";
+                default: return "Your story begins";
             }
         }
 
@@ -76,14 +88,24 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             {
                 case CreationStep.CommanderIdentity:
                     return BuildCommanderBody();
+                case CreationStep.WorldMood:
+                    return "What is the world's mood? Grim, vibrant, haunted — the canvas the Forge will paint on.";
+                case CreationStep.PlayerCalling:
+                    return "What is your calling? Smith, mage, wanderer — the role fate first knows you by.";
+                case CreationStep.FateBegins:
+                    return "Where does fate begin? A forge, a tavern, a crossroads at dusk.";
                 case CreationStep.PersonalityQuestions:
                     return BuildQuestionBody();
                 case CreationStep.WorldHistoryReveal:
                     return BuildHistoryBody();
+                case CreationStep.Birthsign:
+                    return "Under which sign were you born? It marks your blood with a gift.";
                 case CreationStep.StatRolling:
                     return BuildStatsBody();
                 case CreationStep.BuildSelection:
                     return BuildSelectionBody();
+                case CreationStep.Portrait:
+                    return "The Forge paints your likeness. Keep it, or roll the embers again.";
                 case CreationStep.DossierLaunch:
                     return BuildDossierBody();
                 default:
@@ -127,7 +149,6 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             var builder = new StringBuilder();
             builder.AppendLine("Question " + (_questionIndex + 1) + " of " + _questions.Count);
             builder.AppendLine(question.Prompt);
-            builder.AppendLine("Choose one visible answer button below.");
             return builder.ToString();
         }
 
@@ -187,9 +208,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             builder.AppendLine("Dossier Preview");
             builder.AppendLine("Name: " + _commanderName);
             builder.AppendLine("Class: " + selectedClass.Name);
-            builder.AppendLine("Birthsign: " + _selectedBirthsignId);
+            builder.AppendLine("Birthsign: " + (string.IsNullOrWhiteSpace(_selectedBirthsignId)
+                ? "(unchosen)" : CharacterCreationCatalog.GetBirthsign(_selectedBirthsignId).Name));
             builder.AppendLine("Alignment: " + AlignmentName(_selectedAlignmentId));
-            builder.AppendLine("Background: " + _selectedBackgroundId);
+            if (!string.IsNullOrWhiteSpace(_selectedBackgroundId))
+                builder.AppendLine("Background: " + _selectedBackgroundId);
             builder.AppendLine("Stats: " + string.Join(", ", StatOrder.Select(s => s + " " + SafeStat(_assignedStats, s))));
             builder.AppendLine("Skills: " + string.Join(", ", _selectedSkills.OrderBy(v => v)));
             builder.AppendLine("Starting Equipment: " + string.Join(", ", selectedClass.StartingEquipment));
@@ -210,7 +233,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 string slot = "answer" + i;
                 _dynamicSlots.Add(slot);
                 var captured = question.Choices[i];
-                _panel.SetText(slot, captured.Text + "\n" + BuildChoiceDescription(captured));
+                // A. / B. / C. prefix; show only the in-world action. The class weighting
+                // stays hidden so the trial infers your path instead of letting you min-max.
+                string letter = ((char)('A' + i)).ToString();
+                _panel.SetText(slot, letter + ".  " + captured.Text);
                 _panel.SetButtonHandler(slot, () => AnswerCurrentQuestion(captured.Id));
                 _panel.SetVisible(slot, true);
             }
@@ -268,29 +294,116 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         private IEnumerator BeginVisibleWorldgen()
         {
-            LoadingScreen.ShowForContext(new LoadingScreenContext("worldgen", "Building World", "generation"));
-            LoadingScreen.SetProgress(0.1f, "Generating deterministic world");
-            LoadingScreen.LogLine(UiLogSeverity.Info, "[worldgen] seed=" + _seed + " class=" + _selectedClassId);
+            // Begin Your Story -> straight into the game. We intentionally do NOT mount the
+            // visible worldgen reveal panel any more: it flashed by before the player could read
+            // it. The authoritative world is generated in the target scene from
+            // EmberWorldGenIntent.Pending; here we only show a brief loading beat, then load.
+            LoadingScreen.ShowForContext(new LoadingScreenContext("worldgen", "Entering the World", "generation"));
+            var style = MoodToStyle(_worldMood);
+            var genre = CallingToGenre(_playerCalling);
+            LoadingScreen.LogLine(UiLogSeverity.Info, "[worldgen] seed=" + _seed + " class=" + _selectedClassId
+                + " mood=" + _worldMood + " calling=" + _playerCalling + " fate=" + _fateStart
+                + " => style=" + style + " genre=" + genre);
+            LoadingScreen.SetProgress(0.6f, "Weaving your world from the embers");
             yield return null;
+            LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
+            yield return new WaitForSecondsRealtime(0.5f);
+            UnityEngine.SceneManagement.SceneManager.LoadScene(_firstSceneName);
+        }
 
-            var world = WorldgenService.Generate(_seed == 0u ? 42u : _seed, WorldgenParameters.Default);
-            LoadingScreen.SetProgress(0.45f, "Projecting regions, settlements, NPC seeds, and history");
+        // ----- World-genesis choice screens (stages 2-4) -----------------------------------
+        // Single-focal lists like the birthsign screen. The chosen id feeds worldgen:
+        // mood -> WorldStyle, calling -> WorldGenre (MoodToStyle / CallingToGenre below),
+        // fate -> start-locale flavor (logged in BeginVisibleWorldgen). Controller defaults
+        // keep Continue enabled before a pick, so the flow never locks on these stages.
+        private static readonly (string id, string label)[] MoodChoices =
+        {
+            ("grim", "Grim and unforgiving - a dying age of ash"),
+            ("mythic", "Mythic and ancient - the old gods still stir"),
+            ("low", "Gritty and low - mud, steel, and rumor"),
+            ("heroic", "High and heroic - banners raised against the dark"),
+        };
 
-            var go = new GameObject("WorldgenViewController");
-            DontDestroyOnLoad(go);
-            var view = go.AddComponent<WorldgenViewController>();
-            view.Configure(_firstSceneName);
-            view.AutoAdvance = true;
-            view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
-                maxRegions: 8,
-                maxSettlements: 12,
-                maxNpcs: 16,
-                maxHistoryEvents: 20,
-                includeQuestionPrompt: true,
-                includeSyntheticFailure: false));
+        private static readonly (string id, string label)[] CallingChoices =
+        {
+            ("survival", "Endure the wilds - survival above all"),
+            ("intrigue", "Play the courts - politics and quiet knives"),
+            ("hunt", "Hunt what stalks - monsters in the dark"),
+            ("merchant", "Build a fortune - trade roads and coin"),
+            ("pilgrimage", "Walk the long road - faith, ruin, and relics"),
+        };
 
-            LoadingScreen.SetProgress(view.QuestionOpen ? 0.85f : 1f, view.QuestionOpen ? "Awaiting worldgen question" : "Entering " + _firstSceneName);
-            LoadingScreen.LogLine(UiLogSeverity.Success, "[worldgen] visible projection mounted");
+        private static readonly (string id, string label)[] FateChoices =
+        {
+            ("forge", "At the forge - hammer, heat, and a trade to your name"),
+            ("tavern", "In the tavern - a stranger, a job, and a debt"),
+            ("crossroads", "At a crossroads - the open road and no master"),
+        };
+
+        private void RenderMoodButtons()
+            => RenderGenesisChoices("mood_button_", MoodChoices, SetWorldMood);
+
+        private void RenderCallingButtons()
+            => RenderGenesisChoices("calling_button_", CallingChoices, SetPlayerCalling);
+
+        private void RenderFateButtons()
+            => RenderGenesisChoices("fate_button_", FateChoices, SetFateBegins);
+
+        // Shared list renderer for the three genesis stages. Click-to-advance like the
+        // personality trial: "A./B./C. <label>" rows; picking one sets the value and advances
+        // immediately (no [X] marker, no separate Continue press).
+        private void RenderGenesisChoices(string prefix, (string id, string label)[] options, Action<string> onPick)
+        {
+            for (int i = 0; i < options.Length; i++)
+            {
+                var opt = options[i];
+                string slot = prefix + i;
+                _dynamicSlots.Add(slot);
+                string letter = ((char)('A' + i)).ToString();
+                _panel.SetText(slot, letter + ".  " + opt.label);
+                _panel.SetButtonHandler(slot, () => onPick(opt.id));
+                _panel.SetVisible(slot, true);
+            }
+        }
+
+        // World-genesis id -> worldgen enums. Unknown / default ids fall to the grim-survival
+        // baseline so a never-touched stage still yields a coherent world.
+        private static WorldStyle MoodToStyle(string mood)
+        {
+            switch ((mood ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "mythic": return WorldStyle.AncientMythology;
+                case "low": return WorldStyle.LowFantasyMorrowind;
+                case "heroic": return WorldStyle.HighFantasyTolkien;
+                default: return WorldStyle.DarkFantasyGrim;
+            }
+        }
+
+        private static WorldGenre CallingToGenre(string calling)
+        {
+            switch ((calling ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "intrigue": return WorldGenre.PoliticalIntrigue;
+                case "hunt": return WorldGenre.MonsterHunt;
+                case "merchant": return WorldGenre.MerchantEmpire;
+                case "pilgrimage": return WorldGenre.Pilgrimage;
+                default: return WorldGenre.Survival;
+            }
+        }
+
+        private void RenderBirthsignButtons()
+        {
+            var signs = CharacterCreationCatalog.Birthsigns;
+            for (int i = 0; i < signs.Count; i++)
+            {
+                var sign = signs[i];
+                string slot = "birthsign_button_" + i;
+                _dynamicSlots.Add(slot);
+                bool selected = string.Equals(_selectedBirthsignId, sign.Id, StringComparison.OrdinalIgnoreCase);
+                _panel.SetText(slot, (selected ? "[X] " : "[ ] ") + sign.Name + "   " + sign.PassiveBonus);
+                _panel.SetButtonHandler(slot, () => SelectBirthsign(sign.Id));
+                _panel.SetVisible(slot, true);
+            }
         }
 
         private void RenderBuildButtons()
@@ -351,13 +464,6 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private static int SafeStat(IReadOnlyDictionary<string, int> stats, string key)
         {
             return stats.TryGetValue(key, out var value) ? value : 0;
-        }
-
-        private string BuildChoiceDescription(CreationChoice choice)
-        {
-            string topClass = choice.ClassWeights.OrderByDescending(p => p.Value).FirstOrDefault().Key;
-            if (string.IsNullOrWhiteSpace(topClass)) return "Shapes your path.";
-            return "Leans toward " + ClassName(topClass) + ".";
         }
 
         private string FormatStat(string stat)

@@ -24,18 +24,20 @@ namespace EmberCrpg.Domain.CharacterCreation
 
         public static IReadOnlyList<Birthsign> Birthsigns { get; } = new ReadOnlyCollection<Birthsign>(new[]
         {
-            new Birthsign("the_tower", "The Tower", EmberAttribute.End, 4),
-            new Birthsign("the_lover", "The Lover", EmberAttribute.Pre, 4),
-            new Birthsign("the_lady", "The Lady", EmberAttribute.Ins, 4),
-            new Birthsign("the_atronach", "The Atronach", EmberAttribute.Mnd, 6),
-            new Birthsign("the_warrior", "The Warrior", EmberAttribute.Mig, 5),
-            new Birthsign("the_mage", "The Mage", EmberAttribute.Mnd, 5),
-            new Birthsign("the_thief", "The Thief", EmberAttribute.Agi, 5),
-            new Birthsign("the_serpent", "The Serpent", EmberAttribute.Agi, 3),
-            new Birthsign("the_steed", "The Steed", EmberAttribute.Agi, 4),
-            new Birthsign("the_ritual", "The Ritual", EmberAttribute.Pre, 3),
-            new Birthsign("the_shadow", "The Shadow", EmberAttribute.Ins, 3),
-            new Birthsign("the_lord", "The Lord", EmberAttribute.End, 5),
+            // Ember-original birthsigns — forge/ember/ash motifs, NOT the Elder Scrolls signs.
+            // Each marks the newborn's blood with one attribute gift. Balanced 2 per attribute.
+            new Birthsign("the_anvil", "The Anvil", EmberAttribute.Mig, 5),
+            new Birthsign("the_hammer", "The Hammer", EmberAttribute.Mig, 3),
+            new Birthsign("the_kiln", "The Kiln", EmberAttribute.End, 5),
+            new Birthsign("the_ash", "The Ash", EmberAttribute.End, 4),
+            new Birthsign("the_ember", "The Ember", EmberAttribute.Mnd, 5),
+            new Birthsign("the_forgefire", "The Forge-Fire", EmberAttribute.Mnd, 6),
+            new Birthsign("the_spark", "The Spark", EmberAttribute.Agi, 5),
+            new Birthsign("the_wisp", "The Wisp", EmberAttribute.Agi, 3),
+            new Birthsign("the_beacon", "The Beacon", EmberAttribute.Pre, 5),
+            new Birthsign("the_pyre", "The Pyre", EmberAttribute.Pre, 3),
+            new Birthsign("the_cinder", "The Cinder", EmberAttribute.Ins, 4),
+            new Birthsign("the_smoke", "The Smoke", EmberAttribute.Ins, 4),
         });
 
         public static IReadOnlyList<CreationQuestion> Questions { get; } = new ReadOnlyCollection<CreationQuestion>(new[]

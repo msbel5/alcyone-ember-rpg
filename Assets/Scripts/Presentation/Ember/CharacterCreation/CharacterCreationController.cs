@@ -21,13 +21,22 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
     {
         public enum CreationStep
         {
-            CommanderIdentity = 0,
-            PersonalityQuestions = 1,
-            WorldHistoryReveal = 2,
-            StatRolling = 3,
-            BuildSelection = 4,
-            DossierLaunch = 5,
-            Complete = 6,
+            // Ember-fit Genesis wizard. Names kept stable (existing switch cases + tests reference
+            // them by name); new Ember-unique stages inserted: world-genesis (mood/calling/fate),
+            // player-picked Birthsign, and a standalone Portrait stage. Class/Alignment/Skills stay
+            // the combined BuildSelection screen for this increment.
+            CommanderIdentity = 0,    // 1. Name — "What name will they remember?"
+            WorldMood = 1,            // 2. "What is the world's mood?"  (worldgen)
+            PlayerCalling = 2,        // 3. "What is the player's calling?" (worldgen)
+            FateBegins = 3,           // 4. "Where does fate begin?" (worldgen)
+            PersonalityQuestions = 4, // 5. 10 moral dilemmas, one per page
+            WorldHistoryReveal = 5,   // 6. DF-style worldgen streaming
+            Birthsign = 6,            // 7. pick 1 of 12 (player-picked now)
+            StatRolling = 7,          // 8. Abilities — roll + assign the six attributes
+            BuildSelection = 8,       // 9. Class / Alignment / Skills (combined 3-column)
+            Portrait = 9,             // 10. LLM portrait + reroll
+            DossierLaunch = 10,       // 11. Dossier review → Begin Adventure
+            Complete = 11,
         }
 
         private static readonly string[] StatOrder = { "MIG", "AGI", "END", "MND", "INS", "PRE" };
@@ -67,6 +76,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private string _selectedAlignmentId = string.Empty;
         private string _selectedBirthsignId = string.Empty;
         private string _selectedBackgroundId = "smuggler";
+        // World-genesis answers (stages 2-4). Defaulted so the flow advances out of the box;
+        // the player overrides them on the mood/calling/fate screens. These feed worldgen.
+        private string _worldMood = "grim";
+        private string _playerCalling = "survival";
+        private string _fateStart = "crossroads";
         private string _suggestedClassId = "warrior";
         private string _firstSceneName = "SmithingOverworld";
         private int _rerollsRemaining = 3;
@@ -193,34 +207,37 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             if (!CanAdvance) return;
 
-            switch (_step)
+            // Final stage launches the story; everything else advances linearly through the
+            // Genesis wizard (data-driven next = +1) with per-stage on-enter side effects.
+            if (_step == CreationStep.DossierLaunch)
             {
-                case CreationStep.CommanderIdentity:
-                    _step = CreationStep.PersonalityQuestions;
-                    _questionIndex = Mathf.Clamp(_questionIndex, 0, Mathf.Max(0, _questions.Count - 1));
-                    break;
-
-                case CreationStep.WorldHistoryReveal:
-                    _step = CreationStep.StatRolling;
-                    if (_activeStats.Count == 0) RollAllAttributes();
-                    break;
-
-                case CreationStep.StatRolling:
-                    _step = CreationStep.BuildSelection;
-                    break;
-
-                case CreationStep.BuildSelection:
-                    _step = CreationStep.DossierLaunch;
-                    GeneratePortrait();
-                    break;
-
-                case CreationStep.DossierLaunch:
-                    BeginYourStory();
-                    _step = CreationStep.Complete;
-                    break;
+                BeginYourStory();
+                _step = CreationStep.Complete;
+                Render();
+                return;
             }
 
+            EnterStage((CreationStep)((int)_step + 1));
             Render();
+        }
+
+        // Advance to a stage and run its on-enter side effects (question index clamp, stat roll,
+        // portrait generation). Kept separate from Continue so Back/jumps reuse the same hooks.
+        private void EnterStage(CreationStep next)
+        {
+            _step = next;
+            switch (next)
+            {
+                case CreationStep.PersonalityQuestions:
+                    _questionIndex = Mathf.Clamp(_questionIndex, 0, Mathf.Max(0, _questions.Count - 1));
+                    break;
+                case CreationStep.StatRolling:
+                    if (_activeStats.Count == 0) RollAllAttributes();
+                    break;
+                case CreationStep.Portrait:
+                    GeneratePortrait();
+                    break;
+            }
         }
 
         public void Back()
@@ -368,6 +385,43 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             AddLog("[choice] Background: " + _selectedBackgroundId + ".");
         }
 
+        // World-genesis answers (stages 2-4) — feed WorldgenService via EmberWorldGenIntent.
+        public void SetWorldMood(string mood)
+        {
+            if (_step != CreationStep.WorldMood) return;
+            _worldMood = (mood ?? string.Empty).Trim();
+            Continue(); // click-to-advance, consistent with the personality trial
+        }
+
+        public void SetPlayerCalling(string calling)
+        {
+            if (_step != CreationStep.PlayerCalling) return;
+            _playerCalling = (calling ?? string.Empty).Trim();
+            Continue(); // click-to-advance, consistent with the personality trial
+        }
+
+        public void SetFateBegins(string start)
+        {
+            if (_step != CreationStep.FateBegins) return;
+            _fateStart = (start ?? string.Empty).Trim();
+            Continue(); // click-to-advance, consistent with the personality trial
+        }
+
+        // Birthsign is now player-picked (was auto-resolved from seed). Only honored on its stage.
+        public void SelectBirthsign(string birthsignId)
+        {
+            if (_step != CreationStep.Birthsign) return;
+            if (string.IsNullOrWhiteSpace(birthsignId)) return;
+            foreach (var sign in CharacterCreationCatalog.Birthsigns)
+            {
+                if (!string.Equals(sign.Id, birthsignId, StringComparison.OrdinalIgnoreCase)) continue;
+                _selectedBirthsignId = sign.Id;
+                AddLog("[build] Birthsign chosen: " + sign.Name + " (" + sign.PassiveBonus + ").");
+                Render();
+                return;
+            }
+        }
+
         public void SelectClass(string classId)
         {
             if (_step != CreationStep.BuildSelection && _step != CreationStep.DossierLaunch) return;
@@ -473,10 +527,18 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             {
                 case CreationStep.CommanderIdentity:
                     return _commanderName.Length >= 2;
+                case CreationStep.WorldMood:
+                    return !string.IsNullOrWhiteSpace(_worldMood);
+                case CreationStep.PlayerCalling:
+                    return !string.IsNullOrWhiteSpace(_playerCalling);
+                case CreationStep.FateBegins:
+                    return !string.IsNullOrWhiteSpace(_fateStart);
                 case CreationStep.PersonalityQuestions:
                     return false;
                 case CreationStep.WorldHistoryReveal:
                     return IsHistoryAdvanceUnlocked();
+                case CreationStep.Birthsign:
+                    return !string.IsNullOrWhiteSpace(_selectedBirthsignId);
                 case CreationStep.StatRolling:
                     return _rollKept;
                 case CreationStep.BuildSelection:
@@ -486,6 +548,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                         && !string.IsNullOrWhiteSpace(_selectedAlignmentId)
                         && _selectedSkills.Count >= 1
                         && _selectedSkills.Count <= 5;
+                case CreationStep.Portrait:
+                    return true; // portrait is optional-confirm; reroll is available but not required
                 case CreationStep.DossierLaunch:
                     return true;
                 default:

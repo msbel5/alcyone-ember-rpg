@@ -35,6 +35,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-scene-tour"))
+            {
+                yield return RunSceneTour();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             yield return CaptureAfter(1.5f, "boot");
             yield return CaptureAfter(0.5f, "assetgen");
             LoadingScreen.Dismiss();
@@ -151,6 +158,35 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
             SceneManager.LoadScene("TavernDialog");
             yield return CaptureFixedAfter(1.2f, "tavern_game.png");
+        }
+
+        // Loads every gameplay scene in turn and captures it twice — once with UI, once with all
+        // Canvases hidden — so magenta/material issues (which can live in any scene, e.g. the 5th
+        // or 6th) and the HUD can both be verified across the whole game. Scenes load cold;
+        // UrpMaterialRescue runs on each sceneLoaded, so the repair is exercised per scene.
+        private static readonly string[] TourScenes =
+        {
+            "SmithingOverworld", "TavernDialog", "ColonyNeeds", "CombatDungeon",
+            "OracleShrine", "RitualHall", "SeasonFarm", "TradeMarket",
+            "ShowroomOverview", "TavernFlavour",
+        };
+
+        private IEnumerator RunSceneTour()
+        {
+            for (int i = 0; i < TourScenes.Length; i++)
+            {
+                string scene = TourScenes[i];
+                if (!Application.CanStreamedLevelBeLoaded(scene)) continue; // not in build settings
+                SceneManager.LoadScene(scene);
+                yield return new WaitForSecondsRealtime(1.5f); // load + UrpMaterialRescue + first frames
+                string idx = (i + 1).ToString("00");
+                yield return CaptureFixedAfter(0.1f, "tour_" + idx + "_" + scene + "_ui.png");
+
+                var canvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                for (int c = 0; c < canvases.Length; c++) if (canvases[c] != null) canvases[c].enabled = false;
+                yield return CaptureFixedAfter(0.25f, "tour_" + idx + "_" + scene + "_noui.png");
+                for (int c = 0; c < canvases.Length; c++) if (canvases[c] != null) canvases[c].enabled = true;
+            }
         }
 
         private IEnumerator CaptureFixedAfter(float seconds, string fileName)
