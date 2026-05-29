@@ -43,8 +43,9 @@ namespace EmberCrpg.Presentation.Ember.Visual
                 var layers = terrain.terrainData.terrainLayers;
                 if (layers == null || layers.Length == 0 || layers[0] == null) continue;
 
-                // Convention key the generation step will write to: env_<scene>_<terrainObject>.
-                var key = Sanitize("env_" + sceneName + "_" + terrain.gameObject.name);
+                // Scene-keyed texture (env_<scene>) that the forge generates and writes; one themed
+                // floor per scene, painted onto every terrain in that scene. Matches the manifest ids.
+                var key = Sanitize("env_" + sceneName);
                 var tex = TryLoadGenerated(key);
                 if (tex == null) continue;
 

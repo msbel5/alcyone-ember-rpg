@@ -40,6 +40,17 @@ namespace EmberCrpg.Simulation.Generation
             // logos + splash moved to top of list (above) so menus get visuals before later stalls.
             // splash uses sd15-lcm @ 1280x720 to skip the cuDNN 9 dependency; re-up to sdxl-turbo
             // when cudnn64_9.dll is part of the standard machine setup.
+            // Environment floor textures (one per scene whose terrain still uses the fallback).
+            // Generated during loading, painted onto scene terrain by SceneEnvironmentDresser.
+            entries.Add(new ManifestEntry("env_colonyneeds", "environment", "Assets/Generated/Core/env_colonyneeds.png", "env_colonyneeds", 512, 512, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("env_combatdungeon", "environment", "Assets/Generated/Core/env_combatdungeon.png", "env_combatdungeon", 512, 512, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("env_oracleshrine", "environment", "Assets/Generated/Core/env_oracleshrine.png", "env_oracleshrine", 512, 512, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("env_ritualhall", "environment", "Assets/Generated/Core/env_ritualhall.png", "env_ritualhall", 512, 512, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("env_seasonfarm", "environment", "Assets/Generated/Core/env_seasonfarm.png", "env_seasonfarm", 512, 512, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("env_trademarket", "environment", "Assets/Generated/Core/env_trademarket.png", "env_trademarket", 512, 512, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("env_showroomoverview", "environment", "Assets/Generated/Core/env_showroomoverview.png", "env_showroomoverview", 512, 512, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("env_tavernflavour", "environment", "Assets/Generated/Core/env_tavernflavour.png", "env_tavernflavour", 512, 512, true, 300, "sd15-lcm"));
+
             return new CoreAssetManifest(entries);
         }
 

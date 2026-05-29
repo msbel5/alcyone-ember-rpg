@@ -7,6 +7,9 @@ namespace EmberCrpg.Simulation.Generation
     public sealed class StaticPromptCatalog
     {
         public const string EmberStyleHeader = "dark-fantasy ember-warm palette, painterly low-saturation, transparent background, single subject centered";
+        // Floors/walls are tileable surfaces, NOT centered icons: this header replaces the icon
+        // "transparent background, single subject centered" with a seamless-fill directive.
+        public const string EmberFloorHeader = "dark-fantasy ember-warm palette, painterly low-saturation, seamless tileable texture, top-down orthographic surface filling the entire frame edge to edge, no central subject";
         public const string EmberNegativeFooter = "no text, no watermark, no border, no UI elements, no signature, no logo";
 
         private readonly IReadOnlyDictionary<string, string> _prompts;
@@ -40,6 +43,16 @@ namespace EmberCrpg.Simulation.Generation
             Add(prompts, "rest", "a bedroll beside a low coal fire");
             Add(prompts, "continue", "a forward-pointing wrought iron arrow");
             Add(prompts, "error", "a cracked warning seal glowing dull red");
+
+            // Environment floor textures: tileable surfaces (EmberFloorHeader), NOT centered icons.
+            prompts["env_colonyneeds"] = EmberFloorHeader + ", worn flagstone colony floor, soot-darkened warm stone, ash and cinders in the cracks, torchlit, " + EmberNegativeFooter;
+            prompts["env_combatdungeon"] = EmberFloorHeader + ", cold damp dungeon floor, cracked dark flagstones, faint ember glow in the gaps, grim, " + EmberNegativeFooter;
+            prompts["env_oracleshrine"] = EmberFloorHeader + ", sacred shrine floor, polished dark marble veined with ember-gold inlay, mystical sheen, " + EmberNegativeFooter;
+            prompts["env_ritualhall"] = EmberFloorHeader + ", ritual hall floor, black obsidian slabs etched with faintly glowing ember runes, " + EmberNegativeFooter;
+            prompts["env_seasonfarm"] = EmberFloorHeader + ", tilled farm soil and dry stubble grass, warm dusk earth, scattered ash, " + EmberNegativeFooter;
+            prompts["env_trademarket"] = EmberFloorHeader + ", market square cobblestone, worn warm-grey pavers, dust and straw, lantern-lit, " + EmberNegativeFooter;
+            prompts["env_showroomoverview"] = EmberFloorHeader + ", showroom floor, smooth dark stone with ember-gold seam trim, polished sheen, " + EmberNegativeFooter;
+            prompts["env_tavernflavour"] = EmberFloorHeader + ", tavern wooden plank floor, warm aged oak timber, hearth-glow, knot details, " + EmberNegativeFooter;
             Add(prompts, "item_sword", "a wrought-iron longsword with rune-etched fuller, oxblood leather grip");
             Add(prompts, "item_bow", "a recurved yew bow strung with dark cord and brass nocks");
             Add(prompts, "item_staff", "a charred ashwood staff capped with warm iron");

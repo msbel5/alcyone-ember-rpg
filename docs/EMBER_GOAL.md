@@ -142,11 +142,11 @@ open P2 (gameplay).
 > `Texture2D.LoadImage`) — no in-memory cache. Boot generates only the **first 3** manifest entries.
 - T1.1 DONE — forge mapped. `ManifestEntry(id,category,expectedPath,staticPromptKey,w,h,requiresGeneration,timeout,modelHint)`; prompts in `StaticPromptCatalog`; loop `BootBootstrap.RunAsync`→`VisibleGenerationFlow`→`VisibleGenerationPipeline.RunAsync`; model `sd15-lcm`; w/h ÷64.
 - T1.2 DONE — 8/10 scenes' terrain → `ember_surface_fallback.png`; only Smithing+Tavern themed. Hook = `EmberWorldHost.Awake` or `SceneManager.sceneLoaded`.
-- T1.3 DONE(pending build) — `SceneEnvironmentDresser.cs` implemented: self-mounts on `sceneLoaded`, paints terrain layer 0 from `env_<scene>_<terrain>.png`, multi-path disk load (editor+persistentData+streaming), no-op if absent (never magenta). Verifying compile via genesis29.
-- T1.4 NEXT — add env manifest entries (`env_<scene>_<terrain>`) + `StaticPromptCatalog` themed prompts (w/h ÷64, model `sd15-lcm`).
-- T1.5 **Resolve the built-player write-path FIRST**, then wire generation: env entries must generate during a loading screen (raise Boot's 3-cap OR a worldgen-loading pass) AND write where the dresser reads in a *build* (`persistentDataPath/Generated/Core`).
+- T1.3 DONE — `SceneEnvironmentDresser.cs`: self-mounts on `sceneLoaded`, paints ALL terrains' layer 0 from `env_<scene>.png`, multi-path disk load (editor+persistentData+streaming), no-op if absent (never magenta). Build-verified genesis29.
+- T1.4 DONE — 8 env manifest entries (`env_<scene>`, 512² ÷64, sd15-lcm) + tileable-floor prompts in `StaticPromptCatalog` (new `EmberFloorHeader`, NOT the icon "single subject centered" header). Verifying via genesis30.
+- T1.5 NEXT (THE GATE) — make env entries actually GENERATE. Boot caps at **3** (`BootBootstrap` maxEntries=3) so env entries currently never generate. Options: raise the cap, or a dedicated worldgen/new-game generation pass. Verify `VisibleGenerationPipeline.Write` path resolves in a *built player* (dresser reads parent-of-dataPath/Assets/Generated/Core + persistentData + streaming).
 - T1.6 Failure fallback = neutral static texture (never magenta); `UrpMaterialRescue` stays last-resort.
-- T1.7 Build + scene-tour + read screenshots → themed floors, no placeholder/magenta. Commit + memory.
+- T1.7 PROOF — note: `--ember-scene-tour` BYPASSES Boot generation (loads scenes directly), so it cannot prove gen→assign. Need a driver mode that runs boot/worldgen generation THEN enters a gameplay scene and screenshots the themed floor (or pre-generate, then tour). Then read screenshots: themed floors, zero placeholder/magenta. Commit + memory.
 
 **T2–T7 / H1:** expand when each becomes NOW (summaries in §1 table).
 
