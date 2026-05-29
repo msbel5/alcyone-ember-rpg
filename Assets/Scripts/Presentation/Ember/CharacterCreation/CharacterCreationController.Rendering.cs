@@ -315,7 +315,9 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             DontDestroyOnLoad(go);
             var view = go.AddComponent<WorldgenViewController>();
             view.Configure(_firstSceneName);
-            view.AutoAdvance = true;
+            // Player answers the DM's opening worldgen question themselves (no auto-skip).
+            // Clicking an option pumps the projection to Completed, which loads the start scene.
+            view.AutoAdvance = false;
             view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
                 maxRegions: 8,
                 maxSettlements: 12,
@@ -324,8 +326,18 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 includeQuestionPrompt: true,
                 includeSyntheticFailure: false));
 
-            LoadingScreen.SetProgress(view.QuestionOpen ? 0.85f : 1f, view.QuestionOpen ? "Awaiting worldgen question" : "Entering " + _firstSceneName);
             LoadingScreen.LogLine(UiLogSeverity.Success, "[worldgen] visible projection mounted");
+            if (view.QuestionOpen)
+            {
+                // Reveal the worldgen panel so the player can read it and click an answer —
+                // the loading overlay would otherwise cover it and swallow the clicks. The
+                // start scene loads once they answer (Completed event -> LoadStartSceneAfterPause).
+                LoadingScreen.Dismiss();
+            }
+            else
+            {
+                LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
+            }
         }
 
         // ----- World-genesis choice screens (stages 2-4) -----------------------------------

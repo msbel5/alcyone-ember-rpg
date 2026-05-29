@@ -111,6 +111,11 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
                     _panel?.SetButtonHandler(slot, () => AnswerQuestion(captured));
                     _panel?.SetVisible(slot, true);
                 }
+                // Interactive choice: hide the generic skip buttons ("Auto-advance"/"Continue",
+                // which have no handler) so only the real location options remain — the player
+                // must pick where to begin instead of being able to skip past the question.
+                _panel?.SetVisible("auto", false);
+                _panel?.SetVisible("continue", false);
                 StartAutoAdvanceIfNeeded();
                 return;
             }
