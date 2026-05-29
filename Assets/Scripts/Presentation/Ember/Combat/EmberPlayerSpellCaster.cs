@@ -20,7 +20,14 @@ namespace EmberCrpg.Presentation.Ember.Combat
             _line.endWidth = 0.5f;
             _line.positionCount = 2;
             _line.enabled = false;
-            _line.material = new Material(Shader.Find("Sprites/Default"));
+            // Build-safe shader resolution. Passing a null shader to new Material() yields the
+            // magenta InternalErrorShader the instant this ripple is enabled on a spell cast
+            // (the "magenta after ~1 minute" in combat). Sprites/Default is in Always-Included,
+            // but fall back to URP shaders so a null can never reach the material.
+            var rippleShader = Shader.Find("Sprites/Default")
+                               ?? Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                               ?? Shader.Find("Universal Render Pipeline/Unlit");
+            _line.material = new Material(rippleShader);
             _line.material.color = new Color(0.2f, 0.6f, 1f, 0.8f);
         }
 
