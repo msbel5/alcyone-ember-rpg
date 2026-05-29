@@ -416,7 +416,24 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             }
         }
 
-        public IReadOnlyList<string> GetTopics() => Topics;
+        public IReadOnlyList<string> GetTopics()
+        {
+            // T-Dialog-AskAbout slice 2 — delegate to the per-NPC adapter source when it has
+            // real deterministic topic IDs (DomainSimulationAdapter pulls them from
+            // SliceWorldState.Topics, the same source AskAboutService.Ask() reads). Falls back
+            // to the {rumors, work, trade, fate} stub when no adapter is wired (offline /
+            // editor sketch path). This is what makes TavernDialog finally surface the same
+            // real topic IDs (embers/gate/watch/...) that Showroom already showed via the
+            // adapter-owned dialog path.
+            if (_adapter is IDialogSource adapterSource)
+            {
+                var adapterTopics = adapterSource.GetTopics();
+                if (adapterTopics != null && adapterTopics.Count > 0)
+                    return adapterTopics;
+            }
+            return Topics;
+        }
+
         public string GetPortraitName() => "portrait_npc_placeholder";
 
         public void SelectTopic(string topicId)

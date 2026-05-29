@@ -490,10 +490,16 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             if (_step != CreationStep.DossierLaunch && _step != CreationStep.Complete) return;
             _storyLaunched = true;
             AddLog("[launch] You arrive at Ashford with nothing but your wits and a name that means nothing - yet.");
+            // Genesis stages 2-4 author the world via WorldMood/PlayerCalling/FateBegins.
+            // Those values flow into EmberWorldGenIntent.Mood/Calling/Start, then EmberWorldGenUI
+            // hands them to WorldgenAdapter.SeedWorld (see EmberWorldGenUI line ~143). Earlier the
+            // first three args were _profileHint / _selectedClassId / _firstSceneName, which silently
+            // discarded the player's genesis answers — fixed here so creation actually authors the
+            // world. _profileHint stays in the dossier dump; _firstSceneName still drives scene load.
             EmberWorldGenIntent.Pending = new EmberWorldGenIntent(
-                _profileHint,
-                _selectedClassId,
-                _firstSceneName,
+                _worldMood,
+                _playerCalling,
+                _fateStart,
                 _commanderName,
                 _selectedClassId,
                 _selectedBirthsignId,
