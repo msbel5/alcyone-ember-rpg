@@ -22,6 +22,7 @@ namespace EmberCrpg.Presentation.Ember.Visual
 
         private static Material _particleMaterial;
         private static Material _meshMaterial;
+        private static UrpMaterialRescueRunner _runner;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Install()
@@ -29,6 +30,17 @@ namespace EmberCrpg.Presentation.Ember.Visual
             // Subscribe once; idempotent across domain reloads.
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
+
+            // Persistent re-scanner: catches magenta renderers spawned AFTER scene load — e.g. a
+            // combat VFX that only appears a minute into CombatDungeon — which the one-shot
+            // sceneLoaded pass cannot see. Re-runs the rescue every few seconds (silent unless it
+            // actually repairs something).
+            if (_runner == null)
+            {
+                var go = new GameObject("UrpMaterialRescueRunner");
+                Object.DontDestroyOnLoad(go);
+                _runner = go.AddComponent<UrpMaterialRescueRunner>();
+            }
         }
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => RescueLoadedScene();
@@ -100,6 +112,21 @@ namespace EmberCrpg.Presentation.Ember.Visual
             if (_meshMaterial.HasProperty("_BaseColor")) _meshMaterial.SetColor("_BaseColor", warmStone);
             if (_meshMaterial.HasProperty("_Color")) _meshMaterial.SetColor("_Color", warmStone);
             return _meshMaterial;
+        }
+    }
+
+    /// <summary>Drives periodic re-scans so late-spawned magenta renderers (e.g. delayed combat
+    /// VFX) get repaired too, not just the ones present at scene load.</summary>
+    internal sealed class UrpMaterialRescueRunner : MonoBehaviour
+    {
+        private float _timer;
+
+        private void Update()
+        {
+            _timer += Time.unscaledDeltaTime;
+            if (_timer < 2f) return; // catch late-spawned magenta within ~2s of it appearing
+            _timer = 0f;
+            UrpMaterialRescue.RescueLoadedScene();
         }
     }
 }
