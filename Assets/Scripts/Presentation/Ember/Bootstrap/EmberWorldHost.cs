@@ -405,7 +405,17 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         public string GetCurrentLine()
         {
+            // T-Dialog-AskAbout slice 2 fix — transparent proxy. When _adapter is also an
+            // IDialogSource (DomainSimulationAdapter implements IDialogSourcePortrait), forward
+            // the live line through it so picking a real topic id from GetTopics (e.g.
+            // embers/gate/watch) returns the deterministic AskAboutService answer / streaming
+            // LLM line instead of the generic fallback below. _fateLine takes precedence so a
+            // ConsultFate result still surfaces. Host-owned dialog fallback (no adapter): keep
+            // the legacy {work/trade/fate} switch + default flavor line.
             if (!string.IsNullOrEmpty(_fateLine)) return _fateLine;
+
+            if (_adapter is IDialogSource adapterSource)
+                return adapterSource.GetCurrentLine();
 
             switch (_selectedTopic)
             {
@@ -415,6 +425,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 default: return "Ask clean questions. The world remembers what matters.";
             }
         }
+
+        // Async LLM gate — when the adapter is generating an NPC line, the panel renders the
+        // "thinking…" placeholder. Default false when host owns the dialog (synchronous path).
+        bool IDialogSource.IsThinking => _adapter is IDialogSource adapterSource && adapterSource.IsThinking;
 
         public IReadOnlyList<string> GetTopics()
         {
@@ -434,25 +448,40 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             return Topics;
         }
 
-        public string GetPortraitName() => "portrait_npc_placeholder";
+        public string GetPortraitName()
+        {
+            // Forward to the adapter when it carries a per-NPC portrait id so the dialog panel
+            // gets a real sprite name (e.g. "portrait_sage_nera") instead of the gray
+            // placeholder. Falls back to the generic placeholder when no adapter / no portrait.
+            if (_adapter is IDialogSourcePortrait portraitSource)
+            {
+                var name = portraitSource.GetPortraitName();
+                if (!string.IsNullOrEmpty(name)) return name;
+            }
+            return "portrait_npc_placeholder";
+        }
 
         public void SelectTopic(string topicId)
         {
-            if (!string.IsNullOrEmpty(topicId))
-                _selectedTopic = topicId;
-            // Codex audit (eighth pass A-P1): the host's IDialogSource
-            // implementation previously only mutated _selectedTopic, so when
-            // a DialogBoxPanel routed SelectTopic("trade") into this method
-            // while a per-NPC adapter source was actually responsible for
-            // the conversation, the adapter never saw the topic change and
-            // its line stayed stuck. The R-key path explicitly assigns
-            // `d.Source = this`, so host-owned panels still route through
-            // the local _selectedTopic above. For adapter-owned sources
-            // the panel already calls source.SelectTopic directly (its
-            // Source is the adapter, not the host), so no forwarding is
-            // required from here. TODO(eighth-pass): if host is ever
-            // installed as a proxy that intercepts adapter-owned dialog,
-            // re-route via _commands.GetDialogSource(_activeDialogActor).
+            if (string.IsNullOrEmpty(topicId)) return;
+
+            // T-Dialog-AskAbout slice 2 fix — close the loop the prior comment flagged. Slice 2
+            // made GetTopics() advertise adapter topics (embers/gate/watch/...). Without this
+            // forward, DialogBoxPanel.Source.SelectTopic("embers") only mutated _selectedTopic
+            // here and the host's GetCurrentLine fell back to the generic flavor line — the
+            // player saw the new topic listed but never the deterministic answer. When the
+            // adapter is the real dialog source, forward the selection so its SelectTopic
+            // appends the WorldEvent, mutates NpcMemory, and fires the async LLM topic answer.
+            if (_adapter is IDialogSource adapterSource)
+            {
+                adapterSource.SelectTopic(topicId);
+                return;
+            }
+
+            // Host-owned fallback path (no adapter wired): keep the legacy _selectedTopic
+            // mutation so the GetCurrentLine() switch (work/trade/fate) still picks a sane
+            // canned line.
+            _selectedTopic = topicId;
         }
 
         /// <summary>
