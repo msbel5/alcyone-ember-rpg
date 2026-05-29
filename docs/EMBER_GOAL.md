@@ -137,16 +137,15 @@ open P2 (gameplay).
 ## §5 — ATOMIC BACKLOG (detail behind §1; expand only the NOW task)
 
 **T1 — Floors env-texture generation + assignment** *(spec: `docs/PRD_loading_asset_generation_v1.md`)*
-- T1.1 Map the forge: `CoreAssetManifest` entry shape + entry list; `ForgeBootstrap` enqueue point;
-  `AssetForgeCache` retrieve-by-key API; the `sd15-lcm` model id. (Delegate the *reading* to a subagent
-  → tight map; you keep design.)
-- T1.2 Map floor materials: list `Tile_*.mat` + `_fallback.mat`, their shader + base-map property
-  (`_BaseMap`); build a **scene → floor-material** table (grep `.unity` for `Tile_` GUIDs; note Terrain).
-- T1.3 Add env manifest entries (`env_<scene>_floor`/`_wall`) — themed prompts, size, tiling, model id.
-- T1.4 Enqueue env entries in `ForgeBootstrap` during loading; surface progress on `LoadingScreen`.
-- T1.5 New `SceneEnvironmentDresser` — one-shot on scene load: pull generated texture from cache, assign
-  `_BaseMap` to the scene's floor/wall materials. **No per-frame polling.**
-- T1.6 Failure fallback = neutral *static* texture (never magenta); demote `UrpMaterialRescue` to last-resort.
+> REALITY (mapped 2026-05-29): floors are **Unity Terrain** → assign `terrainData.terrainLayers[i].diffuseTexture`
+> (NOT `Tile_*.mat` `_BaseMap`). Generated PNGs live on **disk** (`Assets/Generated/Core/<id>.png`, reloaded via
+> `Texture2D.LoadImage`) — no in-memory cache. Boot generates only the **first 3** manifest entries.
+- T1.1 DONE — forge mapped. `ManifestEntry(id,category,expectedPath,staticPromptKey,w,h,requiresGeneration,timeout,modelHint)`; prompts in `StaticPromptCatalog`; loop `BootBootstrap.RunAsync`→`VisibleGenerationFlow`→`VisibleGenerationPipeline.RunAsync`; model `sd15-lcm`; w/h ÷64.
+- T1.2 DONE — 8/10 scenes' terrain → `ember_surface_fallback.png`; only Smithing+Tavern themed. Hook = `EmberWorldHost.Awake` or `SceneManager.sceneLoaded`.
+- T1.3 DONE(pending build) — `SceneEnvironmentDresser.cs` implemented: self-mounts on `sceneLoaded`, paints terrain layer 0 from `env_<scene>_<terrain>.png`, multi-path disk load (editor+persistentData+streaming), no-op if absent (never magenta). Verifying compile via genesis29.
+- T1.4 NEXT — add env manifest entries (`env_<scene>_<terrain>`) + `StaticPromptCatalog` themed prompts (w/h ÷64, model `sd15-lcm`).
+- T1.5 **Resolve the built-player write-path FIRST**, then wire generation: env entries must generate during a loading screen (raise Boot's 3-cap OR a worldgen-loading pass) AND write where the dresser reads in a *build* (`persistentDataPath/Generated/Core`).
+- T1.6 Failure fallback = neutral static texture (never magenta); `UrpMaterialRescue` stays last-resort.
 - T1.7 Build + scene-tour + read screenshots → themed floors, no placeholder/magenta. Commit + memory.
 
 **T2–T7 / H1:** expand when each becomes NOW (summaries in §1 table).
