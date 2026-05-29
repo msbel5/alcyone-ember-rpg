@@ -55,13 +55,13 @@ UPDATED : 2026-05-29
 | T7 | *(LATER, after gameplay)* AI ambient sound + music generation | LATER | — |
 | H1 | Housekeeping: reconcile `Reference/` (Godot) ↔ `docs/` (Unity) PRDs via the matrix; archive stale/irrelevant PRDs; ensure each active task has a canonical Unity PRD | ONGOING | matrix current; no orphan tasks |
 
-**▶ NOW = T3 (HUD consistency).** T1 (themed floors) + T2 (generation real) DONE & build-verified:
+**▶ NOW = T4 (billboard transparency).** T1 (themed floors) + T2 (generation real) DONE & build-verified:
 genesis30 scene-tour shows ColonyNeeds + CombatDungeon rendering DISTINCT generated themed floors
 (orange placeholder gone, no magenta); the 8 `env_<scene>` floors are 8 distinct md5s, prompt-matched;
 `EmberMainMenuUI` background top-up generates them (no extra wiring), `SceneEnvironmentDresser` paints
 them onto terrain at load. NEXT: unify `EmberHud` (vitals pills + numbered 1–9 hotbar) across ALL scenes —
 CombatDungeon still shows a divergent bottom-bar HUD. Also pending in P1: T4 billboard checker-backing,
-T5 AI-DM conversation, T6 full playtest. After T3 verifies, set T3=DONE, T4=NOW, commit, record memory.
+T5 AI-DM conversation, T6 full playtest. T3 HUD DONE (genesis31: EmberHud now in all 10 scenes, divergent CombatHud removed/disabled; residual polish: runtime-created EmberHud anchors hotbar bottom-center vs authored scenes' top-center — RectTransform parity, fold into a later HUD pass). NOW = T4: fix the gray checker backing behind CombatDungeon enemies (billboard cutout/placeholder) + clean billboard edges. Then T5 AI-DM conversation round-trip, T6 full playtest. After T4 verifies, set T4=DONE, T5=NOW.
 
 ### Already DONE (foundation — do NOT redo)
 - ✅ Windows64 build pipeline **fixed** (was a `GUI/Text Shader` DontSave entry in Always-Included Shaders → removed; genesis28 builds clean). Commit `af6a0d80`.
