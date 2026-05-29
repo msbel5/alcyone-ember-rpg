@@ -45,6 +45,24 @@ namespace EmberCrpg.Presentation.Ember.Visual
                 r.sharedMaterial = r is ParticleSystemRenderer ? ParticleMaterial() : MeshMaterial();
                 repaired++;
             }
+
+            // Legacy 3D TextMesh labels (e.g. the phase-gate "→ Colony Needs" sign) frequently
+            // have their MeshRenderer material overridden to a non-font prop material, so the
+            // glyphs never render. Restore the font's own material so the text shows under URP.
+            var textMeshes = Object.FindObjectsByType<TextMesh>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < textMeshes.Length; i++)
+            {
+                var tm = textMeshes[i];
+                if (tm == null || tm.font == null) continue;
+                var mr = tm.GetComponent<MeshRenderer>();
+                var fontMat = tm.font.material;
+                if (mr != null && fontMat != null && mr.sharedMaterial != fontMat)
+                {
+                    mr.sharedMaterial = fontMat;
+                    repaired++;
+                }
+            }
+
             if (repaired > 0)
                 Debug.Log($"[UrpMaterialRescue] Repaired {repaired} renderer(s) with missing/magenta materials.");
             return repaired;
