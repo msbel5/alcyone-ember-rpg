@@ -315,8 +315,35 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             }
             foreach (var faction in Object.FindObjectsByType<FactionPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 faction.Source = this;
+            // HUD consistency (T3): every scene must show the standard EmberHud (vitals pills +
+            // numbered hotbar), never the divergent bottom-bar CombatHud. CombatDungeon is the only
+            // scene authored without an EmberHud, so if none exists we create one under the CombatHud's
+            // Canvas, then disable the CombatHud. EmberHud reads combat vitals via ICombatHudSource
+            // (this host), so no combat info is lost. EmberHud builds its pills/hotbar procedurally and
+            // only needs a Canvas parent + an Image, so runtime creation is safe.
+            var emberHuds = Object.FindObjectsByType<EmberHud>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var combat in Object.FindObjectsByType<CombatHud>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                combat.Source = this;
+            {
+                if (combat == null) continue;
+                if (emberHuds.Length == 0)
+                {
+                    var canvas = combat.GetComponentInParent<Canvas>();
+                    if (canvas != null)
+                    {
+                        var go = new GameObject("EmberHud", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                        go.transform.SetParent(canvas.transform, worldPositionStays: false);
+                        var rt = (RectTransform)go.transform;
+                        rt.anchorMin = Vector2.zero;
+                        rt.anchorMax = Vector2.one;
+                        rt.offsetMin = Vector2.zero;
+                        rt.offsetMax = Vector2.zero;
+                        go.GetComponent<UnityEngine.UI.Image>().color = new Color(0f, 0f, 0f, 0f);
+                        go.AddComponent<EmberHud>().Source = this;
+                        emberHuds = Object.FindObjectsByType<EmberHud>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                    }
+                }
+                combat.gameObject.SetActive(false);
+            }
             foreach (var spellBar in Object.FindObjectsByType<SpellBar>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 spellBar.Source = this;
