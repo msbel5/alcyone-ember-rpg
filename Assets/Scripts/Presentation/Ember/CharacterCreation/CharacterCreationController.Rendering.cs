@@ -151,7 +151,6 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             var builder = new StringBuilder();
             builder.AppendLine("Question " + (_questionIndex + 1) + " of " + _questions.Count);
             builder.AppendLine(question.Prompt);
-            builder.AppendLine("Choose one visible answer button below.");
             return builder.ToString();
         }
 
@@ -211,9 +210,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             builder.AppendLine("Dossier Preview");
             builder.AppendLine("Name: " + _commanderName);
             builder.AppendLine("Class: " + selectedClass.Name);
-            builder.AppendLine("Birthsign: " + _selectedBirthsignId);
+            builder.AppendLine("Birthsign: " + (string.IsNullOrWhiteSpace(_selectedBirthsignId)
+                ? "(unchosen)" : CharacterCreationCatalog.GetBirthsign(_selectedBirthsignId).Name));
             builder.AppendLine("Alignment: " + AlignmentName(_selectedAlignmentId));
-            builder.AppendLine("Background: " + _selectedBackgroundId);
+            if (!string.IsNullOrWhiteSpace(_selectedBackgroundId))
+                builder.AppendLine("Background: " + _selectedBackgroundId);
             builder.AppendLine("Stats: " + string.Join(", ", StatOrder.Select(s => s + " " + SafeStat(_assignedStats, s))));
             builder.AppendLine("Skills: " + string.Join(", ", _selectedSkills.OrderBy(v => v)));
             builder.AppendLine("Starting Equipment: " + string.Join(", ", selectedClass.StartingEquipment));
@@ -234,7 +235,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 string slot = "answer" + i;
                 _dynamicSlots.Add(slot);
                 var captured = question.Choices[i];
-                _panel.SetText(slot, captured.Text + "\n" + BuildChoiceDescription(captured));
+                // A. / B. / C. prefix; show only the in-world action. The class weighting
+                // stays hidden so the trial infers your path instead of letting you min-max.
+                string letter = ((char)('A' + i)).ToString();
+                _panel.SetText(slot, letter + ".  " + captured.Text);
                 _panel.SetButtonHandler(slot, () => AnswerCurrentQuestion(captured.Id));
                 _panel.SetVisible(slot, true);
             }
@@ -476,13 +480,6 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private static int SafeStat(IReadOnlyDictionary<string, int> stats, string key)
         {
             return stats.TryGetValue(key, out var value) ? value : 0;
-        }
-
-        private string BuildChoiceDescription(CreationChoice choice)
-        {
-            string topClass = choice.ClassWeights.OrderByDescending(p => p.Value).FirstOrDefault().Key;
-            if (string.IsNullOrWhiteSpace(topClass)) return "Shapes your path.";
-            return "Leans toward " + ClassName(topClass) + ".";
         }
 
         private string FormatStat(string stat)
