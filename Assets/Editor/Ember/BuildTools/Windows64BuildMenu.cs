@@ -27,7 +27,7 @@ namespace EmberCrpg.Editor.Ember.Build
                     locationPathName = output,
                     target = BuildTarget.StandaloneWindows64,
                     options = BuildOptions.None,
-                    extraScriptingDefines = new[] { "EXCLUDE_BCL_MEMORY", "EXCLUDE_BCL_NUMERICS" },
+                    extraScriptingDefines = new[] { "EXCLUDE_BCL_MEMORY", "EXCLUDE_BCL_NUMERICS", "USE_LLAMASHARP" },
                 };
                 var report = BuildPipeline.BuildPlayer(options);
                 if (report.summary.result != BuildResult.Succeeded)
