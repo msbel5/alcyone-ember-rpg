@@ -29,7 +29,7 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 9/34 done · ✅ LANE P1 COMPLETE (DET-01..08 + ARCH-12 — all Win64-verified). · ▶ NOW = LANE P2: ARCH-01 (delete ~1078 LOC dead ShieldBuff batch-totals) → ARCH-03/04/05/06/07/02. · prior Codex EMB-001..060 = 60/60**
+**Progress: 10/34 done · P1 complete; P2 started: ARCH-01 deleted dead ShieldBuff batch-totals (39 files, 6848 deletions, fallback 1218 green). · ▶ NOW = ARCH-03 (delete 3 orphaned dialogue services) → ARCH-05/06/07/04/02. · prior Codex EMB-001..060 = 60/60**
 
 Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → P3 playability → P4 docs → P5 naming/hygiene.** Do P1 fully before P2.
 
@@ -54,7 +54,7 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[x]` **ARCH-12** · Low · `DomainSimulationAdapter.Save.cs:41-52` — reflection field-mirror restore is fragile: give `SliceWorldState` an explicit `CopyFrom`/replace.
 
 ### LANE P2 — dead code / architecture / duplication
-- `[ ]` **ARCH-01** · Critical · `Simulation/Magic/ShieldBuffAbsorptionBatchTotals.cs`+`ShieldBuffService.BatchTotals.cs`+`…Partition.cs` (~1078 LOC) — 0 game callers, 16 permutation tests only: keep `From`+the 1 filtered overload a real damage path needs, delete the rest + their tests (ref-scan first).
+- `[x]` **ARCH-01** · Critical · `Simulation/Magic/ShieldBuffAbsorptionBatchTotals.cs`+`ShieldBuffService.BatchTotals.cs`+`…Partition.cs` (~1078 LOC) — 0 game callers, 16 permutation tests only: keep `From`+the 1 filtered overload a real damage path needs, delete the rest + their tests (ref-scan first).
 - `[ ]` **ARCH-03** · High · `Simulation/Narrative/AskDmService.cs`,`NpcDialogueService.cs`,`AskAboutService.cs` — orphaned by ConversationState: delete all three + their tests, OR repromote exactly one as the NPC-dialog home and route the adapter through it (decide, don't leave dormant).
 - `[ ]` **ARCH-04** · High · `EmberSaveService.cs`+`JsonSliceSaveService.cs`+`FileSaveRepository.cs`+`DomainSimulationAdapter.Save.cs` — kill the save-within-a-save: one repository persists canonical `SliceSaveData`; transform/scene become fields; PlayerPrefs → read-only legacy.
 - `[ ]` **ARCH-05** · Med · `Infrastructure/AiDm/LlmClients.cs:11`,`NativeLlmClient.cs:16` — namespace lies about assembly: rename `EmberCrpg.Simulation.AiDm` → `EmberCrpg.Infrastructure.AiDm`; fix usings (placement is correct).
