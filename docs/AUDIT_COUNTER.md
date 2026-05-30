@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 57/60 addressed (53 fixed + 2 decided + 2 deferred) · 3 TODO feature-builds (§8 plans) · build green · LLM PROVEN**
+**Progress: 59/60 addressed (55 fixed + 2 decided + 2 deferred) · EMB-041 forge-factory dedup + EMB-018 async-LLM + EMB-057 Slice-retire remain open · build green · LLM PROVEN**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -96,7 +96,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 ### Medium
 - `[x]` **EMB-003** · orphan `.meta` · Editor:final-yes — orphan metas (`AI Toolkit.meta`, `Audio.meta`, `Generated/Core.meta`, `AiDm.meta`, art UI metas, onnx `.data.meta`). Classify: restore/delete/document.
 - `[x]` **EMB-017** · global state · Editor:yes — static locators (`EmberDomainAdapterLocator`/`UiSurfaceLocator`/`ForgeLocator`) + pending-load. Scene-scoped composition root + reset hooks.
-- `[ ]` **EMB-020** · dialogue dup · Editor:yes — `AskAboutService`/`AskDmService`/`NpcDialogueService`/adapter all do shell dialogue. One conversation-state model.
+- `[x]` **EMB-020** · dialogue dup · Editor:yes — DONE. Added Domain `ConversationState` (one model: speaker + portrait + per-actor topics; `FindTopic` refuses un-offered topics). `DomainSimulationAdapter.GetDialogSource` builds it per actor; GetTopics/SelectTopic read it. Legacy Slice AskAbout/AskDm services stay for the Slice path (EMB-057). Win64 build SUCCESS, 0 CS.
 - `[x]` **EMB-022** · repo hygiene · Editor:no — `Reports/**` 102 files/~11MB. Keep latest curated → `docs/proofs/`, archive rest.
 - `[x]` **EMB-023** · docs-in-Assets · Editor:pold-yes — `Assets/Plans/`, `Assets/pold/NavMesh.asset`. Move planning to `docs/archive`, classify `pold`.
 - `[x]` **EMB-024** · sample assets · Editor:yes — TMP Examples 284 files/~5.7MB. Remove after ref scan.
@@ -116,7 +116,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-042** · placeholder masking · Editor:screenshot-yes — fallback gen can hide failure. Visible generated/fallback/static provenance in loading log + UI.
 - `[x]` **EMB-043** · AI docs mismatch · Editor:runtime-yes — README `Qwen3:1.7B` vs code Qwen2.5-1.5B vs manifest 3B-missing. One AI-stack doc + manifest.
 - `[x]` **EMB-044** · cloud/network policy · Editor:no — `CloudLlmClient`/`LocalQwenClient`/portrait provider. Cloud opt-in, disabled-by-default, never authoritative.
-- `[ ]` **EMB-045** · ask-about scope · Editor:dialog-yes — global `_world.Topics`. Per-actor conversation state + memory/faction filters.
+- `[x]` **EMB-045** · ask-about scope · Editor:dialog-yes — DONE. Added pure-Domain `NpcTopicCatalog.For(role, factionValue, sharedWorldTopics)` — topics derive from the NPC's role + faction (+2 shared world topics), so different NPCs expose different topics/answers. Adapter GetTopics/SelectTopic now per-actor, not global `_world.Topics`. 7 EditMode tests prove Guard≠Merchant. Fallback 1437; Win64 build SUCCESS, 0 CS.
 - `[x]` **EMB-047** · case-sensitive links · Editor:no — `DOCS/` vs real `docs/`. Normalize lowercase.
 - `[x]` **EMB-049** · old backend ref · Editor:no — `Reference/OldBackendData/**`. Add README "import/reference-only".
 - `[x]` **EMB-050** · reports/ref sprawl · Editor:no — old sprint/audit reports in active docs root. Archive `docs/archive/YYYY-MM/`.
