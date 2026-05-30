@@ -3,6 +3,11 @@
 > Audit items EMB-043 / EMB-044 / EMB-006. The single source of truth for which AI models Ember
 > uses, the fallback order, and the provider policy. Supersedes any older "Qwen3" / cloud mentions.
 
+> **Status — Real local-LLM round-trip: UNVERIFIED in source-only checkouts** (needs `git lfs pull`
+> to resolve the GGUF + native DLLs, then a runtime run). Likewise generated-art (SDXL/SD1.5) output
+> is UNVERIFIED until the model binaries are pulled and a run produces real (non-fallback) images.
+> EditMode / source-level tests are valid and pass; they do not stand in for a runtime LLM/art run.
+
 ## Local LLM (dialogue, DM narration, ambient barks)
 - **Model:** `Qwen2.5-1.5B-Instruct` GGUF (Q4_K_M) —
   `Assets/StreamingAssets/Models/qwen2.5-1.5b-instruct-q4_k_m.gguf` (~986 MB, real on disk).

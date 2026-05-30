@@ -8,10 +8,10 @@ documented exception, not an oversight.
 
 ### Root cause
 
-`SliceSaveRehydration` (under `Assets/Scripts/Simulation/Composition/`) needs
+`WorldSaveRehydration` (under `Assets/Scripts/Simulation/Process/`) needs
 to hydrate the runtime simulation world from the persisted **`Data.Save` DTO
 types** that live in `Assets/Scripts/Data/Save/SliceJson/`. The rehydration
-code translates DTOs back into the in-memory `SliceWorldState` shape that the
+code translates DTOs back into the in-memory `WorldState` shape that the
 tick composer operates on.
 
 ### Why we didn't invert the dependency
@@ -43,3 +43,8 @@ rehydration) is a layering violation and must be rejected.
   ninth pass as B-P2).
 - Codex offered two remediations: "move save composition outward" or
   "document the exception". This file is the chosen "document" path.
+- EMB-AUD-015/016 (2026-05-31) re-raised the same smell a third time. Re-investigated:
+  the sole offender is still `WorldSaveRehydration` (one file, save-rehydration only),
+  and the dangerous inverse (`Data.SliceJson -> Simulation`) was already removed. The
+  only zero-exception fix is a new `SaveContracts` asmdef of pure DTOs — a strict cost
+  increase for zero behavioural gain. **Closed as won't-fix / documented exception.**

@@ -45,9 +45,9 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 60/60 addressed (58 fixed + 2 decided) · ALL DEFECTS CLOSED · build green · LLM PROVEN**
+**Progress: 60/60 addressed (58 fixed + 2 decided) · ALL DEFECTS CLOSED · build green · LLM round-trip captured once on a binaries-resolved machine (UNVERIFIED in source-only checkouts — see `docs/AI_STACK.md`)**
 
-**▶ STATUS = COMPLETE.** All 60 defects (EMB-001..060) addressed: 58 fixed + 2 decided (EMB-029 magic-test coverage kept, EMB-037 procedural-UI = forward design migration). Every code change verified by batchmode Win64 build (`Build succeeded`, 0 `error CS`) and/or the ~1s fallback harness (1437 tests pass). LLM proven (real Qwen DM response captured). Single `main` branch; each fix is its own commit with the Co-Authored-By trailer.
+**▶ STATUS = COMPLETE.** All 60 defects (EMB-001..060) addressed: 58 fixed + 2 decided (EMB-029 magic-test coverage kept, EMB-037 procedural-UI = forward design migration). Every code change verified by batchmode Win64 build (`Build succeeded`, 0 `error CS`) and/or the ~1s fallback harness (1437 tests pass). A real Qwen DM response was captured once on a machine with the LFS binaries resolved (`docs/proofs/llm-roundtrip-2026-05-30.md`); in a source-only checkout the model/native DLLs are LFS pointers, so the round-trip stays UNVERIFIED until `git lfs pull` + a runtime run (see `docs/AI_STACK.md`). Single `main` branch; each fix is its own commit with the Co-Authored-By trailer.
 
 > Forge/SDXL note (pre-audit, already fixed this session): CUDA onnxruntime + cuDNN + llama/ggml/mtmd
 > `.meta` files now Editor+Win64-enabled (commits ebc11d2b, 5ebda704, 753f1b0d) so Editor Play Mode
