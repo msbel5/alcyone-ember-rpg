@@ -43,9 +43,9 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 10 / 60 defects done (+1 partial) · 0 / 11 packages · 8 / 25 final-checklist items**
+**Progress: 15 / 60 defects done · 0 / 11 packages · 8 / 25 final-checklist items**
 
-**▶ NOW = EMB-043-finish (AI-stack doc) + EMB-044 (cloud policy) + EMB-038/039/040 (determinism guards).** Done headless: 001,002,004,005,046,047,048,049,052,058 + greened test (fallback 1421/0). tools/validation/static-audit.sh now CI-gateable (PASS). NEXT BUILD-BATCH (needs Editor closed): 009+019 asmdef moves, 012/034/035 splits, all verified by one batchmode build. EMB-050/022 deferred large move.
+**▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
 > Forge/SDXL note (pre-audit, already fixed this session): CUDA onnxruntime + cuDNN + llama/ggml/mtmd
 > `.meta` files now Editor+Win64-enabled (commits ebc11d2b, 5ebda704, 753f1b0d) so Editor Play Mode
@@ -110,12 +110,12 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-035** · job system complexity · Editor:no — `JobAssignmentSystem.cs` 776. Split discovery/eligibility/reservation/assignment/events.
 - `[ ]` **EMB-036** · magic/combat complexity · Editor:combat-yes — `ShieldBuffService` 529 + `...BatchTotals` 762. Simplify interfaces, keep core tests.
 - `[ ]` **EMB-037** · procedural UI · Editor:yes — HUD/dialog/menu/panel code-heavy. Move layout to templates/tokens.
-- `[ ]` **EMB-038** · deterministic RNG · Editor:no — `LatentNoiseSampler` uses `new System.Random((int)seed)`. Ember deterministic RNG or doc forge as non-authoritative cache.
-- `[ ]` **EMB-039** · non-authoritative time · Editor:no — `DateTime.UtcNow` in `GenerationFailureLog`/`VisibleGenerationPipeline`. Keep timestamps out of canonical IDs.
-- `[ ]` **EMB-040** · visual nondeterminism · Editor:no — `UnityEngine.Random.Range` in `EmberLoadingScreen`/`ActorView`. Doc as presentation-only, keep out of save.
+- `[x]` **EMB-038** · deterministic RNG · Editor:no — `LatentNoiseSampler` uses `new System.Random((int)seed)`. Ember deterministic RNG or doc forge as non-authoritative cache.
+- `[x]` **EMB-039** · non-authoritative time · Editor:no — `DateTime.UtcNow` in `GenerationFailureLog`/`VisibleGenerationPipeline`. Keep timestamps out of canonical IDs.
+- `[x]` **EMB-040** · visual nondeterminism · Editor:no — `UnityEngine.Random.Range` in `EmberLoadingScreen`/`ActorView`. Doc as presentation-only, keep out of save.
 - `[ ]` **EMB-042** · placeholder masking · Editor:screenshot-yes — fallback gen can hide failure. Visible generated/fallback/static provenance in loading log + UI.
-- `[~]` **EMB-043** · AI docs mismatch · Editor:runtime-yes — README `Qwen3:1.7B` vs code Qwen2.5-1.5B vs manifest 3B-missing. One AI-stack doc + manifest.
-- `[ ]` **EMB-044** · cloud/network policy · Editor:no — `CloudLlmClient`/`LocalQwenClient`/portrait provider. Cloud opt-in, disabled-by-default, never authoritative.
+- `[x]` **EMB-043** · AI docs mismatch · Editor:runtime-yes — README `Qwen3:1.7B` vs code Qwen2.5-1.5B vs manifest 3B-missing. One AI-stack doc + manifest.
+- `[x]` **EMB-044** · cloud/network policy · Editor:no — `CloudLlmClient`/`LocalQwenClient`/portrait provider. Cloud opt-in, disabled-by-default, never authoritative.
 - `[ ]` **EMB-045** · ask-about scope · Editor:dialog-yes — global `_world.Topics`. Per-actor conversation state + memory/faction filters.
 - `[x]` **EMB-047** · case-sensitive links · Editor:no — `DOCS/` vs real `docs/`. Normalize lowercase.
 - `[x]` **EMB-049** · old backend ref · Editor:no — `Reference/OldBackendData/**`. Add README "import/reference-only".
@@ -219,3 +219,5 @@ as Unity proof · no casual package/plugin version changes.
 - EMB-002 → 3 tracked assets (Jost.ttf, Spectral-Regular.ttf, LLamaSharp.dll) + Fonts.meta had UNTRACKED valid metas; git-add committed them (clean-clone GUID breakage fix). commit (metas+script)
 - EMB-004 → working copy has 0 LFS pointers (real bytes); built tools/validation/static-audit.sh (dup-GUID HARD FAIL, LFS report/--require-runtime, missing-meta skips dot-paths, 3b tracked-asset-untracked-meta HARD FAIL, orphan filters gitignored, info counts). static-audit PASS.
 - Static-audit info counts (defect scope): Input. 59 (EMB-015), PlayerPrefs 8 (EMB-011), Task.Run 12 (EMB-007/018), GetResult 6 (EMB-018).
+- EMB-038/039/040 → determinism boundary documented (docs/DETERMINISM.md) + static-audit §6 HARD-FAIL guard (Domain/Data.Save free of DateTime.Now/UtcNow + UnityEngine.Random; PASS) + comments at the 3 sites. No behaviour change. commit eb6d6998
+- EMB-043/044/006 → docs/AI_STACK.md authoritative: Qwen2.5-1.5B local truth, SDXL/SD1.5/MiniLM, cloud verified default-off (ForgeBootstrap forces ComfyUi/Ollama false; CloudLlmClient test-only), capability states. commit 2484edaf
