@@ -126,7 +126,8 @@ namespace EmberCrpg.Simulation.Forge
                         "image/png",
                         stopwatch.ElapsedMilliseconds,
                         true,
-                        string.IsNullOrEmpty(initError) ? "placeholder" : initError);
+                        string.IsNullOrEmpty(initError) ? "placeholder" : initError,
+                        isPlaceholder: true); // EMB-042: mark provenance — these bytes are a fallback, not a real generation.
                 }
 
                 if (!string.IsNullOrEmpty(hardFailure))

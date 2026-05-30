@@ -12,16 +12,22 @@ namespace EmberCrpg.Simulation.Generation
 {
     public sealed class PipelineResult
     {
-        public PipelineResult(int total, int succeeded, int failed)
+        public PipelineResult(int total, int succeeded, int failed, int placeholders = 0)
         {
             Total = total;
             Succeeded = succeeded;
             Failed = failed;
+            Placeholders = placeholders;
         }
 
         public int Total { get; }
         public int Succeeded { get; }
         public int Failed { get; }
+
+        /// <summary>EMB-042: how many of the "succeeded" assets were placeholder fallbacks, not real
+        /// generations. &gt; 0 means the loading run shipped fallback art that should be surfaced,
+        /// never silently treated as canonical.</summary>
+        public int Placeholders { get; }
     }
 
     public sealed class VisibleGenerationPipeline
@@ -51,6 +57,7 @@ namespace EmberCrpg.Simulation.Generation
             if (entries == null) throw new ArgumentNullException(nameof(entries));
             int succeeded = 0;
             int failed = 0;
+            int placeholders = 0;   // EMB-042: count fallback-provenance assets among the successes
             for (int i = 0; i < entries.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -71,6 +78,7 @@ namespace EmberCrpg.Simulation.Generation
                         {
                             Write(entry, result.ImageBytes);
                             succeeded++;
+                            if (result.IsPlaceholder) placeholders++;   // EMB-042: provenance — fallback, not real gen
                             EntryThumbnail?.Invoke(entry, result.ImageBytes);
                             EntryProgress?.Invoke(entry, 1f);
                             EntrySucceeded?.Invoke(entry, result.ImageBytes, elapsed);
@@ -94,7 +102,7 @@ namespace EmberCrpg.Simulation.Generation
                 }
             }
 
-            var completed = new PipelineResult(entries.Count, succeeded, failed);
+            var completed = new PipelineResult(entries.Count, succeeded, failed, placeholders);
             Completed?.Invoke(completed);
             return completed;
         }
