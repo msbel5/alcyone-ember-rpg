@@ -62,7 +62,7 @@ Two non-build root scenes exist: `Assets/Scenes/CombatPlayground.unity`, `Sprint
 `docs/CURRENT_STATE.md` (this) · `docs/EMBER_GOAL.md` (backlog/session log) ·
 `docs/AUDIT_COUNTER.md` (cleanup tracker) · `docs/EMBER_VISION_BIBLE.md` +
 `docs/EMBER_VISION_NOTES_MAMI.md` (spirit) · `docs/reference/prd/PRD_IMPLEMENTATION_MATRIX.md`
-(the PRD index, being consolidated) · `docs/mechanics/` (sim mechanics faz-3…faz-12).
+(full index) · `docs/PRD_GOVERNANCE.md` (which-PRD-to-obey) · `docs/mechanics/` (sim mechanics faz-3…faz-12).
 
 ## Forbidden (for any agent working here)
 No features before hygiene is stable · no asset move without its `.meta` · no MonoBehaviour rename

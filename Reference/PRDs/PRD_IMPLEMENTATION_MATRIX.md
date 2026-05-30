@@ -1,3 +1,6 @@
+> **NOT THE CANONICAL INDEX.** The full PRD index is docs/reference/PRD_IMPLEMENTATION_MATRIX.md.
+> PRD precedence rules: docs/PRD_GOVERNANCE.md. (EMB-048)
+
 # PRD: Documentation Inventory Matrix
 **Project:** Ember RPG
 **Phase:** 0
