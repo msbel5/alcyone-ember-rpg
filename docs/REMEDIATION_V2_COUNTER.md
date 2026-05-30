@@ -29,7 +29,7 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 0/34 addressed · ▶ NOW = B1-DET-01 (save replay-equivalence) · build green · prior Codex EMB-001..060 = 60/60 (AUDIT_COUNTER.md)**
+**Progress: 2/34 done (DET-06/07) · DET-01+DET-05 implemented+fallback-proven, PENDING Win64 (Unity Editor is OPEN — close it to verify) · ▶ NOW = DET-04 (native LLM timeout, headless) then DET-03 · prior Codex EMB-001..060 = 60/60**
 
 Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → P3 playability → P4 docs → P5 naming/hygiene.** Do P1 fully before P2.
 
@@ -43,10 +43,10 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 ## §3 — DEFECT REGISTER (V2)
 
 ### LANE P1 — correctness / data-loss / authority (do first)
-- `[ ]` **DET-01** · Critical · `SliceTickComposer.cs:56-201`, `DomainSimulationAdapter.Save.cs:58` — save/load NOT replay-equivalent: persist the hourly/daily accumulators in `SliceSaveData` OR call the dead `RebuildAccumulatorsFrom(world.Time)` on restore. Proof: headless tick→save→reload→next daily boundary == continuous run.
-- `[ ]` **DET-05** · High · `EmberSaveService.cs:93-116` — dual-write divergence: write the file slot FIRST; only update the legacy PlayerPrefs blob + `lastslot` on file-write success (else Load returns stale).
-- `[ ]` **DET-06** · Med · `FileSaveRepository.cs:42 vs 61-69` — quarantine doc/code drift: implement timestamped `.corrupt-{n}` as documented OR fix the comment.
-- `[ ]` **DET-07** · Med · `FileSaveRepository.cs:34-35` — non-atomic write: use `File.Replace(tmp,path,null)` (NTFS-atomic) instead of delete-then-move.
+- `[~]` **DET-01** · Critical · `SliceTickComposer.cs:56-201`, `DomainSimulationAdapter.Save.cs:58` — save/load NOT replay-equivalent: persist the hourly/daily accumulators in `SliceSaveData` OR call the dead `RebuildAccumulatorsFrom(world.Time)` on restore. Proof: headless tick→save→reload→next daily boundary == continuous run.
+- `[~]` **DET-05** · High · `EmberSaveService.cs:93-116` — dual-write divergence: write the file slot FIRST; only update the legacy PlayerPrefs blob + `lastslot` on file-write success (else Load returns stale).
+- `[x]` **DET-06** · Med · `FileSaveRepository.cs:42 vs 61-69` — quarantine doc/code drift: implement timestamped `.corrupt-{n}` as documented OR fix the comment.
+- `[x]` **DET-07** · Med · `FileSaveRepository.cs:34-35` — non-atomic write: use `File.Replace(tmp,path,null)` (NTFS-atomic) instead of delete-then-move.
 - `[ ]` **DET-03** · High · `DomainSimulationAdapter.Fate.cs:77-91`, `NarrationServices.cs:6-50` — LLM authority is COSMETIC: route the live `response.ProposedToolCalls` through `LlmProposalValidator`/`ToolCallRouter`; delete the self-built synthetic-request shim. Proof: malicious `proposed_tool_calls` rejected + no `_world` mutation.
 - `[ ]` **DET-04** · High · `Infrastructure/AiDm/NativeLlmClient.cs:80-135` — native inference has no timeout: wrap load+infer in a `CancellationTokenSource` + timeout, empty `LlmResponse` on cancel (mirror EMB-018 HTTP).
 - `[ ]` **DET-02** · High · `DomainSimulationAdapter.cs:340,797`, `.Fate.cs:72` — fire-and-forget continuations write `_world.ToolCallTrace` on the main thread only by implicit SyncContext: marshal post-await `_world` writes through an explicit main-thread queue drained in OnTick.
