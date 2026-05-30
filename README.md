@@ -18,9 +18,9 @@ The game will be open source and free.
 
 ## Status
 
-**See [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) for the live status**
+**See [docs/REMEDIATION_V2_COUNTER.md](docs/REMEDIATION_V2_COUNTER.md) for the live status**
 (engine baseline, branch/phase, build scenes, what is verified vs only
-claimed, current blockers, and the AI stack). That one-pager is kept current;
+claimed, current blockers, and the AI stack). That tracker is kept current;
 this README intentionally no longer carries a dated status block that drifts.
 
 Active cleanup work is tracked in [docs/AUDIT_COUNTER.md](docs/AUDIT_COUNTER.md);

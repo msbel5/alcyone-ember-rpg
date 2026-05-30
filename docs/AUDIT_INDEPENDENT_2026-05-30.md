@@ -1,6 +1,6 @@
 # Ember — Independent Brutal Audit (2026-05-30)
 
-> Produced by 4 parallel independent reviewers (architecture/duplication · Unity hygiene/CI · determinism/LLM/save · Ember-soul/UI/scenes/docs), analysis-only, evidence-cited by exact path+line. This is the **source list for a later Codex fixing pass**. It deliberately scrutinizes the just-finished 60-defect remediation for left-behind duplication, dead code, and overstated "done".
+> Produced by 4 parallel independent reviewers (architecture/duplication · Unity hygiene/CI · determinism/LLM/save · Ember-soul/UI/scenes/docs), analysis-only, evidence-cited by exact path+line. This is the **source list for a later claude fixing pass**. It deliberately scrutinizes the just-finished 60-defect remediation for left-behind duplication, dead code, and overstated "done".
 >
 > One-line verdict: **the code-level cleanup was largely real and the layering is intact — but (a) the remediation left genuine dead code / two real save bugs / one determinism hole, and (b) the bigger truth the docs hide is that the "living world" is a frozen diorama: 6 of the simulation pillars are test-covered code with zero runtime callers.**
 
@@ -75,10 +75,10 @@
 
 ## 4. Consolidated defect register
 
-Severity: Blocker / Critical / High / Medium / Low. Codex-safe = a headless agent can fix without the Editor.
+Severity: Blocker / Critical / High / Medium / Low. claude-safe = a headless agent can fix without the Editor.
 
 ### Determinism / simulation authority / save (DET)
-| ID | Sev | Path+lines | Why it matters | Fix | Codex-safe | Validation |
+| ID | Sev | Path+lines | Why it matters | Fix | claude-safe | Validation |
 |---|---|---|---|---|---|---|
 | DET-01 | **Critical** | `Simulation/Composition/SliceTickComposer.cs:56-57,182-201`; `Adapters/DomainSimulationAdapter.Save.cs:58` | hourly/daily accumulators not serialized; `RebuildAccumulatorsFrom` is dead → save/load not replay-equivalent | call `RebuildAccumulatorsFrom(world.Time)` on restore, or persist the 2 accumulators in `SliceSaveData` | Yes | headless test: tick N → save → reconstruct → next daily boundary == continuous run |
 | DET-03 | **High** | `Simulation/AiDm/NarrationServices.cs:6,45-50`; `Adapters/DomainSimulationAdapter.Fate.cs:77-91` | live consult_fate validates a self-built request, never `response.ProposedToolCalls`; real gate dormant | wire `ConsultFateService`/`LlmProposalValidator` into the live adapter; feed real proposed calls | Yes | EditMode: feed malicious `proposed_tool_calls` → assert rejected + no `_world` mutation |
@@ -90,7 +90,7 @@ Severity: Blocker / Critical / High / Medium / Low. Codex-safe = a headless agen
 | DET-08 | Low | `Fate.cs:42-44` vs `NarrationServices.cs:108` | two parallel roll formulas (`(salted%100)+1` vs `(seed%100)+1`) — divergence risk if the service is wired | single shared deterministic roll helper in Domain | Yes | seed-sweep test both paths identical |
 
 ### Architecture / duplication / SOLID (ARCH)
-| ID | Sev | Path+lines | Why it matters | Fix | Codex-safe | Validation |
+| ID | Sev | Path+lines | Why it matters | Fix | claude-safe | Validation |
 |---|---|---|---|---|---|---|
 | ARCH-01 | **Critical** | `Simulation/Magic/ShieldBuffAbsorptionBatchTotals.cs` (762), `ShieldBuffService.BatchTotals.cs` (316), `…Partition.cs` | ~1,078 LOC, 0 game callers, kept alive by 16 test files — test-induced design damage the remediation didn't remove | keep `From` + the 1 filtered overload a real damage path needs; delete the rest + their tests (or move to an `Experimental` excluded folder) | Yes | build + EditMode; remaining shield tests green |
 | ARCH-02 | **High** | `Adapters/DomainSimulationAdapter.cs` (804)+`.Combat`(310)+`.Fate`(104)+`.Save`(61) | god class: dialog+hydration+combat+save+fate+factories+ID-math, reaches `ForgeLocator.LlmRouter` static | extract `WorldHydrator`/`DialogController`/`AdapterStatFactory`; inject `ILlmRouter` | Partly | build + full EditMode |
@@ -108,7 +108,7 @@ Severity: Blocker / Critical / High / Medium / Low. Codex-safe = a headless agen
 `SliceSaveMapper.cs` 961 **SPLIT** (→ Economy/Narrative/Worldgen sub-mappers) · `DomainSimulationAdapter.cs` 804 **SPLIT** · `ShieldBuffAbsorptionBatchTotals.cs` 762 **DELETE-most** · `CharacterCreationController.cs` 660 **SPLIT** (fill the empty `CharacterCreationViewModel`) · `.Rendering.cs` 571 **SPLIT** · `EmberWorldHost.cs` 566 **SPLIT** · `EmberHud.cs` 538 **SPLIT** (construction vs bind) · `SliceSaveData.cs` 527 ACCEPTABLE · `LlmClients.cs` 517 **SPLIT** (per-class) · `EmberMainMenuUI.cs` 345 SPLIT (view vs bootstrap-spawn) · `EmberSaveService.cs` 355 SPLIT (shrinks via ARCH-04). Others 300–422 (`WorldgenService.Phases`, `JobAssignmentSystem*`, `UiToolkitPanel.Frames`, `OnnxAssetForge`, `ClipBpeTokenizer`, `DialogBoxPanel`) = ACCEPTABLE (cohesive/already-partial).
 
 ### Unity hygiene / CI / repo (HYG)
-| ID | Sev | Path | Why it matters | Fix | Codex-safe | Editor? |
+| ID | Sev | Path | Why it matters | Fix | claude-safe | Editor? |
 |---|---|---|---|---|---|---|
 | HYG-02 | **High** | `Assets/Plugins/x86_64/cuda/cudnn_*.dll.meta` (10, untracked) | `.gitignore` ignores `cudnn*.dll` but not the `.meta` → `git add -A` commits 10 orphan metas; constant status noise | add `cudnn*.dll.meta` to `.gitignore` | Yes | No |
 | HYG-03 | **High** | `StreamingAssets/Models/sdxl-turbo/{unet,text_encoder_2}/model.onnx.data.meta` | tracked metas whose `.data` payload is gitignored → dangling import on clean clone | `git rm --cached` + ignore `*.onnx.data.meta` | Yes | No |
@@ -122,7 +122,7 @@ Severity: Blocker / Critical / High / Medium / Low. Codex-safe = a headless agen
 | HYG-13 | Low | `Assets/Scenes/Ember/TerrainData/*.asset` (20+, multi-MB) | terrain heightmaps committed for a billboard game that may not need them | confirm intent; regenerate/shrink if greybox | Partly | Yes |
 
 ### Ember soul / UI / scenes / docs / naming (SOUL/HUD/DLG/SCN/DOC/NAME)
-| ID | Sev | Path | Why it matters | Fix | Codex-safe | Editor? |
+| ID | Sev | Path | Why it matters | Fix | claude-safe | Editor? |
 |---|---|---|---|---|---|---|
 | SOUL-01 | **Critical** | `Simulation/Composition/SliceTickComposer.cs:111-167` | tick advances only time/magic/needs/caravans; 6 pillars excluded | gate per-hour/day calls to PlantGrowth/PriceUpdate/FactionReputation/JobAssignment; add "world moves over N ticks" test | Yes | No(test)/Yes(play) |
 | SOUL-02 | **Critical** | grep: PlantGrowth/PriceUpdate/FactionReputation referenced only by `Assets/Tests` | systems pretend to exist; green tests mask dead runtime | wire via SOUL-01; until then docs must not claim they run | Yes | No |
@@ -142,7 +142,7 @@ Severity: Blocker / Critical / High / Medium / Low. Codex-safe = a headless agen
 
 ---
 
-## 5. Codex-ready work packages (priority order; cleanup before features)
+## 5. claude-ready work packages (priority order; cleanup before features)
 
 - **P0 — none.** Project compiles, opens (with LFS), build is green. No blocker.
 - **P1 (data-loss / correctness):**
@@ -190,7 +190,7 @@ Severity: Blocker / Critical / High / Medium / Low. Codex-safe = a headless agen
 - PlayMode/Editor: scene tour screenshots (HUD-01, SCN-03), press-E dialog in all 10 scenes (HUD-02), "world moves over 2 min" (SOUL-01), F5/F9 round-trip across scenes.
 - LLM proof already captured; add a malicious-tool-call refusal proof.
 
-## 10. What Codex must NOT do
+## 10. What claude must NOT do
 - Do not rewrite the project or "fix" by adding another manager/helper/god class.
 - Do not move Unity assets without their `.meta`; do not rename MonoBehaviour classes without scanning scene/prefab GUID refs.
 - Do not delete docs before classifying canonical vs archive; do not delete `Reference/PRDs/` before a ref-scan.
@@ -199,7 +199,7 @@ Severity: Blocker / Critical / High / Medium / Low. Codex-safe = a headless agen
 - Do not touch the deterministic Domain/Sim RNG/worldgen/tick math, the `EmberForgeFactory`, or the `EmberInput` facade except for the named namespace rename.
 - Do not commit cuDNN/model binaries; do not `git add -A` until HYG-02 is fixed.
 
-## 11. Final prioritized checklist (one Codex PR each)
+## 11. Final prioritized checklist (can work on main)
 1. `.gitignore`: cuDNN `.dll.meta` + `*.onnx.data.meta`; `git rm --cached` the 2 orphan metas (HYG-02/03).
 2. Save replay-equivalence: persist/rebuild tick accumulators (DET-01).
 3. Save write-order + atomic + quarantine (DET-05/06/07).

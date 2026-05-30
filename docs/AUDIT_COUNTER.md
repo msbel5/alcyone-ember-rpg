@@ -1,3 +1,5 @@
+> ARCHIVED / HISTORICAL — superseded by docs/REMEDIATION_V2_COUNTER.md. Do not treat as current.
+
 # EMBER AUDIT COUNTER — ChatGPT 5.5 Pro-Max Review Remediation
 
 > **READ THIS FILE + §0 + §1 FIRST WHEN RESUMING AUDIT WORK.** This is the single

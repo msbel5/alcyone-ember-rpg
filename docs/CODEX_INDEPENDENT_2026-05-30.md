@@ -1,119 +1,4 @@
-# EMBER REMEDIATION V2 — COUNTER (post-independent-audit)
-
-> **READ THIS FILE + §0 + §1 FIRST WHEN RESUMING.** Single source of truth for the V2 fix campaign.
-> Survives compaction: §1 counter + §3 register tell you exactly what's done / next / blocked.
-> Detail/evidence lives in `docs/AUDIT_INDEPENDENT_2026-05-30.md` (our 4-agent audit) — grep it by ID,
-> don't re-derive. The original Codex/ChatGPT audit (`docs/Codex_audit.md`, EMB-001..060) is CLOSED
-> 60/60 in `docs/AUDIT_COUNTER.md`; V2 RE-OPENS the items that were closed cosmetically + adds the
-> structural/soul findings that audit missed. Document is updated with codex audit you must address them too.
-> You can use subagents for surgical jobs. Assign them detailed instructions and guardrails and execute them.
-
----
-
-## §0 — OPERATING PROTOCOL (token-preservation · no AI drift)
-1. **Resume from §1.** The `▶ NOW` item is the only thing in flight; everything else is context.
-2. **One atomic defect at a time.** Plan → smallest slice → verify → commit → tick box → advance.
-3. **Verify before "done" (exit-0 lies):** Domain/Sim/Data → `bash tools/validation/run-validation.sh --mode fallback` (~1s, must stay green). Presentation/asmdef/.meta/scene → full Win64 batchmode build (Editor CLOSED): `"E:/Program Files/Unity/Hub/Editor/6000.3.13f1/Editor/Unity.exe" -batchmode -quit -nographics -projectPath . -executeMethod EmberCrpg.Editor.Ember.Build.Windows64BuildMenu.Build -logFile <log>` → require `Build Finished, Result: Success` + 0 `error CS`.
-4. **Ember soul is sacred.** Deterministic living-world CRPG; simulation is the source of truth; LLM is flavour-only and may mutate world state ONLY via validated tool calls; generation is canonical-per-seed. Wire REAL systems — never a visual-only hack (no fake NPC wander). Never drift to generic action RPG.
-5. **Unity asset safety (hard):** never move an asset without its `.meta`; never rename a MonoBehaviour class/file without scanning scene/prefab GUID refs first; scene-YAML edits last resort; cuDNN/model binaries gitignored — NEVER commit; destructive deletes need a ref-scan (scenes+prefabs+code+tests+harness) first; do NOT `git add -A` until HYG-02 lands.
-6. **Persist progress in 3 places:** this file's box, a focused commit (`Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`), one claude-mem line.
-7. **Single `main` branch.** No feature branches (they confuse context). Don't stop until §1 = DONE; surface only genuine decisions (big scope, destructive deletes, design calls).
-
-Box: `[ ]` todo · `[~]` in progress · `[x]` done+verified · `[-]` won't-do/superseded (reason) · `[E]` needs-Editor-play-proof.
-
----
-
-## §1 — STATUS COUNTER  ◀ where we are
-```
-PROJECT : Alcyone Ember RPG (Unity 6000.3.13f1 · URP 17.3 · deterministic living-world CRPG + AI DM)
-EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/DLG/SCN/DOC/NAME)
-BRANCH  : main (only)
-UPDATED : 2026-05-30
-```
-**Progress: 23/34 fully done + ARCH-02 & LOC-split substantially advanced `[~]`. Done: P1 + P2-dead-code + hygiene + DOC-01/02/03 + INP-01 + NAME-02 + NAME-03. This pass also: split SliceSaveMapper 961→6 + adapter 829→471 (ARCH-02 structural). SOUL-01..04 deferred-with-spec (feature epic). Deleted ~73k lines of doc cruft. · ▶ NOW = the tail is decision-gated / Editor-proof / epic — see below. · prior Codex EMB-001..060 = 60/60**
-
-> **State of the remaining tail (honest triage after this pass):**
-> - **Needs ONE user decision (highest-value dedup):** ARCH-04 save-within-a-save. Approach forks on save-compat (break dev-only saves + bump schemaVersion, vs migrate) and seam (`string ExportStateJson()` vs typed `SliceSaveData ExportState()`).
-> - **Needs Editor play-proof `[E]` (batch):** ARCH-06 (live `_fateLine`), DLG-01 (seam+SOUL-04), HUD-02, SCN-01, HUD-01, SCN-03.
-> - **Needs user go-ahead (feature epic):** SOUL-01..04 (plumb plant/job/worksite/price/schedule state into SliceWorldState so the world actually lives).
-> - **Remaining design refactors (autonomous-doable, larger):** ARCH-07 (locator→DI; note the "write-race" is theoretical in single-threaded Unity — value is decoupling), ARCH-02 remainder (WorldHydrator collaborator + ILlmRouter DI), ARCH-08/09 (seam / interface segregation).
-> - **Marginal:** CharacterCreationController/EmberMainMenuUI splits, HYG-09 (CI honesty).
-
-> Audit-correction findings (this pass):
-> - **ARCH-06 is mis-scoped → reclassified `[E]`.** `EmberWorldHost._fateLine` is LIVE (set from `_oracle.ConsultFate()` at lines 136/165/174, returned with precedence at 416), not "dead canned lines." Binding `DialogBoxPanel.Source` straight to the adapter would drop the oracle/fate dialog line. Doing it right means proving DET-03's adapter fate-flow subsumes `_oracle.ConsultFate()` — an Editor play-proof of the OracleShrine dialog. Batch with HUD-02/DLG-01.
-> - **ARCH-04 needs a decision (save-compat + seam).** Killing the nested-JSON requires either (a) `SliceSaveData` (Data tier) gains primitive scene/transform fields + repo persists it directly, or (b) `SaveData` envelope holds a typed `SliceSaveData` (one JsonUtility pass, no escaped string) — which changes the adapter seam from `string ExportStateJson()` to `SliceSaveData ExportState()`. Both BREAK existing nested-string saves unless migrated. Data-loss-adjacent (guardrail). Hold for a crisp scope/compat call.
-
-Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → P3 playability → P4 docs → P5 naming/hygiene.** Do P1 fully before P2.
-
----
-
-## §2 — HOW TO READ
-Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exact path+line, why, validation) is in `docs/AUDIT_INDEPENDENT_2026-05-30.md` §4 under the same ID. Drill in only when you start the item.
-
----
-
-## §3 — DEFECT REGISTER (V2)
-
-### LANE P1 — correctness / data-loss / authority (do first)
-- `[x]` **DET-01** · Critical · `SliceTickComposer.cs:56-201`, `DomainSimulationAdapter.Save.cs:58` — save/load NOT replay-equivalent: persist the hourly/daily accumulators in `SliceSaveData` OR call the dead `RebuildAccumulatorsFrom(world.Time)` on restore. Proof: headless tick→save→reload→next daily boundary == continuous run.
-- `[x]` **DET-05** · High · `EmberSaveService.cs:93-116` — dual-write divergence: write the file slot FIRST; only update the legacy PlayerPrefs blob + `lastslot` on file-write success (else Load returns stale).
-- `[x]` **DET-06** · Med · `FileSaveRepository.cs:42 vs 61-69` — quarantine doc/code drift: implement timestamped `.corrupt-{n}` as documented OR fix the comment.
-- `[x]` **DET-07** · Med · `FileSaveRepository.cs:34-35` — non-atomic write: use `File.Replace(tmp,path,null)` (NTFS-atomic) instead of delete-then-move.
-- `[x]` **DET-03** · High · `DomainSimulationAdapter.Fate.cs:77-91`, `NarrationServices.cs:6-50` — LLM authority is COSMETIC: route the live `response.ProposedToolCalls` through `LlmProposalValidator`/`ToolCallRouter`; delete the self-built synthetic-request shim. Proof: malicious `proposed_tool_calls` rejected + no `_world` mutation.
-- `[x]` **DET-04** · High · `Infrastructure/AiDm/NativeLlmClient.cs:80-135` — native inference has no timeout: wrap load+infer in a `CancellationTokenSource` + timeout, empty `LlmResponse` on cancel (mirror EMB-018 HTTP).
-- `[x]` **DET-02** · High · `DomainSimulationAdapter.cs:340,797`, `.Fate.cs:72` — fire-and-forget continuations write `_world.ToolCallTrace` on the main thread only by implicit SyncContext: marshal post-await `_world` writes through an explicit main-thread queue drained in OnTick.
-- `[x]` **DET-08** · Low · `Fate.cs:42-44` vs `NarrationServices.cs:108` — two parallel roll formulas: one shared deterministic roll helper in Domain.
-- `[x]` **ARCH-12** · Low · `DomainSimulationAdapter.Save.cs:41-52` — reflection field-mirror restore is fragile: give `SliceWorldState` an explicit `CopyFrom`/replace.
-
-### LANE P2 — dead code / architecture / duplication
-- `[x]` **ARCH-01** · Critical · `Simulation/Magic/ShieldBuffAbsorptionBatchTotals.cs`+`ShieldBuffService.BatchTotals.cs`+`…Partition.cs` (~1078 LOC) — 0 game callers, 16 permutation tests only: keep `From`+the 1 filtered overload a real damage path needs, delete the rest + their tests (ref-scan first).
-- `[x]` **ARCH-03** · High · `Simulation/Narrative/AskDmService.cs`,`NpcDialogueService.cs`,`AskAboutService.cs` — orphaned by ConversationState: delete all three + their tests, OR repromote exactly one as the NPC-dialog home and route the adapter through it (decide, don't leave dormant).
-- `[ ]` **ARCH-04** · High · `EmberSaveService.cs`+`JsonSliceSaveService.cs`+`FileSaveRepository.cs`+`DomainSimulationAdapter.Save.cs` — kill the save-within-a-save: one repository persists canonical `SliceSaveData`; transform/scene become fields; PlayerPrefs → read-only legacy.
-- `[x]` **ARCH-05** · Med · `Infrastructure/AiDm/LlmClients.cs:11`,`NativeLlmClient.cs:16` — namespace lies about assembly: rename `EmberCrpg.Simulation.AiDm` → `EmberCrpg.Infrastructure.AiDm`; fix usings (placement is correct).
-- `[ ]` **ARCH-07** · High · `Forge/ForgeLocator.cs`, `IDomainSimulationAdapter.cs:176` — two mutable static locators with a write-race: introduce `IForgeServices`/`IAdapterProvider` from one composition root (keep statics as thin shims during migration).
-- `[E]` **ARCH-06** · High · `Bootstrap/EmberWorldHost.cs:407-489` — host re-implements `IDialogSource` to forward to the adapter. AUDIT-CORRECTION: not "dead canned lines" — `_fateLine` (oracle ConsultFate) is LIVE with precedence (136/165/174/416). Reclassified `[E]`: removing the proxy needs an OracleShrine dialog play-proof that the adapter fate-flow subsumes `_oracle.ConsultFate()`. Batch with HUD-02/DLG-01.
-- `[~]` **ARCH-02** · High · `DomainSimulationAdapter.cs` god class — STRUCTURAL HALF DONE (`24bdf31f`): extracted the worldgen/character-creation/hydration cluster into `DomainSimulationAdapter.Worldgen.cs` (main 829→471, new 381), mirroring the .Save/.Fate/.Combat partials. Win64 Success, 0 CS. REMAINING (design, deferred): promote the cluster to a genuine `WorldHydrator` collaborator + inject `ILlmRouter` instead of `ForgeLocator.LlmRouter` (overlaps ARCH-07 DI).
-- `[ ]` **ARCH-09** · Med · `PlaceholderSimulationAdapter.cs` (289) + `IDomainSimulationAdapter` (203) — trim placeholder to throw/empty; segregate the over-broad interface (dialog/HUD/worldgen sub-interfaces).
-- `[ ]` **ARCH-08** · Med · `IDomainSimulationAdapter.cs:54,55,102`, `EmberSaveService` `GameObject.Find("PlayerRig")` — primitive obsession: pass `ActorId`/`SiteId` across the seam; replace `Find` with a registry handle.
-- `[x]` **ARCH-11** · Low · `SliceTickComposer.cs:23,30`, `SpellExecutionService.cs:23` — Sim XML `<see cref>` points up to Presentation: replace crefs with prose.
-- `[~]` **LOC-split** · Med · mechanical, round-trip tested:
-  - `[x]` `SliceSaveMapper.cs` 961 → 6 partials (root + Process/World/Economy/Narrative/ActorDetail, each 140–242) — `be15e50b`, fallback 1214✓ + Win64 Success.
-  - `[x]` `DomainSimulationAdapter.cs` 829 → 471 (+Worldgen.cs 381) — done as ARCH-02 structural `24bdf31f`.
-  - `[-]` `LlmClients.cs` 517 — WON'T per-class-split: header carries a deliberate prior Codex decision (J-P3 #32) folding the 3 public client types with documented rationale + "do not split now". Respected (guardrail: don't fight validated-good decisions). The internal `LlmHttpClientCore` could be extracted later if desired (outside the note's scope).
-  - `[~]` `CharacterCreationController.cs` 660 — ALREADY partial (.cs 660 + .Rendering.cs 571 + .Portrait.cs 69 = 3 cohesive files); `CharacterCreationViewModel.cs` is already filled (91 LOC, not empty). The 660-line main IS the 14-stage state machine (cohesive); splitting it further is design judgment, not clean mechanical. Treating as substantially addressed.
-  - `[ ]` `EmberMainMenuUI.cs` 345 (view vs bootstrap-spawn) — pending; decoration methods are interleaved (non-contiguous), marginal LOC payoff for a 345-line file.
-
-### LANE P3 — playability (turns "done" into real; many need Editor proof)
-- `[~]` **SOUL-01** · Critical · `Simulation/Composition/SliceTickComposer.cs:111-167` — tick advances only time/magic/needs/caravans: gate per-hour/day calls to PlantGrowth, PriceUpdate, FactionReputation, JobAssignment (cost-gated). Proof: headless "world moves over N ticks" test (plant stage + price + job state change).
-- `[~]` **SOUL-03** · High · `Domain/Actors/ActorRecord.cs:76,131` — `ScheduleState` stored but never read: build a ScheduleSystem resolving actor target per game-hour so NPCs move. `[E]` visual.
-- `[~]` **SOUL-04** · High · `Simulation/World/SliceWorldFactory.cs:52-56` — worldgen NPC seeds never instantiated as views (scenes use 5 fixed actors): spawn ActorViews from `GeneratedWorld.Npcs`, OR explicitly document scenes as fixed vignettes. `[E]`
-- `[ ]` **HUD-02** · High · `Interaction/EmberPlayerInteractRaycaster.cs:87-99` — Ask-About dead in 6/10 scenes (no DialogBoxPanel): have `EmberWorldHost` ensure one at runtime (like it does PauseMenu/EmberHud). `[E]`
-- `[E]` **DLG-01** · High · `DomainSimulationAdapter.cs:306-335` — per-actor topics keyed by display-name string (`NpcSeeds.FirstOrDefault(n => n.Name == actorName)`) vs scene `_displayName`. AUDIT-CORRECTION: resolving by stable ID isn't a local edit — the interaction seam passes `target.DisplayName` (a string) from the raycaster, and scene actors carry no `NpcId` (that's SOUL-04's dormant scene-actor↔seed binding). Fixing it properly means a seam change (`DisplayName`→`NpcId`) + giving scene actors stable IDs + an Editor dialog play-proof. Reclassified `[E]`, entangled with SOUL-04.
-- `[ ]` **SCN-01** · High · `EmberScenePortal.cs:11,24`,`BootBootstrap.cs:17`,`EmberMainMenuUI.cs:19` — `EmberScenes` registry bypassed by raw scene-name strings: drive portal targets from `EmberScenes` constants. `[E]`
-- `[ ]` **HUD-01** · `[E]` · `EmberHud.cs` — verify action-bar reachable: click CAST→SPL1..5, ATK/SRCH route (scene-tour screenshot).
-- `[ ]` **SCN-03** · `[E]` · `CharacterCreation.unity` — walk all wizard stages; confirm intent carried to gameplay.
-
-### LANE P4 — docs hygiene
-- `[x]` **DOC-01** · High · `docs/EMBER_GOAL.md` — it's the stale ChatGPT audit, not the goal: rename → `docs/archive/2026-05-30-chatgpt-audit.md`; repoint README to `EMBER_VISION_BIBLE.md`.
-- `[x]` **DOC-02** · High · `Reference/PRDs/` vs `docs/reference/prd/` (byte-identical) + `docs/prds/` — ref-scan then delete `Reference/PRDs/`; fold `docs/prds/`; one PRD matrix.
-- `[x]` **DOC-03** · Med · `docs/AUDIT_COUNTER.md:46` + `docs/CURRENT_STATE.md` — add "code-complete vs runtime-wired vs proven" columns; mark the dormant systems honestly.
-
-### LANE P5 — naming / hygiene / CI
-- `[x]` **HYG-02** · High · `.gitignore` — add `Assets/Plugins/x86_64/cuda/cudnn*.dll.meta` (untracked orphan metas hazard). DO THIS FIRST among hygiene.
-- `[x]` **HYG-03** · High · `StreamingAssets/Models/sdxl-turbo/{unet,text_encoder_2}/model.onnx.data.meta` — `git rm --cached` + ignore `*.onnx.data.meta`.
-- `[x]` **HYG-11** · Med · `tools/validation/static-audit.sh:88-128` — add check: any tracked/staged `.meta` whose asset is gitignored → FAIL unless meta also ignored.
-- `[ ]` **HYG-08** · High · `.github/workflows/unity-test.yml` — add a Win64 build job (≥ nightly) invoking the Ember build menu. `[E]` runner.
-- `[ ]` **HYG-09** · High · same — EditMode CI `lfs:false` false-greens; restore LFS for binary-needing jobs or assert pointer-independence + name the job SOURCE-ONLY.
-- `[ ]` **HYG-05** · High · `Assets/Plugins/NuGet/*.dll` (~19MB Roslyn/MCP) — move the MCP dev plugin out of `Assets/` (Packages/ or gitignore+per-dev) or LFS-track. `[E]` verify plugin still loads.
-- `[x]` **HYG-10** · Med · workflow triggers — add `feat/**` to push branches so the static-audit gate runs.
-- `[x]` **INP-01** · Low · `Input/EmberInput.cs:3` — namespace `…Ember.Inputs` ≠ folder `Input/`: align.
-- `[x]` **NAME-01** · High · all 18 `Slice*` types atomically renamed → `World*` (Domain/Sim/Data) / `Ember*` (Presentation): WorldState, WorldSaveData, WorldSaveMapper(+5 parts), WorldSaveRehydration, WorldTickComposer, WorldFactory, WorldItemCatalog, WorldSpellCatalog, WorldActorLoadoutFactory, EmberHudFormatter, EmberAtmosphere{CueSet,Selector} (+6 *Tests). All targets collision-checked (0 prior); all plain C# (no GUID refs); 83 files edited + 23 file/.meta renames. Fallback 1214✓; Win64 Success, 0 CS. Commit `ac4a3d82`. Out of scope: the `SliceJson` folder/asmdef (its code already uses `Data.Save` namespace) + infix `JsonSliceSaveService`.
-- `[x]` **NAME-03** · Low · `Presentation/SliceHudFormatter.cs`,`SliceAtmosphere*.cs`,`InventoryEquipmentFormatter.cs` — moved (4 .cs+.meta, GUID-safe) → `Presentation/Ember/UI/`; namespace `…Presentation.Slice`→`…Presentation.Ember.UI`; updated 2 test usings + fallback csproj. Fallback 1214✓; Win64 Success, 0 CS. Commit `f49b8078`.
-- `[x]` **NAME-02** · Low · `Domain/Actors/*` (expanded project-wide) — swept 262 stale Turkish "Faz"(=Phase) sprint labels across 225 .cs files → English "Phase" (comments + string labels only; compile-inert). Fallback 1214✓; Win64 Success, 0 CS. Commit `005429ed`.
-
----
-
-## §5 — CODEX Ember Audit Summary / INCLUDED AS COUNTER TOO
+## Ember Audit Summary
 
 Static repository audit only. I did **not** open the Unity Editor, run Play Mode, import assets, rebuild scenes, resolve LFS files, or modify anything. Several findings below are therefore marked as requiring Unity Editor inspection. The uploaded zip appears to be a newer cleanup state than the earlier audit: some previous defects are fixed, but several docs still describe old defects as current.
 
@@ -137,7 +22,7 @@ Static repository audit only. I did **not** open the Unity Editor, run Play Mode
 * **Input has improved but is not migrated.** Direct `UnityEngine.Input` calls appear centralized behind `EmberInput`, but the project still uses the legacy input API instead of Input System actions/rebinding.
 * **Save/load improved but remains prototype-shaped.** There is now a file repository, corrupt-save quarantine, and legacy fallback, but the UI uses one default slot, mirrors into `PlayerPrefs`, and nests domain JSON inside a Unity envelope.
 * **Scene build list is cleanly concentrated under `Assets/Scenes/Ember`, but scene playability is not proven statically.** Static tests cannot prove camera feel, collisions, portal reachability, missing material imports, or UI readability.
-* **Do not add features yet.** The next Claude passes should be cleanup/proof passes: source-of-truth docs, LFS/runtime validation, scene interaction proof, save/load proof, adapter decomposition, and simulation authority boundaries.
+* **Do not add features yet.** The next Codex passes should be cleanup/proof passes: source-of-truth docs, LFS/runtime validation, scene interaction proof, save/load proof, adapter decomposition, and simulation authority boundaries.
 
 ### 2. Ember soul alignment
 
@@ -179,14 +64,14 @@ The third drift is AI proof inflation. Some docs claim LLM proof is complete, wh
 
 #### Generated/placeholder work hiding product problems
 
-Art/model generation paths, proof screenshots, and scene validation docs can hide the fact that the uploaded source-only state does not contain real binary/model/art bytes. Because many `Assets/Art`, `Assets/Plugins`, and `Assets/StreamingAssets/Models` files are LFS pointers, a Claude pass can falsely pass static tests while the actual visual/LLM build remains invalid.
+Art/model generation paths, proof screenshots, and scene validation docs can hide the fact that the uploaded source-only state does not contain real binary/model/art bytes. Because many `Assets/Art`, `Assets/Plugins`, and `Assets/StreamingAssets/Models` files are LFS pointers, a Codex pass can falsely pass static tests while the actual visual/LLM build remains invalid.
 
 ### 3. Canonical source map
 
 | Area                   | Canonical source                                                                                 | Stale/archive/reference source                                          | Notes                                                                                                |
 | ---------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Project overview       | `README.md`, but only as entry point                                                             | Old status assumptions from missing `docs/EMBER_GOAL.md`                | README now points to `docs/CURRENT_STATE.md`; it should not carry volatile status.                   |
-| Current repo state     | `docs/REMEDIATION_V2_COUNTER.md` plus actual code/filesystem                                     | `docs/CURRENT_STATE.md`, `docs/AUDIT_COUNTER.md`, `docs/Claude_audit.md` | `CURRENT_STATE.md` is partly stale; `AUDIT_COUNTER.md` overclaims “all closed”; code is final truth. |
+| Current repo state     | `docs/REMEDIATION_V2_COUNTER.md` plus actual code/filesystem                                     | `docs/CURRENT_STATE.md`, `docs/AUDIT_COUNTER.md`, `docs/Codex_audit.md` | `CURRENT_STATE.md` is partly stale; `AUDIT_COUNTER.md` overclaims “all closed”; code is final truth. |
 | Missing expected canon | None                                                                                             | `docs/EMBER_GOAL.md`                                                    | The file requested in read order is absent. Need replacement/update in instructions/docs.            |
 | Vision/spirit          | `docs/EMBER_VISION_BIBLE.md`, `docs/EMBER_VISION_NOTES_MAMI.md`                                  | Older phase fences where contradicted by current implementation         | These remain the strongest Ember identity sources.                                                   |
 | Mechanics              | `docs/mechanics/MASTER_MECHANICS_BIBLE.md`, `docs/mechanics/ARCHITECTURE.md`                     | Older backend/Godot references                                          | Mechanics docs are broad reference; code/tick composition proves what is real.                       |
@@ -206,10 +91,10 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 ### 4. Defect register
 
-|CheckBox     | ID          | Severity | Category                         | Path(s)                                                                                                                                                                                                                                 | Evidence                                                                                                                                                                               | Why it matters                                                                                                                          | Fix direction                                                                                                                                  | Claude-safe?                                        | Validation                                                                                                    |
+|CheckBox     | ID          | Severity | Category                         | Path(s)                                                                                                                                                                                                                                 | Evidence                                                                                                                                                                               | Why it matters                                                                                                                          | Fix direction                                                                                                                                  | Codex-safe?                                        | Validation                                                                                                    |
 | ----------- | ----------- | -------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-|    `[ ]`    | EMB-AUD-001 | Critical | Docs hygiene / source truth      | `docs/EMBER_GOAL.md`                                                                                                                                                                                                                    | File is absent, but user-required read order expects it immediately after README.                                                                                                      | Claude and reviewers will follow stale external instructions or fail to locate the supposed current goal.                                | Create/restore a replacement only after deciding whether `docs/CURRENT_STATE.md` or `docs/REMEDIATION_V2_COUNTER.md` is the current successor. | Yes, docs-only.                                    | Static file existence and docs link check. Editor: no.                                                        |
-|    `[ ]`    | EMB-AUD-002 | High     | Docs conflict                    | `docs/CURRENT_STATE.md`, `docs/REMEDIATION_V2_COUNTER.md`, `docs/AUDIT_COUNTER.md`, actual files                                                                                                                                        | `CURRENT_STATE.md` still mentions old root scenes, old `DomainSimulationAdapter` LOC, `Reports` clutter; `AUDIT_COUNTER.md` claims all closed; remediation doc says work remains.      | Current status is unreliable; Claude could undo fixed work or ignore open defects.                                                       | Make one current-state page authoritative; move old audit counters to archive/reference.                                                       | Yes.                                               | Compare current-state claims against filesystem and static scans. Editor: no.                                 |
+|    `[ ]`    | EMB-AUD-001 | Critical | Docs hygiene / source truth      | `docs/EMBER_GOAL.md`                                                                                                                                                                                                                    | File is absent, but user-required read order expects it immediately after README.                                                                                                      | Codex and reviewers will follow stale external instructions or fail to locate the supposed current goal.                                | Create/restore a replacement only after deciding whether `docs/CURRENT_STATE.md` or `docs/REMEDIATION_V2_COUNTER.md` is the current successor. | Yes, docs-only.                                    | Static file existence and docs link check. Editor: no.                                                        |
+|    `[ ]`    | EMB-AUD-002 | High     | Docs conflict                    | `docs/CURRENT_STATE.md`, `docs/REMEDIATION_V2_COUNTER.md`, `docs/AUDIT_COUNTER.md`, actual files                                                                                                                                        | `CURRENT_STATE.md` still mentions old root scenes, old `DomainSimulationAdapter` LOC, `Reports` clutter; `AUDIT_COUNTER.md` claims all closed; remediation doc says work remains.      | Current status is unreliable; Codex could undo fixed work or ignore open defects.                                                       | Make one current-state page authoritative; move old audit counters to archive/reference.                                                       | Yes.                                               | Compare current-state claims against filesystem and static scans. Editor: no.                                 |
 |    `[ ]`    | EMB-AUD-003 | High     | AI docs conflict                 | `docs/AI_STACK.md`, `docs/proofs/llm-roundtrip-2026-05-30.md`, `docs/AUDIT_COUNTER.md`                                                                                                                                                  | AI stack doc says real LLM proof still unverified; proof doc and audit counter claim real Qwen proof.                                                                                  | Ember’s LLM must be bounded and truthful. Contradictory proof status invites fake AI claims.                                            | Split AI status into “source-only”, “LFS-resolved local”, and “verified runtime proof.”                                                        | Yes.                                               | Docs consistency check plus LFS-resolved runtime proof. Editor: yes for runtime.                              |
 |    `[ ]`    | EMB-AUD-004 | High     | LFS/runtime proof                | `Assets/Plugins/**`, `Assets/StreamingAssets/Models/**`, `Assets/Art/**`, `.gitattributes`                                                                                                                                              | Runtime DLLs/models and many art files are Git LFS pointer files in the uploaded zip. Static audit reports 25 runtime binary/model pointers; broader scan finds many art pointers too. | Source-only tests can pass while LLM, ONNX generation, native plugins, textures, and visual build fail.                                 | Add explicit source-only vs runtime-LFS validation modes; require real bytes for build/AI/art proof.                                           | Yes for validation/docs; no for binary resolution. | Pointer scan; LFS-resolved clone; Unity import/build. Editor: yes for full proof.                             |
 |    `[ ]`    | EMB-AUD-005 | Medium   | Unity `.meta` integrity          | `Assets/AI Toolkit.meta`, `Assets/Audio.meta`, `Assets/Generated/Core.meta`, `Assets/Editor/Ember/Patches.meta`, `Assets/Scripts/Presentation/Ember/AiDm.meta`, `Assets/Art/UI/*.meta`                                                  | Static audit warns 13 orphan `.meta` files.                                                                                                                                            | Orphan metas indicate deleted/ignored assets and make Unity asset ownership ambiguous.                                                  | Restore missing assets if intentional, otherwise delete orphan metas through Unity-safe cleanup.                                               | Partial; deletion needs care.                      | Static audit must report zero orphan metas or documented exceptions. Editor: yes.                             |
@@ -228,7 +113,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 |    `[ ]`    | EMB-AUD-018 | Medium   | Save schema                      | `Assets/Scripts/Presentation/Ember/Save/EmberSaveService.cs`                                                                                                                                                                            | Save envelope stores `domainStateJson` as nested string plus Unity scene/player position fields.                                                                                       | Nested JSON makes migrations/search/debug harder and couples Unity scene state to domain save.                                          | Introduce explicit outer schema version and structured domain envelope.                                                                        | Yes after characterization.                        | Golden save fixture before/after migration. Editor: no.                                                       |
 |    `[ ]`    | EMB-AUD-019 | High     | Main menu save flow              | `Assets/Scripts/Presentation/Ember/UI/EmberMainMenuUI.cs`, `EmberSaveService.cs`                                                                                                                                                        | Main menu Continue/LoadGame reads `PlayerPrefs.GetString("ember.save.v1")`, not `FileSaveRepository` slots.                                                                            | Player-facing load can ignore file-slot source of truth and preserve legacy single-slot assumptions.                                    | Route menu Continue through the same save repository/service used by runtime saves.                                                            | Yes.                                               | Save in-game, restart, Continue loads from file slot with PlayerPrefs cleared/changed. Editor: yes.           |
 |    `[ ]`    | EMB-AUD-020 | Medium   | Save DTO size/schema drift       | `Assets/Scripts/Data/Save/WorldSaveData.cs`, `Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper*.cs`                                                                                                                                   | `WorldSaveData.cs` is 527 LOC and carries legacy role fields; mapper split exists but schema remains broad.                                                                            | Save schema will keep accreting fields and become impossible to migrate safely.                                                         | Split DTOs by subsystem and freeze legacy compatibility fields behind migration tests.                                                         | Yes if no field renames first.                     | Golden old-save/new-save roundtrip. Editor: no.                                                               |
-|    `[ ]`    | EMB-AUD-021 | High     | Architecture/SOLID               | `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter*.cs`                                                                                                                                                                | Main file 471 LOC plus partials for worldgen/combat/save/fate; aggregate remains a large command/read-model/dialog/save/LLM bridge.                                                    | Partial classes reduced file size but not responsibility count. Claude changes here remain high-risk.                                    | Split into explicit services: tick bridge, read-model projector, command router, dialog adapter, save bridge, fate/LLM adapter.                | Partial, staged only.                              | Characterization tests before each extraction; scene smoke. Editor: yes for final smoke.                      |
+|    `[ ]`    | EMB-AUD-021 | High     | Architecture/SOLID               | `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter*.cs`                                                                                                                                                                | Main file 471 LOC plus partials for worldgen/combat/save/fate; aggregate remains a large command/read-model/dialog/save/LLM bridge.                                                    | Partial classes reduced file size but not responsibility count. Codex changes here remain high-risk.                                    | Split into explicit services: tick bridge, read-model projector, command router, dialog adapter, save bridge, fate/LLM adapter.                | Partial, staged only.                              | Characterization tests before each extraction; scene smoke. Editor: yes for final smoke.                      |
 |    `[ ]`    | EMB-AUD-022 | Medium   | Async/state timing               | `DomainSimulationAdapter.Fate.cs`, `DomainSimulationAdapter.cs`                                                                                                                                                                         | LLM/fate results enqueue `_mainThreadApply`, drained in `AdvanceTick`.                                                                                                                 | If ticking is paused or blocked, thinking flags/results can stall; authoritative trace application is tied to presentation tick timing. | Add deterministic main-thread pump independent of sim tick or explicitly drain during UI update.                                               | Partial.                                           | Pause/Ask Fate test; no stuck thinking state. Editor: yes.                                                    |
 |    `[ ]`    | EMB-AUD-023 | Critical | Ember soul / simulation wiring   | `Assets/Scripts/Simulation/WorldTickComposer.cs`, `Assets/Scripts/Simulation/Process/**`, `Assets/Scripts/Simulation/Farming/**`, `Assets/Scripts/Simulation/Economy/**`                                                                | Composer advances time, magic, needs, caravans; many systems exist but are not composed into main tick.                                                                                | Ember’s promise is a living world; isolated systems/tests do not make the world live.                                                   | Build a deterministic simulation composition plan and wire systems in small verified passes.                                                   | Partial.                                           | Same-seed tick digest including needs/jobs/plants/prices/factions. Editor: no for sim, yes for visible proof. |
 |    `[ ]`    | EMB-AUD-024 | High     | Process/world authority          | `JsonSliceSaveService.cs`, process/farming stores                                                                                                                                                                                       | Process stores live outside core `WorldState` in save bridge.                                                                                                                          | Jobs/plants/worksites cannot be clearly authoritative or replayable if owned by Presentation.                                           | Move stores to `WorldState` or pure simulation aggregate, then map through Data.                                                               | Partial.                                           | Save/load/replay of worksite/job/plant state without Presentation service. Editor: no.                        |
@@ -248,9 +133,9 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 |    `[ ]`    | EMB-AUD-038 | Medium   | Plugin/dependency hygiene        | `Assets/Plugins/**`, `Assets/Plugins/NuGet/**`                                                                                                                                                                                          | Native/managed plugins live under Assets; NuGet marker exists; runtime DLLs are LFS pointers in this upload.                                                                           | Unity plugin import settings and transitive dependencies can silently break platform builds.                                            | Create dependency manifest with platform import settings and source-only/runtime states.                                                       | Partial.                                           | Unity plugin inspector/build on target platforms. Editor: yes.                                                |
 |    `[ ]`    | EMB-AUD-039 | Low      | TextMesh Pro footprint           | `Assets/TextMesh Pro/**`                                                                                                                                                                                                                | TMP runtime resources are present; Examples & Extras are not present in this upload.                                                                                                   | Not a current sample-sprawl defect, but should remain monitored for unused sample imports.                                              | Keep TMP essentials; do not re-import examples unless needed.                                                                                  | Yes.                                               | Reference scan. Editor: yes if removing assets.                                                               |
 |    `[ ]`    | EMB-AUD-040 | Medium   | Test coverage shape              | `Assets/Tests/EditMode/**`, `Assets/Tests/PlayMode/**`                                                                                                                                                                                  | EditMode coverage is broad; PlayMode mostly tests character creation/boot/fake forge, not all gameplay scenes.                                                                         | Backend tests do not prove Ember is playable as a CRPG route.                                                                           | Add scene tour PlayMode tests and reduce audit-only confidence.                                                                                | Yes.                                               | PlayMode route: menu → creation → every scene interact/portal/save. Editor: yes.                              |
-|    `[ ]`    | EMB-AUD-041 | Medium   | Test bloat                       | `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`, magic/job tests                                                                                                                                                     | One magic test file is 1033 LOC; several tests exceed 300 LOC.                                                                                                                         | Overgrown tests are hard for Claude to maintain and can mask missing product tests.                                                      | Split/consolidate by scenario; keep golden integration cases.                                                                                  | Yes.                                               | Same test coverage, smaller files, no product coverage regression. Editor: no.                                |
-|    `[ ]`    | EMB-AUD-042 | Medium   | Docs/reference clutter           | `docs/Claude_audit.md`, `docs/AUDIT_INDEPENDENT_2026-05-30.md`, `docs/AUDIT_COUNTER.md`, `docs/proofs/**`                                                                                                                                | These docs contain obsolete findings and overclaims mixed with useful evidence.                                                                                                        | Reviewers can mistake stale audit output for current truth.                                                                             | Move old audits/proofs under dated archive with status header.                                                                                 | Yes.                                               | Docs index: every audit marked current/reference/archive. Editor: no.                                         |
-|    `[ ]`    | EMB-AUD-043 | Medium   | PRD governance drift             | `docs/PRD_GOVERNANCE.md`, `Reference/PRDs/**`, `docs/reference/**`                                                                                                                                                                      | Governance says `docs/reference/prd/` is a deprecated mirror, but that folder is absent; `Reference/PRDs` still exists.                                                                | Claude may search the wrong PRD tree or assume duplicates are already removed.                                                           | Update governance to actual folder layout and one active matrix.                                                                               | Yes.                                               | Broken path check. Editor: no.                                                                                |
+|    `[ ]`    | EMB-AUD-041 | Medium   | Test bloat                       | `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`, magic/job tests                                                                                                                                                     | One magic test file is 1033 LOC; several tests exceed 300 LOC.                                                                                                                         | Overgrown tests are hard for Codex to maintain and can mask missing product tests.                                                      | Split/consolidate by scenario; keep golden integration cases.                                                                                  | Yes.                                               | Same test coverage, smaller files, no product coverage regression. Editor: no.                                |
+|    `[ ]`    | EMB-AUD-042 | Medium   | Docs/reference clutter           | `docs/Codex_audit.md`, `docs/AUDIT_INDEPENDENT_2026-05-30.md`, `docs/AUDIT_COUNTER.md`, `docs/proofs/**`                                                                                                                                | These docs contain obsolete findings and overclaims mixed with useful evidence.                                                                                                        | Reviewers can mistake stale audit output for current truth.                                                                             | Move old audits/proofs under dated archive with status header.                                                                                 | Yes.                                               | Docs index: every audit marked current/reference/archive. Editor: no.                                         |
+|    `[ ]`    | EMB-AUD-043 | Medium   | PRD governance drift             | `docs/PRD_GOVERNANCE.md`, `Reference/PRDs/**`, `docs/reference/**`                                                                                                                                                                      | Governance says `docs/reference/prd/` is a deprecated mirror, but that folder is absent; `Reference/PRDs` still exists.                                                                | Codex may search the wrong PRD tree or assume duplicates are already removed.                                                           | Update governance to actual folder layout and one active matrix.                                                                               | Yes.                                               | Broken path check. Editor: no.                                                                                |
 |    `[ ]`    | EMB-AUD-044 | Medium   | Stale docs claims                | `docs/CURRENT_STATE.md`, old roadmap/docs                                                                                                                                                                                               | Current state references `Reports/` and old root scenes that are absent; roadmap mentions old Qwen/Copilot fallback language.                                                          | Stale references undermine cleanup and AI policy.                                                                                       | Archive or update stale docs; keep one dated status page.                                                                                      | Yes.                                               | Grep for absent paths/model names and resolve. Editor: no.                                                    |
 |    `[ ]`    | EMB-AUD-045 | Low      | Reference data placement         | `Reference/OldBackendData/**`                                                                                                                                                                                                           | Large old backend JSON reference remains in repo.                                                                                                                                      | Useful, but easy to confuse with active Unity data.                                                                                     | Keep reference-only README and forbid runtime imports without migration plan.                                                                  | Yes.                                               | Source-map entry and no runtime direct reads. Editor: no.                                                     |
 |    `[ ]`    | EMB-AUD-046 | Low      | Dev tooling placement            | `.claude/skills/**`                                                                                                                                                                                                                     | Local agent skills are tracked beside game source.                                                                                                                                     | Not product source; can confuse repository ownership.                                                                                   | Classify as contributor tooling or move under `tools/agent`.                                                                                   | Yes.                                               | Docs/source-map update. Editor: no.                                                                           |
@@ -259,7 +144,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 |    `[ ]`    | EMB-AUD-049 | Medium   | Job system isolation             | `Assets/Scripts/Simulation/Process/JobAssignmentSystem*.cs`, tests                                                                                                                                                                      | Job system is split but not visibly composed into main tick.                                                                                                                           | Colony simulation cannot matter if jobs only exist in tests/side stores.                                                                | Wire after process state ownership is moved to world root.                                                                                     | Partial.                                           | Tick digest includes job assignment/reservation changes. Editor: no.                                          |
 |    `[ ]`    | EMB-AUD-050 | Low      | Secrets/security                 | Whole repo, `.gitignore`, AI clients                                                                                                                                                                                                    | No actual API keys found by static search; cloud client supports bearer config.                                                                                                        | Good baseline, but cloud/provider expansion could leak secrets.                                                                         | Keep secrets ignored and cloud providers opt-in only.                                                                                          | Yes.                                               | Secret scan in CI. Editor: no.                                                                                |
 
-### 5. Claude-ready work packages
+### 5. Codex-ready work packages
 
 #### P0-A — Rebuild the source-of-truth map
 
@@ -276,7 +161,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** path/link grep; compare current-state checklist to `find` output.
 **Unity Editor required:** no.
-**Suggested Claude prompt title:** “P0: Make Ember current-state docs match the actual repository.”
+**Suggested Codex prompt title:** “P0: Make Ember current-state docs match the actual repository.”
 
 #### P0-B — Runtime asset/LFS validation gate
 
@@ -292,7 +177,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** run static audit with and without runtime mode; pointer fixtures fail runtime mode.
 **Unity Editor required:** no for scan; yes for full runtime proof.
-**Suggested Claude prompt title:** “P0: Add source-only vs runtime-LFS validation for Ember assets and AI.”
+**Suggested Codex prompt title:** “P0: Add source-only vs runtime-LFS validation for Ember assets and AI.”
 
 #### P0-C — Orphan `.meta` cleanup plan
 
@@ -308,7 +193,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** `tools/validation/static-audit.sh`, Unity import log.
 **Unity Editor required:** yes.
-**Suggested Claude prompt title:** “P0: Resolve orphan Unity .meta files without touching scene contents.”
+**Suggested Codex prompt title:** “P0: Resolve orphan Unity .meta files without touching scene contents.”
 
 #### P1-A — AI/model truthfulness pass
 
@@ -325,7 +210,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** manifest tests, pointer rejection test, LFS-resolved LLM smoke proof.
 **Unity Editor required:** yes for runtime proof.
-**Suggested Claude prompt title:** “P1: Make Ember AI/model proof reproducible and pointer-safe.”
+**Suggested Codex prompt title:** “P1: Make Ember AI/model proof reproducible and pointer-safe.”
 
 #### P1-B — Scene interaction proof before scene fixes
 
@@ -342,7 +227,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** PlayMode scene-tour test plus screenshots.
 **Unity Editor required:** yes.
-**Suggested Claude prompt title:** “P1: Add scene interaction and portal validation without modifying scenes.”
+**Suggested Codex prompt title:** “P1: Add scene interaction and portal validation without modifying scenes.”
 
 #### P1-C — Save/load characterization
 
@@ -357,7 +242,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** EditMode tests plus manual save/load scene proof.
 **Unity Editor required:** yes for menu/scene proof.
-**Suggested Claude prompt title:** “P1: Characterize Ember save/load and main-menu continue before refactor.”
+**Suggested Codex prompt title:** “P1: Characterize Ember save/load and main-menu continue before refactor.”
 
 #### P2-A — Persistence dependency direction cleanup
 
@@ -373,7 +258,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** Unity assembly compile and EditMode tests.
 **Unity Editor required:** yes.
-**Suggested Claude prompt title:** “P2: Remove Simulation dependency on SliceJson persistence.”
+**Suggested Codex prompt title:** “P2: Remove Simulation dependency on SliceJson persistence.”
 
 #### P2-B — Move process stores toward authoritative world state
 
@@ -389,7 +274,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** same-seed tick/save/load digest.
 **Unity Editor required:** no initially.
-**Suggested Claude prompt title:** “P2: Make process and farming stores authoritative, not Presentation side state.”
+**Suggested Codex prompt title:** “P2: Make process and farming stores authoritative, not Presentation side state.”
 
 #### P2-C — Adapter responsibility split, no behaviour change
 
@@ -405,7 +290,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** fallback, EditMode, and manual scene smoke.
 **Unity Editor required:** yes for smoke.
-**Suggested Claude prompt title:** “P2: Split DomainSimulationAdapter responsibilities without changing behaviour.”
+**Suggested Codex prompt title:** “P2: Split DomainSimulationAdapter responsibilities without changing behaviour.”
 
 #### P2-D — Stable actor/NPC interaction IDs
 
@@ -422,7 +307,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** PlayMode interact with two named actors; scene reference check.
 **Unity Editor required:** yes.
-**Suggested Claude prompt title:** “P2: Replace display-name dialog lookup with stable actor IDs.”
+**Suggested Codex prompt title:** “P2: Replace display-name dialog lookup with stable actor IDs.”
 
 #### P3-A — Living-world tick composition plan
 
@@ -438,7 +323,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** deterministic replay/save-load digest.
 **Unity Editor required:** no for core; yes for visible proof.
-**Suggested Claude prompt title:** “P3: Wire Ember living-world systems into deterministic tick composition.”
+**Suggested Codex prompt title:** “P3: Wire Ember living-world systems into deterministic tick composition.”
 
 #### P3-B — UI/Ask About scene fix
 
@@ -454,7 +339,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** manual and PlayMode interaction tour.
 **Unity Editor required:** yes.
-**Suggested Claude prompt title:** “P3: Ensure every Ember gameplay scene supports Ask About interaction.”
+**Suggested Codex prompt title:** “P3: Ensure every Ember gameplay scene supports Ask About interaction.”
 
 #### P4-A — Docs and reference archive cleanup
 
@@ -470,7 +355,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** docs inventory and broken-link check.
 **Unity Editor required:** no.
-**Suggested Claude prompt title:** “P4: Classify Ember docs into current, reference, proof, and archive.”
+**Suggested Codex prompt title:** “P4: Classify Ember docs into current, reference, proof, and archive.”
 
 #### P5-A — Visual/runtime polish only after proof
 
@@ -486,7 +371,7 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Suggested validation:** full scene screenshot proof and build.
 **Unity Editor required:** yes.
-**Suggested Claude prompt title:** “P5: Visual polish with generated/static asset provenance proof.”
+**Suggested Codex prompt title:** “P5: Visual polish with generated/static asset provenance proof.”
 
 ### 6. Refactor targets
 
@@ -494,9 +379,9 @@ Art/model generation paths, proof screenshots, and scene validation docs can hid
 
 **Above 1000 LOC**
 
-|CheckBox     | File                                                               |  LOC | Acceptable? | Split direction                                                  |
-| ----------- | ------------------------------------------------------------------ | ---: | ----------- | ---------------------------------------------------------------- |
-|    `[ ]`    | `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs` | 1033 | No          | Split by spell/effect family; keep one golden integration suite. |
+| File                                                               |  LOC | Acceptable? | Split direction                                                  |
+| ------------------------------------------------------------------ | ---: | ----------- | ---------------------------------------------------------------- |
+| `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs` | 1033 | No          | Split by spell/effect family; keep one golden integration suite. |
 
 **Above 800 LOC**
 
@@ -504,65 +389,65 @@ No current non-test source file above 800 LOC in this upload. Earlier 800+ LOC s
 
 **Above 500 LOC**
 
-|CheckBox     | File                                                                                           | LOC | Acceptable?   | Split direction                                                    |
-| ----------- | ---------------------------------------------------------------------------------------------- | --: | ------------- | ------------------------------------------------------------------ |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/CharacterCreation/CharacterCreationController.cs`           | 660 | No            | Wizard state, validation, generation coordination, transition.     |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/CharacterCreation/CharacterCreationController.Rendering.cs` | 571 | No            | View renderer, style/theme helpers, preview/portrait rendering.    |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/Bootstrap/EmberWorldHost.cs`                                | 566 | No            | Composition root, lifecycle, input binding, UI binding, tick host. |
-|    `[ ]`    | `Assets/Tests/EditMode/Process/JobAssignmentSystemTests.cs`                                    | 554 | Borderline/no | Split by discovery, eligibility, reservation, assignment cases.    |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/UI/EmberHud.cs`                                             | 538 | No            | Bars, action strip, message log, status/clock, presenter.          |
-|    `[ ]`    | `Assets/Scripts/Data/Save/WorldSaveData.cs`                                                    | 527 | No            | Save DTO modules by subsystem.                                     |
-|    `[ ]`    | `Assets/Scripts/Infrastructure/AiDm/LlmClients.cs`                                             | 517 | No            | Config, local provider, cloud provider, transport, JSON parser.    |
+| File                                                                                           | LOC | Acceptable?   | Split direction                                                    |
+| ---------------------------------------------------------------------------------------------- | --: | ------------- | ------------------------------------------------------------------ |
+| `Assets/Scripts/Presentation/Ember/CharacterCreation/CharacterCreationController.cs`           | 660 | No            | Wizard state, validation, generation coordination, transition.     |
+| `Assets/Scripts/Presentation/Ember/CharacterCreation/CharacterCreationController.Rendering.cs` | 571 | No            | View renderer, style/theme helpers, preview/portrait rendering.    |
+| `Assets/Scripts/Presentation/Ember/Bootstrap/EmberWorldHost.cs`                                | 566 | No            | Composition root, lifecycle, input binding, UI binding, tick host. |
+| `Assets/Tests/EditMode/Process/JobAssignmentSystemTests.cs`                                    | 554 | Borderline/no | Split by discovery, eligibility, reservation, assignment cases.    |
+| `Assets/Scripts/Presentation/Ember/UI/EmberHud.cs`                                             | 538 | No            | Bars, action strip, message log, status/clock, presenter.          |
+| `Assets/Scripts/Data/Save/WorldSaveData.cs`                                                    | 527 | No            | Save DTO modules by subsystem.                                     |
+| `Assets/Scripts/Infrastructure/AiDm/LlmClients.cs`                                             | 517 | No            | Config, local provider, cloud provider, transport, JSON parser.    |
 
 **Above 300 LOC**
 
-|CheckBox     | File                                                                             | LOC | Acceptable?                         | Split direction                                                |
-| ----------- | -------------------------------------------------------------------------------- | --: | ----------------------------------- | -------------------------------------------------------------- |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.cs`          | 471 | No as aggregate                     | Split with existing partials into real services.               |
-|    `[ ]`    | `Assets/Scripts/Simulation/Worldgen/WorldgenService.Phases.cs`                   | 422 | Borderline/no                       | Deterministic phases and projection modules.                   |
-|    `[ ]`    | `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`                       | 413 | Borderline/no                       | Discovery/scoring/reservation.                                 |
-|    `[ ]`    | `Assets/Tests/EditMode/Magic/SpellExecutionServiceTests.cs`                      | 385 | Borderline                          | Split if adding more cases.                                    |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Worldgen.cs` | 381 | No as aggregate                     | Move worldgen bridge out of adapter.                           |
-|    `[ ]`    | `Assets/Scripts/Simulation/Process/JobAssignmentSystem.Tick.cs`                  | 378 | Borderline                          | Tick policy separate from assignment core.                     |
-|    `[ ]`    | `Assets/Scripts/Ui/Backends/UiToolkit/UiToolkitPanel.Frames.cs`                  | 374 | No                                  | Per-screen/panel renderers.                                    |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/Save/EmberSaveService.cs`                     | 373 | No                                  | Runtime save controller, repository presenter, scene restore.  |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/Loading/LoadingScreenController.cs`           | 369 | No                                  | Loading state, view, generation progress coordinator.          |
-|    `[ ]`    | `Assets/Tests/EditMode/Magic/ShieldBuffServiceRegistryBatchAbsorptionTests.cs`   | 351 | Borderline                          | Consolidate matrix cases.                                      |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/UI/EmberMainMenuUI.cs`                        | 345 | No                                  | Menu presenter, save-slot presenter, generation entry.         |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/UI/DialogBoxPanel.cs`                         | 335 | No                                  | Dialog view, topic list, modal input.                          |
-|    `[ ]`    | `Assets/Tests/EditMode/Audit/AuditSeventhPassCoverageTests.cs`                   | 325 | Borderline                          | Keep audit tests small and targeted.                           |
-|    `[ ]`    | `Assets/Scripts/Simulation/Forge/OnnxAssetForge.cs`                              | 320 | Borderline/no                       | Provider implementation, fallback/provenance, tensor pipeline. |
-|    `[ ]`    | `Assets/Tests/EditMode/Magic/SpellTargetValidatorTests.cs`                       | 315 | Borderline                          | Split only if growing.                                         |
-|    `[ ]`    | `Assets/Tests/EditMode/Acceptance/FazSixToTwelveBackendAcceptanceTests.cs`       | 315 | Borderline                          | Keep as acceptance if stable.                                  |
-|    `[ ]`    | `Assets/Scripts/Simulation/Forge/ClipBpeTokenizer.cs`                            | 310 | Acceptable if generated/algorithmic | Avoid editing unless tests exist.                              |
-|    `[ ]`    | `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Combat.cs`   | 310 | No as aggregate                     | Move combat command adapter out.                               |
-|    `[ ]`    | `Assets/Tests/EditMode/Audit/AuditCoverageGapsTests.cs`                          | 308 | Borderline                          | Avoid growing audit-test bloat.                                |
-|    `[ ]`    | `Assets/Tests/EditMode/World/ActorStoreTests.cs`                                 | 306 | Borderline                          | Split by actor-store behaviour if expanding.                   |
+| File                                                                             | LOC | Acceptable?                         | Split direction                                                |
+| -------------------------------------------------------------------------------- | --: | ----------------------------------- | -------------------------------------------------------------- |
+| `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.cs`          | 471 | No as aggregate                     | Split with existing partials into real services.               |
+| `Assets/Scripts/Simulation/Worldgen/WorldgenService.Phases.cs`                   | 422 | Borderline/no                       | Deterministic phases and projection modules.                   |
+| `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`                       | 413 | Borderline/no                       | Discovery/scoring/reservation.                                 |
+| `Assets/Tests/EditMode/Magic/SpellExecutionServiceTests.cs`                      | 385 | Borderline                          | Split if adding more cases.                                    |
+| `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Worldgen.cs` | 381 | No as aggregate                     | Move worldgen bridge out of adapter.                           |
+| `Assets/Scripts/Simulation/Process/JobAssignmentSystem.Tick.cs`                  | 378 | Borderline                          | Tick policy separate from assignment core.                     |
+| `Assets/Scripts/Ui/Backends/UiToolkit/UiToolkitPanel.Frames.cs`                  | 374 | No                                  | Per-screen/panel renderers.                                    |
+| `Assets/Scripts/Presentation/Ember/Save/EmberSaveService.cs`                     | 373 | No                                  | Runtime save controller, repository presenter, scene restore.  |
+| `Assets/Scripts/Presentation/Ember/Loading/LoadingScreenController.cs`           | 369 | No                                  | Loading state, view, generation progress coordinator.          |
+| `Assets/Tests/EditMode/Magic/ShieldBuffServiceRegistryBatchAbsorptionTests.cs`   | 351 | Borderline                          | Consolidate matrix cases.                                      |
+| `Assets/Scripts/Presentation/Ember/UI/EmberMainMenuUI.cs`                        | 345 | No                                  | Menu presenter, save-slot presenter, generation entry.         |
+| `Assets/Scripts/Presentation/Ember/UI/DialogBoxPanel.cs`                         | 335 | No                                  | Dialog view, topic list, modal input.                          |
+| `Assets/Tests/EditMode/Audit/AuditSeventhPassCoverageTests.cs`                   | 325 | Borderline                          | Keep audit tests small and targeted.                           |
+| `Assets/Scripts/Simulation/Forge/OnnxAssetForge.cs`                              | 320 | Borderline/no                       | Provider implementation, fallback/provenance, tensor pipeline. |
+| `Assets/Tests/EditMode/Magic/SpellTargetValidatorTests.cs`                       | 315 | Borderline                          | Split only if growing.                                         |
+| `Assets/Tests/EditMode/Acceptance/FazSixToTwelveBackendAcceptanceTests.cs`       | 315 | Borderline                          | Keep as acceptance if stable.                                  |
+| `Assets/Scripts/Simulation/Forge/ClipBpeTokenizer.cs`                            | 310 | Acceptable if generated/algorithmic | Avoid editing unless tests exist.                              |
+| `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Combat.cs`   | 310 | No as aggregate                     | Move combat command adapter out.                               |
+| `Assets/Tests/EditMode/Audit/AuditCoverageGapsTests.cs`                          | 308 | Borderline                          | Avoid growing audit-test bloat.                                |
+| `Assets/Tests/EditMode/World/ActorStoreTests.cs`                                 | 306 | Borderline                          | Split by actor-store behaviour if expanding.                   |
 
 #### Top 20 refactor targets
 
-|CheckBox     | Rank | File/class                                 | Current responsibility                                                                            | Why too large or misplaced                                             | Proposed split                                                                                | Safe migration strategy                                                   | Test/proof required                      |
-| ----------- | ---- | ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------- |
-|    `[ ]`    | 1    | `DomainSimulationAdapter*.cs`              | Presentation bridge for world, tick, read models, commands, combat, save, dialog, fate, worldgen. | Partial split reduced LOC but not responsibility count.                | Tick bridge, read-model projector, command router, dialog adapter, fate adapter, save bridge. | Characterize public adapter behaviour, extract one responsibility per PR. | EditMode adapter tests and scene smoke.  |
-|    `[ ]`    | 2    | `EmberWorldHost.cs`                        | Scene composition, locators, input, UI binding, tick lifecycle.                                   | Runtime god host.                                                      | Composition root, lifecycle host, input binder, UI binder.                                    | Extract non-MonoBehaviour helpers first.                                  | Boot/gameplay scene smoke.               |
-|    `[ ]`    | 3    | `JsonSliceSaveService.cs`                  | Save bridge plus process stores.                                                                  | Presentation owns authoritative process state.                         | Pure save service, process-state owner, mapping adapter.                                      | Add save roundtrip tests before moving state.                             | Process/farming save-load proof.         |
-|    `[ ]`    | 4    | `EmberSaveService.cs`                      | Save hotkeys, file repo, PlayerPrefs compatibility, scene restore.                                | UI/runtime/persistence mixed.                                          | Save controller, save repository adapter, scene restore service, status presenter.            | Characterize current behaviour first.                                     | Save/load/menu tests.                    |
-|    `[ ]`    | 5    | `WorldSaveData.cs`                         | Entire save DTO tree.                                                                             | Too broad; legacy fields can expand.                                   | DTO files/modules by subsystem.                                                               | File split only first, no field rename.                                   | Golden JSON compatibility.               |
-|    `[ ]`    | 6    | `WorldSaveMapper*.cs`                      | World save mapping across subsystems.                                                             | Mapper split exists but remains central migration risk.                | Sub-mappers for actors/items/process/worldgen/dialog/magic.                                   | Golden old/new save tests.                                                | Roundtrip and migration tests.           |
-|    `[ ]`    | 7    | `CharacterCreationController.cs`           | Wizard state, generation intent, validation, transition.                                          | Character creation is product-critical but overcoupled.                | State machine, presenter, generation coordinator, transition service.                         | Preserve serialized scene refs; extract pure state first.                 | Character creation PlayMode/screenshots. |
-|    `[ ]`    | 8    | `CharacterCreationController.Rendering.cs` | Procedural creation UI rendering.                                                                 | Rendering details dominate controller partial.                         | View renderer, style helpers, portrait/progress widgets.                                      | No behaviour change extraction.                                           | Screenshot comparison.                   |
-|    `[ ]`    | 9    | `EmberHud.cs`                              | Procedural HUD/action bar/message/status UI.                                                      | CRPG UI needs proof; file is too large.                                | Bars, action bar, message log, status/clock presenters.                                       | Wait for PRD source map, then split.                                      | Scene screenshots.                       |
-|    `[ ]`    | 10   | `DialogBoxPanel.cs`                        | Dialog UI, topic list, input.                                                                     | Dialog is core Ember interface; too much modal behaviour in one panel. | Dialog view, topic list component, input adapter.                                             | Add interaction tests first.                                              | Tavern and all-scene dialog proof.       |
-|    `[ ]`    | 11   | `EmberMainMenuUI.cs`                       | Main menu UI, continue/load, new game path.                                                       | Menu still touches legacy PlayerPrefs load path.                       | Menu presenter, save-slot presenter, new-game coordinator.                                    | Add menu save tests.                                                      | Continue/load proof.                     |
-|    `[ ]`    | 12   | `LoadingScreenController.cs`               | Loading state/progress/generation UI.                                                             | Loading/generation/progress policy mixed.                              | Loading state machine, progress view, generation coordinator.                                 | Preserve scene flow; add tests.                                           | New Game loading proof.                  |
-|    `[ ]`    | 13   | `LlmClients.cs`                            | Local/cloud LLM provider config and transport.                                                    | Too much provider infrastructure in one file.                          | Config, local provider, cloud provider, HTTP transport, parser.                               | Add fake provider tests first.                                            | No-network default tests.                |
-|    `[ ]`    | 14   | `NativeLlmClient.cs`                       | LLamaSharp native client, model download/readiness.                                               | Provider readiness and downloader are high-risk.                       | Model validator, downloader, native runtime client.                                           | Add pointer/hash tests before changing load.                              | Real LFS model runtime proof.            |
-|    `[ ]`    | 15   | `ModelBootstrap.cs`                        | Model verification/download/provider setup.                                                       | Startup model policy mixed with provider construction.                 | Model locator, verifier, downloader, provider factory.                                        | Normalize manifest/hashes first.                                          | Manifest and startup tests.              |
-|    `[ ]`    | 16   | `OnnxAssetForge.cs`                        | ONNX diffusion provider and fallback.                                                             | AI provider implementation in Simulation namespace.                    | Provider impl, fallback generator, provenance reporter.                                       | Add source/fallback provenance tests.                                     | Generated asset proof.                   |
-|    `[ ]`    | 17   | `ComfyUiAssetForge.cs`                     | Network forge provider.                                                                           | Blocking network provider in Simulation area.                          | Infrastructure provider with async availability.                                              | Keep opt-in; fake endpoint tests.                                         | Default no-network proof.                |
-|    `[ ]`    | 18   | `WorldgenService*.cs`                      | Procedural world generation phases.                                                               | Core to Ember; projection gap remains.                                 | Phases, validators, projection to actors/scenes.                                              | Add same-seed digest.                                                     | Deterministic worldgen proof.            |
-|    `[ ]`    | 19   | `JobAssignmentSystem*.cs`                  | Job discovery/assignment/tick logic.                                                              | Important but not clearly composed into main tick.                     | Discovery, scoring, reservation, tick integration.                                            | Move state ownership first.                                               | Job tick/save proof.                     |
-|    `[ ]`    | 20   | `UiToolkitPanel*.cs`                       | UI Toolkit backend frames/panels.                                                                 | Backend code grows into UI god renderer.                               | Per-screen renderers/templates.                                                               | Extract one panel at a time.                                              | UI screenshot proof.                     |
+| Rank | File/class                                 | Current responsibility                                                                            | Why too large or misplaced                                             | Proposed split                                                                                | Safe migration strategy                                                   | Test/proof required                      |
+| ---- | ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------- |
+| 1    | `DomainSimulationAdapter*.cs`              | Presentation bridge for world, tick, read models, commands, combat, save, dialog, fate, worldgen. | Partial split reduced LOC but not responsibility count.                | Tick bridge, read-model projector, command router, dialog adapter, fate adapter, save bridge. | Characterize public adapter behaviour, extract one responsibility per PR. | EditMode adapter tests and scene smoke.  |
+| 2    | `EmberWorldHost.cs`                        | Scene composition, locators, input, UI binding, tick lifecycle.                                   | Runtime god host.                                                      | Composition root, lifecycle host, input binder, UI binder.                                    | Extract non-MonoBehaviour helpers first.                                  | Boot/gameplay scene smoke.               |
+| 3    | `JsonSliceSaveService.cs`                  | Save bridge plus process stores.                                                                  | Presentation owns authoritative process state.                         | Pure save service, process-state owner, mapping adapter.                                      | Add save roundtrip tests before moving state.                             | Process/farming save-load proof.         |
+| 4    | `EmberSaveService.cs`                      | Save hotkeys, file repo, PlayerPrefs compatibility, scene restore.                                | UI/runtime/persistence mixed.                                          | Save controller, save repository adapter, scene restore service, status presenter.            | Characterize current behaviour first.                                     | Save/load/menu tests.                    |
+| 5    | `WorldSaveData.cs`                         | Entire save DTO tree.                                                                             | Too broad; legacy fields can expand.                                   | DTO files/modules by subsystem.                                                               | File split only first, no field rename.                                   | Golden JSON compatibility.               |
+| 6    | `WorldSaveMapper*.cs`                      | World save mapping across subsystems.                                                             | Mapper split exists but remains central migration risk.                | Sub-mappers for actors/items/process/worldgen/dialog/magic.                                   | Golden old/new save tests.                                                | Roundtrip and migration tests.           |
+| 7    | `CharacterCreationController.cs`           | Wizard state, generation intent, validation, transition.                                          | Character creation is product-critical but overcoupled.                | State machine, presenter, generation coordinator, transition service.                         | Preserve serialized scene refs; extract pure state first.                 | Character creation PlayMode/screenshots. |
+| 8    | `CharacterCreationController.Rendering.cs` | Procedural creation UI rendering.                                                                 | Rendering details dominate controller partial.                         | View renderer, style helpers, portrait/progress widgets.                                      | No behaviour change extraction.                                           | Screenshot comparison.                   |
+| 9    | `EmberHud.cs`                              | Procedural HUD/action bar/message/status UI.                                                      | CRPG UI needs proof; file is too large.                                | Bars, action bar, message log, status/clock presenters.                                       | Wait for PRD source map, then split.                                      | Scene screenshots.                       |
+| 10   | `DialogBoxPanel.cs`                        | Dialog UI, topic list, input.                                                                     | Dialog is core Ember interface; too much modal behaviour in one panel. | Dialog view, topic list component, input adapter.                                             | Add interaction tests first.                                              | Tavern and all-scene dialog proof.       |
+| 11   | `EmberMainMenuUI.cs`                       | Main menu UI, continue/load, new game path.                                                       | Menu still touches legacy PlayerPrefs load path.                       | Menu presenter, save-slot presenter, new-game coordinator.                                    | Add menu save tests.                                                      | Continue/load proof.                     |
+| 12   | `LoadingScreenController.cs`               | Loading state/progress/generation UI.                                                             | Loading/generation/progress policy mixed.                              | Loading state machine, progress view, generation coordinator.                                 | Preserve scene flow; add tests.                                           | New Game loading proof.                  |
+| 13   | `LlmClients.cs`                            | Local/cloud LLM provider config and transport.                                                    | Too much provider infrastructure in one file.                          | Config, local provider, cloud provider, HTTP transport, parser.                               | Add fake provider tests first.                                            | No-network default tests.                |
+| 14   | `NativeLlmClient.cs`                       | LLamaSharp native client, model download/readiness.                                               | Provider readiness and downloader are high-risk.                       | Model validator, downloader, native runtime client.                                           | Add pointer/hash tests before changing load.                              | Real LFS model runtime proof.            |
+| 15   | `ModelBootstrap.cs`                        | Model verification/download/provider setup.                                                       | Startup model policy mixed with provider construction.                 | Model locator, verifier, downloader, provider factory.                                        | Normalize manifest/hashes first.                                          | Manifest and startup tests.              |
+| 16   | `OnnxAssetForge.cs`                        | ONNX diffusion provider and fallback.                                                             | AI provider implementation in Simulation namespace.                    | Provider impl, fallback generator, provenance reporter.                                       | Add source/fallback provenance tests.                                     | Generated asset proof.                   |
+| 17   | `ComfyUiAssetForge.cs`                     | Network forge provider.                                                                           | Blocking network provider in Simulation area.                          | Infrastructure provider with async availability.                                              | Keep opt-in; fake endpoint tests.                                         | Default no-network proof.                |
+| 18   | `WorldgenService*.cs`                      | Procedural world generation phases.                                                               | Core to Ember; projection gap remains.                                 | Phases, validators, projection to actors/scenes.                                              | Add same-seed digest.                                                     | Deterministic worldgen proof.            |
+| 19   | `JobAssignmentSystem*.cs`                  | Job discovery/assignment/tick logic.                                                              | Important but not clearly composed into main tick.                     | Discovery, scoring, reservation, tick integration.                                            | Move state ownership first.                                               | Job tick/save proof.                     |
+| 20   | `UiToolkitPanel*.cs`                       | UI Toolkit backend frames/panels.                                                                 | Backend code grows into UI god renderer.                               | Per-screen renderers/templates.                                                               | Extract one panel at a time.                                              | UI screenshot proof.                     |
 
 ### 7. Unity-specific fix plan
 
@@ -599,7 +484,7 @@ No current non-test source file above 800 LOC in this upload. Earlier 800+ LOC s
 #### Docs to archive
 
 * `docs/AUDIT_COUNTER.md` — overclaims all defects closed.
-* `docs/Claude_audit.md` — stale audit snapshot.
+* `docs/Codex_audit.md` — stale audit snapshot.
 * `docs/AUDIT_INDEPENDENT_2026-05-30.md` — useful but partially stale; archive as historical audit input.
 * Old proof docs under `docs/proofs/**` unless each is labelled reproducible with source-only or LFS-resolved runtime assets.
 * Old roadmap sections mentioning Qwen3/Copilot fallback or old save/PlayerPrefs-only state.
@@ -644,7 +529,7 @@ No current non-test source file above 800 LOC in this upload. Earlier 800+ LOC s
   * living-world tick composition gaps,
   * save/menu PlayerPrefs compatibility debt.
 * Canonical doc links.
-* What Claude must not touch.
+* What Codex must not touch.
 * Exact validation commands.
 * Last updated date and evidence basis.
 
@@ -797,7 +682,7 @@ Required proof:
 * LFS/generated art cache does not affect authoritative world digest unless explicitly part of seed contract.
 * Wall-clock time, HTTP response timing, Unity visual randomness, and LLM flavour text are excluded from authoritative sim state.
 
-### 10. What Claude should NOT do
+### 10. What Codex should NOT do
 
 * Do not rewrite the whole project.
 * Do not add gameplay features before cleanup/proof.
@@ -855,34 +740,3 @@ Required proof:
 28. Move forge provider implementations out of Simulation or clearly isolate them from deterministic sim.
 29. Archive stale audit/proof docs and label remaining proof docs by reproducibility mode.
 30. Only then allow new Ember gameplay feature work.
-
-
-
-
-## §6 — DECIDED / WON'T-DO (record here with reason)
-- **SOUL-01/03/04 → DEFERRED as a FEATURE EPIC (not a remediation wiring), with spec.** On inspection
-  the dormant systems can't be "ticked" because the world-state they operate on was never plumbed into
-  the live `SliceWorldState`: `PlantGrowthSystem.AdvanceOneDay` needs a `ComponentStore<PlantComponent>`
-  + `PlantSpeciesDef` + farm plots (absent); `JobAssignmentSystem.TryAssignNext` needs a `JobBoard` +
-  `WorksiteStore` (absent); `PriceUpdateSystem.Recompute` is per-item (needs an item/threshold/delta
-  config + stockpile iteration); `FactionReputationSystem.ApplyDelta` is event-driven, not a tick.
-  Wiring them REQUIRES first adding that state to `SliceWorldState`, seeding it, ticking it, and
-  rendering it — a multi-step living-world feature. The guardrail forbids a visual-only hack, so this is
-  honestly deferred to a dedicated feature effort rather than fake-completed. SOUL-02 (the "systems
-  pretend to exist" finding) is the same root cause. Marked `[~]`; needs a feature epic + user go-ahead.
-  - **UPDATE (user gave go-ahead):** detailed implementation PRD authored → **`docs/PRD_living_world_soul_v1.md`**.
-    Verified the gap is NARROWER than first feared — `WorldState` already carries Prices/Stockpiles/Caravans/
-    Factions; only **Plants/Soils/Jobs/Worksites** are missing from the world root (carried by the save bridge,
-    never ticked). PRD specifies: add those 4 stores + CopyFrom; re-home the save mapping; seed worksites/jobs in
-    HydrateSites; wire PlantGrowth/JobAssignment/PriceUpdate into WorldTickComposer's daily/hourly blocks; add a
-    ScheduleSystem (SOUL-03); render worldgen NPCs or document vignettes (SOUL-04); acceptance =
-    headless `WorldLivesOverNTicksTests`. **Implementation pending a fresh session** (this session's context is
-    now too large to spawn the implementation sub-agent — see §1 note).
-
-## §7 — GUARDRAILS (do NOT)
-- Don't rewrite the project; don't "fix" by adding another manager/helper/god class.
-- Don't make the dormant validator pass cosmetically (DET-03) — wire the real gate.
-- Don't replace dormant simulation systems with visual-only hacks (SOUL-01) — wire the real systems.
-- Don't touch the deterministic Domain/Sim RNG/worldgen/tick MATH, `EmberForgeFactory`, or the `EmberInput` facade body (only the INP-01 namespace).
-- Don't delete docs/PRDs before a ref-scan; don't rename MonoBehaviours without a scene/prefab GUID scan; don't `git add -A` before HYG-02.
-- Don't let the LLM mutate world state except via validated tool calls.

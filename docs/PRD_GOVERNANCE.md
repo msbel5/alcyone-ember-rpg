@@ -17,18 +17,18 @@
 | Location | Role | Status |
 |---|---|---|
 | `docs/prds/` | **Active Unity PRDs** you build against (+ a few audit/mission notes) | CANONICAL for implementation |
-| `Reference/PRDs/` (97 files) | **Godot-era design-intent reference** — referenced by `docs/EMBER_GOAL.md` and code (`EmberHud.cs`) | CANONICAL reference location |
-| `docs/reference/prd/` (97 files) | Near-exact **mirror** of `Reference/PRDs/` (96 of 97 files identical; only `PRD_STANDARD.md` diverges) | DEPRECATED mirror — do not add new content; slated for physical reconciliation (tracked under EMB-050) |
+| `Reference/PRDs/` (97 files) | **Godot-era design-intent reference** — referenced by `docs/EMBER_VISION_BIBLE.md` and code (`EmberHud.cs`) | CANONICAL reference location |
+| `docs/reference/prd/` (removed) | Was a near-exact **mirror** of `Reference/PRDs/`; reconciled away under EMB-050 | REMOVED — use `Reference/PRDs/` and the index at `docs/reference/PRD_IMPLEMENTATION_MATRIX.md` |
 
 ## The single matrix
 - Canonical: **`docs/reference/PRD_IMPLEMENTATION_MATRIX.md`** (115 lines, the real index).
-- The two 33-line `PRD_IMPLEMENTATION_MATRIX.md` stubs under `Reference/PRDs/` and
-  `docs/reference/prd/` are partial — treat them as pointers to the canonical matrix above.
+- The 33-line `PRD_IMPLEMENTATION_MATRIX.md` stub under `Reference/PRDs/` is partial —
+  treat it as a pointer to the canonical matrix above.
 
 ## Rules for any agent
 - A frontend task obeys the matching `Reference/PRDs/PRD_frontend_*_v1.md` design intent, rendered
   in Unity per `docs/prds/PRD_visual_architecture_3d_billboard_v1.md`.
-- Do **not** author new PRDs under `docs/reference/prd/` (the deprecated mirror).
+- Do **not** recreate the removed `docs/reference/prd/` mirror; author reference PRDs under `Reference/PRDs/`.
 - When a `Reference/PRDs/` PRD is implemented in Unity, record it in the canonical matrix with an
   `active / reference / deprecated` tag rather than forking another copy.
 - Physical consolidation (removing the deprecated mirror, archiving stale reports/sprint docs) is a
