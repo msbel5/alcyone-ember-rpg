@@ -20,10 +20,10 @@
     <Compile Include="../../../Assets/Scripts/Simulation/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Infrastructure/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Data/**/*.cs" />
-    <Compile Include="../../../Assets/Scripts/Presentation/InventoryEquipmentFormatter.cs" />
-    <Compile Include="../../../Assets/Scripts/Presentation/SliceAtmosphereCueSet.cs" />
-    <Compile Include="../../../Assets/Scripts/Presentation/SliceAtmosphereSelector.cs" />
-    <Compile Include="../../../Assets/Scripts/Presentation/SliceHudFormatter.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/InventoryEquipmentFormatter.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/SliceAtmosphereCueSet.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/SliceAtmosphereSelector.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/SliceHudFormatter.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Visual/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Adapters/CharacterCreationViewModel.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/ComfyUiAssetForge.cs" />

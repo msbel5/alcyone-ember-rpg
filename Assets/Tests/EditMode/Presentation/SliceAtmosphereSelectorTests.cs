@@ -1,5 +1,5 @@
 using System.Linq;
-using EmberCrpg.Presentation.Slice;
+using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 

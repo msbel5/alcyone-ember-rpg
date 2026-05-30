@@ -8,7 +8,7 @@ using EmberCrpg.Simulation.Inventory;
 // Inputs: current world inventory/equipment state.
 // Outputs: compact HUD and inspect-screen strings with no Unity mutation.
 // Bible reference: Sprint 4 Phase 4 player-facing inventory/equipment UI acceptance.
-namespace EmberCrpg.Presentation.Slice
+namespace EmberCrpg.Presentation.Ember.UI
 {
     /// <summary>Formats inventory and equipped gear for HUD and inspect commands.</summary>
     public static class InventoryEquipmentFormatter

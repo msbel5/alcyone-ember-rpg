@@ -7,7 +7,7 @@ using EmberCrpg.Domain.Actors;
 // Inputs: world snapshot, save path, last status, and encounter-turn hint.
 // Outputs: presentation-only text with no gameplay mutation.
 // Bible reference: PRD Sprint 1 FR-08, Sprint 2 FR-01.
-namespace EmberCrpg.Presentation.Slice
+namespace EmberCrpg.Presentation.Ember.UI
 {
     /// <summary>Builds the compact debug HUD used by the runtime slice shell.</summary>
     public static class SliceHudFormatter

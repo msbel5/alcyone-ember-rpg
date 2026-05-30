@@ -1,5 +1,5 @@
 using EmberCrpg.Domain.Inventory;
-using EmberCrpg.Presentation.Slice;
+using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Simulation.Inventory;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
