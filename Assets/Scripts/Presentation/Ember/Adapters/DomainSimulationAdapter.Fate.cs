@@ -74,11 +74,21 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 _pendingFate = string.IsNullOrEmpty(response.Text) ? $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)" : response.Text.Trim();
 
-                // Synthesize the consult_fate tool trace. (EMB-008: routing this through the tool
-                // validator/router instead of a direct synth is a separate follow-up.)
+                // EMB-008: route the consult_fate tool call through the governed Simulation tool-
+                // authority layer (ToolRegistry + ToolCallValidator) instead of hand-synthesising an
+                // accepted trace. Even this read-only/benign tool is gated, so the trace is produced
+                // ONLY via the validated path — an unregistered tool, a wrong surface, or a missing
+                // required arg yields a rejected verdict that is recorded + logged, never blind-trusted.
+                var registry = new EmberCrpg.Simulation.AiDm.ToolRegistry();
+                registry.Register(tools[0]);
                 var toolReq = new ToolCallRequest(new ToolId("consult_fate"), ToolSurfaceKind.Dm, new Dictionary<string, string> { { "query", "oracle_consult" } });
-                var toolRes = ToolCallResult.AcceptedWith(bucket.Code);
+                var validation = new EmberCrpg.Simulation.AiDm.ToolCallValidator().Validate(toolReq, registry);
+                // On accept, surface the actual oracle outcome as the trace payload; on reject, keep the
+                // validator's rejection result (and reason) so the trace reflects the refusal.
+                var toolRes = validation.Accepted ? ToolCallResult.AcceptedWith(bucket.Code) : validation;
                 _world.ToolCallTrace.Add(new ToolCallTraceRecord(_world.Time, default, toolReq, toolRes));
+                if (!validation.Accepted)
+                    LogCombat($"[fate] tool call rejected: {validation.RejectionReason}");
             }
             else
             {
