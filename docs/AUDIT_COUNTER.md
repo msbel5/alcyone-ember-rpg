@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 55/60 addressed (51 fixed + 2 decided + 2 deferred) · 5 TODO feature-builds (§8 plans) · build green · LLM PROVEN**
+**Progress: 56/60 addressed (52 fixed + 2 decided + 2 deferred) · 4 TODO feature-builds (§8 plans) · build green · LLM PROVEN**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -83,7 +83,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-015** · input · Editor:yes — DONE. Added `EmberInput` facade (`Assets/Scripts/Presentation/Ember/Input/EmberInput.cs`): semantic actions (Move/Look/Sprint/Interact/SaveQuick/LoadQuick/PauseDown/AttackClick/MeleeSwing/NumberKeyDown(1..9)) + thin passthroughs (KeyDown/Key/MouseDown/AxisRaw/Axis) for inspector-bound configurable keys. Migrated 11 files / 38 sites; active-runtime direct `UnityEngine.Input.` count now 0 (legacy Slice* left for EMB-057). Win64 build SUCCESS, 0 CS.
 - `[x]` **EMB-016** · UI arch · Editor:yes — `Ui.Foundation` uses UnityEngine types (not backend-neutral); `UiToolkitPanel.cs` 517. Rename boundary honestly / split.
 - `[~]` **EMB-018** · LLM blocking · Editor:yes — sync `HttpClient...GetAwaiter().GetResult()`; async job service + timeout/cancel + main-thread apply.
-- `[ ]` **EMB-019** · LLM placement · Editor:no — HTTP/native/model clients in `Simulation`; move providers to Infrastructure/Presentation, keep contracts in core.
+- `[x]` **EMB-019** · LLM placement · Editor:no — DONE. New `EmberCrpg.Infrastructure` asmdef (refs Domain+Simulation, noEngineReferences, auto-ref plugins); `git mv`'d LlmClients.cs + NativeLlmClient.cs there (HTTP + LLamaSharp impls), contracts kept in Domain.AiDm. Rewired Presentation + EditMode test asmdefs + fallback-harness glob. Namespace kept `EmberCrpg.Simulation.AiDm` (assembly boundary isolates I/O; zero consumer churn). Nothing in Simulation referenced the concretes → deterministic core now provably HTTP/native-free. Fallback 1430 PASS; Win64 build SUCCESS, 0 CS.
 - `[x]` **EMB-021** · generated-asset policy · Editor:maybe — `GeneratedAssets/**` tracked, `Assets/Generated/Core.meta` orphan; one cache root, ignore regenerated, track only seed manifests.
 - `[x]` **EMB-027** · CI coverage · Editor:CI — default EditMode-only, PlayMode/build tag-only, `lfs:false`. Add asset+pointer audit, opt-in LFS build.
 - `[x]` **EMB-030** · scene playability · Editor:yes — scene-tour checklist (spawn/camera/collision/interact/exit/HUD/dialog/save/screenshot). (== P1-C)
