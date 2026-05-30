@@ -19,6 +19,10 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class SliceSaveData
     {
+        // EMB-012: explicit save schema version. Bump SliceSaveMapper.CurrentSchemaVersion when the
+        // on-disk shape changes incompatibly and add a migration branch in ToWorld. Legacy saves
+        // written before this field existed deserialize it to 0, which ToWorld treats as the v1 baseline.
+        public int schemaVersion;
         public long totalMinutes;
         public long roomSeed;
         public long currentRoomId;

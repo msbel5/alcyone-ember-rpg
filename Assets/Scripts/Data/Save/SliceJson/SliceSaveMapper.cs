@@ -25,6 +25,11 @@ namespace EmberCrpg.Data.Save
     /// <summary>Pure mapping layer between aggregate world state and JSON DTOs.</summary>
     public static class SliceSaveMapper
     {
+        // EMB-012: current on-disk save schema version. Bump on any incompatible shape change and add
+        // a migration branch in ToWorld; SliceSaveData.schemaVersion records the version a save was
+        // written with so old saves can be detected and migrated rather than silently misread.
+        public const int CurrentSchemaVersion = 1;
+
         public static SliceSaveData ToData(SliceWorldState world)
         {
             // Codex audit (third pass A-P3): null world used to NRE inside the
@@ -34,6 +39,7 @@ namespace EmberCrpg.Data.Save
             if (world == null) throw new ArgumentNullException(nameof(world));
             return new SliceSaveData
             {
+                schemaVersion = CurrentSchemaVersion,
                 totalMinutes = (long)world.Time.TotalMinutes,
                 roomSeed = (long)world.RoomSeed,
                 currentRoomId = (long)world.CurrentRoomId,
@@ -87,6 +93,16 @@ inventory = ToInventoryData(world.PlayerInventory),
         public static SliceWorldState ToWorld(SliceSaveData data, SliceWorldState seedWorld)
         {
             var world = seedWorld ?? throw new ArgumentNullException(nameof(seedWorld));
+
+            // EMB-012: detect schema drift. A save written by a NEWER build (version above what this
+            // build understands) cannot be safely mapped field-by-field, so refuse it explicitly
+            // rather than silently loading a half-mapped world. Legacy saves (schemaVersion 0, written
+            // before the field existed) are treated as the v1 baseline and load normally.
+            if (data.schemaVersion > CurrentSchemaVersion)
+                throw new NotSupportedException(
+                    "Save schema v" + data.schemaVersion + " is newer than this build supports (v" +
+                    CurrentSchemaVersion + "). Update the game to load this save.");
+
             world.Time = new EmberCrpg.Domain.Core.GameTime(data.totalMinutes);
             if (data.dungeonRooms != null && data.dungeonRooms.Length > 0)
                 world.Dungeon = DungeonSaveMapper.ToLayout((int)data.roomSeed, (int)data.dungeonStartRoomId, data.dungeonRooms, data.dungeonDoors, data.dungeonSpawns);
