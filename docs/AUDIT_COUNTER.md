@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 18 / 60 defects done (+1 deferred-with-rationale) · 0 / 11 packages · 9 / 25 final-checklist items**
+**Progress: 25 / 60 defects done (+1 deferred) · 0 / 11 packages · 11 / 25 final-checklist items**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -84,7 +84,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-016** · UI arch · Editor:yes — `Ui.Foundation` uses UnityEngine types (not backend-neutral); `UiToolkitPanel.cs` 517. Rename boundary honestly / split.
 - `[ ]` **EMB-018** · LLM blocking · Editor:yes — sync `HttpClient...GetAwaiter().GetResult()`; async job service + timeout/cancel + main-thread apply.
 - `[ ]` **EMB-019** · LLM placement · Editor:no — HTTP/native/model clients in `Simulation`; move providers to Infrastructure/Presentation, keep contracts in core.
-- `[ ]` **EMB-021** · generated-asset policy · Editor:maybe — `GeneratedAssets/**` tracked, `Assets/Generated/Core.meta` orphan; one cache root, ignore regenerated, track only seed manifests.
+- `[x]` **EMB-021** · generated-asset policy · Editor:maybe — `GeneratedAssets/**` tracked, `Assets/Generated/Core.meta` orphan; one cache root, ignore regenerated, track only seed manifests.
 - `[x]` **EMB-027** · CI coverage · Editor:CI — default EditMode-only, PlayMode/build tag-only, `lfs:false`. Add asset+pointer audit, opt-in LFS build.
 - `[ ]` **EMB-030** · scene playability · Editor:yes — scene-tour checklist (spawn/camera/collision/interact/exit/HUD/dialog/save/screenshot). (== P1-C)
 - `[ ]` **EMB-033** · char-creation complexity · Editor:yes — controller 707 + rendering 571 + portrait LLM. Split state/view/gen/transition.
@@ -98,14 +98,14 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-017** · global state · Editor:yes — static locators (`EmberDomainAdapterLocator`/`UiSurfaceLocator`/`ForgeLocator`) + pending-load. Scene-scoped composition root + reset hooks.
 - `[ ]` **EMB-020** · dialogue dup · Editor:yes — `AskAboutService`/`AskDmService`/`NpcDialogueService`/adapter all do shell dialogue. One conversation-state model.
 - `[ ]` **EMB-022** · repo hygiene · Editor:no — `Reports/**` 102 files/~11MB. Keep latest curated → `docs/proofs/`, archive rest.
-- `[ ]` **EMB-023** · docs-in-Assets · Editor:pold-yes — `Assets/Plans/`, `Assets/pold/NavMesh.asset`. Move planning to `docs/archive`, classify `pold`.
+- `[x]` **EMB-023** · docs-in-Assets · Editor:pold-yes — `Assets/Plans/`, `Assets/pold/NavMesh.asset`. Move planning to `docs/archive`, classify `pold`.
 - `[ ]` **EMB-024** · sample assets · Editor:yes — TMP Examples 284 files/~5.7MB. Remove after ref scan.
 - `[ ]` **EMB-025** · Resources usage · Editor:yes — fonts/theme via `Resources` + missing metas. Explicit serialized refs after meta fix.
 - `[ ]` **EMB-026** · package hygiene · Editor:yes-final — manifest test-framework `1.4.5` vs lock `1.6.0`; stale `.gitignore` ai.assistant. Normalize.
 - `[x]` **EMB-028** · validation limits · Editor:yes-unity-mode — fallback harness compiles selected files only; rename "partial", add full-Unity target.
 - `[ ]` **EMB-029** · test bloat · Editor:no — magic shield tests 300-500+ lines overfit. Consolidate, add product-facing tests.
 - `[ ]` **EMB-031** · scene org · Editor:yes — root `CombatPlayground`/`Sprint4Foundation` outside build + dup GUID. Archive/delete after EMB-001.
-- `[ ]` **EMB-032** · prefab policy · Editor:yes — no `Assets/Prefabs`; scenes hand-authored. Audit before any prefab conversion (no blind mass-convert).
+- `[x]` **EMB-032** · prefab policy · Editor:yes — no `Assets/Prefabs`; scenes hand-authored. Audit before any prefab conversion (no blind mass-convert).
 - `[ ]` **EMB-034** · worldgen complexity · Editor:no — `WorldgenService.cs` 649. Split regions/settlements/factions/NPCs/history/validation w/ same-seed digest test.
 - `[ ]` **EMB-035** · job system complexity · Editor:no — `JobAssignmentSystem.cs` 776. Split discovery/eligibility/reservation/assignment/events.
 - `[ ]` **EMB-036** · magic/combat complexity · Editor:combat-yes — `ShieldBuffService` 529 + `...BatchTotals` 762. Simplify interfaces, keep core tests.
@@ -120,13 +120,13 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-047** · case-sensitive links · Editor:no — `DOCS/` vs real `docs/`. Normalize lowercase.
 - `[x]` **EMB-049** · old backend ref · Editor:no — `Reference/OldBackendData/**`. Add README "import/reference-only".
 - `[ ]` **EMB-050** · reports/ref sprawl · Editor:no — old sprint/audit reports in active docs root. Archive `docs/archive/YYYY-MM/`.
-- `[ ]` **EMB-051** · plugin dep hell · Editor:yes — 127 plugin files; NuGet marker missing meta; LFS DLLs. `docs/DEPENDENCIES.md` + import audit.
-- `[ ]` **EMB-053** · build-size/delivery · Editor:yes — ~14GB build w/ ONNX/cuDNN; LFS model pointers. Decide code-only+downloader vs curated-LFS.
+- `[x]` **EMB-051** · plugin dep hell · Editor:yes — 127 plugin files; NuGet marker missing meta; LFS DLLs. `docs/DEPENDENCIES.md` + import audit.
+- `[x]` **EMB-053** · build-size/delivery · Editor:yes — ~14GB build w/ ONNX/cuDNN; LFS model pointers. Decide code-only+downloader vs curated-LFS.
 - `[ ]` **EMB-054** · scene YAML static limits · Editor:yes — can't prove no missing scripts statically. Editor scene-validation menu/test.
-- `[ ]` **EMB-055** · prefab policy · Editor:yes — scene recipes vs prefabs ownership unclear. Decide policy, no blind change.
+- `[x]` **EMB-055** · prefab policy · Editor:yes — scene recipes vs prefabs ownership unclear. Decide policy, no blind change.
 - `[ ]` **EMB-056** · scene hardcoding · Editor:yes — hardcoded scene names across runtime/editor/diag. Central scene-ID registry.
 - `[ ]` **EMB-057** · Slice* legacy · Editor:yes — `SliceGameController`/`SlicePlayerRig` legacy input+file saves. Ref-scan then archive/delete.
-- `[ ]` **EMB-059** · `.claude/skills` classification · Editor:no — 65 tracked skill files. Classify dev-tooling vs product.
+- `[x]` **EMB-059** · `.claude/skills` classification · Editor:no — 65 tracked skill files. Classify dev-tooling vs product.
 - `[ ]` **EMB-060** · test/package lock mismatch · Editor:yes — manifest `1.4.5` vs lock `1.6.0`. Resolve once, commit normalized.
 
 ### Low
@@ -239,3 +239,4 @@ REMAINING = build-batch refactors (each needs its own ~12min batchmode build) + 
 NEXT SESSION: start a build-batch — do 2-3 partial-class splits, one batchmode build, commit. Then asmdef moves. Keep each change behaviour-preserving + build-verified.
 - EMB-027 → added static-audit CI job (pure bash, lfs:false, ~30s) gating the Unity EditMode job (needs:). Catches dup-GUID/untracked-meta/determinism leaks CI's EditMode-only run missed. commit 47a09e98
 - EMB-028 → run-validation fallback PASS line now labelled "[PARTIAL — pure-C# source tests only; not Unity compile/scenes/assets/meta/plugins/PlayMode]". commit 47a09e98
+- EMB-021/023/051/053/032/055/059 → repo-hygiene batch: untracked GeneratedAssets cache + gitignore; removed pold stale + Plans->docs/archive; docs/DEPENDENCIES.md + docs/REPO_HYGIENE.md (build-delivery=code+downloader, prefab=recipe-owned, .claude/skills=kept dev-tooling). static-audit PASS. commit 65759586
