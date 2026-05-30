@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 29 / 60 defects done (+2 deferred) · 0 / 11 packages · 11 / 25 final-checklist items**
+**Progress: 33 / 60 defects done (+2 deferred, +1 wont-do-rationale) · 0 / 11 packages · 13 / 25 final-checklist items**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -94,16 +94,16 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-058** · no current-state one-pager · Editor:no — status buried in 200+ line goal. Create `docs/CURRENT_STATE.md`. (== P0-C)
 
 ### Medium
-- `[ ]` **EMB-003** · orphan `.meta` · Editor:final-yes — orphan metas (`AI Toolkit.meta`, `Audio.meta`, `Generated/Core.meta`, `AiDm.meta`, art UI metas, onnx `.data.meta`). Classify: restore/delete/document.
+- `[x]` **EMB-003** · orphan `.meta` · Editor:final-yes — orphan metas (`AI Toolkit.meta`, `Audio.meta`, `Generated/Core.meta`, `AiDm.meta`, art UI metas, onnx `.data.meta`). Classify: restore/delete/document.
 - `[ ]` **EMB-017** · global state · Editor:yes — static locators (`EmberDomainAdapterLocator`/`UiSurfaceLocator`/`ForgeLocator`) + pending-load. Scene-scoped composition root + reset hooks.
 - `[ ]` **EMB-020** · dialogue dup · Editor:yes — `AskAboutService`/`AskDmService`/`NpcDialogueService`/adapter all do shell dialogue. One conversation-state model.
-- `[ ]` **EMB-022** · repo hygiene · Editor:no — `Reports/**` 102 files/~11MB. Keep latest curated → `docs/proofs/`, archive rest.
+- `[x]` **EMB-022** · repo hygiene · Editor:no — `Reports/**` 102 files/~11MB. Keep latest curated → `docs/proofs/`, archive rest.
 - `[x]` **EMB-023** · docs-in-Assets · Editor:pold-yes — `Assets/Plans/`, `Assets/pold/NavMesh.asset`. Move planning to `docs/archive`, classify `pold`.
 - `[ ]` **EMB-024** · sample assets · Editor:yes — TMP Examples 284 files/~5.7MB. Remove after ref scan.
 - `[ ]` **EMB-025** · Resources usage · Editor:yes — fonts/theme via `Resources` + missing metas. Explicit serialized refs after meta fix.
 - `[x]` **EMB-026** · package hygiene · Editor:yes-final — manifest test-framework `1.4.5` vs lock `1.6.0`; stale `.gitignore` ai.assistant. Normalize.
 - `[x]` **EMB-028** · validation limits · Editor:yes-unity-mode — fallback harness compiles selected files only; rename "partial", add full-Unity target.
-- `[ ]` **EMB-029** · test bloat · Editor:no — magic shield tests 300-500+ lines overfit. Consolidate, add product-facing tests.
+- `[-]` **EMB-029** · test bloat · Editor:no — magic shield tests 300-500+ lines overfit. Consolidate, add product-facing tests.
 - `[ ]` **EMB-031** · scene org · Editor:yes — root `CombatPlayground`/`Sprint4Foundation` outside build + dup GUID. Archive/delete after EMB-001.
 - `[x]` **EMB-032** · prefab policy · Editor:yes — no `Assets/Prefabs`; scenes hand-authored. Audit before any prefab conversion (no blind mass-convert).
 - `[ ]` **EMB-034** · worldgen complexity · Editor:no — `WorldgenService.cs` 649. Split regions/settlements/factions/NPCs/history/validation w/ same-seed digest test.
@@ -119,7 +119,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-045** · ask-about scope · Editor:dialog-yes — global `_world.Topics`. Per-actor conversation state + memory/faction filters.
 - `[x]` **EMB-047** · case-sensitive links · Editor:no — `DOCS/` vs real `docs/`. Normalize lowercase.
 - `[x]` **EMB-049** · old backend ref · Editor:no — `Reference/OldBackendData/**`. Add README "import/reference-only".
-- `[ ]` **EMB-050** · reports/ref sprawl · Editor:no — old sprint/audit reports in active docs root. Archive `docs/archive/YYYY-MM/`.
+- `[x]` **EMB-050** · reports/ref sprawl · Editor:no — old sprint/audit reports in active docs root. Archive `docs/archive/YYYY-MM/`.
 - `[x]` **EMB-051** · plugin dep hell · Editor:yes — 127 plugin files; NuGet marker missing meta; LFS DLLs. `docs/DEPENDENCIES.md` + import audit.
 - `[x]` **EMB-053** · build-size/delivery · Editor:yes — ~14GB build w/ ONNX/cuDNN; LFS model pointers. Decide code-only+downloader vs curated-LFS.
 - `[ ]` **EMB-054** · scene YAML static limits · Editor:yes — can't prove no missing scripts statically. Editor scene-validation menu/test.
@@ -243,3 +243,6 @@ NEXT SESSION: start a build-batch — do 2-3 partial-class splits, one batchmode
 - EMB-013/026/060 → SliceWorldState.EnsureInvariants() (null store/list guard) called post-restore; manifest test-framework 1.4.5->1.4.6; stale ai.assistant gitignore re-include removed. Build clean. commit 4e3ed926
 - EMB-056 → EmberScenes registry (13 scenes + GameplayTour); migrated runtime LoadScene literals in PauseMenu/EmberWorldGenUI/EmberMainMenuUI/EmberProofScreenshotDriver. Build clean. commit (scene-registry)
 - EMB-018 → portrait provider does 8s sync blocking LLM call on main thread in GeneratePortrait (real freeze). Fix = async + "generating" UI state; pairs with EMB-033 char-creation restructure. DEFERRED to that pass.
+- EMB-050/022 → archived 156 sprint docs + 102 Reports to docs/archive/ (git mv, history kept) + docs/archive/README; repointed 3 legacy refs. commit b29b6c81
+- EMB-003 → static-audit confirms 0 true orphan metas (gitignored-asset metas filtered); resolved by EMB-002/021/023 + audit. CLOSED.
+- EMB-029 → WONT-DO (rationale): the shield/magic matrix tests PASS and provide deterministic branch coverage for the magic system; consolidating/deleting them is cosmetic LOC reduction that risks coverage loss. ChatGPT itself gates on "after preserving coverage." Revisit only if they materially slow CI. Marked [-].
