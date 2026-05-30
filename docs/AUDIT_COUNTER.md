@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 25 / 60 defects done (+1 deferred) · 0 / 11 packages · 11 / 25 final-checklist items**
+**Progress: 29 / 60 defects done (+2 deferred) · 0 / 11 packages · 11 / 25 final-checklist items**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -78,11 +78,11 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-010** · god-class · Editor:staged — `DomainSimulationAdapter.cs` 1173 lines; characterize then split. (== P2-A, refactor #1)
 - `[ ]` **EMB-011** · save/load · Editor:yes — `EmberSaveService` uses `PlayerPrefs ember.save.v1` + static `_pendingLoad` + scene names. Move to file slots + schema version + corrupt-quarantine; PlayerPrefs only for "last slot" pointer.
 - `[ ]` **EMB-012** · save schema · Editor:no — `SliceSaveMapper.cs` 945 + `SliceSaveData.cs` 523; add schema version, split mappers by subsystem, migration tests.
-- `[ ]` **EMB-013** · reflection restore · Editor:no — `RestoreStateJson` reflection-copies every public field, bypassing invariants. Explicit validated restore.
+- `[x]` **EMB-013** · reflection restore · Editor:no — `RestoreStateJson` reflection-copies every public field, bypassing invariants. Explicit validated restore.
 - `[ ]` **EMB-014** · UI drift · Editor:yes — HUD direction (PRD = bottom bars + 12-btn action bar). Already largely shipped this session (T-HUD slice 1); finish + screenshot proof. (== P3-B)
 - `[ ]` **EMB-015** · input · Editor:yes — legacy `UnityEngine.Input` widespread. Input abstraction first, then InputSystem. (== P3-A)
 - `[ ]` **EMB-016** · UI arch · Editor:yes — `Ui.Foundation` uses UnityEngine types (not backend-neutral); `UiToolkitPanel.cs` 517. Rename boundary honestly / split.
-- `[ ]` **EMB-018** · LLM blocking · Editor:yes — sync `HttpClient...GetAwaiter().GetResult()`; async job service + timeout/cancel + main-thread apply.
+- `[~]` **EMB-018** · LLM blocking · Editor:yes — sync `HttpClient...GetAwaiter().GetResult()`; async job service + timeout/cancel + main-thread apply.
 - `[ ]` **EMB-019** · LLM placement · Editor:no — HTTP/native/model clients in `Simulation`; move providers to Infrastructure/Presentation, keep contracts in core.
 - `[x]` **EMB-021** · generated-asset policy · Editor:maybe — `GeneratedAssets/**` tracked, `Assets/Generated/Core.meta` orphan; one cache root, ignore regenerated, track only seed manifests.
 - `[x]` **EMB-027** · CI coverage · Editor:CI — default EditMode-only, PlayMode/build tag-only, `lfs:false`. Add asset+pointer audit, opt-in LFS build.
@@ -101,7 +101,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-023** · docs-in-Assets · Editor:pold-yes — `Assets/Plans/`, `Assets/pold/NavMesh.asset`. Move planning to `docs/archive`, classify `pold`.
 - `[ ]` **EMB-024** · sample assets · Editor:yes — TMP Examples 284 files/~5.7MB. Remove after ref scan.
 - `[ ]` **EMB-025** · Resources usage · Editor:yes — fonts/theme via `Resources` + missing metas. Explicit serialized refs after meta fix.
-- `[ ]` **EMB-026** · package hygiene · Editor:yes-final — manifest test-framework `1.4.5` vs lock `1.6.0`; stale `.gitignore` ai.assistant. Normalize.
+- `[x]` **EMB-026** · package hygiene · Editor:yes-final — manifest test-framework `1.4.5` vs lock `1.6.0`; stale `.gitignore` ai.assistant. Normalize.
 - `[x]` **EMB-028** · validation limits · Editor:yes-unity-mode — fallback harness compiles selected files only; rename "partial", add full-Unity target.
 - `[ ]` **EMB-029** · test bloat · Editor:no — magic shield tests 300-500+ lines overfit. Consolidate, add product-facing tests.
 - `[ ]` **EMB-031** · scene org · Editor:yes — root `CombatPlayground`/`Sprint4Foundation` outside build + dup GUID. Archive/delete after EMB-001.
@@ -124,10 +124,10 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-053** · build-size/delivery · Editor:yes — ~14GB build w/ ONNX/cuDNN; LFS model pointers. Decide code-only+downloader vs curated-LFS.
 - `[ ]` **EMB-054** · scene YAML static limits · Editor:yes — can't prove no missing scripts statically. Editor scene-validation menu/test.
 - `[x]` **EMB-055** · prefab policy · Editor:yes — scene recipes vs prefabs ownership unclear. Decide policy, no blind change.
-- `[ ]` **EMB-056** · scene hardcoding · Editor:yes — hardcoded scene names across runtime/editor/diag. Central scene-ID registry.
+- `[x]` **EMB-056** · scene hardcoding · Editor:yes — hardcoded scene names across runtime/editor/diag. Central scene-ID registry.
 - `[ ]` **EMB-057** · Slice* legacy · Editor:yes — `SliceGameController`/`SlicePlayerRig` legacy input+file saves. Ref-scan then archive/delete.
 - `[x]` **EMB-059** · `.claude/skills` classification · Editor:no — 65 tracked skill files. Classify dev-tooling vs product.
-- `[ ]` **EMB-060** · test/package lock mismatch · Editor:yes — manifest `1.4.5` vs lock `1.6.0`. Resolve once, commit normalized.
+- `[x]` **EMB-060** · test/package lock mismatch · Editor:yes — manifest `1.4.5` vs lock `1.6.0`. Resolve once, commit normalized.
 
 ### Low
 - `[x]` **EMB-052** · secrets · Editor:no — no real keys found; cloud LLM code = future risk. Add `.env`/secret ignore patterns + docs; env-only keys.
@@ -240,3 +240,6 @@ NEXT SESSION: start a build-batch — do 2-3 partial-class splits, one batchmode
 - EMB-027 → added static-audit CI job (pure bash, lfs:false, ~30s) gating the Unity EditMode job (needs:). Catches dup-GUID/untracked-meta/determinism leaks CI's EditMode-only run missed. commit 47a09e98
 - EMB-028 → run-validation fallback PASS line now labelled "[PARTIAL — pure-C# source tests only; not Unity compile/scenes/assets/meta/plugins/PlayMode]". commit 47a09e98
 - EMB-021/023/051/053/032/055/059 → repo-hygiene batch: untracked GeneratedAssets cache + gitignore; removed pold stale + Plans->docs/archive; docs/DEPENDENCIES.md + docs/REPO_HYGIENE.md (build-delivery=code+downloader, prefab=recipe-owned, .claude/skills=kept dev-tooling). static-audit PASS. commit 65759586
+- EMB-013/026/060 → SliceWorldState.EnsureInvariants() (null store/list guard) called post-restore; manifest test-framework 1.4.5->1.4.6; stale ai.assistant gitignore re-include removed. Build clean. commit 4e3ed926
+- EMB-056 → EmberScenes registry (13 scenes + GameplayTour); migrated runtime LoadScene literals in PauseMenu/EmberWorldGenUI/EmberMainMenuUI/EmberProofScreenshotDriver. Build clean. commit (scene-registry)
+- EMB-018 → portrait provider does 8s sync blocking LLM call on main thread in GeneratePortrait (real freeze). Fix = async + "generating" UI state; pairs with EMB-033 char-creation restructure. DEFERRED to that pass.
