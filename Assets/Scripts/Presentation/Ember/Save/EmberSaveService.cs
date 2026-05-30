@@ -90,19 +90,37 @@ namespace EmberCrpg.Presentation.Ember.Save
             };
 
             var jsonStr = JsonUtility.ToJson(data);
-            PlayerPrefs.SetString(SaveKey, jsonStr);   // legacy blob (back-compat)
-            // EMB-011: write the durable file slot + remember it as the last slot.
+            // DET-05: write the durable file slot FIRST; only mirror to the legacy PlayerPrefs blob +
+            // last-slot pointer AFTER it succeeds. Previously the blob was written unconditionally and
+            // the file slot in a swallowed try/catch — so a file-write failure left the NEW save in
+            // PlayerPrefs but the OLD save in the file slot, and Load (which prefers the file slot)
+            // silently returned stale state. Now file and blob update together or neither does, so the
+            // two stores can never diverge.
+            bool durableOk;
             try
             {
-                _repo?.Save(DefaultSlot, jsonStr);
-                PlayerPrefs.SetInt(LastSlotKey, DefaultSlot);
+                if (_repo == null) throw new System.InvalidOperationException("no save repository");
+                _repo.Save(DefaultSlot, jsonStr);
+                durableOk = true;
             }
-            catch (System.Exception) { /* file write failed; the PlayerPrefs blob above still has it */ }
-            PlayerPrefs.Save();
-            if (domainAvailable && domainFailed)
-                ShowStatus("Save partial: domain export failed.");
+            catch (System.Exception)
+            {
+                durableOk = false;
+            }
+
+            if (durableOk)
+            {
+                PlayerPrefs.SetInt(LastSlotKey, DefaultSlot);
+                PlayerPrefs.SetString(SaveKey, jsonStr); // legacy mirror, consistent with the file slot
+                PlayerPrefs.Save();
+                ShowStatus(domainAvailable && domainFailed ? "Save partial: domain export failed." : "Saved.");
+            }
             else
-                ShowStatus("Saved.");
+            {
+                // Durable write failed — keep the previous consistent (file + blob) save untouched
+                // and tell the player, rather than silently persisting a divergent blob.
+                ShowStatus("Save failed: could not write save slot.");
+            }
         }
 
         public void Load()
