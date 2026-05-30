@@ -5,6 +5,7 @@
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Threading; // EMB-018: CancellationTokenSource for bounded HTTP timeouts
 using EmberCrpg.Domain.AiDm;
 
 namespace EmberCrpg.Simulation.AiDm
@@ -84,8 +85,9 @@ namespace EmberCrpg.Simulation.AiDm
             try
             {
                 using (var probe = new HttpRequestMessage(HttpMethod.Get, _config.EndpointUrl))
+                using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5))) // EMB-018: probe must not hang
                 {
-                    var resp = _http.SendAsync(probe).GetAwaiter().GetResult();
+                    var resp = _http.SendAsync(probe, timeout.Token).GetAwaiter().GetResult();
                     // Ollama responds 200 OK on GET to /api/generate even
                     // without a model selected; any 2xx-3xx is "service up".
                     return (int)resp.StatusCode >= 200 && (int)resp.StatusCode < 400;
@@ -129,6 +131,9 @@ namespace EmberCrpg.Simulation.AiDm
 
     internal static class LlmHttpClientCore
     {
+        // EMB-018: hard ceiling on the sync-over-async request so a hung endpoint can't pin the thread.
+        private const int HttpTimeoutSeconds = 30;
+
         public static LlmResponse CompleteHttp(LlmClientConfig config, HttpClient http, LlmRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -147,11 +152,22 @@ namespace EmberCrpg.Simulation.AiDm
                 if (!string.IsNullOrWhiteSpace(config.ApiKey))
                     message.Headers.TryAddWithoutValidation("Authorization", "Bearer " + config.ApiKey);
 
-                var response = http.SendAsync(message).GetAwaiter().GetResult();
-                if (!response.IsSuccessStatusCode)
-                    return new LlmResponse(string.Empty, null, 0);
-
-                var json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                // EMB-018: bound the sync-over-async HTTP call with a timeout so a hung/slow endpoint
+                // can't block the (worker) thread indefinitely; on timeout or transport error, degrade
+                // to an empty response instead of throwing into the caller's awaited Task.Run.
+                string json;
+                try
+                {
+                    using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(HttpTimeoutSeconds)))
+                    {
+                        var response = http.SendAsync(message, timeout.Token).GetAwaiter().GetResult();
+                        if (!response.IsSuccessStatusCode)
+                            return new LlmResponse(string.Empty, null, 0);
+                        json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    }
+                }
+                catch (OperationCanceledException) { return new LlmResponse(string.Empty, null, 0); }
+                catch (HttpRequestException) { return new LlmResponse(string.Empty, null, 0); }
                 var text = ExtractStringField(json, "text") ?? ExtractStringField(json, "response") ?? string.Empty;
                 var tokens = ExtractIntField(json, "tokens_used") ?? 0;
                 // Codex audit (second pass A-P1): the HTTP path previously
