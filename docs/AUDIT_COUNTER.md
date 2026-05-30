@@ -221,3 +221,7 @@ as Unity proof · no casual package/plugin version changes.
 - Static-audit info counts (defect scope): Input. 59 (EMB-015), PlayerPrefs 8 (EMB-011), Task.Run 12 (EMB-007/018), GetResult 6 (EMB-018).
 - EMB-038/039/040 → determinism boundary documented (docs/DETERMINISM.md) + static-audit §6 HARD-FAIL guard (Domain/Data.Save free of DateTime.Now/UtcNow + UnityEngine.Random; PASS) + comments at the 3 sites. No behaviour change. commit eb6d6998
 - EMB-043/044/006 → docs/AI_STACK.md authoritative: Qwen2.5-1.5B local truth, SDXL/SD1.5/MiniLM, cloud verified default-off (ForgeBootstrap forces ComfyUi/Ollama false; CloudLlmClient test-only), capability states. commit 2484edaf
+
+### Build-batch findings (need Unity Editor CLOSED + batchmode verify)
+- EMB-009 → Simulation->Data.SliceJson comes from ONE file Process/SliceSaveRehydration.cs (using EmberCrpg.Data.Save) and is DELIBERATE — there's EmberCrpg.Simulation.asmdef.README.md defending it (prior Codex 7th-pass audit added it for save-rehydration shape-sync). ChatGPT wants it reversed. GENUINE DESIGN TENSION between two reviewers. Ember-correct resolution = introduce a persistence ABSTRACTION (interface in Domain/Sim) + move concrete SliceJson to Data/Presentation composition; non-trivial, needs build. SURFACED to user (not blind-flipped).
+- EMB-019 (LLM provider placement), EMB-012/034/035 (splits 945/649/776 LOC): large mechanical refactors, each needs a batchmode build to verify no CS errors. Queue as a focused build-batch when Editor is closed.
