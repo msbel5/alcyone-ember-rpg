@@ -49,6 +49,25 @@ namespace EmberCrpg.Editor.Ember.Build
             ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_cuda.dll", editor: false, windows64: true);
             ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_shared.dll", editor: false, windows64: true);
             ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_tensorrt.dll", editor: false, windows64: true);
+
+            // cuDNN DLLs — gitignored binaries that Unity creates STUB .meta files for on first
+            // import (just fileFormatVersion + guid, no PluginImporter platformData). Stubs let
+            // Unity bundle the .dll into the Win64 build (defaults work), but the Editor refuses
+            // to load them at Play Mode → CUDA session init fails → SdxlTurboPipeline returns
+            // "sdxl_requires_cuda" → ForgeBootstrap falls back to Sd15LcmPipeline → blurry icon
+            // generation. Configuring them here turns each stub into a proper PluginImporter
+            // (Editor + Win64 enabled, CPU x86_64, OS Windows) so the next run of the build menu
+            // self-heals the import config even if someone else stubs the .metas later.
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_adv64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_cnn64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_engines_precompiled64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_engines_runtime_compiled64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_engines_tensor_ir64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_ext64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_graph64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_heuristic64_9.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_ops64_9.dll", editor: true, windows64: true);
         }
 
         private static void ConfigureNativePlugin(string path, bool editor, bool windows64)
