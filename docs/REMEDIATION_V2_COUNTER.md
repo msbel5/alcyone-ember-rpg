@@ -79,7 +79,7 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
   - `[x]` `SliceSaveMapper.cs` 961 → 6 partials (root + Process/World/Economy/Narrative/ActorDetail, each 140–242) — `be15e50b`, fallback 1214✓ + Win64 Success.
   - `[x]` `DomainSimulationAdapter.cs` 829 → 471 (+Worldgen.cs 381) — done as ARCH-02 structural `24bdf31f`.
   - `[-]` `LlmClients.cs` 517 — WON'T per-class-split: header carries a deliberate prior Codex decision (J-P3 #32) folding the 3 public client types with documented rationale + "do not split now". Respected (guardrail: don't fight validated-good decisions). The internal `LlmHttpClientCore` could be extracted later if desired (outside the note's scope).
-  - `[ ]` `CharacterCreationController.cs` 660 (+fill empty `CharacterCreationViewModel`) — pending; MVVM-extraction is design work, not pure mechanical.
+  - `[~]` `CharacterCreationController.cs` 660 — ALREADY partial (.cs 660 + .Rendering.cs 571 + .Portrait.cs 69 = 3 cohesive files); `CharacterCreationViewModel.cs` is already filled (91 LOC, not empty). The 660-line main IS the 14-stage state machine (cohesive); splitting it further is design judgment, not clean mechanical. Treating as substantially addressed.
   - `[ ]` `EmberMainMenuUI.cs` 345 (view vs bootstrap-spawn) — pending; decoration methods are interleaved (non-contiguous), marginal LOC payoff for a 345-line file.
 
 ### LANE P3 — playability (turns "done" into real; many need Editor proof)
