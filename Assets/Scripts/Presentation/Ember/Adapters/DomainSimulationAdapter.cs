@@ -71,8 +71,26 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // ----- IEmberSimulationClock -----
         public void AdvanceTick(int tickIndex)
         {
+            DrainMainThreadApply(); // DET-02: apply queued off-thread LLM results on the main thread
             _tick = tickIndex;
             _tickComposer.Advance(_world, tickIndex);
+        }
+
+        // DET-02: post-await LLM continuations enqueue their _world / dialog-state writes here instead
+        // of mutating shared state on whatever thread the await resumes on. Relying on Unity's
+        // SynchronizationContext to marshal them back to the main thread is implicit and null in a
+        // headless run, which would reopen the EMB-007 race on _world. Draining here, at the top of the
+        // deterministic main-thread tick, guarantees those writes land on the main thread in order.
+        private readonly System.Collections.Concurrent.ConcurrentQueue<System.Action> _mainThreadApply
+            = new System.Collections.Concurrent.ConcurrentQueue<System.Action>();
+
+        private void DrainMainThreadApply()
+        {
+            while (_mainThreadApply.TryDequeue(out var apply))
+            {
+                try { apply(); }
+                catch (System.Exception) { /* a queued apply must never break the tick */ }
+            }
         }
         public int TickIndex => _tick;
 
@@ -338,9 +356,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // SynchronizationContext — previously _currentDialogLine / _isDialogThinking were
             // written from the worker thread, racing the main-thread dialog reader.
             var response = await Task.Run(() => router.Complete(request, out _));
-            if (response != null && !string.IsNullOrEmpty(response.Text))
-                _currentDialogLine = response.Text.Trim();
-            _isDialogThinking = false;
+            // DET-02: apply the result on the main-thread tick, not on the await's resumption thread.
+            _mainThreadApply.Enqueue(() =>
+            {
+                if (response != null && !string.IsNullOrEmpty(response.Text))
+                    _currentDialogLine = response.Text.Trim();
+                _isDialogThinking = false;
+            });
         }
 
         // Ninth-pass FOUNDATION worldgen: SeedWorld now runs the deterministic
@@ -792,12 +814,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 $"You are {npc.Name}, a {npc.Role} in a {worldStyle} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
                 new List<string>());
 
-            // EMB-007: blocking LLM call off-thread; shared-state mutations applied after the await
-            // on the main thread (Unity SynchronizationContext continuation), not the worker thread.
+            // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and
+            // applied on the deterministic main-thread tick (not on the await's resumption thread).
             var response = await Task.Run(() => router.Complete(request, out _));
-            if (response != null && !string.IsNullOrEmpty(response.Text))
-                _currentDialogLine = response.Text.Trim();
-            _isDialogThinking = false;
+            _mainThreadApply.Enqueue(() =>
+            {
+                if (response != null && !string.IsNullOrEmpty(response.Text))
+                    _currentDialogLine = response.Text.Trim();
+                _isDialogThinking = false;
+            });
         }
 
     }
