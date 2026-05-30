@@ -190,7 +190,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
 
             try
             {
-                var forge = BuildForge(_persistentRoot, out var onnx, out var failureReason);
+                var forge = EmberForgeFactory.BuildForge(_persistentRoot, out var onnx, out var failureReason);
                 ForgeLocator.SetAssetForge(forge);
                 if (onnx != null)
                     Log($"ModelBootstrap: asset forge rebound -> {onnx.Flavor} (cuda={onnx.UsesCuda}).");
@@ -206,126 +206,6 @@ namespace EmberCrpg.Presentation.Ember.Forge
             {
                 Log("ModelBootstrap: ApplyLocator error: " + ex.Message);
             }
-        }
-
-        private static IAssetForge BuildForge(string modelRoot, out OnnxAssetForge selectedOnnx, out string failureReason)
-        {
-            selectedOnnx = null;
-            failureReason = string.Empty;
-            bool cudaArtifacts = HasCudaRuntimeArtifacts();
-            if (cudaArtifacts) AddCudaProviderDirectoryToPath();
-
-            if (cudaArtifacts)
-            {
-                var sdxl = BuildSdxlForge(modelRoot, OnnxExecutionProviderPreference.PreferCuda);
-                string sdxlError = string.Empty;
-                bool sdxlReady = sdxl.IsAvailable() && sdxl.TryWarmup(out sdxlError);
-                if (sdxlReady)
-                {
-                    selectedOnnx = sdxl;
-                    return sdxl;
-                }
-
-                failureReason = "sdxl_init_failed:" + (string.IsNullOrEmpty(sdxlError) ? "unknown" : sdxlError);
-                sdxl.Dispose();
-            }
-            else
-            {
-                failureReason = "cuda_runtime_missing";
-            }
-
-            var sd15 = BuildSd15Forge(modelRoot);
-            string sd15Error = string.Empty;
-            bool sd15Ready = sd15.IsAvailable() && sd15.TryWarmup(out sd15Error);
-            if (sd15Ready)
-            {
-                selectedOnnx = sd15;
-                return sd15;
-            }
-
-            if (!string.IsNullOrEmpty(sd15Error))
-                failureReason = string.IsNullOrEmpty(failureReason)
-                    ? "sd15_init_failed:" + sd15Error
-                    : failureReason + "|sd15_init_failed:" + sd15Error;
-            else if (!sd15.IsAvailable())
-                failureReason = string.IsNullOrEmpty(failureReason)
-                    ? "sd15_model_files_missing"
-                    : failureReason + "|sd15_model_files_missing";
-
-            selectedOnnx = sd15;
-            return sd15;
-        }
-
-        private static OnnxAssetForge BuildSdxlForge(string modelRoot, OnnxExecutionProviderPreference providerPreference)
-        {
-            var modelDir = Path.Combine(modelRoot, "sdxl-turbo");
-            var paths = new[]
-            {
-                Path.Combine(modelDir, "text_encoder", "model.onnx"),
-                Path.Combine(modelDir, "text_encoder_2", "model.onnx"),
-                Path.Combine(modelDir, "unet", "model.onnx"),
-                Path.Combine(modelDir, "vae_decoder", "model.onnx"),
-                Path.Combine(modelDir, "tokenizer", "vocab.json"),
-                Path.Combine(modelDir, "tokenizer", "merges.txt"),
-                Path.Combine(modelDir, "tokenizer", "tokenizer_config.json"),
-            };
-
-            return new OnnxAssetForge(paths, OnnxDiffusionFlavor.SdxlTurbo, providerPreference);
-        }
-
-        private static OnnxAssetForge BuildSd15Forge(string modelRoot)
-        {
-            var modelDir = Path.Combine(modelRoot, "sd-1.5");
-            var paths = new[]
-            {
-                Path.Combine(modelDir, "text_encoder", "model.onnx"),
-                Path.Combine(modelDir, "unet", "model.onnx"),
-                Path.Combine(modelDir, "vae_decoder", "model.onnx"),
-                Path.Combine(modelDir, "tokenizer", "vocab.json"),
-                Path.Combine(modelDir, "tokenizer", "merges.txt"),
-                Path.Combine(modelDir, "tokenizer", "tokenizer_config.json"),
-            };
-
-            return new OnnxAssetForge(paths, OnnxDiffusionFlavor.Sd15Lcm, OnnxExecutionProviderPreference.CpuOnly);
-        }
-
-        private static bool HasCudaRuntimeArtifacts()
-        {
-            var basePath = FindCudaProviderDirectory();
-            if (string.IsNullOrEmpty(basePath)) return false;
-            return File.Exists(Path.Combine(basePath, "onnxruntime.dll"))
-                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_cuda.dll"))
-                && File.Exists(Path.Combine(basePath, "onnxruntime_providers_shared.dll"));
-        }
-
-        private static void AddCudaProviderDirectoryToPath()
-        {
-            var basePath = FindCudaProviderDirectory();
-            if (string.IsNullOrEmpty(basePath)) return;
-            var current = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-            if (current.IndexOf(basePath, StringComparison.OrdinalIgnoreCase) >= 0) return;
-            Environment.SetEnvironmentVariable("PATH", basePath + Path.PathSeparator + current);
-        }
-
-        private static string FindCudaProviderDirectory()
-        {
-            var candidates = new[]
-            {
-                Path.Combine(Application.dataPath, "Plugins", "x86_64", "cuda"),
-                Path.Combine(Application.dataPath, "Plugins", "x86_64"),
-                Path.Combine(Application.dataPath, "Plugins"),
-            };
-
-            for (int i = 0; i < candidates.Length; i++)
-            {
-                var path = candidates[i];
-                if (File.Exists(Path.Combine(path, "onnxruntime.dll"))
-                    && File.Exists(Path.Combine(path, "onnxruntime_providers_cuda.dll"))
-                    && File.Exists(Path.Combine(path, "onnxruntime_providers_shared.dll")))
-                    return path;
-            }
-
-            return string.Empty;
         }
 
         private sealed class ModelBootstrapFailureAssetForge : IAssetForge
