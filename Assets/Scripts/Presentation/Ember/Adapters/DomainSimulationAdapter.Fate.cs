@@ -40,7 +40,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             // FNV-1a-32 roll as baseline
             uint salted = (uint)_tick * 2654435761u;
-            int roll = (int)(salted % 100u) + 1;
+            int roll = ConsultFateOutcomeBucket.D100(salted); // DET-08: shared deterministic d100 roll
             var bucket = EmberCrpg.Domain.AiDm.ConsultFateOutcomeBucket.FromRoll(roll);
 
             var tools = new List<ToolDescriptor>
