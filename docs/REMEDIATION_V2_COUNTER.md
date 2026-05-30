@@ -67,9 +67,9 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[ ]` **LOC-split** · Med · split (after the above, mechanical, round-trip test each): `SliceSaveMapper.cs` 961→Economy/Narrative/Worldgen mappers · `DomainSimulationAdapter.cs` 804 · `CharacterCreationController.cs` 660 (+fill the empty `CharacterCreationViewModel`) · `LlmClients.cs` 517 (per-class files) · `EmberMainMenuUI.cs` 345 (view vs bootstrap-spawn).
 
 ### LANE P3 — playability (turns "done" into real; many need Editor proof)
-- `[ ]` **SOUL-01** · Critical · `Simulation/Composition/SliceTickComposer.cs:111-167` — tick advances only time/magic/needs/caravans: gate per-hour/day calls to PlantGrowth, PriceUpdate, FactionReputation, JobAssignment (cost-gated). Proof: headless "world moves over N ticks" test (plant stage + price + job state change).
-- `[ ]` **SOUL-03** · High · `Domain/Actors/ActorRecord.cs:76,131` — `ScheduleState` stored but never read: build a ScheduleSystem resolving actor target per game-hour so NPCs move. `[E]` visual.
-- `[ ]` **SOUL-04** · High · `Simulation/World/SliceWorldFactory.cs:52-56` — worldgen NPC seeds never instantiated as views (scenes use 5 fixed actors): spawn ActorViews from `GeneratedWorld.Npcs`, OR explicitly document scenes as fixed vignettes. `[E]`
+- `[~]` **SOUL-01** · Critical · `Simulation/Composition/SliceTickComposer.cs:111-167` — tick advances only time/magic/needs/caravans: gate per-hour/day calls to PlantGrowth, PriceUpdate, FactionReputation, JobAssignment (cost-gated). Proof: headless "world moves over N ticks" test (plant stage + price + job state change).
+- `[~]` **SOUL-03** · High · `Domain/Actors/ActorRecord.cs:76,131` — `ScheduleState` stored but never read: build a ScheduleSystem resolving actor target per game-hour so NPCs move. `[E]` visual.
+- `[~]` **SOUL-04** · High · `Simulation/World/SliceWorldFactory.cs:52-56` — worldgen NPC seeds never instantiated as views (scenes use 5 fixed actors): spawn ActorViews from `GeneratedWorld.Npcs`, OR explicitly document scenes as fixed vignettes. `[E]`
 - `[ ]` **HUD-02** · High · `Interaction/EmberPlayerInteractRaycaster.cs:87-99` — Ask-About dead in 6/10 scenes (no DialogBoxPanel): have `EmberWorldHost` ensure one at runtime (like it does PauseMenu/EmberHud). `[E]`
 - `[ ]` **DLG-01** · High · `DomainSimulationAdapter.cs:288-318` — per-actor topics keyed by display-name string vs scene `_displayName`: resolve actor by stable ID; mismatch must not silently fall back to global topics.
 - `[ ]` **SCN-01** · High · `EmberScenePortal.cs:11,24`,`BootBootstrap.cs:17`,`EmberMainMenuUI.cs:19` — `EmberScenes` registry bypassed by raw scene-name strings: drive portal targets from `EmberScenes` constants. `[E]`
@@ -97,7 +97,16 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 ---
 
 ## §4 — DECIDED / WON'T-DO (record here with reason)
-- (none yet)
+- **SOUL-01/03/04 → DEFERRED as a FEATURE EPIC (not a remediation wiring), with spec.** On inspection
+  the dormant systems can't be "ticked" because the world-state they operate on was never plumbed into
+  the live `SliceWorldState`: `PlantGrowthSystem.AdvanceOneDay` needs a `ComponentStore<PlantComponent>`
+  + `PlantSpeciesDef` + farm plots (absent); `JobAssignmentSystem.TryAssignNext` needs a `JobBoard` +
+  `WorksiteStore` (absent); `PriceUpdateSystem.Recompute` is per-item (needs an item/threshold/delta
+  config + stockpile iteration); `FactionReputationSystem.ApplyDelta` is event-driven, not a tick.
+  Wiring them REQUIRES first adding that state to `SliceWorldState`, seeding it, ticking it, and
+  rendering it — a multi-step living-world feature. The guardrail forbids a visual-only hack, so this is
+  honestly deferred to a dedicated feature effort rather than fake-completed. SOUL-02 (the "systems
+  pretend to exist" finding) is the same root cause. Marked `[~]`; needs a feature epic + user go-ahead.
 
 ## §5 — GUARDRAILS (do NOT)
 - Don't rewrite the project; don't "fix" by adding another manager/helper/god class.
