@@ -54,6 +54,22 @@ namespace EmberCrpg.Tests.EditMode.Save
         }
 
         [Test]
+        public void TryLoad_CorruptTwice_PreservesBothQuarantines()
+        {
+            var repo = new FileSaveRepository(_root);
+            // First corruption -> slot_1.json.corrupt
+            repo.Save(1, "garbage-1");
+            Assert.That(repo.TryLoad(1, raw => raw.StartsWith("{"), out _), Is.False);
+            // A second corruption of the same slot must NOT overwrite the first quarantine (DET-06).
+            repo.Save(1, "garbage-2");
+            Assert.That(repo.TryLoad(1, raw => raw.StartsWith("{"), out _), Is.False);
+
+            Assert.That(File.Exists(repo.SlotPath(1) + ".corrupt"), Is.True, "first corrupt save kept");
+            Assert.That(File.Exists(repo.SlotPath(1) + ".corrupt.2"), Is.True, "second corrupt save kept");
+            Assert.That(repo.SlotExists(1), Is.False, "slot freed after quarantine");
+        }
+
+        [Test]
         public void ListSlots_ReportsOccupied()
         {
             var repo = new FileSaveRepository(_root);

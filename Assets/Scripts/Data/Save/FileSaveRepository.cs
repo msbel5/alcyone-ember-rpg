@@ -31,15 +31,19 @@ namespace EmberCrpg.Data.Save
             var path = SlotPath(slot);
             var tmp = path + ".tmp";
             File.WriteAllText(tmp, json ?? string.Empty);
-            if (File.Exists(path)) File.Delete(path);
-            File.Move(tmp, path);
+            // DET-07: atomic publish. File.Replace swaps tmp into place in a single operation (atomic
+            // on NTFS), so a crash can't leave the slot deleted-but-not-yet-moved (the old
+            // Delete-then-Move had exactly that window). Move only when there is no existing slot.
+            if (File.Exists(path)) File.Replace(tmp, path, null);
+            else File.Move(tmp, path);
         }
 
         public bool SlotExists(int slot) => File.Exists(SlotPath(slot));
 
         /// <summary>Read a slot's JSON. On a missing or unreadable file returns false. If the file
         /// exists but <paramref name="isValid"/> rejects it (corrupt content), the bad file is moved
-        /// to slot_{n}.json.corrupt-{ticks} so it can't crash the loader and the slot is freed.</summary>
+        /// aside to slot_{n}.json.corrupt (or .corrupt.2, .corrupt.3, … to preserve earlier corrupt
+        /// saves) so it can't crash the loader and the slot is freed.</summary>
         public bool TryLoad(int slot, Func<string, bool> isValid, out string json)
         {
             json = null;
@@ -62,8 +66,12 @@ namespace EmberCrpg.Data.Save
         {
             try
             {
+                // DET-06: preserve every corrupt save for forensics instead of overwriting the last
+                // one. Pick the first free ".corrupt[.N]" name — deterministic, no wall-clock (keeps
+                // this Data type free of DateTime per the determinism guard).
                 var dest = path + ".corrupt";
-                if (File.Exists(dest)) File.Delete(dest);
+                int n = 1;
+                while (File.Exists(dest)) dest = path + ".corrupt." + (++n);
                 File.Move(path, dest);
             }
             catch { /* best-effort; never throw from the load path */ }
