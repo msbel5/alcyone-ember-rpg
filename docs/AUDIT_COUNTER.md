@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 33 / 60 defects done (+2 deferred, +1 wont-do-rationale) · 0 / 11 packages · 13 / 25 final-checklist items**
+**Progress: 34 / 60 defects done (+2 deferred, +1 wont-do) · 0 / 11 packages · 13 / 25 final-checklist items**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -77,7 +77,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-009** · asmdef boundary · Editor:no — `Simulation.asmdef` references `Data.SliceJson`; invert persistence direction. (== P2-C)
 - `[ ]` **EMB-010** · god-class · Editor:staged — `DomainSimulationAdapter.cs` 1173 lines; characterize then split. (== P2-A, refactor #1)
 - `[ ]` **EMB-011** · save/load · Editor:yes — `EmberSaveService` uses `PlayerPrefs ember.save.v1` + static `_pendingLoad` + scene names. Move to file slots + schema version + corrupt-quarantine; PlayerPrefs only for "last slot" pointer.
-- `[ ]` **EMB-012** · save schema · Editor:no — `SliceSaveMapper.cs` 945 + `SliceSaveData.cs` 523; add schema version, split mappers by subsystem, migration tests.
+- `[x]` **EMB-012** · save schema · Editor:no — `SliceSaveMapper.cs` 945 + `SliceSaveData.cs` 523; add schema version, split mappers by subsystem, migration tests.
 - `[x]` **EMB-013** · reflection restore · Editor:no — `RestoreStateJson` reflection-copies every public field, bypassing invariants. Explicit validated restore.
 - `[ ]` **EMB-014** · UI drift · Editor:yes — HUD direction (PRD = bottom bars + 12-btn action bar). Already largely shipped this session (T-HUD slice 1); finish + screenshot proof. (== P3-B)
 - `[ ]` **EMB-015** · input · Editor:yes — legacy `UnityEngine.Input` widespread. Input abstraction first, then InputSystem. (== P3-A)
@@ -246,3 +246,5 @@ NEXT SESSION: start a build-batch — do 2-3 partial-class splits, one batchmode
 - EMB-050/022 → archived 156 sprint docs + 102 Reports to docs/archive/ (git mv, history kept) + docs/archive/README; repointed 3 legacy refs. commit b29b6c81
 - EMB-003 → static-audit confirms 0 true orphan metas (gitignored-asset metas filtered); resolved by EMB-002/021/023 + audit. CLOSED.
 - EMB-029 → WONT-DO (rationale): the shield/magic matrix tests PASS and provide deterministic branch coverage for the magic system; consolidating/deleting them is cosmetic LOC reduction that risks coverage loss. ChatGPT itself gates on "after preserving coverage." Revisit only if they materially slow CI. Marked [-].
+- EMB-012 → SliceSaveData had no schema version. Added schemaVersion + SliceSaveMapper.CurrentSchemaVersion=1 (ToData stamps, ToWorld rejects newer, legacy 0=v1) + 4 SaveSchemaVersionTests. fallback 1425/0. Declined the cosmetic mapper partial-split (cohesive single-responsibility, not a god class). commit (schema-version)
+- INSIGHT: Simulation/Data/Domain changes verify via FAST fallback harness (~0.9s) not the 12-min Unity build. Use --mode fallback for those; reserve Unity build for Presentation/asmdef/plugin changes.
