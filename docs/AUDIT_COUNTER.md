@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 44/60 addressed (38 fixed + 4 wont-do/decided + 2 deferred) · 16 TODO · build green · LLM PROVEN REAL**
+**Progress: 44/60 addressed (41 fixed + 1 decided + 2 deferred) · 16 TODO · build green · LLM PROVEN**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -106,9 +106,9 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[-]` **EMB-029** · test bloat · Editor:no — magic shield tests 300-500+ lines overfit. Consolidate, add product-facing tests.
 - `[x]` **EMB-031** · scene org · Editor:yes — root `CombatPlayground`/`Sprint4Foundation` outside build + dup GUID. Archive/delete after EMB-001.
 - `[x]` **EMB-032** · prefab policy · Editor:yes — no `Assets/Prefabs`; scenes hand-authored. Audit before any prefab conversion (no blind mass-convert).
-- `[-]` **EMB-034** · worldgen complexity · Editor:no — `WorldgenService.cs` 649. Split regions/settlements/factions/NPCs/history/validation w/ same-seed digest test.
-- `[-]` **EMB-035** · job system complexity · Editor:no — `JobAssignmentSystem.cs` 776. Split discovery/eligibility/reservation/assignment/events.
-- `[-]` **EMB-036** · magic/combat complexity · Editor:combat-yes — `ShieldBuffService` 529 + `...BatchTotals` 762. Simplify interfaces, keep core tests.
+- `[x]` **EMB-034** · worldgen complexity · Editor:no — `WorldgenService.cs` 649. Split regions/settlements/factions/NPCs/history/validation w/ same-seed digest test.
+- `[x]` **EMB-035** · job system complexity · Editor:no — `JobAssignmentSystem.cs` 776. Split discovery/eligibility/reservation/assignment/events.
+- `[x]` **EMB-036** · magic/combat complexity · Editor:combat-yes — `ShieldBuffService` 529 + `...BatchTotals` 762. Simplify interfaces, keep core tests.
 - `[ ]` **EMB-037** · procedural UI · Editor:yes — HUD/dialog/menu/panel code-heavy. Move layout to templates/tokens.
 - `[x]` **EMB-038** · deterministic RNG · Editor:no — `LatentNoiseSampler` uses `new System.Random((int)seed)`. Ember deterministic RNG or doc forge as non-authoritative cache.
 - `[x]` **EMB-039** · non-authoritative time · Editor:no — `DateTime.UtcNow` in `GenerationFailureLog`/`VisibleGenerationPipeline`. Keep timestamps out of canonical IDs.
