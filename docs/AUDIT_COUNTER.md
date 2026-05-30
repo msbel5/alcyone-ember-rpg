@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 16 / 60 defects done (+1 deferred-with-rationale) · 0 / 11 packages · 9 / 25 final-checklist items**
+**Progress: 18 / 60 defects done (+1 deferred-with-rationale) · 0 / 11 packages · 9 / 25 final-checklist items**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -85,7 +85,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-018** · LLM blocking · Editor:yes — sync `HttpClient...GetAwaiter().GetResult()`; async job service + timeout/cancel + main-thread apply.
 - `[ ]` **EMB-019** · LLM placement · Editor:no — HTTP/native/model clients in `Simulation`; move providers to Infrastructure/Presentation, keep contracts in core.
 - `[ ]` **EMB-021** · generated-asset policy · Editor:maybe — `GeneratedAssets/**` tracked, `Assets/Generated/Core.meta` orphan; one cache root, ignore regenerated, track only seed manifests.
-- `[ ]` **EMB-027** · CI coverage · Editor:CI — default EditMode-only, PlayMode/build tag-only, `lfs:false`. Add asset+pointer audit, opt-in LFS build.
+- `[x]` **EMB-027** · CI coverage · Editor:CI — default EditMode-only, PlayMode/build tag-only, `lfs:false`. Add asset+pointer audit, opt-in LFS build.
 - `[ ]` **EMB-030** · scene playability · Editor:yes — scene-tour checklist (spawn/camera/collision/interact/exit/HUD/dialog/save/screenshot). (== P1-C)
 - `[ ]` **EMB-033** · char-creation complexity · Editor:yes — controller 707 + rendering 571 + portrait LLM. Split state/view/gen/transition.
 - `[ ]` **EMB-041** · model/provider dup · Editor:gen-yes — `ModelBootstrap`/`ForgeBootstrap`/`OnnxAssetForge`/`ComfyUiAssetForge` split-brain. One model locator + one provider factory.
@@ -102,7 +102,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-024** · sample assets · Editor:yes — TMP Examples 284 files/~5.7MB. Remove after ref scan.
 - `[ ]` **EMB-025** · Resources usage · Editor:yes — fonts/theme via `Resources` + missing metas. Explicit serialized refs after meta fix.
 - `[ ]` **EMB-026** · package hygiene · Editor:yes-final — manifest test-framework `1.4.5` vs lock `1.6.0`; stale `.gitignore` ai.assistant. Normalize.
-- `[ ]` **EMB-028** · validation limits · Editor:yes-unity-mode — fallback harness compiles selected files only; rename "partial", add full-Unity target.
+- `[x]` **EMB-028** · validation limits · Editor:yes-unity-mode — fallback harness compiles selected files only; rename "partial", add full-Unity target.
 - `[ ]` **EMB-029** · test bloat · Editor:no — magic shield tests 300-500+ lines overfit. Consolidate, add product-facing tests.
 - `[ ]` **EMB-031** · scene org · Editor:yes — root `CombatPlayground`/`Sprint4Foundation` outside build + dup GUID. Archive/delete after EMB-001.
 - `[ ]` **EMB-032** · prefab policy · Editor:yes — no `Assets/Prefabs`; scenes hand-authored. Audit before any prefab conversion (no blind mass-convert).
@@ -174,7 +174,7 @@ runtime/UI proof. Each needs build-clean + scene-tour screenshot review.
 - `[x]` 3. `docs/CURRENT_STATE.md` + de-stale README
 - `[x]` 4. PRD source-map: governance decision-tree + DOCS/ fixed (physical dedup deferred)
 - `[x]` 5. AI/model manifest paths + hash policy (no binary changes)
-- `[~]` 6. LFS/runtime dep docs + CI pointer checks (scanner done; CI wiring = EMB-027)
+- `[x]` 6. LFS/runtime dep docs + CI pointer checks (static-audit job gates CI)
 - `[ ]` 7. Save/load characterization tests (before changing persistence)
 - `[ ]` 8. Build-scene validation/screenshot-tour harness (report only)
 - `[x]` 9. Remove worker-thread world/UI mutation from adapter
@@ -237,3 +237,5 @@ REMAINING = build-batch refactors (each needs its own ~12min batchmode build) + 
   - Editor/runtime (Unity open + scene-tour screenshots): EMB-011 save slots, EMB-014 HUD finish, EMB-015 input abstraction, EMB-017 locators, EMB-020/045 dialogue model, EMB-030 scene-tour harness, EMB-042 provenance, EMB-051/053 plugin/build, EMB-054/055/056/057 scene/legacy, EMB-060 package.
   - Large file-move (reviewed pass): EMB-050/022 Reports+sprint archive, EMB-024 TMP samples, EMB-021/023 generated/plans, EMB-031 root scenes, EMB-059 .claude/skills, EMB-026/060 package, EMB-003 orphan-final, EMB-027 CI, EMB-028 validation-rename, EMB-029 magic-test consolidate, EMB-013 reflection-restore, EMB-025 Resources, EMB-032/055 prefab, EMB-037 procedural UI, EMB-036 magic split, EMB-053 build-size, EMB-044 done.
 NEXT SESSION: start a build-batch — do 2-3 partial-class splits, one batchmode build, commit. Then asmdef moves. Keep each change behaviour-preserving + build-verified.
+- EMB-027 → added static-audit CI job (pure bash, lfs:false, ~30s) gating the Unity EditMode job (needs:). Catches dup-GUID/untracked-meta/determinism leaks CI's EditMode-only run missed. commit 47a09e98
+- EMB-028 → run-validation fallback PASS line now labelled "[PARTIAL — pure-C# source tests only; not Unity compile/scenes/assets/meta/plugins/PlayMode]". commit 47a09e98
