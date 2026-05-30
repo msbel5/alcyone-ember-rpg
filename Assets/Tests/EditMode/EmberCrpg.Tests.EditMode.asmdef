@@ -4,6 +4,7 @@
     "references": [
         "EmberCrpg.Domain",
         "EmberCrpg.Simulation",
+        "EmberCrpg.Infrastructure",
         "EmberCrpg.Data",
         "EmberCrpg.Data.SliceJson",
         "EmberCrpg.Presentation",

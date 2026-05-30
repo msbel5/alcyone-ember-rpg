@@ -4,6 +4,7 @@
     "references": [
         "EmberCrpg.Domain",
         "EmberCrpg.Simulation",
+        "EmberCrpg.Infrastructure",
         "EmberCrpg.Data",
         "EmberCrpg.Data.SliceJson",
         "EmberCrpg.Ui.Foundation",
@@ -13,7 +14,7 @@
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.Cinemachine"
     ],
-"includePlatforms": [],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

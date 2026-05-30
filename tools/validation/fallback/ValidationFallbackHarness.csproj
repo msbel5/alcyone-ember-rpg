@@ -18,6 +18,7 @@
   <ItemGroup>
     <Compile Include="../../../Assets/Scripts/Domain/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Simulation/**/*.cs" />
+    <Compile Include="../../../Assets/Scripts/Infrastructure/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Data/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/InventoryEquipmentFormatter.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/SliceAtmosphereCueSet.cs" />

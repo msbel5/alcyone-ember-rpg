@@ -1,3 +1,7 @@
+// EMB-019: this non-deterministic LLM provider implementation lives in the EmberCrpg.Infrastructure
+// assembly (not EmberCrpg.Simulation) so the deterministic, headless Simulation core can never
+// reference HTTP/native inference at compile time. The namespace stays EmberCrpg.Simulation.AiDm
+// on purpose: AiDm is the logical area, while the assembly boundary is what isolates the I/O.
 using System;
 using System.IO;
 using System.Collections.Generic;
