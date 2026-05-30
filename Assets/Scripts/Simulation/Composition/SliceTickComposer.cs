@@ -20,7 +20,7 @@ namespace EmberCrpg.Simulation.Composition
     /// system composition (plant growth, faction reputation decay, caravan
     /// motion) will land in subsequent passes once their tick contracts are
     /// re-examined; the audit's primary risk call specifically warned
-    /// against wiring them at the raw 10 Hz <see cref="EmberCrpg.Presentation.Ember.Tick.EmberTickDriver"/>
+    /// against wiring them at the raw 10 Hz Presentation tick driver (EmberTickDriver)
     /// rate without first auditing their cost gating.
     /// </summary>
     public sealed class SliceTickComposer

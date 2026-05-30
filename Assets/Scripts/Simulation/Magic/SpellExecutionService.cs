@@ -20,7 +20,7 @@ namespace EmberCrpg.Simulation.Magic
     /// Codex audit (fifth pass A-P2): this service is the LEGACY spell pipeline
     /// kept for back-compat with the seven original <see cref="EmberCrpg.Domain.Magic.SpellEffectCode"/>
     /// rows + the existing acceptance tests. The live game's spell command
-    /// (<see cref="EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter.TryCastSpell"/>)
+    /// (the Presentation adapter's TryCastSpell)
     /// now routes through <see cref="SpellCastingService"/>'s prepare/commit
     /// pair and (for data-driven new spells) the
     /// <see cref="SpellResolver"/> + <see cref="EffectOperationHandlers"/>
