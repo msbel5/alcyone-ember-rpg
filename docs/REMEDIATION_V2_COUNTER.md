@@ -29,7 +29,7 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 13/34 done · P1 complete; P2 done: ARCH-01/03/05/11/12. · ▶ NOW = bigger P2 refactors (ARCH-06 dialog-proxy, ARCH-04 save-pipeline, ARCH-07 locator→DI, ARCH-02 god-class, ARCH-08/09) + LOC-splits, then P3/P4/P5. · prior Codex EMB-001..060 = 60/60**
+**Progress: 17/34 done · P1 + P2-dead-code + HYG-02/03/10/11 hygiene done. · ▶ NOW = SOUL-01 (wire dormant living-world systems into the tick — highest value), then remaining P2 refactors / P3 / DOC. · prior Codex EMB-001..060 = 60/60**
 
 Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → P3 playability → P4 docs → P5 naming/hygiene.** Do P1 fully before P2.
 
@@ -82,13 +82,13 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[ ]` **DOC-03** · Med · `docs/AUDIT_COUNTER.md:46` + `docs/CURRENT_STATE.md` — add "code-complete vs runtime-wired vs proven" columns; mark the dormant systems honestly.
 
 ### LANE P5 — naming / hygiene / CI
-- `[ ]` **HYG-02** · High · `.gitignore` — add `Assets/Plugins/x86_64/cuda/cudnn*.dll.meta` (untracked orphan metas hazard). DO THIS FIRST among hygiene.
-- `[ ]` **HYG-03** · High · `StreamingAssets/Models/sdxl-turbo/{unet,text_encoder_2}/model.onnx.data.meta` — `git rm --cached` + ignore `*.onnx.data.meta`.
-- `[ ]` **HYG-11** · Med · `tools/validation/static-audit.sh:88-128` — add check: any tracked/staged `.meta` whose asset is gitignored → FAIL unless meta also ignored.
+- `[x]` **HYG-02** · High · `.gitignore` — add `Assets/Plugins/x86_64/cuda/cudnn*.dll.meta` (untracked orphan metas hazard). DO THIS FIRST among hygiene.
+- `[x]` **HYG-03** · High · `StreamingAssets/Models/sdxl-turbo/{unet,text_encoder_2}/model.onnx.data.meta` — `git rm --cached` + ignore `*.onnx.data.meta`.
+- `[x]` **HYG-11** · Med · `tools/validation/static-audit.sh:88-128` — add check: any tracked/staged `.meta` whose asset is gitignored → FAIL unless meta also ignored.
 - `[ ]` **HYG-08** · High · `.github/workflows/unity-test.yml` — add a Win64 build job (≥ nightly) invoking the Ember build menu. `[E]` runner.
 - `[ ]` **HYG-09** · High · same — EditMode CI `lfs:false` false-greens; restore LFS for binary-needing jobs or assert pointer-independence + name the job SOURCE-ONLY.
 - `[ ]` **HYG-05** · High · `Assets/Plugins/NuGet/*.dll` (~19MB Roslyn/MCP) — move the MCP dev plugin out of `Assets/` (Packages/ or gitignore+per-dev) or LFS-track. `[E]` verify plugin still loads.
-- `[ ]` **HYG-10** · Med · workflow triggers — add `feat/**` to push branches so the static-audit gate runs.
+- `[x]` **HYG-10** · Med · workflow triggers — add `feat/**` to push branches so the static-audit gate runs.
 - `[ ]` **INP-01** · Low · `Input/EmberInput.cs:3` — namespace `…Ember.Inputs` ≠ folder `Input/`: align.
 - `[ ]` **NAME-01** · High · `SliceWorldState` (68 refs) + `SliceSaveMapper/ItemCatalog/SpellCatalog/TickComposer/WorldFactory` — dedicated atomic GUID-safe rename `Slice*`→`Ember*`/`World*` (do LAST; ref-heavy; scan scene/prefab GUIDs).
 - `[ ]` **NAME-03** · Low · `Presentation/SliceHudFormatter.cs`,`SliceAtmosphere*.cs` — move under `Presentation/Ember/...` (with `.meta`).
