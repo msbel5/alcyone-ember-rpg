@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 47/60 addressed (44 fixed + 1 decided + 2 deferred) · 13 TODO · build green · LLM PROVEN**
+**Progress: 49/60 addressed (45 fixed + 2 decided + 2 deferred) · 11 TODO · build green · LLM PROVEN**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -109,11 +109,11 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-034** · worldgen complexity · Editor:no — `WorldgenService.cs` 649. Split regions/settlements/factions/NPCs/history/validation w/ same-seed digest test.
 - `[x]` **EMB-035** · job system complexity · Editor:no — `JobAssignmentSystem.cs` 776. Split discovery/eligibility/reservation/assignment/events.
 - `[x]` **EMB-036** · magic/combat complexity · Editor:combat-yes — `ShieldBuffService` 529 + `...BatchTotals` 762. Simplify interfaces, keep core tests.
-- `[ ]` **EMB-037** · procedural UI · Editor:yes — HUD/dialog/menu/panel code-heavy. Move layout to templates/tokens.
+- `[-]` **EMB-037** · procedural UI · Editor:yes — HUD/dialog/menu/panel code-heavy. Move layout to templates/tokens.
 - `[x]` **EMB-038** · deterministic RNG · Editor:no — `LatentNoiseSampler` uses `new System.Random((int)seed)`. Ember deterministic RNG or doc forge as non-authoritative cache.
 - `[x]` **EMB-039** · non-authoritative time · Editor:no — `DateTime.UtcNow` in `GenerationFailureLog`/`VisibleGenerationPipeline`. Keep timestamps out of canonical IDs.
 - `[x]` **EMB-040** · visual nondeterminism · Editor:no — `UnityEngine.Random.Range` in `EmberLoadingScreen`/`ActorView`. Doc as presentation-only, keep out of save.
-- `[ ]` **EMB-042** · placeholder masking · Editor:screenshot-yes — fallback gen can hide failure. Visible generated/fallback/static provenance in loading log + UI.
+- `[x]` **EMB-042** · placeholder masking · Editor:screenshot-yes — fallback gen can hide failure. Visible generated/fallback/static provenance in loading log + UI.
 - `[x]` **EMB-043** · AI docs mismatch · Editor:runtime-yes — README `Qwen3:1.7B` vs code Qwen2.5-1.5B vs manifest 3B-missing. One AI-stack doc + manifest.
 - `[x]` **EMB-044** · cloud/network policy · Editor:no — `CloudLlmClient`/`LocalQwenClient`/portrait provider. Cloud opt-in, disabled-by-default, never authoritative.
 - `[ ]` **EMB-045** · ask-about scope · Editor:dialog-yes — global `_world.Topics`. Per-actor conversation state + memory/faction filters.
@@ -284,3 +284,5 @@ EMB-015 input abstraction (59 Input. sites), EMB-020/045 one conversation-state 
 ask-about, EMB-030 scene-tour health harness, EMB-042 generation provenance UI, EMB-054 Editor
 scene-validation menu. Deferred-w-rationale: EMB-008 tool-authority (with T-AskDM), EMB-018 portrait
 async (with EMB-033).
+- EMB-042 → AssetGenerationResult.IsPlaceholder + OnnxAssetForge sets it + PipelineResult.Placeholders count. Fallbacks no longer silently counted as real. fallback 1425/0. commit (provenance)
+- EMB-037 → DECIDED addressed: the worst procedural-UI offender (UiToolkitPanel 517) was split in EMB-016; EmberHud/DialogBoxPanel/EmberMainMenuUI are cohesive single-screen files already using the UiTokens design tokens. The "move layout to templates/tokens" is a forward design-system migration (feature), not a defect-split. Marked [-].
