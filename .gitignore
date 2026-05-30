@@ -102,3 +102,17 @@ Reports/*.tmp
 # from https://developer.nvidia.com/cudnn-9-archive and copy into
 # Assets/Plugins/x86_64/cuda/. The forge picks them up at runtime.
 Assets/Plugins/x86_64/cuda/cudnn*.dll
+
+# EMB-052 — secrets must never be committed. Keys/endpoints are read from
+# environment variables only (e.g. EMBER_LOCAL_LLM_ENDPOINT, the cloud LLM
+# ApiKey passed via CloudLlmConfig). Ignore any local secret/key material:
+.env
+.env.*
+*.env
+secrets.json
+**/secrets.json
+*.key
+*.pem
+*.pfx
+*.p12
+**/appsettings.*.local.json
