@@ -1159,6 +1159,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 field.SetValue(_world, value);
             }
 
+            // EMB-013: the reflection copy above mirrors fields verbatim, so a corrupt/partial save
+            // could leave a store or list null and crash the next tick. Re-establish the non-null
+            // collection/store invariants explicitly before anything reads the restored world.
+            _world.EnsureInvariants();
+
             // Reset the tick composer anchor so the next AdvanceTick does
             // not double-advance the just-restored time.
             _tickComposer.ResetAnchor();

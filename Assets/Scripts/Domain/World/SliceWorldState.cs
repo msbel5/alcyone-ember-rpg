@@ -46,6 +46,30 @@ namespace EmberCrpg.Domain.World
         public List<NpcSeedRecord> NpcSeeds = new List<NpcSeedRecord>();
         public WorldProfile WorldProfile;
 
+        /// <summary>
+        /// EMB-013: re-establish the non-null collection/store invariants after a deserialize or a
+        /// reflection-based restore. A corrupt or partial save (or a future field the loader did not
+        /// populate) can leave a store or list null; RestoreStateJson copies fields verbatim, so that
+        /// null would reach the live world and the next tick would NullReference. Calling this right
+        /// after a restore guarantees every store/list is at least an empty instance, so a bad save
+        /// degrades gracefully instead of crashing the run.
+        /// </summary>
+        public void EnsureInvariants()
+        {
+            Actors ??= new ActorStore();
+            Items ??= new ItemStore();
+            Sites ??= new SiteStore();
+            Factions ??= new FactionStore();
+            Events ??= new WorldEventLog();
+            Prices ??= new PriceLedger();
+            Stockpiles ??= new List<StockpileComponent>();
+            TradeRoutes ??= new List<TradeRouteDef>();
+            Caravans ??= new List<CaravanInstance>();
+            ToolCallTrace ??= new List<ToolCallTraceRecord>();
+            LlmProposalLog ??= new List<LlmProposalLogEntry>();
+            NpcSeeds ??= new List<NpcSeedRecord>();
+        }
+
         // Codex audit (sixth pass D-P3 #D2): the five named role views below
         // (Player/Talker/Merchant/Guard/Enemy) are deprecated since Faz 1 but
         // 71 call sites across Simulation/Presentation/Data still read or

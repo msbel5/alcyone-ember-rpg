@@ -70,14 +70,8 @@ Packages/*/
 !Packages/manifest.json
 !Packages/packages-lock.json
 
-# Embedded Unity AI Assistant package — required for the project to compile under Unity 6.3+
-# because the registry version 2.9.0-pre.2 calls Microsoft.ML.Tokenizers 2.0.25 API
-# (SentencePieceTokenizer.Create(stream, addBeginOfSentence, addEndOfSentence)) which the
-# project's bundled 3.0.26 (used by LLamaSharp) no longer provides. Patched in-place on the
-# SigLip2Text.cs line; behavior preserved (defaults already false). Track this package despite
-# the blanket Packages/*/ rule below.
-!Packages/com.unity.ai.assistant/
-!Packages/com.unity.ai.assistant/**
+# (EMB-026) The com.unity.ai.assistant embedded package was removed; its re-include
+# exception is gone. Packages/*/ keeps any locally-inlined package source out of git.
 
 # Unity convention: any folder suffixed with ~ is ignored by Unity (docs, build
 # artifacts, third-party binaries). Skip them in the embedded ai.assistant too —
