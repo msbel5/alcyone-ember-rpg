@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 49/60 addressed (45 fixed + 2 decided + 2 deferred) · 11 TODO · build green · LLM PROVEN**
+**Progress: 51/60 addressed (47 fixed + 2 decided + 2 deferred) · 9 TODO · build green · LLM PROVEN · 0 missing scripts**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -86,7 +86,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-019** · LLM placement · Editor:no — HTTP/native/model clients in `Simulation`; move providers to Infrastructure/Presentation, keep contracts in core.
 - `[x]` **EMB-021** · generated-asset policy · Editor:maybe — `GeneratedAssets/**` tracked, `Assets/Generated/Core.meta` orphan; one cache root, ignore regenerated, track only seed manifests.
 - `[x]` **EMB-027** · CI coverage · Editor:CI — default EditMode-only, PlayMode/build tag-only, `lfs:false`. Add asset+pointer audit, opt-in LFS build.
-- `[ ]` **EMB-030** · scene playability · Editor:yes — scene-tour checklist (spawn/camera/collision/interact/exit/HUD/dialog/save/screenshot). (== P1-C)
+- `[x]` **EMB-030** · scene playability · Editor:yes — scene-tour checklist (spawn/camera/collision/interact/exit/HUD/dialog/save/screenshot). (== P1-C)
 - `[x]` **EMB-033** · char-creation complexity · Editor:yes — controller 707 + rendering 571 + portrait LLM. Split state/view/gen/transition.
 - `[ ]` **EMB-041** · model/provider dup · Editor:gen-yes — `ModelBootstrap`/`ForgeBootstrap`/`OnnxAssetForge`/`ComfyUiAssetForge` split-brain. One model locator + one provider factory.
 - `[x]` **EMB-046** · docs/source conflict · Editor:no — README says "no char creation / AI test-wired only"; goal says creation exists + LLM partial. README → point to CURRENT_STATE. (== P0-C)
@@ -122,7 +122,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-050** · reports/ref sprawl · Editor:no — old sprint/audit reports in active docs root. Archive `docs/archive/YYYY-MM/`.
 - `[x]` **EMB-051** · plugin dep hell · Editor:yes — 127 plugin files; NuGet marker missing meta; LFS DLLs. `docs/DEPENDENCIES.md` + import audit.
 - `[x]` **EMB-053** · build-size/delivery · Editor:yes — ~14GB build w/ ONNX/cuDNN; LFS model pointers. Decide code-only+downloader vs curated-LFS.
-- `[ ]` **EMB-054** · scene YAML static limits · Editor:yes — can't prove no missing scripts statically. Editor scene-validation menu/test.
+- `[x]` **EMB-054** · scene YAML static limits · Editor:yes — can't prove no missing scripts statically. Editor scene-validation menu/test.
 - `[x]` **EMB-055** · prefab policy · Editor:yes — scene recipes vs prefabs ownership unclear. Decide policy, no blind change.
 - `[x]` **EMB-056** · scene hardcoding · Editor:yes — hardcoded scene names across runtime/editor/diag. Central scene-ID registry.
 - `[ ]` **EMB-057** · Slice* legacy · Editor:yes — `SliceGameController`/`SlicePlayerRig` legacy input+file saves. Ref-scan then archive/delete.
