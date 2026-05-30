@@ -75,6 +75,16 @@ namespace EmberCrpg.Editor.Ember.Build
             ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_graph64_9.dll", editor: true, windows64: true);
             ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_heuristic64_9.dll", editor: true, windows64: true);
             ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/cudnn_ops64_9.dll", editor: true, windows64: true);
+
+            // LLM native stack — llama.cpp + ggml backends + multimodal. Same stub-.meta
+            // problem as cuDNN: Unity auto-generates GUID-only stubs and the Editor refuses to
+            // load them in Play Mode, so any in-Editor AskDM/NPC-dialog LLM call silently
+            // skipped the native path. Enable for both Editor and Win64 with x86_64.
+            ConfigureNativePlugin("Assets/Plugins/x86_64/llama.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/ggml.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/ggml-base.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/ggml-cpu.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/mtmd.dll", editor: true, windows64: true);
         }
 
         private static void ConfigureNativePlugin(string path, bool editor, bool windows64)
