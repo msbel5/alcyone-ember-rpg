@@ -43,12 +43,19 @@ namespace EmberCrpg.Editor.Ember.Build
 
         private static void ConfigureOnnxNativePlugins()
         {
-            ConfigureNativePlugin("Assets/Plugins/x86_64/onnxruntime.dll", editor: true, windows64: false);
-            ConfigureNativePlugin("Assets/Plugins/x86_64/onnxruntime_providers_shared.dll", editor: true, windows64: false);
-            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime.dll", editor: false, windows64: true);
-            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_cuda.dll", editor: false, windows64: true);
-            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_shared.dll", editor: false, windows64: true);
-            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_tensorrt.dll", editor: false, windows64: true);
+            // User goal: "Editorda SDXL olucak her zaman, en iyi modelleri kullanıcaz" — Editor
+            // must use the same CUDA-accelerated ONNX runtime as the build, so SDXL Turbo works
+            // in Play Mode at Daggerfall-quality. The earlier split (CPU-only in Editor, CUDA
+            // in Build) meant Editor Play Mode always fell back to Sd15LcmPipeline → 128px
+            // blurry icons. Now: the CUDA pair under Assets/Plugins/x86_64/cuda/ is enabled for
+            // both Editor and Win64; the CPU-only pair at Assets/Plugins/x86_64/ is disabled so
+            // there is no duplicate-onnxruntime.dll conflict in either platform.
+            ConfigureNativePlugin("Assets/Plugins/x86_64/onnxruntime.dll", editor: false, windows64: false);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/onnxruntime_providers_shared.dll", editor: false, windows64: false);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_cuda.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_shared.dll", editor: true, windows64: true);
+            ConfigureNativePlugin("Assets/Plugins/x86_64/cuda/onnxruntime_providers_tensorrt.dll", editor: true, windows64: true);
 
             // cuDNN DLLs — gitignored binaries that Unity creates STUB .meta files for on first
             // import (just fileFormatVersion + guid, no PluginImporter platformData). Stubs let
