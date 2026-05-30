@@ -42,6 +42,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-llm-proof"))
+            {
+                yield return RunLlmProof();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             yield return CaptureAfter(1.5f, "boot");
             yield return CaptureAfter(0.5f, "assetgen");
             LoadingScreen.Dismiss();
@@ -183,6 +190,64 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield return CaptureFixedAfter(0.25f, "tour_" + idx + "_" + scene + "_noui.png");
                 for (int c = 0; c < canvases.Length; c++) if (canvases[c] != null) canvases[c].enabled = true;
             }
+        }
+
+        // EMB-006: real LLM round-trip proof. Waits for the native LLM to register, calls it with a
+        // DM prompt, and writes the provider/model provenance + the actual response text to
+        // llm-proof.txt. Headless diagnostic (no rendering), so the synchronous Complete() call is
+        // fine — it runs, writes, and quits. Proves whether the on-device Qwen is genuinely wired or
+        // only producing canned fallback text.
+        private IEnumerator RunLlmProof()
+        {
+            float deadline = Time.realtimeSinceStartup + 90f;
+            while (EmberCrpg.Presentation.Ember.Forge.ForgeLocator.NativeLlm == null
+                   && Time.realtimeSinceStartup < deadline)
+                yield return new WaitForSecondsRealtime(0.5f);
+
+            var path = Path.Combine(_outputDir, "llm-proof.txt");
+            var llm = EmberCrpg.Presentation.Ember.Forge.ForgeLocator.NativeLlm;
+            if (llm == null)
+            {
+                File.WriteAllText(path, "FAIL: ForgeLocator.NativeLlm was never registered (LLM not wired).\n");
+                yield break;
+            }
+
+            File.WriteAllText(path,
+                "NativeLlm: " + llm.GetType().FullName + "\n" +
+                "ModelPath: " + llm.ModelPath + "\n" +
+                "IsAvailable: " + llm.IsAvailable + "\n" +
+                "Calling Complete() OFF the main thread (Task.Run); polling...\n");
+
+            // EMB-006 + EMB-007: run the blocking inference (incl. the slow first-call model load)
+            // on a worker thread so the Unity main loop stays responsive — exactly the gameplay path.
+            // Poll the task from the coroutine with a generous CPU-inference timeout.
+            EmberCrpg.Domain.AiDm.LlmResponse resp = null;
+            Exception error = null;
+            var task = System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    var req = new EmberCrpg.Domain.AiDm.LlmRequest(
+                        "ember-dm", "llm-proof",
+                        null, 48, 42UL,
+                        "You are the Ember dungeon master. Reply in one short, vivid sentence.",
+                        new[] { "Player asks: What rumours stir in the tavern tonight?" });
+                    resp = llm.Complete(req);
+                }
+                catch (Exception ex) { error = ex; }
+            });
+
+            float infDeadline = Time.realtimeSinceStartup + 240f;
+            while (!task.IsCompleted && Time.realtimeSinceStartup < infDeadline)
+                yield return new WaitForSecondsRealtime(0.5f);
+
+            string outcome;
+            if (!task.IsCompleted) outcome = "TIMEOUT: inference did not finish within 240s\n";
+            else if (error != null) outcome = "EXCEPTION:\n" + error + "\n";
+            else if (resp == null) outcome = "RESULT: (null response)\n";
+            else outcome = "RESULT OK\n--- RESPONSE TEXT ---\n" + resp.Text + "\n--- END ---\n";
+            File.AppendAllText(path, outcome);
+            Debug.Log("[EmberProofScreenshotDriver] llm-proof: " + outcome);
         }
 
         private IEnumerator CaptureFixedAfter(float seconds, string fileName)
