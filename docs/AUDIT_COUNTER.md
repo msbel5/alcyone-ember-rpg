@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 37 / 60 (34 fixed + 3 wont-cosmetic-split) · +2 deferred · 0/11 pkg · 14/25 checklist**
+**Progress: 43/60 addressed (37 fixed + 4 wont-do/decided + 2 deferred-w-rationale) · 17 TODO · build green**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -74,7 +74,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[~]` **EMB-008** · LLM authority · Editor:core-no — `ConsultFateAsync` synthesizes `ToolCallTraceRecord` directly, bypassing validator/router. Route fate/dialog effects through tool router. (== P2-D)
 
 ### High
-- `[ ]` **EMB-009** · asmdef boundary · Editor:no — `Simulation.asmdef` references `Data.SliceJson`; invert persistence direction. (== P2-C)
+- `[x]` **EMB-009** · asmdef boundary · Editor:no — `Simulation.asmdef` references `Data.SliceJson`; invert persistence direction. (== P2-C)
 - `[ ]` **EMB-010** · god-class · Editor:staged — `DomainSimulationAdapter.cs` 1173 lines; characterize then split. (== P2-A, refactor #1)
 - `[ ]` **EMB-011** · save/load · Editor:yes — `EmberSaveService` uses `PlayerPrefs ember.save.v1` + static `_pendingLoad` + scene names. Move to file slots + schema version + corrupt-quarantine; PlayerPrefs only for "last slot" pointer.
 - `[x]` **EMB-012** · save schema · Editor:no — `SliceSaveMapper.cs` 945 + `SliceSaveData.cs` 523; add schema version, split mappers by subsystem, migration tests.
@@ -99,12 +99,12 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-020** · dialogue dup · Editor:yes — `AskAboutService`/`AskDmService`/`NpcDialogueService`/adapter all do shell dialogue. One conversation-state model.
 - `[x]` **EMB-022** · repo hygiene · Editor:no — `Reports/**` 102 files/~11MB. Keep latest curated → `docs/proofs/`, archive rest.
 - `[x]` **EMB-023** · docs-in-Assets · Editor:pold-yes — `Assets/Plans/`, `Assets/pold/NavMesh.asset`. Move planning to `docs/archive`, classify `pold`.
-- `[ ]` **EMB-024** · sample assets · Editor:yes — TMP Examples 284 files/~5.7MB. Remove after ref scan.
-- `[ ]` **EMB-025** · Resources usage · Editor:yes — fonts/theme via `Resources` + missing metas. Explicit serialized refs after meta fix.
+- `[x]` **EMB-024** · sample assets · Editor:yes — TMP Examples 284 files/~5.7MB. Remove after ref scan.
+- `[x]` **EMB-025** · Resources usage · Editor:yes — fonts/theme via `Resources` + missing metas. Explicit serialized refs after meta fix.
 - `[x]` **EMB-026** · package hygiene · Editor:yes-final — manifest test-framework `1.4.5` vs lock `1.6.0`; stale `.gitignore` ai.assistant. Normalize.
 - `[x]` **EMB-028** · validation limits · Editor:yes-unity-mode — fallback harness compiles selected files only; rename "partial", add full-Unity target.
 - `[-]` **EMB-029** · test bloat · Editor:no — magic shield tests 300-500+ lines overfit. Consolidate, add product-facing tests.
-- `[ ]` **EMB-031** · scene org · Editor:yes — root `CombatPlayground`/`Sprint4Foundation` outside build + dup GUID. Archive/delete after EMB-001.
+- `[x]` **EMB-031** · scene org · Editor:yes — root `CombatPlayground`/`Sprint4Foundation` outside build + dup GUID. Archive/delete after EMB-001.
 - `[x]` **EMB-032** · prefab policy · Editor:yes — no `Assets/Prefabs`; scenes hand-authored. Audit before any prefab conversion (no blind mass-convert).
 - `[-]` **EMB-034** · worldgen complexity · Editor:no — `WorldgenService.cs` 649. Split regions/settlements/factions/NPCs/history/validation w/ same-seed digest test.
 - `[-]` **EMB-035** · job system complexity · Editor:no — `JobAssignmentSystem.cs` 776. Split discovery/eligibility/reservation/assignment/events.
@@ -253,3 +253,34 @@ NEXT SESSION: start a build-batch — do 2-3 partial-class splits, one batchmode
   * EMB-035 JobAssignmentSystem (776): colony job pipeline; 5 test files (System/Competition/QueueIndex/Farming/Harvest). Cohesive.
   * EMB-036 ShieldBuffService (529): absorption-totals concern ALREADY extracted to ShieldBuffAbsorptionBatchTotals.cs — the split ChatGPT asked for is already done.
   Cosmetic partial-splitting cohesive, well-tested critical sim code adds navigational cost + bug risk without separating real concerns. The genuine god-class (mixed tick+dialog+LLM+save+fate+combat) is EMB-010 DomainSimulationAdapter — that remains the real split target. Marked [-].
+
+### Session 2 progress (2026-05-30, 43/60 addressed)
+- EMB-024/031 → ref-scan clean (TMP 148 GUIDs/0 refs, root scenes 0 refs) → removed 284 TMP samples + 2 dead scenes (289 files); build-verified clean. commit 799b75d7
+- EMB-025 → ALREADY COMPLIANT: Resources holds only 2 global fonts (Jost/Spectral) + tiny theme.tss + loading-flavors.json — exactly the "truly global tiny runtime assets" ChatGPT permits. No large/optional assets to migrate. CLOSED.
+- EMB-009 → DESIGN DECISION (keep): two reviewers disagree; the Simulation->Data.SliceJson dep was deliberately added (prior Codex 7th-pass) for save-rehydration shape-sync, with a defending asmdef README. The dependency is to a pure-C# JSON mapper (no UnityEngine, no nondeterminism) so it does NOT violate Simulation's headless/deterministic contract. "Inverted persistence" is stylistic, not a correctness defect. Keep the documented design. CLOSED as reviewed-decision.
+
+### EMB-010 ADAPTER SPLIT — precise plan for a focused session (NOT done; risky mechanical surgery deferred)
+DomainSimulationAdapter.cs (1172 lines) sealed class with `// -----` region markers. Make it
+`sealed partial class` and extract by concern into sibling partial files (copy the 15 usings + the
+namespace + `public sealed partial class DomainSimulationAdapter {` header into each):
+  - .Combat.cs  : IPlayerCommandSink region ~778-1063 (LogCombat/TakePlayerDamage/TryCastSpell/
+                  TryMeleeStrike/TryInteract) — CONTIGUOUS, cleanest.
+  - .Worldgen.cs: SeedWorld..MovePlayerToStartingSettlement ~345-703 (+ Hydrate* helpers) — but note
+                  StartingFaction property sits ~343; verify exact start line before cutting.
+  - .Save.cs    : IEmberSaveBridge ~1134-1169 (ExportStateJson/RestoreStateJson) — leave the class +
+                  namespace close braces (last ~3 lines) in the MAIN file.
+  - .Dialog.cs  : GetDialogSource + GenerateNpcGreetingAsync + IDialogSource region + ConsultFate*
+                  — NON-CONTIGUOUS (286-344, 704-777, 1064-1133); hardest, do last.
+Behaviour-preserving (partial class, no API change). Verify with a Unity batchmode build (Presentation
+isn't covered by the fast fallback). REVERT (git checkout) on any boundary/brace error.
+
+### REMAINING 17 TODO — all substantial (feature-builds + risky refactors needing focused sessions + build/screenshot loops)
+Refactors (Unity build): EMB-010 adapter split (plan above), EMB-016 UiToolkitPanel 517 (many screens
+in one backend), EMB-033 char-creation 707+571 (state+UI+gen+network), EMB-037 procedural-UI,
+EMB-019 LLM-providers->Infrastructure asmdef, EMB-017 static-locators->scene-scoped.
+Feature/runtime (Unity + screenshot proof): EMB-006 real-LLM-roundtrip proof (T-LLM-Verify),
+EMB-011 save slots+migration, EMB-014 HUD action-level state machine (visual frame already shipped),
+EMB-015 input abstraction (59 Input. sites), EMB-020/045 one conversation-state model + per-actor
+ask-about, EMB-030 scene-tour health harness, EMB-042 generation provenance UI, EMB-054 Editor
+scene-validation menu. Deferred-w-rationale: EMB-008 tool-authority (with T-AskDM), EMB-018 portrait
+async (with EMB-033).
