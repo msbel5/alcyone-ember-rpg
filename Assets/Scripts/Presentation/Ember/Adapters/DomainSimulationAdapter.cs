@@ -29,6 +29,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _activeDialogActor = string.Empty;
         private string _currentDialogLine = string.Empty;
         private string _currentPortrait = "portrait_npc_placeholder";
+        // EMB-020/045: the one per-actor conversation model (current speaker + their role/faction topics).
+        private ConversationState _conversation = ConversationState.None;
         private string _pendingFate = string.Empty;
         private bool _isFateThinking;
         private bool _isDialogThinking;
@@ -294,9 +296,22 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (npc != null)
             {
                 if (!string.IsNullOrEmpty(npc.PortraitAssetPath)) _currentPortrait = npc.PortraitAssetPath;
-                
+
+                // EMB-045: this NPC's Ask-About topics come from THEIR role + faction (+ a little shared
+                // world lore), not the global _world.Topics menu. EMB-020: bind speaker + portrait +
+                // topics into the one ConversationState the dialog surface reads.
+                var perActorTopics = NpcTopicCatalog.For(npc.Role, npc.Faction.Value, _world.Topics);
+                _conversation = new ConversationState(_activeDialogActor, _currentPortrait, perActorTopics);
+
                 // Fire async greeting
                 _ = GenerateNpcGreetingAsync(npc);
+            }
+            else
+            {
+                // No seed record (ad-hoc actor): fall back to the shared world topics, still funneled
+                // through the one ConversationState model so GetTopics/SelectTopic have a single source.
+                _conversation = new ConversationState(
+                    _activeDialogActor, _currentPortrait, _world.Topics ?? new List<AskAboutTopic>());
             }
 
             return this;
@@ -712,7 +727,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             : _currentDialogLine;
         public bool IsThinking => _isDialogThinking;
         public string GetPortraitName() => _currentPortrait;
-        public IReadOnlyList<string> GetTopics() => _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
+        // EMB-045: surface THIS actor's topics (role/faction-derived), not the global menu. Falls back
+        // to the world list only when no conversation is active.
+        public IReadOnlyList<string> GetTopics()
+        {
+            if (_conversation != null && _conversation.Topics.Count > 0)
+                return _conversation.Topics.Select(t => t.Id).ToList();
+            return _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
+        }
 
         public void SelectTopic(string topicId)
         {
@@ -725,7 +747,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // on success; _isDialogThinking gates the "thinking…" indicator.
             if (string.IsNullOrEmpty(topicId)) return;
 
-            var topic = _world.Topics?.FirstOrDefault(t => string.Equals(t.Id, topicId, System.StringComparison.Ordinal));
+            // EMB-045: answer from THIS actor's topic set first; only fall back to the world list. An
+            // actor never answers for a topic they did not offer.
+            var topic = _conversation?.FindTopic(topicId)
+                ?? _world.Topics?.FirstOrDefault(t => string.Equals(t.Id, topicId, System.StringComparison.Ordinal));
             _currentDialogLine = !string.IsNullOrEmpty(topic?.Answer)
                 ? topic.Answer
                 : $"{_activeDialogActor} considers \"{topicId}\".";
