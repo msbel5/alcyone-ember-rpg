@@ -43,9 +43,9 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 5 / 60 defects done (+1 partial) · 0 / 11 packages · 5 / 25 final-checklist items**
+**Progress: 8 / 60 defects done (+1 partial) · 0 / 11 packages · 6 / 25 final-checklist items**
 
-**▶ NOW = EMB-052 (secrets/.env ignore patterns).** Done headless: 001,047,058,046,005 + pre-existing StaticPromptCatalog test greened (fallback 1421/0). EMB-043 still partial (manifest done; AI-stack doc pending). Next: 052, 048/050, 049, 004-scan, static-audit tooling.
+**▶ NOW = EMB-004 + static-audit tooling (LFS pointer scan + dup-GUID/missing-meta/orphan-meta/Input/PlayerPrefs/Task.Run scanners under tools/validation/).** Done headless: 001,047,058,046,005,052,048,049 + greened pre-existing test (fallback 1421/0). EMB-043 partial (AI-stack doc pending). EMB-050/022 = deferred large file-move (Reports+sprint archive + mirror dedup). Next after 004: 019/009 asmdef, 038/039/040 determinism docs, 012/034/035 splits.
 
 > Forge/SDXL note (pre-audit, already fixed this session): CUDA onnxruntime + cuDNN + llama/ggml/mtmd
 > `.meta` files now Editor+Win64-enabled (commits ebc11d2b, 5ebda704, 753f1b0d) so Editor Play Mode
@@ -90,7 +90,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-033** · char-creation complexity · Editor:yes — controller 707 + rendering 571 + portrait LLM. Split state/view/gen/transition.
 - `[ ]` **EMB-041** · model/provider dup · Editor:gen-yes — `ModelBootstrap`/`ForgeBootstrap`/`OnnxAssetForge`/`ComfyUiAssetForge` split-brain. One model locator + one provider factory.
 - `[x]` **EMB-046** · docs/source conflict · Editor:no — README says "no char creation / AI test-wired only"; goal says creation exists + LLM partial. README → point to CURRENT_STATE. (== P0-C)
-- `[ ]` **EMB-048** · PRD duplication · Editor:no — `Reference/PRDs` 97 + `docs/reference/prd` + `docs/prds` overlap. One matrix, active/reference/deprecated tags. (== P4-A)
+- `[x]` **EMB-048** · PRD duplication · Editor:no — `Reference/PRDs` 97 + `docs/reference/prd` + `docs/prds` overlap. One matrix, active/reference/deprecated tags. (== P4-A)
 - `[x]` **EMB-058** · no current-state one-pager · Editor:no — status buried in 200+ line goal. Create `docs/CURRENT_STATE.md`. (== P0-C)
 
 ### Medium
@@ -118,7 +118,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-044** · cloud/network policy · Editor:no — `CloudLlmClient`/`LocalQwenClient`/portrait provider. Cloud opt-in, disabled-by-default, never authoritative.
 - `[ ]` **EMB-045** · ask-about scope · Editor:dialog-yes — global `_world.Topics`. Per-actor conversation state + memory/faction filters.
 - `[x]` **EMB-047** · case-sensitive links · Editor:no — `DOCS/` vs real `docs/`. Normalize lowercase.
-- `[ ]` **EMB-049** · old backend ref · Editor:no — `Reference/OldBackendData/**`. Add README "import/reference-only".
+- `[x]` **EMB-049** · old backend ref · Editor:no — `Reference/OldBackendData/**`. Add README "import/reference-only".
 - `[ ]` **EMB-050** · reports/ref sprawl · Editor:no — old sprint/audit reports in active docs root. Archive `docs/archive/YYYY-MM/`.
 - `[ ]` **EMB-051** · plugin dep hell · Editor:yes — 127 plugin files; NuGet marker missing meta; LFS DLLs. `docs/DEPENDENCIES.md` + import audit.
 - `[ ]` **EMB-053** · build-size/delivery · Editor:yes — ~14GB build w/ ONNX/cuDNN; LFS model pointers. Decide code-only+downloader vs curated-LFS.
@@ -130,7 +130,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-060** · test/package lock mismatch · Editor:yes — manifest `1.4.5` vs lock `1.6.0`. Resolve once, commit normalized.
 
 ### Low
-- `[ ]` **EMB-052** · secrets · Editor:no — no real keys found; cloud LLM code = future risk. Add `.env`/secret ignore patterns + docs; env-only keys.
+- `[x]` **EMB-052** · secrets · Editor:no — no real keys found; cloud LLM code = future risk. Add `.env`/secret ignore patterns + docs; env-only keys.
 
 ---
 
@@ -143,9 +143,9 @@ Order by safety×value:
 3. `[x]` EMB-058 + EMB-046 + EMB-003-scan — create `docs/CURRENT_STATE.md`, de-stale README (= P0-C)
 4. `[x]` EMB-005 — model manifest path normalize + `VerifyAllPresent` test (= P1-A)
 5. `[ ]` EMB-043 — AI-stack doc, fix Qwen version mismatch
-6. `[ ]` EMB-052 — secret/.env ignore patterns
-7. `[ ]` EMB-048 + EMB-050 — PRD matrix dedup + docs archive plan (= P4-A)
-8. `[ ]` EMB-049 — OldBackendData README
+6. `[x]` EMB-052 — secret/.env ignore patterns
+7. `[~]` EMB-048(done) + EMB-050(deferred) — PRD matrix dedup + docs archive plan (= P4-A)
+8. `[x]` EMB-049 — OldBackendData README
 9. `[ ]` EMB-004 — LFS pointer-scan validation script (= P0-B)
 10. `[ ]` static-audit tooling — duplicate-GUID / missing-meta / orphan-meta / LFS / `Input.` / `PlayerPrefs` / `Task.Run` scanners under `tools/validation/`
 11. `[ ]` EMB-022 + EMB-059 — Reports + `.claude/skills` classification (move/ignore, ref-safe)
@@ -172,7 +172,7 @@ runtime/UI proof. Each needs build-clean + scene-tour screenshot review.
 - `[ ]` 1. Duplicate-GUID + missing/orphan meta audit (one Unity-safe PR)
 - `[ ]` 2. Static validation: dup-GUID, missing-meta, orphan-meta, LFS-pointer
 - `[x]` 3. `docs/CURRENT_STATE.md` + de-stale README
-- `[ ]` 4. PRD source-map: one matrix, active/reference/deprecated, fix `DOCS/`
+- `[x]` 4. PRD source-map: governance decision-tree + DOCS/ fixed (physical dedup deferred)
 - `[x]` 5. AI/model manifest paths + hash policy (no binary changes)
 - `[ ]` 6. LFS/runtime dep docs + CI pointer checks
 - `[ ]` 7. Save/load characterization tests (before changing persistence)
@@ -212,3 +212,7 @@ as Unity proof · no casual package/plugin version changes.
 - EMB-047 → 125 docs files had uppercase DOCS/ path prefix; sed DOCS/→docs/ (DOCS: mechanism IDs preserved). commit 09d43068
 - EMB-058/046/043 → created docs/CURRENT_STATE.md; replaced README 62-line stale status block with pointer; README Qwen3→Qwen2.5-1.5B. commit 0df3b1a0
 - EMB-005 → manifest paths were flattened + wrong dir names; rewrote to nested layout matching ForgeBootstrap + disk (10/10 resolve); dropped 3B + flattened tokenizers; added ShippedManifest guard test. Also greened pre-existing StaticPromptCatalog floor-header test. commits d3177ff1 + test-fix
+- EMB-052 → no hardcoded keys (scan clean); added .env/secret gitignore patterns + docs/SECURITY_NOTES.md (env-only key policy). commit 7a4242cb
+- EMB-048 → 3 PRD locations; Reference/PRDs vs docs/reference/prd are 96/97 identical; wrote docs/PRD_GOVERNANCE.md decision-tree + stub-matrix pointers; declared docs/reference/prd deprecated-mirror. Physical dedup deferred to EMB-050.
+- EMB-049 → added Reference/OldBackendData/README.md (import/reference-only, 48 old JSON files).
+- EMB-050/EMB-022 DEFERRED: 102 tracked Reports + 156 docs/sprint-* + 97-file mirror = ~400 file move; large diff + link-break risk; do as dedicated reviewed pass (surface to user before executing).
