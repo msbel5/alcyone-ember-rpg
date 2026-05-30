@@ -117,7 +117,7 @@ all four before kicking off any atom and before opening any PR.
   self-checks against this before opening a PR. Failure-escalation
   table at the bottom tells Inspector when to revert versus when to
   request changes.
-- [The active sprint atom map](docs/sprint-faz-4-atom-map.md) — top-of-
+- [The active sprint atom map](docs/archive/sprint/sprint-faz-4-atom-map.md) — top-of-
   file **Debt ledger** is a gate, not a footnote. Before kicking off
   the next atom, Captain takes one action against the ledger (close /
   advance / defer) and records it in the kickoff doc.
