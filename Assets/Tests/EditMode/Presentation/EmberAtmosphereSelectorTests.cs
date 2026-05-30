@@ -9,15 +9,15 @@ using NUnit.Framework;
 namespace EmberCrpg.Tests.EditMode.Presentation
 {
     /// <summary>Verifies atmosphere hooks without requiring Unity audio assets or playback.</summary>
-    public sealed class SliceAtmosphereSelectorTests
+    public sealed class EmberAtmosphereSelectorTests
     {
         [Test]
         public void Select_StartRoom_UsesRoomTemplateAndClosedDoorCues()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var room = world.Dungeon.FindRoom(world.CurrentRoomId);
 
-            var cues = SliceAtmosphereSelector.Select(world);
+            var cues = EmberAtmosphereSelector.Select(world);
 
             Assert.That(cues.AmbienceId, Does.StartWith(ExpectedAmbiencePrefix(room.TemplateId)));
             Assert.That(cues.MusicId, Is.EqualTo("music.dungeon.explore"));
@@ -28,11 +28,11 @@ namespace EmberCrpg.Tests.EditMode.Presentation
         [Test]
         public void Select_CurrentEnemyRoomWithCombatActive_UsesCombatMusicAndSfx()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             world.CurrentRoomId = world.EnemyRoomId;
             world.EncounterActive = true;
 
-            var cues = SliceAtmosphereSelector.Select(world);
+            var cues = EmberAtmosphereSelector.Select(world);
 
             Assert.That(cues.MusicId, Is.EqualTo("music.combat.low"));
             Assert.That(cues.SfxId, Is.EqualTo("sfx.combat-pulse"));
@@ -41,16 +41,16 @@ namespace EmberCrpg.Tests.EditMode.Presentation
         [Test]
         public void Select_UnvisitedAndClearedRoomStates_VaryAmbienceDeterministically()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var alternateRoom = world.Dungeon.Rooms.First(room => room.Id != world.CurrentRoomId);
             var state = world.DungeonRoomStates.First(candidate => candidate.RoomId == alternateRoom.Id);
             world.CurrentRoomId = alternateRoom.Id;
             state.Visited = false;
 
-            var unvisited = SliceAtmosphereSelector.Select(world);
+            var unvisited = EmberAtmosphereSelector.Select(world);
             state.Visited = true;
             state.Cleared = true;
-            var cleared = SliceAtmosphereSelector.Select(world);
+            var cleared = EmberAtmosphereSelector.Select(world);
 
             Assert.That(unvisited.AmbienceId, Does.EndWith(".unvisited"));
             Assert.That(cleared.AmbienceId, Does.EndWith(".cleared"));
@@ -60,10 +60,10 @@ namespace EmberCrpg.Tests.EditMode.Presentation
         [Test]
         public void FormatHud_ShowsCurrentAtmosphereForDebugValidation()
         {
-            var world = new SliceWorldFactory().Create(1337);
-            var cues = SliceAtmosphereSelector.Select(world);
+            var world = new WorldFactory().Create(1337);
+            var cues = EmberAtmosphereSelector.Select(world);
 
-            var hud = SliceHudFormatter.Format(world, "/tmp/save.json", "ready", "none", cues);
+            var hud = EmberHudFormatter.Format(world, "/tmp/save.json", "ready", "none", cues);
 
             Assert.That(hud, Does.Contain("Atmosphere:"));
             Assert.That(hud, Does.Contain(cues.AmbienceId));

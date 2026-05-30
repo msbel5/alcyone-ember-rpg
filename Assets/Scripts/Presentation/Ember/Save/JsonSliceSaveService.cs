@@ -67,21 +67,21 @@ namespace EmberCrpg.Presentation.Ember.Save
             _recipeWorkOrders = orders.Select(order => order ?? throw new ArgumentException("Recipe work orders cannot contain null entries.", nameof(orders))).ToList();
         }
 
-        public string SaveToJson(SliceWorldState world)
+        public string SaveToJson(WorldState world)
         {
-            var data = SliceSaveMapper.ToData(world);
-            data.worksites = SliceSaveMapper.ToWorksiteData(_worksites);
-            data.recipeWorkOrders = _recipeWorkOrders.Select(EmberCrpg.Simulation.Process.SliceSaveRehydration.ToRecipeWorkOrderData).ToArray();
-            data.jobs = SliceSaveMapper.ToJobBoardData(_jobs);
-            data.soils = SliceSaveMapper.ToSoilComponentData(_soils);
-            data.plants = SliceSaveMapper.ToPlantComponentData(_plants);
+            var data = WorldSaveMapper.ToData(world);
+            data.worksites = WorldSaveMapper.ToWorksiteData(_worksites);
+            data.recipeWorkOrders = _recipeWorkOrders.Select(EmberCrpg.Simulation.Process.WorldSaveRehydration.ToRecipeWorkOrderData).ToArray();
+            data.jobs = WorldSaveMapper.ToJobBoardData(_jobs);
+            data.soils = WorldSaveMapper.ToSoilComponentData(_soils);
+            data.plants = WorldSaveMapper.ToPlantComponentData(_plants);
             return JsonUtility.ToJson(data, true);
         }
 
-        public SliceWorldState LoadFromJson(string json)
+        public WorldState LoadFromJson(string json)
         {
             // Codex audit (A/P3): JsonUtility.FromJson<T>(null/empty) returns
-            // an empty SliceSaveData with default everything, which would
+            // an empty WorldSaveData with default everything, which would
             // round-trip into a vanilla world but mask a caller-side data
             // outage (corrupt PlayerPrefs, dropped HTTP body, etc.). Fail
             // fast instead so the caller can decide whether to fall back to
@@ -89,19 +89,19 @@ namespace EmberCrpg.Presentation.Ember.Save
             if (string.IsNullOrWhiteSpace(json))
                 throw new ArgumentException("Save JSON must be non-empty.", nameof(json));
 
-            var data = JsonUtility.FromJson<SliceSaveData>(json);
+            var data = JsonUtility.FromJson<WorldSaveData>(json);
             if (data == null)
-                throw new InvalidOperationException("Save JSON did not deserialize into a SliceSaveData payload.");
-            // Codex audit (seventh pass B-P1 #10): SliceSaveMapper.ToWorld
+                throw new InvalidOperationException("Save JSON did not deserialize into a WorldSaveData payload.");
+            // Codex audit (seventh pass B-P1 #10): WorldSaveMapper.ToWorld
             // no longer constructs the seed world (would have leaked a
             // Simulation type into Data). Build the seed here, then map.
-            var seedWorld = EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed);
-            var world = SliceSaveMapper.ToWorld(data, seedWorld);
-            _worksites = SliceSaveMapper.ToWorksiteStore(data.worksites);
+            var seedWorld = EmberCrpg.Simulation.Process.WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed);
+            var world = WorldSaveMapper.ToWorld(data, seedWorld);
+            _worksites = WorldSaveMapper.ToWorksiteStore(data.worksites);
             _recipeWorkOrders = ToRecipeWorkOrders(data.recipeWorkOrders);
-            _jobs = SliceSaveMapper.ToJobBoard(data.jobs);
-            _soils = SliceSaveMapper.ToSoilComponentStore(data.soils);
-            _plants = SliceSaveMapper.ToPlantComponentStore(data.plants);
+            _jobs = WorldSaveMapper.ToJobBoard(data.jobs);
+            _soils = WorldSaveMapper.ToSoilComponentStore(data.soils);
+            _plants = WorldSaveMapper.ToPlantComponentStore(data.plants);
             return world;
         }
 
@@ -112,7 +112,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             if (_resolveRecipe == null)
                 throw new InvalidOperationException("JsonSliceSaveService needs a recipe resolver to load active recipe work orders.");
 
-            return data.Select(order => EmberCrpg.Simulation.Process.SliceSaveRehydration.ToRecipeWorkOrder(order, _resolveRecipe)).ToList();
+            return data.Select(order => EmberCrpg.Simulation.Process.WorldSaveRehydration.ToRecipeWorkOrder(order, _resolveRecipe)).ToList();
         }
     }
 }

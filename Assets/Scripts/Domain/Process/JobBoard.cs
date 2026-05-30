@@ -167,7 +167,7 @@ namespace EmberCrpg.Domain.Process
 
         /// <summary>
         /// Returns the deterministic claim sequence for a claimed job, or 0 when unclaimed
-        /// or unknown. Persisted by SliceSaveMapper so the load path can preserve original
+        /// or unknown. Persisted by WorldSaveMapper so the load path can preserve original
         /// queue order across save/load (PR#138 bot review fix).
         /// </summary>
         public int GetClaimSequence(JobId id)

@@ -32,7 +32,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             if (string.IsNullOrEmpty(json)) return;
             // ARCH-12: replace the restored state via an explicit, reflection-free CopyFrom on the
-            // world itself (see SliceWorldState.CopyFrom). The previous reflection field-walk silently
+            // world itself (see WorldState.CopyFrom). The previous reflection field-walk silently
             // followed any field type/visibility change in this determinism-critical load path and hid
             // ref-aliasing bugs; CopyFrom is type-checked and a reflection coverage test guards that it
             // mirrors every public field.

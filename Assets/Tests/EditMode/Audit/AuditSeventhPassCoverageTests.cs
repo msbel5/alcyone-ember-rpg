@@ -18,7 +18,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
     /// </summary>
     public sealed class AuditSeventhPassCoverageTests
     {
-        // ---- G #17: SliceTickComposer ResetAnchor / double-tick behaviour. ---
+        // ---- G #17: WorldTickComposer ResetAnchor / double-tick behaviour. ---
         [Test]
         public void SliceTickComposer_FirstAdvanceIsNoOpThenSecondMovesTime()
         {
@@ -29,8 +29,8 @@ namespace EmberCrpg.Tests.EditMode.Audit
                 new SeasonDefinition(Season.Autumn, 181, 270),
                 new SeasonDefinition(Season.Winter, 271, 360),
             });
-            var composer = new SliceTickComposer(new GameTimeAdvanceSystem(calendar));
-            var world = new SliceWorldState();
+            var composer = new WorldTickComposer(new GameTimeAdvanceSystem(calendar));
+            var world = new WorldState();
             world.Time = new GameTime(0);
 
             composer.Advance(world, tickIndex: 0);
@@ -52,8 +52,8 @@ namespace EmberCrpg.Tests.EditMode.Audit
                 new SeasonDefinition(Season.Autumn, 181, 270),
                 new SeasonDefinition(Season.Winter, 271, 360),
             });
-            var composer = new SliceTickComposer(new GameTimeAdvanceSystem(calendar));
-            var world = new SliceWorldState();
+            var composer = new WorldTickComposer(new GameTimeAdvanceSystem(calendar));
+            var world = new WorldState();
             world.Time = new GameTime(0);
 
             composer.Advance(world, tickIndex: 0);
@@ -74,8 +74,8 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void SliceTickComposer_BackwardsTickIsIdempotent()
         {
-            var composer = new SliceTickComposer();
-            var world = new SliceWorldState();
+            var composer = new WorldTickComposer();
+            var world = new WorldState();
             world.Time = new GameTime(0);
 
             composer.Advance(world, tickIndex: 0);
@@ -210,7 +210,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
                 new GridPosition(1, 0),
                 accuracy: 50, dodge: 0, armor: 0, baseDamage: 1);
 
-            var catalog = EmberCrpg.Simulation.Magic.SliceSpellCatalog.All;
+            var catalog = EmberCrpg.Simulation.Magic.WorldSpellCatalog.All;
             // Pick the first spell that targets enemies and deals damage.
             EmberCrpg.Domain.Magic.SpellDefinition damageSpell = null;
             foreach (var s in catalog)
@@ -253,8 +253,8 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void SliceTickComposer_ResetAnchorThenRebuildAccumulators_RestoresHourlyRemainder()
         {
-            var composer = new SliceTickComposer();
-            var world = new SliceWorldState();
+            var composer = new WorldTickComposer();
+            var world = new WorldState();
             world.Time = new GameTime(0);
 
             composer.Advance(world, tickIndex: 0);  // anchor
@@ -266,12 +266,12 @@ namespace EmberCrpg.Tests.EditMode.Audit
             composer.RebuildAccumulatorsFrom(world.Time);
 
             // _ticksSinceHourly is private — peek via reflection to pin behaviour.
-            var field = typeof(SliceTickComposer).GetField(
+            var field = typeof(WorldTickComposer).GetField(
                 "_ticksSinceHourly",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.That(field, Is.Not.Null, "_ticksSinceHourly field must exist for accumulator restore");
             int hourlyAccum = (int)field.GetValue(composer);
-            int expected = (int)(30L % SliceTickComposer.TicksPerGameHour); // 30 % 10 == 0
+            int expected = (int)(30L % WorldTickComposer.TicksPerGameHour); // 30 % 10 == 0
             Assert.That(hourlyAccum, Is.EqualTo(expected),
                 "RebuildAccumulatorsFrom must restore _ticksSinceHourly to TotalMinutes % TicksPerGameHour.");
         }
@@ -284,8 +284,8 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void SliceTickComposer_HourlyCatchupStampsEventsAtBoundaryNotPostAdvanceTime()
         {
-            var composer = new SliceTickComposer();
-            var world = new SliceWorldState();
+            var composer = new WorldTickComposer();
+            var world = new WorldState();
             world.Time = new GameTime(0);
 
             // Register an actor so NeedsSystem actually appends events.

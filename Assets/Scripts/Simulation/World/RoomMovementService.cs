@@ -17,7 +17,7 @@ namespace EmberCrpg.Simulation.World
             return room.IsWalkable(candidate) ? candidate : origin;
         }
 
-        public GridPosition Move(SliceWorldState world, GridPosition origin, int deltaX, int deltaY)
+        public GridPosition Move(WorldState world, GridPosition origin, int deltaX, int deltaY)
         {
             var candidate = origin.Translate(deltaX, deltaY);
             if (candidate.Equals(world.Room.DoorCell))

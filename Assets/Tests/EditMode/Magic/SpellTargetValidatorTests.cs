@@ -19,7 +19,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateEmberWard(), caster, requestedTarget: null);
+            var result = validator.Validate(WorldSpellCatalog.CreateEmberWard(), caster, requestedTarget: null);
 
             Assert.That(result.Success, Is.True);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.None));
@@ -32,7 +32,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateEmberWard(), caster, caster);
+            var result = validator.Validate(WorldSpellCatalog.CreateEmberWard(), caster, caster);
 
             Assert.That(result.Success, Is.True);
             Assert.That(result.RoutedTarget, Is.SameAs(caster));
@@ -45,7 +45,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var other = CreateActor(702, "Guard", ActorRole.Guard, x: 1, y: 2);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateEmberWard(), caster, other);
+            var result = validator.Validate(WorldSpellCatalog.CreateEmberWard(), caster, other);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.WrongTargetForSelfSpell));
@@ -59,7 +59,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var ally = CreateActor(702, "Guard", ActorRole.Guard, x: 1, y: 2);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateMendingTouch(), caster, ally);
+            var result = validator.Validate(WorldSpellCatalog.CreateMendingTouch(), caster, ally);
 
             Assert.That(result.Success, Is.True);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.None));
@@ -73,7 +73,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var ally = CreateActor(702, "Guard", ActorRole.Guard, x: 2, y: 2);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateMendingTouch(), caster, ally);
+            var result = validator.Validate(WorldSpellCatalog.CreateMendingTouch(), caster, ally);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.TargetNotAdjacent));
@@ -85,7 +85,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateMendingTouch(), caster, caster);
+            var result = validator.Validate(WorldSpellCatalog.CreateMendingTouch(), caster, caster);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.TargetNotAdjacent));
@@ -98,7 +98,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var ally = CreateActor(702, "Guard", ActorRole.Guard, x: 4, y: 1);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateMendingTouch(), caster, ally);
+            var result = validator.Validate(WorldSpellCatalog.CreateMendingTouch(), caster, ally);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.TargetNotAdjacent));
@@ -110,7 +110,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateMendingTouch(), caster, requestedTarget: null);
+            var result = validator.Validate(WorldSpellCatalog.CreateMendingTouch(), caster, requestedTarget: null);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.InvalidTarget));
@@ -123,7 +123,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var corpse = CreateActor(702, "Fallen", ActorRole.Guard, x: 1, y: 2, health: 0);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateMendingTouch(), caster, corpse);
+            var result = validator.Validate(WorldSpellCatalog.CreateMendingTouch(), caster, corpse);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.InvalidTarget));
@@ -136,7 +136,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var enemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 5, y: 4);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateFlameBolt(), caster, enemy);
+            var result = validator.Validate(WorldSpellCatalog.CreateFlameBolt(), caster, enemy);
 
             Assert.That(result.Success, Is.True);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.None));
@@ -150,7 +150,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var farEnemy = CreateActor(801, "Ash Rat", ActorRole.Enemy, x: 7, y: 4);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateFlameBolt(), caster, farEnemy);
+            var result = validator.Validate(WorldSpellCatalog.CreateFlameBolt(), caster, farEnemy);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.TargetOutOfRange));
@@ -185,7 +185,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateFlameBolt(), caster, requestedTarget: null);
+            var result = validator.Validate(WorldSpellCatalog.CreateFlameBolt(), caster, requestedTarget: null);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.InvalidTarget));
@@ -198,7 +198,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var corpse = CreateActor(802, "Husk", ActorRole.Enemy, x: 2, y: 1, health: 0);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateFlameBolt(), caster, corpse);
+            var result = validator.Validate(WorldSpellCatalog.CreateFlameBolt(), caster, corpse);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.InvalidTarget));
@@ -261,7 +261,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateFlameBolt(), caster: null, requestedTarget: null);
+            var result = validator.Validate(WorldSpellCatalog.CreateFlameBolt(), caster: null, requestedTarget: null);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.InvalidCaster));
@@ -274,7 +274,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var ally = CreateActor(702, "Guard", ActorRole.Guard, x: 1, y: 2);
             var validator = new SpellTargetValidator();
 
-            var result = validator.Validate(SliceSpellCatalog.CreateMendingTouch(), caster, ally);
+            var result = validator.Validate(WorldSpellCatalog.CreateMendingTouch(), caster, ally);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellTargetValidationError.InvalidCaster));
@@ -286,7 +286,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1);
             var ally = CreateActor(702, "Guard", ActorRole.Guard, x: 1, y: 2, health: 13);
             var validator = new SpellTargetValidator();
-            var routed = validator.Validate(SliceSpellCatalog.CreateMendingTouch(), caster, ally);
+            var routed = validator.Validate(WorldSpellCatalog.CreateMendingTouch(), caster, ally);
             Assert.That(routed.Success, Is.True);
 
             var cast = SpellCastResult.Ok(routed.Spell, 10, "cast");

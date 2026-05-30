@@ -20,12 +20,12 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryCast(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId });
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId });
 
             Assert.That(result.Success, Is.True);
             Assert.That(result.Error, Is.EqualTo(SpellCastError.None));
-            Assert.That(result.Spell.TemplateId, Is.EqualTo(SliceSpellCatalog.FlameBoltTemplateId));
+            Assert.That(result.Spell.TemplateId, Is.EqualTo(WorldSpellCatalog.FlameBoltTemplateId));
             Assert.That(result.ManaSpent, Is.EqualTo(12));
             Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(8));
         }
@@ -80,8 +80,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryCast(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId });
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId });
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastError.InsufficientMana));
@@ -97,12 +97,12 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryCast(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.MendingTouchTemplateId });
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.MendingTouchTemplateId });
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastError.SpellNotKnown));
-            Assert.That(result.Spell.TemplateId, Is.EqualTo(SliceSpellCatalog.FlameBoltTemplateId));
+            Assert.That(result.Spell.TemplateId, Is.EqualTo(WorldSpellCatalog.FlameBoltTemplateId));
             Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
         }
 
@@ -113,8 +113,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryCast(
                 null,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId });
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId });
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastError.InvalidCaster));
@@ -127,7 +127,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateCaster(mana: 20, health: 16);
             var service = new SpellCastingService();
 
-            var result = service.TryCast(caster, " ", new[] { SliceSpellCatalog.FlameBoltTemplateId });
+            var result = service.TryCast(caster, " ", new[] { WorldSpellCatalog.FlameBoltTemplateId });
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastError.SpellNotFound));
@@ -141,11 +141,11 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateCaster(mana: 20, health: 16);
             var service = new SpellCastingService();
 
-            var result = service.TryCast(caster, SliceSpellCatalog.FlameBoltTemplateId, null);
+            var result = service.TryCast(caster, WorldSpellCatalog.FlameBoltTemplateId, null);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastError.SpellNotKnown));
-            Assert.That(result.Spell.TemplateId, Is.EqualTo(SliceSpellCatalog.FlameBoltTemplateId));
+            Assert.That(result.Spell.TemplateId, Is.EqualTo(WorldSpellCatalog.FlameBoltTemplateId));
             Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
         }
 
@@ -171,8 +171,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryCast(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId });
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId });
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastError.InvalidCaster));

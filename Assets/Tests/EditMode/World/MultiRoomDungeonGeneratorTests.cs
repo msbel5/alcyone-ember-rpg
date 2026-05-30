@@ -47,7 +47,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void Traverse_ClosedGuardedDoorBlocksUntilSprint2DoorOpens()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var guardedDoor = world.Dungeon.Doors.First(door => door.RequiresGuardClearance);
             var traversal = new DungeonTraversalService();
             Assert.That(traversal.Traverse(world, guardedDoor.Id), Does.Contain("closed"));

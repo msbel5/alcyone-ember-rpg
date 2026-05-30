@@ -12,7 +12,7 @@ namespace EmberCrpg.Simulation.World
     /// <summary>Rules-based doorway toggle for the slice threshold.</summary>
     public sealed class DoorInteractionService
     {
-        public string Toggle(SliceWorldState world)
+        public string Toggle(WorldState world)
         {
             if (world.Actors.FirstByRole(ActorRole.Player).Position.ManhattanDistanceTo(world.Room.DoorCell) > 1)
                 return "Stand at the south threshold before working the door.";

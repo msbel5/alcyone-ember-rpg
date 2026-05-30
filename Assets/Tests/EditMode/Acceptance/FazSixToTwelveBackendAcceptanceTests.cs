@@ -91,7 +91,7 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             // attacker/defender as locals only — they never reached world.Actors,
             // so the post-round-trip assertions could not verify their vitals.
             // Replace the seed world's role actors with these test actors so
-            // SliceSaveMapper actually serialises them through ActorSaveMapper.
+            // WorldSaveMapper actually serialises them through ActorSaveMapper.
             ReplaceActorByRole(world, attacker);
             ReplaceActorByRole(world, defender);
             var action = new CombatActionDef(new CombatActionId("slash"), staminaCost: 3, "flat", "flat", "slash");
@@ -279,18 +279,18 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
             Assert.That(world.Events.Events.Count(e => e.Reason == "approved_tool_call"), Is.EqualTo(1));
         }
 
-        private static SliceWorldState NewWorld(bool seedWorldAnchors = true)
+        private static WorldState NewWorld(bool seedWorldAnchors = true)
         {
-            return new SliceWorldFactory().Create(1337, seedWorldAnchors);
+            return new WorldFactory().Create(1337, seedWorldAnchors);
         }
 
-        private static SliceWorldState RoundTrip(SliceWorldState world)
+        private static WorldState RoundTrip(WorldState world)
         {
-            var data = SliceSaveMapper.ToData(world);
-            return SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
+            var data = WorldSaveMapper.ToData(world);
+            return WorldSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed));
         }
 
-        private static void ReplaceActorByRole(SliceWorldState world, ActorRecord replacement)
+        private static void ReplaceActorByRole(WorldState world, ActorRecord replacement)
         {
             var existing = world.Actors.FirstByRole(replacement.Role);
             if (existing != null) world.Actors.Remove(existing.Id);

@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.AiDm
     /// <summary>Deterministic DM escalation handlers backed by world snapshot data.</summary>
     public sealed class DmAgentEscalationService
     {
-        public void RegisterHandlers(ToolCallRouter router, SliceWorldState world)
+        public void RegisterHandlers(ToolCallRouter router, WorldState world)
         {
             if (router == null) throw new ArgumentNullException(nameof(router));
             if (world == null) throw new ArgumentNullException(nameof(world));
@@ -42,7 +42,7 @@ namespace EmberCrpg.Simulation.AiDm
             return router.Invoke(request, registry, now, siteId, events, tracer);
         }
 
-        private static string BuildSnapshot(SliceWorldState world)
+        private static string BuildSnapshot(WorldState world)
         {
             return $"actors:{world.Actors.Count} sites:{world.Sites.Count} factions:{world.Factions.Count} stockpiles:{world.Stockpiles.Count} events:{world.Events.Count}";
         }

@@ -16,7 +16,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var service = new SpellSuccessChanceService();
 
-            var result = service.Calculate(null, SliceSpellCatalog.CreateFlameBolt());
+            var result = service.Calculate(null, WorldSpellCatalog.CreateFlameBolt());
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellSuccessChanceError.InvalidCaster));
@@ -41,7 +41,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var service = new SpellSuccessChanceService();
             var caster = CreateActor("Collapsed Mage", 40, 60, health: 0);
 
-            var result = service.Calculate(caster, SliceSpellCatalog.CreateFlameBolt());
+            var result = service.Calculate(caster, WorldSpellCatalog.CreateFlameBolt());
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellSuccessChanceError.InvalidCaster));
@@ -95,8 +95,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var mindFocusedCaster = CreateActor("Pyromancer", mind: 80, insight: 20);
             var insightFocusedCaster = CreateActor("Mystic", mind: 20, insight: 80);
 
-            var mindResult = service.Calculate(mindFocusedCaster, SliceSpellCatalog.CreateFlameBolt());
-            var insightResult = service.Calculate(insightFocusedCaster, SliceSpellCatalog.CreateFlameBolt());
+            var mindResult = service.Calculate(mindFocusedCaster, WorldSpellCatalog.CreateFlameBolt());
+            var insightResult = service.Calculate(insightFocusedCaster, WorldSpellCatalog.CreateFlameBolt());
 
             Assert.That(mindResult.Success, Is.True);
             Assert.That(mindResult.PrimaryAttributeBonus, Is.EqualTo(40));
@@ -111,8 +111,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var insightFocusedCaster = CreateActor("Mender", mind: 20, insight: 80);
             var mindFocusedCaster = CreateActor("Scholar", mind: 80, insight: 20);
 
-            var insightResult = service.Calculate(insightFocusedCaster, SliceSpellCatalog.CreateMendingTouch());
-            var mindResult = service.Calculate(mindFocusedCaster, SliceSpellCatalog.CreateMendingTouch());
+            var insightResult = service.Calculate(insightFocusedCaster, WorldSpellCatalog.CreateMendingTouch());
+            var mindResult = service.Calculate(mindFocusedCaster, WorldSpellCatalog.CreateMendingTouch());
 
             Assert.That(insightResult.Success, Is.True);
             Assert.That(insightResult.PrimaryAttributeBonus, Is.EqualTo(40));
@@ -126,7 +126,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var service = new SpellSuccessChanceService();
             var caster = CreateActor("Acolyte", mind: 60, insight: 44);
 
-            var result = service.Calculate(caster, SliceSpellCatalog.CreateFlameBolt());
+            var result = service.Calculate(caster, WorldSpellCatalog.CreateFlameBolt());
 
             Assert.That(result.Success, Is.True);
             Assert.That(result.Error, Is.EqualTo(SpellSuccessChanceError.None));
@@ -153,7 +153,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 18,
                 6,
                 new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 8, 0) });
-            var touchSpell = SliceSpellCatalog.CreateMendingTouch();
+            var touchSpell = WorldSpellCatalog.CreateMendingTouch();
 
             var areaResult = service.Calculate(caster, areaSpell);
             var touchResult = service.Calculate(caster, touchSpell);

@@ -19,8 +19,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var target = CreateActor(601, "Ash Rat", ActorRole.Enemy, health: 14, mana: 4);
             var cast = new SpellCastingService().TryCast(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId });
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId });
             var manaAfterCast = caster.Vitals.Mana.Current;
             var service = new SpellEffectResolutionService();
 
@@ -40,7 +40,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         public void ResolveInstantaneousEffects_DirectDamage_ClampsAtZeroHealth()
         {
             var target = CreateActor(601, "Ash Rat", ActorRole.Enemy, health: 5, mana: 4);
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateFlameBolt(), 12, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateFlameBolt(), 12, "cast");
             var service = new SpellEffectResolutionService();
 
             var result = service.ResolveInstantaneousEffects(cast, target);
@@ -227,7 +227,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         public void ResolveInstantaneousEffects_RestoreHealth_HealsTargetUpToMax()
         {
             var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4);
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateMendingTouch(), 10, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateMendingTouch(), 10, "cast");
             var service = new SpellEffectResolutionService();
 
             var result = service.ResolveInstantaneousEffects(cast, target);
@@ -905,7 +905,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         public void ResolveInstantaneousEffects_FailedCast_IsRejectedWithoutMutatingTarget()
         {
             var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4);
-            var failedCast = SpellCastResult.Fail(SpellCastError.InsufficientMana, SliceSpellCatalog.CreateFlameBolt(), "failed");
+            var failedCast = SpellCastResult.Fail(SpellCastError.InsufficientMana, WorldSpellCatalog.CreateFlameBolt(), "failed");
             var service = new SpellEffectResolutionService();
 
             var result = service.ResolveInstantaneousEffects(failedCast, target);
@@ -919,7 +919,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         public void ResolveInstantaneousEffects_NullOrIncapacitatedTarget_IsRejected()
         {
             var deadTarget = CreateActor(601, "Guard", ActorRole.Guard, health: 0, mana: 4);
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateMendingTouch(), 10, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateMendingTouch(), 10, "cast");
             var service = new SpellEffectResolutionService();
 
             var nullTargetResult = service.ResolveInstantaneousEffects(cast, null);
@@ -936,14 +936,14 @@ namespace EmberCrpg.Tests.EditMode.Magic
         public void ResolveInstantaneousEffects_NonInstantaneousEffect_IsRejectedWithoutMutatingTarget()
         {
             var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4);
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var service = new SpellEffectResolutionService();
 
             var result = service.ResolveInstantaneousEffects(cast, target);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellEffectResolutionError.NonInstantaneousEffect));
-            Assert.That(result.Spell.TemplateId, Is.EqualTo(SliceSpellCatalog.EmberWardTemplateId));
+            Assert.That(result.Spell.TemplateId, Is.EqualTo(WorldSpellCatalog.EmberWardTemplateId));
             Assert.That(target.Vitals.Health.Current, Is.EqualTo(13));
         }
 

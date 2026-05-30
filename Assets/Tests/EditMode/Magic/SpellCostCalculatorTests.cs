@@ -58,9 +58,9 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var calculator = new SpellCostCalculator();
 
-            for (var i = 0; i < SliceSpellCatalog.All.Count; i++)
+            for (var i = 0; i < WorldSpellCatalog.All.Count; i++)
             {
-                var spell = SliceSpellCatalog.All[i];
+                var spell = WorldSpellCatalog.All[i];
                 Assert.That(spell.ManaCost, Is.GreaterThanOrEqualTo(calculator.EstimateTotalManaCost(spell)), spell.TemplateId);
             }
         }

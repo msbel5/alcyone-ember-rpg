@@ -111,10 +111,10 @@ namespace EmberCrpg.Tests.EditMode.Audit
             var tracer = new ToolCallTracer();
             var events = new WorldEventLog();
             var svc = new DmAgentEscalationService();
-            // RegisterHandlers requires a non-null SliceWorldState. The
+            // RegisterHandlers requires a non-null WorldState. The
             // escalate_resolve_or_pass handler does not actually inspect the
             // world, but the API contract is strict.
-            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1);
+            var world = new EmberCrpg.Simulation.World.WorldFactory().Create(roomSeed: 1);
             svc.RegisterHandlers(router, world);
 
             var result = svc.EscalateNpcToDm("topic-7", registry, router, new GameTime(0), new SiteId(1UL), events, tracer);

@@ -12,7 +12,7 @@ namespace EmberCrpg.Tests.EditMode.AiDm
         [Test]
         public void Execute_RejectsIllFormedProposal()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
             var service = new ToolUseService(StarterToolSurfaces.Registry());
             var call = new ToolCallRequest(new ToolId("gift_item"), ToolSurfaceKind.Npc, new Dictionary<string, string> { { "actor", "7" } });
 
@@ -26,7 +26,7 @@ namespace EmberCrpg.Tests.EditMode.AiDm
         [Test]
         public void Execute_AcceptsValidProposal_AppendsTraceAndMemory()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
             var service = new ToolUseService(StarterToolSurfaces.Registry());
             var call = new ToolCallRequest(new ToolId("gift_item"), ToolSurfaceKind.Npc, new Dictionary<string, string> { { "actor", "7" }, { "item", "iron_ring" } });
 

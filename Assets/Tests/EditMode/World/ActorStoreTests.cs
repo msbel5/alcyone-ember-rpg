@@ -182,9 +182,9 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(store.Count, Is.EqualTo(2));
         }
 
-        // Phase 1 role-view shims: lay the rail for migrating SliceWorldState's
+        // Phase 1 role-view shims: lay the rail for migrating WorldState's
         // named slice fields (Player/Talker/Merchant/Guard/Enemy) onto
-        // ActorStore lookups by ActorRole. SliceWorldState now consumes these
+        // ActorStore lookups by ActorRole. WorldState now consumes these
         // shims through deprecated named actor views during Phase 1 migration.
 
         [Test]

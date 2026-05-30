@@ -6,17 +6,17 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// Pins Phase 1 migration rail: SliceWorldState's legacy named actor surfaces are
+// Pins Phase 1 migration rail: WorldState's legacy named actor surfaces are
 // now deprecated views over ActorStore role lookups. Consumers can keep running
 // while new work writes through the store-backed path.
 namespace EmberCrpg.Tests.EditMode.World
 {
-    public sealed class SliceWorldStateActorViewTests
+    public sealed class WorldStateActorViewTests
     {
         [Test]
         public void SettingNamedActorView_RegistersRecordInActorStore()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
             var player = MakeRecord(1, "Warden", ActorRole.Player);
 
             world.ReplaceActorView(ActorRole.Player, player);
@@ -28,7 +28,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void SettingNamedActorViewTwice_ReplacesPreviousRoleRecord()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
             var first = MakeRecord(1, "Warden", ActorRole.Player);
             var second = MakeRecord(11, "New Warden", ActorRole.Player);
 
@@ -43,7 +43,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void SettingNamedActorViewWithWrongRole_Throws()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
             var guard = MakeRecord(4, "Sentinel", ActorRole.Guard);
 
             Assert.Throws<ArgumentException>(() => world.ReplaceActorView(ActorRole.Player, guard));
@@ -52,7 +52,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void SettingNamedActorView_RemovesAllExistingRoleRecordsBeforeAddingNew()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
             var firstGuard = MakeRecord(4, "Sentinel", ActorRole.Guard);
             var secondGuard = MakeRecord(5, "Patrol", ActorRole.Guard);
             var replacementGuard = MakeRecord(6, "Captain", ActorRole.Guard);
@@ -70,7 +70,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void NewWorldStateStartsWithEmptyCoreStoreRoots()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
 
             Assert.That(world.Actors, Is.Not.Null);
             Assert.That(world.Items, Is.Not.Null);
@@ -87,7 +87,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void FactoryPopulatesStoreBackedNamedViewsAndKeepsOtherStoreRootsReady()
         {
-            var world = new SliceWorldFactory().Create(17, seedWorldAnchors: false);
+            var world = new WorldFactory().Create(17, seedWorldAnchors: false);
 
             Assert.That(world.Actors.Count, Is.EqualTo(5));
             Assert.That(world.Items, Is.Not.Null);

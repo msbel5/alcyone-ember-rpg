@@ -1,5 +1,5 @@
 // Design note:
-// SliceWorldFactory builds the smallest fully wired world state for the playable slice.
+// WorldFactory builds the smallest fully wired world state for the playable slice.
 // Inputs: room seed.
 // Outputs: deterministic room, actors, inventories, topics, and interaction state.
 // Bible reference: PRD Sprint 1 FR-01 through FR-07, Sprint 2 FR-02 through FR-05.
@@ -16,13 +16,13 @@ using EmberCrpg.Simulation.Inventory;
 namespace EmberCrpg.Simulation.World
 {
     /// <summary>Creates the initial deterministic world snapshot for the vertical slice.</summary>
-    public sealed class SliceWorldFactory
+    public sealed class WorldFactory
     {
         private readonly ProceduralRoomGenerator _rooms = new ProceduralRoomGenerator();
         private readonly MultiRoomDungeonGenerator _dungeons = new MultiRoomDungeonGenerator();
-        private readonly SliceActorLoadoutFactory _actors = new SliceActorLoadoutFactory();
+        private readonly WorldActorLoadoutFactory _actors = new WorldActorLoadoutFactory();
 
-        public SliceWorldState Create(int roomSeed, bool seedWorldAnchors = true)
+        public WorldState Create(int roomSeed, bool seedWorldAnchors = true)
         {
             var room = _rooms.Generate(roomSeed);
             var dungeon = _dungeons.Generate(roomSeed);
@@ -33,7 +33,7 @@ namespace EmberCrpg.Simulation.World
             var enemySpawn = dungeon.FindSpawn(DungeonSpawnKind.Enemy);
             var pickupSpawn = dungeon.FindSpawn(DungeonSpawnKind.Pickup);
             var talkTopics = new[] { "embers", "gate", "watch" };
-            var world = new SliceWorldState();
+            var world = new WorldState();
             world.Time = new GameTime(8 * GameTime.MinutesPerHour);
             world.RoomSeed = roomSeed;
             world.Room = room;
@@ -56,12 +56,12 @@ namespace EmberCrpg.Simulation.World
             world.ReplaceActorView(ActorRole.Enemy, _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, enemySpawn.Position));
             world.PlayerInventory = new InventoryState(10);
             world.PlayerEquipment = new EquipmentState();
-            world.PlayerInventory.TryAdd(SliceItemCatalog.CreateAshTrainingBlade());
+            world.PlayerInventory.TryAdd(WorldItemCatalog.CreateAshTrainingBlade());
             world.MerchantInventory = new InventoryState(4);
-            world.MerchantInventory.TryAdd(SliceItemCatalog.CreateGateWrit());
+            world.MerchantInventory.TryAdd(WorldItemCatalog.CreateGateWrit());
             world.Pickups = new List<RoomPickup>
             {
-                new RoomPickup(SliceItemCatalog.CreateEmberShard(), pickupSpawn.Position),
+                new RoomPickup(WorldItemCatalog.CreateEmberShard(), pickupSpawn.Position),
             };
             world.Topics = new List<AskAboutTopic>
             {
@@ -76,7 +76,7 @@ namespace EmberCrpg.Simulation.World
             return world;
         }
 
-        private static void SeedWorldAnchors(SliceWorldState world)
+        private static void SeedWorldAnchors(WorldState world)
         {
             AddSite(world, 1, SiteKind.Settlement, "Furnace", 0, 0, 2, 2);
             AddSite(world, 2, SiteKind.Settlement, "Hearth", 3, 0, 5, 2);
@@ -110,7 +110,7 @@ namespace EmberCrpg.Simulation.World
             world.Caravans.Add(new CaravanInstance(new CaravanId(1), route.Id, route.OriginSiteId, 0, 0, CaravanState.EnRoute));
         }
 
-        private static void AddSite(SliceWorldState world, ulong id, SiteKind kind, string name, int minX, int minY, int maxX, int maxY)
+        private static void AddSite(WorldState world, ulong id, SiteKind kind, string name, int minX, int minY, int maxX, int maxY)
         {
             world.Sites.Add(new SiteRecord(new SiteId(id), kind, name, new GridPosition(minX, minY), new GridPosition(maxX, maxY)));
         }

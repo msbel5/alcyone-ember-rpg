@@ -21,7 +21,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void SaveAndLoad_RoundTripsCanonicalStoreRootsAndEventLog()
         {
-            var world = new SliceWorldFactory().Create(2112, seedWorldAnchors: false);
+            var world = new WorldFactory().Create(2112, seedWorldAnchors: false);
             var guard = MakeRecord(44, "Bridge Guard", ActorRole.Guard, new GridPosition(9, 4));
             var siteId = new SiteId(20);
             var itemId = new ItemId(700);
@@ -77,15 +77,15 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void Mapper_PrefersCanonicalActorStoreWhenSaveDataCarriesLegacyAndStoreActors()
         {
-            var world = new SliceWorldFactory().Create(17);
-            var data = SliceSaveMapper.ToData(world);
+            var world = new WorldFactory().Create(17);
+            var data = WorldSaveMapper.ToData(world);
             var canonicalGuard = MakeRecord(404, "Canonical Guard", ActorRole.Guard, new GridPosition(3, 7));
             data.actors = data.actors
                 .Where(actor => actor.role != (int)ActorRole.Guard)
                 .Concat(new[] { ActorSaveMapper.ToData(canonicalGuard) })
                 .ToArray();
 
-            var loaded = SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
+            var loaded = WorldSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed));
 
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Id, Is.EqualTo(canonicalGuard.Id));
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Name, Is.EqualTo("Canonical Guard"));
@@ -95,11 +95,11 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void Mapper_TreatsEmptyCanonicalActorStoreAsExplicitAndSkipsLegacyActors()
         {
-            var world = new SliceWorldFactory().Create(23);
-            var data = SliceSaveMapper.ToData(world);
+            var world = new WorldFactory().Create(23);
+            var data = WorldSaveMapper.ToData(world);
             data.actors = Array.Empty<ActorSaveData>();
 
-            var loaded = SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
+            var loaded = WorldSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed));
 
             Assert.That(loaded.Actors.Count, Is.EqualTo(0));
         }
@@ -107,13 +107,13 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void Mapper_SkipsMalformedLegacyActorsWhenCanonicalActorStoreIsPresent()
         {
-            var world = new SliceWorldFactory().Create(29);
-            var data = SliceSaveMapper.ToData(world);
+            var world = new WorldFactory().Create(29);
+            var data = WorldSaveMapper.ToData(world);
             var canonicalGuard = MakeRecord(505, "Canonical Guard", ActorRole.Guard, new GridPosition(6, 8));
             data.actors = new[] { ActorSaveMapper.ToData(canonicalGuard) };
             data.guard = new ActorSaveData();
 
-            var loaded = SliceSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
+            var loaded = WorldSaveMapper.ToWorld(data, EmberCrpg.Simulation.Process.WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed));
 
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Id, Is.EqualTo(canonicalGuard.Id));
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Guard).Name, Is.EqualTo("Canonical Guard"));

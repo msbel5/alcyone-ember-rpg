@@ -20,7 +20,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_RegistryOverload_EmberWardCast_WritesIntoOwnActorBag()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var registry = new ShieldBuffStateRegistry();
             var service = new SpellEffectResolutionService();
 
@@ -35,15 +35,15 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(registry.HasState(CasterActorId), Is.True);
             var casterBag = registry.GetOrNull(CasterActorId);
             Assert.That(casterBag, Is.Not.Null);
-            Assert.That(casterBag.IsActive(SliceSpellCatalog.EmberWardTemplateId), Is.True);
-            Assert.That(casterBag.GetRemainingTicks(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(30));
-            Assert.That(casterBag.GetMagnitude(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(4));
+            Assert.That(casterBag.IsActive(WorldSpellCatalog.EmberWardTemplateId), Is.True);
+            Assert.That(casterBag.GetRemainingTicks(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(30));
+            Assert.That(casterBag.GetMagnitude(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(4));
         }
 
         [Test]
         public void ApplyShieldBuffs_RegistryOverload_OnlyTouchesTargetActorBag()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var registry = new ShieldBuffStateRegistry();
             var preExisting = registry.GetOrCreate(OtherActorId);
             preExisting.SetActiveBuff("preexisting.buff", remainingTicks: 11, magnitude: 2);
@@ -57,7 +57,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var otherBag = registry.GetOrNull(OtherActorId);
             Assert.That(otherBag, Is.Not.Null);
-            Assert.That(otherBag.IsActive(SliceSpellCatalog.EmberWardTemplateId), Is.False);
+            Assert.That(otherBag.IsActive(WorldSpellCatalog.EmberWardTemplateId), Is.False);
             Assert.That(otherBag.GetRemainingTicks("preexisting.buff"), Is.EqualTo(11));
             Assert.That(otherBag.GetMagnitude("preexisting.buff"), Is.EqualTo(2));
         }
@@ -65,10 +65,10 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_RegistryOverload_RecastReplacesEntryOnSameActorBag()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var registry = new ShieldBuffStateRegistry();
             var existing = registry.GetOrCreate(CasterActorId);
-            existing.SetActiveBuff(SliceSpellCatalog.EmberWardTemplateId, remainingTicks: 5, magnitude: 1);
+            existing.SetActiveBuff(WorldSpellCatalog.EmberWardTemplateId, remainingTicks: 5, magnitude: 1);
             var service = new SpellEffectResolutionService();
 
             var result = service.ApplyShieldBuffs(cast, registry, CasterActorId);
@@ -76,8 +76,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.Success, Is.True);
             Assert.That(result.AppliedBuffCount, Is.EqualTo(1));
             var bag = registry.GetOrNull(CasterActorId);
-            Assert.That(bag.GetRemainingTicks(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(30));
-            Assert.That(bag.GetMagnitude(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(4));
+            Assert.That(bag.GetRemainingTicks(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(30));
+            Assert.That(bag.GetMagnitude(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(4));
         }
 
         [Test]
@@ -116,7 +116,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_RegistryOverload_FlameBoltCast_ProducesNoBuffWritesAndStillCreatesEmptyBag()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateFlameBolt(), 12, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateFlameBolt(), 12, "cast");
             var registry = new ShieldBuffStateRegistry();
             var service = new SpellEffectResolutionService();
 
@@ -148,7 +148,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         public void ApplyShieldBuffs_RegistryOverload_FailedCast_IsRejectedAndRegistryIsUntouched()
         {
             var registry = new ShieldBuffStateRegistry();
-            var failed = SpellCastResult.Fail(SpellCastError.InsufficientMana, SliceSpellCatalog.CreateEmberWard(), "failed");
+            var failed = SpellCastResult.Fail(SpellCastError.InsufficientMana, WorldSpellCatalog.CreateEmberWard(), "failed");
             var service = new SpellEffectResolutionService();
 
             var result = service.ApplyShieldBuffs(failed, registry, CasterActorId);
@@ -161,7 +161,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_RegistryOverload_NullRegistry_ThrowsArgumentNull()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var service = new SpellEffectResolutionService();
 
             Assert.Throws<ArgumentNullException>(() => service.ApplyShieldBuffs(cast, null, CasterActorId));
@@ -170,7 +170,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_RegistryOverload_WhitespaceActorId_ThrowsArgument()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var registry = new ShieldBuffStateRegistry();
             var service = new SpellEffectResolutionService();
 
@@ -182,7 +182,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_RegistryOverload_ParityWithSingleBagOverloadOnSameInputState()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var service = new SpellEffectResolutionService();
 
             var registry = new ShieldBuffStateRegistry();
@@ -198,10 +198,10 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(registryResult.TotalAppliedDurationTicks, Is.EqualTo(directResult.TotalAppliedDurationTicks));
 
             var bag = registry.GetOrNull(CasterActorId);
-            Assert.That(bag.GetRemainingTicks(SliceSpellCatalog.EmberWardTemplateId),
-                Is.EqualTo(directBag.GetRemainingTicks(SliceSpellCatalog.EmberWardTemplateId)));
-            Assert.That(bag.GetMagnitude(SliceSpellCatalog.EmberWardTemplateId),
-                Is.EqualTo(directBag.GetMagnitude(SliceSpellCatalog.EmberWardTemplateId)));
+            Assert.That(bag.GetRemainingTicks(WorldSpellCatalog.EmberWardTemplateId),
+                Is.EqualTo(directBag.GetRemainingTicks(WorldSpellCatalog.EmberWardTemplateId)));
+            Assert.That(bag.GetMagnitude(WorldSpellCatalog.EmberWardTemplateId),
+                Is.EqualTo(directBag.GetMagnitude(WorldSpellCatalog.EmberWardTemplateId)));
         }
     }
 }

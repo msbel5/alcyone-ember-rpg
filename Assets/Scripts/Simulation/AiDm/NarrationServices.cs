@@ -28,7 +28,7 @@ namespace EmberCrpg.Simulation.AiDm
             _budget = budget ?? throw new ArgumentNullException(nameof(budget));
         }
 
-        public LlmResponse Generate(LlmRequest request, GameTime now, SliceWorldState world, string fallbackText)
+        public LlmResponse Generate(LlmRequest request, GameTime now, WorldState world, string fallbackText)
         {
             if (!_budget.TryReserve())
                 return new LlmResponse(fallbackText ?? string.Empty, null, 0);
@@ -58,7 +58,7 @@ namespace EmberCrpg.Simulation.AiDm
             _routing = routing ?? throw new ArgumentNullException(nameof(routing));
         }
 
-        public LlmResponse Narrate(LlmRequest request, GameTime now, SliceWorldState world)
+        public LlmResponse Narrate(LlmRequest request, GameTime now, WorldState world)
         {
             var response = _routing.Complete(request, out var provider);
             world?.LlmProposalLog.Add(new LlmProposalLogEntry(now, provider, request.ConversationId, response.Text, response.ProposedToolCalls, null));
@@ -136,7 +136,7 @@ namespace EmberCrpg.Simulation.AiDm
     /// </summary>
     public sealed class StorytellerCheckpointSystem
     {
-        public void RecordCheckpoint(SliceWorldState world, GameTime now, string label)
+        public void RecordCheckpoint(WorldState world, GameTime now, string label)
         {
             if (world == null) throw new ArgumentNullException(nameof(world));
             SiteId siteId = default;

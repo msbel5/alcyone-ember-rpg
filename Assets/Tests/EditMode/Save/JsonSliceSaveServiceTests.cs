@@ -20,7 +20,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void SaveAndLoad_RoundTripsDoorMerchantGuardAndEnemyState()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Merchant).Position.Translate(0, 1));
             var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
             new EquipmentService().TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
@@ -49,11 +49,11 @@ namespace EmberCrpg.Tests.EditMode.Save
             var json = service.SaveToJson(world);
             var loaded = service.LoadFromJson(json);
 
-            Assert.That(loaded.PlayerInventory.Contains(SliceItemCatalog.GateWritTemplateId), Is.True);
+            Assert.That(loaded.PlayerInventory.Contains(WorldItemCatalog.GateWritTemplateId), Is.True);
             Assert.That(loaded.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon).Id, Is.EqualTo(weapon.Id));
             Assert.That(loaded.PlayerEquipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(weapon.Id));
-            Assert.That(loaded.MerchantInventory.Contains(SliceItemCatalog.GateWritTemplateId), Is.False);
-            Assert.That(loaded.MerchantInventory.Contains(SliceItemCatalog.EmberShardTemplateId), Is.True);
+            Assert.That(loaded.MerchantInventory.Contains(WorldItemCatalog.GateWritTemplateId), Is.False);
+            Assert.That(loaded.MerchantInventory.Contains(WorldItemCatalog.EmberShardTemplateId), Is.True);
             Assert.That(loaded.GuardDoorAccessGranted, Is.True);
             Assert.That(loaded.DoorOpen, Is.True);
             Assert.That(loaded.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.Current, Is.EqualTo(world.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.Current));
@@ -70,7 +70,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(talkerMemory.HasDialogueSeen("embers"), Is.True);
             Assert.That(talkerMemory.CountEvents(ActorMemoryEventTypes.DialogueTopic), Is.EqualTo(2));
             Assert.That(loaded.NpcMemory.TryGet(loaded.Actors.FirstByRole(ActorRole.Merchant).Id, out var merchantMemory), Is.True);
-            Assert.That(merchantMemory.Transactions.Single().ItemTemplateId, Is.EqualTo(SliceItemCatalog.GateWritTemplateId));
+            Assert.That(merchantMemory.Transactions.Single().ItemTemplateId, Is.EqualTo(WorldItemCatalog.GateWritTemplateId));
             Assert.That(loaded.NpcMemory.TryGet(loaded.Actors.FirstByRole(ActorRole.Guard).Id, out var guardMemory), Is.True);
             Assert.That(guardMemory.CountEvents(ActorMemoryEventTypes.ClearanceGranted), Is.EqualTo(1));
             Assert.That(loaded.PlayerSpellCooldowns, Is.Not.Null);
@@ -88,7 +88,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void SaveAndLoad_FreshWorld_StartsWithNoSpellCooldowns()
         {
-            var world = new SliceWorldFactory().Create(2027);
+            var world = new WorldFactory().Create(2027);
 
             var service = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService();
             var loaded = service.LoadFromJson(service.SaveToJson(world));
@@ -100,7 +100,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void SaveAndLoad_FreshWorld_StartsWithNoShieldBuffs()
         {
-            var world = new SliceWorldFactory().Create(2027);
+            var world = new WorldFactory().Create(2027);
 
             var service = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService();
             var loaded = service.LoadFromJson(service.SaveToJson(world));

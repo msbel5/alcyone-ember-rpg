@@ -5,7 +5,7 @@ namespace EmberCrpg.Domain.Narrative
 {
     /// <summary>
     /// EMB-045: derives an NPC's "Ask About" topics from that actor's own context — their role,
-    /// faction, and home — instead of handing every NPC the same global <c>SliceWorldState.Topics</c>
+    /// faction, and home — instead of handing every NPC the same global <c>WorldState.Topics</c>
     /// list. Two NPCs of different roles therefore expose different topics (and different deterministic
     /// fallback answers), so a conversation feels like talking to a person, not browsing a global menu.
     /// Pure + deterministic (no Unity, no time, no RNG); the live LLM enriches the answers at runtime,

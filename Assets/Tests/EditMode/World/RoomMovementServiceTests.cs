@@ -29,7 +29,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void Move_ClosedDoorCell_StaysInPlace()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var moved = new RoomMovementService().Move(world, new GridPosition(world.Room.DoorCell.X, 1), 0, -1);
             Assert.That(moved, Is.EqualTo(new GridPosition(world.Room.DoorCell.X, 1)));
         }
@@ -37,7 +37,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void Move_OpenDoorCell_AllowsThresholdStep()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             world.DoorOpen = true;
             var moved = new RoomMovementService().Move(world, new GridPosition(world.Room.DoorCell.X, 1), 0, -1);
             Assert.That(moved, Is.EqualTo(world.Room.DoorCell));

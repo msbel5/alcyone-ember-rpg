@@ -22,8 +22,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecute(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId },
                 enemy);
 
             Assert.That(result.Success, Is.True);
@@ -45,20 +45,20 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var first = service.TryExecute(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId },
                 enemy,
                 cooldownState);
 
             Assert.That(first.Success, Is.True);
             Assert.That(first.Error, Is.EqualTo(SpellExecutionError.None));
-            Assert.That(cooldownState.GetRemainingTicks(SliceSpellCatalog.FlameBoltTemplateId),
-                Is.EqualTo(SliceSpellCatalog.FlameBoltCooldownTicks));
+            Assert.That(cooldownState.GetRemainingTicks(WorldSpellCatalog.FlameBoltTemplateId),
+                Is.EqualTo(WorldSpellCatalog.FlameBoltCooldownTicks));
 
             var second = service.TryExecute(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId },
                 enemy,
                 cooldownState);
 
@@ -66,8 +66,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(second.Error, Is.EqualTo(SpellExecutionError.CastRejected));
             Assert.That(second.CastResult.Error, Is.EqualTo(SpellCastError.SpellOnCooldown));
             Assert.That(second.ManaSpent, Is.EqualTo(0));
-            Assert.That(cooldownState.GetRemainingTicks(SliceSpellCatalog.FlameBoltTemplateId),
-                Is.EqualTo(SliceSpellCatalog.FlameBoltCooldownTicks));
+            Assert.That(cooldownState.GetRemainingTicks(WorldSpellCatalog.FlameBoltTemplateId),
+                Is.EqualTo(WorldSpellCatalog.FlameBoltCooldownTicks));
         }
 
         [Test]
@@ -180,8 +180,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecute(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId },
                 farEnemy);
 
             Assert.That(result.Success, Is.False);
@@ -200,8 +200,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecute(
                 caster,
-                SliceSpellCatalog.EmberWardTemplateId,
-                new[] { SliceSpellCatalog.EmberWardTemplateId },
+                WorldSpellCatalog.EmberWardTemplateId,
+                new[] { WorldSpellCatalog.EmberWardTemplateId },
                 requestedTarget: caster);
 
             Assert.That(result.Success, Is.False);
@@ -221,8 +221,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecute(
                 caster,
-                SliceSpellCatalog.MendingTouchTemplateId,
-                new[] { SliceSpellCatalog.MendingTouchTemplateId },
+                WorldSpellCatalog.MendingTouchTemplateId,
+                new[] { WorldSpellCatalog.MendingTouchTemplateId },
                 ally);
 
             Assert.That(result.Success, Is.True);
@@ -241,8 +241,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecuteWithRoll(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId },
                 enemy,
                 new XorShiftRng(3u));
 
@@ -266,8 +266,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecuteWithRoll(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId },
                 enemy,
                 new XorShiftRng(1u));
 
@@ -290,8 +290,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecuteWithRoll(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId },
                 farEnemy,
                 new XorShiftRng(3u));
 
@@ -312,8 +312,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecute(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.FlameBoltTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.FlameBoltTemplateId },
                 enemy);
 
             Assert.That(result.Success, Is.False);
@@ -333,8 +333,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.TryExecute(
                 caster,
-                SliceSpellCatalog.FlameBoltTemplateId,
-                new[] { SliceSpellCatalog.MendingTouchTemplateId },
+                WorldSpellCatalog.FlameBoltTemplateId,
+                new[] { WorldSpellCatalog.MendingTouchTemplateId },
                 enemy);
 
             Assert.That(result.Success, Is.False);

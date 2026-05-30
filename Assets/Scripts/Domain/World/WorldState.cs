@@ -1,5 +1,5 @@
 // Design note:
-// SliceWorldState groups every deterministic slice system into one saveable pure object graph.
+// WorldState groups every deterministic slice system into one saveable pure object graph.
 // Inputs: room, actors, inventories, pickups, door, guard, and narrative shell state.
 // Outputs: a single runtime snapshot for tests, presentation wrappers, and JSON mapping.
 // Bible reference: PRD Sprint 1 FR-03 through FR-07, Sprint 2 FR-02 through FR-05.
@@ -19,7 +19,7 @@ using EmberCrpg.Domain.Worldgen;
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure aggregate state for the playable vertical slice.</summary>
-    public sealed class SliceWorldState
+    public sealed class WorldState
     {
         public GameTime Time;
         public int RoomSeed;
@@ -132,9 +132,9 @@ namespace EmberCrpg.Domain.World
         /// public field from <paramref name="other"/> onto this instance; callers run
         /// <see cref="EnsureInvariants"/> afterwards. Replaces a reflection field-walk that silently
         /// followed field type/visibility changes in the determinism-critical load path. A field added
-        /// to this type MUST be added here too — SliceWorldStateCopyFromTests guards that via reflection.
+        /// to this type MUST be added here too — WorldStateCopyFromTests guards that via reflection.
         /// </summary>
-        public void CopyFrom(SliceWorldState other)
+        public void CopyFrom(WorldState other)
         {
             if (other == null) return;
             Time = other.Time;

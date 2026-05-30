@@ -102,11 +102,11 @@ namespace EmberCrpg.Tests.EditMode.Audit
             Assert.That(clone.GetEquippedItemId(EquipmentSlot.Weapon).Value, Is.EqualTo(0UL));
         }
 
-        // ----- SliceWorldState.FindTradeRoute (G-P3) -----
+        // ----- WorldState.FindTradeRoute (G-P3) -----
         [Test]
         public void SliceWorldState_FindTradeRoute_HitAndMiss()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
             var routeId = new TradeRouteId(42UL);
             world.TradeRoutes.Add(new TradeRouteDef(routeId, new SiteId(1UL), new SiteId(2UL), "iron_ingot", 5, 3));
             Assert.That(world.FindTradeRoute(routeId), Is.Not.Null);
@@ -144,7 +144,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
             // round-trip proved nothing about combat-applied damage. Pin the
             // contract here: vitals mutations on actors that ARE in the store
             // survive Save → Load.
-            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1);
+            var world = new EmberCrpg.Simulation.World.WorldFactory().Create(roomSeed: 1);
             var defender = world.Actors.Records.FirstOrDefault(a => a.Role == ActorRole.Enemy);
             Assert.That(defender, Is.Not.Null, "factory should seed at least one enemy");
             var startingHp = defender.Vitals.Health.Current;

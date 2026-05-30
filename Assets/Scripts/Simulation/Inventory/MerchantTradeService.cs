@@ -15,49 +15,49 @@ namespace EmberCrpg.Simulation.Inventory
     {
         private readonly NpcMemoryQueryService _memoryQueries = new NpcMemoryQueryService();
 
-        public string TradeGateWrit(SliceWorldState world)
+        public string TradeGateWrit(WorldState world)
         {
             if (world.Actors.FirstByRole(ActorRole.Player).Position.ManhattanDistanceTo(world.Actors.FirstByRole(ActorRole.Merchant).Position) > 2)
                 return "Stand closer to Quartermaster Ivo before trying to trade.";
 
             var context = _memoryQueries.GetMerchantContext(world.NpcMemory, world.Actors.FirstByRole(ActorRole.Merchant).Id);
-            if (!world.MerchantInventory.Contains(SliceItemCatalog.GateWritTemplateId))
+            if (!world.MerchantInventory.Contains(WorldItemCatalog.GateWritTemplateId))
                 return context.Familiarity == MerchantFamiliarity.Stranger
                     ? "Quartermaster Ivo has no gate writs left to issue."
                     : "Quartermaster Ivo checks his ledger and remembers your earlier writ. No sealed gate writs remain.";
-            if (!world.PlayerInventory.Contains(SliceItemCatalog.EmberShardTemplateId))
+            if (!world.PlayerInventory.Contains(WorldItemCatalog.EmberShardTemplateId))
                 return context.Familiarity == MerchantFamiliarity.Stranger
                     ? "Bring Quartermaster Ivo one Ember Shard and he will issue a gate writ."
                     : "Quartermaster Ivo recognizes you, but still needs one Ember Shard before issuing another writ.";
 
-            if (!world.PlayerInventory.TryRemove(SliceItemCatalog.EmberShardTemplateId, 1))
+            if (!world.PlayerInventory.TryRemove(WorldItemCatalog.EmberShardTemplateId, 1))
                 return "The trade slips; your Ember Shard never leaves your hand.";
-            if (!world.MerchantInventory.TryRemove(SliceItemCatalog.GateWritTemplateId, 1))
+            if (!world.MerchantInventory.TryRemove(WorldItemCatalog.GateWritTemplateId, 1))
             {
-                world.PlayerInventory.TryAdd(SliceItemCatalog.CreateEmberShard());
+                world.PlayerInventory.TryAdd(WorldItemCatalog.CreateEmberShard());
                 return "Quartermaster Ivo reaches for a writ that is no longer there.";
             }
-            if (!world.PlayerInventory.TryAdd(SliceItemCatalog.CreateGateWrit()))
+            if (!world.PlayerInventory.TryAdd(WorldItemCatalog.CreateGateWrit()))
             {
-                world.PlayerInventory.TryAdd(SliceItemCatalog.CreateEmberShard());
-                world.MerchantInventory.TryAdd(SliceItemCatalog.CreateGateWrit());
+                world.PlayerInventory.TryAdd(WorldItemCatalog.CreateEmberShard());
+                world.MerchantInventory.TryAdd(WorldItemCatalog.CreateGateWrit());
                 return "Your inventory is too full to carry a sealed gate writ.";
             }
 
-            world.MerchantInventory.TryAdd(SliceItemCatalog.CreateEmberShard());
+            world.MerchantInventory.TryAdd(WorldItemCatalog.CreateEmberShard());
             var memory = world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Merchant).Id);
             memory.RecordEvent(new InteractionEvent(
                 world.Time,
                 ActorMemoryEventTypes.TradedWith,
                 world.Actors.FirstByRole(ActorRole.Player).Id,
                 "gate_writ_trade",
-                SliceItemCatalog.GateWritTemplateId,
+                WorldItemCatalog.GateWritTemplateId,
                 1,
                 world.Actors.FirstByRole(ActorRole.Merchant).Position));
             memory.RecordTransaction(new TransactionRecord(
                 world.Time,
                 "IssueGateWrit",
-                SliceItemCatalog.GateWritTemplateId,
+                WorldItemCatalog.GateWritTemplateId,
                 1,
                 0));
             switch (context.Familiarity)

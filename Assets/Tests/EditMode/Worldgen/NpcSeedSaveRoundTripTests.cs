@@ -12,7 +12,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
         [Test]
         public void SliceSaveMapper_RoundTripsNpcSeedPortraitAssetPath()
         {
-            var world = new SliceWorldFactory().Create(roomSeed: 42);
+            var world = new WorldFactory().Create(roomSeed: 42);
             world.NpcSeeds.Add(new NpcSeedRecord(
                 new NpcId(7),
                 new SettlementId(11),
@@ -22,8 +22,8 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
                 NpcRole.Artisan,
                 "portrait-cache-hash"));
 
-            var data = SliceSaveMapper.ToData(world);
-            var loaded = SliceSaveMapper.ToWorld(data, SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
+            var data = WorldSaveMapper.ToData(world);
+            var loaded = WorldSaveMapper.ToWorld(data, WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed));
 
             Assert.That(loaded.NpcSeeds.Count, Is.EqualTo(1));
             Assert.That(loaded.NpcSeeds[0].Id.Value, Is.EqualTo(7UL));

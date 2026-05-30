@@ -3,30 +3,30 @@ using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.Actors;
 
 // Design note:
-// SliceAtmosphereSelector maps deterministic dungeon state into audio cue ids for presentation hooks.
+// EmberAtmosphereSelector maps deterministic dungeon state into audio cue ids for presentation hooks.
 // Inputs: generated room template, spawn placement, visited/cleared state, combat, and door state.
 // Outputs: ambience/music/SFX cue ids; it performs no playback and mutates no simulation state.
 // Bible reference: Sprint 4 Phase 5 audio/atmosphere hooks and deterministic dungeon-state variation.
 namespace EmberCrpg.Presentation.Ember.UI
 {
     /// <summary>Pure presentation selector for room/state atmosphere cue ids.</summary>
-    public static class SliceAtmosphereSelector
+    public static class EmberAtmosphereSelector
     {
-        public static SliceAtmosphereCueSet Select(SliceWorldState world)
+        public static EmberAtmosphereCueSet Select(WorldState world)
         {
             if (world == null || world.Dungeon == null)
-                return SliceAtmosphereCueSet.Silent("no-world");
+                return EmberAtmosphereCueSet.Silent("no-world");
 
             var room = world.Dungeon.Rooms.FirstOrDefault(candidate => candidate.Id == world.CurrentRoomId);
             if (room == null)
-                return SliceAtmosphereCueSet.Silent("missing-room");
+                return EmberAtmosphereCueSet.Silent("missing-room");
 
             var roomState = world.DungeonRoomStates.FirstOrDefault(candidate => candidate.RoomId == room.Id);
             var ambience = SelectAmbience(room.TemplateId, roomState);
             var music = SelectMusic(world, roomState);
             var sfx = SelectSfx(world, room);
             var reason = $"room:{room.Id} template:{room.TemplateId} visited:{roomState?.Visited ?? false} combat:{IsCombatThreat(world)}";
-            return new SliceAtmosphereCueSet(ambience, music, sfx, reason);
+            return new EmberAtmosphereCueSet(ambience, music, sfx, reason);
         }
 
         private static string SelectAmbience(string templateId, DungeonRoomState roomState)
@@ -44,7 +44,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             return baseCue;
         }
 
-        private static string SelectMusic(SliceWorldState world, DungeonRoomState roomState)
+        private static string SelectMusic(WorldState world, DungeonRoomState roomState)
         {
             if (IsCombatThreat(world))
                 return "music.combat.low";
@@ -57,7 +57,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             return "music.dungeon.explore";
         }
 
-        private static string SelectSfx(SliceWorldState world, DungeonRoom room)
+        private static string SelectSfx(WorldState world, DungeonRoom room)
         {
             if (IsCombatThreat(world))
                 return "sfx.combat-pulse";
@@ -70,12 +70,12 @@ namespace EmberCrpg.Presentation.Ember.UI
             return "sfx.none";
         }
 
-        private static bool IsCombatThreat(SliceWorldState world)
+        private static bool IsCombatThreat(WorldState world)
         {
             return world.EncounterActive && !world.Actors.FirstByRole(ActorRole.Enemy).Vitals.Health.IsDepleted && world.CurrentRoomId == world.EnemyRoomId;
         }
 
-        private static bool HasClosedDoor(SliceWorldState world, DungeonRoom room)
+        private static bool HasClosedDoor(WorldState world, DungeonRoom room)
         {
             return room.DoorIds.Any(doorId => world.DungeonDoorStates.Any(state => state.DoorId == doorId && !state.Open));
         }

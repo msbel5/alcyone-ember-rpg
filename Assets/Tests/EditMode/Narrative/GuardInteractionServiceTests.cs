@@ -27,7 +27,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         public void Interact_WithGateWrit_GrantsDoorClearance()
         {
             var world = CreateGuardReadyWorld();
-            world.PlayerInventory.TryAdd(SliceItemCatalog.CreateGateWrit());
+            world.PlayerInventory.TryAdd(WorldItemCatalog.CreateGateWrit());
 
             var reply = new GuardInteractionService().Interact(world);
 
@@ -35,9 +35,9 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             Assert.That(world.GuardDoorAccessGranted, Is.True);
         }
 
-        private static SliceWorldState CreateGuardReadyWorld()
+        private static WorldState CreateGuardReadyWorld()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Guard).Position.Translate(0, -1));
             return world;
         }

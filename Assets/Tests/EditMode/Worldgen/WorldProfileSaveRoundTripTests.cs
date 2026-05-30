@@ -11,7 +11,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
         [Test]
         public void SliceSaveMapper_RoundTripsWorldProfile()
         {
-            var world = new SliceWorldFactory().Create(roomSeed: 42);
+            var world = new WorldFactory().Create(roomSeed: 42);
             world.WorldProfile = new WorldProfile(
                 WorldStyle.DarkFantasyGrim,
                 WorldGenre.PoliticalIntrigue,
@@ -24,8 +24,8 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
                 playerCallingKeyword: "diplomat",
                 startLocationKeyword: "capital");
 
-            var data = SliceSaveMapper.ToData(world);
-            var loaded = SliceSaveMapper.ToWorld(data, SliceSaveRehydration.CreateSeedWorld((int)data.roomSeed));
+            var data = WorldSaveMapper.ToData(world);
+            var loaded = WorldSaveMapper.ToWorld(data, WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed));
 
             Assert.That(loaded.WorldProfile, Is.EqualTo(world.WorldProfile));
         }

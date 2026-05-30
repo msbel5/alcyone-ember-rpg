@@ -1,6 +1,6 @@
 // Design note:
-// SliceSaveMapper translates between pure world state and Unity-serializable DTOs.
-// Inputs: SliceWorldState or SliceSaveData snapshots.
+// WorldSaveMapper translates between pure world state and Unity-serializable DTOs.
+// Inputs: WorldState or WorldSaveData snapshots.
 // Outputs: round-trippable save objects with no UnityEngine in Domain/Simulation.
 // Bible reference: PRD Sprint 1 FR-06, Sprint 2 FR-02 through FR-04.
 using System;
@@ -16,28 +16,28 @@ using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.Worldgen;
 // Codex audit (seventh pass B-P1 #9): Data.SliceJson no longer references
-// EmberCrpg.Simulation. RecipeWorkOrder / SliceWorldFactory rehydration moved
-// to EmberCrpg.Simulation.Process.SliceSaveRehydration. SliceWorldState
+// EmberCrpg.Simulation. RecipeWorkOrder / WorldFactory rehydration moved
+// to EmberCrpg.Simulation.Process.WorldSaveRehydration. WorldState
 // construction is the caller's responsibility (overload taking the seed
 // world, below).
 namespace EmberCrpg.Data.Save
 {
     /// <summary>Pure mapping layer between aggregate world state and JSON DTOs.</summary>
-    public static partial class SliceSaveMapper
+    public static partial class WorldSaveMapper
     {
         // EMB-012: current on-disk save schema version. Bump on any incompatible shape change and add
-        // a migration branch in ToWorld; SliceSaveData.schemaVersion records the version a save was
+        // a migration branch in ToWorld; WorldSaveData.schemaVersion records the version a save was
         // written with so old saves can be detected and migrated rather than silently misread.
         public const int CurrentSchemaVersion = 1;
 
-        public static SliceSaveData ToData(SliceWorldState world)
+        public static WorldSaveData ToData(WorldState world)
         {
             // Codex audit (third pass A-P3): null world used to NRE inside the
             // initializer; throw a typed exception so callers can detect and
             // recover (e.g. surface a "save corrupt" status) rather than
             // crashing the save path.
             if (world == null) throw new ArgumentNullException(nameof(world));
-            return new SliceSaveData
+            return new WorldSaveData
             {
                 schemaVersion = CurrentSchemaVersion,
                 totalMinutes = (long)world.Time.TotalMinutes,
@@ -90,7 +90,7 @@ inventory = ToInventoryData(world.PlayerInventory),
             };
         }
 
-        public static SliceWorldState ToWorld(SliceSaveData data, SliceWorldState seedWorld)
+        public static WorldState ToWorld(WorldSaveData data, WorldState seedWorld)
         {
             var world = seedWorld ?? throw new ArgumentNullException(nameof(seedWorld));
 

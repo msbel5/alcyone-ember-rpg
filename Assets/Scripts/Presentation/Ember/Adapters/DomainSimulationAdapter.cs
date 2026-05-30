@@ -21,9 +21,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// </summary>
     public sealed partial class DomainSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait
     {
-        private readonly SliceWorldState _world;
+        private readonly WorldState _world;
         private readonly EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService _saveService;
-        private readonly EmberCrpg.Simulation.Composition.SliceTickComposer _tickComposer;
+        private readonly EmberCrpg.Simulation.Composition.WorldTickComposer _tickComposer;
         private int _tick;
         private string _lastCombatLine = string.Empty;
         private string _activeDialogActor = string.Empty;
@@ -38,12 +38,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private const ulong SettlementSiteOffset = 200_000UL;
         private const ulong GeneratedNpcActorOffset = 10_000UL;
 
-        public DomainSimulationAdapter(SliceWorldState world)
+        public DomainSimulationAdapter(WorldState world)
         {
             _world = world ?? throw new System.ArgumentNullException(nameof(world));
             _saveService = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService(
                 EmberCrpg.Data.Recipes.ProductionRecipeRegistry.Resolve);
-            _tickComposer = new EmberCrpg.Simulation.Composition.SliceTickComposer();
+            _tickComposer = new EmberCrpg.Simulation.Composition.WorldTickComposer();
 
             if (_saveService.Worksites != null && _world.Sites != null)
             {
@@ -66,7 +66,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
         }
 
-        public SliceWorldState World => _world;
+        public WorldState World => _world;
 
         // ----- IEmberSimulationClock -----
         public void AdvanceTick(int tickIndex)
@@ -229,9 +229,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // Previously this method sorted alphabetically (flame_bolt /
                 // mending_touch / ember_ward becomes ember_ward / flame_bolt /
                 // mending_touch), but TryCastSpell still resolved by raw
-                // `SliceSpellCatalog.All[index]`, so pressing slot 0 would
+                // `WorldSpellCatalog.All[index]`, so pressing slot 0 would
                 // cast a different spell than the one displayed.
-                return EmberCrpg.Simulation.Magic.SliceSpellCatalog.All
+                return EmberCrpg.Simulation.Magic.WorldSpellCatalog.All
                     .Select(s => s.TemplateId)
                     .ToList();
             }

@@ -1,4 +1,4 @@
-// SliceSaveMapper partial — process: worksites, jobs, soil, plants (split from the 961-line monolith, NAME/LOC-split).
+// WorldSaveMapper partial — process: worksites, jobs, soil, plants (split from the 961-line monolith, NAME/LOC-split).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ using EmberCrpg.Domain.Worldgen;
 
 namespace EmberCrpg.Data.Save
 {
-    public static partial class SliceSaveMapper
+    public static partial class WorldSaveMapper
     {
         public static WorksiteSaveData[] ToWorksiteData(WorksiteStore store)
         {
@@ -38,7 +38,7 @@ namespace EmberCrpg.Data.Save
         // `ToRecipeWorkOrder(RecipeWorkOrderSaveData, ...)` took/returned a
         // Simulation.Process type, forcing this Data asmdef to reference
         // EmberCrpg.Simulation. Moved to
-        // EmberCrpg.Simulation.Process.SliceSaveRehydration so the Data
+        // EmberCrpg.Simulation.Process.WorldSaveRehydration so the Data
         // asmdef no longer leaks the Simulation namespace.
 
         public static JobRequestSaveData[] ToJobBoardData(JobBoard board)

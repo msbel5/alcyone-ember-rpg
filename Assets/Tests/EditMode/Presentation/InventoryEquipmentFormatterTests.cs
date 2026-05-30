@@ -15,7 +15,7 @@ namespace EmberCrpg.Tests.EditMode.Presentation
         [Test]
         public void FormatInspect_ShowsInventoryItemAndEmptyWeaponSlot()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
 
             var text = InventoryEquipmentFormatter.FormatInspect(world);
 
@@ -26,7 +26,7 @@ namespace EmberCrpg.Tests.EditMode.Presentation
         [Test]
         public void FormatEquipmentLine_ShowsEquippedWeaponBonuses()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
             new EquipmentService().TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
 

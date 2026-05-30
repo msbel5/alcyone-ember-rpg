@@ -46,7 +46,7 @@ namespace EmberCrpg.Domain.Inventory
 
         /// <summary>
         /// Codex audit (A/P2): enumerate every equipped (slot, itemId) pair in
-        /// stable slot-code order. SliceSaveMapper used to hardcode "weapon
+        /// stable slot-code order. WorldSaveMapper used to hardcode "weapon
         /// only", silently dropping future slots; the dictionary's natural
         /// enumeration order is also non-deterministic. Sorting by Code gives
         /// the save layer a stable canonical list.

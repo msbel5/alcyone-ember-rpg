@@ -10,13 +10,13 @@ namespace EmberCrpg.Simulation.AiDm
     public sealed class ToolUseService
     {
         private readonly ToolRegistry _registry;
-        private readonly Dictionary<string, Func<ToolCallRequest, SliceWorldState, GameTime, ToolCallResult>> _handlers;
+        private readonly Dictionary<string, Func<ToolCallRequest, WorldState, GameTime, ToolCallResult>> _handlers;
         private readonly ToolCallValidator _validator = new ToolCallValidator();
 
         public ToolUseService(ToolRegistry registry)
         {
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
-            _handlers = new Dictionary<string, Func<ToolCallRequest, SliceWorldState, GameTime, ToolCallResult>>(StringComparer.Ordinal)
+            _handlers = new Dictionary<string, Func<ToolCallRequest, WorldState, GameTime, ToolCallResult>>(StringComparer.Ordinal)
             {
                 { "gift_item", GiftItem },
                 { "propose_quest", ProposeQuest },
@@ -26,7 +26,7 @@ namespace EmberCrpg.Simulation.AiDm
             };
         }
 
-        public ToolCallResult Execute(ToolCallRequest request, SliceWorldState world, GameTime now, SiteId siteId)
+        public ToolCallResult Execute(ToolCallRequest request, WorldState world, GameTime now, SiteId siteId)
         {
             if (world == null) throw new ArgumentNullException(nameof(world));
             var validation = _validator.Validate(request, _registry);
@@ -46,14 +46,14 @@ namespace EmberCrpg.Simulation.AiDm
             return result;
         }
 
-        private static void AppendTrace(SliceWorldState world, GameTime now, SiteId siteId, ToolCallRequest request, ToolCallResult result)
+        private static void AppendTrace(WorldState world, GameTime now, SiteId siteId, ToolCallRequest request, ToolCallResult result)
         {
             if (request == null) return;
             if (world.ToolCallTrace == null) world.ToolCallTrace = new List<ToolCallTraceRecord>();
             world.ToolCallTrace.Add(new ToolCallTraceRecord(now, siteId, request, result));
         }
 
-        private static void AppendMemory(SliceWorldState world, ToolCallRequest request, GameTime now, string summary)
+        private static void AppendMemory(WorldState world, ToolCallRequest request, GameTime now, string summary)
         {
             if (!request.Parameters.TryGetValue("actor", out var raw) || !ulong.TryParse(raw, out var actor) || actor == 0UL)
                 return;
@@ -61,30 +61,30 @@ namespace EmberCrpg.Simulation.AiDm
             world.NpcMemory.GetOrCreate(new ActorId(actor)).RecordEvent(new InteractionEvent(now, "AiToolUse", default, request.ToolId.Code, summary ?? string.Empty, 0, default));
         }
 
-        private static ToolCallResult GiftItem(ToolCallRequest request, SliceWorldState world, GameTime now)
+        private static ToolCallResult GiftItem(ToolCallRequest request, WorldState world, GameTime now)
         {
             return ToolCallResult.AcceptedWith("gift_item:" + request.Parameters["item"]);
         }
 
-        private static ToolCallResult ProposeQuest(ToolCallRequest request, SliceWorldState world, GameTime now)
+        private static ToolCallResult ProposeQuest(ToolCallRequest request, WorldState world, GameTime now)
         {
             world.Events?.Append(new WorldEvent(now, WorldEventKind.DmConsultFate, default, default, request.Parameters["summary"]));
             return ToolCallResult.AcceptedWith("quest:" + request.Parameters["summary"]);
         }
 
-        private static ToolCallResult FlavorBark(ToolCallRequest request, SliceWorldState world, GameTime now)
+        private static ToolCallResult FlavorBark(ToolCallRequest request, WorldState world, GameTime now)
         {
             return ToolCallResult.AcceptedWith(request.Parameters["text"]);
         }
 
-        private static ToolCallResult RecallMemory(ToolCallRequest request, SliceWorldState world, GameTime now)
+        private static ToolCallResult RecallMemory(ToolCallRequest request, WorldState world, GameTime now)
         {
             if (!ulong.TryParse(request.Parameters["actor"], out var actor) || world.NpcMemory == null || !world.NpcMemory.TryGet(new ActorId(actor), out var memory))
                 return ToolCallResult.AcceptedWith(string.Empty);
             return ToolCallResult.AcceptedWith(string.Join("|", new EmberCrpg.Simulation.Memory.MemoryRecallService().LastN(memory, 8)));
         }
 
-        private static ToolCallResult ConsultFate(ToolCallRequest request, SliceWorldState world, GameTime now)
+        private static ToolCallResult ConsultFate(ToolCallRequest request, WorldState world, GameTime now)
         {
             var roll = (int)(StableHash(request.Parameters["query"]) % 100UL) + 1;
             return ToolCallResult.AcceptedWith(ConsultFateOutcomeBucket.FromRoll(roll).Code);

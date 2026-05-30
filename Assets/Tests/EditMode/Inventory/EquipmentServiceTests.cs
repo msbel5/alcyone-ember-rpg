@@ -18,7 +18,7 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         [Test]
         public void TryEquip_WeaponInInventory_EquipsByStableItemId()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
 
             var result = new EquipmentService().TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
@@ -32,7 +32,7 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         {
             var inventory = new InventoryState(10);
             var equipment = new EquipmentState();
-            var shard = SliceItemCatalog.CreateEmberShard();
+            var shard = WorldItemCatalog.CreateEmberShard();
             inventory.TryAdd(shard);
 
             var result = new EquipmentService().TryEquip(inventory, equipment, shard.Id);
@@ -47,7 +47,7 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         {
             var inventory = new InventoryState(10);
             var equipment = new EquipmentState();
-            var first = SliceItemCatalog.CreateAshTrainingBlade();
+            var first = WorldItemCatalog.CreateAshTrainingBlade();
             var second = new InventoryItem(new ItemId(3002), "ash_training_blade_spare", "Spare Ash Blade", 1, EquipmentSlot.Weapon, 1, 1);
             inventory.TryAdd(first);
             inventory.TryAdd(second);
@@ -65,7 +65,7 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         [Test]
         public void TryEquip_AlreadyEquippedWeapon_ReturnsDedicatedErrorCode()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
             var service = new EquipmentService();
 
@@ -80,7 +80,7 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         [Test]
         public void TryRemove_WithEquipmentState_RefusesToRemoveEquippedItem()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
             var service = new EquipmentService();
             service.TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
@@ -95,7 +95,7 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         [Test]
         public void TryUnequip_EquippedWeapon_ClearsSlot()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
             var service = new EquipmentService();
             service.TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
@@ -109,8 +109,8 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         [Test]
         public void EquippedWeapon_IncreasesEncounterStrikeDamage()
         {
-            var plain = new SliceWorldFactory().Create(1337);
-            var geared = new SliceWorldFactory().Create(1337);
+            var plain = new WorldFactory().Create(1337);
+            var geared = new WorldFactory().Create(1337);
             var service = new EquipmentService();
             var weapon = geared.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
             service.TryEquip(geared.PlayerInventory, geared.PlayerEquipment, weapon.Id);

@@ -16,7 +16,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void JsonDto_RoundTripsSoilAndPlantComponents()
         {
-            var world = new SliceWorldFactory().Create(2026);
+            var world = new WorldFactory().Create(2026);
             world.Time = new GameTime(GameTime.MinutesPerDay * 91);
             var service = new JsonSliceSaveService
             {

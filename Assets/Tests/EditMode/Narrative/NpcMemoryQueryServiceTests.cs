@@ -17,7 +17,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void AskAbout_ThirdRepeatedTopic_UsesWellWornMemoryState()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var service = new AskAboutService();
 
             service.Ask(world, "embers");
@@ -32,7 +32,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void GuardInteract_WithPersistedPassageRequests_UsesClosedStanceEvenWhenCounterIsReset()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Guard).Position.Translate(0, -1));
             world.GuardWarningCount = 0;
             var memory = world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Guard).Id);
@@ -49,7 +49,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void GuardInteract_WithPersistedClearance_RemembersAccessWithoutTransientFlag()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Guard).Position.Translate(0, -1));
             world.GuardDoorAccessGranted = false;
             world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Guard).Id).RecordEvent(new InteractionEvent(
@@ -57,7 +57,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
                 ActorMemoryEventTypes.ClearanceGranted,
                 world.Actors.FirstByRole(ActorRole.Player).Id,
                 "south_door",
-                SliceItemCatalog.GateWritTemplateId,
+                WorldItemCatalog.GateWritTemplateId,
                 1,
                 world.Actors.FirstByRole(ActorRole.Guard).Position));
 
@@ -69,22 +69,22 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void MerchantTrade_WithPriorTransaction_UsesRecognizedCustomerFlavor()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             world.Actors.FirstByRole(ActorRole.Player).MoveTo(world.Actors.FirstByRole(ActorRole.Merchant).Position.Translate(0, 1));
-            world.PlayerInventory.TryAdd(SliceItemCatalog.CreateEmberShard());
+            world.PlayerInventory.TryAdd(WorldItemCatalog.CreateEmberShard());
             var memory = world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Merchant).Id);
             memory.RecordEvent(new InteractionEvent(
                 world.Time,
                 ActorMemoryEventTypes.TradedWith,
                 world.Actors.FirstByRole(ActorRole.Player).Id,
                 "gate_writ_trade",
-                SliceItemCatalog.GateWritTemplateId,
+                WorldItemCatalog.GateWritTemplateId,
                 1,
                 world.Actors.FirstByRole(ActorRole.Merchant).Position));
             memory.RecordTransaction(new TransactionRecord(
                 world.Time,
                 "IssueGateWrit",
-                SliceItemCatalog.GateWritTemplateId,
+                WorldItemCatalog.GateWritTemplateId,
                 1,
                 0));
 
@@ -97,11 +97,11 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void QueryService_DerivesContextsFromNpcMemoryStore()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var guardMemory = world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Guard).Id);
             guardMemory.RecordEvent(CreateGuardPassageRequest(world, 0));
             var merchantMemory = world.NpcMemory.GetOrCreate(world.Actors.FirstByRole(ActorRole.Merchant).Id);
-            merchantMemory.RecordTransaction(new TransactionRecord(world.Time, "IssueGateWrit", SliceItemCatalog.GateWritTemplateId, 1, 0));
+            merchantMemory.RecordTransaction(new TransactionRecord(world.Time, "IssueGateWrit", WorldItemCatalog.GateWritTemplateId, 1, 0));
 
             var query = new NpcMemoryQueryService();
 
@@ -110,7 +110,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             Assert.That(query.GetMerchantContext(world.NpcMemory, world.Actors.FirstByRole(ActorRole.Merchant).Id).Familiarity, Is.EqualTo(MerchantFamiliarity.Recognized));
         }
 
-        private static InteractionEvent CreateGuardPassageRequest(EmberCrpg.Domain.World.SliceWorldState world, int amount)
+        private static InteractionEvent CreateGuardPassageRequest(EmberCrpg.Domain.World.WorldState world, int amount)
         {
             return new InteractionEvent(
                 world.Time,

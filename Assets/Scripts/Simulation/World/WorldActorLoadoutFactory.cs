@@ -3,14 +3,14 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// SliceActorLoadoutFactory assigns role-differentiated deterministic stats, vitals, and combat fields.
+// WorldActorLoadoutFactory assigns role-differentiated deterministic stats, vitals, and combat fields.
 // Inputs: actor identity, role, spawn position, and optional topic ids for narrative-capable roles.
 // Outputs: ready-to-use pure actor records that feel distinct before any UI text lands.
 // Bible reference: MASTER_MECHANICS_BIBLE.md §13/§14/§15, PRD Sprint 2 FR-05.
 namespace EmberCrpg.Simulation.World
 {
     /// <summary>Creates slice actors with role-appropriate starting loadouts.</summary>
-    public sealed class SliceActorLoadoutFactory
+    public sealed class WorldActorLoadoutFactory
     {
         public ActorRecord Create(ActorId id, string name, ActorRole role, GridPosition position, IEnumerable<string> topicIds = null)
         {

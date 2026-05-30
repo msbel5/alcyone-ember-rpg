@@ -19,7 +19,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var service = new SpellCastRollService();
 
-            var result = service.Roll(null, SliceSpellCatalog.CreateFlameBolt(), new XorShiftRng(1u));
+            var result = service.Roll(null, WorldSpellCatalog.CreateFlameBolt(), new XorShiftRng(1u));
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastRollError.InvalidCaster));
@@ -46,7 +46,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var service = new SpellCastRollService();
 
-            var result = service.Roll(CreateActor("Acolyte", 40, 60), SliceSpellCatalog.CreateFlameBolt(), null);
+            var result = service.Roll(CreateActor("Acolyte", 40, 60), WorldSpellCatalog.CreateFlameBolt(), null);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastRollError.InvalidRng));
@@ -60,7 +60,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var service = new SpellCastRollService();
             var caster = CreateActor("Collapsed Mage", 40, 60, health: 0);
 
-            var result = service.Roll(caster, SliceSpellCatalog.CreateFlameBolt(), new XorShiftRng(1u));
+            var result = service.Roll(caster, WorldSpellCatalog.CreateFlameBolt(), new XorShiftRng(1u));
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellCastRollError.InvalidCaster));
@@ -98,7 +98,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var service = new SpellCastRollService();
             var caster = CreateActor("Acolyte", mind: 60, insight: 44);
-            var spell = SliceSpellCatalog.CreateFlameBolt();
+            var spell = WorldSpellCatalog.CreateFlameBolt();
             var expectedChance = new SpellSuccessChanceService().Calculate(caster, spell);
 
             var result = service.Roll(caster, spell, new XorShiftRng(1u));
@@ -171,7 +171,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var service = new SpellCastRollService();
             var caster = CreateActor("Acolyte", mind: 60, insight: 44);
-            var spell = SliceSpellCatalog.CreateFlameBolt();
+            var spell = WorldSpellCatalog.CreateFlameBolt();
 
             var first = service.Roll(caster, spell, new XorShiftRng(123u));
             var second = service.Roll(caster, spell, new XorShiftRng(123u));
@@ -186,7 +186,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         {
             var service = new SpellCastRollService();
             var caster = CreateActor("Acolyte", mind: 60, insight: 44);
-            var spell = SliceSpellCatalog.CreateFlameBolt();
+            var spell = WorldSpellCatalog.CreateFlameBolt();
 
             var seedA = service.Roll(caster, spell, new XorShiftRng(1u));
             var seedB = service.Roll(caster, spell, new XorShiftRng(2u));
@@ -202,7 +202,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var caster = CreateActor("Acolyte", mind: 60, insight: 44);
             var manaBefore = caster.Vitals.Mana.Current;
 
-            var result = service.Roll(caster, SliceSpellCatalog.CreateFlameBolt(), new XorShiftRng(1u));
+            var result = service.Roll(caster, WorldSpellCatalog.CreateFlameBolt(), new XorShiftRng(1u));
 
             Assert.That(result.Chance.Success, Is.True);
             Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(manaBefore));

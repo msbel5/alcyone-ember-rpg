@@ -11,7 +11,7 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// Pins the Phase 3 job-save-proof rail without adding new SliceWorldState fields:
+// Pins the Phase 3 job-save-proof rail without adding new WorldState fields:
 // JsonSliceSaveService carries JobBoard state like the existing Worksite rail,
 // while actor records carry their schedule target through ActorSaveData.
 namespace EmberCrpg.Tests.EditMode.Save
@@ -26,7 +26,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void JsonDto_RoundTripsClaimedJobBoardAndActorScheduleState()
         {
-            var world = new SliceWorldFactory().Create(303);
+            var world = new WorldFactory().Create(303);
             var actor = world.Actors.FirstByRole(ActorRole.Player);
             actor.ApplyJobPreferences(new[] { new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)) });
             actor.ApplyScheduleState(ActorScheduleState.Assigned(Job, FurnaceSite, FurnacePosition));

@@ -15,15 +15,15 @@ namespace EmberCrpg.Tests.EditMode.Composition
     /// and they double as a regression guard on the absolute-time alignment the rebuild assumes
     /// (the playable world starts at 8:00 = 480 min, a multiple of both the hour and day periods).
     /// </summary>
-    public sealed class SliceTickComposerReplayTests
+    public sealed class WorldTickComposerReplayTests
     {
         private const int SaveTick = 13;  // mid-hour: 13 % 10 = 3 ticks in-flight toward the next hour
         private const int FinalTick = 25; // far enough to cross the next hourly boundary post-reload
 
-        private static SliceWorldState World() => new SliceWorldFactory().Create(roomSeed: 1);
+        private static WorldState World() => new WorldFactory().Create(roomSeed: 1);
 
         // Distinct, ordered timestamps at which the composer emitted hourly needs ticks.
-        private static long[] NeedStamps(SliceWorldState w) =>
+        private static long[] NeedStamps(WorldState w) =>
             w.Events.Events
                 .Where(e => e.Kind == WorldEventKind.NeedChanged)
                 .Select(e => e.Tick.TotalMinutes)
@@ -31,7 +31,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 .OrderBy(m => m)
                 .ToArray();
 
-        private static void Advance(SliceTickComposer c, SliceWorldState w, int from, int to)
+        private static void Advance(WorldTickComposer c, WorldState w, int from, int to)
         {
             for (int t = from; t <= to; t++) c.Advance(w, t);
         }
@@ -39,7 +39,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
         private static long[] Continuous()
         {
             var w = World();
-            var c = new SliceTickComposer();
+            var c = new WorldTickComposer();
             c.Advance(w, 0); // anchor at world creation
             Advance(c, w, 1, FinalTick);
             return NeedStamps(w);
@@ -53,11 +53,11 @@ namespace EmberCrpg.Tests.EditMode.Composition
             // Run to the save point, then simulate a COLD load: a brand-new composer (accumulators 0)
             // restored via the DET-01 path.
             var w = World();
-            var pre = new SliceTickComposer();
+            var pre = new WorldTickComposer();
             pre.Advance(w, 0);
             Advance(pre, w, 1, SaveTick);
 
-            var restored = new SliceTickComposer();          // fresh process -> accumulators are 0
+            var restored = new WorldTickComposer();          // fresh process -> accumulators are 0
             restored.RebuildAccumulatorsFrom(w.Time);        // DET-01 fix
             Advance(restored, w, SaveTick, FinalTick);        // first call re-anchors (delta 0)
 
@@ -71,11 +71,11 @@ namespace EmberCrpg.Tests.EditMode.Composition
             var expected = Continuous();
 
             var w = World();
-            var pre = new SliceTickComposer();
+            var pre = new WorldTickComposer();
             pre.Advance(w, 0);
             Advance(pre, w, 1, SaveTick);
 
-            var restored = new SliceTickComposer();          // fresh process -> accumulators are 0
+            var restored = new WorldTickComposer();          // fresh process -> accumulators are 0
             restored.ResetAnchor();                           // pre-fix behavior: keeps the 0 accumulators
             Advance(restored, w, SaveTick, FinalTick);
 

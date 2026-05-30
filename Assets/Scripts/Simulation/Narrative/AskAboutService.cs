@@ -15,7 +15,7 @@ namespace EmberCrpg.Simulation.Narrative
     {
         private readonly NpcMemoryQueryService _memoryQueries = new NpcMemoryQueryService();
 
-        public string Ask(SliceWorldState world, string topicId)
+        public string Ask(WorldState world, string topicId)
         {
             var topic = world.Topics.FirstOrDefault(candidate => candidate.Id == topicId);
             if (topic == null)

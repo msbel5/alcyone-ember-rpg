@@ -13,7 +13,7 @@ namespace EmberCrpg.Presentation.Ember.UI
     /// <summary>Formats inventory and equipped gear for HUD and inspect commands.</summary>
     public static class InventoryEquipmentFormatter
     {
-        public static string FormatEquipmentLine(SliceWorldState world)
+        public static string FormatEquipmentLine(WorldState world)
         {
             var weapon = FindEquipped(world, EquipmentSlot.Weapon);
             if (weapon == null)
@@ -22,7 +22,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             return $"Weapon: {weapon.DisplayName} (+{weapon.AccuracyBonus} ACC, +{weapon.DamageBonus} DMG)";
         }
 
-        public static string FormatInspect(SliceWorldState world)
+        public static string FormatInspect(WorldState world)
         {
             var itemLines = world.PlayerInventory.Items
                 .Select((item, index) => FormatItemLine(world, item, index + 1))
@@ -34,14 +34,14 @@ Equipped
   {FormatEquipmentLine(world)}";
         }
 
-        private static string FormatItemLine(SliceWorldState world, InventoryItem item, int index)
+        private static string FormatItemLine(WorldState world, InventoryItem item, int index)
         {
             var equipped = world.PlayerEquipment.IsEquipped(item.Id) ? " [equipped]" : string.Empty;
             var equipment = item.IsEquipment ? $" ({EquipmentService.GetSlotLabel(item.EquipmentSlot)}, +{item.AccuracyBonus} ACC, +{item.DamageBonus} DMG)" : string.Empty;
             return $"  {index}. {item.DisplayName} x{item.Quantity}{equipment}{equipped}";
         }
 
-        private static InventoryItem FindEquipped(SliceWorldState world, EquipmentSlot slot)
+        private static InventoryItem FindEquipped(WorldState world, EquipmentSlot slot)
         {
             return world.PlayerInventory.FindById(world.PlayerEquipment.GetEquippedItemId(slot));
         }

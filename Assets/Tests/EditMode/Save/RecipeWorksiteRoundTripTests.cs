@@ -29,7 +29,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         {
             var recipe = CreateSmeltIronIngotRecipe();
             var worksites = CreateActiveFurnaceStore();
-            var world = new SliceWorldFactory().Create(2026);
+            var world = new WorldFactory().Create(2026);
             world.PlayerInventory = CreateSmeltingInventory();
 
             var system = new RecipeSystem();

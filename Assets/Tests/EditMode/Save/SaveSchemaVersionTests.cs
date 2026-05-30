@@ -15,33 +15,33 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void ToData_StampsCurrentSchemaVersion()
         {
-            var data = SliceSaveMapper.ToData(new SliceWorldFactory().Create(1337));
-            Assert.That(data.schemaVersion, Is.EqualTo(SliceSaveMapper.CurrentSchemaVersion));
+            var data = WorldSaveMapper.ToData(new WorldFactory().Create(1337));
+            Assert.That(data.schemaVersion, Is.EqualTo(WorldSaveMapper.CurrentSchemaVersion));
         }
 
         [Test]
         public void ToWorld_AcceptsCurrentVersion_Roundtrip()
         {
-            var data = SliceSaveMapper.ToData(new SliceWorldFactory().Create(1337));
-            Assert.DoesNotThrow(() => SliceSaveMapper.ToWorld(data, new SliceWorldFactory().Create(1337)));
+            var data = WorldSaveMapper.ToData(new WorldFactory().Create(1337));
+            Assert.DoesNotThrow(() => WorldSaveMapper.ToWorld(data, new WorldFactory().Create(1337)));
         }
 
         [Test]
         public void ToWorld_TreatsLegacyZeroAsV1()
         {
             // A save written before the schemaVersion field existed deserializes it to 0.
-            var data = SliceSaveMapper.ToData(new SliceWorldFactory().Create(1337));
+            var data = WorldSaveMapper.ToData(new WorldFactory().Create(1337));
             data.schemaVersion = 0;
-            Assert.DoesNotThrow(() => SliceSaveMapper.ToWorld(data, new SliceWorldFactory().Create(1337)));
+            Assert.DoesNotThrow(() => WorldSaveMapper.ToWorld(data, new WorldFactory().Create(1337)));
         }
 
         [Test]
         public void ToWorld_RejectsFutureSchemaVersion()
         {
-            var data = SliceSaveMapper.ToData(new SliceWorldFactory().Create(1337));
-            data.schemaVersion = SliceSaveMapper.CurrentSchemaVersion + 1;
+            var data = WorldSaveMapper.ToData(new WorldFactory().Create(1337));
+            data.schemaVersion = WorldSaveMapper.CurrentSchemaVersion + 1;
             Assert.Throws<NotSupportedException>(
-                () => SliceSaveMapper.ToWorld(data, new SliceWorldFactory().Create(1337)));
+                () => WorldSaveMapper.ToWorld(data, new WorldFactory().Create(1337)));
         }
     }
 }

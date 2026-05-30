@@ -1,4 +1,4 @@
-// SliceSaveMapper partial — narrative/aidm: world events, tool-call trace, world profile, llm proposals, npc seeds (split from the 961-line monolith, NAME/LOC-split).
+// WorldSaveMapper partial — narrative/aidm: world events, tool-call trace, world profile, llm proposals, npc seeds (split from the 961-line monolith, NAME/LOC-split).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ using EmberCrpg.Domain.Worldgen;
 
 namespace EmberCrpg.Data.Save
 {
-    public static partial class SliceSaveMapper
+    public static partial class WorldSaveMapper
     {
         private static WorldEventSaveData[] ToWorldEventLogData(WorldEventLog log)
         {

@@ -47,8 +47,8 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void SliceSpellCatalog_All_IndexOrderIsStable()
         {
-            var first = SliceSpellCatalog.All;
-            var second = SliceSpellCatalog.All;
+            var first = WorldSpellCatalog.All;
+            var second = WorldSpellCatalog.All;
             Assert.That(second.Count, Is.EqualTo(first.Count));
             for (int i = 0; i < first.Count; i++)
             {
@@ -65,7 +65,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void SpellCastingService_TryPrepareCast_InsufficientMana_Rejected()
         {
-            var svc = new SpellCastingService(_ => SliceSpellCatalog.CreateFlameBolt());
+            var svc = new SpellCastingService(_ => WorldSpellCatalog.CreateFlameBolt());
             var caster = NewCaster(mana: 0);
             var result = svc.TryPrepareCast(caster, "flame_bolt", new[] { "flame_bolt" });
             Assert.That(result.Success, Is.False);
@@ -75,7 +75,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void SpellCastingService_TryPrepareCast_KnownSpellPrepared()
         {
-            var svc = new SpellCastingService(_ => SliceSpellCatalog.CreateFlameBolt());
+            var svc = new SpellCastingService(_ => WorldSpellCatalog.CreateFlameBolt());
             var caster = NewCaster(mana: 30);
             var result = svc.TryPrepareCast(caster, "flame_bolt", new[] { "flame_bolt" });
             Assert.That(result.Success, Is.True);
@@ -85,7 +85,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void SpellCastingService_CommitPreparedCast_ConsumesMana()
         {
-            var spell = SliceSpellCatalog.CreateFlameBolt();
+            var spell = WorldSpellCatalog.CreateFlameBolt();
             var svc = new SpellCastingService(_ => spell);
             var caster = NewCaster(mana: 100);
             var manaBefore = caster.Vitals.Mana.Current;
@@ -98,7 +98,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void SpellEffectResolutionService_CanResolveInstantaneous_HappyPath()
         {
-            var spell = SliceSpellCatalog.CreateFlameBolt();
+            var spell = WorldSpellCatalog.CreateFlameBolt();
             var svc = new SpellEffectResolutionService();
             var target = NewDefender();
             var result = svc.CanResolveInstantaneousEffects(spell, target);
@@ -122,7 +122,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
                 local: req => new LlmResponse("ok", null, 1),
                 cloud: null);
             var svc = new DmNarrationService(routing);
-            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
+            var world = new EmberCrpg.Simulation.World.WorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
             var beforeCount = world.LlmProposalLog.Count;
             var req = new LlmRequest("dm.narrate", "c1", new List<ToolDescriptor>(), 64, 0UL);
             var resp = svc.Narrate(req, new GameTime(0), world);
@@ -134,7 +134,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void StorytellerCheckpointSystem_RecordCheckpoint_AppendsEventWhenSitePresent()
         {
-            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
+            var world = new EmberCrpg.Simulation.World.WorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
             // Seed a site so the checkpoint has a valid anchor.
             world.Sites.Add(new SiteRecord(new SiteId(1UL), SiteKind.Settlement, "outpost", new GridPosition(0, 0), new GridPosition(1, 1)));
             var before = world.Events.Count;
@@ -145,7 +145,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void StorytellerCheckpointSystem_RecordCheckpoint_NoSites_SilentNoop()
         {
-            var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
+            var world = new EmberCrpg.Simulation.World.WorldFactory().Create(roomSeed: 1, seedWorldAnchors: false);
             // Explicit no-anchor factory leaves sites empty; RecordCheckpoint must skip.
             Assert.That(world.Sites.Count, Is.EqualTo(0));
             var before = world.Events.Count;

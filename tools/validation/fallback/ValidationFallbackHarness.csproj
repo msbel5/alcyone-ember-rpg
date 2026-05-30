@@ -21,9 +21,9 @@
     <Compile Include="../../../Assets/Scripts/Infrastructure/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Data/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/InventoryEquipmentFormatter.cs" />
-    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/SliceAtmosphereCueSet.cs" />
-    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/SliceAtmosphereSelector.cs" />
-    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/SliceHudFormatter.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/EmberAtmosphereCueSet.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/EmberAtmosphereSelector.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/EmberHudFormatter.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Visual/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Adapters/CharacterCreationViewModel.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/ComfyUiAssetForge.cs" />

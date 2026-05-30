@@ -12,7 +12,7 @@ namespace EmberCrpg.Simulation.Narrative
     /// <summary>Rules-based Think shell for the vertical slice.</summary>
     public sealed class ThinkService
     {
-        public string Think(SliceWorldState world)
+        public string Think(WorldState world)
         {
             if (world.Actors.FirstByRole(ActorRole.Player).Vitals.Health.Current <= world.Actors.FirstByRole(ActorRole.Player).Vitals.Health.Max / 2)
                 return "Think: I'm hurt. Save or finish the rat before pushing deeper.";

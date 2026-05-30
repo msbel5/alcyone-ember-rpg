@@ -15,7 +15,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
     ///
     /// The Presentation adapter cannot be constructed inside the fallback
     /// harness (no Unity engine). To still pin the contract, we mirror the
-    /// adapter's selection rule against a real <see cref="SliceWorldState"/>
+    /// adapter's selection rule against a real <see cref="WorldState"/>
     /// using public Domain primitives. If the production rule diverges from
     /// the rule replicated here, this test must be updated in lockstep —
     /// that's the point of a "behaviour pin".

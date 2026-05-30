@@ -21,7 +21,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void Replay_GuardTalkMemoryAndSecondSiteSurviveSaveLoad()
         {
-            var world = new SliceWorldFactory().Create(3110);
+            var world = new WorldFactory().Create(3110);
             var startSiteId = new SiteId(1001);
             var secondSiteId = new SiteId(1002);
             var firstRoomId = world.CurrentRoomId;
@@ -51,7 +51,7 @@ namespace EmberCrpg.Tests.EditMode.World
             var save = new JsonSliceSaveService();
             var loaded = save.LoadFromJson(save.SaveToJson(world));
             var rememberedTalk = new GuardInteractionService().Interact(loaded);
-            Assert.That(loaded.PlayerInventory.TryAdd(SliceItemCatalog.CreateGateWrit()), Is.True);
+            Assert.That(loaded.PlayerInventory.TryAdd(WorldItemCatalog.CreateGateWrit()), Is.True);
             var clearanceTalk = new GuardInteractionService().Interact(loaded);
             loaded.Actors.FirstByRole(ActorRole.Player).MoveTo(new GridPosition(loaded.Room.DoorCell.X, 1));
             var doorToggle = new DoorInteractionService().Toggle(loaded);

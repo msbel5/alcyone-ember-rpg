@@ -14,7 +14,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void AskAbout_FirstQuestion_UsesTopicAnswer()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var reply = new AskAboutService().Ask(world, "embers");
             Assert.That(reply, Does.Contain("embers").IgnoreCase);
         }
@@ -22,7 +22,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void Think_PrefersNearbyPickupWhenInventoryHasSpace()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var reply = new ThinkService().Think(world);
             Assert.That(reply, Does.Contain("Ember Shard"));
         }

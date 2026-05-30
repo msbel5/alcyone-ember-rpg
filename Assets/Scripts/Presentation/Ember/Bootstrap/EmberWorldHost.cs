@@ -59,7 +59,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // PlaceholderSimulationAdapter exclusively, so every HUD row was
             // fabricated state. Prefer a registered domain adapter; if none
             // is registered yet, try to bootstrap a DomainSimulationAdapter
-            // backed by a fresh SliceWorldState. Only fall back to the
+            // backed by a fresh WorldState. Only fall back to the
             // placeholder when both routes fail (UI-only sandbox scenes).
             _adapter = EmberDomainAdapterLocator.Current
                 ?? TryCreateDomainAdapter()
@@ -363,7 +363,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // Codex audit (fourth pass A-P1): the previous lookup used
             // actor.name (the GameObject name like "Smith_A") to resolve a
             // domain ActorRecord, which silently failed because
-            // SliceWorldFactory creates actors named "Warden", "Sage Nera",
+            // WorldFactory creates actors named "Warden", "Sage Nera",
             // etc. ActorView now exposes a DomainActorKey that scenes can
             // author per-view (falling back to the GameObject name for
             // legacy scenes).
@@ -435,7 +435,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         {
             // T-Dialog-AskAbout slice 2 — delegate to the per-NPC adapter source when it has
             // real deterministic topic IDs (DomainSimulationAdapter pulls them from
-            // SliceWorldState.Topics, the same source AskAboutService.Ask() reads). Falls back
+            // WorldState.Topics, the same source AskAboutService.Ask() reads). Falls back
             // to the {rumors, work, trade, fate} stub when no adapter is wired (offline /
             // editor sketch path). This is what makes TavernDialog finally surface the same
             // real topic IDs (embers/gate/watch/...) that Showroom already showed via the
@@ -534,8 +534,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         /// <summary>
         /// Codex audit (third pass A-P1): try to bootstrap a real
         /// <see cref="DomainSimulationAdapter"/> over a fresh
-        /// <see cref="EmberCrpg.Domain.World.SliceWorldState"/>. Returns
-        /// <c>null</c> if SliceWorldFactory throws or if the construction
+        /// <see cref="EmberCrpg.Domain.World.WorldState"/>. Returns
+        /// <c>null</c> if WorldFactory throws or if the construction
         /// path is otherwise unavailable; the caller falls through to the
         /// placeholder. Wrapped in try/catch so a missing
         /// Simulation-side dependency never crashes scene bootstrap.
@@ -544,7 +544,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         {
             try
             {
-                var world = new EmberCrpg.Simulation.World.SliceWorldFactory().Create(roomSeed: 1);
+                var world = new EmberCrpg.Simulation.World.WorldFactory().Create(roomSeed: 1);
                 return new EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter(world);
             }
             catch (System.Exception ex)

@@ -11,7 +11,7 @@ namespace EmberCrpg.Simulation.World
     /// <summary>Pure generated-dungeon transition helper.</summary>
     public sealed class DungeonTraversalService
     {
-        public string Traverse(SliceWorldState world, int doorId)
+        public string Traverse(WorldState world, int doorId)
         {
             var door = world.Dungeon.Doors.FirstOrDefault(candidate => candidate.Id == doorId);
             if (door == null || (door.FromRoomId != world.CurrentRoomId && door.ToRoomId != world.CurrentRoomId))

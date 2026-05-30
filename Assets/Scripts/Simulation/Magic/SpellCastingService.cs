@@ -20,7 +20,7 @@ namespace EmberCrpg.Simulation.Magic
         private readonly SpellCooldownService _cooldownService;
 
         public SpellCastingService()
-            : this(SliceSpellCatalog.Find, new SpellCooldownService())
+            : this(WorldSpellCatalog.Find, new SpellCooldownService())
         {
         }
 

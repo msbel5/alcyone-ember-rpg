@@ -23,7 +23,7 @@ namespace EmberCrpg.Simulation.Composition
     /// against wiring them at the raw 10 Hz Presentation tick driver (EmberTickDriver)
     /// rate without first auditing their cost gating.
     /// </summary>
-    public sealed class SliceTickComposer
+    public sealed class WorldTickComposer
     {
         /// <summary>
         /// 1 ember-tick == 1 in-game minute. Aligns with
@@ -56,7 +56,7 @@ namespace EmberCrpg.Simulation.Composition
         private int _ticksSinceHourly;
         private int _ticksSinceDaily;
 
-        public SliceTickComposer()
+        public WorldTickComposer()
             : this(
                 new GameTimeAdvanceSystem(BuildDefaultCalendar()),
                 new NeedsSystem(),
@@ -77,7 +77,7 @@ namespace EmberCrpg.Simulation.Composition
             });
         }
 
-        public SliceTickComposer(
+        public WorldTickComposer(
             GameTimeAdvanceSystem timeAdvance,
             NeedsSystem needs,
             MagicTickDriver magic,
@@ -92,7 +92,7 @@ namespace EmberCrpg.Simulation.Composition
         // Codex audit (seventh pass review on PR #198): single-arg constructor
         // kept for any caller that already passed a custom calendar; defaults
         // the NeedsSystem to the canonical mood evaluator.
-        public SliceTickComposer(GameTimeAdvanceSystem timeAdvance)
+        public WorldTickComposer(GameTimeAdvanceSystem timeAdvance)
             : this(
                 timeAdvance,
                 new NeedsSystem(),
@@ -108,7 +108,7 @@ namespace EmberCrpg.Simulation.Composition
         /// (e.g. after a Restore that resets the driver) re-anchors without
         /// rewinding domain state.
         /// </summary>
-        public void Advance(SliceWorldState world, int tickIndex)
+        public void Advance(WorldState world, int tickIndex)
         {
             if (world == null) return;
             int delta = _lastTickIndex < 0 ? 0 : tickIndex - _lastTickIndex;
@@ -176,7 +176,7 @@ namespace EmberCrpg.Simulation.Composition
         /// _ticksSinceHourly / _ticksSinceDaily accumulators are now
         /// preserved so the next Advance flushes the pending hourly tick
         /// instead of restarting the gate. Callers must still invoke
-        /// ResetAnchor only after <see cref="SliceWorldState.Time"/> has
+        /// ResetAnchor only after <see cref="WorldState.Time"/> has
         /// been restored — anchor reset itself does not rewind domain state.
         /// </summary>
         public void ResetAnchor()

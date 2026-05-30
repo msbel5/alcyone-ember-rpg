@@ -1,14 +1,14 @@
 // Design note:
-// SliceAtmosphereCueSet is the presentation-facing contract for audio and atmosphere hooks.
+// EmberAtmosphereCueSet is the presentation-facing contract for audio and atmosphere hooks.
 // Inputs: deterministic cue ids chosen from the current slice world state.
 // Outputs: debug-visible ambience/music/SFX ids that optional Unity audio drivers can consume.
 // Bible reference: Sprint 4 Phase 5 audio/atmosphere hooks without simulation audio coupling.
 namespace EmberCrpg.Presentation.Ember.UI
 {
     /// <summary>Small immutable bundle of current atmosphere cue ids.</summary>
-    public sealed class SliceAtmosphereCueSet
+    public sealed class EmberAtmosphereCueSet
     {
-        public SliceAtmosphereCueSet(string ambienceId, string musicId, string sfxId, string reason)
+        public EmberAtmosphereCueSet(string ambienceId, string musicId, string sfxId, string reason)
         {
             AmbienceId = ambienceId;
             MusicId = musicId;
@@ -21,9 +21,9 @@ namespace EmberCrpg.Presentation.Ember.UI
         public string SfxId { get; }
         public string Reason { get; }
 
-        public static SliceAtmosphereCueSet Silent(string reason)
+        public static EmberAtmosphereCueSet Silent(string reason)
         {
-            return new SliceAtmosphereCueSet("ambience.none", "music.none", "sfx.none", reason);
+            return new EmberAtmosphereCueSet("ambience.none", "music.none", "sfx.none", reason);
         }
     }
 }

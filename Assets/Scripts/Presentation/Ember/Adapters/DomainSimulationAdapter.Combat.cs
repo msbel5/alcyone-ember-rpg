@@ -39,9 +39,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public bool TryCastSpell(int spellSlotIndex)
         {
             // Codex audit (fourth pass A-P1): concrete spell command via
-            // SliceSpellCatalog + the EffectDefinition resolver path. Failure
+            // WorldSpellCatalog + the EffectDefinition resolver path. Failure
             // surfaces a deterministic refusal reason in LogCombat.
-            var spells = EmberCrpg.Simulation.Magic.SliceSpellCatalog.All;
+            var spells = EmberCrpg.Simulation.Magic.WorldSpellCatalog.All;
             if (spellSlotIndex < 0 || spellSlotIndex >= spells.Count)
             {
                 LogCombat("No such spell slot.");
@@ -100,7 +100,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public bool TryMeleeStrike(string targetActorName, int rawDamage)
         {
             // Codex audit (fourth pass A-P1): concrete melee command. Resolves
-            // the target by stable actor name on SliceWorldState and applies
+            // the target by stable actor name on WorldState and applies
             // damage; emits a CombatResolved event so the deterministic log
             // captures the strike.
             if (rawDamage <= 0) { LogCombat("Strike whiffs."); return false; }

@@ -13,16 +13,16 @@ namespace EmberCrpg.Tests.EditMode.Audit
 {
     /// <summary>
     /// Codex audit (third pass) coverage gaps. Pins new behavior added in
-    /// this pass: SliceSaveMapper null guard, mutator lifecycles, query
+    /// this pass: WorldSaveMapper null guard, mutator lifecycles, query
     /// accessors flagged in dimension G.
     /// </summary>
     public sealed class AuditThirdPassCoverageTests
     {
-        // ----- SliceSaveMapper.ToData null guard (A-P3) -----
+        // ----- WorldSaveMapper.ToData null guard (A-P3) -----
         [Test]
         public void SliceSaveMapper_ToData_NullWorldThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => SliceSaveMapper.ToData(null));
+            Assert.Throws<ArgumentNullException>(() => WorldSaveMapper.ToData(null));
         }
 
         // ----- RealtimeCombatState.TogglePaused (G-P2) -----
@@ -88,11 +88,11 @@ namespace EmberCrpg.Tests.EditMode.Audit
             Assert.That(handlers.HasHandler(EmberCrpg.Domain.Magic.EffectOperationKind.DirectRestore), Is.False);
         }
 
-        // ----- SliceWorldFactory smoke: produces a world with seed >= 0 -----
+        // ----- WorldFactory smoke: produces a world with seed >= 0 -----
         [Test]
         public void SliceWorldFactory_Create_ProducesNonNullWorld()
         {
-            var world = new SliceWorldFactory().Create(roomSeed: 1);
+            var world = new WorldFactory().Create(roomSeed: 1);
             Assert.That(world, Is.Not.Null);
             Assert.That(world.Actors, Is.Not.Null);
             Assert.That(world.Actors.Count, Is.GreaterThan(0));

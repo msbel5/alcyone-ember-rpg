@@ -1,25 +1,25 @@
 using System;
 
 // Design note:
-// SliceSaveData is the Unity-serializable DTO tree for slice JSON persistence.
+// WorldSaveData is the Unity-serializable DTO tree for slice JSON persistence.
 // Inputs: pure world-state values copied by the mapper.
 // Outputs: JsonUtility-friendly fields with no behavior.
 // Bible reference: MASTER_MECHANICS_BIBLE.md §48, PRD Sprint 1 FR-06, Sprint 2 FR-02 through FR-04.
 //
 // Codex audit (sixth pass D-P3 #D3): the playerRoomId/talkerRoomId/merchantRoomId/
-// guardRoomId/enemyRoomId fields below mirror the deprecated SliceWorldState
+// guardRoomId/enemyRoomId fields below mirror the deprecated WorldState
 // named role views. They are kept for backward-compatible save migration —
-// SliceSaveMapper writes BOTH the legacy named ids AND the new actors[]
+// WorldSaveMapper writes BOTH the legacy named ids AND the new actors[]
 // list so a player on an old save can load. New code that adds save data
 // should write into actors[] / world stores only; do not expand the legacy
-// named-id surface. Removal lines up with the SliceWorldState role-view
+// named-id surface. Removal lines up with the WorldState role-view
 // removal after the Phase 13 cleanup sprint.
 namespace EmberCrpg.Data.Save
 {
     [Serializable]
-    public sealed class SliceSaveData
+    public sealed class WorldSaveData
     {
-        // EMB-012: explicit save schema version. Bump SliceSaveMapper.CurrentSchemaVersion when the
+        // EMB-012: explicit save schema version. Bump WorldSaveMapper.CurrentSchemaVersion when the
         // on-disk shape changes incompatibly and add a migration branch in ToWorld. Legacy saves
         // written before this field existed deserialize it to 0, which ToWorld treats as the v1 baseline.
         public int schemaVersion;

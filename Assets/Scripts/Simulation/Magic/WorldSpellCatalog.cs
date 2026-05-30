@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using EmberCrpg.Domain.Magic;
 
 // Design note:
-// SliceSpellCatalog is the deterministic Sprint 5 starter spell set.
+// WorldSpellCatalog is the deterministic Sprint 5 starter spell set.
 // Inputs: none beyond fixed template ids and effect specs chosen for the foundation.
 // Outputs: stable read-only spell list and lookup, used by SpellCastingService and tests.
 // Bible reference: EMBER_VISION_BIBLE.md §8 Sprint Mapping (Sprint 5 magic foundation),
@@ -10,7 +10,7 @@ using EmberCrpg.Domain.Magic;
 namespace EmberCrpg.Simulation.Magic
 {
     /// <summary>Static deterministic catalog for the Sprint 5 starter spells.</summary>
-    public static class SliceSpellCatalog
+    public static class WorldSpellCatalog
     {
         public const string FlameBoltTemplateId = "flame_bolt";
         public const string MendingTouchTemplateId = "mending_touch";

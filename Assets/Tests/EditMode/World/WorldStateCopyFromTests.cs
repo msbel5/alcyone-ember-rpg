@@ -6,17 +6,17 @@ using NUnit.Framework;
 namespace EmberCrpg.Tests.EditMode.World
 {
     /// <summary>
-    /// ARCH-12: SliceWorldState.CopyFrom (the reflection-free save/load restore) must mirror EVERY
-    /// public field. A field added to SliceWorldState without being added to CopyFrom would be silently
+    /// ARCH-12: WorldState.CopyFrom (the reflection-free save/load restore) must mirror EVERY
+    /// public field. A field added to WorldState without being added to CopyFrom would be silently
     /// dropped on restore; this reflection walk fails if any public instance field is missed.
     /// </summary>
-    public sealed class SliceWorldStateCopyFromTests
+    public sealed class WorldStateCopyFromTests
     {
         [Test]
         public void CopyFrom_MirrorsEveryPublicField()
         {
             // Populated source: the factory fills the reference fields (stores/lists) + Time = 480.
-            var src = new SliceWorldFactory().Create(roomSeed: 1);
+            var src = new WorldFactory().Create(roomSeed: 1);
 
             // Sentinel the scalar fields the factory may leave at default, so a missed copy is detectable
             // (for a field both sides leave at default, a miss is harmless and undetectable by design).
@@ -26,10 +26,10 @@ namespace EmberCrpg.Tests.EditMode.World
             src.DoorOpen = true; src.GuardDoorAccessGranted = true; src.GuardWarningCount = 5;
             src.EncounterActive = true; src.LastNarrative = "sentinel-narrative";
 
-            var dst = new SliceWorldState();
+            var dst = new WorldState();
             dst.CopyFrom(src);
 
-            foreach (var f in typeof(SliceWorldState).GetFields(BindingFlags.Public | BindingFlags.Instance))
+            foreach (var f in typeof(WorldState).GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
                 Assert.That(f.GetValue(dst), Is.EqualTo(f.GetValue(src)),
                     $"CopyFrom did not mirror public field '{f.Name}'");
@@ -39,7 +39,7 @@ namespace EmberCrpg.Tests.EditMode.World
         [Test]
         public void CopyFrom_NullSource_IsNoOp()
         {
-            var w = new SliceWorldFactory().Create(roomSeed: 1);
+            var w = new WorldFactory().Create(roomSeed: 1);
             var beforeTime = w.Time;
             var beforeActors = w.Actors;
             w.CopyFrom(null);

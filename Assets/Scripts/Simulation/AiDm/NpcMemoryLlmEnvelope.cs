@@ -11,7 +11,7 @@ namespace EmberCrpg.Simulation.AiDm
 {
     public static class NpcMemoryLlmEnvelope
     {
-        public static LlmRequest Build(NpcSeedRecord npc, SliceWorldState world, ToolRegistry registry, int maxTokens, ulong seed)
+        public static LlmRequest Build(NpcSeedRecord npc, WorldState world, ToolRegistry registry, int maxTokens, ulong seed)
         {
             if (npc == null) throw new ArgumentNullException(nameof(npc));
             if (world == null) throw new ArgumentNullException(nameof(world));
@@ -30,7 +30,7 @@ namespace EmberCrpg.Simulation.AiDm
                 recent);
         }
 
-        public static void RecordAcceptedBark(SliceWorldState world, NpcId npcId, GameTime now, string summary)
+        public static void RecordAcceptedBark(WorldState world, NpcId npcId, GameTime now, string summary)
         {
             if (world == null || npcId.IsEmpty || string.IsNullOrWhiteSpace(summary))
                 return;

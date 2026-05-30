@@ -16,7 +16,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void AskAbout_FirstInteraction_RecordsDialogueMemory()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
 
             new AskAboutService().Ask(world, "embers");
 
@@ -32,7 +32,7 @@ namespace EmberCrpg.Tests.EditMode.Narrative
         [Test]
         public void AskAbout_RepeatedInteraction_ChangesOutputFromPersistentMemory()
         {
-            var world = new SliceWorldFactory().Create(1337);
+            var world = new WorldFactory().Create(1337);
             var service = new AskAboutService();
 
             var firstReply = service.Ask(world, "embers");

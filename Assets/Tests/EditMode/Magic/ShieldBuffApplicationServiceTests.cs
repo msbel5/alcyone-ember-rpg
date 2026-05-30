@@ -16,7 +16,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_EmberWardCast_RecordsBuffWithMagnitudeAndDuration()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var state = new ShieldBuffState();
             var service = new SpellEffectResolutionService();
 
@@ -27,26 +27,26 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.AppliedBuffCount, Is.EqualTo(1));
             Assert.That(result.TotalAppliedMagnitude, Is.EqualTo(4));
             Assert.That(result.TotalAppliedDurationTicks, Is.EqualTo(30));
-            Assert.That(result.Spell.TemplateId, Is.EqualTo(SliceSpellCatalog.EmberWardTemplateId));
-            Assert.That(state.IsActive(SliceSpellCatalog.EmberWardTemplateId), Is.True);
-            Assert.That(state.GetRemainingTicks(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(30));
-            Assert.That(state.GetMagnitude(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(4));
+            Assert.That(result.Spell.TemplateId, Is.EqualTo(WorldSpellCatalog.EmberWardTemplateId));
+            Assert.That(state.IsActive(WorldSpellCatalog.EmberWardTemplateId), Is.True);
+            Assert.That(state.GetRemainingTicks(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(30));
+            Assert.That(state.GetMagnitude(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(4));
         }
 
         [Test]
         public void ApplyShieldBuffs_EmberWardCastReplacingActiveBuff_OverwritesEntry()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var state = new ShieldBuffState();
-            state.SetActiveBuff(SliceSpellCatalog.EmberWardTemplateId, remainingTicks: 5, magnitude: 1);
+            state.SetActiveBuff(WorldSpellCatalog.EmberWardTemplateId, remainingTicks: 5, magnitude: 1);
             var service = new SpellEffectResolutionService();
 
             var result = service.ApplyShieldBuffs(cast, state);
 
             Assert.That(result.Success, Is.True);
             Assert.That(result.AppliedBuffCount, Is.EqualTo(1));
-            Assert.That(state.GetRemainingTicks(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(30));
-            Assert.That(state.GetMagnitude(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(4));
+            Assert.That(state.GetRemainingTicks(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(30));
+            Assert.That(state.GetMagnitude(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(4));
         }
 
         [Test]
@@ -138,7 +138,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_FlameBoltCast_ProducesNoBuffWritesAndStateStaysEmpty()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateFlameBolt(), 12, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateFlameBolt(), 12, "cast");
             var state = new ShieldBuffState();
             var service = new SpellEffectResolutionService();
 
@@ -153,7 +153,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
         public void ApplyShieldBuffs_NullCast_IsRejectedAndStateIsUntouched()
         {
             var state = new ShieldBuffState();
-            state.SetActiveBuff(SliceSpellCatalog.EmberWardTemplateId, remainingTicks: 7, magnitude: 2);
+            state.SetActiveBuff(WorldSpellCatalog.EmberWardTemplateId, remainingTicks: 7, magnitude: 2);
             var service = new SpellEffectResolutionService();
 
             var result = service.ApplyShieldBuffs(null, state);
@@ -161,15 +161,15 @@ namespace EmberCrpg.Tests.EditMode.Magic
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellEffectResolutionError.InvalidCast));
             Assert.That(result.Spell, Is.Null);
-            Assert.That(state.GetRemainingTicks(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(7));
-            Assert.That(state.GetMagnitude(SliceSpellCatalog.EmberWardTemplateId), Is.EqualTo(2));
+            Assert.That(state.GetRemainingTicks(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(7));
+            Assert.That(state.GetMagnitude(WorldSpellCatalog.EmberWardTemplateId), Is.EqualTo(2));
         }
 
         [Test]
         public void ApplyShieldBuffs_FailedCast_IsRejectedAndStateIsUntouched()
         {
             var state = new ShieldBuffState();
-            var failedCast = SpellCastResult.Fail(SpellCastError.InsufficientMana, SliceSpellCatalog.CreateEmberWard(), "failed");
+            var failedCast = SpellCastResult.Fail(SpellCastError.InsufficientMana, WorldSpellCatalog.CreateEmberWard(), "failed");
             var service = new SpellEffectResolutionService();
 
             var result = service.ApplyShieldBuffs(failedCast, state);
@@ -182,21 +182,21 @@ namespace EmberCrpg.Tests.EditMode.Magic
         [Test]
         public void ApplyShieldBuffs_NullShieldBuffState_IsRejectedWithInvalidBuffState()
         {
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var service = new SpellEffectResolutionService();
 
             var result = service.ApplyShieldBuffs(cast, null);
 
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.EqualTo(SpellEffectResolutionError.InvalidBuffState));
-            Assert.That(result.Spell.TemplateId, Is.EqualTo(SliceSpellCatalog.EmberWardTemplateId));
+            Assert.That(result.Spell.TemplateId, Is.EqualTo(WorldSpellCatalog.EmberWardTemplateId));
         }
 
         [Test]
         public void ApplyShieldBuffs_DoesNotAffectInstantaneousResolutionRejection()
         {
             var target = CreateGuard();
-            var cast = SpellCastResult.Ok(SliceSpellCatalog.CreateEmberWard(), 15, "cast");
+            var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var state = new ShieldBuffState();
             var service = new SpellEffectResolutionService();
 
@@ -204,7 +204,7 @@ namespace EmberCrpg.Tests.EditMode.Magic
             var instantaneous = service.ResolveInstantaneousEffects(cast, target);
 
             Assert.That(buffApplication.Success, Is.True);
-            Assert.That(state.IsActive(SliceSpellCatalog.EmberWardTemplateId), Is.True);
+            Assert.That(state.IsActive(WorldSpellCatalog.EmberWardTemplateId), Is.True);
             Assert.That(instantaneous.Success, Is.False);
             Assert.That(instantaneous.Error, Is.EqualTo(SpellEffectResolutionError.NonInstantaneousEffect));
             Assert.That(target.Vitals.Health.Current, Is.EqualTo(13));

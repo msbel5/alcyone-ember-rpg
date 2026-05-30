@@ -14,7 +14,7 @@ namespace EmberCrpg.Tests.EditMode.AiDm
         public void Build_CarriesPersonaAndLastEightMemoryRows()
         {
             var npc = new NpcSeedRecord(new NpcId(9), new SettlementId(2), new FactionId(3), "Brennec", 900, NpcRole.Artisan);
-            var world = new SliceWorldState
+            var world = new WorldState
             {
                 WorldProfile = new WorldProfile(WorldStyle.DarkFantasyGrim, WorldGenre.PoliticalIntrigue, 42, 1000000, 47, 12, 100, "grim", "smith", "city"),
             };
@@ -34,7 +34,7 @@ namespace EmberCrpg.Tests.EditMode.AiDm
         [Test]
         public void RecordAcceptedBark_AppendsDeterministicMemoryFragment()
         {
-            var world = new SliceWorldState();
+            var world = new WorldState();
             NpcMemoryLlmEnvelope.RecordAcceptedBark(world, new NpcId(12), new GameTime(5), "warned about the ash road");
 
             Assert.That(world.NpcMemory.TryGet(new ActorId(12), out var memory), Is.True);
