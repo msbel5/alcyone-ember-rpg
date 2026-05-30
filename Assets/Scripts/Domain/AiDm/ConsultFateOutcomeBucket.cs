@@ -32,6 +32,16 @@ namespace EmberCrpg.Domain.AiDm
             return Favourable;
         }
 
+        /// <summary>
+        /// DET-08: the single deterministic "roll a d100 (1..100) from a seed" shared by every
+        /// Consult-Fate path, so the live adapter and the Simulation ConsultFateService cannot drift to
+        /// different roll formulas. Equivalent to (seed % 100) + 1.
+        /// </summary>
+        public static int D100(ulong seed) => (int)(seed % 100UL) + 1;
+
+        /// <summary>DET-08: bucket for a seed via the shared <see cref="D100"/> roll.</summary>
+        public static ConsultFateOutcomeBucket FromSeed(ulong seed) => FromRoll(D100(seed));
+
         public bool Equals(ConsultFateOutcomeBucket other) => Code == other.Code;
         public override bool Equals(object obj) => obj is ConsultFateOutcomeBucket o && Equals(o);
         public override int GetHashCode() => Code.GetHashCode();

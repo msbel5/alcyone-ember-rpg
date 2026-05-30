@@ -105,7 +105,7 @@ namespace EmberCrpg.Simulation.AiDm
             // crash deterministic narration. Add 1 to land in the canonical 1..100
             // bucket window without changing the 35/35/30 distribution.
             return new ConsultFateResult(
-                ConsultFateOutcomeBucket.FromRoll((int)(seed % 100UL) + 1),
+                ConsultFateOutcomeBucket.FromSeed(seed), // DET-08: shared deterministic d100 roll
                 validation.Accepted.Count,
                 validation.Rejected.Count,
                 applied);
