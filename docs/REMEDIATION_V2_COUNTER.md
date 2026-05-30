@@ -29,7 +29,7 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 22/34 done · P1 + P2-dead-code + hygiene + DOC-01/02/03 + INP-01 + NAME-02 done; SOUL-01..04 deferred-with-spec (feature epic). Also deleted ~73k lines of doc cruft (archive/sprints/PRD dups). · ▶ NOW = NAME-03 (file moves) next; ARCH-04/06/07 reclassified to needs-decision/Editor-proof (see notes). · prior Codex EMB-001..060 = 60/60**
+**Progress: 23/34 done · P1 + P2-dead-code + hygiene + DOC-01/02/03 + INP-01 + NAME-02 + NAME-03 done; SOUL-01..04 deferred-with-spec (feature epic). Also deleted ~73k lines of doc cruft. · ▶ NOW = LOC-split SliceSaveMapper (Data-tier, headless) next; ARCH-04/06/07/02 = needs-decision/Editor-proof (see notes). · prior Codex EMB-001..060 = 60/60**
 
 > Audit-correction findings (this pass):
 > - **ARCH-06 is mis-scoped → reclassified `[E]`.** `EmberWorldHost._fateLine` is LIVE (set from `_oracle.ConsultFate()` at lines 136/165/174, returned with precedence at 416), not "dead canned lines." Binding `DialogBoxPanel.Source` straight to the adapter would drop the oracle/fate dialog line. Doing it right means proving DET-03's adapter fate-flow subsumes `_oracle.ConsultFate()` — an Editor play-proof of the OracleShrine dialog. Batch with HUD-02/DLG-01.
@@ -95,7 +95,7 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[x]` **HYG-10** · Med · workflow triggers — add `feat/**` to push branches so the static-audit gate runs.
 - `[x]` **INP-01** · Low · `Input/EmberInput.cs:3` — namespace `…Ember.Inputs` ≠ folder `Input/`: align.
 - `[ ]` **NAME-01** · High · `SliceWorldState` (68 refs) + `SliceSaveMapper/ItemCatalog/SpellCatalog/TickComposer/WorldFactory` — dedicated atomic GUID-safe rename `Slice*`→`Ember*`/`World*` (do LAST; ref-heavy; scan scene/prefab GUIDs).
-- `[ ]` **NAME-03** · Low · `Presentation/SliceHudFormatter.cs`,`SliceAtmosphere*.cs` — move under `Presentation/Ember/...` (with `.meta`).
+- `[x]` **NAME-03** · Low · `Presentation/SliceHudFormatter.cs`,`SliceAtmosphere*.cs`,`InventoryEquipmentFormatter.cs` — moved (4 .cs+.meta, GUID-safe) → `Presentation/Ember/UI/`; namespace `…Presentation.Slice`→`…Presentation.Ember.UI`; updated 2 test usings + fallback csproj. Fallback 1214✓; Win64 Success, 0 CS. Commit `f49b8078`.
 - `[x]` **NAME-02** · Low · `Domain/Actors/*` (expanded project-wide) — swept 262 stale Turkish "Faz"(=Phase) sprint labels across 225 .cs files → English "Phase" (comments + string labels only; compile-inert). Fallback 1214✓; Win64 Success, 0 CS. Commit `005429ed`.
 
 ---
