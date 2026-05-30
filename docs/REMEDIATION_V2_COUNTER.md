@@ -29,7 +29,14 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 23/34 done · P1 + P2-dead-code + hygiene + DOC-01/02/03 + INP-01 + NAME-02 + NAME-03 done; SOUL-01..04 deferred-with-spec (feature epic). Also deleted ~73k lines of doc cruft. · ▶ NOW = LOC-split SliceSaveMapper (Data-tier, headless) next; ARCH-04/06/07/02 = needs-decision/Editor-proof (see notes). · prior Codex EMB-001..060 = 60/60**
+**Progress: 23/34 fully done + ARCH-02 & LOC-split substantially advanced `[~]`. Done: P1 + P2-dead-code + hygiene + DOC-01/02/03 + INP-01 + NAME-02 + NAME-03. This pass also: split SliceSaveMapper 961→6 + adapter 829→471 (ARCH-02 structural). SOUL-01..04 deferred-with-spec (feature epic). Deleted ~73k lines of doc cruft. · ▶ NOW = the tail is decision-gated / Editor-proof / epic — see below. · prior Codex EMB-001..060 = 60/60**
+
+> **State of the remaining tail (honest triage after this pass):**
+> - **Needs ONE user decision (highest-value dedup):** ARCH-04 save-within-a-save. Approach forks on save-compat (break dev-only saves + bump schemaVersion, vs migrate) and seam (`string ExportStateJson()` vs typed `SliceSaveData ExportState()`).
+> - **Needs Editor play-proof `[E]` (batch):** ARCH-06 (live `_fateLine`), DLG-01 (seam+SOUL-04), HUD-02, SCN-01, HUD-01, SCN-03.
+> - **Needs user go-ahead (feature epic):** SOUL-01..04 (plumb plant/job/worksite/price/schedule state into SliceWorldState so the world actually lives).
+> - **Remaining design refactors (autonomous-doable, larger):** ARCH-07 (locator→DI; note the "write-race" is theoretical in single-threaded Unity — value is decoupling), ARCH-02 remainder (WorldHydrator collaborator + ILlmRouter DI), ARCH-08/09 (seam / interface segregation).
+> - **Marginal:** CharacterCreationController/EmberMainMenuUI splits, HYG-09 (CI honesty).
 
 > Audit-correction findings (this pass):
 > - **ARCH-06 is mis-scoped → reclassified `[E]`.** `EmberWorldHost._fateLine` is LIVE (set from `_oracle.ConsultFate()` at lines 136/165/174, returned with precedence at 416), not "dead canned lines." Binding `DialogBoxPanel.Source` straight to the adapter would drop the oracle/fate dialog line. Doing it right means proving DET-03's adapter fate-flow subsumes `_oracle.ConsultFate()` — an Editor play-proof of the OracleShrine dialog. Batch with HUD-02/DLG-01.
@@ -64,18 +71,23 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[x]` **ARCH-05** · Med · `Infrastructure/AiDm/LlmClients.cs:11`,`NativeLlmClient.cs:16` — namespace lies about assembly: rename `EmberCrpg.Simulation.AiDm` → `EmberCrpg.Infrastructure.AiDm`; fix usings (placement is correct).
 - `[ ]` **ARCH-07** · High · `Forge/ForgeLocator.cs`, `IDomainSimulationAdapter.cs:176` — two mutable static locators with a write-race: introduce `IForgeServices`/`IAdapterProvider` from one composition root (keep statics as thin shims during migration).
 - `[E]` **ARCH-06** · High · `Bootstrap/EmberWorldHost.cs:407-489` — host re-implements `IDialogSource` to forward to the adapter. AUDIT-CORRECTION: not "dead canned lines" — `_fateLine` (oracle ConsultFate) is LIVE with precedence (136/165/174/416). Reclassified `[E]`: removing the proxy needs an OracleShrine dialog play-proof that the adapter fate-flow subsumes `_oracle.ConsultFate()`. Batch with HUD-02/DLG-01.
-- `[ ]` **ARCH-02** · High · `DomainSimulationAdapter.cs` (804)+partials — god class: extract `WorldHydrator`/`DialogController`/`AdapterStatFactory`; inject `ILlmRouter` instead of `ForgeLocator.LlmRouter`.
+- `[~]` **ARCH-02** · High · `DomainSimulationAdapter.cs` god class — STRUCTURAL HALF DONE (`24bdf31f`): extracted the worldgen/character-creation/hydration cluster into `DomainSimulationAdapter.Worldgen.cs` (main 829→471, new 381), mirroring the .Save/.Fate/.Combat partials. Win64 Success, 0 CS. REMAINING (design, deferred): promote the cluster to a genuine `WorldHydrator` collaborator + inject `ILlmRouter` instead of `ForgeLocator.LlmRouter` (overlaps ARCH-07 DI).
 - `[ ]` **ARCH-09** · Med · `PlaceholderSimulationAdapter.cs` (289) + `IDomainSimulationAdapter` (203) — trim placeholder to throw/empty; segregate the over-broad interface (dialog/HUD/worldgen sub-interfaces).
 - `[ ]` **ARCH-08** · Med · `IDomainSimulationAdapter.cs:54,55,102`, `EmberSaveService` `GameObject.Find("PlayerRig")` — primitive obsession: pass `ActorId`/`SiteId` across the seam; replace `Find` with a registry handle.
 - `[x]` **ARCH-11** · Low · `SliceTickComposer.cs:23,30`, `SpellExecutionService.cs:23` — Sim XML `<see cref>` points up to Presentation: replace crefs with prose.
-- `[ ]` **LOC-split** · Med · split (after the above, mechanical, round-trip test each): `SliceSaveMapper.cs` 961→Economy/Narrative/Worldgen mappers · `DomainSimulationAdapter.cs` 804 · `CharacterCreationController.cs` 660 (+fill the empty `CharacterCreationViewModel`) · `LlmClients.cs` 517 (per-class files) · `EmberMainMenuUI.cs` 345 (view vs bootstrap-spawn).
+- `[~]` **LOC-split** · Med · mechanical, round-trip tested:
+  - `[x]` `SliceSaveMapper.cs` 961 → 6 partials (root + Process/World/Economy/Narrative/ActorDetail, each 140–242) — `be15e50b`, fallback 1214✓ + Win64 Success.
+  - `[x]` `DomainSimulationAdapter.cs` 829 → 471 (+Worldgen.cs 381) — done as ARCH-02 structural `24bdf31f`.
+  - `[-]` `LlmClients.cs` 517 — WON'T per-class-split: header carries a deliberate prior Codex decision (J-P3 #32) folding the 3 public client types with documented rationale + "do not split now". Respected (guardrail: don't fight validated-good decisions). The internal `LlmHttpClientCore` could be extracted later if desired (outside the note's scope).
+  - `[ ]` `CharacterCreationController.cs` 660 (+fill empty `CharacterCreationViewModel`) — pending; MVVM-extraction is design work, not pure mechanical.
+  - `[ ]` `EmberMainMenuUI.cs` 345 (view vs bootstrap-spawn) — pending; decoration methods are interleaved (non-contiguous), marginal LOC payoff for a 345-line file.
 
 ### LANE P3 — playability (turns "done" into real; many need Editor proof)
 - `[~]` **SOUL-01** · Critical · `Simulation/Composition/SliceTickComposer.cs:111-167` — tick advances only time/magic/needs/caravans: gate per-hour/day calls to PlantGrowth, PriceUpdate, FactionReputation, JobAssignment (cost-gated). Proof: headless "world moves over N ticks" test (plant stage + price + job state change).
 - `[~]` **SOUL-03** · High · `Domain/Actors/ActorRecord.cs:76,131` — `ScheduleState` stored but never read: build a ScheduleSystem resolving actor target per game-hour so NPCs move. `[E]` visual.
 - `[~]` **SOUL-04** · High · `Simulation/World/SliceWorldFactory.cs:52-56` — worldgen NPC seeds never instantiated as views (scenes use 5 fixed actors): spawn ActorViews from `GeneratedWorld.Npcs`, OR explicitly document scenes as fixed vignettes. `[E]`
 - `[ ]` **HUD-02** · High · `Interaction/EmberPlayerInteractRaycaster.cs:87-99` — Ask-About dead in 6/10 scenes (no DialogBoxPanel): have `EmberWorldHost` ensure one at runtime (like it does PauseMenu/EmberHud). `[E]`
-- `[ ]` **DLG-01** · High · `DomainSimulationAdapter.cs:288-318` — per-actor topics keyed by display-name string vs scene `_displayName`: resolve actor by stable ID; mismatch must not silently fall back to global topics.
+- `[E]` **DLG-01** · High · `DomainSimulationAdapter.cs:306-335` — per-actor topics keyed by display-name string (`NpcSeeds.FirstOrDefault(n => n.Name == actorName)`) vs scene `_displayName`. AUDIT-CORRECTION: resolving by stable ID isn't a local edit — the interaction seam passes `target.DisplayName` (a string) from the raycaster, and scene actors carry no `NpcId` (that's SOUL-04's dormant scene-actor↔seed binding). Fixing it properly means a seam change (`DisplayName`→`NpcId`) + giving scene actors stable IDs + an Editor dialog play-proof. Reclassified `[E]`, entangled with SOUL-04.
 - `[ ]` **SCN-01** · High · `EmberScenePortal.cs:11,24`,`BootBootstrap.cs:17`,`EmberMainMenuUI.cs:19` — `EmberScenes` registry bypassed by raw scene-name strings: drive portal targets from `EmberScenes` constants. `[E]`
 - `[ ]` **HUD-01** · `[E]` · `EmberHud.cs` — verify action-bar reachable: click CAST→SPL1..5, ATK/SRCH route (scene-tour screenshot).
 - `[ ]` **SCN-03** · `[E]` · `CharacterCreation.unity` — walk all wizard stages; confirm intent carried to gameplay.
