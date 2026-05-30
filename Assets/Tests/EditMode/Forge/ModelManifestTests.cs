@@ -120,5 +120,60 @@ namespace EmberCrpg.Tests.EditMode.Forge
             // OS-specific separator normalisation
             Assert.That(resolved, Does.Contain("sub" + Path.DirectorySeparatorChar + "a" + Path.DirectorySeparatorChar + "b.txt"));
         }
+
+        // EMB-005 regression guard: the SHIPPED StreamingAssets manifest must declare paths that
+        // match the real nested on-disk model layout the runtime (ForgeBootstrap) loads:
+        //   sdxl-turbo/<component>/model.onnx, sd-1.5/<component>/model.onnx, all-minilm-l6-v2/...
+        // The old manifest had flattened paths (sdxl-turbo/text_encoder.onnx) and wrong dir names
+        // (minilm-l6-v2, sd15-lcm) so VerifyAllPresent reported everything missing and the
+        // downloader would have fetched the wrong layout. This test fails if anyone reverts that.
+        [Test]
+        public void ShippedManifest_PathsMatchNestedRuntimeLayout()
+        {
+            var manifestPath = FindShippedManifest();
+            if (manifestPath == null)
+            {
+                Assert.Ignore("StreamingAssets/Models/manifest.json not reachable from test host; skipping shipped-manifest check.");
+                return;
+            }
+
+            var entries = ModelManifest.LoadFromJson(File.ReadAllText(manifestPath));
+            Assert.That(entries.Count, Is.GreaterThan(0), "shipped manifest parsed to zero entries");
+
+            var modelsRoot = Path.GetDirectoryName(manifestPath);
+            foreach (var e in entries)
+            {
+                // No flattened diffusion component paths — every onnx component lives in its own dir.
+                Assert.That(e.Path, Does.Not.Match(@"^(sdxl-turbo|sd-1\.5)/[^/]+\.onnx$"),
+                    "flattened onnx path (should be <dir>/<component>/model.onnx): " + e.Path);
+                // Correct directory names.
+                Assert.That(e.Path, Does.Not.StartWith("minilm-l6-v2/"),
+                    "wrong dir name (should be all-minilm-l6-v2/): " + e.Path);
+                Assert.That(e.Path, Does.Not.StartWith("sd15-lcm/"),
+                    "wrong dir name (should be sd-1.5/): " + e.Path);
+
+                // Every declared path must resolve to a real file in the bundle.
+                var full = ModelManifest.ResolvePath(modelsRoot, e.Path);
+                Assert.That(File.Exists(full), Is.True, "manifest entry '" + e.Id + "' path missing on disk: " + e.Path);
+
+                // The deprecated larger-tier 3B entry must not be in the shipped verify manifest
+                // (not bundled; larger tiers are a future opt-in download, documented separately).
+                Assert.That(e.Id, Does.Not.Contain("3b"), "shipped manifest must not list the un-bundled qwen 3B tier");
+            }
+        }
+
+        // Walk up from the test host's base directory looking for the project's StreamingAssets
+        // manifest. Works under both Unity EditMode (base dir inside the project) and the pure-C#
+        // fallback harness (base dir inside the repo). Returns null if not found.
+        private static string FindShippedManifest()
+        {
+            var dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+            for (int hops = 0; dir != null && hops < 12; hops++, dir = dir.Parent)
+            {
+                var candidate = Path.Combine(dir.FullName, "Assets", "StreamingAssets", "Models", "manifest.json");
+                if (File.Exists(candidate)) return candidate;
+            }
+            return null;
+        }
     }
 }
