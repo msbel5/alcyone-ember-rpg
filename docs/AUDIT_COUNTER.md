@@ -43,9 +43,9 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 4 / 60 defects done (+1 partial) · 0 / 11 packages · 4 / 25 final-checklist items**
+**Progress: 5 / 60 defects done (+1 partial) · 0 / 11 packages · 5 / 25 final-checklist items**
 
-**▶ NOW = EMB-005 (model manifest path normalize + VerifyAllPresent test).** Done so far (headless): EMB-001 dup-GUID, EMB-047 DOCS/ links, EMB-058 CURRENT_STATE, EMB-046 README de-stale, EMB-043 README-Qwen (partial; manifest pending here). Next headless: 005, 052, 048/050, 049, 004-scan, static-audit tooling.
+**▶ NOW = EMB-052 (secrets/.env ignore patterns).** Done headless: 001,047,058,046,005 + pre-existing StaticPromptCatalog test greened (fallback 1421/0). EMB-043 still partial (manifest done; AI-stack doc pending). Next: 052, 048/050, 049, 004-scan, static-audit tooling.
 
 > Forge/SDXL note (pre-audit, already fixed this session): CUDA onnxruntime + cuDNN + llama/ggml/mtmd
 > `.meta` files now Editor+Win64-enabled (commits ebc11d2b, 5ebda704, 753f1b0d) so Editor Play Mode
@@ -68,7 +68,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-001** · Unity asset identity · Editor:partial — `CombatPlayground.unity.meta` & `Sprint4Foundation.unity.meta` share GUID `92b2f977c6bb4e4ebc6c7ace4f8484a7`. Both are non-build root scenes. Fix: confirm no refs, regenerate one GUID or archive one scene. **▶ NOW**
 - `[ ]` **EMB-002** · `.meta` integrity · Editor:yes — missing `.meta` on `LLamaSharp.dll`, `Jost.ttf`, `Spectral-Regular.ttf`, `Resources/Fonts/`, `NuGet/.nuget-installed.json`. Import via Unity (don't hand-fake importer settings). [E]
 - `[ ]` **EMB-004** · LFS/build reliability · Editor:scan-no/build-yes — CI `lfs:false`; many DLL/model files are 131-byte LFS pointers → false-green. Add pointer-scan validation; split CI source-only vs LFS-build.
-- `[ ]` **EMB-005** · AI/model bootstrap · Editor:no — `Models/manifest.json` paths (`sdxl-turbo/text_encoder.onnx`) don't match real nested layout (`text_encoder/model.onnx`); hashes `TBD`. Normalize manifest + `VerifyAllPresent` test.
+- `[x]` **EMB-005** · AI/model bootstrap · Editor:no — `Models/manifest.json` paths (`sdxl-turbo/text_encoder.onnx`) don't match real nested layout (`text_encoder/model.onnx`); hashes `TBD`. Normalize manifest + `VerifyAllPresent` test.
 - `[ ]` **EMB-006** · LLM integration · Editor:partial — `NativeLlmClient` fallback when `USE_LLAMASHARP` absent; explicit disabled/fallback/real capability states + presence validation + no fake-real claims.
 - `[ ]` **EMB-007** · Determinism/threading · Editor:yes — `DomainSimulationAdapter` `Task.Run` writes `_currentDialogLine`/`_isDialogThinking`/`_pendingFate`/`_world.ToolCallTrace` off-thread. Marshal results to main-thread tick boundary. (== package P2-B)
 - `[ ]` **EMB-008** · LLM authority · Editor:core-no — `ConsultFateAsync` synthesizes `ToolCallTraceRecord` directly, bypassing validator/router. Route fate/dialog effects through tool router. (== P2-D)
@@ -141,7 +141,7 @@ Order by safety×value:
 1. `[x]` EMB-001 scan (duplicate GUID — fix is partial-headless: regen one root-scene meta GUID after ref-scan)
 2. `[x]` EMB-047 — `DOCS/` → `docs/` link normalize
 3. `[x]` EMB-058 + EMB-046 + EMB-003-scan — create `docs/CURRENT_STATE.md`, de-stale README (= P0-C)
-4. `[ ]` EMB-005 — model manifest path normalize + `VerifyAllPresent` test (= P1-A)
+4. `[x]` EMB-005 — model manifest path normalize + `VerifyAllPresent` test (= P1-A)
 5. `[ ]` EMB-043 — AI-stack doc, fix Qwen version mismatch
 6. `[ ]` EMB-052 — secret/.env ignore patterns
 7. `[ ]` EMB-048 + EMB-050 — PRD matrix dedup + docs archive plan (= P4-A)
@@ -173,7 +173,7 @@ runtime/UI proof. Each needs build-clean + scene-tour screenshot review.
 - `[ ]` 2. Static validation: dup-GUID, missing-meta, orphan-meta, LFS-pointer
 - `[x]` 3. `docs/CURRENT_STATE.md` + de-stale README
 - `[ ]` 4. PRD source-map: one matrix, active/reference/deprecated, fix `DOCS/`
-- `[ ]` 5. AI/model manifest paths + hash policy (no binary changes)
+- `[x]` 5. AI/model manifest paths + hash policy (no binary changes)
 - `[ ]` 6. LFS/runtime dep docs + CI pointer checks
 - `[ ]` 7. Save/load characterization tests (before changing persistence)
 - `[ ]` 8. Build-scene validation/screenshot-tour harness (report only)
@@ -211,3 +211,4 @@ as Unity proof · no casual package/plugin version changes.
 - EMB-001 → HEAD had both root scenes at GUID 92b2...; Unity already regenerated Sprint4Foundation to 7e96...; committed it; full-tree dup scan now clean. commit b6c839be
 - EMB-047 → 125 docs files had uppercase DOCS/ path prefix; sed DOCS/→docs/ (DOCS: mechanism IDs preserved). commit 09d43068
 - EMB-058/046/043 → created docs/CURRENT_STATE.md; replaced README 62-line stale status block with pointer; README Qwen3→Qwen2.5-1.5B. commit 0df3b1a0
+- EMB-005 → manifest paths were flattened + wrong dir names; rewrote to nested layout matching ForgeBootstrap + disk (10/10 resolve); dropped 3B + flattened tokenizers; added ShippedManifest guard test. Also greened pre-existing StaticPromptCatalog floor-header test. commits d3177ff1 + test-fix
