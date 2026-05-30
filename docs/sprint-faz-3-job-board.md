@@ -19,7 +19,7 @@ and focused fallback EditMode tests for ordering and duplicate-claim guards.
 - `Assets/Scripts/Domain/Process/JobBoard.cs` — adds deterministic add, lookup, priority/insertion-order peek, actor claim, complete/cancel, and clear semantics.
 - `Assets/Tests/EditMode/Process/JobRequestTests.cs` — pins constructor storage and invalid sentinel/quantity/priority rejection.
 - `Assets/Tests/EditMode/Process/JobBoardTests.cs` — pins add/get/peek/claim/terminal removal/clear behaviour and duplicate guards.
-- `DOCS/sprint-faz-3-atom-map.md` — marks the job-board atoms landed and moves next increment guidance to actor job state.
+- `docs/sprint-faz-3-atom-map.md` — marks the job-board atoms landed and moves next increment guidance to actor job state.
 
 ## Validation
 

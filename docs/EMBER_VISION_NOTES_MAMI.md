@@ -4,9 +4,9 @@ date: 2026-05-16
 author: Mami (msbel5)
 status: source of author intent
 relationship_to_other_docs: |
-  Mechanic docs in DOCS/mechanics/ remain canonical for implementation.
+  Mechanic docs in docs/mechanics/ remain canonical for implementation.
   This file is consulted for intent when atom-map decomposition has
-  ambiguity. It does NOT supersede DOCS/EMBER_VISION_BIBLE.md or any
+  ambiguity. It does NOT supersede docs/EMBER_VISION_BIBLE.md or any
   mechanic doc; it complements them by recording Mami's voice directly.
 ---
 

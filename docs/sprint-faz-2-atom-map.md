@@ -6,7 +6,7 @@ _Primary Faz 2 boxes:_ `[box=PROCESS]`, `[box=MATTER]`.
 _Support boxes:_ `[box=LIVING]` (worker skill/actor identity), `[box=WORLD]` (worksite location), `[box=TIME]` (40-tick deterministic proof), `[box=PLAYABLE]` (acceptance proof).
 _Acceptance gate:_ `player can craft an iron ingot from ore and fuel and watch the stockpile increase` (from `docs/ROADMAP.md` Faz 2).
 
-This atom map decomposes Faz 2 against `DOCS/mechanic-map-v1.md` and `DOCS/agent-rules-v2.md` before any gameplay code is written. Per `CRON_CODES.md @EMSPR`, Faz 2 is not promotion-ready until every row below is checked off, every sub-area has merged PR evidence, `tools/validation/run-validation.sh --mode fallback` passes, and a final sprint summary records atom count, bundle count, and product-visible PR count.
+This atom map decomposes Faz 2 against `docs/mechanic-map-v1.md` and `docs/agent-rules-v2.md` before any gameplay code is written. Per `CRON_CODES.md @EMSPR`, Faz 2 is not promotion-ready until every row below is checked off, every sub-area has merged PR evidence, `tools/validation/run-validation.sh --mode fallback` passes, and a final sprint summary records atom count, bundle count, and product-visible PR count.
 
 Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
@@ -40,7 +40,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 - [x] `Assets/Scripts/Data/Save/SliceSaveMapper.cs` :: extend mapper :: serialize recipe/worksite progress only after runtime state exists [box=TIME] — landed on `agent/sprint-faz-2-recipe-worksite-save`
 - [x] `Assets/Tests/EditMode/Save/RecipeWorksiteRoundTripTests.cs` :: tests :: round-trip active worksite progress and produced stock [box=TIME][box=PROCESS] — landed on `agent/sprint-faz-2-recipe-worksite-save`
-- [x] `DOCS/sprint-faz-2-smelt-iron-acceptance.md` :: `player can ...` :: deterministic replay proof for crafting iron ingot from ore + fuel at furnace [box=PLAYABLE] — landed on `agent/sprint-faz-2-smelt-iron-acceptance`
+- [x] `docs/sprint-faz-2-smelt-iron-acceptance.md` :: `player can ...` :: deterministic replay proof for crafting iron ingot from ore + fuel at furnace [box=PLAYABLE] — landed on `agent/sprint-faz-2-smelt-iron-acceptance`
 
 ## Bundling guidance
 
@@ -53,12 +53,12 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [x] every Faz 2 atom above is checked off — 20 gameplay/proof rows checked, plus 1 meta atom-map row.
 - [x] every sub-area has at least one merged PR/main evidence: Recipe definitions (#99, #100, and `RecipeDef` commit `e217cc6` on `main`), Worksite state (#102, #103), Recipe execution (#104), Save/load/proof (#105, #106).
 - [x] `tools/validation/run-validation.sh --mode fallback` passes on the final Faz 2 branch — final-summary rerun passed with `fallback_exit_code=0`, `Passed: 813, Failed: 0, Skipped: 0`.
-- [x] final sprint summary records atom count and bundle count — see `DOCS/sprint-faz-2-final-summary.md`.
+- [x] final sprint summary records atom count and bundle count — see `docs/sprint-faz-2-final-summary.md`.
 - [x] product-visible PR count for Faz 2 ≥ 1 — count is 1 (`#104`, first EventLog-emitting RecipeSystem slice).
 
 ## This atom map
 
-- [x] `DOCS/sprint-faz-2-atom-map.md` :: this file :: canonical Faz 2 decomposition required before first gameplay atom [box=meta] — created on `agent/sprint-faz-2-atom-map`
+- [x] `docs/sprint-faz-2-atom-map.md` :: this file :: canonical Faz 2 decomposition required before first gameplay atom [box=meta] — created on `agent/sprint-faz-2-atom-map`
 
 ## Thalamus packet
 
@@ -67,7 +67,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Final summary / promotion evidence
 
-Faz 2 is closed by `DOCS/sprint-faz-2-final-summary.md`. The final pass records 20 gameplay/proof atom rows, 1 meta atom row, 7 non-review implementation bundles, 1 product-visible PR, and the player-can sentence from `docs/ROADMAP.md`.
+Faz 2 is closed by `docs/sprint-faz-2-final-summary.md`. The final pass records 20 gameplay/proof atom rows, 1 meta atom row, 7 non-review implementation bundles, 1 product-visible PR, and the player-can sentence from `docs/ROADMAP.md`.
 
 Thalamus final-summary packet resolved successfully:
 

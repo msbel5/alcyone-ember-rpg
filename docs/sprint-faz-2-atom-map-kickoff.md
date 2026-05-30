@@ -3,7 +3,7 @@
 _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-atom-map`
 _Box:_ `[box=meta]` kickoff for Faz 2 `[box=PROCESS]` + `[box=MATTER]`
-_Atom-map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom-map:_ `docs/sprint-faz-2-atom-map.md`
 _Thalamus:_ `pkt_20260511213524_1a8c556dd6e1` / `sha256:f03d726809ee9adaf77d58d3a2505c4575a3eb382bcdfd94b66a6e038050fee7`
 
 ## Increment goal
@@ -12,8 +12,8 @@ Open Faz 2 (`Recipe + Worksite`) truthfully after Faz 1 promotion by decomposing
 
 ## Files changed
 
-- `DOCS/sprint-faz-2-atom-map.md` — canonical Faz 2 atom map against `DOCS/mechanic-map-v1.md` and `DOCS/agent-rules-v2.md`.
-- `DOCS/sprint-faz-2-atom-map-kickoff.md` — this concise sprint summary.
+- `docs/sprint-faz-2-atom-map.md` — canonical Faz 2 atom map against `docs/mechanic-map-v1.md` and `docs/agent-rules-v2.md`.
+- `docs/sprint-faz-2-atom-map-kickoff.md` — this concise sprint summary.
 
 ## Validation
 

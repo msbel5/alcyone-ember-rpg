@@ -9,8 +9,8 @@ Complete the Faz 3 `job-event-log` atom: job assignment and job completion now h
 - `Assets/Scripts/Domain/World/WorldEventKind.cs`
 - `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`
 - `Assets/Tests/EditMode/Process/JobEventLogTests.cs`
-- `DOCS/sprint-faz-3-atom-map.md`
-- `DOCS/sprint-3-job-event-log.md`
+- `docs/sprint-faz-3-atom-map.md`
+- `docs/sprint-3-job-event-log.md`
 
 ## Behaviour
 

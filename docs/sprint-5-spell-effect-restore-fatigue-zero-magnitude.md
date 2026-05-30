@@ -22,7 +22,7 @@ explicit zero-magnitude pin; this test closes that gap.
 ## Change set
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Added `ResolveInstantaneousEffects_RestoreFatigue_ZeroMagnitudeLeavesFatigueUnchanged`.
-- `DOCS/sprint-5-spell-effect-restore-fatigue-zero-magnitude.md` (this file).
+- `docs/sprint-5-spell-effect-restore-fatigue-zero-magnitude.md` (this file).
 
 ## Out of scope
 - No production code changes.

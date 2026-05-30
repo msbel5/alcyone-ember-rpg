@@ -107,7 +107,7 @@ Tackle in this order. Each phase is a separate commit.
 
 **P10 — Smoke test** (20 min)
 - Play through: New Game → walk Faz 3 → portal to Faz 4 → talk to Innkeeper → inventory tab → continue to Faz 5 → harvest a crop billboard → Faz 6 buy from merchant → Faz 7 swing at goblin → Faz 8 cast on effigy → Faz 9 ask oracle → Faz 10 consult fate → Faz 11 panel showcase → Faz 12 narration → loop. Hit F5 mid-way, quit, relaunch, F9, verify position restored.
-- Capture a 30-second .gif of the full loop. Commit it to `DOCS/screenshots/ember-end-to-end.gif`.
+- Capture a 30-second .gif of the full loop. Commit it to `docs/screenshots/ember-end-to-end.gif`.
 
 ### Quality gates after each phase
 

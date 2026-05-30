@@ -8,13 +8,13 @@ coverage, product-visible proof, validation result, and next sprint direction.
 
 ## Files changed
 
-- `DOCS/sprint-faz-3-atom-map.md`
-- `DOCS/sprint-3-faz-3-promotion.md`
+- `docs/sprint-faz-3-atom-map.md`
+- `docs/sprint-3-faz-3-promotion.md`
 
 ## Promotion evidence
 
 - Final atom count: 40 implementation atoms checked in
-  `DOCS/sprint-faz-3-atom-map.md`.
+  `docs/sprint-faz-3-atom-map.md`.
 - Bundle count: 6 suggested bundles represented by merged PRs:
   `job-primitives`, `job-board`, `actor-job-state`, `assignment-system`,
   `competition-proof`, and `job-save-proof`.
@@ -56,5 +56,5 @@ coverage, product-visible proof, validation result, and next sprint direction.
 ## Next increment
 
 Start Faz 4 by writing the colony-needs atom map against
-`DOCS/mechanic-map-v1.md`, with a product-visible `player can ...` acceptance
+`docs/mechanic-map-v1.md`, with a product-visible `player can ...` acceptance
 sentence before implementation work begins.

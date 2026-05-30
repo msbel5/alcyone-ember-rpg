@@ -4,12 +4,12 @@ _Date:_ 2026-05-09
 _Branch:_ `realignment-faz-0` (PR [#78](https://github.com/msbel5/alcyone-ember-rpg/pull/78))
 _Phase box:_ `[box=meta]` — audit and realignment, no gameplay surface.
 _Acceptance gate:_ a fresh contributor opens the repo, reads
-`README.md`, `docs/ROADMAP.md`, `DOCS/mechanic-map-v1.md`, and within
+`README.md`, `docs/ROADMAP.md`, `docs/mechanic-map-v1.md`, and within
 five minutes can answer the four orientation questions in
 `README.md`.
 
 This atom map is the canonical decomposition of Faz 0 against
-`DOCS/mechanic-map-v1.md` and `DOCS/agent-rules-v2.md`. Per
+`docs/mechanic-map-v1.md` and `docs/agent-rules-v2.md`. Per
 `CRON_CODES.md @EMSPR` (PRD-V atomic decomposition + sprint promotion
 hard rule), Faz 0 is not a candidate for promotion until every row
 below is checked off, every sub-area has at least one merged PR, and
@@ -19,9 +19,9 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Canonical doc set (one PR, #78)
 
-- [x] `DOCS/alcyone-audit-2026-05-09.md` :: audit body :: explain why the Sprint 5 magic-test loop stalled and what changes now [box=meta]
-- [x] `DOCS/mechanic-map-v1.md` :: 8-box living-world model :: TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM frame for all future decomposition [box=meta]
-- [x] `DOCS/agent-rules-v2.md` :: five rules :: product-visible increment, no speculative utility, data-driven effects, world-store promotion, playable proof [box=meta]
+- [x] `docs/alcyone-audit-2026-05-09.md` :: audit body :: explain why the Sprint 5 magic-test loop stalled and what changes now [box=meta]
+- [x] `docs/mechanic-map-v1.md` :: 8-box living-world model :: TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM frame for all future decomposition [box=meta]
+- [x] `docs/agent-rules-v2.md` :: five rules :: product-visible increment, no speculative utility, data-driven effects, world-store promotion, playable proof [box=meta]
 - [x] `README.md` :: repo orientation :: locked architecture summary, sprint workflow, real on-disk layout (`Assets/Scripts/{Domain,Simulation,Data,Presentation}` + `Assets/Tests/{EditMode,PlayMode}`) [box=meta]
 - [x] `docs/ROADMAP.md` :: 12-phase roadmap :: Faz 0..12 with `player can ...` acceptance per phase, supersedes Sprint 0 roadmap [box=meta]
 
@@ -55,7 +55,7 @@ the captain workspace and is not part of this repo's commit history.
 
 ## This atom map
 
-- [x] `DOCS/sprint-faz-0-atom-map.md` :: this file :: canonical Faz 0 decomposition required by sprint promotion hard rule [box=meta]
+- [x] `docs/sprint-faz-0-atom-map.md` :: this file :: canonical Faz 0 decomposition required by sprint promotion hard rule [box=meta]
 
 ## Promotion checklist
 
@@ -68,7 +68,7 @@ the captain workspace and is not part of this repo's commit history.
 ## Next sprint
 
 Faz 1 — Core Store reset (boxes WORLD, LIVING, MATTER). Decompose
-against `DOCS/mechanic-map-v1.md` once PR #78 is merged. Expected
+against `docs/mechanic-map-v1.md` once PR #78 is merged. Expected
 atoms: `ActorStore`, `ItemStore`, `SiteStore`, `FactionStore`,
 `WorldEvent` + `ReasonTrace`, deprecated-view shims over the
 existing `SliceWorldState.Player/Talker/Merchant/Guard/Enemy`

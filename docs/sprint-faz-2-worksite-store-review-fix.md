@@ -5,7 +5,7 @@ _Branch:_ `agent/sprint-faz-2-worksite-store`
 _PR:_ https://github.com/msbel5/alcyone-ember-rpg/pull/103
 _Box:_ `[box=WORLD]` / `[box=PROCESS]`
 _Thalamus:_ `pkt_20260512174224_544043d5100b` / `sha256:31e7ad25579d711e612ef0610a4e7cb23c32093ad77719c642d055ffcd7f7703`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -14,7 +14,7 @@ Address Copilot's PR #103 review by pinning the remaining `WorksiteStore` lookup
 ## Files changed
 
 - `Assets/Tests/EditMode/Process/WorksiteStoreTests.cs` — adds explicit coverage for missing-key `Get`, happy-path `TryGet`, `Contains` false for empty/missing keys, and `Remove` false for empty/missing keys without mutating state.
-- `DOCS/sprint-faz-2-worksite-store-review-fix.md` — records this review-fix increment and validation evidence.
+- `docs/sprint-faz-2-worksite-store-review-fix.md` — records this review-fix increment and validation evidence.
 
 ## Validation
 

@@ -8,8 +8,8 @@ Complete the Faz 3 `TickAssignedJobs` atom: active `RecipeWorkOrder` rows owned 
 
 - `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`
 - `Assets/Tests/EditMode/Process/JobAssignmentSystemTests.cs`
-- `DOCS/sprint-faz-3-atom-map.md`
-- `DOCS/sprint-3-tick-assigned-jobs.md`
+- `docs/sprint-faz-3-atom-map.md`
+- `docs/sprint-3-tick-assigned-jobs.md`
 
 ## Behaviour
 

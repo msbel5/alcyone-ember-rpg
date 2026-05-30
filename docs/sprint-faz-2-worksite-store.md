@@ -4,7 +4,7 @@ _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-worksite-store`
 _Box:_ `[box=WORLD]` / `[box=PROCESS]`
 _Thalamus:_ `pkt_20260512172605_70e9bd2bfe2e` / `sha256:27b28c9ecc4741edc2e79c1b1a200f96245e731fb218e152dd71df9d735e76a4`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -14,8 +14,8 @@ Land the remaining Worksite state atom bundle for Faz 2: `WorksiteStore`, a pure
 
 - `Assets/Scripts/Domain/Process/WorksiteStore.cs` — adds deterministic site-cell lookup, duplicate/default-site rejection, remove/clear, and insertion-order enumeration for `WorksiteRecord`.
 - `Assets/Tests/EditMode/Process/WorksiteStoreTests.cs` — pins add/get/try-get/remove/clear/enumeration behavior and same-position/different-site semantics.
-- `DOCS/sprint-faz-2-atom-map.md` — checks off the WorksiteStore atom rows and records this packet metadata.
-- `DOCS/sprint-faz-2-worksite-store.md` — records this sprint summary.
+- `docs/sprint-faz-2-atom-map.md` — checks off the WorksiteStore atom rows and records this packet metadata.
+- `docs/sprint-faz-2-worksite-store.md` — records this sprint summary.
 
 ## Validation
 

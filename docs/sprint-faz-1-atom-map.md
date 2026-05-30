@@ -9,8 +9,8 @@ a second site and watch the same guard remembered across save/load`
 (from `docs/ROADMAP.md` Faz 1).
 
 This atom map is the canonical decomposition of Faz 1 against
-`DOCS/mechanic-map-v1.md` (8-box living-world model) and
-`DOCS/agent-rules-v2.md` (five rules — product-visible increment,
+`docs/mechanic-map-v1.md` (8-box living-world model) and
+`docs/agent-rules-v2.md` (five rules — product-visible increment,
 no speculative utility, data-driven effects, world-store promotion,
 playable proof). Per `CRON_CODES.md @EMSPR` PRD-V atomic decomposition
 + sprint promotion hard rule, Faz 1 is not a candidate for promotion
@@ -68,21 +68,21 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## Sub-area: Acceptance proof (PLAYABLE — every fifth PR)
 
-- [x] `DOCS/sprint-faz-1-acceptance.md` :: `player can ...` :: deterministic replay log pins guard spawned + talked to + remembered after save/load + walking to a second site (rule 5: playable proof) [box=PLAYABLE] — landed via `agent/sprint-faz-1-acceptance-proof`; pinned by `Assets/Tests/EditMode/World/Faz1AcceptanceReplayTests.cs`
+- [x] `docs/sprint-faz-1-acceptance.md` :: `player can ...` :: deterministic replay log pins guard spawned + talked to + remembered after save/load + walking to a second site (rule 5: playable proof) [box=PLAYABLE] — landed via `agent/sprint-faz-1-acceptance-proof`; pinned by `Assets/Tests/EditMode/World/Faz1AcceptanceReplayTests.cs`
 
 ## Promotion checklist
 
 - [x] every Faz 1 atom above is checked off — verified 27/27 atom rows in this file on `agent/sprint-faz-1-promotion`
 - [x] every sub-area has at least one merged PR — ActorStore, ItemStore, SiteStore, FactionStore, WorldEventLog/ReasonTrace, runtime store roots, save/load round-trip, and PLAYABLE acceptance all carry merged PR evidence above
 - [x] `tools/validation/run-validation.sh --mode fallback` passes on the active branch — PASS on 2026-05-11: `Passed!  - Failed:     0, Passed:   759, Skipped:     0, Total:   759`; log `validation-output/validation-20260511T211332Z.log`
-- [x] sprint summary file recording final atom count + bundle count — `DOCS/sprint-faz-1-promotion.md` records 27/27 atoms and bundle count 1
+- [x] sprint summary file recording final atom count + bundle count — `docs/sprint-faz-1-promotion.md` records 27/27 atoms and bundle count 1
 - [x] product-visible PR count for Faz 1 ≥ 1 (the playable-proof PR closes this) — closed by `agent/sprint-faz-1-acceptance-proof`
 - [x] PR #79 (`agent/sprint-faz-1-actor-store`, the first Faz 1 PR) does NOT count as test-only against rule 1's two-PR cap because it adds a new domain primitive (`ActorStore`); Faz 1 subsequently landed visible store exposure and the playable proof
 - [x] This PR counts as product-visible foundation because the legacy slice actor accessors now read through `ActorStore`, exposing the LIVING store to existing gameplay code without adding new slice fields
 
 ## This atom map
 
-- [x] `DOCS/sprint-faz-1-atom-map.md` :: this file :: canonical Faz 1 decomposition required by sprint promotion hard rule — maintained through acceptance-proof PR
+- [x] `docs/sprint-faz-1-atom-map.md` :: this file :: canonical Faz 1 decomposition required by sprint promotion hard rule — maintained through acceptance-proof PR
 
 ## Thalamus packet
 
@@ -130,13 +130,13 @@ The TIME-box save/load atom is now landed: canonical `Actors`,
 canonical actor-store payloads over legacy named actor fields.
 
 The PLAYABLE-box acceptance proof is now landed in
-`DOCS/sprint-faz-1-acceptance.md`, backed by
+`docs/sprint-faz-1-acceptance.md`, backed by
 `Assets/Tests/EditMode/World/Faz1AcceptanceReplayTests.cs`: guard spawn,
 guard talk memory, save/load persistence, second-site movement, and ordered
 WorldEventLog evidence are all pinned in one deterministic replay.
 
 The final Faz 1 promotion checklist is verified on
 `agent/sprint-faz-1-promotion` and summarized in
-`DOCS/sprint-faz-1-promotion.md`. The next sprint factory run should open
+`docs/sprint-faz-1-promotion.md`. The next sprint factory run should open
 Faz 2 (`Recipe + Worksite`) from `docs/ROADMAP.md` by decomposing the first
 PROCESS/MATTER slice before writing gameplay code.

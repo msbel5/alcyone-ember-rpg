@@ -12,8 +12,8 @@ Address Copilot review on PR #98 without widening Faz 2 scope: keep the atom-map
 
 ## Files changed
 
-- `DOCS/sprint-faz-2-atom-map-kickoff.md` — corrects initial atom accounting to 20 unchecked implementation/proof atoms + 1 checked meta row, and clarifies that the first visible target is `RecipeSystem` + EventLog smelt progress while PLAYABLE proof remains a separate later atom.
-- `DOCS/sprint-faz-2-kickoff-review-fix.md` — this sprint summary.
+- `docs/sprint-faz-2-atom-map-kickoff.md` — corrects initial atom accounting to 20 unchecked implementation/proof atoms + 1 checked meta row, and clarifies that the first visible target is `RecipeSystem` + EventLog smelt progress while PLAYABLE proof remains a separate later atom.
+- `docs/sprint-faz-2-kickoff-review-fix.md` — this sprint summary.
 
 ## Validation
 
@@ -22,7 +22,7 @@ Address Copilot review on PR #98 without widening Faz 2 scope: keep the atom-map
 
 ## Bot review disposition
 
-- Copilot count mismatch comment: fixed by matching the 20 unchecked rows in `DOCS/sprint-faz-2-atom-map.md`.
+- Copilot count mismatch comment: fixed by matching the 20 unchecked rows in `docs/sprint-faz-2-atom-map.md`.
 - Copilot visible-target wording comment: fixed by separating `RecipeSystem` + EventLog smelt progress from the later PLAYABLE proof atom.
 - GitHub Actions screenshot comment: informational only; no code or doc defect.
 

@@ -86,7 +86,7 @@ Measured result on this branch:
 - Branch: `agent/sprint-5-shield-buff-tickdown`
 - Base commit: `b17f15b`
 - Local fallback baseline before slice: `240 / 240` (per
-  `DOCS/sprint-5-shield-buff-save-mapper.md`).
+  `docs/sprint-5-shield-buff-save-mapper.md`).
 - Local fallback baseline after slice: `251 / 251`.
 - 11 new EditMode tests in `ShieldBuffServiceTests`.
 - See PR for commit hashes and CI status when opened.

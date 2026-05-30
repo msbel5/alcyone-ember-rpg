@@ -2,7 +2,7 @@
 
 ## Goal
 
-Implement the third Faz 4 code bundle from `DOCS/sprint-faz-4-atom-map.md`:
+Implement the third Faz 4 code bundle from `docs/sprint-faz-4-atom-map.md`:
 deterministic needs ticking, mood recomputation, and a concrete `NeedChanged`
 EventLog trace.
 
@@ -13,8 +13,8 @@ EventLog trace.
 - `Assets/Tests/EditMode/Living/NeedsSystemTests.cs`
 - `Assets/Tests/EditMode/Living/NeedsSystemMoodTests.cs`
 - `Assets/Tests/EditMode/Living/NeedsEventLogTests.cs`
-- `DOCS/sprint-faz-4-atom-map.md`
-- `DOCS/sprint-4-needs-tick-event-log.md`
+- `docs/sprint-faz-4-atom-map.md`
+- `docs/sprint-4-needs-tick-event-log.md`
 
 ## Behaviour
 

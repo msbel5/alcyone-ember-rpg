@@ -4,7 +4,7 @@ _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-worksite-record`
 _Box:_ `[box=PROCESS]` / `[box=WORLD]`
 _Thalamus:_ `pkt_20260512165525_4cc0d00efb24` / `sha256:374f77949c30038ded3235d02d9c0f9f0af89a399bc9a9d318c0cab1cd93db67`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 _PR:_ https://github.com/msbel5/alcyone-ember-rpg/pull/102
 
 ## Increment goal
@@ -13,7 +13,7 @@ Address PR #102 bot-review queue truthfully. Copilot suggested removing `EmberCr
 
 ## Files changed
 
-- `DOCS/sprint-faz-2-worksite-record-review-fix.md` — records the false-positive review handling, failed trial evidence, and final validation result.
+- `docs/sprint-faz-2-worksite-record-review-fix.md` — records the false-positive review handling, failed trial evidence, and final validation result.
 
 ## Validation
 

@@ -29,12 +29,12 @@ shape as the existing handles.
   values compare equal, different values compare unequal, default is
   empty, equal values share hash code, empty `ToString` returns
   `SiteId.Empty`, non-empty `ToString` contains the raw value.
-- `DOCS/sprint-faz-1-atom-map.md` — corrected the SiteStore sub-area
+- `docs/sprint-faz-1-atom-map.md` — corrected the SiteStore sub-area
   path from `Domain/World/SiteId.cs` to `Domain/Core/SiteId.cs` (to
   match the existing ActorId/ItemId convention) and checked the row
   off. Also corrected and checked off the ItemId row, which already
   exists at `Domain/Core/ItemId.cs`.
-- `DOCS/sprint-faz-1-site-id.md` — this summary.
+- `docs/sprint-faz-1-site-id.md` — this summary.
 
 ## Validation result
 

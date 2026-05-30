@@ -16,7 +16,7 @@ This is a product-visible foundation increment: gameplay-facing code can now rea
   - Adds `Items`, `Sites`, `Factions`, and `Events` store/log roots next to the existing `Actors` store.
 - `Assets/Tests/EditMode/World/SliceWorldStateActorViewTests.cs`
   - Pins fresh and factory-created world snapshots expose non-null empty store/log roots while keeping actor role views intact.
-- `DOCS/sprint-faz-1-atom-map.md`
+- `docs/sprint-faz-1-atom-map.md`
   - Records the prerequisite atom and updates the next save/load increment wording.
 
 ## Validation

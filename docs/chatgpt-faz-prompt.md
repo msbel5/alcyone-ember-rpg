@@ -43,7 +43,7 @@ Test / Acceptance / Risk).
 - 8-kutu mekanik haritası: TIME, WORLD, LIVING, MATTER, PROCESS,
   SOCIETY, CRPG, AI/DM
 - Roadmap 13 Faz (0..12). Faz 0 audit done.
-- 5 ajan kuralı (alcyone-ember-rpg/DOCS/agent-rules-v2.md):
+- 5 ajan kuralı (alcyone-ember-rpg/docs/agent-rules-v2.md):
   1. product-visible (max 2 test-only PR/sprint)
   2. no speculative utility
   3. data-driven effect (no new SpellEffectCode enum)

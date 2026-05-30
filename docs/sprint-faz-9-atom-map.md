@@ -4,11 +4,11 @@ _Date:_ 2026-05-20
 _Branch:_ `mami/faz-6-12-atom-maps`
 _Primary boxes:_ `CRPG`, `AI/DM`
 _Roadmap:_ `docs/ROADMAP.md`
-_Mechanic map:_ `DOCS/mechanic-map-v1.md`
-_Execution ledger:_ `DOCS/faz-5-12-execution-ledger.md`
-_Agent rules:_ `DOCS/agent-rules-v2.md`
-_Vision notes:_ `DOCS/EMBER_VISION_NOTES_MAMI.md`
-_Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
+_Mechanic map:_ `docs/mechanic-map-v1.md`
+_Execution ledger:_ `docs/faz-5-12-execution-ledger.md`
+_Agent rules:_ `docs/agent-rules-v2.md`
+_Vision notes:_ `docs/EMBER_VISION_NOTES_MAMI.md`
+_Inspector checklist:_ `docs/inspector-audit-checklist.md`
 
 ## Vision anchors
 
@@ -60,7 +60,7 @@ Faz 9 makes memory and dialogue first-class:
 
 | Atom | Primary box | File / class | Responsibility | Closing proof | Status |
 |---:|---|---|---|---|---|
-| 1 | AI/DM | `DOCS/kickoff-faz-9.md` | CO-09 audit: reuse/refactor/deprecate decisions for the six Sprint 1 narrative files. | doc landed | queued |
+| 1 | AI/DM | `docs/kickoff-faz-9.md` | CO-09 audit: reuse/refactor/deprecate decisions for the six Sprint 1 narrative files. | doc landed | queued |
 | 2 | CRPG | `Assets/Scripts/Domain/Narrative/TopicId.cs` | Stable string topic id. Replaces or extends Sprint 1 `AskAboutTopic` per CO-09 decision. | `TopicIdTests` | queued |
 | 3 | CRPG | `Assets/Scripts/Domain/Narrative/TopicDef.cs` | Data row: topic id, prompt phrasing, gating predicate id, default answer template id. | `TopicDefTests` | queued |
 | 4 | LIVING | `Assets/Scripts/Domain/Memory/MemoryFact.cs` | Immutable fact: `(actorId subject, TopicId topic, ActorId object, GameTime when, string detail)`. | `MemoryFactTests` | queued |

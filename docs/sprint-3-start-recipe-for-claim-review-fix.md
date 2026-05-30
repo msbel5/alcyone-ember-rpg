@@ -8,7 +8,7 @@ Address Codex PR #114 feedback: `StartRecipeForClaim` must prove the full reques
 
 - `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`
 - `Assets/Tests/EditMode/Process/JobAssignmentSystemTests.cs`
-- `DOCS/sprint-3-start-recipe-for-claim-review-fix.md`
+- `docs/sprint-3-start-recipe-for-claim-review-fix.md`
 
 ## Change
 

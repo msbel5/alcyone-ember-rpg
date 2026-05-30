@@ -5,7 +5,7 @@ _Branch:_ `agent/sprint-faz-2-smelt-iron-acceptance`
 _PR:_ https://github.com/msbel5/alcyone-ember-rpg/pull/105
 _Box:_ `[box=PLAYABLE]` / `[box=PROCESS]` / `[box=MATTER]` / `[box=TIME]`
 _Thalamus:_ `pkt_20260512190154_c849680f3a6f` / `sha256:d21feee1a9410aebe91a0853f9e2e3b093086c07a25ce6090b6b93180e840daf`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -34,8 +34,8 @@ These tests are the current deterministic stand-in for a Unity scene proof until
 
 ## Files changed
 
-- `DOCS/sprint-faz-2-smelt-iron-acceptance.md` — adds the Faz 2 player-facing deterministic acceptance proof.
-- `DOCS/sprint-faz-2-atom-map.md` — marks only the acceptance proof atom as landed and keeps save/load atoms open.
+- `docs/sprint-faz-2-smelt-iron-acceptance.md` — adds the Faz 2 player-facing deterministic acceptance proof.
+- `docs/sprint-faz-2-atom-map.md` — marks only the acceptance proof atom as landed and keeps save/load atoms open.
 
 ## Validation
 
@@ -44,7 +44,7 @@ These tests are the current deterministic stand-in for a Unity scene proof until
 
 ## Sprint accounting
 
-- Atom rows landed in this increment: 1 (`DOCS/sprint-faz-2-smelt-iron-acceptance.md`).
+- Atom rows landed in this increment: 1 (`docs/sprint-faz-2-smelt-iron-acceptance.md`).
 - Bundle count impact: +0; this is one proof atom, not a code bundle.
 - Product-visible PR count for Faz 2: remains 1 code-visible PR, with this PR adding the required player-facing proof documentation.
 

@@ -2,9 +2,9 @@
 
 Inspector applies this checklist to every Captain PR before merge. A single FAIL row blocks the merge.
 
-This checklist is referenced by `DOCS/agent-rules-v2.md` Rules 6-9 and by the top-of-file Debt ledger gate in every active sprint atom map (currently `DOCS/sprint-faz-4-atom-map.md`).
+This checklist is referenced by `docs/agent-rules-v2.md` Rules 6-9 and by the top-of-file Debt ledger gate in every active sprint atom map (currently `docs/sprint-faz-4-atom-map.md`).
 
-## A. Mandatory PR body fields (per `DOCS/agent-rules-v2.md` Rule 9)
+## A. Mandatory PR body fields (per `docs/agent-rules-v2.md` Rule 9)
 
 - [ ] `Primary box:` present; value is exactly one of `TIME | WORLD | LIVING | MATTER | PROCESS | SOCIETY | CRPG | AI/DM`.
 - [ ] `Visible proof artifact:` present. Either a path to a test/log/snapshot/event row exists in the diff, OR the value is `none-this-is-foundational` AND `Carry-over debt row advanced` is `CO-XX-closed` or `CO-XX-advanced`.
@@ -13,11 +13,11 @@ This checklist is referenced by `DOCS/agent-rules-v2.md` Rules 6-9 and by the to
 - [ ] `Why this is the next bundle:` present; ties to the active Debt ledger row OR to the rail of the atom map being progressed.
 - [ ] `Phase fences honored:` present; value is `yes` OR a fence-breach proposal is included in the sprint summary.
 
-## B. Hard fail paths (per `DOCS/agent-rules-v2.md` Rule 6)
+## B. Hard fail paths (per `docs/agent-rules-v2.md` Rule 6)
 
 - [ ] No diff touches `Assets/Scenes/`, `Assets/Art/`, `Assets/Prefabs/`, `Assets/Resources/`, `Assets/Materials/`, `Assets/Textures/`.
 - [ ] No diff adds binary files anywhere (`.png`, `.jpg`, `.fbx`, `.wav`, `.mp3`, `.psd`, `.blend`, `.tga`, `.exr`).
-- [ ] No diff touches `DOCS/screenshots/` or `DOCS/images/`.
+- [ ] No diff touches `docs/screenshots/` or `docs/images/`.
 - [ ] No diff touches `Assets/Scripts/Presentation/` except pure-C# files with zero `using UnityEngine` AND a Mami-side consumer cited in the PR body.
 
 ## C. Speculative utility (Rule 2)
@@ -25,11 +25,11 @@ This checklist is referenced by `DOCS/agent-rules-v2.md` Rules 6-9 and by the to
 - [ ] Every new helper / overload / extension method either has a same-PR consumer in the diff, or is named in a `next-PR backlink` with a concrete consumer file path.
 - [ ] Optional parameters added to existing methods are consumed in the same PR or by a same-PR test calling the new overload distinctly from the old one.
 
-## D. Phase fences (per `DOCS/EMBER_VISION_NOTES_MAMI.md` section 1)
+## D. Phase fences (per `docs/EMBER_VISION_NOTES_MAMI.md` section 1)
 
 - [ ] No atom row implements Memory state before Faz 9.
 - [ ] No atom row implements shared NPC/party/DM tool surface before Faz 10.
-- [ ] No atom row calls or imports a real or mock LLM client outside Faz 12 as a default execution path. Tests may use deterministic mocks (this exception is preserved from `DOCS/EMBER_VISION_NOTES_MAMI.md` section 1).
+- [ ] No atom row calls or imports a real or mock LLM client outside Faz 12 as a default execution path. Tests may use deterministic mocks (this exception is preserved from `docs/EMBER_VISION_NOTES_MAMI.md` section 1).
 - [ ] No atom row generates procedural world content outside a dedicated post-Faz 12 faz.
 - [ ] No atom row touches multiverse / 100K-year / interplanetary scope at the implementation level.
 - [ ] No atom row builds free-text dialog parsing outside Faz 9.
@@ -38,7 +38,7 @@ This checklist is referenced by `DOCS/agent-rules-v2.md` Rules 6-9 and by the to
 
 - [ ] If the previous Captain PR had `Visible proof artifact: none-this-is-foundational` AND `Carry-over debt row advanced: none-ledger-empty`, the current PR MUST either close a CO row, advance a CO row (with diff evidence per Checklist G), OR present a visible proof artifact path. (Aligned with `agent-rules-v2.md` Rule 8: a concrete `CO-XX-advanced` report breaks the drift, since the audit fields are no longer `none-ledger-empty`.)
 
-## F. Box tag schema (per `DOCS/mechanic-map-v1.md`)
+## F. Box tag schema (per `docs/mechanic-map-v1.md`)
 
 - [ ] Each atom row in any new atom map carries exactly one `primary_box` from the 8-box list.
 - [ ] Optional cross-cutting commentary (`infra`, `meta`, `playable`) appears in row commentary, not in the `primary_box` column.
@@ -51,10 +51,10 @@ This checklist is referenced by `DOCS/agent-rules-v2.md` Rules 6-9 and by the to
 - [ ] If `closed`, the PR diff satisfies the row's Exit proof column. Inspector verifies the diff matches the Exit proof literally.
 - [ ] If `advanced`, the row has been `advanced` at most twice consecutively across prior PRs; a third `advanced` report against the same row fails this check and must be promoted to `closed`.
 
-## H. Kickoff doc anchors (per `DOCS/EMBER_VISION_NOTES_MAMI.md` sections 1 and 2)
+## H. Kickoff doc anchors (per `docs/EMBER_VISION_NOTES_MAMI.md` sections 1 and 2)
 
-- [ ] The kickoff doc for any new atom map or new bundle within an existing atom map contains a `## Vision anchors` heading that cites by number which of the 9 anchors (from `DOCS/EMBER_VISION_NOTES_MAMI.md` section 2) the sprint serves. A sprint citing zero anchors is "internal-scaffolding only" and capped at one PR with explicit justification.
-- [ ] The kickoff doc contains a `## Phase fences` heading that explicitly lists which of the 6 fences (from `DOCS/EMBER_VISION_NOTES_MAMI.md` section 1) are honored, OR states "no fence crossed by this bundle."
+- [ ] The kickoff doc for any new atom map or new bundle within an existing atom map contains a `## Vision anchors` heading that cites by number which of the 9 anchors (from `docs/EMBER_VISION_NOTES_MAMI.md` section 2) the sprint serves. A sprint citing zero anchors is "internal-scaffolding only" and capped at one PR with explicit justification.
+- [ ] The kickoff doc contains a `## Phase fences` heading that explicitly lists which of the 6 fences (from `docs/EMBER_VISION_NOTES_MAMI.md` section 1) are honored, OR states "no fence crossed by this bundle."
 - [ ] If a fence is crossed, a one-paragraph **fence breach proposal** is present in the sprint summary, AND atom rows that cross the fence are absent from the bundle until Mami lifts the fence.
 
 ## Failure escalation

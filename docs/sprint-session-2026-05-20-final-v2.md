@@ -80,12 +80,12 @@ These are awaiting CI green and merge in the next half hour.
 
 ### Docs
 
-- `DOCS/sprint-faz-{6..12}-atom-map.md` — 7 atom maps
-- `DOCS/sprint-4-faz-4-promotion.md`
-- `DOCS/kickoff-faz-9.md` (CO-09 audit)
-- `DOCS/sprint-session-2026-05-20-summary.md` (interim)
-- `DOCS/sprint-session-2026-05-20-final.md` (v1 final)
-- `DOCS/sprint-session-2026-05-20-final-v2.md` (this file, v2 final)
+- `docs/sprint-faz-{6..12}-atom-map.md` — 7 atom maps
+- `docs/sprint-4-faz-4-promotion.md`
+- `docs/kickoff-faz-9.md` (CO-09 audit)
+- `docs/sprint-session-2026-05-20-summary.md` (interim)
+- `docs/sprint-session-2026-05-20-final.md` (v1 final)
+- `docs/sprint-session-2026-05-20-final-v2.md` (this file, v2 final)
 
 ## What remains for the post-10AM session
 

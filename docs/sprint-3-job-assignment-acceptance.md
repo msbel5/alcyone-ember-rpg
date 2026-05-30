@@ -7,9 +7,9 @@ job-assignment replay and the final `player can ...` acceptance sentence.
 
 ## Files changed
 
-- `DOCS/sprint-faz-3-job-assignment-acceptance.md`
-- `DOCS/sprint-3-job-assignment-acceptance.md`
-- `DOCS/sprint-faz-3-atom-map.md`
+- `docs/sprint-faz-3-job-assignment-acceptance.md`
+- `docs/sprint-3-job-assignment-acceptance.md`
+- `docs/sprint-faz-3-atom-map.md`
 
 ## Behaviour
 
@@ -22,7 +22,7 @@ against the playable acceptance gate instead of only implementation atoms.
 
 Product-visible PR count for this increment: 1. The player-facing proof is the
 deterministic event-log/save-load replay documented in
-`DOCS/sprint-faz-3-job-assignment-acceptance.md`.
+`docs/sprint-faz-3-job-assignment-acceptance.md`.
 
 Acceptance sentence: `player can set 2 actors to "smith" priority 1, watch both queue at the furnace, and produce 4 ingots in a deterministic day`.
 

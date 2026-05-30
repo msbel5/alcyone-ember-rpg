@@ -40,7 +40,7 @@ closes that gap on the drain side.
 
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Adds `ResolveInstantaneousEffects_DirectMana_BundledWithRestoreMana_ZeroRestoreLeavesDrainApplied`.
-- `DOCS/sprint-5-spell-effect-direct-mana-restore-mana-asymmetric-zero-restore.md` (this file).
+- `docs/sprint-5-spell-effect-direct-mana-restore-mana-asymmetric-zero-restore.md` (this file).
 
 ## Out of scope
 

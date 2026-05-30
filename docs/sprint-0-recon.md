@@ -138,7 +138,7 @@ Implement the thinnest playable path that proves the repo can move from scaffold
 - reject anything undocumented or untested
 
 ### Archivist
-- write `DOCS/sprint-1-summary.md` after implementation and inspection
+- write `docs/sprint-1-summary.md` after implementation and inspection
 
 ## 8. Exit criteria for Sprint 0
 

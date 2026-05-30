@@ -80,7 +80,7 @@ combat-pipeline call.
   N-way bucket-vs-filtered parity, sum-of-buckets-vs-unfiltered parity,
   parity vs the binary `PartitionFrom` contract, and a no-mutation guard
   on the registry.
-- `DOCS/sprint-5-shield-buff-batch-totals-group-by.md` &mdash; this design
+- `docs/sprint-5-shield-buff-batch-totals-group-by.md` &mdash; this design
   note.
 
 ## Out of scope

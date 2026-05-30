@@ -4,7 +4,7 @@ _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-recipe-primitives`
 _Box:_ `[box=PROCESS]` / `[box=MATTER]`
 _Thalamus:_ `pkt_20260511224254_c77408bba8ae` / `sha256:b8de5869a950fac87baa85b8f79842e82106d6b0ded7a912f73ec67ccf90fcd5`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 _Bot review:_ Copilot inline comment on PR #99 discussion `r3222580834`
 
 ## Increment goal
@@ -15,7 +15,7 @@ Address the PR #99 Copilot review by preserving the invalid recipe ingredient qu
 
 - `Assets/Scripts/Domain/Process/RecipeIngredient.cs` — passes the invalid `quantity` into `ArgumentOutOfRangeException`.
 - `Assets/Tests/EditMode/Process/RecipeIngredientTests.cs` — asserts the zero and negative invalid values are preserved.
-- `DOCS/sprint-faz-2-recipe-primitives-review-fix.md` — records this bot-review follow-up and validation evidence.
+- `docs/sprint-faz-2-recipe-primitives-review-fix.md` — records this bot-review follow-up and validation evidence.
 
 ## Validation
 

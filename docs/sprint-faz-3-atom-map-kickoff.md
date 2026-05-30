@@ -5,7 +5,7 @@ _Branch:_ `agent/sprint-faz-3-job-assignment-atom-map`
 _Box:_ `[box=PROCESS]` / `[box=LIVING]`
 _Thalamus packet:_ `pkt_20260514123115_29f1c700862d`
 _Resolver:_ `sha256:58a8f09009a23e253fc532730e6b8f560ee1f8847deac455cc24a17e49577d99`
-_Atom map:_ `DOCS/sprint-faz-3-atom-map.md`
+_Atom map:_ `docs/sprint-faz-3-atom-map.md`
 
 ## Increment goal
 
@@ -17,8 +17,8 @@ bound to the Faz 3 acceptance sentence:
 
 ## Files changed
 
-- `DOCS/sprint-faz-3-atom-map.md` — canonical Faz 3 atom map, bundle plan, promotion checklist, and next increment.
-- `DOCS/sprint-faz-3-atom-map-kickoff.md` — this kickoff summary with validation/provenance.
+- `docs/sprint-faz-3-atom-map.md` — canonical Faz 3 atom map, bundle plan, promotion checklist, and next increment.
+- `docs/sprint-faz-3-atom-map-kickoff.md` — this kickoff summary with validation/provenance.
 
 ## Validation
 

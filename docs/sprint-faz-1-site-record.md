@@ -34,9 +34,9 @@ no Unity, no I/O, immutable invariants pinned at construction.
   rejects blank name, rejects inverted bounds, contains an inside
   point, contains the inclusive boundary corners, rejects outside
   points.
-- `DOCS/sprint-faz-1-atom-map.md` — checked off the SiteRecord atom
+- `docs/sprint-faz-1-atom-map.md` — checked off the SiteRecord atom
   row with a backlink to this PR.
-- `DOCS/sprint-faz-1-site-record.md` — this summary.
+- `docs/sprint-faz-1-site-record.md` — this summary.
 
 ## Validation result
 
@@ -63,7 +63,7 @@ checks gate the merge.
   fields added.
 - Rule 5 (playable proof every fifth PR): this is the next PR after
   `SiteId`; the playable-proof PR remains scheduled later in the
-  atom map (`DOCS/sprint-faz-1-acceptance.md`).
+  atom map (`docs/sprint-faz-1-acceptance.md`).
 
 ## Thalamus packet
 

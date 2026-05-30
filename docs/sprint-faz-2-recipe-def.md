@@ -4,7 +4,7 @@ _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-recipe-def`
 _Box:_ `[box=PROCESS]` / `[box=MATTER]`
 _Thalamus:_ `pkt_20260512155456_1e0b33ca071d` / `sha256:8412025a3dc3a147474a87cabd5502591a859a9356bbdd9114d87d9bc5255b5a`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -14,8 +14,8 @@ Land the final pure recipe-definition atom before runtime execution: `RecipeDef`
 
 - `Assets/Scripts/Domain/Process/RecipeDef.cs` — adds the pure definition with empty-id rejection, row validation, tag trimming, positive duration validation, defensive row copies, and read-only projections.
 - `Assets/Tests/EditMode/Process/RecipeDefTests.cs` — pins constructor storage, trimming, invalid inputs, defensive copies, read-only row projections, and the canonical `SmeltIronIngot` shape.
-- `DOCS/sprint-faz-2-atom-map.md` — checks off the RecipeDef atom rows and redirects the next increment toward a product-visible RecipeSystem EventLog slice.
-- `DOCS/sprint-faz-2-recipe-def.md` — records this sprint summary and validation evidence.
+- `docs/sprint-faz-2-atom-map.md` — checks off the RecipeDef atom rows and redirects the next increment toward a product-visible RecipeSystem EventLog slice.
+- `docs/sprint-faz-2-recipe-def.md` — records this sprint summary and validation evidence.
 
 ## Validation
 

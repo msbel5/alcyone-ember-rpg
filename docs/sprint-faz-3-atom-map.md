@@ -7,8 +7,8 @@ _Branch:_ `agent/sprint-faz-3-job-assignment-atom-map`
 _Box:_ `[box=PROCESS]` / `[box=LIVING]` with `[box=MATTER]`, `[box=TIME]`, `[box=WORLD]`
 _Thalamus packet:_ `pkt_20260514123115_29f1c700862d`
 _Resolver:_ `sha256:58a8f09009a23e253fc532730e6b8f560ee1f8847deac455cc24a17e49577d99`
-_Mechanic map:_ `DOCS/mechanic-map-v1.md`
-_Agent rules:_ `DOCS/agent-rules-v2.md`
+_Mechanic map:_ `docs/mechanic-map-v1.md`
+_Agent rules:_ `docs/agent-rules-v2.md`
 
 ## Sprint goal
 
@@ -25,8 +25,8 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 ### 0. Sprint map / promotion metadata
 
-- [x] DOCS/sprint-faz-3-atom-map.md :: Faz3AtomMap :: define PROCESS/LIVING atom graph, bundles, and promotion gate [box=PROCESS]
-- [x] DOCS/sprint-faz-3-atom-map-kickoff.md :: Faz3Kickoff :: record kickoff validation, files changed, packet/resolver, next atom [box=PROCESS]
+- [x] docs/sprint-faz-3-atom-map.md :: Faz3AtomMap :: define PROCESS/LIVING atom graph, bundles, and promotion gate [box=PROCESS]
+- [x] docs/sprint-faz-3-atom-map-kickoff.md :: Faz3Kickoff :: record kickoff validation, files changed, packet/resolver, next atom [box=PROCESS]
 
 ### 1. Pure job definition rail
 
@@ -82,7 +82,7 @@ a 3-5 atom bundle when the atoms share the same shape.
 - [x] Assets/Scripts/Data/Save/SliceSaveData.cs :: SliceSaveData.jobs :: persist JobBoard entries and actor schedule job state [box=PROCESS]
 - [x] Assets/Scripts/Data/Save/SliceSaveMapper.cs :: SliceSaveMapper.ToData/ApplyJobs :: round-trip job board and actor schedule state without new SliceWorldState named fields [box=PROCESS]
 - [x] Assets/Tests/EditMode/Save/JobAssignmentRoundTripTests.cs :: JobAssignmentRoundTripTests :: save/load preserves pending and active jobs [box=PROCESS]
-- [x] DOCS/sprint-faz-3-job-assignment-acceptance.md :: Faz3AcceptanceProof :: deterministic replay note with `player can ...` sentence [box=PLAYABLE]
+- [x] docs/sprint-faz-3-job-assignment-acceptance.md :: Faz3AcceptanceProof :: deterministic replay note with `player can ...` sentence [box=PLAYABLE]
 
 ## Suggested bundles
 
@@ -105,4 +105,4 @@ a 3-5 atom bundle when the atoms share the same shape.
 
 Faz 3 is ready for promotion after the final promotion-summary PR merges.
 The next sprint increment should open Faz 4 colony-needs atom mapping against
-`DOCS/mechanic-map-v1.md`.
+`docs/mechanic-map-v1.md`.

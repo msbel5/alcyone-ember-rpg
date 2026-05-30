@@ -23,7 +23,7 @@ converges on the same dictionary-backed registry contract that
   contract and the default-id rejection paths. Mirrors
   `ActorStoreTests` / `SiteStoreTests` so the three landed stores
   share one regression shape.
-- `DOCS/sprint-faz-1-atom-map.md` — atom-map rows for `ItemStore.cs`
+- `docs/sprint-faz-1-atom-map.md` — atom-map rows for `ItemStore.cs`
   and `ItemStoreTests.cs` checked off; new Thalamus packet recorded;
   "Next increment" advanced to the `FactionId` primitive.
 
@@ -58,7 +58,7 @@ PASS fallback_harness
   shipping the MATTER store; `SliceWorldState` is not touched, no
   hard-coded slice fields added.
 - Rule 5 (playable proof): handled by the dedicated playable-proof
-  PR planned at the end of Faz 1 (`DOCS/sprint-faz-1-acceptance.md`
+  PR planned at the end of Faz 1 (`docs/sprint-faz-1-acceptance.md`
   atom row).
 
 ## Next increment

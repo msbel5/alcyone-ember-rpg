@@ -49,7 +49,7 @@ remaining pool-symmetry gaps by adding the fatigue-pool variant.
 
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Adds `ResolveInstantaneousEffects_DirectFatigue_BundledWithRestoreFatigue_OvershootDrainClampsThenRestoreApplies`.
-- `DOCS/sprint-5-spell-effect-direct-fatigue-restore-fatigue-overshoot-bundle.md` (this file).
+- `docs/sprint-5-spell-effect-direct-fatigue-restore-fatigue-overshoot-bundle.md` (this file).
 
 ## Out of scope
 

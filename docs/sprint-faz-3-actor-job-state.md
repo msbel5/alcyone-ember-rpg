@@ -21,7 +21,7 @@ logging jobs yet.
 - `Assets/Tests/EditMode/Actors/ActorJobPreferenceTests.cs` — pins preference storage, disabled rows, equality, invalid `JobKind.None`, and debug labels.
 - `Assets/Tests/EditMode/Actors/ActorScheduleStateTests.cs` — pins idle default, assigned fields, empty job/site rejection, equality, and debug labels.
 - `Assets/Tests/EditMode/Actors/ActorRecordTests.cs` — pins job preference replacement, duplicate-kind rejection, and schedule replacement.
-- `DOCS/sprint-faz-3-atom-map.md` — marks the actor-job-state atoms landed and moves next increment guidance to assignment-system.
+- `docs/sprint-faz-3-atom-map.md` — marks the actor-job-state atoms landed and moves next increment guidance to assignment-system.
 
 ## Validation
 

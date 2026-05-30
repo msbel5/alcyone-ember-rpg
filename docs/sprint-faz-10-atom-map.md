@@ -4,15 +4,15 @@ _Date:_ 2026-05-20
 _Branch:_ `mami/faz-6-12-atom-maps`
 _Primary boxes:_ `AI/DM`
 _Roadmap:_ `docs/ROADMAP.md`
-_Mechanic map:_ `DOCS/mechanic-map-v1.md`
-_Execution ledger:_ `DOCS/faz-5-12-execution-ledger.md`
-_Agent rules:_ `DOCS/agent-rules-v2.md`
-_Vision notes:_ `DOCS/EMBER_VISION_NOTES_MAMI.md`
-_Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
+_Mechanic map:_ `docs/mechanic-map-v1.md`
+_Execution ledger:_ `docs/faz-5-12-execution-ledger.md`
+_Agent rules:_ `docs/agent-rules-v2.md`
+_Vision notes:_ `docs/EMBER_VISION_NOTES_MAMI.md`
+_Inspector checklist:_ `docs/inspector-audit-checklist.md`
 
 ## Vision anchors (this is the tool-calling architecture sprint)
 
-Per `DOCS/EMBER_VISION_NOTES_MAMI.md` section 1.9: **tool-calling actors are NPC + party member + DM**. All three hold separate but isomorphic deterministic tool surfaces. NPCs can escalate to the DM on stale state. The DM has its own tool surface. This sprint defines those surfaces and the typed query / mutation contracts. **It does NOT call an LLM** — that ships in Faz 12.
+Per `docs/EMBER_VISION_NOTES_MAMI.md` section 1.9: **tool-calling actors are NPC + party member + DM**. All three hold separate but isomorphic deterministic tool surfaces. NPCs can escalate to the DM on stale state. The DM has its own tool surface. This sprint defines those surfaces and the typed query / mutation contracts. **It does NOT call an LLM** — that ships in Faz 12.
 
 1. Living-world over showroom: the API only reads simulation state; LLM is decorative.
 7. Tool-calling interpreter: simulation exposes a typed query/mutation surface; LLM consumes it later, deterministic agents consume it now.

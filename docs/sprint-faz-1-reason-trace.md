@@ -2,7 +2,7 @@
 
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-reason-trace`
-_Atom-map ref:_ `DOCS/sprint-faz-1-atom-map.md` — WorldEvent log + ReasonTrace
+_Atom-map ref:_ `docs/sprint-faz-1-atom-map.md` — WorldEvent log + ReasonTrace
 sub-area (`[box=PROCESS]`).
 
 ## Increment goal
@@ -33,7 +33,7 @@ shape so invariants are pinned at construction.
   `HasCause` behavior (case-sensitive match, rejects blank queries). Nine
   `[Test]` cases, mirroring the `FactionRecordTests` shape.
 - `Assets/Tests/EditMode/World/ReasonTraceTests.cs.meta` — Unity meta stub.
-- `DOCS/sprint-faz-1-atom-map.md` — checks off the `ReasonTrace` row in the
+- `docs/sprint-faz-1-atom-map.md` — checks off the `ReasonTrace` row in the
   WorldEvent log + ReasonTrace sub-area and appends this PR's Thalamus packet.
 
 ## Validation
@@ -59,7 +59,7 @@ on the Pi sprint factory host, so the fallback harness is the floor).
 - Rule 4 (world-store promotion): N/A — `SliceWorldState` is not touched.
 - Rule 5 (playable proof): cumulative Faz 1 PR count is well under the
   every-fifth-PR threshold; playable proof remains scheduled for the
-  acceptance-proof atom (`DOCS/sprint-faz-1-acceptance.md`).
+  acceptance-proof atom (`docs/sprint-faz-1-acceptance.md`).
 
 ## Thalamus packet
 

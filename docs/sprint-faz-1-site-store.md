@@ -30,7 +30,7 @@ turns the assembled primitives into a consumable registry.
   point.
 - `Assets/Tests/EditMode/World/SiteStoreTests.cs.meta` — Unity asset
   metadata.
-- `DOCS/sprint-faz-1-atom-map.md` — SiteStore + SiteStoreTests rows
+- `docs/sprint-faz-1-atom-map.md` — SiteStore + SiteStoreTests rows
   flipped to `[x]`, Thalamus packet appended, next-increment line
   pointed at `ItemRecord`.
 

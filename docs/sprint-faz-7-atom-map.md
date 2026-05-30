@@ -4,11 +4,11 @@ _Date:_ 2026-05-20
 _Branch:_ `mami/faz-6-12-atom-maps`
 _Primary boxes:_ `CRPG`, `MATTER`
 _Roadmap:_ `docs/ROADMAP.md`
-_Mechanic map:_ `DOCS/mechanic-map-v1.md`
-_Execution ledger:_ `DOCS/faz-5-12-execution-ledger.md`
-_Agent rules:_ `DOCS/agent-rules-v2.md`
-_Vision notes:_ `DOCS/EMBER_VISION_NOTES_MAMI.md`
-_Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
+_Mechanic map:_ `docs/mechanic-map-v1.md`
+_Execution ledger:_ `docs/faz-5-12-execution-ledger.md`
+_Agent rules:_ `docs/agent-rules-v2.md`
+_Vision notes:_ `docs/EMBER_VISION_NOTES_MAMI.md`
+_Inspector checklist:_ `docs/inspector-audit-checklist.md`
 
 ## Vision anchors
 

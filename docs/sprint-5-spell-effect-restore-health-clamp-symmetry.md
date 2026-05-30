@@ -47,7 +47,7 @@ two intact.
 
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Adds `ResolveInstantaneousEffects_RestoreHealth_ClampsAtMaxHealth`.
-- `DOCS/sprint-5-spell-effect-restore-health-clamp-symmetry.md` (this file).
+- `docs/sprint-5-spell-effect-restore-health-clamp-symmetry.md` (this file).
 
 ## Out of scope
 

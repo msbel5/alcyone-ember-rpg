@@ -5,7 +5,7 @@
 - Session start: 05:00 GMT+3 (Mami fell asleep)
 - Session end target: 10:00 GMT+3 (Mami's wake-up)
 - Plan file: `~/.claude/plans/alcyone-beceremedi-ruhunu-anladin-shimmering-moler.md`
-- Earlier interim summary: `DOCS/sprint-session-2026-05-20-summary.md`
+- Earlier interim summary: `docs/sprint-session-2026-05-20-summary.md`
 
 This file is the final morning hand-off. It supersedes the interim summary
 for what landed during the overnight window.
@@ -95,11 +95,11 @@ all resolved within the session).
 - `Assets/Scripts/Simulation/Process/PathfindingSystem.cs`
 - `Assets/Scripts/Presentation/VisualLayer/JobDebugSnapshot.cs`, `ColonyNeedsSnapshot.cs`, `SeasonClockSnapshot.cs`, `FactionRelationSnapshot.cs`, `WorldEventTailSnapshot.cs`, `InventoryStockpileSnapshot.cs`
 - `Assets/Scripts/Data/Recipes/ProductionRecipeRegistry.cs`
-- `DOCS/sprint-faz-{6..12}-atom-map.md` (7 atom maps)
-- `DOCS/kickoff-faz-9.md`
-- `DOCS/sprint-4-faz-4-promotion.md`
-- `DOCS/sprint-session-2026-05-20-summary.md` (interim)
-- `DOCS/sprint-session-2026-05-20-final.md` (this file)
+- `docs/sprint-faz-{6..12}-atom-map.md` (7 atom maps)
+- `docs/kickoff-faz-9.md`
+- `docs/sprint-4-faz-4-promotion.md`
+- `docs/sprint-session-2026-05-20-summary.md` (interim)
+- `docs/sprint-session-2026-05-20-final.md` (this file)
 
 All `.cs` files ship with paired tests and `.meta` files for Unity.
 

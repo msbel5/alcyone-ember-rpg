@@ -392,7 +392,7 @@ own.** This is the **clean-room rule**.
 | `references/openmw-master/` | OpenMW (C++ Morrowind reimplementation). Full engine including AI, dialog, journal, faction. | NPC schedule + disposition system, dialog response trees, faction reputation propagation, journal + quest engine, magic effect framework |
 | `references/gemrb-master/` | GemRB (C++ Infinity Engine reimplementation: BG/IWD/PST). | RTWP combat pacing, party management, action queue, dialog-as-interface UX, scriptable AI behaviour blocks |
 | `references/dwarf-fortress-legacy/` | DF legacy C++ snapshot. Off-world simulation reference. | living world tick architecture, agent memory tiers, emergent event chains, historical figure tracking |
-| `references/ember-rpg/` | Our previous attempt. *Read it as anti-pattern.* | what NOT to do — examine `DOCS/lessons-from-first-attempt.md` for the post-mortem |
+| `references/ember-rpg/` | Our previous attempt. *Read it as anti-pattern.* | what NOT to do — examine `docs/lessons-from-first-attempt.md` for the post-mortem |
 
 ### External references (no source on Pi, read online)
 
@@ -418,7 +418,7 @@ When you write a new module:
 
 ### Important: where to put cross-references in our docs
 
-Each Sprint summary doc (`DOCS/sprint-N-summary.md`) **must** link back to the
+Each Sprint summary doc (`docs/sprint-N-summary.md`) **must** link back to the
 Bible sections it implements:
 
 ```

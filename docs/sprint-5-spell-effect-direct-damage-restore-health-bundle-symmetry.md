@@ -47,7 +47,7 @@ versa) while leaving the fatigue/mana pairs intact.
 
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Adds `ResolveInstantaneousEffects_DirectDamage_BundledWithRestoreHealthAggregatesIndependently`.
-- `DOCS/sprint-5-spell-effect-direct-damage-restore-health-bundle-symmetry.md` (this file).
+- `docs/sprint-5-spell-effect-direct-damage-restore-health-bundle-symmetry.md` (this file).
 
 ## Out of scope
 

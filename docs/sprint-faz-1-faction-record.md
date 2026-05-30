@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-faction-record`
 _Box:_ `[box=SOCIETY]` (seed)
-_Atom-map ref:_ `DOCS/sprint-faz-1-atom-map.md` — FactionStore sub-area
+_Atom-map ref:_ `docs/sprint-faz-1-atom-map.md` — FactionStore sub-area
 
 ## Increment goal
 

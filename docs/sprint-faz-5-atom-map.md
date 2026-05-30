@@ -4,11 +4,11 @@ _Date:_ 2026-05-17
 _Branch:_ `agent/faz-5-season-ledger`
 _Primary boxes:_ `TIME`, `PROCESS`
 _Roadmap:_ `docs/ROADMAP.md`
-_Mechanic map:_ `DOCS/mechanic-map-v1.md`
-_Execution ledger:_ `DOCS/faz-5-12-execution-ledger.md`
-_Agent rules:_ `DOCS/agent-rules-v2.md`
-_Vision notes:_ `DOCS/EMBER_VISION_NOTES_MAMI.md`
-_Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
+_Mechanic map:_ `docs/mechanic-map-v1.md`
+_Execution ledger:_ `docs/faz-5-12-execution-ledger.md`
+_Agent rules:_ `docs/agent-rules-v2.md`
+_Vision notes:_ `docs/EMBER_VISION_NOTES_MAMI.md`
+_Inspector checklist:_ `docs/inspector-audit-checklist.md`
 
 ## Vision anchors
 
@@ -59,7 +59,7 @@ increase. Every new atom row carries exactly one `primary_box`.
 | 9 | PROCESS | `HarvestSystem` | Convert ripe wheat into stockpile output with deterministic item factory injection. | `HarvestSystemTests` | implemented locally |
 | 10 | TIME | `Data/Save` plant/season DTOs and mappers | Round-trip time/plant/process state without adding named `SliceWorldState` fields. | `PlantSeasonRoundTripTests` | implemented locally |
 | 11 | PROCESS | Farming job/path hook | Connect planting/harvest jobs to the existing job/path lane and close/advance relevant pathing debt. | `FarmingJobIntegrationTests` | implemented locally |
-| 12 | PROCESS | `DOCS/sprint-faz-5-plant-season-acceptance.md` | Deterministic replay proof for spring planting through summer harvest and food stockpile increase. | `PlantSeasonAcceptanceTests` and replay note | queued |
+| 12 | PROCESS | `docs/sprint-faz-5-plant-season-acceptance.md` | Deterministic replay proof for spring planting through summer harvest and food stockpile increase. | `PlantSeasonAcceptanceTests` and replay note | queued |
 
 ## Next increment
 

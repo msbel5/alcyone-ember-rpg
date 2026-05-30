@@ -46,9 +46,9 @@ branch:
 
 | File | Purpose |
 |---|---|
-| `DOCS/alcyone-audit-2026-05-09.md` | This audit |
-| `DOCS/mechanic-map-v1.md` | The 8-box living-world model |
-| `DOCS/agent-rules-v2.md` | New cron rules: visible-progress, no-speculative-utility, data-driven effects, world-store promotion, playable proof |
+| `docs/alcyone-audit-2026-05-09.md` | This audit |
+| `docs/mechanic-map-v1.md` | The 8-box living-world model |
+| `docs/agent-rules-v2.md` | New cron rules: visible-progress, no-speculative-utility, data-driven effects, world-store promotion, playable proof |
 | `README.md` (rewritten) | Reflects the actual state of the rewrite |
 | `docs/ROADMAP.md` (rewritten) | 12-phase roadmap aligned with the mechanic map |
 
@@ -104,7 +104,7 @@ PR per the rules above.
 ## Acceptance for Faz 0
 
 - A new contributor opens the repo, reads `README.md`, reads
-  `docs/ROADMAP.md`, reads `DOCS/mechanic-map-v1.md`, and within
+  `docs/ROADMAP.md`, reads `docs/mechanic-map-v1.md`, and within
   five minutes can answer:
   - what kind of game is this
   - what is in scope right now

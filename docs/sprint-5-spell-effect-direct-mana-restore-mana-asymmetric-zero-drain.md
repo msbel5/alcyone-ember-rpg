@@ -36,7 +36,7 @@ This pin closes the symmetric gap on the restore side.
 
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Adds `ResolveInstantaneousEffects_DirectMana_BundledWithRestoreMana_ZeroDrainLeavesRestoreApplied`.
-- `DOCS/sprint-5-spell-effect-direct-mana-restore-mana-asymmetric-zero-drain.md` (this file).
+- `docs/sprint-5-spell-effect-direct-mana-restore-mana-asymmetric-zero-drain.md` (this file).
 
 ## Out of scope
 

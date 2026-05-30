@@ -100,7 +100,7 @@ combat-pipeline call.
   unfiltered group-by, sum-of-buckets parity vs filtered
   `ComputeBatchTotals`, per-bucket parity vs the equivalent two-condition
   filtered `ComputeBatchTotals`, and a no-mutation guard on the registry.
-- `DOCS/sprint-5-shield-buff-batch-totals-group-by-filter.md` &mdash;
+- `docs/sprint-5-shield-buff-batch-totals-group-by-filter.md` &mdash;
   this design note.
 
 ## Out of scope

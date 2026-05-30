@@ -29,13 +29,13 @@ fixture inside one sub-area shape.
   values compare equal, different values compare unequal, default is
   empty, equal values share hash code, empty `ToString` returns
   `FactionId.Empty`, non-empty `ToString` contains the raw value.
-- `DOCS/sprint-faz-1-atom-map.md` — corrected the FactionStore
+- `docs/sprint-faz-1-atom-map.md` — corrected the FactionStore
   sub-area path from `Domain/World/FactionId.cs` to
   `Domain/Core/FactionId.cs` (matching the ActorId/ItemId/SiteId
   convention) and checked the FactionId row off. Appended the
   FactionId Thalamus packet metadata. Replaced the trailing "next
   increment" note so it points at `FactionRecord` next.
-- `DOCS/sprint-faz-1-faction-id.md` — this summary.
+- `docs/sprint-faz-1-faction-id.md` — this summary.
 
 ## Validation result
 

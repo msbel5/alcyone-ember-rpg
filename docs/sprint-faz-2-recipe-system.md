@@ -5,7 +5,7 @@ _Branch:_ `agent/sprint-faz-2-recipe-system`
 _PR:_ pending
 _Box:_ `[box=PROCESS]` / `[box=MATTER]` / `[box=TIME]` / `[box=PLAYABLE]`
 _Thalamus:_ `pkt_20260512182245_50ced2e83e39` / `sha256:fb5f0604997918a5753c37c549c3b790e6abf8ab952a8da6d613eae21b3fc16a`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -17,8 +17,8 @@ Ship the smallest product-visible Faz 2 `RecipeSystem` slice: an active furnace 
 - `Assets/Scripts/Domain/World/WorldEventKind.cs` — adds `RecipeCompleted` only alongside the concrete `RecipeSystem` emitter.
 - `Assets/Tests/EditMode/Process/RecipeSystemTests.cs` — covers active furnace start, input consumption, failure paths, 40-tick completion, and output production.
 - `Assets/Tests/EditMode/Process/RecipeEventLogTests.cs` — pins the ordered `WorldEventLog` recipe completion event and causal `ReasonTrace`.
-- `DOCS/sprint-faz-2-atom-map.md` — marks the recipe execution atoms as landed and updates the next increment.
-- `DOCS/sprint-faz-2-recipe-system.md` — records this increment.
+- `docs/sprint-faz-2-atom-map.md` — marks the recipe execution atoms as landed and updates the next increment.
+- `docs/sprint-faz-2-recipe-system.md` — records this increment.
 
 ## Validation
 
@@ -39,4 +39,4 @@ The proof is deterministic EditMode coverage: `RecipeEventLogTests.CompletingRec
 
 ## Next increment
 
-Add the save/load and player-facing proof sub-area: serialize active recipe/worksite progress only after runtime state exists, then add `DOCS/sprint-faz-2-smelt-iron-acceptance.md` with a deterministic replay proof for crafting iron ingot from ore + fuel at a furnace.
+Add the save/load and player-facing proof sub-area: serialize active recipe/worksite progress only after runtime state exists, then add `docs/sprint-faz-2-smelt-iron-acceptance.md` with a deterministic replay proof for crafting iron ingot from ore + fuel at a furnace.

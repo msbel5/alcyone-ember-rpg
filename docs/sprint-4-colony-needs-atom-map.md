@@ -3,14 +3,14 @@
 ## Goal
 
 Open Faz 4 by recording the colony-needs atom map before gameplay code begins.
-This keeps the next sprint aligned with `DOCS/mechanic-map-v1.md`,
-`DOCS/agent-rules-v2.md`, and the Faz 4 acceptance sentence in
+This keeps the next sprint aligned with `docs/mechanic-map-v1.md`,
+`docs/agent-rules-v2.md`, and the Faz 4 acceptance sentence in
 `docs/ROADMAP.md`.
 
 ## Files changed
 
-- `DOCS/sprint-faz-4-atom-map.md`
-- `DOCS/sprint-4-colony-needs-atom-map.md`
+- `docs/sprint-faz-4-atom-map.md`
+- `docs/sprint-4-colony-needs-atom-map.md`
 
 ## Behaviour
 

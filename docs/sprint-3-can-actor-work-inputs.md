@@ -8,8 +8,8 @@ Complete the Faz 3 `CanActorWorkJob` atom by adding a mutation-free recipe/input
 
 - `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`
 - `Assets/Tests/EditMode/Process/JobAssignmentSystemTests.cs`
-- `DOCS/sprint-faz-3-atom-map.md`
-- `DOCS/sprint-3-can-actor-work-inputs.md`
+- `docs/sprint-faz-3-atom-map.md`
+- `docs/sprint-3-can-actor-work-inputs.md`
 
 ## Validation
 

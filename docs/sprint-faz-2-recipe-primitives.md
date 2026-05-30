@@ -4,7 +4,7 @@ _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-recipe-primitives`
 _Box:_ `[box=PROCESS]` / `[box=MATTER]`
 _Thalamus:_ `pkt_20260511222722_4531e566a532` / `sha256:aef062b231ad626b049d9166098ecef0131cad4633ea6727d52c0efaf3805b09`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -16,7 +16,7 @@ Start the Faz 2 pure definition rail with the smallest deterministic recipe hand
 - `Assets/Scripts/Domain/Process/RecipeIngredient.cs` — pure input row describing item/material tag + positive quantity.
 - `Assets/Tests/EditMode/Process/RecipeIdTests.cs` — value semantics, default sentinel, equality operators, hash, debug label.
 - `Assets/Tests/EditMode/Process/RecipeIngredientTests.cs` — tag storage/normalization and constructor invariant tests.
-- `DOCS/sprint-faz-2-atom-map.md` — checks off the four landed atoms and points the next increment at `RecipeOutput` / `RecipeDef`.
+- `docs/sprint-faz-2-atom-map.md` — checks off the four landed atoms and points the next increment at `RecipeOutput` / `RecipeDef`.
 
 ## Validation
 

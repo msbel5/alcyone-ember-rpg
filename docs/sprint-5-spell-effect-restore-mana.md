@@ -120,4 +120,4 @@ adds the four `RestoreMana` tests above. `git diff --check` is clean.
 - `Assets/Scripts/Simulation/Magic/SpellEffectResolutionResult.cs`
 - `Assets/Scripts/Simulation/Magic/SpellEffectResolutionService.cs`
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
-- `DOCS/sprint-5-spell-effect-restore-mana.md`
+- `docs/sprint-5-spell-effect-restore-mana.md`

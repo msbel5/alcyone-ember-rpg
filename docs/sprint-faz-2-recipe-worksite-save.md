@@ -4,7 +4,7 @@ _Date:_ 2026-05-14
 _Branch:_ `agent/sprint-faz-2-recipe-worksite-save`
 _Packet:_ `pkt_20260514100543_0ae5b0863208`
 _Resolver:_ `sha256:8f7b856d70c40ce7e38edaf7d701dd546a9f51d65ce3fa25ecb906430fe6f46e`
-_Atom-map rows:_ save/load TIME rail in `DOCS/sprint-faz-2-atom-map.md`.
+_Atom-map rows:_ save/load TIME rail in `docs/sprint-faz-2-atom-map.md`.
 
 ## Increment goal
 

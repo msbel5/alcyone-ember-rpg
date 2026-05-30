@@ -51,7 +51,7 @@ matching pair on the drain side.
 
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Adds `ResolveInstantaneousEffects_DirectDamage_OvershootMagnitudeClampsAtZeroHealth`.
-- `DOCS/sprint-5-spell-effect-direct-damage-clamp-symmetry.md` (this file).
+- `docs/sprint-5-spell-effect-direct-damage-clamp-symmetry.md` (this file).
 
 ## Out of scope
 

@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-world-event-reason-trace`
 _Box:_ `[box=PROCESS]`
-_Atom-map:_ `DOCS/sprint-faz-1-atom-map.md`
+_Atom-map:_ `docs/sprint-faz-1-atom-map.md`
 _Thalamus:_ `pkt_20260511171028_aef909de2bad` / `sha256:2396d74b65954917a72c14aa1baaba3dc3701802a6f420a4eb7d44230409743b`
 
 ## Increment goal
@@ -18,7 +18,7 @@ from the WorldEvent and WorldEventLog documentation surfaces now that
   note to say `WorldEventLog` already consumes `WorldEvent`.
 - `Assets/Tests/EditMode/World/WorldEventLogTests.cs` — clarifies that the
   `Events` projection is a live view, not a point-in-time snapshot.
-- `DOCS/sprint-faz-1-atom-map.md` — records that trace preservation is covered
+- `docs/sprint-faz-1-atom-map.md` — records that trace preservation is covered
   by the landed PR #92 attachment work.
 
 ## Validation

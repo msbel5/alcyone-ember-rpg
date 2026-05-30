@@ -5,9 +5,9 @@ _Authoritative branch:_ `main`
 _Active branch:_ `realignment-faz-0`
 
 This roadmap supersedes the previous Sprint 0 roadmap (kept as
-`DOCS/sprint-0-recon.md` for history). It is aligned with
-`DOCS/mechanic-map-v1.md` (the 8-box living-world model) and gated
-by `DOCS/agent-rules-v2.md` (five agent rules).
+`docs/sprint-0-recon.md` for history). It is aligned with
+`docs/mechanic-map-v1.md` (the 8-box living-world model) and gated
+by `docs/agent-rules-v2.md` (five agent rules).
 
 The structure is **12 phases** (`Faz 0` through `Faz 12`). Each phase
 maps to one or two boxes of the mechanic map. A phase is done when its
@@ -22,9 +22,9 @@ Captain decomposes against the mechanic map rather than the magic enum.
 
 Deliverables:
 
-- `DOCS/alcyone-audit-2026-05-09.md`
-- `DOCS/mechanic-map-v1.md`
-- `DOCS/agent-rules-v2.md`
+- `docs/alcyone-audit-2026-05-09.md`
+- `docs/mechanic-map-v1.md`
+- `docs/agent-rules-v2.md`
 - `docs/reference/` mirrors the canonical PRDs and architecture notes
   from `msbel5/ember-rpg`
 - `README.md` rewritten
@@ -35,7 +35,7 @@ Deliverables:
   not tracked in this repo)
 
 Acceptance: a fresh contributor opens the repo, reads `README.md`,
-`docs/ROADMAP.md`, `DOCS/mechanic-map-v1.md`, and within five minutes
+`docs/ROADMAP.md`, `docs/mechanic-map-v1.md`, and within five minutes
 can answer the four orientation questions in `README.md`.
 
 ## Faz 1 — Core Store reset
@@ -248,7 +248,7 @@ Note: Faz 11 PRs run in parallel with Faz 1-10. Each system gets a
 view as it lands. Unity work never blocks Core work.
 
 Acceptance: every previous phase has a one-screenshot Unity proof in
-`DOCS/screenshots/<phase>.png`.
+`docs/screenshots/<phase>.png`.
 
 ## Faz 12 — LLM / NPC fallback flavour
 

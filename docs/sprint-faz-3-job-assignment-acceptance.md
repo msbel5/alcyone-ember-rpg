@@ -5,7 +5,7 @@ _Branch:_ `agent/sprint-3-job-assignment-acceptance`
 _Box:_ `[box=PLAYABLE]`
 _Thalamus packet:_ `pkt_20260515160510_f936c3bdc2ce`
 _Resolver:_ `sha256:3704ccf03e10f2cb8881b2043e569eb7c666b8a4805ec4cc40c60a6419413e8f`
-_Atom map:_ `DOCS/sprint-faz-3-atom-map.md`
+_Atom map:_ `docs/sprint-faz-3-atom-map.md`
 
 ## Acceptance sentence
 

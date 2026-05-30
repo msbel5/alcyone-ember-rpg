@@ -3,7 +3,7 @@
 _Date:_ 2026-05-14
 _Branch:_ `main` after PR #106 merge
 _Box:_ `[box=PROCESS]` / `[box=MATTER]` with `[box=WORLD]`, `[box=TIME]`, `[box=LIVING]`, `[box=PLAYABLE]`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 _Thalamus packet:_ `pkt_20260514112422_03d44f0347f2`
 _Resolver:_ `sha256:e24087d59931ef7c67f7e636d00e72c66a81953b2eb9d660b1b9a7a2ba66f4ce`
 _Thalamus status:_ resolved OK on 2026-05-14 final-summary pass
@@ -18,8 +18,8 @@ Close Faz 2 with a narrow promotion summary: record the final Recipe + Worksite 
 
 ## Files changed in this final-summary increment
 
-- `DOCS/sprint-faz-2-final-summary.md` — adds the final Faz 2 promotion summary and accounting.
-- `DOCS/sprint-faz-2-atom-map.md` — updates the promotion checklist and final Thalamus evidence.
+- `docs/sprint-faz-2-final-summary.md` — adds the final Faz 2 promotion summary and accounting.
+- `docs/sprint-faz-2-atom-map.md` — updates the promotion checklist and final Thalamus evidence.
 
 ## Faz 2 delivery surface
 
@@ -29,12 +29,12 @@ Faz 2 landed the first PROCESS/MATTER vertical slice:
 - Worksite state: `WorksiteKind`, `WorksiteRecord`, `WorksiteStore`, and focused EditMode tests.
 - Recipe execution: `RecipeSystem`, `RecipeWorkOrder`, `WorldEventKind.RecipeCompleted`, ordered `WorldEventLog` / `ReasonTrace` proof, and deterministic smelt tests.
 - Save/load rail: `SliceSaveData`, `SliceSaveMapper`, `JsonSliceSaveService`, active worksite/order rehydration, and round-trip tests.
-- Playable proof: `DOCS/sprint-faz-2-smelt-iron-acceptance.md` deterministic replay note.
+- Playable proof: `docs/sprint-faz-2-smelt-iron-acceptance.md` deterministic replay note.
 
 ## Sprint accounting
 
 - Faz 2 delivery atom rows checked: 20 gameplay/proof rows in the atom map.
-- Meta atom rows checked: 1 (`DOCS/sprint-faz-2-atom-map.md`).
+- Meta atom rows checked: 1 (`docs/sprint-faz-2-atom-map.md`).
 - Total checked atom-map rows: 21.
 - Bundle count: 7 landed non-review implementation bundles (`recipe-primitives`, `recipe-output`, `recipe-def`, `worksite-record`, `worksite-store`, `recipe-system`, `recipe-worksite-save`).
 - Product-visible PR count: 1 (`#104`, `agent/sprint-faz-2-recipe-system`, first EventLog-emitting PROCESS slice). PR #105 documents the player-facing proof; PR #106 closes persistence.

@@ -28,7 +28,7 @@ Implemented:
 
 ## Why this slice matters
 
-`DOCS/sprint-5-spell-success-roll.md` deliberately stopped at the Tier 3 seam and left execution
+`docs/sprint-5-spell-success-roll.md` deliberately stopped at the Tier 3 seam and left execution
 unwired. That was honest, but it still left gameplay callers with a gap: they could calculate and
 roll a cast chance, yet the end-to-end execution service had no native way to honour that result.
 This increment closes that gap while keeping the policy narrow and testable.

@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-faction-record` (follow-up commit on PR #87)
 _Box:_ `[box=SOCIETY]` (seed, hardening)
-_Atom-map ref:_ `DOCS/sprint-faz-1-atom-map.md` — FactionStore sub-area
+_Atom-map ref:_ `docs/sprint-faz-1-atom-map.md` — FactionStore sub-area
 _Source:_ AI bot review queue — Copilot + chatgpt-codex-connector P2
 on PR #87 ("Return a truly immutable tag snapshot")
 
@@ -69,5 +69,5 @@ prior 706).
 
 `Assets/Scripts/Domain/World/FactionStore.cs` — dictionary-backed
 registry mirroring `ActorStore` / `SiteStore` / `ItemStore`. Atom
-map row in `DOCS/sprint-faz-1-atom-map.md` under FactionStore
+map row in `docs/sprint-faz-1-atom-map.md` under FactionStore
 sub-area.

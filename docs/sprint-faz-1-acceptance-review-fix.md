@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-acceptance-proof`
 _Box:_ `[box=PLAYABLE]`
-_Atom-map:_ `DOCS/sprint-faz-1-atom-map.md`
+_Atom-map:_ `docs/sprint-faz-1-atom-map.md`
 _Thalamus:_ `pkt_20260511202241_663cef0a2776` / `sha256:58a4dbf582206903d8cdf60c6b19b0e4d29df978b1807535ed57ab3ac7c7b21c`
 _PR:_ https://github.com/msbel5/alcyone-ember-rpg/pull/96
 
@@ -19,9 +19,9 @@ the player as the actor entering the second site.
   guarded door, grants clearance through `GuardInteractionService`, opens it
   with `DoorInteractionService`, traverses through `DungeonTraversalService`,
   and records `loaded.Player.Id` on the `SiteEntered` event.
-- `DOCS/sprint-faz-1-acceptance.md` — corrects the Unity API wording and
+- `docs/sprint-faz-1-acceptance.md` — corrects the Unity API wording and
   documents the service-backed traversal proof.
-- `DOCS/sprint-faz-1-acceptance-review-fix.md` — this summary.
+- `docs/sprint-faz-1-acceptance-review-fix.md` — this summary.
 
 ## Validation
 

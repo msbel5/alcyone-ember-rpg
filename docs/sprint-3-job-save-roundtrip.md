@@ -11,7 +11,7 @@ Complete the Faz 3 save/load persistence atoms for job assignment without adding
 - `Assets/Scripts/Data/Save/SliceSaveMapper.cs`
 - `Assets/Scripts/Data/Save/JsonSliceSaveService.cs`
 - `Assets/Tests/EditMode/Save/JobAssignmentRoundTripTests.cs`
-- `DOCS/sprint-faz-3-atom-map.md`
+- `docs/sprint-faz-3-atom-map.md`
 - `docs/sprint-3-job-save-roundtrip.md`
 
 ## Behaviour
@@ -39,4 +39,4 @@ Acceptance sentence: player can save after a smith claims a furnace job, reload,
 
 ## Next increment
 
-Finish Faz 3 with `DOCS/sprint-faz-3-job-assignment-acceptance.md`: write the deterministic replay/playable proof and final `player can ...` sentence before promotion.
+Finish Faz 3 with `docs/sprint-faz-3-job-assignment-acceptance.md`: write the deterministic replay/playable proof and final `player can ...` sentence before promotion.

@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-acceptance-proof`
 _Box:_ `[box=PLAYABLE]` with replay coverage across `[box=LIVING]`, `[box=WORLD]`, `[box=PROCESS]`, and `[box=TIME]`
-_Atom-map:_ `DOCS/sprint-faz-1-atom-map.md`
+_Atom-map:_ `docs/sprint-faz-1-atom-map.md`
 _Thalamus:_ `pkt_20260511195718_3b201e02afe2` / `sha256:7b422f4dd607a04ac435e6b2eadffa47fec9ea21cd357eea509ca785a9368767`
 
 ## Increment goal
@@ -45,8 +45,8 @@ replay in the fallback validation harness without UnityEditor-only APIs:
   Faz 1 acceptance replay test.
 - `Assets/Tests/EditMode/World/Faz1AcceptanceReplayTests.cs.meta` — Unity meta
   stub for the test file.
-- `DOCS/sprint-faz-1-acceptance.md` — this proof/summary.
-- `DOCS/sprint-faz-1-atom-map.md` — marks the PLAYABLE acceptance atom landed
+- `docs/sprint-faz-1-acceptance.md` — this proof/summary.
+- `docs/sprint-faz-1-atom-map.md` — marks the PLAYABLE acceptance atom landed
   and records packet metadata.
 
 ## Validation
@@ -56,7 +56,7 @@ replay in the fallback validation harness without UnityEditor-only APIs:
 
 ## Sprint accounting
 
-- Final atom count: 27/27 atom-map rows checked in `DOCS/sprint-faz-1-atom-map.md` on this branch.
+- Final atom count: 27/27 atom-map rows checked in `docs/sprint-faz-1-atom-map.md` on this branch.
 - Bundle count: 0 for this PR; this is a single acceptance-proof atom.
 - Product-visible PR count for Faz 1: at least 1; this PR is the explicit
   playable-proof PR and the prior store PRs exposed world state through

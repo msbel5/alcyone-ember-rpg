@@ -40,4 +40,4 @@ Sprint 4 is not complete until the final summary has evidence for:
 - audio/atmosphere hooks work from presentation code without adding `UnityEngine` to domain/simulation
 - local fallback validation passes; PR GitHub EditMode/PlayMode checks are green or explicitly explained
 - a manual play-pass video demonstrates multi-room traversal, combat, inventory use, and save/load before final approval
-- `DOCS/sprint-4-summary.md` records implementation, validation, and remaining risks before approval
+- `docs/sprint-4-summary.md` records implementation, validation, and remaining risks before approval

@@ -4,7 +4,7 @@ _Date:_ 2026-05-14
 _Branch:_ `agent/sprint-faz-2-recipe-worksite-save`
 _Packet:_ `pkt_20260514103804_61c974910401`
 _Resolver:_ `sha256:596d1c19f91fda5ea8542600026f98b300e5f7ac0e4c286509facfadc6c35bcd`
-_Atom-map rows:_ save/load TIME rail in `DOCS/sprint-faz-2-atom-map.md`.
+_Atom-map rows:_ save/load TIME rail in `docs/sprint-faz-2-atom-map.md`.
 _Bot review:_ Codex PR #106 P2 — production save/load did not populate or rehydrate process DTO fields.
 
 ## Increment goal
@@ -28,5 +28,5 @@ After PR #106 is updated and bot feedback is marked addressed, wait for remote c
 
 ## Atom-map bookkeeping
 
-- `DOCS/sprint-faz-2-atom-map.md` now marks the save/load TIME rows for `SliceSaveMapper`/`RecipeWorksiteRoundTripTests` as landed on `agent/sprint-faz-2-recipe-worksite-save`.
+- `docs/sprint-faz-2-atom-map.md` now marks the save/load TIME rows for `SliceSaveMapper`/`RecipeWorksiteRoundTripTests` as landed on `agent/sprint-faz-2-recipe-worksite-save`.
 - Current cron packet: `pkt_20260514105821_bf14bff6ca68`; resolver: `sha256:62e3ced1a90e0ef1103cf7066036d2202562584822c0f076e7d11b86bdfcb3ee`.

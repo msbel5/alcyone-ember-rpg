@@ -11,8 +11,8 @@ Complete the Faz 3 `competition-proof` bundle: centralize canonical smelting/bre
 - `Assets/Scripts/Domain/Process/WorksiteKind.cs`
 - `Assets/Tests/EditMode/Process/RecipeFixtureCatalog.cs`
 - `Assets/Tests/EditMode/Process/JobAssignmentCompetitionTests.cs`
-- `DOCS/sprint-faz-3-atom-map.md`
-- `DOCS/sprint-3-competition-proof.md`
+- `docs/sprint-faz-3-atom-map.md`
+- `docs/sprint-3-competition-proof.md`
 
 ## Behaviour
 

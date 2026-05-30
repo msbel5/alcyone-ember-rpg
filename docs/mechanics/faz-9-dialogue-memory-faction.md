@@ -1,6 +1,6 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
-> _Captain atom-map_: `DOCS/sprint-faz-9-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Captain atom-map_: `docs/sprint-faz-9-atom-map.md` (Captain narrow vertical-slice decomposition).
 > _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
 > _Spec covers full architecture; Captain may implement subset and extend later.
 

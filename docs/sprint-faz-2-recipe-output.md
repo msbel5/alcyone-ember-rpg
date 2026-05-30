@@ -4,7 +4,7 @@ _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-recipe-output`
 _Box:_ `[box=PROCESS]` / `[box=MATTER]`
 _Thalamus:_ `pkt_20260512151432_3f3e838ea4f3` / `sha256:51368bad478cc9049ff6efb3539955fe2559a6f8a0186140c5a324b0adc2b0ce`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -14,8 +14,8 @@ Land the next Faz 2 pure definition atom: `RecipeOutput`, the MATTER/PROCESS row
 
 - `Assets/Scripts/Domain/Process/RecipeOutput.cs` — adds the pure output row with tag trimming, material/quality sentinel rejection, and positive quantity validation.
 - `Assets/Tests/EditMode/Process/RecipeOutputTests.cs` — pins storage, trimming, sentinel rejection, and invalid quantity diagnostics.
-- `DOCS/sprint-faz-2-atom-map.md` — checks off the two RecipeOutput atom rows and records the next increment warning.
-- `DOCS/sprint-faz-2-recipe-output.md` — records this sprint summary and validation evidence.
+- `docs/sprint-faz-2-atom-map.md` — checks off the two RecipeOutput atom rows and records the next increment warning.
+- `docs/sprint-faz-2-recipe-output.md` — records this sprint summary and validation evidence.
 
 ## Validation
 

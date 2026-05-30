@@ -8,10 +8,10 @@ override the older "exactly one small shippable increment" wording.
 
 In addition to this file, Captain reads the following before every atom-map kickoff doc and before every PR:
 
-- `DOCS/mechanic-map-v1.md` — the 8-box living-world model. Every atom row carries exactly one `primary_box` from this list.
-- `DOCS/EMBER_VISION_NOTES_MAMI.md` — operating constraints (Phase fences), 9-point Vision anchors, and Mami's verbatim intent. Captain's kickoff doc cites which anchors the sprint serves and which fences it honors.
-- `DOCS/inspector-audit-checklist.md` — the checklist Inspector applies to every Captain PR. Captain self-checks against this before opening a PR.
-- The active sprint atom map (currently `DOCS/sprint-faz-4-atom-map.md`) — top-of-file **Debt ledger** is a gate, not a footnote. Before kicking off the next atom, Captain takes one action against the ledger (close / advance / defer) and records it in the kickoff doc.
+- `docs/mechanic-map-v1.md` — the 8-box living-world model. Every atom row carries exactly one `primary_box` from this list.
+- `docs/EMBER_VISION_NOTES_MAMI.md` — operating constraints (Phase fences), 9-point Vision anchors, and Mami's verbatim intent. Captain's kickoff doc cites which anchors the sprint serves and which fences it honors.
+- `docs/inspector-audit-checklist.md` — the checklist Inspector applies to every Captain PR. Captain self-checks against this before opening a PR.
+- The active sprint atom map (currently `docs/sprint-faz-4-atom-map.md`) — top-of-file **Debt ledger** is a gate, not a footnote. Before kicking off the next atom, Captain takes one action against the ledger (close / advance / defer) and records it in the kickoff doc.
 
 ## 1. Product-visible increment rule
 
@@ -116,9 +116,9 @@ needs to widen, not the test surface.
 
 ## Enforcement notes for Captain
 
-- Decompose with `atom-of-thoughts` against `DOCS/mechanic-map-v1.md`,
+- Decompose with `atom-of-thoughts` against `docs/mechanic-map-v1.md`,
   not against the old enum tree.
-- The atom-map (`DOCS/sprint-N-atom-map.md`) tracks which mechanic-map
+- The atom-map (`docs/sprint-N-atom-map.md`) tracks which mechanic-map
   box the atom belongs to. Every atom row carries a box tag like
   `[box=PROCESS]`.
 - Sprint promotion (the hard rule from `@EMSPR`) still applies, but
@@ -144,7 +144,7 @@ reference for this project. Captain may pull docs from there into
 A Captain PR is automatically rejected by Inspector if any of the following hold:
 
 - The PR touches `Assets/Scenes/`, `Assets/Art/`, `Assets/Prefabs/`, `Assets/Resources/`, `Assets/Materials/`, `Assets/Textures/`, or any binary file (`.png`, `.jpg`, `.fbx`, `.wav`, `.mp3`, `.psd`, `.blend`, `.tga`, `.exr`).
-- The PR touches `DOCS/screenshots/`, `DOCS/images/`, or any non-text asset under `DOCS/`.
+- The PR touches `docs/screenshots/`, `docs/images/`, or any non-text asset under `docs/`.
 - The PR touches `Assets/Scripts/Presentation/` except for pure-C# read-only snapshot row types that contain zero `using UnityEngine` AND name a Mami-side consumer (a pending or merged `mami/*` PR) in the PR body. This exception matches the Faz 11 carve-out in Rule 7 below.
 - The PR's acceptance criterion mentions a screenshot, prefab, scene capture, or visual asset that Captain is asked to produce.
 
@@ -154,8 +154,8 @@ The visual layer is Mami territory. Captain may write atom maps and mechanic doc
 
 Captain MAY:
 
-- write `DOCS/sprint-faz-11-atom-map.md`
-- write or extend `DOCS/mechanics/faz-11-unity-visual-layer.md`
+- write `docs/sprint-faz-11-atom-map.md`
+- write or extend `docs/mechanics/faz-11-unity-visual-layer.md`
 - write pure-C# snapshot row types under `Assets/Scripts/Presentation/VisualLayer/` provided the file contains zero `using UnityEngine` AND has at least one Mami-side consumer pending or merged (cite the consumer in the PR body)
 
 Captain MAY NOT:
@@ -183,7 +183,7 @@ This rule exists to prevent the Sprint-5 magic micro-loop pattern from recurring
 
 ## 9. PR body audit fields (mandatory)
 
-Every Captain-authored PR MUST include this block verbatim in its body, with values filled in. Inspector rejects PRs missing the block or any field, per `DOCS/inspector-audit-checklist.md` checklist A.
+Every Captain-authored PR MUST include this block verbatim in its body, with values filled in. Inspector rejects PRs missing the block or any field, per `docs/inspector-audit-checklist.md` checklist A.
 
 ```
 Primary box: <one of TIME|WORLD|LIVING|MATTER|PROCESS|SOCIETY|CRPG|AI/DM>
@@ -194,7 +194,7 @@ Why this is the next bundle: <one sentence tying to ledger + atom map>
 Phase fences honored: <yes | called-out-violation-because-...>
 ```
 
-The block is enforced via `.github/PULL_REQUEST_TEMPLATE.md` so every new PR opens with the template pre-filled. Captain fills the values; Inspector reads the values and checks them against `DOCS/inspector-audit-checklist.md`.
+The block is enforced via `.github/PULL_REQUEST_TEMPLATE.md` so every new PR opens with the template pre-filled. Captain fills the values; Inspector reads the values and checks them against `docs/inspector-audit-checklist.md`.
 
 ## Ownership boundaries
 
@@ -208,14 +208,14 @@ The block is enforced via `.github/PULL_REQUEST_TEMPLATE.md` so every new PR ope
 | `Assets/Scripts/Presentation/` (Unity-bound views) | Mami | no | yes |
 | `Assets/Scenes/` | Mami | no — Rule 6 | yes |
 | `Assets/Art/`, `Assets/Prefabs/`, materials, textures, models | Mami | no — Rule 6 | yes |
-| `DOCS/` (text only) | shared | yes | yes |
-| `DOCS/screenshots/`, `DOCS/images/`, binaries under DOCS | Mami | no — Rule 6 | yes |
+| `docs/` (text only) | shared | yes | yes |
+| `docs/screenshots/`, `docs/images/`, binaries under DOCS | Mami | no — Rule 6 | yes |
 
 Branch naming: Captain ships in `agent/*` branches. Mami ships in `mami/*` branches. Captain PRs that branch from `mami/*` are rejected on sight.
 
 ## 8-box tag schema (clarification)
 
-Per `DOCS/mechanic-map-v1.md` "every gameplay system fits into exactly one box":
+Per `docs/mechanic-map-v1.md` "every gameplay system fits into exactly one box":
 
 - Every atom row carries exactly one `primary_box` from `{ TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM }`.
 - Cross-cutting concerns (`infra`, `meta`, `playable`) are NOT boxes. They appear as commentary fields, not in the `primary_box` column.

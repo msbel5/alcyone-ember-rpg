@@ -2,7 +2,7 @@
 
 ## Goal
 
-Implement the fourth Faz 4 code bundle from `DOCS/sprint-faz-4-atom-map.md`:
+Implement the fourth Faz 4 code bundle from `docs/sprint-faz-4-atom-map.md`:
 deterministic hunger recovery through meals, fatigue recovery through sleep,
 and concrete recovery reason traces.
 
@@ -18,8 +18,8 @@ and concrete recovery reason traces.
 - `Assets/Tests/EditMode/Living/NeedMoodEvaluatorTests.cs`
 - `Assets/Tests/EditMode/Living/NeedsEventLogTests.cs`
 - `Assets/Tests/EditMode/Living/NeedsSystemMoodTests.cs`
-- `DOCS/sprint-faz-4-atom-map.md`
-- `DOCS/sprint-4-eat-sleep-recovery.md`
+- `docs/sprint-faz-4-atom-map.md`
+- `docs/sprint-4-eat-sleep-recovery.md`
 
 ## Behaviour
 

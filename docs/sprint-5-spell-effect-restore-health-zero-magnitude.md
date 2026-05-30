@@ -26,7 +26,7 @@ a follow-up increment to keep this PR small and single-purpose.
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Added
     `ResolveInstantaneousEffects_RestoreHealth_ZeroMagnitudeLeavesHealthUnchanged`.
-- `DOCS/sprint-5-spell-effect-restore-health-zero-magnitude.md`
+- `docs/sprint-5-spell-effect-restore-health-zero-magnitude.md`
   (this file).
 
 ## Out of scope

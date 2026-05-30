@@ -2,7 +2,7 @@
 
 ## Goal
 
-Implement the first Faz 4 code bundle from `DOCS/sprint-faz-4-atom-map.md`:
+Implement the first Faz 4 code bundle from `docs/sprint-faz-4-atom-map.md`:
 pure actor-local needs primitives with focused tests.
 
 ## Files changed
@@ -15,8 +15,8 @@ pure actor-local needs primitives with focused tests.
 - `Assets/Tests/EditMode/Actors/NeedValueTests.cs`
 - `Assets/Tests/EditMode/Actors/ActorNeedsTests.cs`
 - `Assets/Tests/EditMode/Actors/ActorRecordNeedsTests.cs`
-- `DOCS/sprint-faz-4-atom-map.md`
-- `DOCS/sprint-4-needs-primitives.md`
+- `docs/sprint-faz-4-atom-map.md`
+- `docs/sprint-4-needs-primitives.md`
 
 ## Behaviour
 

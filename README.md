@@ -89,11 +89,11 @@ matrix (PRs #62-#71) without producing player-visible capability.
 
 Faz 0 lands the canonical maps and rules:
 
-- `DOCS/alcyone-audit-2026-05-09.md` — what is in the repo, why the loop
+- `docs/alcyone-audit-2026-05-09.md` — what is in the repo, why the loop
   stalled, what to do about it
-- `DOCS/mechanic-map-v1.md` — the **8-box living-world model** every
+- `docs/mechanic-map-v1.md` — the **8-box living-world model** every
   sprint must target
-- `DOCS/agent-rules-v2.md` — five new agent rules: product-visible
+- `docs/agent-rules-v2.md` — five new agent rules: product-visible
   increment, no speculative utility, data-driven effect, world-store
   promotion, playable proof
 - `docs/ROADMAP.md` — the 12-phase plan from Core Store reset to LLM
@@ -134,7 +134,7 @@ against the canonical mechanic list rather than the bare magic enum.
 
 1. The **Captain** cron (`@EMSPR`) reads
    `/home/msbel/.openclaw/workspace/CRON_CODES.md` and decomposes the
-   active sprint phase against `DOCS/mechanic-map-v1.md`. Every atom
+   active sprint phase against `docs/mechanic-map-v1.md`. Every atom
    row carries a box tag like `[box=PROCESS]`.
 2. The **Builder** writes one atom (or a small bundle of atoms) and
    opens a PR.
@@ -155,27 +155,27 @@ These four documents form the control plane that keeps Captain on-track
 and prevents the Sprint-5 magic micro-loop from recurring. Captain reads
 all four before kicking off any atom and before opening any PR.
 
-- [DOCS/EMBER_VISION_NOTES_MAMI.md](DOCS/EMBER_VISION_NOTES_MAMI.md) —
+- [docs/EMBER_VISION_NOTES_MAMI.md](docs/EMBER_VISION_NOTES_MAMI.md) —
   operating constraints (Phase fences), 9-point Vision anchors, and
   Mami's verbatim intent. Source of author intent. Mechanic docs remain
   canonical for implementation; this file is consulted when atom-map
   decomposition has ambiguity.
-- [DOCS/agent-rules-v2.md](DOCS/agent-rules-v2.md) — Rules 1-9.
+- [docs/agent-rules-v2.md](docs/agent-rules-v2.md) — Rules 1-9.
   Required reading. Rule 6 (hard fail paths) and Rule 8 (anti-drift
   halt) are the hard tripwires. Rule 9 specifies the mandatory PR body
   audit fields, enforced via `.github/PULL_REQUEST_TEMPLATE.md`.
-- [DOCS/inspector-audit-checklist.md](DOCS/inspector-audit-checklist.md) —
+- [docs/inspector-audit-checklist.md](docs/inspector-audit-checklist.md) —
   the checklist Inspector applies to every Captain PR. Captain
   self-checks against this before opening a PR. Failure-escalation
   table at the bottom tells Inspector when to revert versus when to
   request changes.
-- [The active sprint atom map](DOCS/sprint-faz-4-atom-map.md) — top-of-
+- [The active sprint atom map](docs/sprint-faz-4-atom-map.md) — top-of-
   file **Debt ledger** is a gate, not a footnote. Before kicking off
   the next atom, Captain takes one action against the ledger (close /
   advance / defer) and records it in the kickoff doc.
 
 Mami territory: `Assets/Scenes/`, `Assets/Art/`, `Assets/Prefabs/`,
-`DOCS/screenshots/`, the Unity-bound parts of `Assets/Scripts/Presentation/`,
+`docs/screenshots/`, the Unity-bound parts of `Assets/Scripts/Presentation/`,
 and any binary asset. Captain ships in `agent/*` branches; Mami ships in
 `mami/*` branches. Visual proof of `player can ...` acceptance sentences
 is Mami's job, not Captain's — Captain proves with deterministic replay
@@ -197,7 +197,7 @@ alcyone-ember-rpg/
 │  │  └─ EditMode/       deterministic unit tests — asmdef EmberCrpg.Tests.EditMode
 │  ├─ Scenes/            Unity scenes
 │  └─ Art/               sprites, shaders, materials
-├─ DOCS/                 sprint summaries, atom maps, audit, mechanic map,
+├─ docs/                 sprint summaries, atom maps, audit, mechanic map,
 │                        agent rules
 ├─ docs/
 │  ├─ EMBER_VISION_BIBLE.md   the bible

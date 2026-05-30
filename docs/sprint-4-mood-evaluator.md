@@ -2,7 +2,7 @@
 
 ## Goal
 
-Implement the second Faz 4 code bundle from `DOCS/sprint-faz-4-atom-map.md`:
+Implement the second Faz 4 code bundle from `docs/sprint-faz-4-atom-map.md`:
 pure mood derivation from actor needs plus memory pressure.
 
 ## Files changed
@@ -13,8 +13,8 @@ pure mood derivation from actor needs plus memory pressure.
 - `Assets/Tests/EditMode/Actors/ActorMoodTests.cs`
 - `Assets/Tests/EditMode/Actors/ActorRecordMoodTests.cs`
 - `Assets/Tests/EditMode/Living/NeedMoodEvaluatorTests.cs`
-- `DOCS/sprint-faz-4-atom-map.md`
-- `DOCS/sprint-4-mood-evaluator.md`
+- `docs/sprint-faz-4-atom-map.md`
+- `docs/sprint-4-mood-evaluator.md`
 
 ## Behaviour
 

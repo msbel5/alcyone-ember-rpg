@@ -1,6 +1,6 @@
 ## 1. Sistem haritası (Mermaid graph TB)
 
-> _Captain atom-map_: `DOCS/sprint-faz-5-atom-map.md` (Captain narrow vertical-slice decomposition).
+> _Captain atom-map_: `docs/sprint-faz-5-atom-map.md` (Captain narrow vertical-slice decomposition).
 > _Naming_: aligned with Captain types (JobRequest, ActorScheduleState, JobAssignmentSystem).
 > _Spec covers full architecture; Captain may implement subset and extend later.
 
@@ -1074,7 +1074,7 @@ Atom listesi:
 | 9 | `HarvestSystem.cs` | Ripe wheat -> stockpile food/wheat output; deterministic rng inject | `HarvestSystemTests` | [box=PROCESS] |
 | 10 | `Data/Save/PlantSeasonSaveData.cs`, mapper extension | Soil/Plant/WorldProcess/Season round-trip; `SliceWorldState` field ekleme yok | `PlantSeasonRoundTripTests` | [box=TIME] |
 | 11 | `WorksiteSlot.cs`, `IPathfinder.cs`, actor components | Faz 3 job/path lane ile farming/harvest job hook | `FarmingJobIntegrationTests` | [box=PROCESS][box=LIVING] |
-| 12 | `DOCS/sprint-faz-5-plant-season-acceptance.md` | Deterministic replay proof: spring plant, summer harvest, food rises | `PlantSeasonAcceptanceTests` | [box=PROCESS][box=TIME][box=PLAYABLE] |
+| 12 | `docs/sprint-faz-5-plant-season-acceptance.md` | Deterministic replay proof: spring plant, summer harvest, food rises | `PlantSeasonAcceptanceTests` | [box=PROCESS][box=TIME][box=PLAYABLE] |
 
 ## 5. Test stratejisi
 

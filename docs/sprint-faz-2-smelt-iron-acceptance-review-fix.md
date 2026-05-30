@@ -5,7 +5,7 @@ _Branch:_ `agent/sprint-faz-2-smelt-iron-acceptance`
 _PR:_ https://github.com/msbel5/alcyone-ember-rpg/pull/105
 _Box:_ `[box=PLAYABLE]` / `[box=PROCESS]`
 _Thalamus:_ `pkt_20260514093233_ebaa5f4d7c98` / `sha256:90b771fbc8d373111c2c95203fc4ad832b8f2ebba55385e569096c8c6e192b92`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -13,8 +13,8 @@ Address the Codex P2 review on PR #105 by replacing the nonexistent `RecipeSyste
 
 ## Files changed
 
-- `DOCS/sprint-faz-2-smelt-iron-acceptance.md` — points the acceptance proof at `RecipeSystemTests.Tick_CompletesAfterFortyTicksAndProducesIronIngot` and records the PR URL.
-- `DOCS/sprint-faz-2-smelt-iron-acceptance-review-fix.md` — records this review-fix increment and validation evidence.
+- `docs/sprint-faz-2-smelt-iron-acceptance.md` — points the acceptance proof at `RecipeSystemTests.Tick_CompletesAfterFortyTicksAndProducesIronIngot` and records the PR URL.
+- `docs/sprint-faz-2-smelt-iron-acceptance-review-fix.md` — records this review-fix increment and validation evidence.
 
 ## Validation
 

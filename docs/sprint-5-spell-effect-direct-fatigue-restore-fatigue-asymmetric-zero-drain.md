@@ -29,7 +29,7 @@ the fatigue family.
   bundle pinned (PR #72) plus the overshoot bundle (PR #68) and
   the independent-aggregation aggregate (existing test). The
   asymmetric zero halves were previously listed as the next
-  increments in `DOCS/sprint-5-spell-effect-direct-mana-restore-mana-asymmetric-zero-drain.md`.
+  increments in `docs/sprint-5-spell-effect-direct-mana-restore-mana-asymmetric-zero-drain.md`.
 - Without this test, a future refactor of
   `SpellEffectResolutionService.ResolveInstantaneousEffects`
   could collapse a zero-magnitude `DirectFatigue` into a no-op
@@ -42,7 +42,7 @@ the fatigue family.
 
 - `Assets/Tests/EditMode/Magic/SpellEffectResolutionServiceTests.cs`
   - Adds `ResolveInstantaneousEffects_DirectFatigue_BundledWithRestoreFatigue_ZeroDrainLeavesRestoreApplied`.
-- `DOCS/sprint-5-spell-effect-direct-fatigue-restore-fatigue-asymmetric-zero-drain.md` (this file).
+- `docs/sprint-5-spell-effect-direct-fatigue-restore-fatigue-asymmetric-zero-drain.md` (this file).
 
 ## Out of scope
 

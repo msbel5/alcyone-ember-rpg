@@ -173,4 +173,4 @@ Sprint 1 is done only when all are true:
 - tests added for every system in scope
 - best available test gate executed and recorded
 - Inspector reviews the branch and approves or returns issues
-- `DOCS/sprint-1-summary.md` exists
+- `docs/sprint-1-summary.md` exists

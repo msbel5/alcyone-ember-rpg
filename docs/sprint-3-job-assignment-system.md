@@ -41,7 +41,7 @@ of job requests remaining passive board rows.
 
 ## Atom-map updates
 
-Updated `DOCS/sprint-faz-3-atom-map.md` for the completed `TryAssignNext` and focused assignment-system tests. The broader `CanActorWorkJob` recipe-input atom remains open for the claimed-job lifecycle work.
+Updated `docs/sprint-faz-3-atom-map.md` for the completed `TryAssignNext` and focused assignment-system tests. The broader `CanActorWorkJob` recipe-input atom remains open for the claimed-job lifecycle work.
 
 ## Next increment
 

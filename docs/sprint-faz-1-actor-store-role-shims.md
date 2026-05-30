@@ -40,7 +40,7 @@ domain primitives (not just tests), so it is **not** test-only.
   - `TryFirstByRole_KnownRole_ReturnsFirstAndTrue`
   - `TryFirstByRole_NoMatch_ReturnsFalseAndNull`
   - `TryFirstByRole_EmptyStore_ReturnsFalseAndNull`
-- `DOCS/sprint-faz-1-atom-map.md` — checked off the deprecated-view
+- `docs/sprint-faz-1-atom-map.md` — checked off the deprecated-view
   shims row with a backlink.
 
 ## Validation

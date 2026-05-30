@@ -8,8 +8,8 @@ Complete the Faz 3 `StartRecipeForClaim` atom: a claimed job can now start its m
 
 - `Assets/Scripts/Simulation/Process/JobAssignmentSystem.cs`
 - `Assets/Tests/EditMode/Process/JobAssignmentSystemTests.cs`
-- `DOCS/sprint-faz-3-atom-map.md`
-- `DOCS/sprint-3-start-recipe-for-claim.md`
+- `docs/sprint-faz-3-atom-map.md`
+- `docs/sprint-3-start-recipe-for-claim.md`
 
 ## Validation
 

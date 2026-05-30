@@ -3,7 +3,7 @@
 _Date:_ 2026-05-09
 _Branch:_ `agent/sprint-faz-1-actor-store`
 _Phase boxes:_ `[box=LIVING]` (primary).
-_Atom map:_ `DOCS/sprint-faz-1-atom-map.md`.
+_Atom map:_ `docs/sprint-faz-1-atom-map.md`.
 
 ## Increment goal
 
@@ -13,16 +13,16 @@ This is the rail Faz 1's later PRs ride on (deprecated-view shims for
 `Player`/`Talker`/...; `SliceWorldState` consumer migration).
 
 This is also Faz 1's canonical decomposition entry point: the atom map
-in `DOCS/sprint-faz-1-atom-map.md` decomposes Faz 1 against
-`DOCS/mechanic-map-v1.md` (boxes WORLD, LIVING, MATTER, plus a
+in `docs/sprint-faz-1-atom-map.md` decomposes Faz 1 against
+`docs/mechanic-map-v1.md` (boxes WORLD, LIVING, MATTER, plus a
 SOCIETY-seed FactionStore and a PROCESS-primary WorldEventLog).
 
 ## Files changed
 
-- `DOCS/sprint-faz-1-atom-map.md` — Faz 1 atom map (canonical decomposition).
+- `docs/sprint-faz-1-atom-map.md` — Faz 1 atom map (canonical decomposition).
 - `Assets/Scripts/Domain/World/ActorStore.cs` — new dictionary-backed registry.
 - `Assets/Tests/EditMode/World/ActorStoreTests.cs` — 15 tests pinning Add/Get/TryGet/Remove/Contains/Count/Clear/Records contracts and default-id rejection.
-- `DOCS/sprint-faz-1-actor-store.md` — this summary.
+- `docs/sprint-faz-1-actor-store.md` — this summary.
 
 ## Validation result
 

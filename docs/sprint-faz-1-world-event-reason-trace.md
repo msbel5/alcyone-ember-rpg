@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-world-event-reason-trace`
 _Box:_ `[box=PROCESS]`
-_Atom-map:_ `DOCS/sprint-faz-1-atom-map.md`
+_Atom-map:_ `docs/sprint-faz-1-atom-map.md`
 _Thalamus:_ `pkt_20260511165159_ff7b1d23db09` / `sha256:78d30d0a1413c7305c41d3cc24d827b2fabd484ded4e023472adb5b0296b0355`
 
 ## Increment goal
@@ -23,7 +23,7 @@ event payload.
   explicit trace storage, and existing constructor invariants.
 - `Assets/Tests/EditMode/World/WorldEventLogTests.cs` — pins that append and
   enumeration preserve an event's causal trace reference.
-- `DOCS/sprint-faz-1-atom-map.md` — records this PROCESS-box atom as landed.
+- `docs/sprint-faz-1-atom-map.md` — records this PROCESS-box atom as landed.
 
 ## Validation
 

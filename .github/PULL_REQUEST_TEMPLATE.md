@@ -1,10 +1,10 @@
 <!--
-Mandatory PR audit block — see DOCS/agent-rules-v2.md Rule 9 and
-DOCS/inspector-audit-checklist.md.
+Mandatory PR audit block — see docs/agent-rules-v2.md Rule 9 and
+docs/inspector-audit-checklist.md.
 
 Captain: fill in every field below. Inspector rejects PRs missing the block
 or any field. State vocabulary for the Carry-over field is defined in
-DOCS/sprint-faz-4-atom-map.md (top-of-file Debt ledger).
+docs/sprint-faz-4-atom-map.md (top-of-file Debt ledger).
 -->
 
 ## PR audit fields
@@ -34,7 +34,7 @@ Phase fences honored: <yes | called-out-violation-because-...>
 
 - [ ] `./tools/validation/run-validation.sh --mode fallback` passed locally.
 - [ ] Existing tests still green; new tests pin the new behaviour deterministically.
-- [ ] Self-checked against `DOCS/inspector-audit-checklist.md` checklists A-H.
+- [ ] Self-checked against `docs/inspector-audit-checklist.md` checklists A-H.
 
 ## Thalamus
 

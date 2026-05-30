@@ -75,7 +75,7 @@ through every merged PR.
 - Unity scenes, prefabs, sprites, materials, screenshots — Mami territory per
   `agent-rules-v2.md` Rule 6 (ownership boundaries).
 - AI image generation and "real screenshots" — explicit Mami territory.
-- LLM client wiring — fenced to Faz 12 per `DOCS/EMBER_VISION_NOTES_MAMI.md`.
+- LLM client wiring — fenced to Faz 12 per `docs/EMBER_VISION_NOTES_MAMI.md`.
 - OpenMW source code copy — algorithmic reference only, never verbatim port.
 
 ## Next session priority (for the morning)

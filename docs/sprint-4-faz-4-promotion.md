@@ -9,12 +9,12 @@ and next sprint direction.
 
 ## Files changed
 
-- `DOCS/sprint-faz-4-atom-map.md`
-- `DOCS/sprint-4-faz-4-promotion.md`
+- `docs/sprint-faz-4-atom-map.md`
+- `docs/sprint-4-faz-4-promotion.md`
 
 ## Promotion evidence
 
-- Final implementation atom count: every row in `DOCS/sprint-faz-4-atom-map.md`
+- Final implementation atom count: every row in `docs/sprint-faz-4-atom-map.md`
   rails 1-6 is checked.
 - Bundle count: 6 suggested bundles, 6 merged: `needs-primitives`,
   `mood-evaluator`, `needs-tick-event-log`, `eat-sleep-recovery`, `job-refusal`,
@@ -77,7 +77,7 @@ threshold, JobAssignment refuses, `JobRefused` event emits, meal recovery via
 
 ## Next increment
 
-Start Faz 5 atom map kickoff using `DOCS/sprint-faz-5-atom-map.md` (foundation
+Start Faz 5 atom map kickoff using `docs/sprint-faz-5-atom-map.md` (foundation
 already landed via PR #136). Bring forward the three open Faz 4 debt rows
 (CO-02 GridPathfinder, CO-03 PathfindingSystem, CO-06 WorksiteSlot, CO-07
 BakeBread production data) into the Faz 5 ledger so they remain visible at

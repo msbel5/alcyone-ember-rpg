@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-slice-actor-views`
 _Box:_ `[box=LIVING]`
-_Atom-map:_ `DOCS/sprint-faz-1-atom-map.md`
+_Atom-map:_ `docs/sprint-faz-1-atom-map.md`
 _Thalamus:_ `pkt_20260511180152_36cf9ee4aad3` / `sha256:527e964761013636e732d49f4d9979886c83eaee103289da50a3996366a9af6d`
 
 ## Increment goal
@@ -23,7 +23,7 @@ of adding or extending hard-coded slice actor fields.
   of the store-backed views.
 - `Assets/Tests/EditMode/World/ActorStoreTests.cs` — refreshes migration-note
   comments now that `SliceWorldState` consumes the role-view shims.
-- `DOCS/sprint-faz-1-atom-map.md` — checks off the LIVING migration rail and
+- `docs/sprint-faz-1-atom-map.md` — checks off the LIVING migration rail and
   records the current packet metadata.
 
 ## Validation

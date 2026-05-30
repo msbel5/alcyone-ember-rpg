@@ -36,4 +36,4 @@ Address PR #95 Copilot review feedback on the canonical actor-store save/load pa
 
 ## Next increment
 
-After PR #95 is updated/merged, add `DOCS/sprint-faz-1-acceptance.md` with a deterministic replay log, debug-HUD dump, screenshot, or one-paragraph playtest note proving guard spawn + talk + memory + second-site continuity across save/load.
+After PR #95 is updated/merged, add `docs/sprint-faz-1-acceptance.md` with a deterministic replay log, debug-HUD dump, screenshot, or one-paragraph playtest note proving guard spawn + talk + memory + second-site continuity across save/load.

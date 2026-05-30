@@ -6,10 +6,10 @@ _Primary boxes:_ `[box=LIVING]`, `[box=PROCESS]`
 _Support boxes:_ `[box=MATTER]`, `[box=TIME]`, `[box=PLAYABLE]`
 _Thalamus packet:_ `pkt_20260515204915_e1c5ad32792f`
 _Resolver:_ `sha256:b288c6a454567c4784185bc4de8dd77d791ba3aae1593887763f9bd529de2e50`
-_Mechanic map:_ `DOCS/mechanic-map-v1.md`
-_Agent rules:_ `DOCS/agent-rules-v2.md`
-_Vision notes:_ `DOCS/EMBER_VISION_NOTES_MAMI.md`
-_Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
+_Mechanic map:_ `docs/mechanic-map-v1.md`
+_Agent rules:_ `docs/agent-rules-v2.md`
+_Vision notes:_ `docs/EMBER_VISION_NOTES_MAMI.md`
+_Inspector checklist:_ `docs/inspector-audit-checklist.md`
 
 ## Debt ledger (Faz 1/2/3 — open carry-over)
 
@@ -31,13 +31,13 @@ _Inspector checklist:_ `DOCS/inspector-audit-checklist.md`
 | CO-06 | `Assets/Scripts/Domain/Process/WorksiteSlot.cs` :: `WorksiteSlot` | PROCESS | open | `SiteId + Position + WorksiteTag + QueuePosition` value type. Faz 11 Atom 8. | PR adds the value type + factory `FromWorksite(WorksiteRecord, tag, queuePosition)` + a test pinning the factory output for one worksite fixture. | Faz 11 spec |
 | CO-07 | (data row) :: `BakeBread` production recipe | PROCESS | open | Promote `RecipeFixtureCatalog.BakeBread` (test-only) into a production data row. Faz 3 deliverable "A second recipe so jobs compete" landed as test fixture only. | PR ships a non-test `RecipeDef` data row for `BakeBread` registered in the production recipe registry + a test where a deterministic day produces both ingot and bread from competing jobs. | Faz 3 |
 | CO-08 | `Assets/Scripts/Simulation/Living/NeedMoodEvaluator.cs` :: `Evaluate(memoryPressure)` overload | LIVING | closed | Removed the `memoryPressure` parameter from mood derivation. No in-sprint consumer; Memory is Faz 9 (Phase fence). | PR deletes the overload OR removes the parameter + all call sites updated + existing `NeedMoodEvaluatorTests` still green. | Faz 4 self-correction |
-| CO-09 | `Assets/Scripts/Domain/Narrative/AskAboutTopic.cs` + Simulation Narrative iskelet | AI/DM | closed (DOCS/kickoff-faz-9.md) | `AskAboutTopic`, `AskAboutService`, `AskDmService`, `NpcMemoryQueryService`, `GuardInteractionService`, `ThinkService` audit landed: 4 refactor (AskAboutTopic, AskAboutService, GuardInteractionService, NpcMemoryQueryService), 2 deprecate (AskDmService, ThinkService). | Faz 9 atom map kickoff doc explicitly cites each of the 6 files with one of `reuse / refactor / deprecate` decisions per file. | Sprint 1 |
+| CO-09 | `Assets/Scripts/Domain/Narrative/AskAboutTopic.cs` + Simulation Narrative iskelet | AI/DM | closed (docs/kickoff-faz-9.md) | `AskAboutTopic`, `AskAboutService`, `AskDmService`, `NpcMemoryQueryService`, `GuardInteractionService`, `ThinkService` audit landed: 4 refactor (AskAboutTopic, AskAboutService, GuardInteractionService, NpcMemoryQueryService), 2 deprecate (AskDmService, ThinkService). | Faz 9 atom map kickoff doc explicitly cites each of the 6 files with one of `reuse / refactor / deprecate` decisions per file. | Sprint 1 |
 
-> **Tagging schema** (per `DOCS/mechanic-map-v1.md` "exactly one box"): each row carries exactly one `primary_box` from `{ TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM }`. Optional cross-cutting tags (`infra`, `meta`, `playable`) live in row commentary, not in the `primary_box` column. **Note:** the rail sections of this file below were authored before this schema landed and contain legacy multi-box tags like `[box=TIME][box=LIVING]`; those rows are grandfathered. New rows added to this or any future atom map obey one-box.
+> **Tagging schema** (per `docs/mechanic-map-v1.md` "exactly one box"): each row carries exactly one `primary_box` from `{ TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM }`. Optional cross-cutting tags (`infra`, `meta`, `playable`) live in row commentary, not in the `primary_box` column. **Note:** the rail sections of this file below were authored before this schema landed and contain legacy multi-box tags like `[box=TIME][box=LIVING]`; those rows are grandfathered. New rows added to this or any future atom map obey one-box.
 
 ## PR audit fields (mandatory PR body section)
 
-Captain writes these six lines into the body of every Captain-authored PR. Inspector rejects any PR missing any line per `DOCS/inspector-audit-checklist.md` checklist A.
+Captain writes these six lines into the body of every Captain-authored PR. Inspector rejects any PR missing any line per `docs/inspector-audit-checklist.md` checklist A.
 
 ```
 Primary box: <one of TIME|WORLD|LIVING|MATTER|PROCESS|SOCIETY|CRPG|AI/DM>
@@ -77,8 +77,8 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ### 0. Sprint map / kickoff metadata
 
-- [x] `DOCS/sprint-faz-4-atom-map.md` :: `Faz4AtomMap` :: define LIVING/PROCESS atom graph, bundles, and promotion gate [box=LIVING]
-- [x] `DOCS/sprint-4-colony-needs-atom-map.md` :: `Faz4Kickoff` :: record kickoff validation, packet/resolver, product-visible count, and next atom [box=LIVING]
+- [x] `docs/sprint-faz-4-atom-map.md` :: `Faz4AtomMap` :: define LIVING/PROCESS atom graph, bundles, and promotion gate [box=LIVING]
+- [x] `docs/sprint-4-colony-needs-atom-map.md` :: `Faz4Kickoff` :: record kickoff validation, packet/resolver, product-visible count, and next atom [box=LIVING]
 
 ### 1. Pure needs component rail
 
@@ -131,7 +131,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 - [x] `Assets/Scripts/Data/Save/ActorSaveMapper.cs` :: needs/mood mapper :: round-trip actor needs and mood without legacy named-field expansion [box=TIME][box=LIVING]
 - [x] `Assets/Tests/EditMode/Save/ActorNeedsRoundTripTests.cs` :: tests :: save/load preserves hunger, fatigue, thirst, and mood [box=TIME][box=LIVING]
 - [ ] `Assets/Tests/EditMode/Living/ColonyNeedsAcceptanceReplayTests.cs` :: acceptance replay :: three days unfed lowers mood, refuses work, meal recovery permits work again [box=PLAYABLE]
-- [ ] `DOCS/sprint-faz-4-colony-needs-acceptance.md` :: `Faz4AcceptanceProof` :: deterministic replay note with final `player can ...` sentence [box=PLAYABLE]
+- [ ] `docs/sprint-faz-4-colony-needs-acceptance.md` :: `Faz4AcceptanceProof` :: deterministic replay note with final `player can ...` sentence [box=PLAYABLE]
 
 ## Suggested bundles
 
@@ -153,7 +153,7 @@ Format: `- [ ] file/path :: scope :: brief responsibility [box=...]`.
 
 ## This atom map
 
-- [x] `DOCS/sprint-faz-4-atom-map.md` :: this file :: canonical Faz 4 decomposition required before the first needs gameplay atom [box=meta]
+- [x] `docs/sprint-faz-4-atom-map.md` :: this file :: canonical Faz 4 decomposition required before the first needs gameplay atom [box=meta]
 
 ## Next increment
 

@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-world-event`
 _Box:_ `[box=PROCESS]`
-_Atom-map ref:_ `DOCS/sprint-faz-1-atom-map.md` — WorldEvent log + ReasonTrace sub-area.
+_Atom-map ref:_ `docs/sprint-faz-1-atom-map.md` — WorldEvent log + ReasonTrace sub-area.
 
 ## Goal
 
@@ -29,7 +29,7 @@ concrete consumer (agent-rules-v2 rule 2).
 - `Assets/Tests/EditMode/World/WorldEventTests.cs` (new) — pins
   field storage, kind/subject/reason invariants, actor-only and
   site-only acceptance paths.
-- `DOCS/sprint-faz-1-atom-map.md` — atom-map reconciliation:
+- `docs/sprint-faz-1-atom-map.md` — atom-map reconciliation:
   - `ActorStore` + `ActorStoreTests` marked `[x]` against PR #79
     (already merged at `a347efe`).
   - `FactionStore` + `FactionStoreTests` marked `[x]` against PR #88

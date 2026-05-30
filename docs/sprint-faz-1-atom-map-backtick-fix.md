@@ -3,7 +3,7 @@
 ## Goal
 
 Address Copilot PR #89 inline review comment on
-`DOCS/sprint-faz-1-atom-map.md:106`. The backtick-wrapped
+`docs/sprint-faz-1-atom-map.md:106`. The backtick-wrapped
 `Assets/Scripts/Domain/World/WorldEventLog.cs` path was split across
 two source lines, which broke the markdown inline code span (backtick
 opened on one line, closed on the next). Keep the path inside a single
@@ -11,7 +11,7 @@ pair of backticks on one rendered line.
 
 ## Files changed
 
-- `DOCS/sprint-faz-1-atom-map.md` — move the line break out of the
+- `docs/sprint-faz-1-atom-map.md` — move the line break out of the
   inline code span; the path now renders as a single code token.
 
 ## Validation

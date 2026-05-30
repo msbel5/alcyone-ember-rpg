@@ -1,6 +1,6 @@
 # Sprint 3 Validation — Canonical Adapter
 
-This is the requested Sprint 3 validation path. The validation procedure remains the repo-local script documented in `docs/validation.md`; this page adapts that truth into the `DOCS/` Sprint path so task runners and reviewers have one canonical Sprint 3 entry point.
+This is the requested Sprint 3 validation path. The validation procedure remains the repo-local script documented in `docs/validation.md`; this page adapts that truth into the `docs/` Sprint path so task runners and reviewers have one canonical Sprint 3 entry point.
 
 ## Run from repo root
 

@@ -18,7 +18,7 @@ This is a product-visible foundation increment: `player can save and load a worl
   - Writes store roots into the save DTO, restores them on load, and prefers canonical actor-store payloads over legacy actor fields when present.
 - `Assets/Tests/EditMode/Save/StoreRoundTripTests.cs`
   - Pins JSON round-trip for `ActorStore`, `ItemStore`, `SiteStore`, `FactionStore`, and `WorldEventLog` plus actor-store preference over legacy named fields.
-- `DOCS/sprint-faz-1-atom-map.md`
+- `docs/sprint-faz-1-atom-map.md`
   - Marks the TIME-box save/load atoms landed and points the next run at the PLAYABLE acceptance proof.
 
 ## Validation
@@ -37,4 +37,4 @@ This is a product-visible foundation increment: `player can save and load a worl
 
 ## Next increment
 
-Add `DOCS/sprint-faz-1-acceptance.md` with a deterministic replay log, debug-HUD dump, screenshot, or one-paragraph playtest note proving guard spawn + talk + memory + second-site continuity across save/load.
+Add `docs/sprint-faz-1-acceptance.md` with a deterministic replay log, debug-HUD dump, screenshot, or one-paragraph playtest note proving guard spawn + talk + memory + second-site continuity across save/load.

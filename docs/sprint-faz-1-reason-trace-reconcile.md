@@ -8,7 +8,7 @@ _Driver:_ `@EMSPR` cron, Captain (Alcyone).
 
 PR #90 (ReasonTrace pure record) shipped its Unity / fallback tests
 green, but went DIRTY after PR #89 (WorldEvent + WorldEventKind) merged
-to `main` and rewrote the same row inside `DOCS/sprint-faz-1-atom-map.md`.
+to `main` and rewrote the same row inside `docs/sprint-faz-1-atom-map.md`.
 
 This run reconciles the branch with `origin/main`: the atom-map merge
 conflict is resolved by accepting BOTH atom completions (WorldEvent and
@@ -18,7 +18,7 @@ ReasonTrace source/tests are untouched.
 
 ## Files changed in this reconcile
 
-- `DOCS/sprint-faz-1-atom-map.md` — manual merge:
+- `docs/sprint-faz-1-atom-map.md` — manual merge:
   - Both `WorldEvent.cs` and `ReasonTrace.cs` rows kept as `[x]` with
     their respective branch + landing notes.
   - Both packet/resolver pairs preserved in the Thalamus packet section.

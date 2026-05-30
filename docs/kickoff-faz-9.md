@@ -2,8 +2,8 @@
 
 _Date:_ 2026-05-20
 _Branch:_ `mami/faz-9-co-09-audit`
-_Atom-map ref:_ `DOCS/sprint-faz-9-atom-map.md` Atom 1
-_Closes:_ Debt ledger row `CO-09` in `DOCS/sprint-faz-4-atom-map.md`
+_Atom-map ref:_ `docs/sprint-faz-9-atom-map.md` Atom 1
+_Closes:_ Debt ledger row `CO-09` in `docs/sprint-faz-4-atom-map.md`
 
 ## Purpose
 
@@ -93,9 +93,9 @@ without re-deciding the Sprint 1 inheritance.
 
 ## Debt ledger transition
 
-`CO-09` in `DOCS/sprint-faz-4-atom-map.md` flips from
+`CO-09` in `docs/sprint-faz-4-atom-map.md` flips from
 `deferred-to-faz-9` to `closed` once this document merges to `main`, with the
-note: *closed via DOCS/kickoff-faz-9.md audit*.
+note: *closed via docs/kickoff-faz-9.md audit*.
 
 ## Next increment
 

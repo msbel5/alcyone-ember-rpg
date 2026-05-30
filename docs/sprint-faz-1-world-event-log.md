@@ -32,9 +32,9 @@ silent gaps, deterministic insertion order, immutable public view.
   read-only view immutability.
 - `Assets/Tests/EditMode/World/WorldEventLogTests.cs.meta` — Unity
   meta stub.
-- `DOCS/sprint-faz-1-atom-map.md` — marks the two WorldEventLog
+- `docs/sprint-faz-1-atom-map.md` — marks the two WorldEventLog
   atom rows as landed and appends WorldEventLog packet metadata.
-- `DOCS/sprint-faz-1-world-event-log.md` — this file.
+- `docs/sprint-faz-1-world-event-log.md` — this file.
 
 ## Invariants pinned
 
@@ -73,7 +73,7 @@ silent gaps, deterministic insertion order, immutable public view.
 - Rule 4 (world-store promotion): adds new world state via a Faz 1
   store-shape primitive, not a `SliceWorldState` field.
 - Rule 5 (playable proof): not the fifth PR slot; playable proof
-  remains the open `DOCS/sprint-faz-1-acceptance.md` atom and is
+  remains the open `docs/sprint-faz-1-acceptance.md` atom and is
   unblocked once save/load round-trip lands.
 
 ## Validation

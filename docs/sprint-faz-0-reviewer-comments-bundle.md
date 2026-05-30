@@ -31,7 +31,7 @@ description (`Assets/Scripts/{Domain,Simulation,Data,Presentation}` +
 - `docs/ROADMAP.md`
 - `docs/reference/UPSTREAM_README.md`
 - `docs/reference/README.md`
-- `DOCS/sprint-faz-0-reviewer-comments-bundle.md` (this file)
+- `docs/sprint-faz-0-reviewer-comments-bundle.md` (this file)
 
 ## Validation
 
@@ -62,8 +62,8 @@ description (`Assets/Scripts/{Domain,Simulation,Data,Presentation}` +
 After PR #78 merges, the active sprint becomes Faz 1 (Core Store
 reset). The next `@EMSPR` run will:
 
-1. Decompose Faz 1 against `DOCS/mechanic-map-v1.md`
+1. Decompose Faz 1 against `docs/mechanic-map-v1.md`
    (`box=WORLD` + `box=LIVING` + `box=MATTER`).
-2. Write `DOCS/faz-1-atom-map.md`.
+2. Write `docs/faz-1-atom-map.md`.
 3. Open the first atom: introduce `ActorStore` skeleton (no
    consumer migration yet — that follows in subsequent atoms).

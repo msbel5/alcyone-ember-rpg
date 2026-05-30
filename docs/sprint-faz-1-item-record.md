@@ -3,7 +3,7 @@
 _Date:_ 2026-05-11
 _Branch:_ `agent/sprint-faz-1-item-record`
 _Box:_ `[box=MATTER]`
-_Atom-map:_ `DOCS/sprint-faz-1-atom-map.md` (ItemStore sub-area)
+_Atom-map:_ `docs/sprint-faz-1-atom-map.md` (ItemStore sub-area)
 
 ## Increment goal
 
@@ -25,7 +25,7 @@ PR can stand `ItemStore` up on the same shape as `ActorStore` and
 - `Assets/Tests/EditMode/Inventory/ItemRecordTests.cs` (+meta) —
   NUnit pins for field storage, `IsEquipment`, `Slot=None` legal
   non-equipment path, and the three sentinel rejections.
-- `DOCS/sprint-faz-1-atom-map.md` — check off `ItemRecord` row,
+- `docs/sprint-faz-1-atom-map.md` — check off `ItemRecord` row,
   re-point "Next increment after this PR" line at `ItemStore`,
   record this run's Thalamus packet alongside ActorStore's.
 

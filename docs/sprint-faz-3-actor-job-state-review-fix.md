@@ -20,7 +20,7 @@ job preferences.
   replacement list before swapping it into `_jobPreferences`.
 - `Assets/Tests/EditMode/Actors/ActorRecordTests.cs` — pins that a failed
   duplicate replacement preserves the actor's prior valid preference rows.
-- `DOCS/sprint-faz-3-actor-job-state-review-fix.md` — records this review
+- `docs/sprint-faz-3-actor-job-state-review-fix.md` — records this review
   follow-up evidence.
 
 ## Validation

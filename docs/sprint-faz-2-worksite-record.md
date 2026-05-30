@@ -4,7 +4,7 @@ _Date:_ 2026-05-12
 _Branch:_ `agent/sprint-faz-2-worksite-record`
 _Box:_ `[box=WORLD]` / `[box=PROCESS]`
 _Thalamus:_ `pkt_20260512163304_3231f1e1dfa6` / `sha256:cddef5e203ed5a4a21cb318412b64738176fc34ea11841722529208f90a60e5b`
-_Atom map:_ `DOCS/sprint-faz-2-atom-map.md`
+_Atom map:_ `docs/sprint-faz-2-atom-map.md`
 
 ## Increment goal
 
@@ -15,8 +15,8 @@ Land the first Worksite state atom bundle for Faz 2: a typed `WorksiteKind` sent
 - `Assets/Scripts/Domain/Process/WorksiteKind.cs` — adds the minimal typed worksite category (`None`, `Furnace`).
 - `Assets/Scripts/Domain/Process/WorksiteRecord.cs` — adds a pure immutable worksite component with site id, grid position, kind, active flag, and `WithActive` replacement helper.
 - `Assets/Tests/EditMode/Process/WorksiteRecordTests.cs` — pins constructor storage, empty-site rejection, `None` rejection, inactive state, and immutable active-state replacement.
-- `DOCS/sprint-faz-2-atom-map.md` — checks off the WorksiteKind, WorksiteRecord, and WorksiteRecordTests atoms.
-- `DOCS/sprint-faz-2-worksite-record.md` — records this sprint summary.
+- `docs/sprint-faz-2-atom-map.md` — checks off the WorksiteKind, WorksiteRecord, and WorksiteRecordTests atoms.
+- `docs/sprint-faz-2-worksite-record.md` — records this sprint summary.
 
 ## Validation
 
