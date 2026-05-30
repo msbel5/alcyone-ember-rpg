@@ -1,7 +1,7 @@
 # Ember — CURRENT STATE (one-pager)
 
 > **The single concise truth for "where is the project right now".** README points here instead
-> of carrying a stale status block. Deep backlog/session log lives in `docs/EMBER_GOAL.md`; the
+> of carrying a stale status block. The original audit lives in `docs/Codex_audit.md`; the
 > active cleanup pass lives in `docs/AUDIT_COUNTER.md`. Update this page's "Last updated" line
 > whenever phase/branch/blockers change.
 
@@ -59,9 +59,9 @@ Two non-build root scenes exist: `Assets/Scenes/CombatPlayground.unity`, `Sprint
   Cloud/network providers must be opt-in and disabled by default.
 
 ## Canonical docs
-`docs/CURRENT_STATE.md` (this) · `docs/EMBER_GOAL.md` (backlog/session log) ·
+`docs/CURRENT_STATE.md` (this) · `docs/Codex_audit.md` (original audit) ·
 `docs/AUDIT_COUNTER.md` (cleanup tracker) · `docs/EMBER_VISION_BIBLE.md` +
-`docs/EMBER_VISION_NOTES_MAMI.md` (spirit) · `docs/reference/prd/PRD_IMPLEMENTATION_MATRIX.md`
+`docs/EMBER_VISION_NOTES_MAMI.md` (spirit) · `Reference/PRDs/PRD_IMPLEMENTATION_MATRIX.md`
 (full index) · `docs/PRD_GOVERNANCE.md` (which-PRD-to-obey) · `docs/mechanics/` (sim mechanics faz-3…faz-12).
 
 ## Forbidden (for any agent working here)

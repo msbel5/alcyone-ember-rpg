@@ -24,7 +24,7 @@ claimed, current blockers, and the AI stack). That one-pager is kept current;
 this README intentionally no longer carries a dated status block that drifts.
 
 Active cleanup work is tracked in [docs/AUDIT_COUNTER.md](docs/AUDIT_COUNTER.md);
-backlog/session detail in [docs/EMBER_GOAL.md](docs/EMBER_GOAL.md).
+the original audit in [docs/Codex_audit.md](docs/Codex_audit.md) + [docs/AUDIT_INDEPENDENT_2026-05-30.md](docs/AUDIT_INDEPENDENT_2026-05-30.md); the live V2 fix tracker in [docs/REMEDIATION_V2_COUNTER.md](docs/REMEDIATION_V2_COUNTER.md). The canonical vision is [docs/EMBER_VISION_BIBLE.md](docs/EMBER_VISION_BIBLE.md).
 
 ---
 
