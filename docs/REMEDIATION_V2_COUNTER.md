@@ -29,7 +29,7 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 8/34 done (DET-01..08 all Win64-verified — save replay, dual-write, atomic+history, native timeout, main-thread queue, REAL LLM authority, shared roll) · ▶ NOW = ARCH-12 (explicit CopyFrom restore) → finishes P1 lane, then P2. · prior Codex EMB-001..060 = 60/60**
+**Progress: 9/34 done · ✅ LANE P1 COMPLETE (DET-01..08 + ARCH-12 — all Win64-verified). · ▶ NOW = LANE P2: ARCH-01 (delete ~1078 LOC dead ShieldBuff batch-totals) → ARCH-03/04/05/06/07/02. · prior Codex EMB-001..060 = 60/60**
 
 Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → P3 playability → P4 docs → P5 naming/hygiene.** Do P1 fully before P2.
 
@@ -51,7 +51,7 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[x]` **DET-04** · High · `Infrastructure/AiDm/NativeLlmClient.cs:80-135` — native inference has no timeout: wrap load+infer in a `CancellationTokenSource` + timeout, empty `LlmResponse` on cancel (mirror EMB-018 HTTP).
 - `[x]` **DET-02** · High · `DomainSimulationAdapter.cs:340,797`, `.Fate.cs:72` — fire-and-forget continuations write `_world.ToolCallTrace` on the main thread only by implicit SyncContext: marshal post-await `_world` writes through an explicit main-thread queue drained in OnTick.
 - `[x]` **DET-08** · Low · `Fate.cs:42-44` vs `NarrationServices.cs:108` — two parallel roll formulas: one shared deterministic roll helper in Domain.
-- `[ ]` **ARCH-12** · Low · `DomainSimulationAdapter.Save.cs:41-52` — reflection field-mirror restore is fragile: give `SliceWorldState` an explicit `CopyFrom`/replace.
+- `[x]` **ARCH-12** · Low · `DomainSimulationAdapter.Save.cs:41-52` — reflection field-mirror restore is fragile: give `SliceWorldState` an explicit `CopyFrom`/replace.
 
 ### LANE P2 — dead code / architecture / duplication
 - `[ ]` **ARCH-01** · Critical · `Simulation/Magic/ShieldBuffAbsorptionBatchTotals.cs`+`ShieldBuffService.BatchTotals.cs`+`…Partition.cs` (~1078 LOC) — 0 game callers, 16 permutation tests only: keep `From`+the 1 filtered overload a real damage path needs, delete the rest + their tests (ref-scan first).
