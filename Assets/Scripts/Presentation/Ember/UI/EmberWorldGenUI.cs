@@ -144,7 +144,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                                   EmberWorldGenIntent.Pending.Calling,
                                   EmberWorldGenIntent.Pending.Start);
             }
-            UnityEngine.SceneManagement.SceneManager.LoadScene("CharacterCreation");
+            UnityEngine.SceneManagement.SceneManager.LoadScene(EmberScenes.CharacterCreation);
         }
     }
 

@@ -132,7 +132,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             await RunScenarioAssetTopUpAsync();
             LoadingScreen.Dismiss();
             await Task.Delay(350);
-            SceneManager.LoadScene(string.IsNullOrWhiteSpace(_firstSceneName) ? "CharacterCreation" : _firstSceneName);
+            SceneManager.LoadScene(string.IsNullOrWhiteSpace(_firstSceneName) ? EmberScenes.CharacterCreation : _firstSceneName);
         }
 
         private void MountUiToolkitTitleMenu()

@@ -47,10 +47,10 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             LoadingScreen.Dismiss();
             yield return new WaitForSeconds(0.4f);
 
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene(EmberScenes.MainMenu);
             yield return CaptureAfter(1.0f, "mainmenu");
 
-            SceneManager.LoadScene("CharacterCreation");
+            SceneManager.LoadScene(EmberScenes.CharacterCreation);
             yield return new WaitForSeconds(1.0f);
             var creation = FindFirstObjectByType<CharacterCreationController>();
             if (creation != null)
@@ -121,7 +121,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             var go = new GameObject("WorldgenProofView");
             var view = go.AddComponent<WorldgenViewController>();
             view.AutoLoadScene = false;
-            view.Configure("SmithingOverworld");
+            view.Configure(EmberScenes.SmithingOverworld);
             var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
             view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
                 maxRegions: 2,
@@ -135,7 +135,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
         private IEnumerator RunRescueProof()
         {
-            SceneManager.LoadScene("CharacterCreation");
+            SceneManager.LoadScene(EmberScenes.CharacterCreation);
             yield return new WaitForSeconds(1.0f);
             var creation = FindFirstObjectByType<CharacterCreationController>();
             if (creation != null)
@@ -152,11 +152,11 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             yield return CaptureFixedAfter(0.75f, "worldgen_loading.png");
             LoadingScreen.Dismiss();
 
-            SceneManager.LoadScene("SmithingOverworld");
+            SceneManager.LoadScene(EmberScenes.SmithingOverworld);
             yield return CaptureFixedAfter(1.2f, "smithing_game.png");
             yield return CaptureFixedAfter(0.2f, "spawn_proof.png");
 
-            SceneManager.LoadScene("TavernDialog");
+            SceneManager.LoadScene(EmberScenes.TavernDialog);
             yield return CaptureFixedAfter(1.2f, "tavern_game.png");
         }
 
@@ -164,12 +164,8 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         // Canvases hidden — so magenta/material issues (which can live in any scene, e.g. the 5th
         // or 6th) and the HUD can both be verified across the whole game. Scenes load cold;
         // UrpMaterialRescue runs on each sceneLoaded, so the repair is exercised per scene.
-        private static readonly string[] TourScenes =
-        {
-            "SmithingOverworld", "TavernDialog", "ColonyNeeds", "CombatDungeon",
-            "OracleShrine", "RitualHall", "SeasonFarm", "TradeMarket",
-            "ShowroomOverview", "TavernFlavour",
-        };
+        // EMB-056: single source of truth for the gameplay tour list (EmberScenes registry).
+        private static readonly string[] TourScenes = EmberScenes.GameplayTour;
 
         private IEnumerator RunSceneTour()
         {

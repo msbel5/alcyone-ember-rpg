@@ -84,7 +84,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             CreateButton(layoutGo.transform, "RESUME", Resume);
             CreateButton(layoutGo.transform, "SAVE (F5)", InvokeSave);
             CreateButton(layoutGo.transform, "LOAD (F9)", InvokeLoad);
-            CreateButton(layoutGo.transform, "MAIN MENU", () => { Time.timeScale = 1f; SceneManager.LoadScene("MainMenu"); });
+            CreateButton(layoutGo.transform, "MAIN MENU", () => { Time.timeScale = 1f; SceneManager.LoadScene(EmberScenes.MainMenu); });
             CreateButton(layoutGo.transform, "QUIT", Application.Quit);
         }
 
