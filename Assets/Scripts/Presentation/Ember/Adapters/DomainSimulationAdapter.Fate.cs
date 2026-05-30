@@ -64,40 +64,47 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 new List<string>()
             );
 
-            // EMB-007: only the blocking LLM call runs off the main thread. The response — including
-            // the AUTHORITATIVE _world.ToolCallTrace mutation — is applied after the await on the
-            // main thread (Unity SynchronizationContext). Previously _pendingFate and, worse,
-            // _world.ToolCallTrace.Add (a List on the authoritative world) were written from the
-            // worker thread, racing the main-thread tick that reads the trace.
+            // EMB-007 / DET-02: only the blocking LLM call runs off the main thread; the result is
+            // applied via the adapter's main-thread apply queue (drained in AdvanceTick), NOT via the
+            // implicit SynchronizationContext — so the AUTHORITATIVE _world.ToolCallTrace write can
+            // never land on a worker thread (the EMB-007 race) even in a headless run with no context.
             var response = await Task.Run(() => router.Complete(request, out _));
-            if (response != null)
+            _mainThreadApply.Enqueue(() =>
             {
-                _pendingFate = string.IsNullOrEmpty(response.Text) ? $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)" : response.Text.Trim();
+                _pendingFate = (response != null && !string.IsNullOrEmpty(response.Text))
+                    ? response.Text.Trim()
+                    : $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)";
 
-                // EMB-008: route the consult_fate tool call through the governed Simulation tool-
-                // authority layer (ToolRegistry + ToolCallValidator) instead of hand-synthesising an
-                // accepted trace. Even this read-only/benign tool is gated, so the trace is produced
-                // ONLY via the validated path — an unregistered tool, a wrong surface, or a missing
-                // required arg yields a rejected verdict that is recorded + logged, never blind-trusted.
-                var registry = new EmberCrpg.Simulation.AiDm.ToolRegistry();
-                registry.Register(tools[0]);
-                var toolReq = new ToolCallRequest(new ToolId("consult_fate"), ToolSurfaceKind.Dm, new Dictionary<string, string> { { "query", "oracle_consult" } });
-                var validation = new EmberCrpg.Simulation.AiDm.ToolCallValidator().Validate(toolReq, registry);
-                // On accept, surface the actual oracle outcome as the trace payload; on reject, keep the
-                // validator's rejection result (and reason) so the trace reflects the refusal.
-                var toolRes = validation.Accepted ? ToolCallResult.AcceptedWith(bucket.Code) : validation;
-                _world.ToolCallTrace.Add(new ToolCallTraceRecord(_world.Time, default, toolReq, toolRes));
-                if (!validation.Accepted)
-                    LogCombat($"[fate] tool call rejected: {validation.RejectionReason}");
-            }
-            else
-            {
-                _pendingFate = $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)";
-            }
-            _isFateThinking = false;
+                // DET-03: the LLM's tool authority is REAL, not cosmetic. Route the model's ACTUAL
+                // response.ProposedToolCalls through the governed gate — LlmProposalValidator over the
+                // ToolRegistry, then ToolCallRouter for the accepted calls. Rejected proposals never
+                // mutate the world and are logged; consult_fate is ToolSideEffect.Read so its handler
+                // just echoes the deterministic fate bucket. The fate OUTCOME stays deterministic (the
+                // roll), so the LLM only decorates it and can never conjure a tool the game never
+                // declared. (Replaces the EMB-008 self-built synthetic request that validated nothing.)
+                if (response != null)
+                {
+                    var toolValidator = new EmberCrpg.Simulation.AiDm.ToolCallValidator();
+                    var fateRegistry = new EmberCrpg.Simulation.AiDm.ToolRegistry();
+                    fateRegistry.Register(tools[0]);
+                    var fateRouter = new EmberCrpg.Simulation.AiDm.ToolCallRouter(toolValidator);
+                    fateRouter.RegisterHandler(ToolSurfaceKind.Dm, new ToolId("consult_fate"),
+                        _ => ToolCallResult.AcceptedWith(bucket.Code));
+                    var tracer = new EmberCrpg.Simulation.AiDm.ToolCallTracer();
 
-            // Update combat log once finished
-            LogCombat(_pendingFate);
+                    var proposals = new EmberCrpg.Simulation.AiDm.LlmProposalValidator(toolValidator)
+                        .Validate(response, fateRegistry);
+                    foreach (var accepted in proposals.Accepted)
+                        fateRouter.Invoke(accepted, fateRegistry, _world.Time, default, _world.Events, tracer);
+                    foreach (var rejected in proposals.Rejected)
+                        LogCombat($"[fate] rejected LLM tool call {rejected.request.ToolId.Code}: {rejected.reason}");
+                    foreach (var rec in tracer.Entries)
+                        _world.ToolCallTrace.Add(rec);
+                }
+
+                _isFateThinking = false;
+                LogCombat(_pendingFate); // surface the prophecy once finished
+            });
         }
 
     }
