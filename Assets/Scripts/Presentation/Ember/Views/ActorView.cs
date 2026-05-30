@@ -117,6 +117,8 @@ namespace EmberCrpg.Presentation.Ember.Views
             {
                 _shakeRemaining -= Time.deltaTime;
                 float shake = 0.05f;
+                // EMB-040: UnityEngine.Random is presentation-only here (cosmetic billboard jitter).
+                // It never feeds Domain/Simulation or the save — keep it that way (docs/DETERMINISM.md).
                 _billboard.localPosition += new Vector3(Random.Range(-shake, shake), Random.Range(-shake, shake), 0f);
             }
         }

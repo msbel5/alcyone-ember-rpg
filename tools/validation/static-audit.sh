@@ -141,6 +141,24 @@ say "  Task.Run sites                      : $c_taskrun   (EMB-007/018)"
 say "  sync .GetAwaiter().GetResult() sites: $c_block   (EMB-018)"
 
 # ---------------------------------------------------------------------------
+# 6. Determinism boundary guard  (HARD FAIL — EMB-038/039/040)
+#    The authoritative tiers (Domain + the save mapper) must never depend on
+#    wall-clock time or engine visual RNG, or deterministic replay breaks.
+#    Forge image noise (System.Random) and ActorView shake (UnityEngine.Random)
+#    are presentation-tier visual-only by design — see docs/DETERMINISM.md.
+# ---------------------------------------------------------------------------
+head "6. Determinism boundary (Domain + Data/Save authoritative tiers)"
+LEAK="$(grep -rIn -E 'UnityEngine\.Random|DateTime\.(UtcNow|Now)' \
+        Assets/Scripts/Domain Assets/Scripts/Data/Save 2>/dev/null)"
+if [ -n "$LEAK" ]; then
+  echo "FAIL: wall-clock/engine-RNG leaked into an authoritative tier (breaks deterministic replay):"
+  printf '%s\n' "$LEAK" | sed 's/^/  /'
+  FAIL=1
+else
+  say "PASS: no DateTime.Now/UtcNow or UnityEngine.Random in Domain or Data/Save."
+fi
+
+# ---------------------------------------------------------------------------
 head "RESULT"
 if [ "$FAIL" -eq 0 ]; then echo "static-audit PASS"; else echo "static-audit FAIL"; fi
 exit "$FAIL"

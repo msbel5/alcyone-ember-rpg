@@ -20,6 +20,9 @@ namespace EmberCrpg.Simulation.Generation
         {
             var directory = System.IO.Path.GetDirectoryName(_path);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            // EMB-039: DateTime.UtcNow is log-only here (a human-readable timestamp on a failure
+            // line). It never enters a generated-asset ID or any world/save field — keep it that
+            // way so it can't leak into the deterministic identity (docs/DETERMINISM.md).
             var line = "{"
                 + "\"ts\":\"" + DateTime.UtcNow.ToString("O") + "\","
                 + "\"entryId\":\"" + Escape(entryId) + "\","
