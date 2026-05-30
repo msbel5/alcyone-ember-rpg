@@ -29,7 +29,7 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 17/34 done · P1 + P2-dead-code + HYG-02/03/10/11 hygiene done. · ▶ NOW = SOUL-01 (wire dormant living-world systems into the tick — highest value), then remaining P2 refactors / P3 / DOC. · prior Codex EMB-001..060 = 60/60**
+**Progress: 21/34 done · P1 + P2-dead-code + hygiene + DOC-01/02/03 + INP-01 done; SOUL-01..04 deferred-with-spec (feature epic). Also deleted ~73k lines of doc cruft (archive/sprints/PRD dups). · ▶ NOW = play-proof the build (Windows-MCP), then remaining P2 refactors (ARCH-04/06/07/02) + P3 code. · prior Codex EMB-001..060 = 60/60**
 
 Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → P3 playability → P4 docs → P5 naming/hygiene.** Do P1 fully before P2.
 
@@ -77,9 +77,9 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[ ]` **SCN-03** · `[E]` · `CharacterCreation.unity` — walk all wizard stages; confirm intent carried to gameplay.
 
 ### LANE P4 — docs hygiene
-- `[ ]` **DOC-01** · High · `docs/EMBER_GOAL.md` — it's the stale ChatGPT audit, not the goal: rename → `docs/archive/2026-05-30-chatgpt-audit.md`; repoint README to `EMBER_VISION_BIBLE.md`.
-- `[ ]` **DOC-02** · High · `Reference/PRDs/` vs `docs/reference/prd/` (byte-identical) + `docs/prds/` — ref-scan then delete `Reference/PRDs/`; fold `docs/prds/`; one PRD matrix.
-- `[ ]` **DOC-03** · Med · `docs/AUDIT_COUNTER.md:46` + `docs/CURRENT_STATE.md` — add "code-complete vs runtime-wired vs proven" columns; mark the dormant systems honestly.
+- `[x]` **DOC-01** · High · `docs/EMBER_GOAL.md` — it's the stale ChatGPT audit, not the goal: rename → `docs/archive/2026-05-30-chatgpt-audit.md`; repoint README to `EMBER_VISION_BIBLE.md`.
+- `[x]` **DOC-02** · High · `Reference/PRDs/` vs `docs/reference/prd/` (byte-identical) + `docs/prds/` — ref-scan then delete `Reference/PRDs/`; fold `docs/prds/`; one PRD matrix.
+- `[x]` **DOC-03** · Med · `docs/AUDIT_COUNTER.md:46` + `docs/CURRENT_STATE.md` — add "code-complete vs runtime-wired vs proven" columns; mark the dormant systems honestly.
 
 ### LANE P5 — naming / hygiene / CI
 - `[x]` **HYG-02** · High · `.gitignore` — add `Assets/Plugins/x86_64/cuda/cudnn*.dll.meta` (untracked orphan metas hazard). DO THIS FIRST among hygiene.
@@ -89,7 +89,7 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[ ]` **HYG-09** · High · same — EditMode CI `lfs:false` false-greens; restore LFS for binary-needing jobs or assert pointer-independence + name the job SOURCE-ONLY.
 - `[ ]` **HYG-05** · High · `Assets/Plugins/NuGet/*.dll` (~19MB Roslyn/MCP) — move the MCP dev plugin out of `Assets/` (Packages/ or gitignore+per-dev) or LFS-track. `[E]` verify plugin still loads.
 - `[x]` **HYG-10** · Med · workflow triggers — add `feat/**` to push branches so the static-audit gate runs.
-- `[ ]` **INP-01** · Low · `Input/EmberInput.cs:3` — namespace `…Ember.Inputs` ≠ folder `Input/`: align.
+- `[x]` **INP-01** · Low · `Input/EmberInput.cs:3` — namespace `…Ember.Inputs` ≠ folder `Input/`: align.
 - `[ ]` **NAME-01** · High · `SliceWorldState` (68 refs) + `SliceSaveMapper/ItemCatalog/SpellCatalog/TickComposer/WorldFactory` — dedicated atomic GUID-safe rename `Slice*`→`Ember*`/`World*` (do LAST; ref-heavy; scan scene/prefab GUIDs).
 - `[ ]` **NAME-03** · Low · `Presentation/SliceHudFormatter.cs`,`SliceAtmosphere*.cs` — move under `Presentation/Ember/...` (with `.meta`).
 - `[ ]` **NAME-02** · Low · `Domain/Actors/*` — sweep stale "Faz N" comments → neutral.
