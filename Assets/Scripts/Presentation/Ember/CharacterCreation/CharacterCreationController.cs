@@ -656,52 +656,5 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             return tags[index % tags.Length] + " [importance:" + ((index % 5) + 1) + "] [facet:" + classId + "]";
         }
 
-        private void GeneratePortrait()
-        {
-            var manifest = GenericNpcBaseManifest.CreateDefault();
-            var raw = string.IsNullOrWhiteSpace(_llmJson) ? RequestPortraitJson(string.Empty) : _llmJson;
-            if (!NpcPromptJsonValidator.TryValidate(raw, manifest, out var json, out var reason))
-            {
-                raw = RequestPortraitJson(reason);
-                if (!NpcPromptJsonValidator.TryValidate(raw, manifest, out json, out reason))
-                {
-                    json = NpcPromptJsonDefaults.FromSeed(_seed + (uint)(3 - _rerollsRemaining), manifest);
-                    AddLog("[portrait] LLM invalid twice; deterministic fallback used: " + reason + ".");
-                }
-            }
-
-            PortraitJson = json.ToCanonicalJson();
-            _panel?.SetText("portraitJson", PortraitJson);
-            AddLog("[portrait] JSON ready.");
-        }
-
-        private string RequestPortraitJson(string correctionReason)
-        {
-            if (_portraitJsonProvider != null)
-                return _portraitJsonProvider(_seed + (uint)(3 - _rerollsRemaining), correctionReason ?? string.Empty);
-            return DefaultNpcPortraitJsonProvider.Request(_seed + (uint)(3 - _rerollsRemaining), correctionReason);
-        }
-
-        private void AddLog(string line)
-        {
-            _logLines.Add(line);
-            _panel?.LogLine("log", UiLogSeverity.Info, line);
-        }
-
-        private string[] BuildAttributeRollSnapshot()
-        {
-            var rows = new string[StatOrder.Length];
-            for (int i = 0; i < StatOrder.Length; i++)
-                rows[i] = StatOrder[i] + "=" + SafeStat(_assignedStats, StatOrder[i]);
-            return rows;
-        }
-
-        private static string ResolveBirthsignId(uint seed)
-        {
-            var rows = CharacterCreationCatalog.Birthsigns;
-            if (rows.Count == 0) return string.Empty;
-            return rows[(int)(seed % (uint)rows.Count)].Id;
-        }
-
     }
 }
