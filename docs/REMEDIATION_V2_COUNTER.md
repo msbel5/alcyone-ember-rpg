@@ -29,7 +29,11 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 21/34 done · P1 + P2-dead-code + hygiene + DOC-01/02/03 + INP-01 done; SOUL-01..04 deferred-with-spec (feature epic). Also deleted ~73k lines of doc cruft (archive/sprints/PRD dups). · ▶ NOW = play-proof the build (Windows-MCP), then remaining P2 refactors (ARCH-04/06/07/02) + P3 code. · prior Codex EMB-001..060 = 60/60**
+**Progress: 22/34 done · P1 + P2-dead-code + hygiene + DOC-01/02/03 + INP-01 + NAME-02 done; SOUL-01..04 deferred-with-spec (feature epic). Also deleted ~73k lines of doc cruft (archive/sprints/PRD dups). · ▶ NOW = NAME-03 (file moves) next; ARCH-04/06/07 reclassified to needs-decision/Editor-proof (see notes). · prior Codex EMB-001..060 = 60/60**
+
+> Audit-correction findings (this pass):
+> - **ARCH-06 is mis-scoped → reclassified `[E]`.** `EmberWorldHost._fateLine` is LIVE (set from `_oracle.ConsultFate()` at lines 136/165/174, returned with precedence at 416), not "dead canned lines." Binding `DialogBoxPanel.Source` straight to the adapter would drop the oracle/fate dialog line. Doing it right means proving DET-03's adapter fate-flow subsumes `_oracle.ConsultFate()` — an Editor play-proof of the OracleShrine dialog. Batch with HUD-02/DLG-01.
+> - **ARCH-04 needs a decision (save-compat + seam).** Killing the nested-JSON requires either (a) `SliceSaveData` (Data tier) gains primitive scene/transform fields + repo persists it directly, or (b) `SaveData` envelope holds a typed `SliceSaveData` (one JsonUtility pass, no escaped string) — which changes the adapter seam from `string ExportStateJson()` to `SliceSaveData ExportState()`. Both BREAK existing nested-string saves unless migrated. Data-loss-adjacent (guardrail). Hold for a crisp scope/compat call.
 
 Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → P3 playability → P4 docs → P5 naming/hygiene.** Do P1 fully before P2.
 
@@ -59,7 +63,7 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[ ]` **ARCH-04** · High · `EmberSaveService.cs`+`JsonSliceSaveService.cs`+`FileSaveRepository.cs`+`DomainSimulationAdapter.Save.cs` — kill the save-within-a-save: one repository persists canonical `SliceSaveData`; transform/scene become fields; PlayerPrefs → read-only legacy.
 - `[x]` **ARCH-05** · Med · `Infrastructure/AiDm/LlmClients.cs:11`,`NativeLlmClient.cs:16` — namespace lies about assembly: rename `EmberCrpg.Simulation.AiDm` → `EmberCrpg.Infrastructure.AiDm`; fix usings (placement is correct).
 - `[ ]` **ARCH-07** · High · `Forge/ForgeLocator.cs`, `IDomainSimulationAdapter.cs:176` — two mutable static locators with a write-race: introduce `IForgeServices`/`IAdapterProvider` from one composition root (keep statics as thin shims during migration).
-- `[ ]` **ARCH-06** · High · `Bootstrap/EmberWorldHost.cs:407-489` — host re-implements `IDialogSource` only to forward to the adapter + dead canned-line switch: bind `DialogBoxPanel.Source` to the adapter directly, delete the proxy.
+- `[E]` **ARCH-06** · High · `Bootstrap/EmberWorldHost.cs:407-489` — host re-implements `IDialogSource` to forward to the adapter. AUDIT-CORRECTION: not "dead canned lines" — `_fateLine` (oracle ConsultFate) is LIVE with precedence (136/165/174/416). Reclassified `[E]`: removing the proxy needs an OracleShrine dialog play-proof that the adapter fate-flow subsumes `_oracle.ConsultFate()`. Batch with HUD-02/DLG-01.
 - `[ ]` **ARCH-02** · High · `DomainSimulationAdapter.cs` (804)+partials — god class: extract `WorldHydrator`/`DialogController`/`AdapterStatFactory`; inject `ILlmRouter` instead of `ForgeLocator.LlmRouter`.
 - `[ ]` **ARCH-09** · Med · `PlaceholderSimulationAdapter.cs` (289) + `IDomainSimulationAdapter` (203) — trim placeholder to throw/empty; segregate the over-broad interface (dialog/HUD/worldgen sub-interfaces).
 - `[ ]` **ARCH-08** · Med · `IDomainSimulationAdapter.cs:54,55,102`, `EmberSaveService` `GameObject.Find("PlayerRig")` — primitive obsession: pass `ActorId`/`SiteId` across the seam; replace `Find` with a registry handle.
@@ -92,7 +96,7 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[x]` **INP-01** · Low · `Input/EmberInput.cs:3` — namespace `…Ember.Inputs` ≠ folder `Input/`: align.
 - `[ ]` **NAME-01** · High · `SliceWorldState` (68 refs) + `SliceSaveMapper/ItemCatalog/SpellCatalog/TickComposer/WorldFactory` — dedicated atomic GUID-safe rename `Slice*`→`Ember*`/`World*` (do LAST; ref-heavy; scan scene/prefab GUIDs).
 - `[ ]` **NAME-03** · Low · `Presentation/SliceHudFormatter.cs`,`SliceAtmosphere*.cs` — move under `Presentation/Ember/...` (with `.meta`).
-- `[ ]` **NAME-02** · Low · `Domain/Actors/*` — sweep stale "Faz N" comments → neutral.
+- `[x]` **NAME-02** · Low · `Domain/Actors/*` (expanded project-wide) — swept 262 stale Turkish "Faz"(=Phase) sprint labels across 225 .cs files → English "Phase" (comments + string labels only; compile-inert). Fallback 1214✓; Win64 Success, 0 CS. Commit `005429ed`.
 
 ---
 
