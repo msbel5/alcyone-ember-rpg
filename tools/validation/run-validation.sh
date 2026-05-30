@@ -195,7 +195,7 @@ run_fallback_harness() {
   echo "fallback_exit_code=$exit_code"
   echo "fallback_trx=$result_dir/fallback.trx"
   if [[ $exit_code -eq 0 ]]; then
-    echo "PASS fallback_harness"
+    echo "PASS fallback_harness  [PARTIAL — pure-C# source tests only; does NOT validate Unity compile, scenes, assets, .meta, plugins, or PlayMode]"
   else
     echo "FAIL fallback_harness"
   fi

@@ -60,11 +60,28 @@ env:
   UNITY_VERSION: 6000.3.13f1  # Matches ProjectSettings/ProjectVersion.txt
 
 jobs:
+  # Static asset/source audit — pure bash, no Unity, ~30s (audit EMB-027/004/002).
+  # Catches the false-greens the Unity EditMode job can't: duplicate .meta GUIDs,
+  # tracked assets whose .meta is untracked (clean-clone reference breakage), and
+  # wall-clock / engine-RNG leaks into the deterministic Domain/Save tiers.
+  static-audit:
+    name: Static Asset Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: false  # static-audit is designed to run on a source-only (pointer) checkout
+      - name: Run static asset/source audit
+        run: bash tools/validation/static-audit.sh
+
   # EditMode Tests — Pure C# logic, ~5 min
   editmode-tests:
     name: EditMode Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: static-audit
     steps:
       - name: Checkout
         uses: actions/checkout@v4
