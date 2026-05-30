@@ -3,7 +3,8 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin the deterministic Ask About, Ask DM, and Think shells.
+// These tests pin the deterministic Ask About and Think shells (the Ask DM
+// shell was removed in ARCH-03; the live DM path is the validated tool router).
 // They intentionally avoid live AI dependencies.
 namespace EmberCrpg.Tests.EditMode.Narrative
 {
@@ -16,14 +17,6 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             var world = new SliceWorldFactory().Create(1337);
             var reply = new AskAboutService().Ask(world, "embers");
             Assert.That(reply, Does.Contain("embers").IgnoreCase);
-        }
-
-        [Test]
-        public void AskDm_ReturnsGroundedWorldSummary()
-        {
-            var world = new SliceWorldFactory().Create(1337);
-            var reply = new AskDmService().Ask(world, "What should I do?");
-            Assert.That(reply, Does.Contain("room seed 1337"));
         }
 
         [Test]
