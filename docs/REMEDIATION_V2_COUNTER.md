@@ -29,7 +29,7 @@ EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/D
 BRANCH  : main (only)
 UPDATED : 2026-05-30
 ```
-**Progress: 11/34 done · P1 complete; P2: ARCH-01 (dead ShieldBuff -6848 LOC) + ARCH-03 (dead dialogue shells) done, both Win64-verified. · ▶ NOW = ARCH-11 (Sim crefs), ARCH-05 (namespace), then bigger ARCH-04/06/07/02 refactors. · prior Codex EMB-001..060 = 60/60**
+**Progress: 13/34 done · P1 complete; P2 done: ARCH-01/03/05/11/12. · ▶ NOW = bigger P2 refactors (ARCH-06 dialog-proxy, ARCH-04 save-pipeline, ARCH-07 locator→DI, ARCH-02 god-class, ARCH-08/09) + LOC-splits, then P3/P4/P5. · prior Codex EMB-001..060 = 60/60**
 
 Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → P3 playability → P4 docs → P5 naming/hygiene.** Do P1 fully before P2.
 
@@ -57,7 +57,7 @@ Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exac
 - `[x]` **ARCH-01** · Critical · `Simulation/Magic/ShieldBuffAbsorptionBatchTotals.cs`+`ShieldBuffService.BatchTotals.cs`+`…Partition.cs` (~1078 LOC) — 0 game callers, 16 permutation tests only: keep `From`+the 1 filtered overload a real damage path needs, delete the rest + their tests (ref-scan first).
 - `[x]` **ARCH-03** · High · `Simulation/Narrative/AskDmService.cs`,`NpcDialogueService.cs`,`AskAboutService.cs` — orphaned by ConversationState: delete all three + their tests, OR repromote exactly one as the NPC-dialog home and route the adapter through it (decide, don't leave dormant).
 - `[ ]` **ARCH-04** · High · `EmberSaveService.cs`+`JsonSliceSaveService.cs`+`FileSaveRepository.cs`+`DomainSimulationAdapter.Save.cs` — kill the save-within-a-save: one repository persists canonical `SliceSaveData`; transform/scene become fields; PlayerPrefs → read-only legacy.
-- `[ ]` **ARCH-05** · Med · `Infrastructure/AiDm/LlmClients.cs:11`,`NativeLlmClient.cs:16` — namespace lies about assembly: rename `EmberCrpg.Simulation.AiDm` → `EmberCrpg.Infrastructure.AiDm`; fix usings (placement is correct).
+- `[x]` **ARCH-05** · Med · `Infrastructure/AiDm/LlmClients.cs:11`,`NativeLlmClient.cs:16` — namespace lies about assembly: rename `EmberCrpg.Simulation.AiDm` → `EmberCrpg.Infrastructure.AiDm`; fix usings (placement is correct).
 - `[ ]` **ARCH-07** · High · `Forge/ForgeLocator.cs`, `IDomainSimulationAdapter.cs:176` — two mutable static locators with a write-race: introduce `IForgeServices`/`IAdapterProvider` from one composition root (keep statics as thin shims during migration).
 - `[ ]` **ARCH-06** · High · `Bootstrap/EmberWorldHost.cs:407-489` — host re-implements `IDialogSource` only to forward to the adapter + dead canned-line switch: bind `DialogBoxPanel.Source` to the adapter directly, delete the proxy.
 - `[ ]` **ARCH-02** · High · `DomainSimulationAdapter.cs` (804)+partials — god class: extract `WorldHydrator`/`DialogController`/`AdapterStatFactory`; inject `ILlmRouter` instead of `ForgeLocator.LlmRouter`.
