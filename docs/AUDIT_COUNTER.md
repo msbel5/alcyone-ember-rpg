@@ -286,3 +286,54 @@ scene-validation menu. Deferred-w-rationale: EMB-008 tool-authority (with T-AskD
 async (with EMB-033).
 - EMB-042 → AssetGenerationResult.IsPlaceholder + OnnxAssetForge sets it + PipelineResult.Placeholders count. Fallbacks no longer silently counted as real. fallback 1425/0. commit (provenance)
 - EMB-037 → DECIDED addressed: the worst procedural-UI offender (UiToolkitPanel 517) was split in EMB-016; EmberHud/DialogBoxPanel/EmberMainMenuUI are cohesive single-screen files already using the UiTokens design tokens. The "move layout to templates/tokens" is a forward design-system migration (feature), not a defect-split. Marked [-].
+
+## §8 — PRECISE IMPLEMENTATION PLANS for the remaining feature-builds (ready to execute)
+These are ChatGPT's P2-P4 packages — genuine multi-step FEATURE work (not bug/hygiene defects), each
+needing its own batchmode build (+ screenshot for UI). Plans are concrete so a focused session runs
+them seamlessly. Verify Sim/Data via fast fallback (~1s); Presentation via Win64 build.
+
+### EMB-015 — Input abstraction (P3-A) [Presentation, build]
+- New `Assets/Scripts/Presentation/Ember/Input/EmberInput.cs`: a static action API —
+  bool Interact, Pause, SaveQuick, LoadQuick; Vector2 Move; bool DialogTopic(int 1..9); bool SpellSlot(int 1..5);
+  bool AttackClick. Back it today with UnityEngine.Input; later swap the body for com.unity.inputsystem.
+- Migrate the 59 `Input.` sites (static-audit §5 counts them) — sed by pattern per file: player rig
+  (Move/Interact), combat (AttackClick/SpellSlot), DialogBoxPanel (DialogTopic/ESC), PauseMenu, save
+  hotkeys (F5/F9 -> SaveQuick/LoadQuick). Leave legacy Slice* controllers (EMB-057) untouched.
+- DoD: static-audit `Input.` count in active runtime drops to ~0; build green; manual move/dialog/save check.
+
+### EMB-011 — Durable save slots (P-save) [Presentation, build + scene proof]
+- EmberSaveService today: PlayerPrefs key "ember.save.v1". Add a file-based repository
+  `Assets/Scripts/Presentation/Ember/Save/FileSaveRepository.cs` writing
+  Application.persistentDataPath/saves/slot_{n}.json (n=0..K) with the SliceSaveData (schema v1 from
+  EMB-012). Keep PlayerPrefs ONLY as a "last slot" pointer. Add corrupt-save quarantine (move bad
+  json to .corrupt, surface a status). Add ListSlots()/Save(slot)/Load(slot).
+- DoD: save slot A -> quit -> continue; cross-scene load; corrupt json handled; schema-version guard
+  (EMB-012) rejects future saves.
+
+### EMB-014 — HUD action-level state machine (P3-B, slice 2) [Presentation, build + screenshot]
+- The visual 12-button strip shipped (T-HUD slice 1). Add the ActionLevel enum (UAW_STANDARD/QWEAPONS/
+  QSPELLS/QITEMS/INNATE/SONGS/MODAL/FORMATION) to EmberHud + per-level button population + slot click
+  -> IPlayerCommandSink (the stub Debug.Log in EmberHud.ActionSlot becomes a real command). F1..F12
+  hotkeys via EmberInput (EMB-015). Per Reference/PRDs/PRD_frontend_action_bar_v1.
+- DoD: clicking CAST opens QSPELLS level; ATK issues attack; scene-tour screenshot shows live strip.
+
+### EMB-020 + EMB-045 — One conversation-state model + per-actor Ask About [build + dialog proof]
+- Define one ConversationState (current NPC, portrait, deterministic topic ids from the NPC's
+  memory/faction context, not a global list). DomainSimulationAdapter.GetTopics already delegates to
+  the adapter (EMB-Dialog slice 2); make the adapter compute per-actor topics from NpcMemory +
+  faction, not _world.Topics globally. Deprecate the AskAboutService/AskDmService/NpcDialogueService
+  shells behind the one model. UI (DialogBoxPanel) consumes ConversationState.
+- DoD: two different NPCs expose different topics/answers; TavernDialog scene proof.
+
+### EMB-008 — LLM tool-authority routing [build] (currently deferred; consult_fate is Read-only/benign)
+- Route DomainSimulationAdapter.Fate.cs ConsultFateAsync's trace through LlmProposalValidator +
+  ToolCallValidator (build a ToolRegistry with the consult_fate descriptor) instead of synthesizing
+  ToolCallTraceRecord directly. Pairs with the EMB-020/045 tool-use wiring.
+- DoD: invalid tool calls rejected+logged; fate trace produced only via the router.
+
+### EMB-019 — Move LLM providers out of Simulation (asmdef) [build, RISKY]
+- LlmClients.cs (HTTP) + NativeLlmClient.cs live in EmberCrpg.Simulation (deterministic/headless).
+  Create EmberCrpg.Infrastructure asmdef (references Domain+Simulation); move the provider impls
+  there; keep request/response/tool CONTRACTS in Domain/Simulation. Rewire ForgeBootstrap (Presentation)
+  to compose them. Revert on any asmdef-graph break.
+- DoD: headless Simulation tests compile with no HTTP/native provider refs; build green.
