@@ -1,0 +1,15 @@
+Ember scene validation (EMB-054): 13 scenes, 3 with issues, 0 missing scripts total.
+
+Boot : missingScripts=0 camera=False eventSystem=False   <-- REVIEW
+MainMenu : missingScripts=0 camera=False eventSystem=False   <-- REVIEW
+CharacterCreation : missingScripts=0 camera=True eventSystem=False   <-- REVIEW
+SmithingOverworld : missingScripts=0 camera=True eventSystem=True   OK
+ColonyNeeds : missingScripts=0 camera=True eventSystem=True   OK
+SeasonFarm : missingScripts=0 camera=True eventSystem=True   OK
+TradeMarket : missingScripts=0 camera=True eventSystem=True   OK
+CombatDungeon : missingScripts=0 camera=True eventSystem=True   OK
+RitualHall : missingScripts=0 camera=True eventSystem=True   OK
+TavernDialog : missingScripts=0 camera=True eventSystem=True   OK
+OracleShrine : missingScripts=0 camera=True eventSystem=True   OK
+ShowroomOverview : missingScripts=0 camera=True eventSystem=True   OK
+TavernFlavour : missingScripts=0 camera=True eventSystem=True   OK
