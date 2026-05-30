@@ -7,7 +7,7 @@ namespace EmberCrpg.Domain.Narrative
     /// player-facing prompt phrasing, a gating predicate id (resolved by the
     /// dialogue service), and a default answer template id used when no
     /// memory-derived response applies. Faz 9 Atom 3 (refactor target of the
-    /// Sprint 1 AskAboutTopic class per docs/kickoff-faz-9.md).
+    /// Sprint 1 AskAboutTopic class (Sprint 1 narrative).
     /// </summary>
     public sealed class TopicDef : IEquatable<TopicDef>
     {
