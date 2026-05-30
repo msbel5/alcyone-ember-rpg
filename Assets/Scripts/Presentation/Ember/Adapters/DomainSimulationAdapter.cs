@@ -318,16 +318,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 new List<string>()
             );
 
-            await Task.Run(() =>
-            {
-                LlmProviderKind chosen;
-                var response = router.Complete(request, out chosen);
-                if (response != null && !string.IsNullOrEmpty(response.Text))
-                {
-                    _currentDialogLine = response.Text.Trim();
-                }
-                _isDialogThinking = false;
-            });
+            // EMB-007: only the blocking LLM call runs off the main thread. The shared-state
+            // mutations are applied AFTER the await, which resumes on Unity's main-thread
+            // SynchronizationContext — previously _currentDialogLine / _isDialogThinking were
+            // written from the worker thread, racing the main-thread dialog reader.
+            var response = await Task.Run(() => router.Complete(request, out _));
+            if (response != null && !string.IsNullOrEmpty(response.Text))
+                _currentDialogLine = response.Text.Trim();
+            _isDialogThinking = false;
         }
 
         // Ninth-pass FOUNDATION worldgen: SeedWorld now runs the deterministic
@@ -769,16 +767,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 $"You are {npc.Name}, a {npc.Role} in a {worldStyle} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
                 new List<string>());
 
-            await Task.Run(() =>
-            {
-                LlmProviderKind chosen;
-                var response = router.Complete(request, out chosen);
-                if (response != null && !string.IsNullOrEmpty(response.Text))
-                {
-                    _currentDialogLine = response.Text.Trim();
-                }
-                _isDialogThinking = false;
-            });
+            // EMB-007: blocking LLM call off-thread; shared-state mutations applied after the await
+            // on the main thread (Unity SynchronizationContext continuation), not the worker thread.
+            var response = await Task.Run(() => router.Complete(request, out _));
+            if (response != null && !string.IsNullOrEmpty(response.Text))
+                _currentDialogLine = response.Text.Trim();
+            _isDialogThinking = false;
         }
 
         // ----- IPlayerCommandSink -----
@@ -1111,27 +1105,27 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 new List<string>()
             );
 
-            await Task.Run(() =>
+            // EMB-007: only the blocking LLM call runs off the main thread. The response — including
+            // the AUTHORITATIVE _world.ToolCallTrace mutation — is applied after the await on the
+            // main thread (Unity SynchronizationContext). Previously _pendingFate and, worse,
+            // _world.ToolCallTrace.Add (a List on the authoritative world) were written from the
+            // worker thread, racing the main-thread tick that reads the trace.
+            var response = await Task.Run(() => router.Complete(request, out _));
+            if (response != null)
             {
-                LlmProviderKind chosen;
-                var response = router.Complete(request, out chosen);
-                if (response != null)
-                {
-                    _pendingFate = string.IsNullOrEmpty(response.Text) ? $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)" : response.Text.Trim();
-                    
-                    // Log the tool call trace (Phase 4 requirement)
-                    // Synthesize request/result for the trace
-                    var toolReq = new ToolCallRequest(new ToolId("consult_fate"), ToolSurfaceKind.Dm, new Dictionary<string, string> { { "query", "oracle_consult" } });
-var toolRes = ToolCallResult.AcceptedWith(bucket.Code);
-                    
-                    _world.ToolCallTrace.Add(new ToolCallTraceRecord(_world.Time, default, toolReq, toolRes));
-                }
-                else
-                {
-                    _pendingFate = $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)";
-                }
-                _isFateThinking = false;
-            });
+                _pendingFate = string.IsNullOrEmpty(response.Text) ? $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)" : response.Text.Trim();
+
+                // Synthesize the consult_fate tool trace. (EMB-008: routing this through the tool
+                // validator/router instead of a direct synth is a separate follow-up.)
+                var toolReq = new ToolCallRequest(new ToolId("consult_fate"), ToolSurfaceKind.Dm, new Dictionary<string, string> { { "query", "oracle_consult" } });
+                var toolRes = ToolCallResult.AcceptedWith(bucket.Code);
+                _world.ToolCallTrace.Add(new ToolCallTraceRecord(_world.Time, default, toolReq, toolRes));
+            }
+            else
+            {
+                _pendingFate = $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)";
+            }
+            _isFateThinking = false;
 
             // Update combat log once finished
             LogCombat(_pendingFate);
