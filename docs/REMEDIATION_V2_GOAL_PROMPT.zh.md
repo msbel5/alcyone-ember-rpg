@@ -16,4 +16,4 @@ P3 可玩性（多数需 Editor `[E]` 证明）：HUD-02 Ask-About 在 10 个场
 
 灵魂与安全（硬规则）：接真实系统而非视觉骗术。SOUL-01 真正 tick PlantGrowth/PriceUpdate/FactionReputation/JobAssignment 并加 ScheduleSystem 让世界动、NPC 走——用 headless "world changes over N ticks" 测试证明。保持 Domain/Simulation 确定且无 Unity；LLM 只经验证工具改世界。资产安全：移动资产必带 `.meta`；改 MonoBehaviour 名/文件前先扫场景/prefab 的 GUID 引用；尽量不改场景 YAML；cuDNN/模型二进制已 gitignore——绝不提交；破坏性删除前做全量 ref-scan（场景+prefab+代码+测试+harness）；任何 `git add -A` 前先落地 HYG-02（在 .gitignore 加 cuDNN `.dll.meta`）。勿动已验证良好的 `EmberForgeFactory`、`EmberInput` 外观主体（仅修 INP-01 命名空间）、确定性 RNG/worldgen/tick 数学。勿用新增 manager/helper/god class 来"修"。
 
-从 §1 `▶ NOW`（B1/DET-01，存档重放等价）开始；每完成一项重读 §1，直至清单全勾。
+从 §1 `▶ NOW`（B1/DET-01）开始；每完成一项重读 §1，直至全勾。
