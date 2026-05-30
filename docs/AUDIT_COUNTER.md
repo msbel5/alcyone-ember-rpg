@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 52/60 addressed (48 fixed + 2 decided + 2 deferred) · 8 TODO feature-builds (§8 plans) · build green · LLM PROVEN**
+**Progress: 53/60 addressed (49 fixed + 2 decided + 2 deferred) · 7 TODO feature-builds (§8 plans) · build green · LLM PROVEN**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -76,7 +76,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 ### High
 - `[x]` **EMB-009** · asmdef boundary · Editor:no — `Simulation.asmdef` references `Data.SliceJson`; invert persistence direction. (== P2-C)
 - `[x]` **EMB-010** · god-class · Editor:staged — `DomainSimulationAdapter.cs` 1173 lines; characterize then split. (== P2-A, refactor #1)
-- `[ ]` **EMB-011** · save/load · Editor:yes — `EmberSaveService` uses `PlayerPrefs ember.save.v1` + static `_pendingLoad` + scene names. Move to file slots + schema version + corrupt-quarantine; PlayerPrefs only for "last slot" pointer.
+- `[x]` **EMB-011** · save/load · Editor:yes — DONE. Added `Assets/Scripts/Data/Save/FileSaveRepository.cs` (pure-C# `EmberCrpg.Data`): per-slot `persistentDataPath/saves/slot_{n}.json`, atomic `.tmp`→`Move` writes, corrupt-quarantine (bad json → `.corrupt`, slot freed), `ListSlots()/Save/TryLoad`. Wired `EmberSaveService`: Save() dual-writes the file slot + sets `ember.save.lastslot` pointer; Load() prefers the file slot via `TryLoad(IsLoadableSaveJson)` (parses to a SaveData w/ sceneName, else quarantine) and falls back to the legacy `ember.save.v1` blob. 5 EditMode tests (roundtrip/missing/corrupt-quarantine/ListSlots/overwrite) — fallback 1430 PASS; Win64 build SUCCESS (exe 14.1GB, 0 CS). Schema-version guard already in EMB-012.
 - `[x]` **EMB-012** · save schema · Editor:no — `SliceSaveMapper.cs` 945 + `SliceSaveData.cs` 523; add schema version, split mappers by subsystem, migration tests.
 - `[x]` **EMB-013** · reflection restore · Editor:no — `RestoreStateJson` reflection-copies every public field, bypassing invariants. Explicit validated restore.
 - `[ ]` **EMB-014** · UI drift · Editor:yes — HUD direction (PRD = bottom bars + 12-btn action bar). Already largely shipped this session (T-HUD slice 1); finish + screenshot proof. (== P3-B)

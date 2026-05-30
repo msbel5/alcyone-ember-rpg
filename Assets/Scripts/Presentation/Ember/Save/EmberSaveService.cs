@@ -10,11 +10,18 @@ namespace EmberCrpg.Presentation.Ember.Save
 
     public sealed class EmberSaveService : MonoBehaviour
     {
-        private const string SaveKey = "ember.save.v1";
+        private const string SaveKey = "ember.save.v1";          // legacy single-blob (kept for back-compat)
+        private const string LastSlotKey = "ember.save.lastslot"; // EMB-011: PlayerPrefs pointer to the last file slot
+        private const int DefaultSlot = 0;
         private UnityEngine.UI.Text _statusText;
+        private EmberCrpg.Data.Save.FileSaveRepository _repo;     // EMB-011: durable file-based slots
 
         private void Awake()
         {
+            // EMB-011: durable saves live in files under persistentDataPath/saves/slot_N.json; the
+            // PlayerPrefs blob is demoted to a legacy fallback so old saves still load.
+            _repo = new EmberCrpg.Data.Save.FileSaveRepository(Application.persistentDataPath);
+
             var canvas = GameObject.Find("EmberHUD") ?? GameObject.FindAnyObjectByType<Canvas>()?.gameObject;
             if (canvas == null) return;
 
@@ -81,7 +88,15 @@ namespace EmberCrpg.Presentation.Ember.Save
                 domainStateJson = domainJson,
             };
 
-            PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(data));
+            var jsonStr = JsonUtility.ToJson(data);
+            PlayerPrefs.SetString(SaveKey, jsonStr);   // legacy blob (back-compat)
+            // EMB-011: write the durable file slot + remember it as the last slot.
+            try
+            {
+                _repo?.Save(DefaultSlot, jsonStr);
+                PlayerPrefs.SetInt(LastSlotKey, DefaultSlot);
+            }
+            catch (System.Exception) { /* file write failed; the PlayerPrefs blob above still has it */ }
             PlayerPrefs.Save();
             if (domainAvailable && domainFailed)
                 ShowStatus("Save partial: domain export failed.");
@@ -91,7 +106,17 @@ namespace EmberCrpg.Presentation.Ember.Save
 
         public void Load()
         {
-            string json = PlayerPrefs.GetString(SaveKey);
+            // EMB-011: prefer the durable file slot (with corrupt-save quarantine); fall back to the
+            // legacy PlayerPrefs blob so saves written before file slots existed still load.
+            string json = null;
+            if (_repo != null)
+            {
+                int lastSlot = PlayerPrefs.GetInt(LastSlotKey, DefaultSlot);
+                if (_repo.TryLoad(lastSlot, IsLoadableSaveJson, out var fileJson))
+                    json = fileJson;
+            }
+            if (string.IsNullOrEmpty(json))
+                json = PlayerPrefs.GetString(SaveKey);   // legacy fallback
             if (string.IsNullOrEmpty(json))
             {
                 ShowStatus("No save found.");
@@ -157,6 +182,24 @@ namespace EmberCrpg.Presentation.Ember.Save
         /// scene validation. Editor build only; player builds trust Unity's
         /// runtime resolution.
         /// </summary>
+        /// <summary>EMB-011: the quarantine predicate for file slots. A slot is "loadable" only if it
+        /// parses to a SaveData carrying a non-empty sceneName; anything else (truncated write, garbage,
+        /// schema drift that drops the scene) is treated as corrupt and moved aside by TryLoad so it can
+        /// never crash the loader, with the legacy PlayerPrefs blob as the fallback.</summary>
+        private static bool IsLoadableSaveJson(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return false;
+            try
+            {
+                var probe = JsonUtility.FromJson<SaveData>(raw);
+                return probe != null && !string.IsNullOrEmpty(probe.sceneName);
+            }
+            catch (System.Exception)
+            {
+                return false;
+            }
+        }
+
         private static bool IsKnownBuildScene(string sceneName)
         {
             if (string.IsNullOrWhiteSpace(sceneName)) return false;
