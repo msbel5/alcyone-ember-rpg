@@ -43,9 +43,9 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 8 / 60 defects done (+1 partial) · 0 / 11 packages · 6 / 25 final-checklist items**
+**Progress: 10 / 60 defects done (+1 partial) · 0 / 11 packages · 8 / 25 final-checklist items**
 
-**▶ NOW = EMB-004 + static-audit tooling (LFS pointer scan + dup-GUID/missing-meta/orphan-meta/Input/PlayerPrefs/Task.Run scanners under tools/validation/).** Done headless: 001,047,058,046,005,052,048,049 + greened pre-existing test (fallback 1421/0). EMB-043 partial (AI-stack doc pending). EMB-050/022 = deferred large file-move (Reports+sprint archive + mirror dedup). Next after 004: 019/009 asmdef, 038/039/040 determinism docs, 012/034/035 splits.
+**▶ NOW = EMB-043-finish (AI-stack doc) + EMB-044 (cloud policy) + EMB-038/039/040 (determinism guards).** Done headless: 001,002,004,005,046,047,048,049,052,058 + greened test (fallback 1421/0). tools/validation/static-audit.sh now CI-gateable (PASS). NEXT BUILD-BATCH (needs Editor closed): 009+019 asmdef moves, 012/034/035 splits, all verified by one batchmode build. EMB-050/022 deferred large move.
 
 > Forge/SDXL note (pre-audit, already fixed this session): CUDA onnxruntime + cuDNN + llama/ggml/mtmd
 > `.meta` files now Editor+Win64-enabled (commits ebc11d2b, 5ebda704, 753f1b0d) so Editor Play Mode
@@ -66,8 +66,8 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 
 ### Critical (must fix; several are Editor-gated)
 - `[x]` **EMB-001** · Unity asset identity · Editor:partial — `CombatPlayground.unity.meta` & `Sprint4Foundation.unity.meta` share GUID `92b2f977c6bb4e4ebc6c7ace4f8484a7`. Both are non-build root scenes. Fix: confirm no refs, regenerate one GUID or archive one scene. **▶ NOW**
-- `[ ]` **EMB-002** · `.meta` integrity · Editor:yes — missing `.meta` on `LLamaSharp.dll`, `Jost.ttf`, `Spectral-Regular.ttf`, `Resources/Fonts/`, `NuGet/.nuget-installed.json`. Import via Unity (don't hand-fake importer settings). [E]
-- `[ ]` **EMB-004** · LFS/build reliability · Editor:scan-no/build-yes — CI `lfs:false`; many DLL/model files are 131-byte LFS pointers → false-green. Add pointer-scan validation; split CI source-only vs LFS-build.
+- `[x]` **EMB-002** · `.meta` integrity · Editor:yes — missing `.meta` on `LLamaSharp.dll`, `Jost.ttf`, `Spectral-Regular.ttf`, `Resources/Fonts/`, `NuGet/.nuget-installed.json`. Metas already existed on disk (Unity-generated, valid) but were never git-add'ed; committed as-is. DONE headless.
+- `[x]` **EMB-004** · LFS/build reliability · Editor:scan-no/build-yes — CI `lfs:false`; many DLL/model files are 131-byte LFS pointers → false-green. Add pointer-scan validation; split CI source-only vs LFS-build.
 - `[x]` **EMB-005** · AI/model bootstrap · Editor:no — `Models/manifest.json` paths (`sdxl-turbo/text_encoder.onnx`) don't match real nested layout (`text_encoder/model.onnx`); hashes `TBD`. Normalize manifest + `VerifyAllPresent` test.
 - `[ ]` **EMB-006** · LLM integration · Editor:partial — `NativeLlmClient` fallback when `USE_LLAMASHARP` absent; explicit disabled/fallback/real capability states + presence validation + no fake-real claims.
 - `[ ]` **EMB-007** · Determinism/threading · Editor:yes — `DomainSimulationAdapter` `Task.Run` writes `_currentDialogLine`/`_isDialogThinking`/`_pendingFate`/`_world.ToolCallTrace` off-thread. Marshal results to main-thread tick boundary. (== package P2-B)
@@ -146,8 +146,8 @@ Order by safety×value:
 6. `[x]` EMB-052 — secret/.env ignore patterns
 7. `[~]` EMB-048(done) + EMB-050(deferred) — PRD matrix dedup + docs archive plan (= P4-A)
 8. `[x]` EMB-049 — OldBackendData README
-9. `[ ]` EMB-004 — LFS pointer-scan validation script (= P0-B)
-10. `[ ]` static-audit tooling — duplicate-GUID / missing-meta / orphan-meta / LFS / `Input.` / `PlayerPrefs` / `Task.Run` scanners under `tools/validation/`
+9. `[x]` EMB-004 — LFS pointer-scan validation script (= P0-B)
+10. `[x]` static-audit tooling (tools/validation/static-audit.sh) — duplicate-GUID / missing-meta / orphan-meta / LFS / `Input.` / `PlayerPrefs` / `Task.Run` scanners under `tools/validation/`
 11. `[ ]` EMB-022 + EMB-059 — Reports + `.claude/skills` classification (move/ignore, ref-safe)
 12. `[ ]` EMB-038 / EMB-039 / EMB-040 — RNG/time/visual-random determinism docs+guards (pure code)
 13. `[ ]` EMB-009 — Simulation→SliceJson asmdef break (= P2-C, headless compile via build)
@@ -169,12 +169,12 @@ runtime/UI proof. Each needs build-clean + scene-tour screenshot review.
 ---
 
 ## §6 — FINAL PRIORITIZED CHECKLIST (ChatGPT §11; the 25 gates)
-- `[ ]` 1. Duplicate-GUID + missing/orphan meta audit (one Unity-safe PR)
-- `[ ]` 2. Static validation: dup-GUID, missing-meta, orphan-meta, LFS-pointer
+- `[x]` 1. Duplicate-GUID + missing/orphan meta audit (one Unity-safe PR)
+- `[x]` 2. Static validation: dup-GUID, missing-meta, orphan-meta, LFS-pointer
 - `[x]` 3. `docs/CURRENT_STATE.md` + de-stale README
 - `[x]` 4. PRD source-map: governance decision-tree + DOCS/ fixed (physical dedup deferred)
 - `[x]` 5. AI/model manifest paths + hash policy (no binary changes)
-- `[ ]` 6. LFS/runtime dep docs + CI pointer checks
+- `[~]` 6. LFS/runtime dep docs + CI pointer checks (scanner done; CI wiring = EMB-027)
 - `[ ]` 7. Save/load characterization tests (before changing persistence)
 - `[ ]` 8. Build-scene validation/screenshot-tour harness (report only)
 - `[ ]` 9. Remove worker-thread world/UI mutation from adapter
@@ -216,3 +216,6 @@ as Unity proof · no casual package/plugin version changes.
 - EMB-048 → 3 PRD locations; Reference/PRDs vs docs/reference/prd are 96/97 identical; wrote docs/PRD_GOVERNANCE.md decision-tree + stub-matrix pointers; declared docs/reference/prd deprecated-mirror. Physical dedup deferred to EMB-050.
 - EMB-049 → added Reference/OldBackendData/README.md (import/reference-only, 48 old JSON files).
 - EMB-050/EMB-022 DEFERRED: 102 tracked Reports + 156 docs/sprint-* + 97-file mirror = ~400 file move; large diff + link-break risk; do as dedicated reviewed pass (surface to user before executing).
+- EMB-002 → 3 tracked assets (Jost.ttf, Spectral-Regular.ttf, LLamaSharp.dll) + Fonts.meta had UNTRACKED valid metas; git-add committed them (clean-clone GUID breakage fix). commit (metas+script)
+- EMB-004 → working copy has 0 LFS pointers (real bytes); built tools/validation/static-audit.sh (dup-GUID HARD FAIL, LFS report/--require-runtime, missing-meta skips dot-paths, 3b tracked-asset-untracked-meta HARD FAIL, orphan filters gitignored, info counts). static-audit PASS.
+- Static-audit info counts (defect scope): Input. 59 (EMB-015), PlayerPrefs 8 (EMB-011), Task.Run 12 (EMB-007/018), GetResult 6 (EMB-018).
