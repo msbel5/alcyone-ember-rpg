@@ -2,6 +2,7 @@ using UnityEngine;
 using EmberCrpg.Presentation.Ember.Interaction;
 using EmberCrpg.Presentation.Ember.Views;
 using System.Collections;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.Combat
 {
@@ -17,7 +18,7 @@ namespace EmberCrpg.Presentation.Ember.Combat
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F) && !_isSwinging)
+            if (EmberInput.MeleeSwing && !_isSwinging)
             {
                 StartCoroutine(SwingRoutine());
             }

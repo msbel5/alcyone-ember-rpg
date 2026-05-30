@@ -5,6 +5,7 @@ using EmberCrpg.Presentation.Ember.Tick;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 using UnityEngine;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.Bootstrap
 {
@@ -130,7 +131,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         {
             HandleQuitInput();
 
-            if (Input.GetKeyDown(KeyCode.R))
+            if (EmberInput.RegenWorld)
             {
                 _fateLine = _oracle.ConsultFate();
                 _fateTimer = 3f;
@@ -175,7 +176,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.Tab))
+            if (EmberInput.ToggleMap)
             {
                 // Codex audit (sixth pass D-P3 #D1): if the scene wires an
                 // EmberPlayerInventoryToggle (every Faz* scene does, plus the
@@ -228,7 +229,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 // Spell selection
                 for (int i = 0; i < 5; i++)
                 {
-                    if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+                    if (EmberInput.NumberKeyDown(i + 1))
                     {
                         _selectedSpellSlot = i;
                     }
@@ -264,7 +265,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // are true — so the toggle branch was unreachable forever. Move the
             // GetKeyDown check OUT of the else so a tap toggles the cursor lock,
             // and a >1s hold still quits.
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (EmberInput.PauseDown)
             {
                 Cursor.lockState = (Cursor.lockState == CursorLockMode.Locked) ? CursorLockMode.None : CursorLockMode.Locked;
                 Cursor.visible = (Cursor.lockState != CursorLockMode.Locked);
@@ -274,7 +275,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 _escHoldTimer = 0f;
             }
 
-            if (Input.GetKey(KeyCode.Escape))
+            if (EmberInput.PauseHeld)
             {
                 _escHoldTimer += Time.unscaledDeltaTime;
                 if (_escHoldTimer > 1f)

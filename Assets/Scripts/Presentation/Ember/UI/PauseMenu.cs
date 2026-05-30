@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
@@ -30,7 +31,7 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (EmberInput.PauseDown)
             {
                 if (_isPaused) Resume();
                 else Pause();

@@ -1,6 +1,7 @@
 using UnityEngine;
 using EmberCrpg.Presentation.Ember.Adapters;
 using System.Collections;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.Combat
 {
@@ -35,7 +36,7 @@ namespace EmberCrpg.Presentation.Ember.Combat
         {
             for (int i = 0; i < 5; i++)
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+                if (EmberInput.NumberKeyDown(i + 1))
                 {
                     Cast(i);
                 }

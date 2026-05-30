@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.Save
 {
@@ -42,8 +43,8 @@ namespace EmberCrpg.Presentation.Ember.Save
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F5)) Save();
-            if (Input.GetKeyDown(KeyCode.F9)) Load();
+            if (EmberInput.SaveQuick) Save();
+            if (EmberInput.LoadQuick) Load();
         }
 
         public void Save()

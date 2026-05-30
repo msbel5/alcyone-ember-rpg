@@ -1,5 +1,6 @@
 using EmberCrpg.Simulation.Movement;
 using UnityEngine;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Combat
 {
@@ -69,20 +70,20 @@ namespace EmberCrpg.Presentation.Combat
 
         private CombatMovementInput ReadInput()
         {
-            var moveX = Input.GetAxisRaw("Horizontal");
-            var moveZ = Input.GetAxisRaw("Vertical");
+            var moveX = EmberInput.Move.x;
+            var moveZ = EmberInput.Move.y;
 
             // Pin direct WASD keys as a fallback if InputManager axes are edited later.
-            if (Input.GetKey(KeyCode.A)) moveX -= 1f;
-            if (Input.GetKey(KeyCode.D)) moveX += 1f;
-            if (Input.GetKey(KeyCode.S)) moveZ -= 1f;
-            if (Input.GetKey(KeyCode.W)) moveZ += 1f;
+            if (EmberInput.Key(KeyCode.A)) moveX -= 1f;
+            if (EmberInput.Key(KeyCode.D)) moveX += 1f;
+            if (EmberInput.Key(KeyCode.S)) moveZ -= 1f;
+            if (EmberInput.Key(KeyCode.W)) moveZ += 1f;
 
             return new CombatMovementInput(
                 Mathf.Clamp(moveX, -1f, 1f),
                 Mathf.Clamp(moveZ, -1f, 1f),
                 cameraRig != null ? cameraRig.PlanarYawDegrees : transform.eulerAngles.y,
-                Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space));
+                EmberInput.JumpDown);
         }
 
         private void RotateTowardMovement(Vector3 planarVelocity)

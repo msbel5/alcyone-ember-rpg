@@ -1,4 +1,5 @@
 using UnityEngine;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.Camera
 {
@@ -93,15 +94,15 @@ namespace EmberCrpg.Presentation.Ember.Camera
             ApplyMove();
             ApplyHeadbob();
             
-            if (Input.GetKeyDown(KeyCode.F1)) ToggleCursor();
+            if (EmberInput.ToggleCursor) ToggleCursor();
         }
 
         private void ApplyLook()
         {
             if (_eye == null) return;
 
-            float rawX = Input.GetAxisRaw("Mouse X");
-            float rawY = Input.GetAxisRaw("Mouse Y");
+            float rawX = EmberInput.Look.x;
+            float rawY = EmberInput.Look.y;
 
             // Apply Mouse Curve for non-linear response
             float mag = new Vector2(rawX, rawY).magnitude;
@@ -120,9 +121,9 @@ namespace EmberCrpg.Presentation.Ember.Camera
 
         private void ApplyMove()
         {
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
-            bool isSprinting = Input.GetKey(KeyCode.LeftShift) && vertical > 0.1f;
+            float horizontal = EmberInput.Move.x;
+            float vertical = EmberInput.Move.y;
+            bool isSprinting = EmberInput.Sprint && vertical > 0.1f;
 
             Vector3 targetInput = (transform.forward * vertical + transform.right * horizontal).normalized;
             float targetSpeed = _baseSpeed * (isSprinting ? _sprintMultiplier : 1f);
@@ -134,7 +135,7 @@ namespace EmberCrpg.Presentation.Ember.Camera
             if (_controller.isGrounded)
             {
                 if (_verticalVelocity < 0f) _verticalVelocity = -1f;
-                if (Input.GetKeyDown(KeyCode.Space))
+                if (EmberInput.JumpKeyDown)
                 {
                     _verticalVelocity = _jumpForce;
                 }
@@ -186,7 +187,7 @@ namespace EmberCrpg.Presentation.Ember.Camera
                 return;
             }
 
-            float multiplier = Input.GetKey(KeyCode.LeftShift) ? 1.2f : 1.0f;
+            float multiplier = EmberInput.Sprint ? 1.2f : 1.0f;
             _bobTimer += Time.deltaTime * _bobFrequency * multiplier;
 
             float vBob = Mathf.Sin(_bobTimer * 2f * Mathf.PI) * _bobVerticalAmplitude * multiplier;

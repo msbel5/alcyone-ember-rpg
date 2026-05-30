@@ -7,6 +7,7 @@ using EmberCrpg.Domain.Combat;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Simulation.Combat;
 using UnityEngine;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Combat
 {
@@ -31,16 +32,16 @@ namespace EmberCrpg.Presentation.Combat
 
         private void Update()
         {
-            if (Input.GetKeyDown(pauseKey))
+            if (EmberInput.KeyDown(pauseKey))
                 combatState.TogglePaused();
 
-            if (Input.GetMouseButtonDown(0))
+            if (EmberInput.AttackClick)
                 Queue(CombatActionKind.MeleeSwing);
-            if (Input.GetMouseButtonDown(1))
+            if (EmberInput.SecondaryClick)
                 Queue(CombatActionKind.Block);
-            if (Input.GetKeyDown(dodgeKey))
+            if (EmberInput.KeyDown(dodgeKey))
                 Queue(CombatActionKind.Dodge);
-            if (Input.GetKeyDown(castKey))
+            if (EmberInput.KeyDown(castKey))
                 Queue(CombatActionKind.Cast);
 
             lastTick = scheduler.Tick(combatState, Time.deltaTime);

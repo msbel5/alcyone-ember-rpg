@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.Bootstrap;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
@@ -166,7 +167,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                     _displayedLineText = _fullLineText.Substring(0, charsToShow);
                 }
 
-                if (Input.GetMouseButtonDown(0))
+                if (EmberInput.AttackClick)
                 {
                     _displayedLineText = _fullLineText;
                     _isTypewriting = false;
@@ -217,13 +218,13 @@ namespace EmberCrpg.Presentation.Ember.UI
 
             for (int i = 0; i < 9 && i < topics.Count; i++)
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+                if (EmberInput.NumberKeyDown(i + 1))
                 {
                     Source.SelectTopic(topics[i]);
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (EmberInput.PauseDown)
             {
                 Close();
             }

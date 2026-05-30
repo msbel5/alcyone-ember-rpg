@@ -1,4 +1,5 @@
 using UnityEngine;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Combat
 {
@@ -62,7 +63,7 @@ namespace EmberCrpg.Presentation.Combat
                 return;
 
             ReadLookInput();
-            if (Input.GetKeyDown(toggleKey))
+            if (EmberInput.KeyDown(toggleKey))
                 ToggleMode();
 
             if (Mode == CombatPlaygroundCameraMode.FirstPerson)
@@ -86,8 +87,8 @@ namespace EmberCrpg.Presentation.Combat
 
         private void ReadLookInput()
         {
-            yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
-            pitch = Mathf.Clamp(pitch - Input.GetAxis("Mouse Y") * mouseSensitivity, -55f, 75f);
+            yaw += EmberInput.LookSmoothed.x * mouseSensitivity;
+            pitch = Mathf.Clamp(pitch - EmberInput.LookSmoothed.y * mouseSensitivity, -55f, 75f);
         }
 
         private void ApplyFirstPerson()

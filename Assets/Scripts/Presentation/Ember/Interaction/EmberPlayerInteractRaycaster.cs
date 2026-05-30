@@ -4,6 +4,7 @@ using EmberCrpg.Presentation.Ember.Adapters;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using Unity.Cinemachine;
+using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.Interaction
 {
@@ -60,14 +61,14 @@ namespace EmberCrpg.Presentation.Ember.Interaction
 
                 if (interactable != null)
                 {
-                    if (Input.GetKeyDown(KeyCode.E))
+                    if (EmberInput.Interact)
                     {
                         OpenDialog(interactable, hit.point);
                     }
                 }
                 else if (portal != null)
                 {
-                    if (Input.GetKeyDown(KeyCode.E))
+                    if (EmberInput.Interact)
                     {
                         portal.Activate();
                     }
