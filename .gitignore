@@ -56,6 +56,9 @@ Assets/AI Toolkit/Temp.meta
 # Keep them local or download them during model bootstrap; do not publish them.
 Assets/StreamingAssets/Models/sdxl-turbo/unet/model.onnx.data
 Assets/StreamingAssets/Models/sdxl-turbo/text_encoder_2/model.onnx.data
+# HYG-03: the .onnx.data payloads are ignored above, so their Unity .meta must be too
+# (otherwise a clean clone gets a tracked .meta with no asset = dangling import).
+Assets/StreamingAssets/Models/sdxl-turbo/*/model.onnx.data.meta
 
 # Unity Performance Testing auto-generated run info (rewritten on every test run
 # with whichever packages happen to be installed locally — including dev-only
@@ -96,6 +99,9 @@ Reports/*.tmp
 # from https://developer.nvidia.com/cudnn-9-archive and copy into
 # Assets/Plugins/x86_64/cuda/. The forge picks them up at runtime.
 Assets/Plugins/x86_64/cuda/cudnn*.dll
+# HYG-02: the cuDNN DLLs are ignored above; ignore their Unity .meta too so a stray
+# `git add -A` can't commit orphan metas whose DLL is absent on a clean clone.
+Assets/Plugins/x86_64/cuda/cudnn*.dll.meta
 
 # EMB-052 — secrets must never be committed. Keys/endpoints are read from
 # environment variables only (e.g. EMBER_LOCAL_LLM_ENDPOINT, the cloud LLM

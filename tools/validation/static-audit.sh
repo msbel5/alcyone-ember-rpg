@@ -109,6 +109,30 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 3c. Tracked .meta whose ASSET is gitignored  (HARD FAIL — HYG-11)
+#     The reverse of 3b: a .meta is committed but its asset is gitignored (e.g. a
+#     cuDNN .dll or an .onnx.data shard), so a clean clone gets a tracked .meta
+#     with no asset = dangling import. This is the gap the cuDNN/onnx-meta hazard
+#     exploited; gitignore the .meta alongside its asset to fix.
+# ---------------------------------------------------------------------------
+head "3c. Tracked .meta whose asset is gitignored"
+IGNORED_ASSET_META=0
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  while IFS= read -r meta; do
+    case "$meta" in *.meta) ;; *) continue ;; esac
+    asset="${meta%.meta}"
+    if git check-ignore -q "$asset" 2>/dev/null && ! git check-ignore -q "$meta" 2>/dev/null; then
+      echo "  TRACKED meta for gitignored asset: $meta"
+      IGNORED_ASSET_META=$((IGNORED_ASSET_META+1))
+    fi
+  done < <(git ls-files Assets 2>/dev/null)
+  if [ "$IGNORED_ASSET_META" -eq 0 ]; then say "PASS: no tracked .meta points at a gitignored asset."
+  else echo "FAIL: $IGNORED_ASSET_META tracked .meta point at a gitignored asset (gitignore the .meta too)."; FAIL=1; fi
+else
+  say "SKIP: not a git repo."
+fi
+
+# ---------------------------------------------------------------------------
 # 4. Orphan .meta  (.meta whose asset is gone)  (WARN)
 # ---------------------------------------------------------------------------
 head "4. Orphan .meta under Assets"

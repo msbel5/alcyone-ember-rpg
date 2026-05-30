@@ -25,7 +25,7 @@ name: Unity Tests
 
 on:
   push:
-    branches: [main, dev/**]
+    branches: [main, dev/**, feat/**] # HYG-10: run the static-audit gate on feature pushes too
     tags: ['v*']
     paths:
       - 'Assets/**'
