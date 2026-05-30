@@ -2,28 +2,36 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using EmberCrpg.Presentation.Ember.Adapters; // EMB-014: IPlayerCommandSink via EmberDomainAdapterLocator
+using EmberCrpg.Presentation.Ember.Inputs;    // EMB-014/015: F1..F12 hotkeys through the input facade
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
+    /// <summary>The BG1-style "unified action window" levels the bottom strip can switch between.
+    /// Standard is the root; CAST/MODAL/FORM open a sub-level whose last slot is BACK.</summary>
+    public enum ActionLevel { Standard, QWeapons, QSpells, QItems, Innate, Songs, Modal, Formation }
+
     /// <summary>
     /// In-world HUD shared by every gameplay scene. Implements the P1.5 design-system frame
     /// from <c>Reference/PRDs/PRD_frontend_action_bar_v1.md</c>:
     ///   • bottom-LEFT  : labeled HEALTH / FATIGUE / MANA bars (red / yellow / blue, with
     ///                    parchment word labels + numeric "70 / 100" overlay)
-    ///   • bottom-CENTER: 12-button BG1-style context action strip (UAW_STANDARD: ATK CAST
-    ///                    TALK INV CHAR MAP JOURN SRCH STLTH MODAL FORM EQUIP), gold hairline
+    ///   • bottom-CENTER: 12-button BG1-style context action strip with an action-LEVEL state
+    ///                    machine (EMB-014): Standard ⇄ QSpells/Modal/Formation; gold hairline
     ///                    border, F1..F12 hotkey hints
-    ///   • top-LEFT     : tick / day / weather status line (replaced by the formal clock widget
-    ///                    when T-Clock lands; kept here so we don't lose the runtime breadcrumb)
+    ///   • top-LEFT     : tick / day / weather status line
     ///
-    /// Vitals are read each refresh from the injected <see cref="IEmberHudSource"/> when it
-    /// also implements <see cref="ICombatHudSource"/> (EmberWorldHost does), so the panel stays
-    /// domain-agnostic. Slot click handlers are stubs for slice 1 — wiring the real action-level
-    /// state machine + structured-action commands lives in a later T-HUD pass.
+    /// EMB-014: the strip is no longer a row of Debug.Log stubs. Slots carry a typed command and
+    /// route through <see cref="IPlayerCommandSink"/> (obtained from
+    /// <see cref="EmberDomainAdapterLocator.PlayerCommandSink"/>): CAST switches to the QSpells
+    /// level whose SPL1..SPL5 slots issue real <c>TryCastSpell</c> commands; ATK issues a
+    /// <c>TryMeleeStrike</c>; SRCH issues <c>TryInteract</c>; not-yet-built panels report through
+    /// <c>LogCombat</c> rather than the console. F1..F12 trigger the matching slot of the current
+    /// level (F5/F9 are reserved for the global quicksave/quickload bindings).
     ///
-    /// History (audit trail): previous shape was "top vitals pills + numbered 1-9 hotbar". That
-    /// was the wrong direction (T3) — the PRD wants bottom-labeled bars and a 12-button strip,
-    /// not top pills and 9 slots. Rebuilt here per the PRD on feat/p15-design-alignment.
+    /// Vitals are read each refresh from the injected <see cref="IEmberHudSource"/> when it also
+    /// implements <see cref="ICombatHudSource"/> (EmberWorldHost does), so the panel stays
+    /// domain-agnostic.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class EmberHud : MonoBehaviour
@@ -43,28 +51,30 @@ namespace EmberCrpg.Presentation.Ember.UI
         private TMP_Text _hpNumeric, _ftNumeric, _mpNumeric;
 
         // 12-button BG1 context action strip — bottom-center.
-        private readonly ActionSlot[] _slots = new ActionSlot[StandardActions.Length];
+        private const int SlotCount = 12;
+        private readonly ActionSlot[] _slots = new ActionSlot[SlotCount];
+        private ActionLevel _level = ActionLevel.Standard;
 
-        // Standard action set (BG1 UAW_STANDARD) — placeholders until icons + real command
-        // wiring land. Order matches PRD FR-03 (attack first, formation last) so muscle memory
-        // ports cleanly when icons replace the text glyphs.
-        //
-        // tuple = (slot label shown in the strip, tooltip text, F-key hint shown bottom-right).
-        private static readonly (string Label, string Tooltip, string Hotkey)[] StandardActions = new[]
+        // EMB-014: what a slot does when clicked or hotkeyed. Arg/Info carry the command payload.
+        private enum ActionCmd { None, SwitchTo, Back, CastSlot, Attack, Interact, Info }
+
+        private readonly struct ActionDef
         {
-            ("ATK",   "Attack (melee or ranged)",           "F1"),
-            ("CAST",  "Cast memorized spell",               "F2"),
-            ("TALK",  "Talk to nearest NPC",                "F3"),
-            ("INV",   "Inventory",                          "F4"),
-            ("CHAR",  "Character sheet",                    "F5"),
-            ("MAP",   "World map",                          "F6"),
-            ("JOURN", "Journal",                            "F7"),
-            ("SRCH",  "Search the area",                    "F8"),
-            ("STLTH", "Toggle stealth",                     "F9"),
-            ("MODAL", "Toggle modal (turn undead, bard song, etc.)", "F10"),
-            ("FORM",  "Formation presets",                  "F11"),
-            ("EQUIP", "Quick equipment slot",               "F12"),
-        };
+            public ActionDef(string label, string tooltip, string hotkey, ActionCmd cmd, int arg = 0, string info = null)
+            {
+                Label = label; Tooltip = tooltip; Hotkey = hotkey; Cmd = cmd; Arg = arg; Info = info;
+            }
+
+            public readonly string Label;
+            public readonly string Tooltip;
+            public readonly string Hotkey;
+            public readonly ActionCmd Cmd;
+            public readonly int Arg;     // target ActionLevel (SwitchTo) or spell slot (CastSlot)
+            public readonly string Info; // interact tag (Interact) or status copy (Info)
+
+            public bool IsEmpty => string.IsNullOrEmpty(Label);
+            public static ActionDef Empty => new ActionDef(null, null, null, ActionCmd.None);
+        }
 
         // Ember design tokens (mirror Assets/Scripts/Ui/Foundation/UiTokens.cs).
         private static readonly Color VitalHealth   = new Color(0.851f, 0.200f, 0.122f, 1f); // #D9331F
@@ -79,15 +89,95 @@ namespace EmberCrpg.Presentation.Ember.UI
         private static readonly Color GoldHairline  = new Color(0.949f, 0.859f, 0.620f, 0.30f);
         private static readonly Color InkOnGold     = new Color(0.149f, 0.102f, 0.051f, 1f); // #261A0D
 
+        // -------------------------------------------------------------------------------------
+        // Action-level definitions (EMB-014). Each level returns exactly SlotCount entries; the
+        // hotkey F(k) always sits at index (k-1) so an F-key maps straight to a slot.
+        // -------------------------------------------------------------------------------------
+        private static ActionDef[] ActionsFor(ActionLevel level)
+        {
+            switch (level)
+            {
+                case ActionLevel.QSpells:
+                    return Pad(
+                        new ActionDef("SPL1", "Cast spell slot 1", "F1", ActionCmd.CastSlot, 0),
+                        new ActionDef("SPL2", "Cast spell slot 2", "F2", ActionCmd.CastSlot, 1),
+                        new ActionDef("SPL3", "Cast spell slot 3", "F3", ActionCmd.CastSlot, 2),
+                        new ActionDef("SPL4", "Cast spell slot 4", "F4", ActionCmd.CastSlot, 3),
+                        new ActionDef("SPL5", "Cast spell slot 5 (click only — F5 quicksaves)", "F5", ActionCmd.CastSlot, 4));
+
+                case ActionLevel.Modal:
+                    return Pad(
+                        new ActionDef("DETECT", "Toggle detect", "F1", ActionCmd.Info, 0, "Detect modal not yet available."),
+                        new ActionDef("TURN", "Turn undead", "F2", ActionCmd.Info, 0, "Turn undead not yet available."),
+                        new ActionDef("BLESS", "Bless aura", "F3", ActionCmd.Info, 0, "Bless modal not yet available."));
+
+                case ActionLevel.Formation:
+                    return Pad(
+                        new ActionDef("LINE", "Line formation", "F1", ActionCmd.Info, 0, "Formation presets not yet available."),
+                        new ActionDef("WEDGE", "Wedge formation", "F2", ActionCmd.Info, 0, "Formation presets not yet available."),
+                        new ActionDef("BOX", "Box formation", "F3", ActionCmd.Info, 0, "Formation presets not yet available."),
+                        new ActionDef("SKEIN", "Skein formation", "F4", ActionCmd.Info, 0, "Formation presets not yet available."));
+
+                case ActionLevel.QWeapons:
+                    return Pad(
+                        new ActionDef("WPN1", "Quick weapon 1", "F1", ActionCmd.Info, 0, "Weapon swap not yet available."),
+                        new ActionDef("WPN2", "Quick weapon 2", "F2", ActionCmd.Info, 0, "Weapon swap not yet available."),
+                        new ActionDef("WPN3", "Quick weapon 3", "F3", ActionCmd.Info, 0, "Weapon swap not yet available."),
+                        new ActionDef("WPN4", "Quick weapon 4", "F4", ActionCmd.Info, 0, "Weapon swap not yet available."));
+
+                case ActionLevel.QItems:
+                    return Pad(
+                        new ActionDef("ITM1", "Quick item 1", "F1", ActionCmd.Info, 0, "Quick items not yet available."),
+                        new ActionDef("ITM2", "Quick item 2", "F2", ActionCmd.Info, 0, "Quick items not yet available."),
+                        new ActionDef("ITM3", "Quick item 3", "F3", ActionCmd.Info, 0, "Quick items not yet available."),
+                        new ActionDef("ITM4", "Quick item 4", "F4", ActionCmd.Info, 0, "Quick items not yet available."));
+
+                case ActionLevel.Innate:
+                    return Pad(
+                        new ActionDef("INN1", "Innate ability 1", "F1", ActionCmd.Info, 0, "Innate abilities not yet available."),
+                        new ActionDef("INN2", "Innate ability 2", "F2", ActionCmd.Info, 0, "Innate abilities not yet available."),
+                        new ActionDef("INN3", "Innate ability 3", "F3", ActionCmd.Info, 0, "Innate abilities not yet available."));
+
+                case ActionLevel.Songs:
+                    return Pad(
+                        new ActionDef("SONG1", "Bard song 1", "F1", ActionCmd.Info, 0, "Bard songs not yet available."),
+                        new ActionDef("SONG2", "Bard song 2", "F2", ActionCmd.Info, 0, "Bard songs not yet available."),
+                        new ActionDef("SONG3", "Bard song 3", "F3", ActionCmd.Info, 0, "Bard songs not yet available."));
+
+                default: // Standard (BG1 UAW_STANDARD)
+                    return new[]
+                    {
+                        new ActionDef("ATK",   "Attack nearest",   "F1",  ActionCmd.Attack),
+                        new ActionDef("CAST",  "Quick-cast a spell","F2", ActionCmd.SwitchTo, (int)ActionLevel.QSpells),
+                        new ActionDef("TALK",  "Talk to nearest NPC","F3",ActionCmd.Info, 0, "Approach an NPC and press E to talk."),
+                        new ActionDef("INV",   "Inventory",        "F4",  ActionCmd.Info, 0, "Inventory panel not yet available."),
+                        new ActionDef("CHAR",  "Character sheet",  "F5",  ActionCmd.Info, 0, "Character sheet not yet available."),
+                        new ActionDef("MAP",   "World map",        "F6",  ActionCmd.Info, 0, "World map not yet available."),
+                        new ActionDef("JOURN", "Journal",          "F7",  ActionCmd.Info, 0, "Journal not yet available."),
+                        new ActionDef("SRCH",  "Search the area",  "F8",  ActionCmd.Interact, 0, "search"),
+                        new ActionDef("STLTH", "Toggle stealth",   "F9",  ActionCmd.Info, 0, "Stealth not yet available."),
+                        new ActionDef("MODAL", "Modal abilities",  "F10", ActionCmd.SwitchTo, (int)ActionLevel.Modal),
+                        new ActionDef("FORM",  "Formation presets","F11", ActionCmd.SwitchTo, (int)ActionLevel.Formation),
+                        new ActionDef("EQUIP", "Quick equipment",  "F12", ActionCmd.Info, 0, "Equipment panel not yet available."),
+                    };
+            }
+        }
+
+        // Pad a sub-level's actions to SlotCount, leaving a BACK affordance in the final slot.
+        private static ActionDef[] Pad(params ActionDef[] head)
+        {
+            var defs = new ActionDef[SlotCount];
+            for (int i = 0; i < SlotCount; i++) defs[i] = ActionDef.Empty;
+            for (int i = 0; i < head.Length && i < SlotCount - 1; i++) defs[i] = head[i];
+            defs[SlotCount - 1] = new ActionDef("BACK", "Return to standard actions", "F12", ActionCmd.Back);
+            return defs;
+        }
+
         private void Awake()
         {
-            // Force this HUD container to fullscreen. In CombatDungeon the host creates a fresh
-            // GameObject with fullscreen anchors so the bottom-row furniture (vitals + action
-            // strip) lands at the actual bottom of the screen. In the other 9 scenes the
-            // EmberHud is scene-authored on a child RectTransform that is NOT fullscreen — so
-            // a naive bottom-anchored child renders inside that small rect (top-left of
-            // screen). Normalizing to (0,0)→(1,1) here makes the layout identical across every
-            // scene without touching the scene assets.
+            // Force this HUD container to fullscreen so the bottom-row furniture (vitals + action
+            // strip) lands at the actual bottom of the screen in every scene regardless of how the
+            // EmberHud RectTransform was authored.
             if (transform is RectTransform selfRt)
             {
                 selfRt.anchorMin = Vector2.zero;
@@ -106,18 +196,19 @@ namespace EmberCrpg.Presentation.Ember.UI
                 _background.type = Image.Type.Sliced;
             }
 
-            // Keep any pre-existing TMP child (some scenes seed one) but rewire it as the
-            // top-left status label. New scenes get a fresh one from BuildStatusLabel().
             _statusLabel = GetComponentInChildren<TMP_Text>(includeInactive: true);
             if (_statusLabel == null) _statusLabel = BuildStatusLabel();
             else { _statusLabel.color = Parchment; }
 
             BuildVitalsBars();
             BuildActionStrip();
+            SetLevel(ActionLevel.Standard);
         }
 
         private void Update()
         {
+            HandleHotkeys(); // every frame — GetKeyDown must not be throttled
+
             _refreshTimer -= Time.unscaledDeltaTime;
             if (_refreshTimer > 0f) return;
             _refreshTimer = RefreshIntervalSeconds;
@@ -125,6 +216,59 @@ namespace EmberCrpg.Presentation.Ember.UI
                 _statusLabel.text = Source != null ? Source.GetHudText() : "Tick 0  •  Day 1  •  Calm";
             RefreshVitals();
         }
+
+        // -------------------------------------------------------------------------------------
+        // Action-level state machine (EMB-014)
+        // -------------------------------------------------------------------------------------
+        private void SetLevel(ActionLevel level)
+        {
+            _level = level;
+            var defs = ActionsFor(level);
+            for (int i = 0; i < SlotCount; i++)
+                _slots[i]?.Apply(defs[i], this);
+        }
+
+        private void HandleHotkeys()
+        {
+            int fk = EmberInput.FunctionKeyDown();
+            // F5/F9 are reserved for the global quicksave/quickload bindings (EmberSaveService);
+            // the slots sitting on those positions stay click-only to avoid a double-trigger.
+            if (fk < 1 || fk > SlotCount || fk == 5 || fk == 9) return;
+            var defs = ActionsFor(_level);
+            var def = defs[fk - 1];
+            if (!def.IsEmpty) Execute(def);
+        }
+
+        private void Execute(ActionDef def)
+        {
+            switch (def.Cmd)
+            {
+                case ActionCmd.SwitchTo:
+                    SetLevel((ActionLevel)def.Arg);
+                    break;
+                case ActionCmd.Back:
+                    SetLevel(ActionLevel.Standard);
+                    break;
+                case ActionCmd.CastSlot:
+                    Sink()?.TryCastSpell(def.Arg);
+                    SetLevel(ActionLevel.Standard); // BG1: quick-cast returns to the standard level
+                    break;
+                case ActionCmd.Attack:
+                    // Issue a real strike command; the adapter resolves/refuses a target and logs it.
+                    Sink()?.TryMeleeStrike(string.Empty, 6);
+                    break;
+                case ActionCmd.Interact:
+                    Sink()?.TryInteract(def.Info ?? string.Empty);
+                    break;
+                case ActionCmd.Info:
+                    // Replaces the old Debug.Log stub: route the "not yet available" / hint copy
+                    // through the command sink's combat line so it surfaces in-world, not the console.
+                    Sink()?.LogCombat(def.Info ?? def.Tooltip ?? def.Label);
+                    break;
+            }
+        }
+
+        private static IPlayerCommandSink Sink() => EmberDomainAdapterLocator.PlayerCommandSink;
 
         // -------------------------------------------------------------------------------------
         // Vitals  (bottom-left, three labeled bars)
@@ -166,7 +310,6 @@ namespace EmberCrpg.Presentation.Ember.UI
         }
 
         // One row = parchment WORD label (left, 70px) + colored bar with numeric overlay (right).
-        // Bars stack top-down so HEALTH reads first; matches PRD reading order.
         private Image MakeLabeledBar(RectTransform parent, int row, string word, Color color, out TMP_Text numeric)
         {
             const float h = 32f, gap = 6f, labelW = 72f;
@@ -177,7 +320,6 @@ namespace EmberCrpg.Presentation.Ember.UI
             rowRt.anchoredPosition = new Vector2(0f, -row * (h + gap));
             rowRt.sizeDelta = new Vector2(0f, h);
 
-            // word label, left side
             var label = NewText("Word", rowRt, 14, Parchment, TextAlignmentOptions.MidlineLeft);
             var labelRt = label.rectTransform;
             labelRt.anchorMin = new Vector2(0f, 0f);
@@ -191,7 +333,6 @@ namespace EmberCrpg.Presentation.Ember.UI
             label.outlineWidth = 0.18f;
             label.outlineColor = new Color32(0, 0, 0, 200);
 
-            // bar track + colored fill, right side
             var track = NewRect("Track", rowRt);
             track.anchorMin = new Vector2(0f, 0f);
             track.anchorMax = new Vector2(1f, 1f);
@@ -233,10 +374,8 @@ namespace EmberCrpg.Presentation.Ember.UI
         // -------------------------------------------------------------------------------------
         private void BuildActionStrip()
         {
-            // 56px slot fits the widest STANDARD label ("JOURN") at font 11 without wrapping.
-            // 12 slots × 56 + 11 × 4 gap = 716px wide — comfortable bottom-center on 1920×1080.
             const float slot = 56f, gap = 4f;
-            int count = StandardActions.Length;
+            int count = SlotCount;
             float width = count * slot + (count - 1) * gap;
 
             var strip = NewRect("ActionStrip", transform);
@@ -245,24 +384,36 @@ namespace EmberCrpg.Presentation.Ember.UI
             strip.anchoredPosition = new Vector2(0f, 22f);
             strip.sizeDelta = new Vector2(width, slot);
 
+            // Build the slot furniture once; SetLevel() fills in label/hotkey/command per level.
             for (int i = 0; i < count; i++)
-                _slots[i] = ActionSlot.Build(strip, i, slot, gap, StandardActions[i], _font);
+                _slots[i] = ActionSlot.Build(strip, i, slot, gap, _font);
         }
 
-        // Encapsulates one of the 12 BG1 buttons. Slice-1 click handler is a stub that just
-        // logs through Debug; the action-level state machine (UAW_QSPELLS pop-up, modal
-        // toggles, formation presets) lands in a later T-HUD pass.
+        // Encapsulates one of the 12 BG1 buttons. EMB-014: the button fires the slot's mutable
+        // OnClick, which SetLevel rebinds per action level — no hardcoded handler.
         private sealed class ActionSlot
         {
+            public RectTransform Root;
             public Button Button;
             public TMP_Text LabelText;
             public TMP_Text HotkeyText;
             public Image Background;
             public string Tooltip;
+            public Action OnClick;
 
-            public static ActionSlot Build(
-                RectTransform parent, int index, float size, float gap,
-                (string Label, string Tooltip, string Hotkey) cfg, TMP_FontAsset font)
+            public void Apply(ActionDef def, EmberHud hud)
+            {
+                bool empty = def.IsEmpty;
+                if (Root != null) Root.gameObject.SetActive(!empty);
+                if (empty) { OnClick = null; return; }
+                if (LabelText != null) LabelText.text = def.Label;
+                if (HotkeyText != null) HotkeyText.text = def.Hotkey ?? string.Empty;
+                Tooltip = def.Tooltip;
+                var captured = def;
+                OnClick = () => hud.Execute(captured);
+            }
+
+            public static ActionSlot Build(RectTransform parent, int index, float size, float gap, TMP_FontAsset font)
             {
                 var rt = New("Slot_" + (index + 1), parent);
                 rt.anchorMin = new Vector2(0f, 0.5f);
@@ -290,12 +441,9 @@ namespace EmberCrpg.Presentation.Ember.UI
                 colors.fadeDuration     = 0.08f;
                 button.colors = colors;
                 button.targetGraphic = bg;
-                int captured = index;
-                string capturedLabel = cfg.Label;
-                button.onClick.AddListener(() =>
-                {
-                    Debug.Log("[EmberHud] action_strip slot " + (captured + 1) + " (" + capturedLabel + ") — stub; real command wiring lands in a later T-HUD slice.");
-                });
+
+                var slot = new ActionSlot { Root = rt, Button = button, Background = bg };
+                button.onClick.AddListener(() => slot.OnClick?.Invoke());
 
                 var label = NewText("Label", rt, 11, Gold, TextAlignmentOptions.Center, font);
                 var labelRt = label.rectTransform;
@@ -303,12 +451,12 @@ namespace EmberCrpg.Presentation.Ember.UI
                 labelRt.anchorMax = Vector2.one;
                 labelRt.offsetMin = new Vector2(1f, 14f);
                 labelRt.offsetMax = new Vector2(-1f, -3f);
-                label.text = cfg.Label;
                 label.fontStyle = FontStyles.Bold;
                 label.enableWordWrapping = false;
                 label.overflowMode = TextOverflowModes.Overflow;
                 label.outlineWidth = 0.22f;
                 label.outlineColor = new Color32(0, 0, 0, 220);
+                slot.LabelText = label;
 
                 var hotkey = NewText("Hotkey", rt, 9, ParchmentDim, TextAlignmentOptions.BottomRight, font);
                 var hotRt = hotkey.rectTransform;
@@ -316,16 +464,9 @@ namespace EmberCrpg.Presentation.Ember.UI
                 hotRt.anchorMax = Vector2.one;
                 hotRt.offsetMin = new Vector2(2f, 2f);
                 hotRt.offsetMax = new Vector2(-3f, -2f);
-                hotkey.text = cfg.Hotkey;
+                slot.HotkeyText = hotkey;
 
-                return new ActionSlot
-                {
-                    Button = button,
-                    LabelText = label,
-                    HotkeyText = hotkey,
-                    Background = bg,
-                    Tooltip = cfg.Tooltip,
-                };
+                return slot;
             }
 
             private static RectTransform New(string name, Transform parent)
@@ -366,8 +507,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         }
 
         // -------------------------------------------------------------------------------------
-        // Tiny UGUI helpers (kept identical to legacy EmberHud signatures so call sites in this
-        // file stay readable).
+        // Tiny UGUI helpers.
         // -------------------------------------------------------------------------------------
         private RectTransform NewRect(string name, Transform parent)
         {

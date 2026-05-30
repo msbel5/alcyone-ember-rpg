@@ -74,6 +74,16 @@ namespace EmberCrpg.Presentation.Ember.Inputs
         public static bool NumberKeyDown(int oneBased)
             => oneBased >= 1 && oneBased <= 9 && Input.GetKeyDown(KeyCode.Alpha1 + (oneBased - 1));
 
+        // ----- Function row F1..F12 (HUD action bar hotkeys, EMB-014) -----------------------------
+        /// <summary>Returns the 1..12 function key (F1..F12) pressed this frame, or 0 if none.
+        /// KeyCode.F1..F12 are contiguous, so the action bar can map a hotkey to a slot directly.</summary>
+        public static int FunctionKeyDown()
+        {
+            for (int i = 0; i < 12; i++)
+                if (Input.GetKeyDown(KeyCode.F1 + i)) return i + 1;
+            return 0;
+        }
+
         // ----- Thin passthroughs (configurable bindings only) ------------------------------------
         // These exist solely so inspector-bound KeyCode/axis fields still funnel through this facade.
         // Prefer a semantic member above when the binding is fixed.
