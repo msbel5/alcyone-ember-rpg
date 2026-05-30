@@ -108,19 +108,26 @@ namespace EmberCrpg.Simulation.AiDm
                 };
 
                 string resultText = "";
-                // Drain the async stream synchronously to keep the existing
-                // sync Complete() signature.
-                var enumerator = _executor.InferAsync(prompt, inferenceParams).GetAsyncEnumerator();
-                try
+                // DET-04: bound native generation with a timeout so a stalled inference can't pin the
+                // calling (worker) thread forever — the HTTP client got this in EMB-018, native did not.
+                // On timeout the CancellationToken trips MoveNextAsync, which throws and is caught below,
+                // degrading to the fallback/empty response (mirrors LlmHttpClientCore).
+                using (var timeout = new System.Threading.CancellationTokenSource(System.TimeSpan.FromSeconds(60)))
                 {
-                    while (enumerator.MoveNextAsync().AsTask().GetAwaiter().GetResult())
+                    // Drain the async stream synchronously to keep the existing sync Complete() signature.
+                    var enumerator = _executor.InferAsync(prompt, inferenceParams, timeout.Token)
+                        .GetAsyncEnumerator(timeout.Token);
+                    try
                     {
-                        resultText += enumerator.Current;
+                        while (enumerator.MoveNextAsync().AsTask().GetAwaiter().GetResult())
+                        {
+                            resultText += enumerator.Current;
+                        }
                     }
-                }
-                finally
-                {
-                    enumerator.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                    finally
+                    {
+                        enumerator.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                    }
                 }
 
                 return new LlmResponse(resultText, null, 0);
