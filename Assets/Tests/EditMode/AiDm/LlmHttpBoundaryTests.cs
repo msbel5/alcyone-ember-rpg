@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Simulation.AiDm;
+using EmberCrpg.Infrastructure.AiDm; // ARCH-05: LLM provider impls
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.AiDm

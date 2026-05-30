@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using EmberCrpg.Domain.Forge;
 using EmberCrpg.Simulation.AiDm;
+using EmberCrpg.Infrastructure.AiDm; // ARCH-05: LLM provider impls
 using EmberCrpg.Simulation.Forge;
 using EmberCrpg.Domain.AiDm;
 

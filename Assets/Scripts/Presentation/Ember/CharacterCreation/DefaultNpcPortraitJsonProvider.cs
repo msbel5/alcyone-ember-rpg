@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Simulation.AiDm;
+using EmberCrpg.Infrastructure.AiDm; // ARCH-05: LLM provider impls
 
 namespace EmberCrpg.Presentation.Ember.CharacterCreation
 {

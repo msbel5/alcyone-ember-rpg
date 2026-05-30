@@ -1,14 +1,14 @@
-// EMB-019: this non-deterministic LLM provider implementation lives in the EmberCrpg.Infrastructure
-// assembly (not EmberCrpg.Simulation) so the deterministic, headless Simulation core can never
-// reference HTTP/native inference at compile time. The namespace stays EmberCrpg.Simulation.AiDm
-// on purpose: AiDm is the logical area, while the assembly boundary is what isolates the I/O.
+// EMB-019/ARCH-05: this non-deterministic LLM provider lives in the EmberCrpg.Infrastructure
+// assembly AND namespace (EmberCrpg.Infrastructure.AiDm), so the deterministic, headless Simulation
+// core can never reference HTTP/native inference at compile time and the namespace matches the
+// assembly that actually owns the type.
 using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading; // EMB-018: CancellationTokenSource for bounded HTTP timeouts
 using EmberCrpg.Domain.AiDm;
 
-namespace EmberCrpg.Simulation.AiDm
+namespace EmberCrpg.Infrastructure.AiDm
 {
     /// <summary>
     /// Explicit endpoint config for sync LLM clients. Disabled by default.
