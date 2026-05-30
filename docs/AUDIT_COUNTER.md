@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 43/60 addressed (37 fixed + 4 wont-do/decided + 2 deferred-w-rationale) · 17 TODO · build green**
+**Progress: 44/60 addressed (38 fixed + 4 wont-do/decided + 2 deferred) · 16 TODO · build green · LLM PROVEN REAL**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -69,7 +69,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-002** · `.meta` integrity · Editor:yes — missing `.meta` on `LLamaSharp.dll`, `Jost.ttf`, `Spectral-Regular.ttf`, `Resources/Fonts/`, `NuGet/.nuget-installed.json`. Metas already existed on disk (Unity-generated, valid) but were never git-add'ed; committed as-is. DONE headless.
 - `[x]` **EMB-004** · LFS/build reliability · Editor:scan-no/build-yes — CI `lfs:false`; many DLL/model files are 131-byte LFS pointers → false-green. Add pointer-scan validation; split CI source-only vs LFS-build.
 - `[x]` **EMB-005** · AI/model bootstrap · Editor:no — `Models/manifest.json` paths (`sdxl-turbo/text_encoder.onnx`) don't match real nested layout (`text_encoder/model.onnx`); hashes `TBD`. Normalize manifest + `VerifyAllPresent` test.
-- `[ ]` **EMB-006** · LLM integration · Editor:partial — `NativeLlmClient` fallback when `USE_LLAMASHARP` absent; explicit disabled/fallback/real capability states + presence validation + no fake-real claims.
+- `[x]` **EMB-006** · LLM integration · Editor:partial — `NativeLlmClient` fallback when `USE_LLAMASHARP` absent; explicit disabled/fallback/real capability states + presence validation + no fake-real claims.
 - `[x]` **EMB-007** · Determinism/threading · Editor:yes — `DomainSimulationAdapter` `Task.Run` writes `_currentDialogLine`/`_isDialogThinking`/`_pendingFate`/`_world.ToolCallTrace` off-thread. Marshal results to main-thread tick boundary. (== package P2-B)
 - `[~]` **EMB-008** · LLM authority · Editor:core-no — `ConsultFateAsync` synthesizes `ToolCallTraceRecord` directly, bypassing validator/router. Route fate/dialog effects through tool router. (== P2-D)
 
