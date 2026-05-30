@@ -43,11 +43,9 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 0 / 60 defects · 0 / 11 packages · 0 / 25 final-checklist items**
+**Progress: 4 / 60 defects done (+1 partial) · 0 / 11 packages · 4 / 25 final-checklist items**
 
-**▶ NOW = EMB-001 (duplicate scene .meta GUID scan + fix).** Then march the headless lane in §4
-order. First headless burst (no Editor): EMB-001, 047, 058/046/003-docs, 005, 043, 052, 048/050,
-004-scan, 026/060-package, then the static-audit tooling. Editor-required batch surfaced after.
+**▶ NOW = EMB-005 (model manifest path normalize + VerifyAllPresent test).** Done so far (headless): EMB-001 dup-GUID, EMB-047 DOCS/ links, EMB-058 CURRENT_STATE, EMB-046 README de-stale, EMB-043 README-Qwen (partial; manifest pending here). Next headless: 005, 052, 048/050, 049, 004-scan, static-audit tooling.
 
 > Forge/SDXL note (pre-audit, already fixed this session): CUDA onnxruntime + cuDNN + llama/ggml/mtmd
 > `.meta` files now Editor+Win64-enabled (commits ebc11d2b, 5ebda704, 753f1b0d) so Editor Play Mode
@@ -67,7 +65,7 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 ## §3 — DEFECT REGISTER (EMB-001 … EMB-060)
 
 ### Critical (must fix; several are Editor-gated)
-- `[ ]` **EMB-001** · Unity asset identity · Editor:partial — `CombatPlayground.unity.meta` & `Sprint4Foundation.unity.meta` share GUID `92b2f977c6bb4e4ebc6c7ace4f8484a7`. Both are non-build root scenes. Fix: confirm no refs, regenerate one GUID or archive one scene. **▶ NOW**
+- `[x]` **EMB-001** · Unity asset identity · Editor:partial — `CombatPlayground.unity.meta` & `Sprint4Foundation.unity.meta` share GUID `92b2f977c6bb4e4ebc6c7ace4f8484a7`. Both are non-build root scenes. Fix: confirm no refs, regenerate one GUID or archive one scene. **▶ NOW**
 - `[ ]` **EMB-002** · `.meta` integrity · Editor:yes — missing `.meta` on `LLamaSharp.dll`, `Jost.ttf`, `Spectral-Regular.ttf`, `Resources/Fonts/`, `NuGet/.nuget-installed.json`. Import via Unity (don't hand-fake importer settings). [E]
 - `[ ]` **EMB-004** · LFS/build reliability · Editor:scan-no/build-yes — CI `lfs:false`; many DLL/model files are 131-byte LFS pointers → false-green. Add pointer-scan validation; split CI source-only vs LFS-build.
 - `[ ]` **EMB-005** · AI/model bootstrap · Editor:no — `Models/manifest.json` paths (`sdxl-turbo/text_encoder.onnx`) don't match real nested layout (`text_encoder/model.onnx`); hashes `TBD`. Normalize manifest + `VerifyAllPresent` test.
@@ -91,9 +89,9 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-030** · scene playability · Editor:yes — scene-tour checklist (spawn/camera/collision/interact/exit/HUD/dialog/save/screenshot). (== P1-C)
 - `[ ]` **EMB-033** · char-creation complexity · Editor:yes — controller 707 + rendering 571 + portrait LLM. Split state/view/gen/transition.
 - `[ ]` **EMB-041** · model/provider dup · Editor:gen-yes — `ModelBootstrap`/`ForgeBootstrap`/`OnnxAssetForge`/`ComfyUiAssetForge` split-brain. One model locator + one provider factory.
-- `[ ]` **EMB-046** · docs/source conflict · Editor:no — README says "no char creation / AI test-wired only"; goal says creation exists + LLM partial. README → point to CURRENT_STATE. (== P0-C)
+- `[x]` **EMB-046** · docs/source conflict · Editor:no — README says "no char creation / AI test-wired only"; goal says creation exists + LLM partial. README → point to CURRENT_STATE. (== P0-C)
 - `[ ]` **EMB-048** · PRD duplication · Editor:no — `Reference/PRDs` 97 + `docs/reference/prd` + `docs/prds` overlap. One matrix, active/reference/deprecated tags. (== P4-A)
-- `[ ]` **EMB-058** · no current-state one-pager · Editor:no — status buried in 200+ line goal. Create `docs/CURRENT_STATE.md`. (== P0-C)
+- `[x]` **EMB-058** · no current-state one-pager · Editor:no — status buried in 200+ line goal. Create `docs/CURRENT_STATE.md`. (== P0-C)
 
 ### Medium
 - `[ ]` **EMB-003** · orphan `.meta` · Editor:final-yes — orphan metas (`AI Toolkit.meta`, `Audio.meta`, `Generated/Core.meta`, `AiDm.meta`, art UI metas, onnx `.data.meta`). Classify: restore/delete/document.
@@ -116,10 +114,10 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[ ]` **EMB-039** · non-authoritative time · Editor:no — `DateTime.UtcNow` in `GenerationFailureLog`/`VisibleGenerationPipeline`. Keep timestamps out of canonical IDs.
 - `[ ]` **EMB-040** · visual nondeterminism · Editor:no — `UnityEngine.Random.Range` in `EmberLoadingScreen`/`ActorView`. Doc as presentation-only, keep out of save.
 - `[ ]` **EMB-042** · placeholder masking · Editor:screenshot-yes — fallback gen can hide failure. Visible generated/fallback/static provenance in loading log + UI.
-- `[ ]` **EMB-043** · AI docs mismatch · Editor:runtime-yes — README `Qwen3:1.7B` vs code Qwen2.5-1.5B vs manifest 3B-missing. One AI-stack doc + manifest.
+- `[~]` **EMB-043** · AI docs mismatch · Editor:runtime-yes — README `Qwen3:1.7B` vs code Qwen2.5-1.5B vs manifest 3B-missing. One AI-stack doc + manifest.
 - `[ ]` **EMB-044** · cloud/network policy · Editor:no — `CloudLlmClient`/`LocalQwenClient`/portrait provider. Cloud opt-in, disabled-by-default, never authoritative.
 - `[ ]` **EMB-045** · ask-about scope · Editor:dialog-yes — global `_world.Topics`. Per-actor conversation state + memory/faction filters.
-- `[ ]` **EMB-047** · case-sensitive links · Editor:no — `DOCS/` vs real `docs/`. Normalize lowercase.
+- `[x]` **EMB-047** · case-sensitive links · Editor:no — `DOCS/` vs real `docs/`. Normalize lowercase.
 - `[ ]` **EMB-049** · old backend ref · Editor:no — `Reference/OldBackendData/**`. Add README "import/reference-only".
 - `[ ]` **EMB-050** · reports/ref sprawl · Editor:no — old sprint/audit reports in active docs root. Archive `docs/archive/YYYY-MM/`.
 - `[ ]` **EMB-051** · plugin dep hell · Editor:yes — 127 plugin files; NuGet marker missing meta; LFS DLLs. `docs/DEPENDENCIES.md` + import audit.
@@ -140,9 +138,9 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 
 ### Lane A — Headless, Claude-safe (NO Unity Editor) — do ALL of these first
 Order by safety×value:
-1. `[ ]` EMB-001 scan (duplicate GUID — fix is partial-headless: regen one root-scene meta GUID after ref-scan)
-2. `[ ]` EMB-047 — `DOCS/` → `docs/` link normalize
-3. `[ ]` EMB-058 + EMB-046 + EMB-003-scan — create `docs/CURRENT_STATE.md`, de-stale README (= P0-C)
+1. `[x]` EMB-001 scan (duplicate GUID — fix is partial-headless: regen one root-scene meta GUID after ref-scan)
+2. `[x]` EMB-047 — `DOCS/` → `docs/` link normalize
+3. `[x]` EMB-058 + EMB-046 + EMB-003-scan — create `docs/CURRENT_STATE.md`, de-stale README (= P0-C)
 4. `[ ]` EMB-005 — model manifest path normalize + `VerifyAllPresent` test (= P1-A)
 5. `[ ]` EMB-043 — AI-stack doc, fix Qwen version mismatch
 6. `[ ]` EMB-052 — secret/.env ignore patterns
@@ -173,7 +171,7 @@ runtime/UI proof. Each needs build-clean + scene-tour screenshot review.
 ## §6 — FINAL PRIORITIZED CHECKLIST (ChatGPT §11; the 25 gates)
 - `[ ]` 1. Duplicate-GUID + missing/orphan meta audit (one Unity-safe PR)
 - `[ ]` 2. Static validation: dup-GUID, missing-meta, orphan-meta, LFS-pointer
-- `[ ]` 3. `docs/CURRENT_STATE.md` + de-stale README
+- `[x]` 3. `docs/CURRENT_STATE.md` + de-stale README
 - `[ ]` 4. PRD source-map: one matrix, active/reference/deprecated, fix `DOCS/`
 - `[ ]` 5. AI/model manifest paths + hash policy (no binary changes)
 - `[ ]` 6. LFS/runtime dep docs + CI pointer checks
@@ -208,3 +206,8 @@ edits unless minimal+proven · no deleting TMP/scenes/generated/reports before r
 visual-only hacks replacing sim · no new god/manager class to dodge a split · no expanding
 `SliceSaveData` legacy fields without migration · no new static locators · no trusting fallback-green
 as Unity proof · no casual package/plugin version changes.
+
+### Discovery log (2026-05-30 session)
+- EMB-001 → HEAD had both root scenes at GUID 92b2...; Unity already regenerated Sprint4Foundation to 7e96...; committed it; full-tree dup scan now clean. commit b6c839be
+- EMB-047 → 125 docs files had uppercase DOCS/ path prefix; sed DOCS/→docs/ (DOCS: mechanism IDs preserved). commit 09d43068
+- EMB-058/046/043 → created docs/CURRENT_STATE.md; replaced README 62-line stale status block with pointer; README Qwen3→Qwen2.5-1.5B. commit 0df3b1a0
