@@ -43,7 +43,7 @@ BRANCH   : main  (only branch — others deleted to stop context-confusion)
 UPDATED  : 2026-05-30
 ```
 
-**Progress: 15 / 60 defects done · 0 / 11 packages · 8 / 25 final-checklist items**
+**Progress: 16 / 60 defects done (+1 deferred-with-rationale) · 0 / 11 packages · 9 / 25 final-checklist items**
 
 **▶ NOW = BUILD-BATCH (needs Unity Editor CLOSED): EMB-009 (Simulation->SliceJson asmdef break) + EMB-019 (LLM provider placement) + splits EMB-012/034/035, verified by one batchmode build.** Done headless (15): 001,002,004,005,038,039,040,043,044,046,047,048,049,052,058 + greened test + static-audit.sh CI-gateable (PASS, incl determinism guard). Remaining = build-batch (above) + Lane B Editor work (011 save, 014 HUD-finish, 015 input, 016/017/020 UI, 030 scene-tour, 033 char-creation, 042 provenance, 045 ask-about, 051/053 plugin/build, 054/055/056/057 scene/legacy, 060 package) + deferred EMB-050/022 large move.
 
@@ -70,8 +70,8 @@ front-load reading. Severity drives priority *within* the headless/editor lanes.
 - `[x]` **EMB-004** · LFS/build reliability · Editor:scan-no/build-yes — CI `lfs:false`; many DLL/model files are 131-byte LFS pointers → false-green. Add pointer-scan validation; split CI source-only vs LFS-build.
 - `[x]` **EMB-005** · AI/model bootstrap · Editor:no — `Models/manifest.json` paths (`sdxl-turbo/text_encoder.onnx`) don't match real nested layout (`text_encoder/model.onnx`); hashes `TBD`. Normalize manifest + `VerifyAllPresent` test.
 - `[ ]` **EMB-006** · LLM integration · Editor:partial — `NativeLlmClient` fallback when `USE_LLAMASHARP` absent; explicit disabled/fallback/real capability states + presence validation + no fake-real claims.
-- `[ ]` **EMB-007** · Determinism/threading · Editor:yes — `DomainSimulationAdapter` `Task.Run` writes `_currentDialogLine`/`_isDialogThinking`/`_pendingFate`/`_world.ToolCallTrace` off-thread. Marshal results to main-thread tick boundary. (== package P2-B)
-- `[ ]` **EMB-008** · LLM authority · Editor:core-no — `ConsultFateAsync` synthesizes `ToolCallTraceRecord` directly, bypassing validator/router. Route fate/dialog effects through tool router. (== P2-D)
+- `[x]` **EMB-007** · Determinism/threading · Editor:yes — `DomainSimulationAdapter` `Task.Run` writes `_currentDialogLine`/`_isDialogThinking`/`_pendingFate`/`_world.ToolCallTrace` off-thread. Marshal results to main-thread tick boundary. (== package P2-B)
+- `[~]` **EMB-008** · LLM authority · Editor:core-no — `ConsultFateAsync` synthesizes `ToolCallTraceRecord` directly, bypassing validator/router. Route fate/dialog effects through tool router. (== P2-D)
 
 ### High
 - `[ ]` **EMB-009** · asmdef boundary · Editor:no — `Simulation.asmdef` references `Data.SliceJson`; invert persistence direction. (== P2-C)
@@ -177,7 +177,7 @@ runtime/UI proof. Each needs build-clean + scene-tour screenshot review.
 - `[~]` 6. LFS/runtime dep docs + CI pointer checks (scanner done; CI wiring = EMB-027)
 - `[ ]` 7. Save/load characterization tests (before changing persistence)
 - `[ ]` 8. Build-scene validation/screenshot-tour harness (report only)
-- `[ ]` 9. Remove worker-thread world/UI mutation from adapter
+- `[x]` 9. Remove worker-thread world/UI mutation from adapter
 - `[ ]` 10. Route Consult Fate/dialog traces through LLM tool validator
 - `[ ]` 11. Adapter no-behaviour-change split start
 - `[ ]` 12. Remove Simulation→Data.SliceJson dependency
@@ -225,3 +225,15 @@ as Unity proof · no casual package/plugin version changes.
 ### Build-batch findings (need Unity Editor CLOSED + batchmode verify)
 - EMB-009 → Simulation->Data.SliceJson comes from ONE file Process/SliceSaveRehydration.cs (using EmberCrpg.Data.Save) and is DELIBERATE — there's EmberCrpg.Simulation.asmdef.README.md defending it (prior Codex 7th-pass audit added it for save-rehydration shape-sync). ChatGPT wants it reversed. GENUINE DESIGN TENSION between two reviewers. Ember-correct resolution = introduce a persistence ABSTRACTION (interface in Domain/Sim) + move concrete SliceJson to Data/Presentation composition; non-trivial, needs build. SURFACED to user (not blind-flipped).
 - EMB-019 (LLM provider placement), EMB-012/034/035 (splits 945/649/776 LOC): large mechanical refactors, each needs a batchmode build to verify no CS errors. Queue as a focused build-batch when Editor is closed.
+- EMB-007 → 3 Task.Run blocks in DomainSimulationAdapter (greeting/topic/fate) wrote shared state (incl authoritative _world.ToolCallTrace) off-thread; refactored so Task.Run returns only the blocking router.Complete() and all mutations apply after the await on Unity's main-thread SynchronizationContext. Build clean. commit cc079870
+- EMB-008 → consult_fate trace is synthesized directly, not routed through LlmProposalValidator. BUT consult_fate is ToolSideEffect.Read (no world mutation; the trace is a log artifact), so risk is low. Full validator routing needs a ToolRegistry + ToolCallValidator injected into the adapter and pairs with the real LLM tool-use wiring (T-AskDM). Deferred to that pass with an in-code note at the fate block (added during EMB-007). NOT a blind half-measure.
+
+### SESSION CHECKPOINT 2026-05-30 (16/60 + 1 partial done, all pushed, build green)
+Headless lane COMPLETE (15 hygiene/correctness defects). EMB-007 threading fix build-verified.
+REMAINING = build-batch refactors (each needs its own ~12min batchmode build) + Editor/runtime work:
+  - Splits (partial-class, behaviour-preserving, build-verify): EMB-010 adapter 1173, EMB-012 SliceSaveMapper 945, EMB-034 WorldgenService 649, EMB-035 JobAssignmentSystem 776, EMB-016 UiToolkitPanel 517, EMB-033 char-creation 707+571.
+  - asmdef moves (build-verify, risk): EMB-009 Simulation->SliceJson (DESIGN TENSION - see note), EMB-019 LLM providers -> Infrastructure assembly.
+  - EMB-008 tool authority (with T-AskDM wiring), EMB-006 real-LLM proof, EMB-018 portrait async.
+  - Editor/runtime (Unity open + scene-tour screenshots): EMB-011 save slots, EMB-014 HUD finish, EMB-015 input abstraction, EMB-017 locators, EMB-020/045 dialogue model, EMB-030 scene-tour harness, EMB-042 provenance, EMB-051/053 plugin/build, EMB-054/055/056/057 scene/legacy, EMB-060 package.
+  - Large file-move (reviewed pass): EMB-050/022 Reports+sprint archive, EMB-024 TMP samples, EMB-021/023 generated/plans, EMB-031 root scenes, EMB-059 .claude/skills, EMB-026/060 package, EMB-003 orphan-final, EMB-027 CI, EMB-028 validation-rename, EMB-029 magic-test consolidate, EMB-013 reflection-restore, EMB-025 Resources, EMB-032/055 prefab, EMB-037 procedural UI, EMB-036 magic split, EMB-053 build-size, EMB-044 done.
+NEXT SESSION: start a build-batch — do 2-3 partial-class splits, one batchmode build, commit. Then asmdef moves. Keep each change behaviour-preserving + build-verified.
