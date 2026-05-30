@@ -128,6 +128,57 @@ namespace EmberCrpg.Domain.World
         public string LastNarrative;
 
         /// <summary>
+        /// ARCH-12: explicit, reflection-free state replace used by save/load restore. Mirrors every
+        /// public field from <paramref name="other"/> onto this instance; callers run
+        /// <see cref="EnsureInvariants"/> afterwards. Replaces a reflection field-walk that silently
+        /// followed field type/visibility changes in the determinism-critical load path. A field added
+        /// to this type MUST be added here too — SliceWorldStateCopyFromTests guards that via reflection.
+        /// </summary>
+        public void CopyFrom(SliceWorldState other)
+        {
+            if (other == null) return;
+            Time = other.Time;
+            RoomSeed = other.RoomSeed;
+            Room = other.Room;
+            Dungeon = other.Dungeon;
+            CurrentRoomId = other.CurrentRoomId;
+            PlayerRoomId = other.PlayerRoomId;
+            TalkerRoomId = other.TalkerRoomId;
+            MerchantRoomId = other.MerchantRoomId;
+            GuardRoomId = other.GuardRoomId;
+            EnemyRoomId = other.EnemyRoomId;
+            PickupRoomId = other.PickupRoomId;
+            Actors = other.Actors;
+            Items = other.Items;
+            Sites = other.Sites;
+            Factions = other.Factions;
+            Events = other.Events;
+            Prices = other.Prices;
+            Stockpiles = other.Stockpiles;
+            TradeRoutes = other.TradeRoutes;
+            Caravans = other.Caravans;
+            ToolCallTrace = other.ToolCallTrace;
+            LlmProposalLog = other.LlmProposalLog;
+            NpcSeeds = other.NpcSeeds;
+            WorldProfile = other.WorldProfile;
+            PlayerInventory = other.PlayerInventory;
+            PlayerEquipment = other.PlayerEquipment;
+            MerchantInventory = other.MerchantInventory;
+            Pickups = other.Pickups;
+            DungeonRoomStates = other.DungeonRoomStates;
+            DungeonDoorStates = other.DungeonDoorStates;
+            Topics = other.Topics;
+            NpcMemory = other.NpcMemory;
+            PlayerSpellCooldowns = other.PlayerSpellCooldowns;
+            PlayerShieldBuffs = other.PlayerShieldBuffs;
+            DoorOpen = other.DoorOpen;
+            GuardDoorAccessGranted = other.GuardDoorAccessGranted;
+            GuardWarningCount = other.GuardWarningCount;
+            EncounterActive = other.EncounterActive;
+            LastNarrative = other.LastNarrative;
+        }
+
+        /// <summary>
         /// Non-obsolete role-keyed write site for callers that previously assigned to
         /// the deprecated <c>Player</c>/<c>Talker</c>/<c>Merchant</c>/<c>Guard</c>/<c>Enemy</c>
         /// properties. New code should prefer <see cref="ActorStore.Add"/> /

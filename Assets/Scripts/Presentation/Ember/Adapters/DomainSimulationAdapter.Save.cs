@@ -31,22 +31,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public void RestoreStateJson(string json)
         {
             if (string.IsNullOrEmpty(json)) return;
-            // Codex audit (sixth pass A-P2 #14): the previous field-by-field
-            // copy silently dropped any new field added to SliceWorldState.
-            // Mirror EVERY public instance field via reflection so the copy
-            // stays in lockstep with the type. Properties (the obsolete
-            // role accessors) are intentionally skipped — they delegate to
-            // the actor store which is itself a field.
+            // ARCH-12: replace the restored state via an explicit, reflection-free CopyFrom on the
+            // world itself (see SliceWorldState.CopyFrom). The previous reflection field-walk silently
+            // followed any field type/visibility change in this determinism-critical load path and hid
+            // ref-aliasing bugs; CopyFrom is type-checked and a reflection coverage test guards that it
+            // mirrors every public field.
             var restored = _saveService.LoadFromJson(json);
             if (restored == null) return;
 
-            var type = typeof(SliceWorldState);
-            foreach (var field in type.GetFields(
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
-            {
-                var value = field.GetValue(restored);
-                field.SetValue(_world, value);
-            }
+            _world.CopyFrom(restored);
 
             // EMB-013: the reflection copy above mirrors fields verbatim, so a corrupt/partial save
             // could leave a store or list null and crash the next tick. Re-establish the non-null
