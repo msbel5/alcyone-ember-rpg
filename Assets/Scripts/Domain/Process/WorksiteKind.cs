@@ -1,9 +1,9 @@
 // Design note:
-// WorksiteKind is the smallest typed WORLD/PROCESS key for Faz 2 worksites.
+// WorksiteKind is the smallest typed WORLD/PROCESS key for Phase 2 worksites.
 // It deliberately starts with only the sentinel and Furnace so RecipeSystem can
 // validate SmeltIronIngot and the BakeBread competition-proof fixture without
 // committing to the full worksite taxonomy yet.
-// Atom-map ref: docs/sprint-faz-2-atom-map.md Worksite state sub-area.
+// Atom-map ref: docs/sprint-phase-2-atom-map.md Worksite state sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>
@@ -20,7 +20,7 @@ namespace EmberCrpg.Domain.Process
         /// <summary>Bakery worksite used by the BakeBread competition-proof fixture.</summary>
         Bakery = 2,
 
-        /// <summary>Field tile used by Faz 5 planting and harvest jobs.</summary>
+        /// <summary>Field tile used by Phase 5 planting and harvest jobs.</summary>
         Field = 3,
 
         /// <summary>Generic authored worksite marker for visual/debug scene anchors.</summary>

@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Inventory;
 // EquipmentService owns pure equip/unequip validation and equipment-derived combat stats.
 // Inputs: inventory items, stable item ids, target slots, and current equipment state.
 // Outputs: deterministic action results plus additive mechanics modifiers for combat.
-// Bible reference: ARCHITECTURE.md inventory/equipment kernel direction, Sprint 4 Faz 4 roadmap.
+// Bible reference: ARCHITECTURE.md inventory/equipment kernel direction, Sprint 4 Phase 4 roadmap.
 namespace EmberCrpg.Simulation.Inventory
 {
     /// <summary>Pure deterministic equipment rules for the Sprint 4 inventory UI slice.</summary>

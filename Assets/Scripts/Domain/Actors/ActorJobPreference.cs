@@ -2,11 +2,11 @@ using System;
 using EmberCrpg.Domain.Process;
 
 // Design note:
-// ActorJobPreference is Faz 3's first actor-local LIVING row for job assignment.
+// ActorJobPreference is Phase 3's first actor-local LIVING row for job assignment.
 // It records a concrete JobKind plus an explicit priority, but it does not read
 // JobBoard state, select jobs, move actors, start recipes, or emit EventLog
 // lines. Those behaviours belong to the later JobAssignmentSystem atoms.
-// Atom-map ref: docs/sprint-faz-3-atom-map.md Actor job preference and schedule rail.
+// Atom-map ref: docs/sprint-phase-3-atom-map.md Actor job preference and schedule rail.
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>

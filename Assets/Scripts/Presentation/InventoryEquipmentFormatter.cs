@@ -7,7 +7,7 @@ using EmberCrpg.Simulation.Inventory;
 // InventoryEquipmentFormatter turns inventory and equipment identity into deterministic player-facing text.
 // Inputs: current world inventory/equipment state.
 // Outputs: compact HUD and inspect-screen strings with no Unity mutation.
-// Bible reference: Sprint 4 Faz 4 player-facing inventory/equipment UI acceptance.
+// Bible reference: Sprint 4 Phase 4 player-facing inventory/equipment UI acceptance.
 namespace EmberCrpg.Presentation.Slice
 {
     /// <summary>Formats inventory and equipped gear for HUD and inspect commands.</summary>

@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.Magic
 {
     /// <summary>
     /// Orchestrates effect execution: validate cost, dispatch each operation,
-    /// emit SpellResolved. Faz 8 Atom 6.
+    /// emit SpellResolved. Phase 8 Atom 6.
     /// </summary>
     public sealed class SpellResolver
     {

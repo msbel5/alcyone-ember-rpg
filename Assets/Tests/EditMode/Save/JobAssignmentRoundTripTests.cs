@@ -11,7 +11,7 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// Pins the Faz 3 job-save-proof rail without adding new SliceWorldState fields:
+// Pins the Phase 3 job-save-proof rail without adding new SliceWorldState fields:
 // JsonSliceSaveService carries JobBoard state like the existing Worksite rail,
 // while actor records carry their schedule target through ActorSaveData.
 namespace EmberCrpg.Tests.EditMode.Save

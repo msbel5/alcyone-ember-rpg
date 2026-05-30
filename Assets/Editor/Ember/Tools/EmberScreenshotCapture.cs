@@ -9,7 +9,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.Tools
 {
     /// <summary>
-    /// Captures one PNG per faz scene without touching MCP or Play Mode. Each capture
+    /// Captures one PNG per phase scene without touching MCP or Play Mode. Each capture
     /// opens the scene, renders the active camera into a render texture, writes the
     /// PNG under <c>docs/screenshots/</c>. Scenes that do not exist yet are silently
     /// skipped — re-run after <c>Ember &gt; Build Scene &gt; All</c> to refresh.
@@ -20,7 +20,7 @@ namespace EmberCrpg.Editor.Ember.Tools
         private const int Height = 1080;
         private const string ScreenshotsRootRelative = "docs/screenshots";
 
-        [MenuItem("Ember/Capture/All Faz Scene Screenshots")]
+        [MenuItem("Ember/Capture/All Phase Scene Screenshots")]
         public static void CaptureAll()
         {
             var screenshotsDir = ScreenshotsAbsolutePath();

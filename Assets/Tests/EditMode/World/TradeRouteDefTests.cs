@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.World
 {
-    /// <summary>Pins TradeRouteDef field validation and equality. Faz 6 Atom 7.</summary>
+    /// <summary>Pins TradeRouteDef field validation and equality. Phase 6 Atom 7.</summary>
     public sealed class TradeRouteDefTests
     {
         private static readonly TradeRouteId RouteId = new TradeRouteId(101UL);

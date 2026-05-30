@@ -7,7 +7,7 @@ using EmberCrpg.Simulation.Living;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin the product-visible Faz 4 EventLog trace for need pressure.
+// These tests pin the product-visible Phase 4 EventLog trace for need pressure.
 // Eat/sleep recovery and job refusal get their own later EventLog proofs.
 namespace EmberCrpg.Tests.EditMode.Living
 {

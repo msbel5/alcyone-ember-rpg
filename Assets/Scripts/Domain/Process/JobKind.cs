@@ -1,10 +1,10 @@
 // Design note:
-// JobKind is the first tiny category seed for Faz 3 job assignment. It names
+// JobKind is the first tiny category seed for Phase 3 job assignment. It names
 // concrete work only when an active sprint consumer needs it; today that means
 // the smithing lane for the furnace/SmeltIronIngot acceptance path and the
 // baking lane for the BakeBread competition-proof fixture. No hauling, combat,
 // or speculative extras belong here until their PR consumes them.
-// Atom-map ref: docs/sprint-faz-3-atom-map.md Pure job definition rail.
+// Atom-map ref: docs/sprint-phase-3-atom-map.md Pure job definition rail.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>
@@ -21,7 +21,7 @@ namespace EmberCrpg.Domain.Process
         /// <summary>Baking work, consumed by the BakeBread competition-proof fixture.</summary>
         Baker = 2,
 
-        /// <summary>Farming work, consumed by Faz 5 planting and harvest jobs.</summary>
+        /// <summary>Farming work, consumed by Phase 5 planting and harvest jobs.</summary>
         Farmer = 3
     }
 }

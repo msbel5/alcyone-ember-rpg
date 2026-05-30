@@ -4,7 +4,7 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Sprint 4 Faz 5's deterministic room/state-to-cue mapping.
+// These tests pin Sprint 4 Phase 5's deterministic room/state-to-cue mapping.
 // They cover room-template variation, combat/door state cues, and HUD-visible fallback output.
 namespace EmberCrpg.Tests.EditMode.Presentation
 {

@@ -4,11 +4,11 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// WorksiteStore is Faz 2's WORLD/PROCESS registry for site-cell worksites.
+// WorksiteStore is Phase 2's WORLD/PROCESS registry for site-cell worksites.
 // It keeps WorksiteRecord lookup deterministic and pure: no Unity references,
 // no I/O, no ticking recipes, no inventory mutation, and no EventLog writes.
-// RecipeSystem will consume this store in the next visible Faz 2 slice.
-// Atom-map ref: docs/sprint-faz-2-atom-map.md Worksite state sub-area.
+// RecipeSystem will consume this store in the next visible Phase 2 slice.
+// Atom-map ref: docs/sprint-phase-2-atom-map.md Worksite state sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

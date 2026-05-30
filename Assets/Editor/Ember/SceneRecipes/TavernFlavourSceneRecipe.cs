@@ -5,7 +5,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 12 acceptance: three NPCs in a tavern exchange flavour lines validated by the
+    /// Phase 12 acceptance: three NPCs in a tavern exchange flavour lines validated by the
     /// LLM gate; none mutates the world. Reuses the tavern interior and exposes a wide
     /// dialog/narration panel that the LLM client writes to via the same source contract.
     /// </summary>

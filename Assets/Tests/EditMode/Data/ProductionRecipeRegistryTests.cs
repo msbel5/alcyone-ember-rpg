@@ -9,7 +9,7 @@ namespace EmberCrpg.Tests.EditMode.Data
 {
     /// <summary>
     /// Pins production recipe data rows shipped from non-test code.
-    /// Closes CO-07 row in docs/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-07 row in docs/sprint-phase-4-atom-map.md Debt ledger.
     /// </summary>
     public sealed class ProductionRecipeRegistryTests
     {

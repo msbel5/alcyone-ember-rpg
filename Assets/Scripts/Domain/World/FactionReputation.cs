@@ -5,7 +5,7 @@ namespace EmberCrpg.Domain.World
     /// <summary>
     /// Bounded -100..+100 reputation scalar between two factions. Lower means
     /// more hostile, higher means more allied. Pure value object.
-    /// Faz 6 Atom 2.
+    /// Phase 6 Atom 2.
     /// </summary>
     public readonly struct FactionReputation : IEquatable<FactionReputation>
     {

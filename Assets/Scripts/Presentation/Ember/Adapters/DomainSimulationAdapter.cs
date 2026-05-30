@@ -760,7 +760,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         public void SelectTopic(string topicId)
         {
-            // Audit (Faz 12 production wire, 2026-05-27): previously only set a
+            // Audit (Phase 12 production wire, 2026-05-27): previously only set a
             // deterministic placeholder. Now (a) sets the deterministic fallback
             // from the seeded AskAboutTopic so the panel always renders SOMETHING
             // useful even with the LLM offline, (b) appends the WorldEvent
@@ -788,7 +788,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     $"topic_selected id:{topicId}"));
             }
 
-            // Live LLM topic answer (Faz 12 production wire)
+            // Live LLM topic answer (Phase 12 production wire)
             var npc = _world.NpcSeeds.FirstOrDefault(n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
             if (npc != null)
             {

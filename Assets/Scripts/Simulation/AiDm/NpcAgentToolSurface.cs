@@ -4,7 +4,7 @@ using EmberCrpg.Domain.AiDm;
 namespace EmberCrpg.Simulation.AiDm
 {
     /// <summary>
-    /// Builds the NPC-side tool descriptors. Faz 10 Atom 8.
+    /// Builds the NPC-side tool descriptors. Phase 10 Atom 8.
     /// </summary>
     public static class NpcAgentToolSurface
     {

@@ -6,7 +6,7 @@ using EmberCrpg.Domain.World;
 // DungeonSaveMapper translates generated dungeon layout/state to JsonUtility-friendly DTO arrays.
 // Inputs: pure generated layout plus mutable door/room state lists.
 // Outputs: deterministic, round-trippable save DTOs without Unity dependencies.
-// Bible reference: PRD Sprint 1 FR-06, Sprint 4 Faz 3 layout and room-state persistence.
+// Bible reference: PRD Sprint 1 FR-06, Sprint 4 Phase 3 layout and room-state persistence.
 namespace EmberCrpg.Data.Save
 {
     /// <summary>Pure mapping helpers for generated dungeon save data.</summary>

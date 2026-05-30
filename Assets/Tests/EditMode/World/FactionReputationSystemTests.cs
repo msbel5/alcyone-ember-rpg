@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.World
 {
-    /// <summary>Pins Faz 6 Atom 4 FactionReputationSystem: delta apply, event emission, no-op guards.</summary>
+    /// <summary>Pins Phase 6 Atom 4 FactionReputationSystem: delta apply, event emission, no-op guards.</summary>
     public sealed class FactionReputationSystemTests
     {
         private static readonly FactionId A = new FactionId(1UL);

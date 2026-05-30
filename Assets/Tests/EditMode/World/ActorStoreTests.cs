@@ -7,13 +7,13 @@ using EmberCrpg.Domain.World;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 1's first Core Store contract: ActorStore. They cover
+// These tests pin Phase 1's first Core Store contract: ActorStore. They cover
 // Add/Get/TryGet/Remove/Contains/Count/Clear, deterministic insertion-order
 // enumeration, and rejection of the empty ActorId sentinel. Pure Domain —
 // no Unity references.
 namespace EmberCrpg.Tests.EditMode.World
 {
-    /// <summary>Pins Faz 1 ActorStore Add/Get/TryGet/Remove/Contains/Count/Clear/Records.</summary>
+    /// <summary>Pins Phase 1 ActorStore Add/Get/TryGet/Remove/Contains/Count/Clear/Records.</summary>
     public sealed class ActorStoreTests
     {
         [Test]
@@ -182,10 +182,10 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(store.Count, Is.EqualTo(2));
         }
 
-        // Faz 1 role-view shims: lay the rail for migrating SliceWorldState's
+        // Phase 1 role-view shims: lay the rail for migrating SliceWorldState's
         // named slice fields (Player/Talker/Merchant/Guard/Enemy) onto
         // ActorStore lookups by ActorRole. SliceWorldState now consumes these
-        // shims through deprecated named actor views during Faz 1 migration.
+        // shims through deprecated named actor views during Phase 1 migration.
 
         [Test]
         public void RecordsByRole_OnlyMatchingRoleInInsertionOrder()

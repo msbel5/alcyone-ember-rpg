@@ -71,7 +71,7 @@ namespace EmberCrpg.Tests.EditMode.World
                 new[] { "lawful", "   " }));
         }
 
-        /// <summary>An empty tag bag is accepted; the seed Faz-6 faction may carry none.</summary>
+        /// <summary>An empty tag bag is accepted; the seed Phase-6 faction may carry none.</summary>
         [Test]
         public void Constructor_AcceptsEmptyTags()
         {

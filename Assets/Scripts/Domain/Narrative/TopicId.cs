@@ -4,7 +4,7 @@ namespace EmberCrpg.Domain.Narrative
 {
     /// <summary>
     /// Stable string identifier for a dialogue topic. New topics ship as data
-    /// rows; equality is by normalized code only. Faz 9 Atom 2 (refactor of the
+    /// rows; equality is by normalized code only. Phase 9 Atom 2 (refactor of the
     /// Sprint 1 AskAboutTopic id field (Sprint 1 narrative).
     /// </summary>
     public readonly struct TopicId : IEquatable<TopicId>

@@ -11,7 +11,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Process
 {
-    /// <summary>Verifies seed consumption and soil attachment for Faz 5 planting.</summary>
+    /// <summary>Verifies seed consumption and soil attachment for Phase 5 planting.</summary>
     public sealed class PlantingSystemTests
     {
         [Test]

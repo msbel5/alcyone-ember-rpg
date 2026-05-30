@@ -1,11 +1,11 @@
 using System;
 
 // Design note:
-// ActorMood is Faz 4's bounded willingness scalar. Lower values mean the actor
+// ActorMood is Phase 4's bounded willingness scalar. Lower values mean the actor
 // is less willing to work, but refusal policy belongs to a later PROCESS atom.
 // The default struct value intentionally resolves to Neutral so existing actor
 // construction does not become low-mood before mood derivation is wired.
-// Atom-map ref: docs/sprint-faz-4-atom-map.md Mood derivation rail.
+// Atom-map ref: docs/sprint-phase-4-atom-map.md Mood derivation rail.
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>Immutable 0-100 actor mood value where lower means less willing.</summary>

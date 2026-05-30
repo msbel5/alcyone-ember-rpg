@@ -60,7 +60,7 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(evt.ReasonTrace.LeafCause, Is.EqualTo("guard_spawned"));
         }
 
-        /// <summary>A null ReasonTrace remains valid because early Faz 1 events may not yet have a causal chain.</summary>
+        /// <summary>A null ReasonTrace remains valid because early Phase 1 events may not yet have a causal chain.</summary>
         [Test]
         public void Constructor_AcceptsNullReasonTrace()
         {

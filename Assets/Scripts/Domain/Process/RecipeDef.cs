@@ -4,11 +4,11 @@ using System.Collections.ObjectModel;
 using System.Linq;
 
 // Design note:
-// RecipeDef composes the pure PROCESS/MATTER rows landed earlier in Faz 2
+// RecipeDef composes the pure PROCESS/MATTER rows landed earlier in Phase 2
 // into a deterministic recipe definition. It still does not mutate inventory,
 // tick work, allocate item ids, or emit EventLog lines; RecipeSystem owns that
 // runtime behavior in the next visible slice.
-// Atom-map ref: docs/sprint-faz-2-atom-map.md Recipe definitions sub-area.
+// Atom-map ref: docs/sprint-phase-2-atom-map.md Recipe definitions sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

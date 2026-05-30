@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Process
 {
-    /// <summary>Verifies Faz 5 farming jobs enter the existing assignment/path target lane.</summary>
+    /// <summary>Verifies Phase 5 farming jobs enter the existing assignment/path target lane.</summary>
     public sealed class FarmingJobIntegrationTests
     {
         private static readonly SiteId FarmSite = new SiteId(5UL);

@@ -361,7 +361,7 @@ namespace EmberCrpg.Simulation.Process
                 return false;
 
             // Refuse when hunger is severe or mood is low. Thresholds are conservative
-            // for this atom; future faz may expose them as data rows.
+            // for this atom; future phase may expose them as data rows.
             const int hungerRefusalThreshold = 80;
 
             var hunger = actor.Needs.Hunger;

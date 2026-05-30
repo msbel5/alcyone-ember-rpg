@@ -5,7 +5,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 6 acceptance: caravan brings goods, merchant prices update, player can trade.
+    /// Phase 6 acceptance: caravan brings goods, merchant prices update, player can trade.
     /// Builds a marketplace exterior with a merchant, a guard, a caravan marker, and the
     /// inventory/trade UI scaffold.
     /// </summary>

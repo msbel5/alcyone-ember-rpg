@@ -2,14 +2,14 @@ using System;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// ItemRecord is the Faz 1 pure-Domain payload for an item known to the world:
+// ItemRecord is the Phase 1 pure-Domain payload for an item known to the world:
 // MATTER-box material + crafting quality + (optional) equipment slot, keyed by ItemId.
 // Inputs: ItemId handle, ItemMaterial substance, ItemQuality tier, EquipmentSlot slot.
-// Outputs: immutable record consumed by ItemStore in the next Faz 1 PR; no Unity,
+// Outputs: immutable record consumed by ItemStore in the next Phase 1 PR; no Unity,
 // no I/O, no serialization concerns. Mirrors SiteRecord's defensive constructor
 // pattern so invariants are pinned at construction; EquipmentSlot.None remains
 // the legal "non-equipment" value, just like InventoryItem.
-// Atom-map ref: docs/sprint-faz-1-atom-map.md ItemStore sub-area.
+// Atom-map ref: docs/sprint-phase-1-atom-map.md ItemStore sub-area.
 namespace EmberCrpg.Domain.Inventory
 {
     /// <summary>Pure record describing an item registry entry by id, material, quality, and slot.</summary>

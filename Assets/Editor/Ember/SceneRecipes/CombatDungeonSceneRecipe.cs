@@ -9,7 +9,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 7 acceptance: melee swing, damage roll, equipped weapon affects
+    /// Phase 7 acceptance: melee swing, damage roll, equipped weapon affects
     /// outcome. Mood: cold-blue Daggerfall dungeon — dim sun, 4 flickering
     /// wall torches, cold-blue ambient fog volume, vignette pushed toward
     /// danger.

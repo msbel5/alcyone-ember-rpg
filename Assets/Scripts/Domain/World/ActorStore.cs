@@ -4,11 +4,11 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// ActorStore is Faz 1's first Core Store. It replaces the named slice fields
+// ActorStore is Phase 1's first Core Store. It replaces the named slice fields
 // (Player, Talker, Merchant, Guard, Enemy on SliceWorldState) with a single
 // dictionary keyed by ActorId. Pure Domain: no Unity references, no I/O,
 // deterministic enumeration in insertion order.
-// Roadmap reference: docs/ROADMAP.md Faz 1 (Core Store reset).
+// Roadmap reference: docs/ROADMAP.md Phase 1 (Core Store reset).
 namespace EmberCrpg.Domain.World
 {
     /// <summary>
@@ -107,7 +107,7 @@ namespace EmberCrpg.Domain.World
 
         // Role-view shims: lay the rail for migrating SliceWorldState's
         // Player/Talker/Merchant/Guard/Enemy fields onto ActorStore. Concrete
-        // consumer arrives in the next Faz 1 PR (SliceWorldState reads these
+        // consumer arrives in the next Phase 1 PR (SliceWorldState reads these
         // shims and then marks its named fields [Obsolete]). Per
         // docs/agent-rules-v2.md rule 4 (world-store promotion), no new
         // hard-coded slice fields may be added; these lookups are the

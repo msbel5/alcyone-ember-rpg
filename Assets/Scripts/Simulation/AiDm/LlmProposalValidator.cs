@@ -7,7 +7,7 @@ namespace EmberCrpg.Simulation.AiDm
     /// <summary>
     /// Validates LLM proposed tool calls through ToolCallValidator. Returns
     /// only the accepted ones; rejected proposals never mutate the world.
-    /// Faz 12 Atom 6.
+    /// Phase 12 Atom 6.
     /// </summary>
     public sealed class LlmProposalValidator
     {

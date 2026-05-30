@@ -7,7 +7,7 @@ using EmberCrpg.Simulation.Time;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 5 Atom 2: deterministic time advancement plus product-
+// These tests pin Phase 5 Atom 2: deterministic time advancement plus product-
 // visible transition rows in WorldEventLog. Plant growth consumes these events
 // in later PROCESS atoms, so this file deliberately stops at TIME.
 namespace EmberCrpg.Tests.EditMode.Time

@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Process
 {
-    /// <summary>Verifies deterministic season/weather plant growth for Faz 5.</summary>
+    /// <summary>Verifies deterministic season/weather plant growth for Phase 5.</summary>
     public sealed class PlantGrowthSystemTests
     {
         [Test]

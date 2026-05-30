@@ -2,7 +2,7 @@ using System;
 
 namespace EmberCrpg.Domain.AiDm
 {
-    /// <summary>Stable string provider kind for LLM routing. Faz 12 Atom 1.</summary>
+    /// <summary>Stable string provider kind for LLM routing. Phase 12 Atom 1.</summary>
     public readonly struct LlmProviderKind : IEquatable<LlmProviderKind>
     {
         private readonly string _code;

@@ -7,7 +7,7 @@ namespace EmberCrpg.Simulation.AiDm
     /// <summary>
     /// Deterministic in-process mock LLM client. Returns scripted responses
     /// keyed by (system_prompt_id + conversation_id + seed). Used ONLY by tests
-    /// — never wired as a default execution path. Faz 12 Atom 12.
+    /// — never wired as a default execution path. Phase 12 Atom 12.
     /// </summary>
     public sealed class MockLlmClient
     {

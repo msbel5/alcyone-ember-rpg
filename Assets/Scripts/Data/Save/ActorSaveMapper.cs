@@ -57,7 +57,7 @@ namespace EmberCrpg.Data.Save
                 targetWorksitePositionY = schedule.IsIdle ? 0 : schedule.TargetWorksitePosition.Y,
 // Persist needs and mood as 0-100 ints. hasMood lets the load
                 // path tell "actor saved at Lowest (Value=0)" apart from
-                // "pre-Faz-4 save without a mood field" (Codex A/P3).
+                // "pre-Phase-4 save without a mood field" (Codex A/P3).
                 hunger = actor.Needs.Hunger.Value,
                 fatigue = actor.Needs.Fatigue.Value,
                 thirst = actor.Needs.Thirst.Value,
@@ -86,7 +86,7 @@ namespace EmberCrpg.Data.Save
             // erased legitimately Lowest (Value=0) actors on every reload. Use
             // the new `hasMood` presence flag instead: when true, accept any
             // 0..100 mood value verbatim; only fall back to Neutral when the
-            // save predates the flag (pre-Faz-4 saves where hasMood reads
+            // save predates the flag (pre-Phase-4 saves where hasMood reads
             // false by default-deserialization).
             var needs = new ActorNeeds(new NeedValue(save.hunger), new NeedValue(save.fatigue), new NeedValue(save.thirst));
             var mood = save.hasMood ? new ActorMood(save.mood)

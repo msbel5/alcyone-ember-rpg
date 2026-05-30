@@ -2,7 +2,7 @@
 // DungeonSpawnKind identifies deterministic room-local placement anchors in generated dungeons.
 // Inputs: generator-assigned archetype placement.
 // Outputs: stable spawn categories for actors, pickups, tests, and save mapping.
-// Bible reference: MASTER_MECHANICS_BIBLE.md deterministic world lock-in, Sprint 4 Faz 3 scope.
+// Bible reference: MASTER_MECHANICS_BIBLE.md deterministic world lock-in, Sprint 4 Phase 3 scope.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Stable archetype labels for generated dungeon spawn points.</summary>

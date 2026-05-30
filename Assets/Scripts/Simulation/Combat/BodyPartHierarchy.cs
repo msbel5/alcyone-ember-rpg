@@ -6,7 +6,7 @@ using EmberCrpg.Simulation.Rng;
 // BodyPartHierarchy keeps DFU-style weighted zones plus parent/damage/AC modifiers in pure simulation.
 // Inputs: seeded RNG selection or collider-specified body part.
 // Outputs: body-part node data for the deterministic RTWP damage pipeline.
-// Bible reference: MASTER_MECHANICS_BIBLE.md §10 body-part weights, Sprint 4 Faz 2 hit abstraction.
+// Bible reference: MASTER_MECHANICS_BIBLE.md §10 body-part weights, Sprint 4 Phase 2 hit abstraction.
 namespace EmberCrpg.Simulation.Combat
 {
     /// <summary>Humanoid body hierarchy and weighted hit-location selector.</summary>

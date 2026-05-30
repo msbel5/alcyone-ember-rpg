@@ -6,14 +6,14 @@ using EmberCrpg.Domain.World;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 1's SOCIETY-seed Core Store contract: FactionStore.
+// These tests pin Phase 1's SOCIETY-seed Core Store contract: FactionStore.
 // They cover Add/Get/TryGet/Remove/Contains/Count/Clear, deterministic
 // insertion-order enumeration, and rejection of the empty FactionId sentinel.
 // Pure Domain — no Unity references. Mirrors SiteStoreTests / ActorStoreTests
-// so the four Faz 1 stores share a single regression shape.
+// so the four Phase 1 stores share a single regression shape.
 namespace EmberCrpg.Tests.EditMode.World
 {
-    /// <summary>Pins Faz 1 FactionStore Add/Get/TryGet/Remove/Contains/Count/Clear/Records.</summary>
+    /// <summary>Pins Phase 1 FactionStore Add/Get/TryGet/Remove/Contains/Count/Clear/Records.</summary>
     public sealed class FactionStoreTests
     {
         [Test]

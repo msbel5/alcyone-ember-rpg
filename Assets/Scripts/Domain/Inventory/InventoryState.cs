@@ -5,7 +5,7 @@ using System.Linq;
 // InventoryState owns the deterministic backpack and keeps equipment item identity unmerged.
 // Inputs: item add/remove/equipment lookup requests from pure simulation services.
 // Outputs: bounded inventory state suitable for combat, pickup, equipment, and save/load tests.
-// Bible reference: ARCHITECTURE.md inventory kernel, PRD FR-05, Sprint 4 Faz 4.
+// Bible reference: ARCHITECTURE.md inventory kernel, PRD FR-05, Sprint 4 Phase 4.
 namespace EmberCrpg.Domain.Inventory
 {
     /// <summary>Mutable inventory state with stack merge support and fixed capacity.</summary>

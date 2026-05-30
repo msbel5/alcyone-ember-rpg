@@ -10,7 +10,7 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// Pins the Faz 1 TIME-box save/load rail for canonical runtime store roots.
+// Pins the Phase 1 TIME-box save/load rail for canonical runtime store roots.
 // The mapper still writes legacy slice actor fields for migration safety, but
 // store arrays are now the preferred source for ActorStore/ItemStore/SiteStore/
 // FactionStore/WorldEventLog round-trips.

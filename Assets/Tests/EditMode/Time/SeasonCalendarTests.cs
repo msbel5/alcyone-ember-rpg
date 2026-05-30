@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Time
 {
-    /// <summary>Verifies the Faz 5 data-driven season calendar primitive.</summary>
+    /// <summary>Verifies the Phase 5 data-driven season calendar primitive.</summary>
     public sealed class SeasonCalendarTests
     {
         [Test]

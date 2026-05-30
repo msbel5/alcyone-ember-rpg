@@ -6,7 +6,7 @@ namespace EmberCrpg.Tests.EditMode.World
 {
     /// <summary>
     /// Pins deterministic shortest-path behaviour for <see cref="GridPathfinder"/>.
-    /// Closes CO-02 row in docs/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-02 row in docs/sprint-phase-4-atom-map.md Debt ledger.
     /// </summary>
     public sealed class GridPathfinderTests
     {

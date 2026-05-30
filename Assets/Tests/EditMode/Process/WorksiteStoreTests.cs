@@ -10,7 +10,7 @@ using NUnit.Framework;
 // These tests pin the narrow WorksiteStore contract before RecipeSystem exists:
 // deterministic site-cell lookup, duplicate/default rejection, and insertion-order
 // enumeration. Runtime ticking, inventory consumption, and EventLog writes remain
-// in later Faz 2 atoms.
+// in later Phase 2 atoms.
 namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>Verifies the pure-Domain registry contract for WorksiteStore.</summary>

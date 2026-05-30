@@ -179,7 +179,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             if (EmberInput.ToggleMap)
             {
                 // Codex audit (sixth pass D-P3 #D1): if the scene wires an
-                // EmberPlayerInventoryToggle (every Faz* scene does, plus the
+                // EmberPlayerInventoryToggle (every Phase* scene does, plus the
                 // PlayerRig builder), delegate to its Toggle() so the toggle
                 // component is no longer dead code. Falls back to the inline
                 // loop for any scene that omits the component.

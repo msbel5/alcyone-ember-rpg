@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Narrative
 {
-    /// <summary>Pins Faz 9 Atoms 2-3 narrative primitives: TopicId, TopicDef.</summary>
+    /// <summary>Pins Phase 9 Atoms 2-3 narrative primitives: TopicId, TopicDef.</summary>
     public sealed class TopicPrimitivesTests
     {
         // ----- TopicId -----

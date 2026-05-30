@@ -3,7 +3,7 @@ using System;
 namespace EmberCrpg.Domain.Magic
 {
     /// <summary>
-    /// Immutable operation row: kind + magnitude + target rule + cost. Faz 8 Atom 2.
+    /// Immutable operation row: kind + magnitude + target rule + cost. Phase 8 Atom 2.
     /// </summary>
     public readonly struct EffectOperation : IEquatable<EffectOperation>
     {

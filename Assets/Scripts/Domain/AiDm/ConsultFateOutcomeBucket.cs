@@ -4,7 +4,7 @@ namespace EmberCrpg.Domain.AiDm
 {
     /// <summary>
     /// Stable string outcome bucket id for the Consult Fate DM mechanism.
-    /// Faz 12 Atom 10.
+    /// Phase 12 Atom 10.
     /// </summary>
     public readonly struct ConsultFateOutcomeBucket : IEquatable<ConsultFateOutcomeBucket>
     {

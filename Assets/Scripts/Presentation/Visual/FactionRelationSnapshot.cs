@@ -6,7 +6,7 @@ namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of faction-pair reputation for Unity HUD overlays.
-    /// Pure C#: no UnityEngine, no mutation. Faz 11 Atom 4.
+    /// Pure C#: no UnityEngine, no mutation. Phase 11 Atom 4.
     /// </summary>
     public sealed class FactionRelationSnapshot
     {

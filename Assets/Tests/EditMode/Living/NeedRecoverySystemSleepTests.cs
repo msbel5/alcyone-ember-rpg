@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 // Design note:
 // These tests pin sleep as deterministic fatigue recovery without inventory
-// mutation. Job refusal and save/load replay remain later Faz 4 atoms.
+// mutation. Job refusal and save/load replay remain later Phase 4 atoms.
 namespace EmberCrpg.Tests.EditMode.Living
 {
     /// <summary>Verifies deterministic sleep recovery.</summary>

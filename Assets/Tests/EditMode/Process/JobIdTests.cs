@@ -2,7 +2,7 @@ using EmberCrpg.Domain.Process;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 3's stable job-handle contract before JobRequest or
+// These tests pin Phase 3's stable job-handle contract before JobRequest or
 // JobBoard consumers exist. They cover value semantics only; allocation, lookup,
 // save/load, assignment, and EventLog output belong to later atoms.
 namespace EmberCrpg.Tests.EditMode.Process

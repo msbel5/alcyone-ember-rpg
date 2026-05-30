@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Process
 {
-    /// <summary>Verifies Faz 5 data-driven plant definitions.</summary>
+    /// <summary>Verifies Phase 5 data-driven plant definitions.</summary>
     public sealed class PlantDefinitionTests
     {
         [Test]

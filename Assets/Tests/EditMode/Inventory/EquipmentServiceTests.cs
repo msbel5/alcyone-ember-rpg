@@ -8,7 +8,7 @@ using NUnit.Framework;
 using EmberCrpg.Domain.Actors;
 
 // Design note:
-// These tests pin Sprint 4 Faz 4 equipment rules and the first mechanic affected by gear.
+// These tests pin Sprint 4 Phase 4 equipment rules and the first mechanic affected by gear.
 // They cover equip success/refusal, slot constraints, and combat damage modifiers.
 namespace EmberCrpg.Tests.EditMode.Inventory
 {

@@ -8,7 +8,7 @@ using EmberCrpg.Simulation.Rng;
 // MultiRoomDungeonGenerator builds a deterministic connected graph of room nodes from one seed.
 // Inputs: integer dungeon seed.
 // Outputs: 5-10 connected rooms, door edges, and room-local archetype spawn points.
-// Bible reference: MASTER_MECHANICS_BIBLE.md deterministic world lock-in, Sprint 4 Faz 3.
+// Bible reference: MASTER_MECHANICS_BIBLE.md deterministic world lock-in, Sprint 4 Phase 3.
 namespace EmberCrpg.Simulation.World
 {
     /// <summary>Deterministic clean graph generator for Sprint 4's multi-room dungeon.</summary>

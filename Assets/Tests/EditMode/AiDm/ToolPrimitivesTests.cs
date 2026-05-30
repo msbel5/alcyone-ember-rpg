@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.AiDm
 {
-    /// <summary>Pins Faz 10 tool-calling primitives: ToolId, ToolSurfaceKind, ToolDescriptor, ToolCallRequest/Result.</summary>
+    /// <summary>Pins Phase 10 tool-calling primitives: ToolId, ToolSurfaceKind, ToolDescriptor, ToolCallRequest/Result.</summary>
     public sealed class ToolPrimitivesTests
     {
         // ----- ToolId -----

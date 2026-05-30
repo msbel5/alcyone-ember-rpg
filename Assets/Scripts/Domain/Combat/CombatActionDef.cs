@@ -4,7 +4,7 @@ namespace EmberCrpg.Domain.Combat
 {
     /// <summary>
     /// Immutable data row for a combat action. Stamina cost, hit-roll formula
-    /// key, damage formula key, animation tag. Faz 7 Atom 4.
+    /// key, damage formula key, animation tag. Phase 7 Atom 4.
     /// </summary>
     public sealed class CombatActionDef : IEquatable<CombatActionDef>
     {

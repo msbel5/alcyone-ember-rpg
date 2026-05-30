@@ -5,7 +5,7 @@ namespace EmberCrpg.Domain.Narrative
 {
     /// <summary>
     /// Immutable templated text row. Placeholders are simple `{name}` tokens
-    /// resolved deterministically against a substitution map. Faz 9 Atom 9.
+    /// resolved deterministically against a substitution map. Phase 9 Atom 9.
     /// </summary>
     public sealed class DialogueTemplate
     {

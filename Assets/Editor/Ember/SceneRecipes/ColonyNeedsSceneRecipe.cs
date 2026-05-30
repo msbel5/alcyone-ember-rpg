@@ -5,7 +5,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 4 acceptance: actors get hungry, refuse to work, recover after a meal.
+    /// Phase 4 acceptance: actors get hungry, refuse to work, recover after a meal.
     /// Scene composition: settlement floor, three actors with mood-affected portraits,
     /// a tavern marker, and the colony-needs UI panel on the right edge.
     /// </summary>

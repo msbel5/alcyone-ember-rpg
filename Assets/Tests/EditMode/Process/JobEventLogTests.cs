@@ -8,7 +8,7 @@ using EmberCrpg.Simulation.Process;
 using NUnit.Framework;
 
 // Design note:
-// JobEventLogTests pins the Faz 3 player-visible job assignment chronicle.
+// JobEventLogTests pins the Phase 3 player-visible job assignment chronicle.
 // Assignment and completion now emit WorldEventLog rows with reason traces so
 // the Unity/debug layer has a deterministic "player can watch jobs progress"
 // signal before save/load mapping lands.

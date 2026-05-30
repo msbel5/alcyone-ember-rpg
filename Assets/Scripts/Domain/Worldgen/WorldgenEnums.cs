@@ -46,7 +46,7 @@ namespace EmberCrpg.Domain.Worldgen
     /// NPC role bucket used by the FOUNDATION generator. Roles are coarse
     /// because the simulation kernel that consumes them (jobs, dialog,
     /// economy) is still under construction — finer professions belong to a
-    /// Faz-N follow-up that hydrates an NpcSeedRecord into a runtime
+    /// Phase-N follow-up that hydrates an NpcSeedRecord into a runtime
     /// ActorRecord.
     /// </summary>
     public enum NpcRole

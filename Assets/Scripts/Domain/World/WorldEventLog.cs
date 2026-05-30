@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 // Design note:
-// WorldEventLog is the Faz 1 PROCESS-box append-only chronicle over WorldEvent.
+// WorldEventLog is the Phase 1 PROCESS-box append-only chronicle over WorldEvent.
 // Inputs: WorldEvent instances appended one at a time, each non-null.
 // Outputs: deterministic, insertion-order read-only live view over the
 // appended events; immutable through the public surface (the view exposed
@@ -12,7 +12,7 @@ using System.Collections.ObjectModel;
 // Unity, no I/O, no serialization concerns. Mirrors the
 // ActorStore / SiteStore / ItemStore / FactionStore defensive-constructor
 // pattern: invariants pinned at append, no silent nulls accepted.
-// Atom-map ref: docs/sprint-faz-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
+// Atom-map ref: docs/sprint-phase-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>

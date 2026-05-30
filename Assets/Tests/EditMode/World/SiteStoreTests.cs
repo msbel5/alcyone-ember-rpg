@@ -7,14 +7,14 @@ using EmberCrpg.Domain.Actors;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 1's WORLD-box Core Store contract: SiteStore. They
+// These tests pin Phase 1's WORLD-box Core Store contract: SiteStore. They
 // cover Add/Get/TryGet/Remove/Contains/Count/Clear, deterministic
 // insertion-order enumeration, and rejection of the empty SiteId sentinel.
 // Pure Domain — no Unity references. Mirrors ActorStoreTests so the four
-// Faz 1 stores share a single regression shape.
+// Phase 1 stores share a single regression shape.
 namespace EmberCrpg.Tests.EditMode.World
 {
-    /// <summary>Pins Faz 1 SiteStore Add/Get/TryGet/Remove/Contains/Count/Clear/Records.</summary>
+    /// <summary>Pins Phase 1 SiteStore Add/Get/TryGet/Remove/Contains/Count/Clear/Records.</summary>
     public sealed class SiteStoreTests
     {
         [Test]

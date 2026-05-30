@@ -4,7 +4,7 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// SoilComponent is Faz 5's first PROCESS component. It models a tillable site
+// SoilComponent is Phase 5's first PROCESS component. It models a tillable site
 // cell only; planting, watering, growth, snow blocking, and harvest remain
 // separate systems/atoms.
 namespace EmberCrpg.Domain.Process

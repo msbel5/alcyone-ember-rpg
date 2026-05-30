@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Save
 {
-    /// <summary>Verifies Faz 5 plant/soil process components survive JSON DTO round-trip.</summary>
+    /// <summary>Verifies Phase 5 plant/soil process components survive JSON DTO round-trip.</summary>
     public sealed class PlantSeasonRoundTripTests
     {
         [Test]

@@ -6,7 +6,7 @@ namespace EmberCrpg.Presentation.Visual
     /// <summary>
     /// Read-only snapshot of inventory contents aggregated by templateId for
     /// Unity HUD stockpile readouts. Pure C#: no UnityEngine, no mutation.
-    /// Faz 11 Atom 6.
+    /// Phase 11 Atom 6.
     /// </summary>
     public sealed class InventoryStockpileSnapshot
     {

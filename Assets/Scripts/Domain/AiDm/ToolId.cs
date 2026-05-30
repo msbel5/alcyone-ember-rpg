@@ -4,7 +4,7 @@ namespace EmberCrpg.Domain.AiDm
 {
     /// <summary>
     /// Stable string identifier for an AI/DM tool. Equality is by code only.
-    /// Faz 10 Atom 1.
+    /// Phase 10 Atom 1.
     /// </summary>
     public readonly struct ToolId : IEquatable<ToolId>
     {

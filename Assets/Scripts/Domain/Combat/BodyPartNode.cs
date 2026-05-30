@@ -4,7 +4,7 @@ using System;
 // BodyPartNode describes the hierarchy and mechanical modifiers for one targetable body zone.
 // Inputs: weighted hit selection and collider-reported body-part hits.
 // Outputs: parent link, selection weight, armor-class modifier, and damage multiplier.
-// Bible reference: MASTER_MECHANICS_BIBLE.md §10 body-part targeting, Sprint 4 Faz 2 hit abstraction.
+// Bible reference: MASTER_MECHANICS_BIBLE.md §10 body-part targeting, Sprint 4 Phase 2 hit abstraction.
 namespace EmberCrpg.Domain.Combat
 {
     /// <summary>Pure descriptor for a hit-location node in the humanoid body hierarchy.</summary>

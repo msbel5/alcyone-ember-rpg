@@ -8,7 +8,7 @@ namespace EmberCrpg.Simulation.World
     /// Applies typed reputation deltas between two factions, persists them
     /// through <see cref="FactionStore"/>, and emits a
     /// <see cref="WorldEventKind.FactionReputationChanged"/> event for replay.
-    /// Faz 6 Atom 4.
+    /// Phase 6 Atom 4.
     /// </summary>
     public sealed class FactionReputationSystem
     {

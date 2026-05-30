@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Core;
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>
-    /// Site-scoped count of items by tag. Faz 6 Atom 6. Pure data; no Unity
+    /// Site-scoped count of items by tag. Phase 6 Atom 6. Pure data; no Unity
     /// types; deterministic enumeration of non-zero entries.
     /// </summary>
     public sealed class StockpileComponent

@@ -6,7 +6,7 @@ namespace EmberCrpg.Presentation.Visual
     /// <summary>
     /// Read-only snapshot of recent AI/DM tool-call requests + results for
     /// Unity debug HUD overlays. Pure C#: no UnityEngine, no mutation.
-    /// Faz 11 Atom 7.
+    /// Phase 11 Atom 7.
     /// </summary>
     public sealed class ToolCallTraceSnapshot
     {

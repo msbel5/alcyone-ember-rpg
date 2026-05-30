@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.World
 {
-    /// <summary>Verifies deterministic ComponentStore behavior with the Faz 5 soil consumer.</summary>
+    /// <summary>Verifies deterministic ComponentStore behavior with the Phase 5 soil consumer.</summary>
     public sealed class ComponentStoreTests
     {
         [Test]

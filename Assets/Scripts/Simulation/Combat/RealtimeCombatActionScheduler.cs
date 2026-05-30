@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Core;
 // RealtimeCombatActionScheduler advances the first Sprint 4 RTWP queue without engine dependencies.
 // Inputs: action requests, pause/cancel commands, and fixed/variable delta seconds.
 // Outputs: deterministic queue entries plus activation/completion events.
-// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Faz 2 action queue.
+// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Phase 2 action queue.
 namespace EmberCrpg.Simulation.Combat
 {
     /// <summary>Pure timing scheduler for melee/block/dodge/cast action queues.</summary>

@@ -5,7 +5,7 @@ namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>
     /// Pins the eight stable lifecycle codes plus the blocked factory contract for <see cref="JobStatus"/>.
-    /// Closes CO-05 row in docs/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-05 row in docs/sprint-phase-4-atom-map.md Debt ledger.
     /// </summary>
     public sealed class JobStatusTests
     {

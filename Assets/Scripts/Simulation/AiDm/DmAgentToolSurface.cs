@@ -4,7 +4,7 @@ using EmberCrpg.Domain.AiDm;
 namespace EmberCrpg.Simulation.AiDm
 {
     /// <summary>
-    /// Builds the DM-side tool descriptors. Faz 10 Atom 10.
+    /// Builds the DM-side tool descriptors. Phase 10 Atom 10.
     /// </summary>
     public static class DmAgentToolSurface
     {

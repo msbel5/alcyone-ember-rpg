@@ -2,7 +2,7 @@ using EmberCrpg.Domain.Actors;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 4's mood scalar before refusal or recovery systems
+// These tests pin Phase 4's mood scalar before refusal or recovery systems
 // consume it.
 namespace EmberCrpg.Tests.EditMode.Actors
 {

@@ -8,7 +8,7 @@ namespace EmberCrpg.Simulation.World
     /// <summary>
     /// Adjusts site prices based on stockpile counts. Below low threshold,
     /// price rises by a delta; above high threshold, price falls by a delta.
-    /// Emits PriceChanged for replay. Faz 6 Atom 10.
+    /// Emits PriceChanged for replay. Phase 6 Atom 10.
     /// </summary>
     public sealed class PriceUpdateSystem
     {

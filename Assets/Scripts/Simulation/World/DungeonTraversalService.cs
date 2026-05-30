@@ -5,7 +5,7 @@ using EmberCrpg.Domain.World;
 // DungeonTraversalService moves between generated rooms through saveable Sprint 2-style doors.
 // Inputs: world current room and selected dungeon door id.
 // Outputs: deterministic current-room/visited-state changes or a grounded refusal message.
-// Bible reference: PRD Sprint 2 door rules, Sprint 4 Faz 2 traversal contracts, Faz 3 graph layout.
+// Bible reference: PRD Sprint 2 door rules, Sprint 4 Phase 2 traversal contracts, Phase 3 graph layout.
 namespace EmberCrpg.Simulation.World
 {
     /// <summary>Pure generated-dungeon transition helper.</summary>

@@ -21,7 +21,7 @@ namespace EmberCrpg.Infrastructure.AiDm
     // Codex audit (seventh pass J-P3 #32): this file deliberately folds three
     // related public types — LlmClientConfig, LocalQwenClient, CloudLlmClient
     // — into a single file because they share the same HTTP envelope and
-    // config struct. The fold is documented in docs/sprint-faz-12-atom-map.md
+    // config struct. The fold is documented in docs/sprint-phase-12-atom-map.md
     // rows 3 + 4. Splitting them across three files would only multiply
     // boilerplate (each would import the same envelope types and config). If
     // a future code style sweep mandates one-public-type-per-file, the split
@@ -45,9 +45,9 @@ namespace EmberCrpg.Infrastructure.AiDm
     /// <summary>
     /// HTTP client targeting a local Qwen-compatible endpoint.
     /// Codex audit (D-P3, restated in seventh-pass #14): no production caller
-    /// wires this in any of the live Faz scenes; the only callers are
+    /// wires this in any of the live Phase scenes; the only callers are
     /// integration tests and a manual smoke harness. Production adoption is
-    /// gated on the Faz 12 LLM tool-calling sprint where LlmRoutingService
+    /// gated on the Phase 12 LLM tool-calling sprint where LlmRoutingService
     /// will be wired against this contract. Until then, treat this class as
     /// experimental — do not couple gameplay code to it.
     /// </summary>
@@ -105,7 +105,7 @@ namespace EmberCrpg.Infrastructure.AiDm
     /// label is derived from <see cref="LlmClientConfig.Provider"/>.
     /// Codex audit (D-P3, restated in seventh-pass #14): no production caller
     /// is wired today; experimental alongside <see cref="LocalQwenClient"/>.
-    /// Same Faz 12 gate applies: do not couple gameplay to this class until
+    /// Same Phase 12 gate applies: do not couple gameplay to this class until
     /// LlmRoutingService picks it up from configuration. The integration
     /// tests under Assets/Tests/EditMode/Net/* are the only consumers right
     /// now and they bypass the routing seam entirely.

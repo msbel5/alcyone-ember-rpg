@@ -6,7 +6,7 @@ namespace EmberCrpg.Domain.AiDm
     /// <summary>
     /// Immutable LLM request envelope. Carries system prompt id, conversation
     /// id, available tool descriptors, max tokens, deterministic seed.
-    /// Faz 12 Atom 2.
+    /// Phase 12 Atom 2.
     /// </summary>
     public sealed class LlmRequest
     {
@@ -60,7 +60,7 @@ namespace EmberCrpg.Domain.AiDm
 
     /// <summary>
     /// Immutable LLM response envelope. Text + proposed tool calls + tokens used.
-    /// Faz 12 Atom 2.
+    /// Phase 12 Atom 2.
     /// </summary>
     public sealed class LlmResponse
     {

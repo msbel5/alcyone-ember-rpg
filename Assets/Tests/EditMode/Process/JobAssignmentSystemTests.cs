@@ -7,7 +7,7 @@ using EmberCrpg.Simulation.Process;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 3's assignment-system pass: actor preference rows
+// These tests pin Phase 3's assignment-system pass: actor preference rows
 // claim pending jobs, write ActorScheduleState, and start RecipeSystem work
 // orders for claimed jobs, then tick active recipe work until completion
 // removes the board row and clears actor schedule state. Job-specific EventLog

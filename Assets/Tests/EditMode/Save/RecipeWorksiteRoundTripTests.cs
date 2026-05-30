@@ -12,7 +12,7 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// Pins the first Faz 2 TIME rail for process state: active furnace worksite
+// Pins the first Phase 2 TIME rail for process state: active furnace worksite
 // records and a partially progressed recipe work order survive the JSON DTO
 // boundary, then continue ticking to one visible RecipeCompleted event.
 namespace EmberCrpg.Tests.EditMode.Save

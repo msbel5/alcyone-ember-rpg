@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 // Design note:
 // These tests pin the pure need-pressure tick. Mood, EventLog, recovery,
-// save/load, and job refusal are covered by separate Faz 4 rails.
+// save/load, and job refusal are covered by separate Phase 4 rails.
 namespace EmberCrpg.Tests.EditMode.Living
 {
     /// <summary>Verifies deterministic need pressure ticking.</summary>

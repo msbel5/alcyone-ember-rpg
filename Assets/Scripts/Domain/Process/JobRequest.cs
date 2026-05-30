@@ -3,12 +3,12 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// JobRequest is Faz 3's smallest PROCESS-box pending work row. It binds one
+// JobRequest is Phase 3's smallest PROCESS-box pending work row. It binds one
 // stable job handle to a concrete recipe, worksite cell, requester, category,
 // priority, and quantity without assigning actors, mutating inventory, ticking
 // recipes, serializing state, or emitting EventLog lines. JobBoard owns the
 // deterministic pending/claimed lifecycle in the sibling atom.
-// Atom-map ref: docs/sprint-faz-3-atom-map.md Job board state.
+// Atom-map ref: docs/sprint-phase-3-atom-map.md Job board state.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

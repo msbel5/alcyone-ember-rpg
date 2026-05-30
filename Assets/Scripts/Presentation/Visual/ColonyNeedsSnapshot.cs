@@ -7,7 +7,7 @@ namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of actor needs and mood for Unity debug HUD surfaces.
-    /// Pure C#: no UnityEngine, no mutation. Faz 11 Atom 2.
+    /// Pure C#: no UnityEngine, no mutation. Phase 11 Atom 2.
     /// </summary>
     public sealed class ColonyNeedsSnapshot
     {

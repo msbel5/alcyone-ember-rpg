@@ -7,7 +7,7 @@ namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>
     /// Pins WorksiteSlot factory output, equality, and validation guards.
-    /// Closes CO-06 row in docs/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-06 row in docs/sprint-phase-4-atom-map.md Debt ledger.
     /// </summary>
     public sealed class WorksiteSlotTests
     {

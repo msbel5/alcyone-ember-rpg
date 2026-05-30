@@ -4,7 +4,7 @@ namespace EmberCrpg.Simulation.AiDm
 {
     /// <summary>
     /// Per-tick budget counter for LLM flavour calls. Rejects calls past the
-    /// cap; callers fall back to deterministic template text. Faz 12 Atom 7.
+    /// cap; callers fall back to deterministic template text. Phase 12 Atom 7.
     /// </summary>
     public sealed class FlavourBudget
     {

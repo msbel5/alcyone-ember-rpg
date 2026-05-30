@@ -3,16 +3,16 @@ using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
-// Codex ninth-pass D-P3: confirmed test-wired only — no production caller exists at HEAD. Backend-only by design until the AI/DM scene host attaches it in Faz 12 (per docs/sprint-faz-12-atom-map.md row 11).
+// Codex ninth-pass D-P3: confirmed test-wired only — no production caller exists at HEAD. Backend-only by design until the AI/DM scene host attaches it in Phase 12 (per docs/sprint-phase-12-atom-map.md row 11).
 namespace EmberCrpg.Simulation.AiDm
 {
     // Codex audit (seventh pass J-P3 #33): this file deliberately folds the
-    // five Faz-12 LLM narration types — NpcFlavourService, DmNarrationService,
+    // five Phase-12 LLM narration types — NpcFlavourService, DmNarrationService,
     // ConsultFateService, StorytellerCheckpointSystem, and the supporting
     // FlavourBudget — into a single file because they all share the same
     // LlmRoutingService + FlavourBudget dependency surface and the same
     // proposal-log append pattern. The fold is documented in
-    // docs/sprint-faz-12-atom-map.md rows 8, 9, 11, 12. The previous version
+    // docs/sprint-phase-12-atom-map.md rows 8, 9, 11, 12. The previous version
     // of the doc named separate .cs files for each — that drift was the
     // sibling H29 audit finding and is fixed in the same pass. If a future
     // code style sweep mandates one-public-type-per-file, split along the
@@ -45,7 +45,7 @@ namespace EmberCrpg.Simulation.AiDm
     /// Codex audit (D-P3, restated in seventh-pass #15): no production host
     /// calls this service today — it is exercised by EditMode tests only,
     /// not by the live EmberWorldHost tick chain. Runtime wiring lands in
-    /// the Faz 12 DM/LLM sprint when the AI/DM scene host attaches it
+    /// the Phase 12 DM/LLM sprint when the AI/DM scene host attaches it
     /// (alongside <see cref="DmCheckpointService"/> below). Until then,
     /// treat as test-only — runtime callers should not assume this fires.
     /// </summary>

@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.World
     /// Atomic trade between a buyer-site stockpile and a seller-site stockpile
     /// using the local PriceLedger. Pays a quantity from one, delivers to the
     /// other, optionally adjusts faction reputation, and emits TradeCompleted.
-    /// Faz 6 Atom 11.
+    /// Phase 6 Atom 11.
     /// </summary>
     public sealed class TradeService
     {

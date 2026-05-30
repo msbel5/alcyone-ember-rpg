@@ -4,7 +4,7 @@ using EmberCrpg.Domain.Process;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 3's actor-local job preference row before assignment logic
+// These tests pin Phase 3's actor-local job preference row before assignment logic
 // exists. Matching to JobBoard entries is deliberately out of scope here.
 namespace EmberCrpg.Tests.EditMode.Actors
 {

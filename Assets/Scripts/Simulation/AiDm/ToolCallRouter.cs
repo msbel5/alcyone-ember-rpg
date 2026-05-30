@@ -10,7 +10,7 @@ namespace EmberCrpg.Simulation.AiDm
 
     /// <summary>
     /// Routes validated tool calls to registered handlers and emits
-    /// ToolInvoked events to the WorldEventLog. Faz 10 Atom 7.
+    /// ToolInvoked events to the WorldEventLog. Phase 10 Atom 7.
     /// </summary>
     public sealed class ToolCallRouter
     {

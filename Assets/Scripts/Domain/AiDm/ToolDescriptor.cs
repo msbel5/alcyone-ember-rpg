@@ -6,7 +6,7 @@ namespace EmberCrpg.Domain.AiDm
     /// <summary>
     /// Data row describing one AI/DM tool: stable id, surface kind, declared
     /// parameter schema, declared output schema, and whether invoking it
-    /// mutates world state. Faz 10 Atom 3.
+    /// mutates world state. Phase 10 Atom 3.
     /// </summary>
     public sealed class ToolDescriptor
     {

@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Actors;
 // SliceAtmosphereSelector maps deterministic dungeon state into audio cue ids for presentation hooks.
 // Inputs: generated room template, spawn placement, visited/cleared state, combat, and door state.
 // Outputs: ambience/music/SFX cue ids; it performs no playback and mutates no simulation state.
-// Bible reference: Sprint 4 Faz 5 audio/atmosphere hooks and deterministic dungeon-state variation.
+// Bible reference: Sprint 4 Phase 5 audio/atmosphere hooks and deterministic dungeon-state variation.
 namespace EmberCrpg.Presentation.Slice
 {
     /// <summary>Pure presentation selector for room/state atmosphere cue ids.</summary>

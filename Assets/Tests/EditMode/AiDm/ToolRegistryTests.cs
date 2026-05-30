@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.AiDm
 {
-    /// <summary>Pins Faz 10 Atom 5 ToolRegistry: registration, lookup, deterministic enumeration.</summary>
+    /// <summary>Pins Phase 10 Atom 5 ToolRegistry: registration, lookup, deterministic enumeration.</summary>
     public sealed class ToolRegistryTests
     {
         private static ToolDescriptor Descriptor(string toolCode, ToolSurfaceKind surface)

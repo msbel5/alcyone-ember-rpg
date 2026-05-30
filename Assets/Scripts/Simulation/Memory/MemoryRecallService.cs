@@ -8,7 +8,7 @@ namespace EmberCrpg.Simulation.Memory
 {
     /// <summary>
     /// Recalls memory facts for a given topic with optional recency filtering.
-    /// Faz 9 Atom 7.
+    /// Phase 9 Atom 7.
     /// </summary>
     public sealed class MemoryRecallService
     {

@@ -7,7 +7,7 @@ using NUnit.Framework;
 // These tests pin the ItemRecord constructor contract before ItemStore consumers
 // exist. Coverage stays scoped to the pure record; allocation, lookup, save/load,
 // pricing, and bonuses belong elsewhere. Mirrors SiteRecordTests so the four
-// Faz 1 stores converge on one regression shape.
+// Phase 1 stores converge on one regression shape.
 namespace EmberCrpg.Tests.EditMode.Inventory
 {
     /// <summary>Verifies the pure-Domain invariants required of ItemRecord.</summary>

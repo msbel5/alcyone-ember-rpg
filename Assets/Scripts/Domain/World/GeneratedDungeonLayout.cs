@@ -5,7 +5,7 @@ using System.Linq;
 // GeneratedDungeonLayout groups deterministic multi-room topology and archetype spawn points.
 // Inputs: room graph, doors, and spawn metadata produced from a seed.
 // Outputs: pure generated layout for simulation, tests, and JSON save mapping.
-// Bible reference: MASTER_MECHANICS_BIBLE.md deterministic world lock-in, Sprint 4 Faz 3.
+// Bible reference: MASTER_MECHANICS_BIBLE.md deterministic world lock-in, Sprint 4 Phase 3.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure deterministic dungeon graph snapshot.</summary>

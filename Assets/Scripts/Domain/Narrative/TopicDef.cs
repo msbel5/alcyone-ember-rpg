@@ -6,7 +6,7 @@ namespace EmberCrpg.Domain.Narrative
     /// Immutable data row for one dialogue topic. Carries the stable id, the
     /// player-facing prompt phrasing, a gating predicate id (resolved by the
     /// dialogue service), and a default answer template id used when no
-    /// memory-derived response applies. Faz 9 Atom 3 (refactor target of the
+    /// memory-derived response applies. Phase 9 Atom 3 (refactor target of the
     /// Sprint 1 AskAboutTopic class (Sprint 1 narrative).
     /// </summary>
     public sealed class TopicDef : IEquatable<TopicDef>

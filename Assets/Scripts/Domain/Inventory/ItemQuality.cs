@@ -3,10 +3,10 @@
 // can carry, without leaking pricing, bonus, or generator concerns. Mirrors
 // SiteKind / EquipmentSlot's tiny enum shape so ItemRecord can carry quality
 // as a deterministic value alongside material and slot.
-// Atom-map ref: docs/sprint-faz-1-atom-map.md ItemStore sub-area.
+// Atom-map ref: docs/sprint-phase-1-atom-map.md ItemStore sub-area.
 namespace EmberCrpg.Domain.Inventory
 {
-    /// <summary>Supported item quality tiers for the Faz 1 ItemStore sub-area.</summary>
+    /// <summary>Supported item quality tiers for the Phase 1 ItemStore sub-area.</summary>
     public enum ItemQuality
     {
         None = 0,

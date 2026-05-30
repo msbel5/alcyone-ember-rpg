@@ -241,7 +241,7 @@ namespace EmberCrpg.Simulation.Worldgen
                 var name = prefix + " " + word;
 
                 // Tags are empty for the FOUNDATION pass — tags get richer
-                // in the Faz-N follow-up that wires factions into the
+                // in the Phase-N follow-up that wires factions into the
                 // economy / military / religion subsystems.
                 factions.Add(new FactionRecord(new FactionId((ulong)(i + 1)), name, Array.Empty<string>()));
             }

@@ -5,7 +5,7 @@ using EmberCrpg.Domain.Actors;
 // DungeonRoom describes one node in the deterministic Sprint 4 dungeon graph.
 // Inputs: generated id, graph coordinate, dimensions, template, and connected door ids.
 // Outputs: pure room metadata for traversal, placement, and save/load tests.
-// Bible reference: MASTER_MECHANICS_BIBLE.md §40/§41, Sprint 4 Faz 3 multi-room scope.
+// Bible reference: MASTER_MECHANICS_BIBLE.md §40/§41, Sprint 4 Phase 3 multi-room scope.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure generated room node with local-grid bounds.</summary>

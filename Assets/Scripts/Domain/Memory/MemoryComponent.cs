@@ -9,7 +9,7 @@ namespace EmberCrpg.Domain.Memory
     /// <summary>
     /// Actor-local indexed set of <see cref="MemoryFact"/> rows. Insertion-order
     /// deterministic enumeration, query by topic, forget facts older than a
-    /// given game time. Faz 9 Atom 5.
+    /// given game time. Phase 9 Atom 5.
     /// </summary>
     public sealed class MemoryComponent
     {

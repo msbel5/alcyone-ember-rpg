@@ -6,7 +6,7 @@ namespace EmberCrpg.Domain.AiDm
     /// Stable string classifier for which actor class a tool belongs to.
     /// Per EMBER_VISION_NOTES_MAMI.md section 1.9: NPC, party member, DM
     /// all hold separate but isomorphic tool surfaces.
-    /// Faz 10 Atom 2.
+    /// Phase 10 Atom 2.
     /// </summary>
     public readonly struct ToolSurfaceKind : IEquatable<ToolSurfaceKind>
     {

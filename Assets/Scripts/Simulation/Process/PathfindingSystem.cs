@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.Process
     /// <summary>
     /// Advances claimed actors one deterministic grid cell per tick toward their
     /// claimed job's worksite. Emits ActorStepped events for every successful step.
-    /// Closes CO-03 in docs/sprint-faz-4-atom-map.md Debt ledger.
+    /// Closes CO-03 in docs/sprint-phase-4-atom-map.md Debt ledger.
     /// </summary>
     public sealed class PathfindingSystem
     {

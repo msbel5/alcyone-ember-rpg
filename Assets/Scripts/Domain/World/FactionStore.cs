@@ -4,12 +4,12 @@ using System.Linq;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// FactionStore is Faz 1's SOCIETY-seed Core Store. It mirrors ActorStore /
-// ItemStore / SiteStore so the four Faz 1 registries share one contract:
+// FactionStore is Phase 1's SOCIETY-seed Core Store. It mirrors ActorStore /
+// ItemStore / SiteStore so the four Phase 1 registries share one contract:
 // dictionary-backed registry keyed by a value-typed Id, deterministic
 // insertion-order enumeration, default-id rejection, no Unity, no I/O.
-// Roadmap reference: docs/ROADMAP.md Faz 1 (Core Store reset);
-// atom-map row: docs/sprint-faz-1-atom-map.md FactionStore sub-area.
+// Roadmap reference: docs/ROADMAP.md Phase 1 (Core Store reset);
+// atom-map row: docs/sprint-phase-1-atom-map.md FactionStore sub-area.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>
@@ -120,7 +120,7 @@ namespace EmberCrpg.Domain.World
 
         /// <summary>
         /// Sets the reputation between two factions. Symmetric: setting (a, b)
-        /// also serves (b, a). Returns the store for chaining. Faz 6 Atom 3.
+        /// also serves (b, a). Returns the store for chaining. Phase 6 Atom 3.
         /// </summary>
         public FactionStore WithReputation(FactionId a, FactionId b, FactionReputation reputation)
         {
@@ -135,7 +135,7 @@ namespace EmberCrpg.Domain.World
 
         /// <summary>
         /// Returns the reputation between two factions, or <see cref="FactionReputation.Neutral"/>
-        /// when no row exists. Symmetric lookup. Faz 6 Atom 3.
+        /// when no row exists. Symmetric lookup. Phase 6 Atom 3.
         /// </summary>
         public FactionReputation GetReputation(FactionId a, FactionId b)
         {

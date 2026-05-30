@@ -71,41 +71,41 @@ namespace EmberCrpg.Domain.World
         }
 
         // Codex audit (sixth pass D-P3 #D2): the five named role views below
-        // (Player/Talker/Merchant/Guard/Enemy) are deprecated since Faz 1 but
+        // (Player/Talker/Merchant/Guard/Enemy) are deprecated since Phase 1 but
         // 71 call sites across Simulation/Presentation/Data still read or
-        // write them. Removal is scheduled for after the Faz 13 cleanup
+        // write them. Removal is scheduled for after the Phase 13 cleanup
         // sprint — until then, the [Obsolete] attribute fires warning-only
         // (error: false) so existing callers compile while new code is
         // guided to ActorStore.FirstByRole(...).
-        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Player) or ActorStore role-view helpers.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Player) or ActorStore role-view helpers.", false)]
         public ActorRecord Player
         {
             get { return GetActorView(ActorRole.Player); }
             set { SetActorView(ActorRole.Player, value); }
         }
 
-        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Talker) or ActorStore role-view helpers.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Talker) or ActorStore role-view helpers.", false)]
         public ActorRecord Talker
         {
             get { return GetActorView(ActorRole.Talker); }
             set { SetActorView(ActorRole.Talker, value); }
         }
 
-        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Merchant) or ActorStore role-view helpers.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Merchant) or ActorStore role-view helpers.", false)]
         public ActorRecord Merchant
         {
             get { return GetActorView(ActorRole.Merchant); }
             set { SetActorView(ActorRole.Merchant, value); }
         }
 
-        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Guard) or ActorStore role-view helpers.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Guard) or ActorStore role-view helpers.", false)]
         public ActorRecord Guard
         {
             get { return GetActorView(ActorRole.Guard); }
             set { SetActorView(ActorRole.Guard, value); }
         }
 
-        [Obsolete("Slice-era role shim, scheduled for removal after Faz 13. Use Actors.FirstByRole(ActorRole.Enemy) or ActorStore role-view helpers.", false)]
+        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Enemy) or ActorStore role-view helpers.", false)]
         public ActorRecord Enemy
         {
             get { return GetActorView(ActorRole.Enemy); }
@@ -183,7 +183,7 @@ namespace EmberCrpg.Domain.World
         /// the deprecated <c>Player</c>/<c>Talker</c>/<c>Merchant</c>/<c>Guard</c>/<c>Enemy</c>
         /// properties. New code should prefer <see cref="ActorStore.Add"/> /
         /// <see cref="ActorStore.Remove"/> on <see cref="Actors"/> directly; this helper
-        /// exists to keep the slice-era assignment sites readable during the Faz 1 sweep.
+        /// exists to keep the slice-era assignment sites readable during the Phase 1 sweep.
         /// </summary>
         public void ReplaceActorView(ActorRole role, ActorRecord record)
         {

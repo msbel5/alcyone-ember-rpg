@@ -5,7 +5,7 @@ using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// PlantingSystem is Faz 5's narrow seed-consumption atom. Growth, harvest,
+// PlantingSystem is Phase 5's narrow seed-consumption atom. Growth, harvest,
 // weather, jobs, and save/load are later atoms.
 namespace EmberCrpg.Simulation.Process
 {

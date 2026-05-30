@@ -27,7 +27,7 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             scaler.matchWidthOrHeight = 0.5f;
 
             // Audit (eighth pass E-P2): EmberMainMenuUI.EnsureEventSystemExists
-            // creates a DontDestroyOnLoad EventSystem at runtime. When a Faz*
+            // creates a DontDestroyOnLoad EventSystem at runtime. When a Phase*
             // scene that was built via this helper loads, BOTH EventSystems
             // are present and Unity warns "Multiple EventSystems in scene...".
             // Skip creation here when one already exists in the scene.

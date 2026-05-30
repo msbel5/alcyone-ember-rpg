@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Combat;
 // RealtimeCombatState stores the pause flag, deterministic elapsed time, and mutable action queue.
 // Inputs: scheduler queue/cancel/tick operations and pause requests.
 // Outputs: inspectable simulation state that can be edited while paused.
-// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Faz 2 SPACE pause support.
+// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Phase 2 SPACE pause support.
 namespace EmberCrpg.Simulation.Combat
 {
     /// <summary>Mutable pure state for real-time-with-pause combat.</summary>

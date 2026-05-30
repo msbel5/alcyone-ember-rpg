@@ -5,7 +5,7 @@ namespace EmberCrpg.Simulation.AiDm
 {
     /// <summary>
     /// Validates a ToolCallRequest against the registry. Rejects unknown tool
-    /// id, wrong surface, missing required parameter. Faz 10 Atom 6.
+    /// id, wrong surface, missing required parameter. Phase 10 Atom 6.
     /// </summary>
     public sealed class ToolCallValidator
     {

@@ -4,13 +4,13 @@ using System.Collections.ObjectModel;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// FactionRecord is the Faz 1 SOCIETY-seed payload for a faction known to the world:
+// FactionRecord is the Phase 1 SOCIETY-seed payload for a faction known to the world:
 // a stable FactionId handle, a display name, and an ordered, immutable tag bag.
 // Inputs: FactionId handle, display name, tag enumerable (defensive copy at construction).
-// Outputs: immutable record consumed by FactionStore in a follow-up Faz 1 PR; no Unity,
+// Outputs: immutable record consumed by FactionStore in a follow-up Phase 1 PR; no Unity,
 // no I/O, no serialization concerns. Mirrors SiteRecord / ItemRecord's defensive
 // constructor pattern so invariants are pinned at construction.
-// Atom-map ref: docs/sprint-faz-1-atom-map.md FactionStore sub-area.
+// Atom-map ref: docs/sprint-phase-1-atom-map.md FactionStore sub-area.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure record describing a faction registry entry by id, name, and tags.</summary>

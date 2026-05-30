@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Process
 {
-    /// <summary>Pins PriceLedger per-(site, item) scalar behaviour. Faz 6 Atom 5.</summary>
+    /// <summary>Pins PriceLedger per-(site, item) scalar behaviour. Phase 6 Atom 5.</summary>
     public sealed class PriceLedgerTests
     {
         private static readonly SiteId Settlement = new SiteId(1UL);

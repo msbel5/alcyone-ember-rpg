@@ -11,7 +11,7 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// This is the Faz 1 PLAYABLE-box deterministic replay proof. It does not add a
+// This is the Phase 1 PLAYABLE-box deterministic replay proof. It does not add a
 // new gameplay system; it stitches the landed store roots, world-event log,
 // NPC memory, and JSON save/load rail into the roadmap acceptance sentence.
 namespace EmberCrpg.Tests.EditMode.World

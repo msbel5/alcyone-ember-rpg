@@ -6,7 +6,7 @@ using EmberCrpg.Simulation.Process;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin the Faz 3 competition-proof bundle: a second concrete recipe
+// These tests pin the Phase 3 competition-proof bundle: a second concrete recipe
 // lane exists, job assignment still prefers the higher-priority smithing actor,
 // and baking waits when the required bakery worksite is absent.
 namespace EmberCrpg.Tests.EditMode.Process

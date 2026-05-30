@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// HarvestSystem is the narrow Faz 5 output bridge: ripe plant component to
+// HarvestSystem is the narrow Phase 5 output bridge: ripe plant component to
 // stockpile inventory item. Item-id allocation stays injected so the system
 // remains deterministic and testable.
 namespace EmberCrpg.Simulation.Process

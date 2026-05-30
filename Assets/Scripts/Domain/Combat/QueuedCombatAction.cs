@@ -5,7 +5,7 @@ using EmberCrpg.Domain.Core;
 // QueuedCombatAction is a pure scheduled RTWP action with windup/active/recovery timing.
 // Inputs: actor id, action kind, optional target, and deterministic scheduler timestamps.
 // Outputs: action windows that can be tested or adapted by Unity presentation.
-// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Faz 2 action queue.
+// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Phase 2 action queue.
 namespace EmberCrpg.Domain.Combat
 {
     /// <summary>Scheduled combat verb in actor-local timeline order.</summary>

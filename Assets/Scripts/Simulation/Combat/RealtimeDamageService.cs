@@ -7,7 +7,7 @@ using EmberCrpg.Simulation.Rng;
 // RealtimeDamageService resolves collider-origin hits through AC, body-part, stat, and armor math.
 // Inputs: WeaponHitEvent, attacker/defender ActorRecord, active defense intent, and deterministic RNG.
 // Outputs: RealtimeDamageResult plus defender health mutation only on confirmed hits.
-// Bible reference: MASTER_MECHANICS_BIBLE.md §8-§10, Sprint 4 Faz 2 deterministic damage pipeline.
+// Bible reference: MASTER_MECHANICS_BIBLE.md §8-§10, Sprint 4 Phase 2 deterministic damage pipeline.
 namespace EmberCrpg.Simulation.Combat
 {
     /// <summary>Pure deterministic RTWP damage pipeline for weapon/body hit events.</summary>

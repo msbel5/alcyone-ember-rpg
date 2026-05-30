@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Process
 {
-    /// <summary>Verifies the Faz 5 slow world-process primitive.</summary>
+    /// <summary>Verifies the Phase 5 slow world-process primitive.</summary>
     public sealed class WorldProcessDefinitionTests
     {
         [Test]

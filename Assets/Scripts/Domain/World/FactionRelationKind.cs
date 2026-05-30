@@ -5,7 +5,7 @@ namespace EmberCrpg.Domain.World
     /// <summary>
     /// Stable-string relation classification between two factions. The code is the
     /// data row key — new tiers ship as data, not enum branches.
-    /// Faz 6 Atom 1.
+    /// Phase 6 Atom 1.
     /// </summary>
     public readonly struct FactionRelationKind : IEquatable<FactionRelationKind>
     {

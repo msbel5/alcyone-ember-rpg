@@ -4,7 +4,7 @@ using EmberCrpg.Simulation.Rng;
 namespace EmberCrpg.Simulation.Combat
 {
     /// <summary>
-    /// Deterministic damage roll with armor mitigation. Faz 7 Atom 6.
+    /// Deterministic damage roll with armor mitigation. Phase 7 Atom 6.
     /// </summary>
     public sealed class CombatDamageService
     {

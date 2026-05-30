@@ -7,7 +7,7 @@ namespace EmberCrpg.Domain.Process
     /// <summary>
     /// Resolved work target derived from a <see cref="WorksiteRecord"/>. Carries
     /// the worksite cell, a data-driven tag, and a deterministic queue cell.
-    /// Faz 11 Atom 8 spec; closes CO-06 row in docs/sprint-faz-4-atom-map.md.
+    /// Phase 11 Atom 8 spec; closes CO-06 row in docs/sprint-phase-4-atom-map.md.
     /// </summary>
     public readonly struct WorksiteSlot : IEquatable<WorksiteSlot>
     {

@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace EmberCrpg.Tests.EditMode.World
 {
     /// <summary>
-    /// Pins Faz 6 SOCIETY-rail primitives: FactionRelationKind codes,
+    /// Pins Phase 6 SOCIETY-rail primitives: FactionRelationKind codes,
     /// FactionReputation clamp/decay/equality, and FactionStore reputation
     /// symmetric WithReputation/GetReputation.
     /// </summary>

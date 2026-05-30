@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Memory
 {
-    /// <summary>Pins Faz 9 Atoms 4-5 memory primitives: MemoryFact + MemoryComponent.</summary>
+    /// <summary>Pins Phase 9 Atoms 4-5 memory primitives: MemoryFact + MemoryComponent.</summary>
     public sealed class MemoryPrimitivesTests
     {
         private static readonly ActorId Owner = new ActorId(10UL);

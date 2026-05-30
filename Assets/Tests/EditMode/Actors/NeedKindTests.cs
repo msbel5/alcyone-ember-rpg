@@ -2,7 +2,7 @@ using EmberCrpg.Domain.Actors;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 4's seed need categories before any ticking or recovery
+// These tests pin Phase 4's seed need categories before any ticking or recovery
 // logic exists.
 namespace EmberCrpg.Tests.EditMode.Actors
 {

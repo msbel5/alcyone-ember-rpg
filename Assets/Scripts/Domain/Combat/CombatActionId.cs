@@ -2,7 +2,7 @@ using System;
 
 namespace EmberCrpg.Domain.Combat
 {
-    /// <summary>Stable string identifier for a combat action. Faz 7 Atom 4.</summary>
+    /// <summary>Stable string identifier for a combat action. Phase 7 Atom 4.</summary>
     public readonly struct CombatActionId : IEquatable<CombatActionId>
     {
         private readonly string _code;

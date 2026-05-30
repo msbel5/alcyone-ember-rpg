@@ -78,7 +78,7 @@ return text;
         }
     }
 
-    /// <summary>Row DTO consumed by the queue panel. Matches Faz 11 JobDebugSnapshot.</summary>
+    /// <summary>Row DTO consumed by the queue panel. Matches Phase 11 JobDebugSnapshot.</summary>
     public readonly struct JobQueueRow
     {
         public readonly string ActorName;

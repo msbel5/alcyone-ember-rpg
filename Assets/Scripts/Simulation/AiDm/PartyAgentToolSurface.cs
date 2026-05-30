@@ -4,7 +4,7 @@ using EmberCrpg.Domain.AiDm;
 namespace EmberCrpg.Simulation.AiDm
 {
     /// <summary>
-    /// Builds the party-member-side tool descriptors. Faz 10 Atom 9.
+    /// Builds the party-member-side tool descriptors. Phase 10 Atom 9.
     /// </summary>
     public static class PartyAgentToolSurface
     {

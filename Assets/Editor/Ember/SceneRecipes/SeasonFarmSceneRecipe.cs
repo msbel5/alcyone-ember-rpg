@@ -5,7 +5,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 5 acceptance: plant a crop, watch the season tick, harvest at the right stage.
+    /// Phase 5 acceptance: plant a crop, watch the season tick, harvest at the right stage.
     /// Builds a small farm exterior with two crop rows, a farmer actor, and the season HUD.
     /// </summary>
     public sealed class SeasonFarmSceneRecipe : IEmberSceneRecipe

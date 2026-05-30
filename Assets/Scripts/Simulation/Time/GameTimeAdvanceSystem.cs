@@ -4,7 +4,7 @@ using EmberCrpg.Domain.Time;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// GameTimeAdvanceSystem is Faz 5's first Simulation TIME atom. It advances
+// GameTimeAdvanceSystem is Phase 5's first Simulation TIME atom. It advances
 // only deterministic GameTime and optional EventLog rows. It does not model
 // weather, plant growth, schedules, or real-time Unity clocks.
 namespace EmberCrpg.Simulation.Time

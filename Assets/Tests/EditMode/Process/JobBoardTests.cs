@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Process;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 3's pure JobBoard state before actor matching or recipe
+// These tests pin Phase 3's pure JobBoard state before actor matching or recipe
 // ticking exists: deterministic add/peek/claim/terminal removal behaviour only.
 namespace EmberCrpg.Tests.EditMode.Process
 {

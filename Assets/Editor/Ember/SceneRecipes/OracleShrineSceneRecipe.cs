@@ -5,7 +5,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 10 acceptance: the player "Consults Fate", the DM tool surface answers via a
+    /// Phase 10 acceptance: the player "Consults Fate", the DM tool surface answers via a
     /// deterministic query, the response shows in a HUD card. Scene composition is a
     /// quiet hilltop shrine: a low platform, a DM "Oracle" actor, a wide central card
     /// panel showing tool calls and replies.

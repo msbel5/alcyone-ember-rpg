@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.Narrative
 {
     /// <summary>
     /// Decides whether a trade should be refused based on remembered crime
-    /// facts and current faction relation. Faz 9 Atom 11.
+    /// facts and current faction relation. Phase 9 Atom 11.
     /// </summary>
     public sealed class TradeRefusalHook
     {

@@ -6,7 +6,7 @@ namespace EmberCrpg.Domain.World
     /// <summary>
     /// Immutable data row describing a recurring trade route between two sites.
     /// Origin and destination are distinct sites; cadence is the number of game
-    /// days between caravan departures. Faz 6 Atom 7.
+    /// days between caravan departures. Phase 6 Atom 7.
     /// </summary>
     public sealed class TradeRouteDef : IEquatable<TradeRouteDef>
     {

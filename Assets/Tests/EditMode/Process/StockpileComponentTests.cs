@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Process
 {
-    /// <summary>Pins StockpileComponent count + add/remove behaviour. Faz 6 Atom 6.</summary>
+    /// <summary>Pins StockpileComponent count + add/remove behaviour. Phase 6 Atom 6.</summary>
     public sealed class StockpileComponentTests
     {
         private static readonly SiteId Site = new SiteId(1UL);

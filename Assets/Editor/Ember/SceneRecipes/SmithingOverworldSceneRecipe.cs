@@ -9,7 +9,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 3 acceptance: two smiths queue at a furnace and craft ingots.
+    /// Phase 3 acceptance: two smiths queue at a furnace and craft ingots.
     /// Mood: warm forge — orange flickering hearth light, sparks particle,
     /// chimney smoke, soft cool fill behind the anvil. Camera framed thirds
     /// on the anvil + smith composition.

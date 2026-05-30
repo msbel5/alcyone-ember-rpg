@@ -62,7 +62,7 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             go.transform.position = center - new Vector3(sizeMeters / 2f, 0f, sizeMeters / 2f);
 
             // Codex review (PR #203 P1): legacy NavMeshBuilder.BuildNavMesh
-            // bake path still relies on NavigationStatic. Faz 14 sprint
+            // bake path still relies on NavigationStatic. Phase 14 sprint
             // migrates to NavMeshBuildMarkup; until then keep the flag and
             // silence CS0618.
 #pragma warning disable CS0618
@@ -125,7 +125,7 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             }
 
             // Codex review (PR #203 P1): legacy NavMeshBuilder.BuildNavMesh
-            // bake path still relies on NavigationStatic. Faz 14 sprint
+            // bake path still relies on NavigationStatic. Phase 14 sprint
             // migrates to NavMeshBuildMarkup; until then keep the flag and
             // silence CS0618.
 #pragma warning disable CS0618

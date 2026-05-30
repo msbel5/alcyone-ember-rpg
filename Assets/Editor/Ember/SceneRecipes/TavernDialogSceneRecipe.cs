@@ -8,7 +8,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 9 acceptance: walk up to innkeeper, ask about topics, get answers
+    /// Phase 9 acceptance: walk up to innkeeper, ask about topics, get answers
     /// rooted in memory + faction state. Mood: candle-warm tavern — flickering
     /// hearth on the side wall, candle flames at each table, low warm ambient.
     /// </summary>

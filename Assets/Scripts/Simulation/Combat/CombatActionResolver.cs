@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.Combat
 {
     /// <summary>
     /// Orchestrates a single combat action: stamina check -> hit roll -> damage
-    /// roll -> emit CombatResolved. Faz 7 Atom 7.
+    /// roll -> emit CombatResolved. Phase 7 Atom 7.
     /// </summary>
     public sealed class CombatActionResolver
     {

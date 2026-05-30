@@ -10,7 +10,7 @@ namespace EmberCrpg.Simulation.World
     /// Ticks caravans along their trade routes. Each tick advances a step;
     /// when StepsSinceDeparture reaches the route's CadenceDays, the caravan
     /// arrives at the destination, unloads into the destination stockpile,
-    /// and emits CaravanArrived. Faz 6 Atom 9.
+    /// and emits CaravanArrived. Phase 6 Atom 9.
     /// </summary>
     public sealed class CaravanSystem
     {

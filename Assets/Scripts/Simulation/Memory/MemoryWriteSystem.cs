@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.Memory
 {
     /// <summary>
     /// Records memory facts about observed events. Pure: callers translate
-    /// world events into Record calls. Faz 9 Atom 10.
+    /// world events into Record calls. Phase 9 Atom 10.
     /// </summary>
     public sealed class MemoryWriteSystem
     {

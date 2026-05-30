@@ -5,7 +5,7 @@ using System;
 // NPCs distributed across settlements. It is intentionally distinct from
 // ActorId: ActorIds live in the runtime ActorStore (the small slice loaded
 // for gameplay), NpcIds enumerate the full population of the simulated
-// world. The Faz-N follow-up that "hydrates" an NpcSeedRecord into a real
+// world. The Phase-N follow-up that "hydrates" an NpcSeedRecord into a real
 // runtime ActorRecord will mint a fresh ActorId at that moment and keep a
 // back-reference to the NpcId.
 namespace EmberCrpg.Domain.Worldgen

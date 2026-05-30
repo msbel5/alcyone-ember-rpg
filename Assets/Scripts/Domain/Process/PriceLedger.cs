@@ -8,7 +8,7 @@ namespace EmberCrpg.Domain.Process
     /// <summary>
     /// Per-site, per-item price ledger. Maintains a positive-integer scalar for
     /// each (SiteId, itemTag) cell with deterministic adjustment helpers.
-    /// Faz 6 Atom 5.
+    /// Phase 6 Atom 5.
     /// </summary>
     public sealed class PriceLedger
     {

@@ -5,7 +5,7 @@ using EmberCrpg.Domain.Core;
 // InventoryItem is the smallest serializable item instance needed by inventory, pickups, and gear.
 // Inputs: stable item id, template id, display name, quantity, optional equipment slot, and bonuses.
 // Outputs: immutable pure-Domain item records with item identity clear enough for equipment references.
-// Bible reference: ARCHITECTURE.md Part 2, PRD FR-05, Sprint 4 Faz 4 equipment roadmap.
+// Bible reference: ARCHITECTURE.md Part 2, PRD FR-05, Sprint 4 Phase 4 equipment roadmap.
 namespace EmberCrpg.Domain.Inventory
 {
     /// <summary>Minimal item instance used by the slice inventory kernel.</summary>

@@ -6,7 +6,7 @@ namespace EmberCrpg.Simulation.AiDm
 {
     /// <summary>
     /// Loads <see cref="ToolDescriptor"/> rows and exposes deterministic lookup
-    /// by (surface, id). Pure in-memory; no Unity types. Faz 10 Atom 5.
+    /// by (surface, id). Pure in-memory; no Unity types. Phase 10 Atom 5.
     /// </summary>
     public sealed class ToolRegistry
     {

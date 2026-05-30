@@ -7,7 +7,7 @@ namespace EmberCrpg.Simulation.AiDm
 
     /// <summary>
     /// Routes an LLM request to the local provider first; falls back to cloud
-    /// when local returns null/empty. Faz 12 Atom 5.
+    /// when local returns null/empty. Phase 12 Atom 5.
     /// </summary>
     public sealed class LlmRoutingService
     {

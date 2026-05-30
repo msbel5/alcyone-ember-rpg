@@ -6,7 +6,7 @@ namespace EmberCrpg.Domain.AiDm
     /// <summary>
     /// Immutable request envelope for an AI/DM tool invocation. Carries the
     /// tool id, the calling surface, and a typed-by-name parameter set.
-    /// Faz 10 Atom 4.
+    /// Phase 10 Atom 4.
     /// </summary>
     public sealed class ToolCallRequest
     {

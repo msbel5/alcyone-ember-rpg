@@ -4,7 +4,7 @@ using NUnit.Framework;
 // Design note:
 // These tests pin the recipe-handle contract before RecipeDef / RecipeSystem
 // consumers exist. They cover value semantics only; lookup, save/load, ticking,
-// and EventLog output belong to later Faz 2 atoms.
+// and EventLog output belong to later Phase 2 atoms.
 namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>

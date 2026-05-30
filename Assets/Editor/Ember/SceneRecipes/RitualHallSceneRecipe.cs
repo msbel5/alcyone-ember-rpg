@@ -5,7 +5,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 8 acceptance: cast a spell, resolve a data-driven effect, see the world react.
+    /// Phase 8 acceptance: cast a spell, resolve a data-driven effect, see the world react.
     /// Builds a circular ritual hall: stone floor, a mage actor, an effigy target, a wide
     /// HUD area at the bottom for the spellbar and a side panel for spell descriptions.
     /// </summary>

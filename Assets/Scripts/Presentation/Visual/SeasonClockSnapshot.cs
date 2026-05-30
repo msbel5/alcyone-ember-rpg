@@ -5,7 +5,7 @@ namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of the current game time and resolved season for Unity HUD.
-    /// Pure C#: no UnityEngine, no mutation. Faz 11 Atom 3.
+    /// Pure C#: no UnityEngine, no mutation. Phase 11 Atom 3.
     /// </summary>
     public readonly struct SeasonClockSnapshot
     {

@@ -3,11 +3,11 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 
 // Design note:
-// ActorScheduleState is Faz 3's tiny LIVING row for the actor's current job
+// ActorScheduleState is Phase 3's tiny LIVING row for the actor's current job
 // target. It stores only assignment state: no pathfinding, ticking, recipe
 // starts, save/load mapping, or EventLog output. JobAssignmentSystem will later
 // consume this row through ActorRecord/ActorStore.
-// Atom-map ref: docs/sprint-faz-3-atom-map.md Actor job preference and schedule rail.
+// Atom-map ref: docs/sprint-phase-3-atom-map.md Actor job preference and schedule rail.
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>

@@ -2,7 +2,7 @@
 // EquipmentActionResult is the narrow response object for equipment actions.
 // Inputs: EquipmentService validation and mutation decisions.
 // Outputs: success flag, deterministic error code, and player-facing text.
-// Bible reference: Sprint 4 Faz 4 equipment constraints and player UI acceptance.
+// Bible reference: Sprint 4 Phase 4 equipment constraints and player UI acceptance.
 namespace EmberCrpg.Simulation.Inventory
 {
     /// <summary>Result of one equip or unequip request.</summary>

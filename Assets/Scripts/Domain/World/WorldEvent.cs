@@ -2,7 +2,7 @@ using System;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// WorldEvent is the Faz 1 PROCESS-box payload appended to WorldEventLog.
+// WorldEvent is the Phase 1 PROCESS-box payload appended to WorldEventLog.
 // Inputs: deterministic GameTime tick, WorldEventKind category, optional ActorId
 // subject, optional SiteId locus, a non-blank reason label, and an optional
 // ReasonTrace causal chain. At least one of ActorId / SiteId must be non-empty
@@ -11,10 +11,10 @@ using EmberCrpg.Domain.Core;
 // Outputs: immutable record consumed by WorldEventLog; no Unity, no I/O,
 // no serialization concerns. Mirrors SiteRecord / FactionRecord
 // defensive-constructor pattern so invariants are pinned at construction.
-// Atom-map ref: docs/sprint-faz-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
+// Atom-map ref: docs/sprint-phase-1-atom-map.md WorldEvent log + ReasonTrace sub-area.
 namespace EmberCrpg.Domain.World
 {
-    /// <summary>Pure record describing a Faz 1 world event by tick, kind, optional actor, optional site, reason, and optional causal trace.</summary>
+    /// <summary>Pure record describing a Phase 1 world event by tick, kind, optional actor, optional site, reason, and optional causal trace.</summary>
     public sealed class WorldEvent
     {
         public WorldEvent(GameTime tick, WorldEventKind kind, ActorId actorId, SiteId siteId, string reason, ReasonTrace reasonTrace = null)

@@ -4,12 +4,12 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 
 // Design note:
-// ItemStore is Faz 1's MATTER-box Core Store. It mirrors ActorStore/SiteStore so
-// the four Faz 1 registries (ActorStore / ItemStore / SiteStore / FactionStore)
+// ItemStore is Phase 1's MATTER-box Core Store. It mirrors ActorStore/SiteStore so
+// the four Phase 1 registries (ActorStore / ItemStore / SiteStore / FactionStore)
 // share one contract: dictionary-backed registry keyed by a value-typed Id,
 // deterministic insertion-order enumeration, default-id rejection, no Unity,
-// no I/O. Roadmap reference: docs/ROADMAP.md Faz 1 (Core Store reset);
-// atom-map row: docs/sprint-faz-1-atom-map.md ItemStore sub-area.
+// no I/O. Roadmap reference: docs/ROADMAP.md Phase 1 (Core Store reset);
+// atom-map row: docs/sprint-phase-1-atom-map.md ItemStore sub-area.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>

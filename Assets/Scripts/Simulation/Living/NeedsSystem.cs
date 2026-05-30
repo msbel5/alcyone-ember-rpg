@@ -4,11 +4,11 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// NeedsSystem is Faz 4's first deterministic needs tick. It advances only
+// NeedsSystem is Phase 4's first deterministic needs tick. It advances only
 // pressure values and derived mood, then emits a concrete NeedChanged event
 // when a caller uses the EventLog overload. Recovery, job refusal, save/load,
 // inventory consumption, and sleep/eat actions are later atoms.
-// Atom-map ref: docs/sprint-faz-4-atom-map.md Needs tick rail.
+// Atom-map ref: docs/sprint-phase-4-atom-map.md Needs tick rail.
 namespace EmberCrpg.Simulation.Living
 {
     /// <summary>Deterministically advances actor needs and recomputes mood.</summary>

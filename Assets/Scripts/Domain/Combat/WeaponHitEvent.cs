@@ -5,7 +5,7 @@ using EmberCrpg.Domain.Core;
 // WeaponHitEvent abstracts Unity weapon/body colliders into pure combat data.
 // Inputs: attacker, defender, weapon label, optional body-part collider, action sequence, impact bonus.
 // Outputs: deterministic damage-pipeline input with no engine dependency.
-// Bible reference: ARCHITECTURE.md deterministic simulation seam, Sprint 4 Faz 2 hit abstraction.
+// Bible reference: ARCHITECTURE.md deterministic simulation seam, Sprint 4 Phase 2 hit abstraction.
 namespace EmberCrpg.Domain.Combat
 {
     /// <summary>Pure representation of a weapon collider intersecting a defender body collider.</summary>

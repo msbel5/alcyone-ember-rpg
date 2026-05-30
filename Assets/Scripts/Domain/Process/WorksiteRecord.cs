@@ -3,11 +3,11 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 
 // Design note:
-// WorksiteRecord is a pure site-cell component for Faz 2. It identifies a
+// WorksiteRecord is a pure site-cell component for Phase 2. It identifies a
 // worksite by site id, grid position, typed kind, and active flag without
 // mutating inventory, ticking recipes, logging events, or serializing state.
 // WorksiteStore and RecipeSystem will own lookup/progress behaviour later.
-// Atom-map ref: docs/sprint-faz-2-atom-map.md Worksite state sub-area.
+// Atom-map ref: docs/sprint-phase-2-atom-map.md Worksite state sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

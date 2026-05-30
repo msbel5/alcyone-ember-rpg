@@ -13,7 +13,7 @@ using System;
 // list so a player on an old save can load. New code that adds save data
 // should write into actors[] / world stores only; do not expand the legacy
 // named-id surface. Removal lines up with the SliceWorldState role-view
-// removal after the Faz 13 cleanup sprint.
+// removal after the Phase 13 cleanup sprint.
 namespace EmberCrpg.Data.Save
 {
     [Serializable]
@@ -384,7 +384,7 @@ public int regionCount;
         public int mood;
 
         // Codex audit (A/P3): `mood` cannot distinguish "actor saved at the
-        // Lowest mood (Value=0)" from "pre-Faz-4 save with no mood field"
+        // Lowest mood (Value=0)" from "pre-Phase-4 save with no mood field"
         // (Unity default-deserializes both to 0). hasMood is set to true on
         // every new save so the load path can tell them apart and round-trip
         // genuinely-Lowest actors instead of forcing them back to Neutral.

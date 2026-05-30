@@ -6,7 +6,7 @@ using EmberCrpg.Domain.Core;
 // EquipmentState stores item identity references for equipped gear while inventory owns the items.
 // Inputs: validated equip/unequip decisions from pure simulation services.
 // Outputs: stable slot -> ItemId state for combat modifiers, save/load, and HUD text.
-// Bible reference: ARCHITECTURE.md inventory/equipment kernel direction, Sprint 4 Faz 4 roadmap.
+// Bible reference: ARCHITECTURE.md inventory/equipment kernel direction, Sprint 4 Phase 4 roadmap.
 namespace EmberCrpg.Domain.Inventory
 {
     /// <summary>Mutable equipment slots keyed by stable item identity.</summary>

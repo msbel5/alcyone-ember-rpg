@@ -5,7 +5,7 @@ using EmberCrpg.Domain.Actors;
 // DungeonDoor is the deterministic connection between two generated rooms.
 // Inputs: adjacent room ids, threshold cells, and Sprint 2-style initial door rules.
 // Outputs: graph edge metadata whose open/closed state is stored separately.
-// Bible reference: PRD Sprint 2 door system, Sprint 4 Faz 3 door/transition rules.
+// Bible reference: PRD Sprint 2 door system, Sprint 4 Phase 3 door/transition rules.
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure room graph edge with local threshold cells on both sides.</summary>

@@ -7,12 +7,12 @@ using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// RecipeSystem is the first visible Faz 2 PROCESS slice. It consumes the pure
+// RecipeSystem is the first visible Phase 2 PROCESS slice. It consumes the pure
 // RecipeDef + WorksiteStore atoms, mutates only InventoryState, advances a
 // small deterministic work order, and emits a WorldEventLog line when the
 // recipe completes. It does not own save/load, job assignment, skill scaling,
 // Unity presentation, or generic factory registries; those are later atoms in
-// docs/sprint-faz-2-atom-map.md.
+// docs/sprint-phase-2-atom-map.md.
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>
@@ -175,7 +175,7 @@ namespace EmberCrpg.Simulation.Process
     }
 
     /// <summary>
-    /// Narrow runtime state for one recipe execution. Save/load mapping is a later Faz 2 atom.
+    /// Narrow runtime state for one recipe execution. Save/load mapping is a later Phase 2 atom.
     /// </summary>
     public sealed class RecipeWorkOrder
     {

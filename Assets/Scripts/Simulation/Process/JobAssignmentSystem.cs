@@ -7,12 +7,12 @@ using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// JobAssignmentSystem is Faz 3's PROCESS/LIVING bridge. It claims pending
+// JobAssignmentSystem is Phase 3's PROCESS/LIVING bridge. It claims pending
 // JobBoard entries, writes the actor schedule target, and starts the first
 // active RecipeWorkOrder for a claimed job. TickAssignedJobs advances active
 // recipe work, emits job-specific EventLog rows, closes completed JobBoard
 // entries, and idles the claimed actor. Persistence remains a later atom in
-// docs/sprint-faz-3-atom-map.md.
+// docs/sprint-phase-3-atom-map.md.
 namespace EmberCrpg.Simulation.Process
 {
     /// <summary>

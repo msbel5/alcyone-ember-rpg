@@ -2,7 +2,7 @@
 // SliceAtmosphereCueSet is the presentation-facing contract for audio and atmosphere hooks.
 // Inputs: deterministic cue ids chosen from the current slice world state.
 // Outputs: debug-visible ambience/music/SFX ids that optional Unity audio drivers can consume.
-// Bible reference: Sprint 4 Faz 5 audio/atmosphere hooks without simulation audio coupling.
+// Bible reference: Sprint 4 Phase 5 audio/atmosphere hooks without simulation audio coupling.
 namespace EmberCrpg.Presentation.Slice
 {
     /// <summary>Small immutable bundle of current atmosphere cue ids.</summary>

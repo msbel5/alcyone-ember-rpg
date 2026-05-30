@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.World
 {
-    /// <summary>Verifies the Faz 5 world component id primitive.</summary>
+    /// <summary>Verifies the Phase 5 world component id primitive.</summary>
     public sealed class WorldComponentIdTests
     {
         [Test]

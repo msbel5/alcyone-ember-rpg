@@ -6,7 +6,7 @@ using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// Pins Faz 1 migration rail: SliceWorldState's legacy named actor surfaces are
+// Pins Phase 1 migration rail: SliceWorldState's legacy named actor surfaces are
 // now deprecated views over ActorStore role lookups. Consumers can keep running
 // while new work writes through the store-backed path.
 namespace EmberCrpg.Tests.EditMode.World

@@ -8,7 +8,7 @@ using NUnit.Framework;
 // These tests pin the first pure Worksite state atoms before WorksiteStore or
 // RecipeSystem exist. Coverage stays scoped to constructor invariants and the
 // immutable active/inactive toggle; lookup, ticking, and EventLog writes belong
-// to later Faz 2 atoms.
+// to later Phase 2 atoms.
 namespace EmberCrpg.Tests.EditMode.Process
 {
     /// <summary>Verifies the pure-Domain invariants required by WorksiteRecord.</summary>

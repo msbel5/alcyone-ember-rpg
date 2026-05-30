@@ -8,7 +8,7 @@ namespace EmberCrpg.Domain.Memory
     /// <summary>
     /// Immutable atomic fact remembered by one actor about another. Each fact
     /// carries a topic, an object actor (the subject of the fact), the game
-    /// time it was recorded, and a stable detail string. Faz 9 Atom 4.
+    /// time it was recorded, and a stable detail string. Phase 9 Atom 4.
     /// </summary>
     public readonly struct MemoryFact : IEquatable<MemoryFact>
     {

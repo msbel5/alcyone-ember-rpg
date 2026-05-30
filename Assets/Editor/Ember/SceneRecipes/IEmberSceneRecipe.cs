@@ -2,7 +2,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
     /// Single contract every scene recipe implements. A recipe is responsible for one
-    /// faz and produces one .unity file under <see cref="Common.EmberAssetPaths.EmberScenesDir"/>.
+    /// phase and produces one .unity file under <see cref="Common.EmberAssetPaths.EmberScenesDir"/>.
     /// </summary>
     public interface IEmberSceneRecipe
     {

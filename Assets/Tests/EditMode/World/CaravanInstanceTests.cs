@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.World
 {
-    /// <summary>Pins Faz 6 Atom 8 CaravanInstance lifecycle: advance, arrive, unload.</summary>
+    /// <summary>Pins Phase 6 Atom 8 CaravanInstance lifecycle: advance, arrive, unload.</summary>
     public sealed class CaravanInstanceTests
     {
         private static readonly CaravanId Id = new CaravanId(7UL);

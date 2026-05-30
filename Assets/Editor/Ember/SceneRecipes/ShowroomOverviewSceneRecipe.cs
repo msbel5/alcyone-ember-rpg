@@ -5,7 +5,7 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Faz 11 acceptance: every previous faz has a one-screenshot Unity proof.
+    /// Phase 11 acceptance: every previous phase has a one-screenshot Unity proof.
     /// This recipe builds a "showroom" scene that hosts the JobDebugSnapshot,
     /// ColonyNeedsPanel, InventoryGrid, and DialogBoxPanel side by side so a single
     /// capture demonstrates that the view layer can read deterministic backend snapshots.

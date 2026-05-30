@@ -1,11 +1,11 @@
 using System;
 
 // Design note:
-// JobPriority is actor-local LIVING/PROCESS preference data for Faz 3. Lower
+// JobPriority is actor-local LIVING/PROCESS preference data for Phase 3. Lower
 // numeric values win deterministically; the disabled sentinel is explicit so an
 // actor can opt out of a JobKind without inventing hidden magic numbers. This
 // type does not select jobs, mutate actors, or read JobBoard state.
-// Atom-map ref: docs/sprint-faz-3-atom-map.md Pure job definition rail.
+// Atom-map ref: docs/sprint-phase-3-atom-map.md Pure job definition rail.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

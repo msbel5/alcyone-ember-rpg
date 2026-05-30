@@ -8,7 +8,7 @@ namespace EmberCrpg.Presentation.Visual
 {
     /// <summary>
     /// Read-only snapshot of pending and claimed jobs for Unity debug surfaces.
-    /// Pure C#: no UnityEngine, no mutation. Faz 11 Atom 1.
+    /// Pure C#: no UnityEngine, no mutation. Phase 11 Atom 1.
     /// </summary>
     public sealed class JobDebugSnapshot
     {

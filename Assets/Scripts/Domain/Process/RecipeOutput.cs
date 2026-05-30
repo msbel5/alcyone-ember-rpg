@@ -6,8 +6,8 @@ using EmberCrpg.Domain.Inventory;
 // pure recipe-definition row: produced item/material tag, material, quality,
 // and strictly positive quantity. It does not mutate ItemStore, allocate item
 // ids, advance work, or emit events; RecipeDef and RecipeSystem compose it in
-// later Faz 2 atoms.
-// Atom-map ref: docs/sprint-faz-2-atom-map.md Recipe definitions sub-area.
+// later Phase 2 atoms.
+// Atom-map ref: docs/sprint-phase-2-atom-map.md Recipe definitions sub-area.
 namespace EmberCrpg.Domain.Process
 {
     /// <summary>

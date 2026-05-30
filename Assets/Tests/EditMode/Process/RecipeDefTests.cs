@@ -158,7 +158,7 @@ namespace EmberCrpg.Tests.EditMode.Process
         }
 
         /// <summary>
-        /// The first canonical Faz 2 recipe shape is pinned before RecipeSystem consumes it.
+        /// The first canonical Phase 2 recipe shape is pinned before RecipeSystem consumes it.
         /// </summary>
         [Test]
         public void SmeltIronIngotShape_IsPinned()

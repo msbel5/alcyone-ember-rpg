@@ -71,7 +71,7 @@ namespace EmberCrpg.Domain.World
 
     /// <summary>
     /// Runtime caravan: current site, lifecycle state, route progress, payload
-    /// quantity remaining to deliver. Faz 6 Atom 8.
+    /// quantity remaining to deliver. Phase 6 Atom 8.
     /// </summary>
     public sealed class CaravanInstance
     {

@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace EmberCrpg.Tests.EditMode.AiDm
 {
     /// <summary>
-    /// Faz 10 — Codex audit Batch 2 / Finding 1 regression coverage.
+    /// Phase 10 — Codex audit Batch 2 / Finding 1 regression coverage.
     /// `ConsultFateService.Resolve` derived the fate roll from `(int)(seed % 100UL)`
     /// which produces 0..99, but `ConsultFateOutcomeBucket.FromRoll` requires 1..100
     /// and throws on 0. Any seed that is a multiple of 100 (including the obvious

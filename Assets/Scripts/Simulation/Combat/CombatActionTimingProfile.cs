@@ -5,7 +5,7 @@ using EmberCrpg.Domain.Combat;
 // CombatActionTimingProfile centralizes first-pass RTWP windup/active/recovery timings.
 // Inputs: requested CombatActionKind.
 // Outputs: deterministic timing windows for queue scheduling and tests.
-// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Faz 2 action queue.
+// Bible reference: ARCHITECTURE.md RTWP combat lock, Sprint 4 Phase 2 action queue.
 namespace EmberCrpg.Simulation.Combat
 {
     /// <summary>Timing tuple for a real-time combat action.</summary>

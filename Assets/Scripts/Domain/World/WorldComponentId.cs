@@ -1,7 +1,7 @@
 using System;
 
 // Design note:
-// WorldComponentId is Faz 5's stable handle for non-actor world components
+// WorldComponentId is Phase 5's stable handle for non-actor world components
 // such as soil and plants. It is intentionally generic; concrete behavior
 // stays in typed component records and systems.
 namespace EmberCrpg.Domain.World

@@ -2,7 +2,7 @@ using EmberCrpg.Domain.Actors;
 using NUnit.Framework;
 
 // Design note:
-// These tests pin Faz 4's bounded need pressure value. Higher pressure means
+// These tests pin Phase 4's bounded need pressure value. Higher pressure means
 // a worse need, but policies that act on thresholds are later atoms.
 namespace EmberCrpg.Tests.EditMode.Actors
 {

@@ -7,7 +7,7 @@ namespace EmberCrpg.Presentation.Visual
     /// <summary>
     /// Read-only snapshot of the tail of the WorldEventLog for Unity HUD overlays.
     /// Pure C#: no UnityEngine, no mutation. Generic across all sprints — feeds
-    /// combat / dialogue / season HUD readouts in Faz 11 scenes.
+    /// combat / dialogue / season HUD readouts in Phase 11 scenes.
     /// </summary>
     public sealed class WorldEventTailSnapshot
     {

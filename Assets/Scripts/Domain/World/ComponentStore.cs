@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 
 // Design note:
-// ComponentStore is a narrow deterministic registry for Faz 5 world-process
+// ComponentStore is a narrow deterministic registry for Phase 5 world-process
 // components. It mirrors ActorStore/ItemStore insertion-order semantics but
 // stays generic so each component type still owns its domain invariants.
 namespace EmberCrpg.Domain.World

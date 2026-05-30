@@ -4,7 +4,7 @@ namespace EmberCrpg.Simulation.Combat
 {
     /// <summary>
     /// Deterministic hit roll: returns true when roll &lt;= accuracy - dodge.
-    /// Pure, seeded. Faz 7 Atom 5.
+    /// Pure, seeded. Phase 7 Atom 5.
     /// </summary>
     public sealed class CombatHitRollService
     {

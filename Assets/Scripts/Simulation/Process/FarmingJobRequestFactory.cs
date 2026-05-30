@@ -4,7 +4,7 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 
 // Design note:
-// FarmingJobRequestFactory is the narrow Faz 5 bridge from farming components
+// FarmingJobRequestFactory is the narrow Phase 5 bridge from farming components
 // into the existing JobBoard / JobAssignmentSystem lane. It does not run
 // planting or harvest logic; it creates typed jobs that point actors at field
 // worksite cells so later atoms can execute the claimed work.

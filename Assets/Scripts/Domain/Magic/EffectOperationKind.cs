@@ -3,7 +3,7 @@ using System;
 namespace EmberCrpg.Domain.Magic
 {
     /// <summary>
-    /// Stable string classifier for an effect operation. Faz 8 Atom 1.
+    /// Stable string classifier for an effect operation. Phase 8 Atom 1.
     /// </summary>
     public readonly struct EffectOperationKind : IEquatable<EffectOperationKind>
     {
