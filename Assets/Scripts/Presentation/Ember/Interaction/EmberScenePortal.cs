@@ -19,10 +19,16 @@ namespace EmberCrpg.Presentation.Ember.Interaction
 
         public void Activate()
         {
-            if (!string.IsNullOrEmpty(_targetSceneName))
+            if (string.IsNullOrEmpty(_targetSceneName)) return;
+            // LEFT-014: a portal serialized with a stale/renamed target would otherwise call
+            // SceneManager.LoadScene on a name that isn't in the build and hard-fail. CanStreamedLevelBeLoaded
+            // is the runtime-safe build-registry check (works in player builds, not just the Editor).
+            if (!Application.CanStreamedLevelBeLoaded(_targetSceneName))
             {
-                SceneManager.LoadScene(_targetSceneName);
+                Debug.LogWarning($"EmberScenePortal: target scene '{_targetSceneName}' is not in the build; ignoring activation.");
+                return;
             }
+            SceneManager.LoadScene(_targetSceneName);
         }
 
         private void OnTriggerEnter(Collider other)

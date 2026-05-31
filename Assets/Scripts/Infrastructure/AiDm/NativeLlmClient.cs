@@ -75,14 +75,40 @@ namespace EmberCrpg.Infrastructure.AiDm
 
         public string ModelPath => _modelPath;
 
-        public bool IsAvailable => _isInitialised || File.Exists(_modelPath);
+        // LEFT-005: a Git-LFS pointer stub (~130 bytes, begins "version https://git-lfs…") or a
+        // truncated download would pass a bare File.Exists check and make the game believe a real
+        // local Qwen is present (then fail hard inside llama.cpp). A genuine GGUF is many hundred MB
+        // and starts with the ASCII magic "GGUF". Gate availability on size + magic so pointer/corrupt
+        // files are treated as missing and the labelled fallback engages instead of a false "real LLM".
+        public const long MinUsableModelBytes = 1_000_000;
+
+        public static bool IsUsableModelFile(string path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path) || !File.Exists(path)) return false;
+                if (new FileInfo(path).Length < MinUsableModelBytes) return false;
+                var magic = new byte[4];
+                using (var fs = File.OpenRead(path))
+                {
+                    if (fs.Read(magic, 0, 4) < 4) return false;
+                }
+                return magic[0] == (byte)'G' && magic[1] == (byte)'G' && magic[2] == (byte)'U' && magic[3] == (byte)'F';
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public bool IsAvailable => _isInitialised || IsUsableModelFile(_modelPath);
 
         public LlmResponse Complete(LlmRequest request)
         {
 #if USE_LLAMASHARP
             if (!_isInitialised)
             {
-                if (!File.Exists(_modelPath))
+                if (!IsUsableModelFile(_modelPath))
                 {
                     return _fallback?.Complete(request) ?? new LlmResponse("Native model missing and no fallback.", null, 0);
                 }
@@ -158,7 +184,9 @@ namespace EmberCrpg.Infrastructure.AiDm
 
         public async Task EnsureModelReady(Action<float> progressCallback)
         {
-            if (File.Exists(_modelPath))
+            // LEFT-005: only short-circuit when a *usable* model (real GGUF, not an LFS pointer/truncated
+            // stub) is already on disk; otherwise fall through and re-fetch real bytes over _downloadUrl.
+            if (IsUsableModelFile(_modelPath))
             {
                 await LoadModelAsync();
                 progressCallback?.Invoke(1f);

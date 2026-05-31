@@ -340,7 +340,9 @@ namespace EmberCrpg.Presentation.Ember.UI
             }
             return false;
 #else
-            return true;
+            // LEFT-011: don't trust an arbitrary save scene name in a player build — validate against the
+            // shipped build list at runtime (Application.CanStreamedLevelBeLoaded) instead of returning true.
+            return Application.CanStreamedLevelBeLoaded(sceneName);
 #endif
         }
     }
