@@ -9,7 +9,7 @@ historical audit narrative lives in `docs/Audit.md`.
 
 - Closed now (this pass): `LEFT-01`, `LEFT-02`, `LEFT-03`, `LEFT-04`,
   `LEFT-05`, `LEFT-08`, `LEFT-10`, `LEFT-19`, `LEFT-20`
-- Open/staged: `LEFT-06`, `LEFT-07`, `LEFT-09`, `LEFT-11` to `LEFT-18`,
+- Open/staged: `LEFT-06`, `LEFT-07`, `LEFT-09`, `LEFT-11` to `LEFT-17`,
   `LEFT-21`
 
 ## Register
@@ -32,7 +32,7 @@ historical audit narrative lives in `docs/Audit.md`.
 | LEFT-14 | P2 | ⏳ staged | Explicit model-download opt-in flow with progress/cancel |
 | LEFT-15 | P2 | ⏳ staged | ONNX provider placement boundary cleanup |
 | LEFT-16 | P3 | ⏳ staged | Generated actor runtime screenshot/interaction proof |
-| LEFT-17 | P3 | ⏳ staged | WorldTickComposer data-driven catalog extraction |
+| LEFT-17 | P3 | ✅ partial closed | Faction decay is wired/tested; tick-registry/data extraction remains E7-018 staged |
 | LEFT-18 | P3 | ⏳ staged | Legacy input facade migration to action maps |
 | LEFT-19 | P4 | ✅ closed | PRD matrix normalized to `active` vs `reference` |
 | LEFT-20 | P4 | ✅ closed | Stale doc/path references removed or re-labeled |
@@ -83,7 +83,7 @@ Box: `[x]` done+verified · `[~]` partial/staged (reasoned) · `[-]` won't (reas
 | E7-016 | Model download policy | `[x]` | `EnsureModelReady` now gates the multi-GB fetch behind explicit opt-in (`EMBER_ALLOW_MODEL_DOWNLOAD=1`); default = no silent download, fallback answers. |
 | E7-017 | Forge provider boundary | `[~]` | `OnnxAssetForge` in Simulation — documented-exception; moving the impl to Infrastructure is a staged asmdef change. |
 | E7-018 | Tick data-driven gap | `[~]` | Hardcoded crop/threshold/cadence — move to data after a same-seed digest test (staged; don't risk determinism blind). |
-| E7-019 | Faction politics (decay) | `[~]` | Deterministic faction-reputation decay is a design-sensitive tick addition — staged with the digest work. |
+| E7-019 | Faction politics (decay) | `[x]` | Deterministic faction-reputation decay wired as last daily tick; fallback `1242/1245` proves unit, convergence, catch-up, and save/load replay tests. |
 | E7-020 | Input System migration | `[~]` | `EmberInput` is a verified single choke point; migration = add package + InputActions + swap internals behind the frozen facade + rebind UI, gated on a PlayMode baseline. Staged plan in §6 BD-19. |
 | E7-021 | Resources.Load footprint | `[~]` | Keep tiny global fallbacks (fonts/theme); move new UI assets to explicit refs. Staged inventory. |
 | E7-022 | UI Foundation boundary | `[-]` | `noEngineReferences:false` is honest — `IUiPanel`/`UiTokens` legitimately use `RectTransform`/`Color`; "Foundation" = the shared UI-contract layer. Reasoned won't-rename (BD-16). |

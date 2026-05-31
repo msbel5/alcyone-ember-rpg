@@ -1,3 +1,4 @@
+// Why this file is intentionally long: WorldTickComposer is the deterministic cadence contract for every world tick system; keeping the ordered bands in one file makes replay drift reviewable.
 using System;
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
@@ -36,8 +37,8 @@ namespace EmberCrpg.Simulation.Composition
     /// are now wired into the cadence bands above. The sixth-pass audit's
     /// primary risk call — never run them at the raw 10 Hz Presentation tick
     /// driver (EmberTickDriver) rate — is honored by the hourly/daily gating,
-    /// not by leaving them out. Faction reputation decay remains unwired
-    /// pending its own tick-contract review.
+    /// not by leaving them out. Faction reputation decay runs last in the
+    /// daily band so explicit same-day reputation deltas land before drift.
     /// </summary>
     public sealed class WorldTickComposer
     {
@@ -73,6 +74,8 @@ namespace EmberCrpg.Simulation.Composition
         private readonly JobAssignmentSystem _jobAssignment;
         private readonly PriceUpdateSystem _priceUpdate;
         private readonly ScheduleSystem _schedule;
+        private readonly FactionReputationDecaySystem _factionDecay;
+        private readonly FactionDecayConfig _factionDecayConfig;
         // The composer owns its own SeasonCalendar (same canonical 4-season layout the time-advance
         // system uses) so the daily growth block can resolve a Season from world.Time without reaching
         // into the time system. The species catalog is the deterministic set of crops growth runs over.
@@ -169,6 +172,31 @@ namespace EmberCrpg.Simulation.Composition
             JobAssignmentSystem jobAssignment,
             PriceUpdateSystem priceUpdate,
             ScheduleSystem schedule)
+            : this(
+                timeAdvance,
+                needs,
+                magic,
+                caravans,
+                plantGrowth,
+                jobAssignment,
+                priceUpdate,
+                schedule,
+                new FactionReputationDecaySystem(),
+                FactionDecayConfig.Default)
+        {
+        }
+
+        public WorldTickComposer(
+            GameTimeAdvanceSystem timeAdvance,
+            NeedsSystem needs,
+            MagicTickDriver magic,
+            CaravanSystem caravans,
+            PlantGrowthSystem plantGrowth,
+            JobAssignmentSystem jobAssignment,
+            PriceUpdateSystem priceUpdate,
+            ScheduleSystem schedule,
+            FactionReputationDecaySystem factionDecay,
+            FactionDecayConfig factionDecayConfig)
         {
             _timeAdvance = timeAdvance ?? throw new ArgumentNullException(nameof(timeAdvance));
             _needs = needs ?? throw new ArgumentNullException(nameof(needs));
@@ -178,6 +206,10 @@ namespace EmberCrpg.Simulation.Composition
             _jobAssignment = jobAssignment ?? throw new ArgumentNullException(nameof(jobAssignment));
             _priceUpdate = priceUpdate ?? throw new ArgumentNullException(nameof(priceUpdate));
             _schedule = schedule ?? throw new ArgumentNullException(nameof(schedule));
+            _factionDecay = factionDecay ?? throw new ArgumentNullException(nameof(factionDecay));
+            _factionDecayConfig = factionDecayConfig.DaysPerDecayStep < 1
+                ? FactionDecayConfig.Default
+                : factionDecayConfig;
             _seasonCalendar = BuildDefaultCalendar();
             _plantSpecies = BuildDefaultPlantSpecies();
         }
@@ -273,6 +305,7 @@ namespace EmberCrpg.Simulation.Composition
                 // SOUL-01: advance crops one game-day and drift site prices with stockpile levels.
                 AdvancePlantGrowth(world, stamp);
                 RecomputePrices(world, stamp);
+                DecayFactionReputation(world, stamp);
             }
         }
 
@@ -358,6 +391,22 @@ namespace EmberCrpg.Simulation.Composition
                         world.Events);
                 }
             }
+        }
+
+        private void DecayFactionReputation(WorldState world, GameTime stamp)
+        {
+            if (world.Factions == null || world.Events == null)
+                return;
+            if (!ShouldApplyFactionDecay(stamp))
+                return;
+
+            _factionDecay.Apply(world.Factions, _factionDecayConfig, stamp, world.Events);
+        }
+
+        private bool ShouldApplyFactionDecay(GameTime stamp)
+        {
+            long composerDay = stamp.TotalMinutes / (TicksPerGameDay * MinutesPerTick);
+            return composerDay % _factionDecayConfig.DaysPerDecayStep == 0;
         }
 
         private Season ResolveSeason(GameTime time)
