@@ -1,3 +1,4 @@
+// Why this file is intentionally long: SDXL Turbo inference keeps tokenizer, text encoders, UNet denoising, scheduler, VAE decode, and PNG conversion in one internal pipeline boundary.
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -14,8 +15,16 @@ namespace EmberCrpg.Simulation.Forge
         private const int ClipTokenLength = 77;
         private const int ClipBosId = 49406;
         private const int ClipEosId = 49407;
-        private const float SigmaMax = 14.6146f;
         private const float VaeScale = 0.13025f;
+
+        // Multi-step SDXL-Turbo Euler schedule (sharper subject fidelity than one step).
+        // StepCount=1 reduces EXACTLY to the prior single sigma_max step (x -= sigma_max*eps),
+        // so it is a safe floor. Sigmas come from the SDXL scaled_linear beta schedule; the
+        // terminal sigma is 0. See BuildEulerSchedule. (sigma(999)=14.6146 verified.)
+        private const int StepCount = 4;
+        private const int TrainTimesteps = 1000;
+        private const float BetaStart = 0.00085f;
+        private const float BetaEnd = 0.012f;
 
         // SDXL conditions cross-attention on the PENULTIMATE CLIP hidden state (diffusers: hidden_states[-2]),
         // NOT last_hidden_state. The exported encoders expose every layer:
@@ -97,13 +106,22 @@ namespace EmberCrpg.Simulation.Forge
             cancellationToken.ThrowIfCancellationRequested();
 
             var conditioning = SdxlConditioning.Concat(hidden768, encoder2.HiddenStates1280, encoder2.Pooled1280);
-            var latents = LatentNoiseSampler.SampleGaussian(request.Seed, latentLength, SigmaMax);
             var timeIds = new[] { (float)height, (float)width, 0f, 0f, (float)height, (float)width };
 
-            var scaled = ScaleLatentsForEulerInput(latents, SigmaMax);
-            var eps = RunUnet(scaled, latentHeight, latentWidth, 999f, conditioning, timeIds);
-            for (int i = 0; i < latents.Length; i++)
-                latents[i] = latents[i] - (SigmaMax * eps[i]);
+            BuildEulerSchedule(StepCount, out var timesteps, out var sigmas);
+            var latents = LatentNoiseSampler.SampleGaussian(request.Seed, latentLength, sigmas[0]);
+
+            for (int step = 0; step < StepCount; step++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                float sigma = sigmas[step];
+                var scaled = ScaleLatentsForEulerInput(latents, sigma);
+                var eps = RunUnet(scaled, latentHeight, latentWidth, timesteps[step], conditioning, timeIds);
+                // Euler (epsilon-pred): x_{i+1} = x_i + (sigma_next - sigma) * eps
+                float dt = sigmas[step + 1] - sigma;
+                for (int i = 0; i < latents.Length; i++)
+                    latents[i] = latents[i] + (dt * eps[i]);
+            }
 
             for (int i = 0; i < latents.Length; i++)
                 latents[i] /= VaeScale;
@@ -184,6 +202,38 @@ namespace EmberCrpg.Simulation.Forge
             for (int i = 0; i < latents.Length; i++)
                 scaled[i] = latents[i] * scale;
             return scaled;
+        }
+
+        // SDXL scaled_linear beta schedule -> per-train-step sigma; pick `steps` timesteps
+        // (linspace 0..T-1, descending) with their sigmas and a terminal 0. Mirrors diffusers
+        // EulerDiscreteScheduler(beta_schedule="scaled_linear", timestep_spacing="linspace").
+        // steps=1 -> timesteps=[999], sigmas=[14.6146, 0] -> the prior single-step behaviour.
+        private static void BuildEulerSchedule(int steps, out float[] timesteps, out float[] sigmas)
+        {
+            double sqrtStart = Math.Sqrt(BetaStart);
+            double sqrtEnd = Math.Sqrt(BetaEnd);
+            var sigmaTable = new double[TrainTimesteps];
+            double cumprod = 1.0;
+            for (int t = 0; t < TrainTimesteps; t++)
+            {
+                double s = sqrtStart + ((sqrtEnd - sqrtStart) * (t / (double)(TrainTimesteps - 1)));
+                double beta = s * s;
+                cumprod *= 1.0 - beta;
+                sigmaTable[t] = Math.Sqrt((1.0 - cumprod) / cumprod);
+            }
+
+            timesteps = new float[steps];
+            sigmas = new float[steps + 1];
+            for (int i = 0; i < steps; i++)
+            {
+                double frac = steps == 1 ? 1.0 : ((steps - 1 - i) / (double)(steps - 1));
+                int t = (int)Math.Round(frac * (TrainTimesteps - 1));
+                if (t < 0) t = 0;
+                else if (t > TrainTimesteps - 1) t = TrainTimesteps - 1;
+                timesteps[i] = t;
+                sigmas[i] = (float)sigmaTable[t];
+            }
+            sigmas[steps] = 0f;
         }
 
         private static int[] ToIntTokens(long[] tokens)
