@@ -76,9 +76,22 @@ jobs:
       - name: Run static asset/source audit
         run: bash tools/validation/static-audit.sh
 
-  # EditMode Tests — Pure C# logic, ~5 min
+  # EditMode Tests — Pure C# logic, ~5 min.
+  #
+  # HONESTY SCOPE (audit EMB3-006/007): this job runs on a SOURCE-ONLY checkout
+  # (lfs: false, see below) and exercises only Unity EditMode / pure-C# logic
+  # tests. A GREEN result here therefore proves the deterministic Domain /
+  # Simulation / Save / UI-formatter logic compiles and passes — and NOTHING
+  # MORE. In particular a green check here does NOT prove any of:
+  #   - runtime LLM / AI-DM behaviour (no model bytes, no network, no PlayMode);
+  #   - generated-art / diffusion / ONNX inference (the .onnx/.gguf/.pb weights
+  #     are LFS pointer stubs that are never resolved in this job);
+  #   - a working Windows (or any) player build (no build step runs here);
+  #   - scene wiring, prefabs, .meta integrity, or native plugins.
+  # Those require the opt-in PlayMode / build jobs (still lfs:false today — see
+  # their notes) and/or local Unity runs. Do not read this badge as runtime proof.
   editmode-tests:
-    name: EditMode Tests
+    name: EditMode Tests (source-only - green is NOT runtime/LLM/art/build proof)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: static-audit
@@ -91,6 +104,8 @@ jobs:
           # — the ai.assistant DLLs are referenced as assets but Unity tolerates missing LFS
           # pointer files in batchmode (logs warnings, continues). PlayMode/build jobs that
           # truly need binaries should restore LFS in a tolerant follow-up step.
+          # NOTE (EMB3-006/007): because LFS is skipped, the model/art binaries are
+          # pointer stubs here — this run cannot and does not validate runtime AI/art.
           lfs: false
 
       - name: Cache Unity Library
@@ -144,9 +159,14 @@ jobs:
           path: editmode-results
           retention-days: 30
 
-  # PlayMode Tests — Opt-in via workflow_dispatch only
+  # PlayMode Tests — Opt-in via workflow_dispatch only.
+  # CAVEAT (EMB3-006/007): this job ALSO checks out with lfs: false (see step
+  # below), so the LFS-backed model/art binaries are unresolved pointer stubs.
+  # Even a green PlayMode run here does not prove runtime LLM inference or
+  # generated-art output — it only exercises scene/runtime logic that tolerates
+  # missing binaries. Restore LFS before treating this as runtime AI/art proof.
   playmode-tests:
-    name: PlayMode Tests
+    name: PlayMode Tests (lfs:false - not runtime AI/art proof)
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_playmode == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -197,9 +217,14 @@ jobs:
           path: playmode-results
           retention-days: 30
 
-  # Linux64 Build — Opt-in via workflow_dispatch or tag push only
+  # Linux64 Build — Opt-in via workflow_dispatch or tag push only.
+  # CAVEAT (EMB3-006/007): builds StandaloneLinux64 (NOT Windows) and checks out
+  # with lfs: false, so the produced player ships pointer stubs in place of the
+  # real model/art binaries. A green build proves the project compiles into a
+  # Linux player shell — it does not prove a shippable Windows build nor that
+  # runtime AI/art assets are present.
   build-linux:
-    name: Build Linux64 (headless)
+    name: Build Linux64 (headless, lfs:false - not a Windows/runtime-asset proof)
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_build == true) || startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45

@@ -53,3 +53,22 @@
 - `.claude/skills/**` (65 files) are **intentionally-shared project dev tooling** (Claude Code skills
   that help any agent working this repo). Classified as dev tooling, **kept tracked on purpose** — they
   are not game source and are not bundled into the build.
+
+## Non-runtime / reference material (EMB3-049 / 050)
+These top-level directories are **contributor- and reference-facing material, not runtime source**.
+None of them live under `Assets/`, so Unity never imports or compiles them and they are **never wired
+into a player build** (no scene, asmdef, or `Resources`/`StreamingAssets` path references them). They
+exist to help humans and agents *work on* the project, not to ship inside it.
+
+- **`Reference/`** (~146 tracked files: `OldBackendData/`, `PRDs/`) — frozen historical artefacts and
+  product/design specs kept for lookup. Read-only context for contributors; not canonical live state
+  (current status lives in `docs/`). Safe to consult, **do not** treat as compiled content.
+- **`.claude/skills/`** (65 files) — Claude Code agent skills, as noted under EMB-059 above. Dev tooling
+  shared on purpose; not game source, not in the build.
+- **`tools/`** (`validation/`, `codex-audit/`) — developer/CI scripts (e.g. the pure-C# NUnit fallback
+  harness under `tools/validation/fallback/` and `tools/validation/static-audit.sh`). They run *about*
+  the repo in CI and locally; they are not gameplay code and are not part of any shipped artefact.
+
+Rule of thumb: if it is outside `Assets/`, assume it is reference/tooling and **not** runtime-bundled
+unless a build script explicitly copies it. Keep new contributor docs, specs, and scripts in these
+trees (or `docs/`), never under `Assets/` where Unity would import them (see EMB-023).
