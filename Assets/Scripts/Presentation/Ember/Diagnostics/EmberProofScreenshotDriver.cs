@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using EmberCrpg.Presentation.Ember.CharacterCreation;
+using EmberCrpg.Presentation.Ember.Inputs;
 using EmberCrpg.Presentation.Ember.Loading;
 using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Presentation.Ember.UI;
@@ -52,6 +54,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             if (HasArg("--ember-forge-proof"))
             {
                 yield return RunForgeProof();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
+            if (HasArg("--ember-input-proof"))
+            {
+                yield return RunInputProof();
                 if (HasArg("--ember-proof-quit")) Application.Quit();
                 yield break;
             }
@@ -347,6 +356,65 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 "MimeType: " + result.MimeType + "\n" +
                 "ImageBytes: " + (result.ImageBytes?.Length ?? 0) + "\n" +
                 "PngPath: " + pngPath + "\n");
+        }
+
+        // E7-020 Stage 0 baseline hook.
+        // Compile-safe without com.unity.inputsystem: this path records facade outputs only.
+        private IEnumerator RunInputProof()
+        {
+            var logPath = Path.Combine(_outputDir, "input-proof.log");
+            var lines = new List<string>
+            {
+                "mode=source-only",
+                "note=Stage 0 input-proof branch captures facade snapshots without synthetic input injection.",
+                "utc=" + DateTimeOffset.UtcNow.ToString("O")
+            };
+
+            AppendInputSnapshot(lines, "boot");
+            yield return CaptureFixedAfter(0.6f, "input-proof_boot.png");
+
+            SceneManager.LoadScene(EmberScenes.MainMenu);
+            yield return new WaitForSeconds(1.0f);
+            AppendInputSnapshot(lines, "mainmenu");
+            yield return CaptureFixedAfter(0.5f, "input-proof_mainmenu.png");
+
+            SceneManager.LoadScene(EmberScenes.CharacterCreation);
+            yield return new WaitForSeconds(1.0f);
+            AppendInputSnapshot(lines, "character_creation");
+            yield return CaptureFixedAfter(0.5f, "input-proof_character_creation.png");
+
+            File.WriteAllLines(logPath, lines);
+            Debug.Log("[EmberProofScreenshotDriver] wrote " + logPath);
+        }
+
+        private static void AppendInputSnapshot(List<string> lines, string label)
+        {
+            lines.Add("[snapshot] " + label + " scene=" + SceneManager.GetActiveScene().name);
+            lines.Add("Move=" + EmberInput.Move);
+            lines.Add("Look=" + EmberInput.Look);
+            lines.Add("LookSmoothed=" + EmberInput.LookSmoothed);
+            lines.Add("Sprint=" + EmberInput.Sprint);
+            lines.Add("JumpDown=" + EmberInput.JumpDown);
+            lines.Add("JumpKeyDown=" + EmberInput.JumpKeyDown);
+            lines.Add("Interact=" + EmberInput.Interact);
+            lines.Add("ToggleCursor=" + EmberInput.ToggleCursor);
+            lines.Add("RegenWorld=" + EmberInput.RegenWorld);
+            lines.Add("ToggleMap=" + EmberInput.ToggleMap);
+            lines.Add("SaveQuick=" + EmberInput.SaveQuick);
+            lines.Add("LoadQuick=" + EmberInput.LoadQuick);
+            lines.Add("PauseDown=" + EmberInput.PauseDown);
+            lines.Add("PauseHeld=" + EmberInput.PauseHeld);
+            lines.Add("AttackClick=" + EmberInput.AttackClick);
+            lines.Add("SecondaryClick=" + EmberInput.SecondaryClick);
+            lines.Add("MeleeSwing=" + EmberInput.MeleeSwing);
+            lines.Add("NumberKeyDown()=" + EmberInput.NumberKeyDown());
+            lines.Add("NumberKeyDown(1)=" + EmberInput.NumberKeyDown(1));
+            lines.Add("FunctionKeyDown()=" + EmberInput.FunctionKeyDown());
+            lines.Add("KeyDown(C)=" + EmberInput.KeyDown(KeyCode.C));
+            lines.Add("Key(C)=" + EmberInput.Key(KeyCode.C));
+            lines.Add("MouseDown(0)=" + EmberInput.MouseDown(0));
+            lines.Add("AxisRaw(Horizontal)=" + EmberInput.AxisRaw("Horizontal"));
+            lines.Add("Axis(Horizontal)=" + EmberInput.Axis("Horizontal"));
         }
 
         private static string ResolveOutputDir()
