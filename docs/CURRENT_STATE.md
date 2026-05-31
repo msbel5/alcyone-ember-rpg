@@ -13,6 +13,9 @@ This file is the short truth snapshot. For full backlog details use
 - `manual screenshot`: visual evidence captured by a human run.
 - `historical`: old evidence kept for traceability, not current-proof alone.
 
+`LFS-runtime` byte checks and Unity/player behavior checks are separate claims;
+name both labels only when both have current evidence.
+
 ## Verified now (source-only)
 
 - `tools/validation/static-audit.sh` is the structural hygiene gate.

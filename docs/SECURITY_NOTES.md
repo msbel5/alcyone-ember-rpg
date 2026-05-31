@@ -13,6 +13,8 @@
     only added when a non-empty key is supplied.
 - `.gitignore` blocks `.env`, `*.env`, `secrets.json`, `*.key`, `*.pem`, `*.pfx`, `*.p12`, and
   `appsettings.*.local.json` so local secret material can't be staged by accident.
+- Dependency URLs, model paths, and provider endpoints may appear in logs/proofs only after redacting
+  tokens, keys, bearer strings, and auth-bearing query parameters.
 
 ## Network / cloud policy (see also EMB-044)
 - Cloud / network LLM providers are **opt-in and disabled by default**, and are **never

@@ -92,7 +92,7 @@ jobs:
   # This is intentionally separate from source-only CI because it requires
   # lfs:true checkout and may exceed repository LFS budgets on frequent runs.
   runtime-lfs-proof:
-    name: Runtime LFS Proof Gate (manual, lfs:true)
+    name: Runtime LFS Pointer Gate (manual, lfs:true - bytes only)
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_runtime_lfs_gate == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -103,6 +103,7 @@ jobs:
           lfs: true
       - name: Runtime pointer gates (plugins/models/art)
         run: |
+          echo "This gate proves LFS plugin/model/art bytes are not pointers; it does not launch Unity/player or prove LLM, generated actor, forge, or visual behavior."
           bash tools/validation/static-audit.sh --require-runtime
           bash tools/validation/static-audit.sh --require-runtime --require-runtime-visual
 

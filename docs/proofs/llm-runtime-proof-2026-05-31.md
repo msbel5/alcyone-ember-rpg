@@ -46,5 +46,5 @@ User:
 
 ## Still `[E]` (needs a human/visual run, not headless)
 Generated-NPC billboard *visibility*, the character-creation *portrait* on screen, the single-source
-HUD layout, and the full scene-tour remain visual checks — tracked as `BD-20` in
+HUD layout, and the full scene-tour remain visual checks — tracked as `LEFT-16` in
 `docs/REMEDIATION_V2_COUNTER.md`. This proof covers the LLM round-trip + readiness only.

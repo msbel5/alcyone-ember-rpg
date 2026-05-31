@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Worldgen;
 
 namespace EmberCrpg.Domain.Narrative
 {
@@ -17,17 +19,31 @@ namespace EmberCrpg.Domain.Narrative
             new ConversationState(string.Empty, string.Empty, new List<AskAboutTopic>());
 
         public ConversationState(string actorName, string portrait, IReadOnlyList<AskAboutTopic> topics)
+            : this(default, default, actorName, portrait, topics)
         {
+        }
+
+        public ConversationState(
+            ActorId actorId,
+            NpcId npcId,
+            string actorName,
+            string portrait,
+            IReadOnlyList<AskAboutTopic> topics)
+        {
+            ActorId = actorId;
+            NpcId = npcId;
             ActorName = actorName ?? string.Empty;
             Portrait = portrait ?? string.Empty;
             Topics = topics ?? new List<AskAboutTopic>();
         }
 
+        public ActorId ActorId { get; }
+        public NpcId NpcId { get; }
         public string ActorName { get; }
         public string Portrait { get; }
         public IReadOnlyList<AskAboutTopic> Topics { get; }
 
-        public bool IsActive => !string.IsNullOrEmpty(ActorName);
+        public bool IsActive => !ActorId.IsEmpty || !NpcId.IsEmpty || !string.IsNullOrEmpty(ActorName);
 
         /// <summary>Look up a topic this actor actually offers, by stable id. Returns null when the id
         /// is not part of this conversation — callers must not answer for topics the actor never had.</summary>

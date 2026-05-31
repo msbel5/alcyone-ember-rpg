@@ -1,3 +1,4 @@
+// Why this file is intentionally long: combat command routing remains in one partial until command handlers are extracted.
 // EMB-010: DomainSimulationAdapter combat / IPlayerCommandSink (partial-class split).
 using System.Collections.Generic;
 using System.Linq;
@@ -302,7 +303,24 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
             var match = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, targetTag, System.StringComparison.Ordinal));
             if (match == null) return false;
-            GetDialogSource(match.Name);
+            return TryInteract(match.Id);
+        }
+
+        public bool TryInteract(ActorId actorId)
+        {
+            if (actorId.IsEmpty)
+            {
+                LogCombat("Nothing to interact with.");
+                return false;
+            }
+
+            if (_world.Actors == null || !_world.Actors.TryGet(actorId, out var actor) || actor == null)
+            {
+                LogCombat($"No target: actor#{actorId.Value}");
+                return false;
+            }
+
+            GetDialogSource(actor.Id);
             return true;
         }
 

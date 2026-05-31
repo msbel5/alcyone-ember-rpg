@@ -1,3 +1,4 @@
+// Why this file is intentionally long: it documents the temporary aggregate adapter contract while role interfaces are extracted.
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Presentation.Ember.UI;
@@ -137,6 +138,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// Returns true when the adapter routed the interaction.
         /// </summary>
         bool TryInteract(string targetTag);
+
+        /// <summary>
+        /// Player interacts with a world actor by stable id. Use this for NPCs/interactables that
+        /// carry an <see cref="ActorId"/>; the string overload is legacy and reserved for non-actor
+        /// tags or old authored scenes.
+        /// </summary>
+        bool TryInteract(ActorId actorId);
 
         /// <summary>
         /// Acquire the command channel for an NPC conversation. Returns the

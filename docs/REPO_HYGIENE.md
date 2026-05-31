@@ -46,3 +46,6 @@ Never treat source-only green as runtime completeness.
 - No scene YAML mass edits by hand.
 - No forced migration of old assets without `.meta` integrity checks.
 - No fake runtime claims when LFS/runtime bytes are unresolved.
+- `Resources.Load` is allowed only for small global fallbacks/defaults. New
+  gameplay/runtime assets should use explicit references or registries; new
+  `Assets/Resources/**` entries require owner + reason in the PR.

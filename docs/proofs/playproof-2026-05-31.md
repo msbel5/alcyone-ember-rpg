@@ -1,5 +1,8 @@
 # V2 Play-Proof — black-box run of the built Win64 exe (2026-05-31)
 
+Mode: `Unity PlayMode` / player run. `LFS-runtime` is not asserted here for real
+LLM/art output.
+
 Built `Builds/Windows64/alcyone-ember-rpg.exe` (Win64 batchmode, `Build Finished,
 Result: Success`, 0 `error CS`), launched it windowed (1600x900) and drove it via
 Windows-MCP (screenshot + Win32 click). This is a real Play-Mode run showing the V2

@@ -8,8 +8,9 @@ historical audit narrative lives in `docs/Audit.md`.
 ## Status summary
 
 - Closed now (this pass): `LEFT-01`, `LEFT-02`, `LEFT-03`, `LEFT-04`,
-  `LEFT-05`, `LEFT-19`, `LEFT-20`
-- Open/staged: `LEFT-06` to `LEFT-18`, `LEFT-21`
+  `LEFT-05`, `LEFT-08`, `LEFT-10`, `LEFT-19`, `LEFT-20`
+- Open/staged: `LEFT-06`, `LEFT-07`, `LEFT-09`, `LEFT-11` to `LEFT-18`,
+  `LEFT-21`
 
 ## Register
 
@@ -22,9 +23,9 @@ historical audit narrative lives in `docs/Audit.md`.
 | LEFT-05 | P1 | ✅ closed | CI exposes manual runtime-LFS proof gate |
 | LEFT-06 | P1 | ⏳ staged | Save/load multi-slot envelope + migration fixtures |
 | LEFT-07 | P1/P2 | ⏳ staged | Authored scene actor-id migration (Unity editor migration required) |
-| LEFT-08 | P2 | ⏳ staged | Conversation state actor-id/npc-id migration |
+| LEFT-08 | P2 | ✅ closed | Conversation state carries ActorId/NpcId; display name is UI-only/legacy fallback |
 | LEFT-09 | P1/P2 | ⏳ staged | 13-scene runtime tour proof (PlayMode/manual) |
-| LEFT-10 | P2 | ⏳ staged | Simulation dependency boundary (`Data.SliceJson`) |
+| LEFT-10 | P2 | ✅ closed/documented exception | Simulation dependency boundary (`Data.SliceJson`) documented in `Assets/Scripts/Simulation/EmberCrpg.Simulation.asmdef.README.md` |
 | LEFT-11 | P2 | ⏳ staged | `DomainSimulationAdapter` and `EmberWorldHost` split |
 | LEFT-12 | P2/P3 | ⏳ staged | Character/UI controller decomposition |
 | LEFT-13 | P2 | ⏳ staged | LLM provider async/cancellation hardening |

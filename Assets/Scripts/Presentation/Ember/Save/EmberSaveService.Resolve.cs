@@ -90,6 +90,19 @@ namespace EmberCrpg.Presentation.Ember.Save
             return json;
         }
 
+        public static bool AuditIsLoadableSaveJson(string raw) => IsLoadableSaveJson(raw);
+
+        public static bool AuditIsKnownBuildScene(string sceneName) => IsKnownBuildScene(sceneName);
+
+        public static string AuditResolveLatestSaveJson(EmberCrpg.Data.Save.FileSaveRepository repo) =>
+            ResolveLatestSaveJson(repo);
+
+        public static int AuditDefaultSlot => DefaultSlot;
+
+        public static string AuditSaveKey => SaveKey;
+
+        public static string AuditLastSlotKey => LastSlotKey;
+
         /// <summary>
         /// BD-14 (EMB3-019): resolves the latest save through the service's durable-file-slot-first
         /// path (PlayerPrefs only as the legacy fallback INSIDE here) and deserializes it. The

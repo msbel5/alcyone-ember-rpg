@@ -1,3 +1,4 @@
+// Why this file is intentionally long: the aggregate adapter is being split in stages; this root partial keeps shared state only.
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,6 +28,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private int _tick;
         private string _lastCombatLine = string.Empty;
         private string _activeDialogActor = string.Empty;
+        private ActorId _activeDialogActorId;
+        private NpcId _activeDialogNpcId;
         private string _currentDialogLine = string.Empty;
         private string _currentPortrait = "portrait_npc_placeholder";
         // EMB-020/045: the one per-actor conversation model (current speaker + their role/faction topics).

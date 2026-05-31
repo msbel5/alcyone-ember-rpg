@@ -6,8 +6,9 @@ _Codex audit sixth pass I-P3 #I1 — decision documented 2026-05-21._
 
 - `ProjectSettings/ProjectSettings.asset` → `activeInputHandler: 0` (Old Input
   Manager).
-- 55 call sites across `Assets/Scripts/` use the legacy `UnityEngine.Input.*`
-  API (`Input.GetKeyDown`, `Input.GetAxis`, etc.).
+- Active gameplay input is routed through `Assets/Scripts/Presentation/Ember/Inputs/EmberInput.cs`.
+  Legacy direct `UnityEngine.Input.*` call sites outside that facade are tolerated only for explicitly
+  scoped legacy controllers until `LEFT-18` migrates to action maps.
 - `Packages/manifest.json` declares `com.unity.inputsystem@1.11.2` but no
   runtime code references `UnityEngine.InputSystem.*`.
 
@@ -30,9 +31,9 @@ Rationale:
 
 ## Mitigation until migration lands
 
-- New input code SHOULD continue using the legacy `UnityEngine.Input.*` API
-  — do not mix the two. Mixed handling creates "two systems disagree" bugs
-  where polling vs callbacks fire in different frames.
+- New gameplay input code should depend on the `EmberInput` facade, not call
+  `UnityEngine.Input.*` directly. Mixed polling/callback handling creates
+  "two systems disagree" bugs where actions fire in different frames.
 - Modal panels (Dialog, Inventory) use the `EmberWorldHost.IsModalOpen()`
   predicate to suppress spell/movement input — this pattern is independent
   of which Input system is active and will survive the migration.

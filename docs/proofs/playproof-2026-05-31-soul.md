@@ -1,5 +1,8 @@
 # Black-box play-proof — living world + playability (2026-05-31)
 
+Mode: `Unity PlayMode` / player run. Generated actor proof is partial until
+`LEFT-16` has same-seed screenshot plus interaction/speakability evidence.
+
 Real Play-Mode run of the freshly-built `Builds/Windows64/alcyone-ember-rpg.exe`, after the
 SOUL living-world wiring + the breaking dialog-interface change + HUD-02/SCN-01. Driven via
 Windows screen-capture + computer-use clicks. This is a runtime regression + living-world proof,
@@ -42,6 +45,6 @@ not a static green.
   `EmberGeneratedActorSpawner` instantiates one camera-facing billboard per generated NPC, stamps each
   with its `ActorId`, and (fixed 2026-05-31) uses real registry sprite keys + 2.1u sizing + ring-spiral
   scatter + a 6-actor cap so they no longer stack as magenta giants. What remains is the **visual
-  confirmation** (same-seed screenshot of a readable, speakable generated population) — still `[E]`.
+  confirmation** (same-seed screenshot of a readable, speakable generated population) — still `LEFT-16`.
 - **ARCH-06 OracleShrine dialog**, deep Ask-About topic exchange, and the SCN-01 portal *traversal*
   between all scenes were not click-walked end-to-end here.

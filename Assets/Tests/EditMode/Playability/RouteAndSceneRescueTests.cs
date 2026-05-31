@@ -79,6 +79,34 @@ namespace EmberCrpg.Tests.EditMode.Playability
                 sceneName + " must visibly use at least 3 readable existing art assets.");
         }
 
+        [Test]
+        public void EmberScenePortals_TargetEnabledBuildScenes()
+        {
+            var buildScenes = new HashSet<string>();
+            foreach (var scene in EditorBuildSettings.scenes)
+            {
+                if (scene == null || !scene.enabled || string.IsNullOrEmpty(scene.path)) continue;
+                buildScenes.Add(Path.GetFileNameWithoutExtension(scene.path));
+            }
+
+            var invalid = new List<string>();
+            foreach (var sceneName in EmberCrpg.Presentation.Ember.EmberScenes.GameplayTour)
+            {
+                OpenScene(sceneName);
+                foreach (var portal in Object.FindObjectsByType<EmberCrpg.Presentation.Ember.Interaction.EmberScenePortal>(
+                             FindObjectsSortMode.None))
+                {
+                    if (string.IsNullOrWhiteSpace(portal.TargetSceneName)
+                        || !buildScenes.Contains(portal.TargetSceneName))
+                    {
+                        invalid.Add(sceneName + " -> " + (portal.TargetSceneName ?? "<null>"));
+                    }
+                }
+            }
+
+            Assert.That(invalid, Is.Empty, "Every portal target must be an enabled build scene.");
+        }
+
         private static void OpenScene(string sceneName)
         {
             EditorSceneManager.OpenScene("Assets/Scenes/Ember/" + sceneName + ".unity");

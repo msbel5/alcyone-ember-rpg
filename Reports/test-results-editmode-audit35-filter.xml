@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="6" result="Passed" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0,2083145">
+  <test-suite type="TestSuite" id="1000" name="ember-crpg-unity" fullname="ember-crpg-unity" runstate="Runnable" testcasecount="1257" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.208315" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="2475" name="EmberCrpg.Tests.EditMode.dll" fullname="C:/Users/msbel/projects/alcyone-ember-rpg/Library/ScriptAssemblies/EmberCrpg.Tests.EditMode.dll" runstate="Runnable" testcasecount="1257" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.183749" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="16276" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="2476" name="EmberCrpg" fullname="EmberCrpg" runstate="Runnable" testcasecount="1257" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.157342" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="2477" name="Tests" fullname="EmberCrpg.Tests" runstate="Runnable" testcasecount="1257" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.102245" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="2478" name="EditMode" fullname="EmberCrpg.Tests.EditMode" runstate="Runnable" testcasecount="1257" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.078081" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="2483" name="Save" fullname="EmberCrpg.Tests.EditMode.Save" runstate="Runnable" testcasecount="44" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.065932" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestFixture" id="1263" name="EmberSaveServiceResolutionTests" fullname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests" classname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.063174" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1269" name="AuditIsKnownBuildScene_RejectsInvalidSceneNames" fullname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests.AuditIsKnownBuildScene_RejectsInvalidSceneNames" methodname="AuditIsKnownBuildScene_RejectsInvalidSceneNames" classname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests" runstate="Runnable" seed="1754608429" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.015866" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1264" name="AuditIsLoadableSaveJson_RejectsEmptyMalformedAndMissingScene" fullname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests.AuditIsLoadableSaveJson_RejectsEmptyMalformedAndMissingScene" methodname="AuditIsLoadableSaveJson_RejectsEmptyMalformedAndMissingScene" classname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests" runstate="Runnable" seed="1012515322" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.002090" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1265" name="AuditResolveLatestSaveJson_PrefersLastFileSlotOverLegacyPlayerPrefs" fullname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests.AuditResolveLatestSaveJson_PrefersLastFileSlotOverLegacyPlayerPrefs" methodname="AuditResolveLatestSaveJson_PrefersLastFileSlotOverLegacyPlayerPrefs" classname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests" runstate="Runnable" seed="1419480387" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.021526" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1266" name="AuditResolveLatestSaveJson_QuarantinesCorruptSlotThenFallsBackToLegacy" fullname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests.AuditResolveLatestSaveJson_QuarantinesCorruptSlotThenFallsBackToLegacy" methodname="AuditResolveLatestSaveJson_QuarantinesCorruptSlotThenFallsBackToLegacy" classname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests" runstate="Runnable" seed="1896831095" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.004219" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1268" name="TryResolveLatestSave_RejectsMalformedPlayerPrefsFallback" fullname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests.TryResolveLatestSave_RejectsMalformedPlayerPrefsFallback" methodname="TryResolveLatestSave_RejectsMalformedPlayerPrefsFallback" classname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests" runstate="Runnable" seed="1638028376" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.001785" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1267" name="TryResolveLatestSave_UsesPlayerPrefsFallbackWhenSelectedSlotMissing" fullname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests.TryResolveLatestSave_UsesPlayerPrefsFallbackWhenSelectedSlotMissing" methodname="TryResolveLatestSave_UsesPlayerPrefsFallbackWhenSelectedSlotMissing" classname="EmberCrpg.Tests.EditMode.Save.EmberSaveServiceResolutionTests" runstate="Runnable" seed="1790684379" result="Passed" start-time="2026-05-31 17:11:54Z" end-time="2026-05-31 17:11:54Z" duration="0.000895" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[Saving results to: C:/Users/msbel/AppData/LocalLow/DefaultCompany/ember-crpg-unity\TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

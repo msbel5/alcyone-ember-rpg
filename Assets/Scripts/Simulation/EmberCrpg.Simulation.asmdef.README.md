@@ -1,5 +1,9 @@
 # EmberCrpg.Simulation — asmdef reference exception
 
+Tracker: `docs/REMEDIATION_V2_COUNTER.md` marks `LEFT-10` closed as a documented
+exception. Re-open it only if Simulation gains a Data reference outside
+save-rehydration.
+
 ## Why this asmdef references `EmberCrpg.Data` + `EmberCrpg.Data.SliceJson`
 
 The Simulation asmdef points *outward* at Data, which is architecturally

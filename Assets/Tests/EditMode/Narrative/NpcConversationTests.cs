@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Worldgen;
 using NUnit.Framework;
@@ -76,6 +77,30 @@ namespace EmberCrpg.Tests.EditMode.Narrative
             Assert.That(convo.FindTopic("watch"), Is.Not.Null);
             Assert.That(convo.FindTopic("trade"), Is.Null, "must not answer a topic this actor never offered");
             Assert.That(convo.FindTopic(null), Is.Null);
+        }
+
+        [Test]
+        public void ConversationState_CarriesStableIdsSeparatelyFromDisplayName()
+        {
+            var actorId = new ActorId(42UL);
+            var npcId = new NpcId(77UL);
+            var topics = NpcTopicCatalog.For(NpcRole.Scholar, 9UL);
+            var convo = new ConversationState(actorId, npcId, "Sera", "portrait_scholar", topics);
+
+            Assert.That(convo.ActorId, Is.EqualTo(actorId));
+            Assert.That(convo.NpcId, Is.EqualTo(npcId));
+            Assert.That(convo.ActorName, Is.EqualTo("Sera"));
+            Assert.That(convo.IsActive, Is.True);
+        }
+
+        [Test]
+        public void ConversationState_LegacyConstructorLeavesStableIdsEmpty()
+        {
+            var convo = new ConversationState("Same Name", "portrait", NpcTopicCatalog.For(NpcRole.Guard, 0UL));
+
+            Assert.That(convo.ActorId.IsEmpty, Is.True);
+            Assert.That(convo.NpcId.IsEmpty, Is.True);
+            Assert.That(convo.IsActive, Is.True);
         }
 
         [Test]

@@ -11,6 +11,10 @@ bash tools/validation/run-validation.sh --mode fallback
 
 Use this for structure/hygiene/pure-C# checks only.
 
+Fallback mode requires an executable local `.NET` CLI. If `DOTNET_CLI` is not
+set and `dotnet` is not on `PATH`, the script reports
+`dotnet_not_executable`; that is an environment block, not a test failure.
+
 ## 2) Runtime plugin/model gate
 
 ```bash

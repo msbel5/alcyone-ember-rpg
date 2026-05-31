@@ -1,3 +1,4 @@
+// Why this file is intentionally long: dialog, Ask-About, and LLM reply routing remain a legacy partial awaiting staged extraction.
 // REF-a (LEFT-019): the dialog / conversation / Ask-About concern of the DomainSimulationAdapter
 // god-class, extracted to a partial. GetDialogSource, BeginConversation, greeting/topic LLM helpers,
 // IDialogSource (GetCurrentLine/Topics/Portrait/SelectTopic), StyleDescriptor, SanitizeNpcLine.
@@ -34,7 +35,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             var npc = _world.NpcSeeds.FirstOrDefault(
                 n => string.Equals(n.Name, actorName, System.StringComparison.Ordinal));
-            BeginConversation(actorName, npc);
+            BeginConversation(default, npc != null ? npc.Id : default, actorName, npc);
             return this;
         }
 
@@ -48,6 +49,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // global topic menu (the old name-resolution bug). Surface an explicit empty state.
                 _suppressGlobalTopicFallback = true;
                 _activeDialogActor = string.Empty;
+                _activeDialogActorId = default;
+                _activeDialogNpcId = default;
                 _currentDialogLine = "There is no one here to talk to.";
                 _currentPortrait = "portrait_npc_placeholder";
                 _isDialogThinking = false;
@@ -70,7 +73,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             npc ??= _world.NpcSeeds.FirstOrDefault(
                 n => string.Equals(n.Name, actor.Name, System.StringComparison.Ordinal));
 
-            BeginConversation(actor.Name, npc);
+            BeginConversation(actor.Id, npc != null ? npc.Id : default, actor.Name, npc);
             return this;
         }
 
@@ -82,9 +85,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// conversation. Both <see cref="GetDialogSource(string)"/> and
         /// <see cref="GetDialogSource(ActorId)"/> route through here so the two paths can never drift.
         /// </summary>
-        private void BeginConversation(string actorName, NpcSeedRecord npc)
+        private void BeginConversation(ActorId actorId, NpcId npcId, string actorName, NpcSeedRecord npc)
         {
             _suppressGlobalTopicFallback = false;
+            _activeDialogActorId = actorId;
+            _activeDialogNpcId = npcId;
             _activeDialogActor = actorName ?? string.Empty;
             _currentPortrait = "portrait_npc_placeholder";
 
@@ -93,7 +98,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 if (!string.IsNullOrEmpty(npc.PortraitAssetPath)) _currentPortrait = npc.PortraitAssetPath;
 
                 var perActorTopics = NpcTopicCatalog.For(npc.Role, npc.Faction.Value, _world.Topics);
-                _conversation = new ConversationState(_activeDialogActor, _currentPortrait, perActorTopics);
+                _conversation = new ConversationState(
+                    _activeDialogActorId,
+                    _activeDialogNpcId,
+                    _activeDialogActor,
+                    _currentPortrait,
+                    perActorTopics);
 
                 // BUG-DIALOG-EMPTY: seed a DETERMINISTIC opening line synchronously, up front, so the
                 // panel always renders a real sentence even when native inference returns nothing (no
@@ -111,7 +121,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // still funneled through the one ConversationState model so GetTopics/SelectTopic have
                 // a single source of truth.
                 _conversation = new ConversationState(
-                    _activeDialogActor, _currentPortrait, _world.Topics ?? new List<AskAboutTopic>());
+                    _activeDialogActorId,
+                    _activeDialogNpcId,
+                    _activeDialogActor,
+                    _currentPortrait,
+                    _world.Topics ?? new List<AskAboutTopic>());
 
                 // BUG-DIALOG-EMPTY: seed a deterministic, non-empty opening line first so the panel
                 // is never blank. Lead with a shared world topic answer when present.
@@ -354,7 +368,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 ? topic.Answer
                 : $"{_activeDialogActor} considers \"{topicId}\".";
 
-            var actor = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, _activeDialogActor, System.StringComparison.Ordinal));
+            ActorRecord actor = null;
+            if (_conversation != null && !_conversation.ActorId.IsEmpty)
+                _world.Actors.TryGet(_conversation.ActorId, out actor);
+            actor ??= _world.Actors.Records.FirstOrDefault(
+                a => string.Equals(a.Name, _activeDialogActor, System.StringComparison.Ordinal));
             if (actor != null && _world.Events != null)
             {
                 _world.Events.Append(new WorldEvent(
@@ -368,7 +386,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // Live LLM topic answer (Phase 12 production wire). Authored scene actors have no
             // NpcSeed, so route them through the ad-hoc (name-based) path — otherwise selecting a
             // topic ALWAYS showed the deterministic answer (the LLM-NOT-FIRING bug, same as greetings).
-            var npc = _world.NpcSeeds.FirstOrDefault(n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
+            NpcSeedRecord npc = null;
+            if (_conversation != null && !_conversation.NpcId.IsEmpty)
+                npc = _world.NpcSeeds.FirstOrDefault(n => n.Id.Equals(_conversation.NpcId));
+            npc ??= _world.NpcSeeds.FirstOrDefault(
+                n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
             if (npc != null)
                 _ = GenerateNpcTopicAnswerAsync(npc, topicId, topic);
             else

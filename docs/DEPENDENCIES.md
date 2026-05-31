@@ -34,3 +34,9 @@
 - Don't bump a plugin/DLL version casually — the BCL ecosystem versions are matched to LLamaSharp 0.27;
   a mismatch resurfaces CS1705 assembly-version conflicts. Verify a full Win64 build after any change.
 - Editor-only tooling (`McpPlugin*`, SignalR) must stay Editor-scoped (not bundled into the player).
+- Every new heavy runtime dependency needs an approved source/version, an ownership note, and either LFS
+  tracking or a gitignored local-install rule. Plugin/model bumps require the runtime pointer gate and
+  Win64 build evidence.
+- Never vendor secrets, auth-bearing URLs, or provider tokens with dependency manifests or proof logs.
+- `Assets/Plugins/NuGet/.nuget-installed.json` is an ignored NuGet marker. It is not a Unity asset and
+  intentionally has no `.meta`; do not treat it as gameplay content.

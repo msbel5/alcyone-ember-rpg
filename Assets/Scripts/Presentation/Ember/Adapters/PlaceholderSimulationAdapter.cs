@@ -1,3 +1,4 @@
+// Why this file is intentionally long: placeholder adapter implements the full legacy aggregate contract for smoke scenes.
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Presentation.Ember.UI;
@@ -199,6 +200,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public bool TryInteract(string targetTag)
         {
             LogCombat($"placeholder: interact {targetTag ?? string.Empty} not routed.");
+            return false;
+        }
+
+        public bool TryInteract(ActorId actorId)
+        {
+            LogCombat(actorId.IsEmpty
+                ? "placeholder: interact empty actor id not routed."
+                : $"placeholder: interact actor#{actorId.Value} not routed.");
             return false;
         }
 
