@@ -1,10 +1,10 @@
-# `EmberCrpg.Data.SliceJson` — presentation infrastructure
+# `EmberCrpg.Data.SliceJson` — engine-free save-mapper sub-assembly
 
-This folder lives under `Assets/Scripts/Data/` for historical / discovery
-reasons, but architecturally it is **presentation infrastructure**, not Data.
-
-Codex audit follow-up: the parent `EmberCrpg.Data` assembly remains pure; this
-sub-assembly is intentionally the Unity JSON bridge.
+This folder lives under `Assets/Scripts/Data/` for historical / discovery reasons. It is an
+**engine-free** (`noEngineReferences=true`) sub-assembly referencing only `EmberCrpg.Domain` +
+`EmberCrpg.Data`. Its job is to map the deterministic `WorldState` to/from the `WorldSaveData` DTO
+graph. It is **not** the Unity JSON bridge — the `UnityEngine.JsonUtility` wrapper
+(`JsonSliceSaveService`) lives in the Presentation assembly (`Assets/Scripts/Presentation/Ember/Save/`).
 
 ## Why it stays under Data/
 
@@ -18,8 +18,10 @@ compatibility with every caller; the **architectural boundary it enforces**
 is what matters:
 
 - Parent `EmberCrpg.Data` asmdef: Domain-only, no engine references — pure DTOs.
-- This sub-asmdef: Domain + Simulation + UnityEngine — the bridge between
-  the deterministic snapshot DTOs and Unity's `JsonUtility`.
+- This sub-asmdef: **Domain + Data only, `noEngineReferences=true`** (engine-free, verified in the
+  `.asmdef`) — it is the pure `WorldState` ↔ `WorldSaveData` mapper graph (`WorldSaveMapper.*`), NOT a
+  Unity bridge. The `UnityEngine.JsonUtility` wrapper (`JsonSliceSaveService`) lives in the Presentation
+  assembly at `Assets/Scripts/Presentation/Ember/Save/`.
 
 ## What lives here
 

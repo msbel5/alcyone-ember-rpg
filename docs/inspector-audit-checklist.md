@@ -1,5 +1,9 @@
 # Inspector audit checklist
 
+> ⚠️ **LEGACY / REFERENCE-ONLY (E7-023, 2026-05-31).** Historical Captain-era checklist. Some automation
+> rules here are stale or conflict with the current Unity remediation — use it as a manual inspection aid
+> only, never as an enforced gate. Live status: `docs/CURRENT_STATE.md` + `docs/REMEDIATION_V2_COUNTER.md`.
+
 Inspector applies this checklist to every Captain PR before merge. A single FAIL row blocks the merge.
 
 This checklist is referenced by `docs/agent-rules-v2.md` Rules 6-9 and by the top-of-file Debt ledger gate in every active sprint atom map (under `docs/archive/sprint/`).

@@ -202,6 +202,14 @@ namespace EmberCrpg.Infrastructure.AiDm
             return sb.ToString();
         }
 
+        // E7-016: on-demand model download is opt-in only. Returns true exclusively when the user has set
+        // EMBER_ALLOW_MODEL_DOWNLOAD to 1/true — so the default build never pulls a multi-GB file silently.
+        private static bool IsModelDownloadAllowed()
+        {
+            var v = Environment.GetEnvironmentVariable("EMBER_ALLOW_MODEL_DOWNLOAD");
+            return v == "1" || string.Equals(v, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
         public async Task EnsureModelReady(Action<float> progressCallback)
         {
             // LEFT-005: only short-circuit when a *usable* model (real GGUF, not an LFS pointer/truncated
@@ -209,6 +217,17 @@ namespace EmberCrpg.Infrastructure.AiDm
             if (IsUsableModelFile(_modelPath))
             {
                 await LoadModelAsync();
+                progressCallback?.Invoke(1f);
+                return;
+            }
+
+            // E7-016: a multi-GB GGUF fetch must be an EXPLICIT opt-in, never a silent first-run/loading
+            // background pull. Default = NO download — the clearly-labelled fallback client answers until a
+            // real GGUF is present. The user enables the on-demand download by setting
+            // EMBER_ALLOW_MODEL_DOWNLOAD=1 (documented in docs/AI_STACK.md). Without it, report ready and
+            // let availability stay false so Complete() degrades to the fallback instead of stalling.
+            if (!IsModelDownloadAllowed())
+            {
                 progressCallback?.Invoke(1f);
                 return;
             }

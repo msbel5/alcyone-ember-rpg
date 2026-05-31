@@ -1,5 +1,11 @@
 # Agent rules v2 — for Alcyone Captain on alcyone-ember-rpg
 
+> ⚠️ **LEGACY / NOT ACTIVE (E7-023, 2026-05-31).** These old "Alcyone Captain" cron-automation rules
+> reference paths that no longer exist (`docs/archive/sprint/`) and hard-fail any touch to
+> `Assets/Scripts/Presentation`, which directly conflicts with the current Unity remediation (which MUST
+> edit Presentation). **Do not treat these as active PR rules.** The live workflow is
+> `docs/CURRENT_STATE.md` + `docs/REMEDIATION_V2_COUNTER.md`. Kept only for historical reference.
+
 These rules supplement the existing `@EMSPR` cron routine in
 `/home/msbel/.openclaw/workspace/CRON_CODES.md`. When in doubt these
 override the older "exactly one small shippable increment" wording.

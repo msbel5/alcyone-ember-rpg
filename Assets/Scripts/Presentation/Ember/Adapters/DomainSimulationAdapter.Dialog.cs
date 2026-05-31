@@ -386,11 +386,16 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // Live LLM topic answer (Phase 12 production wire). Authored scene actors have no
             // NpcSeed, so route them through the ad-hoc (name-based) path — otherwise selecting a
             // topic ALWAYS showed the deterministic answer (the LLM-NOT-FIRING bug, same as greetings).
+            // E7-005: IDENTITY is id-first — resolve the NPC by the conversation's stable NpcId. The
+            // name match below is an explicit LEGACY fallback that only fires when no stable id is present
+            // (pre-E7-004 authored actors). It can mis-resolve duplicate display-names, so it is being
+            // eliminated by the E7-004 authored-scene actor-ID migration, after which every conversation
+            // carries a real NpcId/ActorId and this branch is dead.
             NpcSeedRecord npc = null;
             if (_conversation != null && !_conversation.NpcId.IsEmpty)
                 npc = _world.NpcSeeds.FirstOrDefault(n => n.Id.Equals(_conversation.NpcId));
             npc ??= _world.NpcSeeds.FirstOrDefault(
-                n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
+                n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal)); // LEGACY name fallback
             if (npc != null)
                 _ = GenerateNpcTopicAnswerAsync(npc, topicId, topic);
             else

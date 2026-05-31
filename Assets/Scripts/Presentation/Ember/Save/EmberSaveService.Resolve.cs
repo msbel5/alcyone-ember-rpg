@@ -131,7 +131,16 @@ namespace EmberCrpg.Presentation.Ember.Save
                 data = null;
                 return false;
             }
-            return data != null && !string.IsNullOrEmpty(data.sceneName);
+            // E7-008: validate the save's scene against the build registry HERE, at the single resolution
+            // point, so NO load entry point (menu Continue/Load, in-game F9) can hand a SaveData that
+            // names a renamed/removed scene to SceneManager.LoadScene. A save with an unknown scene is
+            // treated as "no loadable save" (callers start a new game / show "no saves").
+            if (data == null || string.IsNullOrEmpty(data.sceneName) || !IsKnownBuildScene(data.sceneName))
+            {
+                data = null;
+                return false;
+            }
+            return true;
         }
     }
 }
