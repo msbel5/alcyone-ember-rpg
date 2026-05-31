@@ -5,26 +5,31 @@
 # checkout (that is exactly the false-green scenario it exists to catch).
 #
 # Sections:
-#   1. Duplicate .meta GUIDs            -> HARD FAIL (always corrupts Unity asset identity)
-#   2. LFS pointer runtime binaries      -> reported; HARD FAIL only with --require-runtime
+#   1. Duplicate .meta GUIDs             -> HARD FAIL (always corrupts Unity asset identity)
+#   2. LFS pointer runtime/plugin/model  -> reported; HARD FAIL with --require-runtime
+#   2b.LFS pointer runtime visual assets -> reported; HARD FAIL with --require-runtime-visual
 #   3. Missing .meta (asset w/o .meta)   -> WARN (lists offenders)
 #   4. Orphan .meta (.meta w/o asset)    -> WARN (lists offenders; gitignored-binary metas noted)
 #   5. Informational greps               -> counts only (Input. / PlayerPrefs / Task.Run / GetResult)
 #
 # Usage:
-#   tools/validation/static-audit.sh                 # report; fail only on duplicate GUIDs
-#   tools/validation/static-audit.sh --require-runtime  # also fail if runtime binaries are LFS pointers
-#   tools/validation/static-audit.sh --quiet         # summary lines only
+#   tools/validation/static-audit.sh                                  # source-only report mode
+#   tools/validation/static-audit.sh --require-runtime                # strict plugins/models
+#   tools/validation/static-audit.sh --require-runtime --require-runtime-visual
+#                                                                      # strict plugins/models + art visuals
+#   tools/validation/static-audit.sh --quiet                          # summary lines only
 set -u
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT" || exit 2
 
 REQUIRE_RUNTIME=0
+REQUIRE_RUNTIME_VISUAL=0
 QUIET=0
 for arg in "$@"; do
   case "$arg" in
     --require-runtime) REQUIRE_RUNTIME=1 ;;
+    --require-runtime-visual) REQUIRE_RUNTIME=1; REQUIRE_RUNTIME_VISUAL=1 ;;
     --quiet) QUIET=1 ;;
   esac
 done
@@ -51,23 +56,43 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 2. LFS pointer runtime binaries  (report; fail only with --require-runtime)
+# 2. LFS pointer runtime plugin/model binaries
 # ---------------------------------------------------------------------------
-head "2. LFS pointer runtime binaries"
-LFS_PTRS="$(grep -rIl '^version https://git-lfs.github.com/spec/v1' \
-            Assets/Plugins Assets/StreamingAssets 2>/dev/null)"
-if [ -n "$LFS_PTRS" ]; then
-  N=$(printf '%s\n' "$LFS_PTRS" | grep -c .)
+head "2. LFS pointer runtime plugins/models"
+RUNTIME_PTRS="$(grep -rIl '^version https://git-lfs.github.com/spec/v1' \
+               Assets/Plugins Assets/StreamingAssets 2>/dev/null)"
+if [ -n "$RUNTIME_PTRS" ]; then
+  N=$(printf '%s\n' "$RUNTIME_PTRS" | grep -c .)
   if [ "$REQUIRE_RUNTIME" -eq 1 ]; then
-    echo "FAIL (--require-runtime): $N runtime binary/model files are LFS pointers (run 'git lfs pull'):"
-    printf '%s\n' "$LFS_PTRS" | sed 's/^/  /'
+    echo "FAIL (--require-runtime): $N runtime plugin/model files are LFS pointers (run 'git lfs pull'):"
+    printf '%s\n' "$RUNTIME_PTRS" | sed 's/^/  /'
     FAIL=1
   else
-    say "INFO: $N runtime binary/model files are LFS pointers — SOURCE-ONLY MODE."
+    say "INFO: $N runtime plugin/model files are LFS pointers — SOURCE-ONLY MODE."
     say "      EditMode/source tests are valid; build/forge/LLM proof is NOT (run 'git lfs pull')."
   fi
 else
-  say "PASS: no runtime binaries are LFS pointers — RUNTIME-PRESENT MODE."
+  say "PASS: no runtime plugins/models are LFS pointers — RUNTIME-PRESENT MODE."
+fi
+
+# ---------------------------------------------------------------------------
+# 2b. LFS pointer runtime visual assets
+# ---------------------------------------------------------------------------
+head "2b. LFS pointer runtime visuals"
+VISUAL_PTRS="$(grep -rIl '^version https://git-lfs.github.com/spec/v1' \
+              Assets/Art Assets/Generated/Core 2>/dev/null)"
+if [ -n "$VISUAL_PTRS" ]; then
+  V=$(printf '%s\n' "$VISUAL_PTRS" | grep -c .)
+  if [ "$REQUIRE_RUNTIME_VISUAL" -eq 1 ]; then
+    echo "FAIL (--require-runtime-visual): $V runtime visual asset files are LFS pointers:"
+    printf '%s\n' "$VISUAL_PTRS" | sed 's/^/  /'
+    FAIL=1
+  else
+    say "INFO: $V runtime visual asset files are LFS pointers."
+    say "      Use --require-runtime-visual to make this a hard runtime-proof gate."
+  fi
+else
+  say "PASS: no runtime visual assets are LFS pointers."
 fi
 
 # ---------------------------------------------------------------------------

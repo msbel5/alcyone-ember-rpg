@@ -1,64 +1,38 @@
-# Local validation on Pi
+# Validation Modes
 
-Run validation from the repo root:
+Run commands from repo root.
 
-```bash
-tools/validation/run-validation.sh
-```
-
-The script writes evidence logs and test artifacts under `validation-output/` (gitignored). The latest full log is copied to `validation-output/latest.log`.
-
-## What the script does
-
-1. Detects a Unity editor binary from:
-   - `--unity-path PATH`
-   - `UNITY_EDITOR`, `UNITY_EXECUTABLE`, `UNITY_BINARY`, `UNITY_EXE`, `UNITY_PATH`
-   - `Unity`, `unity-editor`, or `unity` on `PATH`
-   - common Unity Hub/editor locations under `$HOME`, `/opt`, `/usr`, and `/Applications`
-2. If Unity is found, runs real EditMode tests with:
+## 1) Source-only gate (fast)
 
 ```bash
-<Unity> -batchmode -projectPath <repo> -runTests -testPlatform EditMode -testResults validation-output/unity-editmode-results.xml -logFile validation-output/unity-editmode.log -quit
+bash tools/validation/static-audit.sh
+bash tools/validation/run-validation.sh --mode fallback
 ```
 
-3. If Unity is not found, runs a deterministic pure-C# NUnit fallback harness via the `dotnet` on `PATH` (Linux/macOS/Windows alike). Codex audit (H/P3) flagged the hardcoded Linux path that previously appeared here; the canonical command resolves whichever .NET 8 SDK the developer's `PATH` carries:
+Use this for structure/hygiene/pure-C# checks only.
+
+## 2) Runtime plugin/model gate
 
 ```bash
-dotnet test tools/validation/fallback/ValidationFallbackHarness.csproj --configuration Release --nologo --results-directory validation-output/fallback-test-results --logger 'trx;LogFileName=fallback.trx'
+bash tools/validation/static-audit.sh --require-runtime
 ```
 
-## Fallback meaning
+Fails when runtime plugin/model files are still Git LFS pointers.
 
-The fallback harness currently targets `net8.0` and compiles/runs:
-
-- `Assets/Scripts/Domain/**/*.cs`
-- `Assets/Scripts/Simulation/**/*.cs`
-- `Assets/Scripts/Data/**/*.cs`
-- selected pure presentation files
-- `Assets/Scripts/Presentation/VisualLayer/**/*.cs`
-- `Assets/Tests/EditMode/**/*.cs`
-- `tools/validation/fallback/UnityJsonUtilityStub.cs`
-
-It intentionally excludes Unity presentation/runtime `MonoBehaviour` code. It includes a minimal `UnityEngine.JsonUtility` stub backed by `System.Text.Json` so save/load tests can execute without the Unity editor.
-
-**Important:** fallback PASS means the pure domain/simulation/save/pure-presentation EditMode test corpus passed under .NET 8. It is not a real Unity EditMode run and does not validate Unity assembly definitions, editor import/serialization quirks, scenes, input, rendering, or PlayMode behavior.
-
-Use explicit modes when needed:
+## 3) Runtime visual gate
 
 ```bash
-# Require a real Unity editor; exits BLOCKED if not found.
-tools/validation/run-validation.sh --mode unity
-
-# Force the .NET fallback; still not a Unity run.
-tools/validation/run-validation.sh --mode fallback
+bash tools/validation/static-audit.sh --require-runtime --require-runtime-visual
 ```
 
-## Sprint 4 branch hygiene
+Also fails when visual/runtime art paths are still LFS pointers
+(`Assets/Art/**`, `Assets/Generated/Core/**`).
 
-Sprint 4 phase branches should also run the branch hygiene guard before validation:
+## 4) Unity-required validation
 
-```bash
-tools/validation/check-sprint4-branch-hygiene.sh
-```
+- Unity EditMode and PlayMode runs
+- Player build run-through
+- Scene tour screenshots
 
-The guard verifies that the branch descends from the Sprint 4 baseline `b05100026c081361cf6f4c660dfa77fe620d644f` and that exact old branch-lineage commits `52f2e1e` / `116ae2e` are not present as fresh Sprint 4 commits. This is a lightweight guard only; reviewers must still reject copied or cherry-picked old work and any code copied from `Reference/` or `references/`.
+These require Unity runtime/editor sessions and cannot be replaced by
+source-only green checks.

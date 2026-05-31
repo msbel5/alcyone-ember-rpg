@@ -57,6 +57,10 @@ on:
         description: 'Also build StandaloneWindows64 artifact (heavy; needs LFS for runtime-proof)'
         type: boolean
         default: false
+      run_runtime_lfs_gate:
+        description: 'Run runtime LFS pointer gate (lfs:true checkout, plugins/models/art)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -83,6 +87,24 @@ jobs:
           lfs: false  # static-audit is designed to run on a source-only (pointer) checkout
       - name: Run static asset/source audit
         run: bash tools/validation/static-audit.sh
+
+  # Runtime LFS proof gate (manual/opt-in).
+  # This is intentionally separate from source-only CI because it requires
+  # lfs:true checkout and may exceed repository LFS budgets on frequent runs.
+  runtime-lfs-proof:
+    name: Runtime LFS Proof Gate (manual, lfs:true)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_runtime_lfs_gate == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout (LFS runtime bytes)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Runtime pointer gates (plugins/models/art)
+        run: |
+          bash tools/validation/static-audit.sh --require-runtime
+          bash tools/validation/static-audit.sh --require-runtime --require-runtime-visual
 
   # EditMode Tests — Pure C# logic, ~5 min.
   #

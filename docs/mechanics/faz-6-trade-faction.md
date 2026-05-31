@@ -1225,7 +1225,7 @@ namespace EmberCrpg.Simulation.Society
 | 16 | `TradeRouteSystem.TryDispatchBestRoute` | surplus to shortage route seç, cargoyu transit’e al | `TradeRouteDispatchTests` | `[box=SOCIETY][box=TIME]` |
 | 17 | `TradeRouteSystem.DeliverDueCaravans` | arrival stock mutate, price drop, event log | `TradeRouteArrivalTests` | `[box=SOCIETY][box=TIME]` |
 | 18 | `TradeRouteSystem` shortage edge cases | no surplus, no edge, no idle caravan deterministic no-op | `TradeRouteShortageTests` | `[box=SOCIETY][box=TIME]` |
-| 19 | `SliceSaveMapper` DTO extension | economy, edges, relations, caravans save/load | `SocietySaveRoundTripTests` | `[box=TIME]` |
+| 19 | `WorldSaveMapper` DTO extension | economy, edges, relations, caravans save/load | `SocietySaveRoundTripTests` | `[box=TIME]` |
 | 20 | `CaravanArrivalPriceDropTests.cs` | city gate acceptance: caravan arrives, price drops | acceptance replay | `[box=PLAYABLE][box=SOCIETY]` |
 | 21 | `ISettlementNeedPressureSource`, `TradePriceModifierRow` | Faz 4 Needs hook boş kaynakla no-op çalışsın | `NeedPressureHookTests` | `[box=SOCIETY]` |
 | 22 | `faz-6 final summary` | visible PR count, replay log, player-can sentence | doc proof | `[box=PLAYABLE]` |

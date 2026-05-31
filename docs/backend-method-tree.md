@@ -1,9 +1,13 @@
 # Backend method tree
 
-_Generated:_ 2026-05-18
-_Branch:_ agent/faz-5-season-ledger
+> Historical inventory snapshot. Not an active implementation contract.
+> For current implementation truth use `docs/CURRENT_STATE.md`,
+> `docs/REMEDIATION_V2_COUNTER.md`, and active PRDs under `docs/prds/`.
 
-Purpose: make the backend visible as a class/method inventory before continuing Faz 4-12 implementation. This is a control-plane artifact for slicing GPT-5-mini/Codex work into small bounded files and tests.
+_Generated snapshot:_ 2026-05-18
+_Snapshot branch:_ `agent/faz-5-season-ledger`
+
+Purpose at capture time: class/method inventory for old sprint slicing.
 
 ## Inventory summary
 
@@ -97,7 +101,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### Faz 6 Trade routes + Faction
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.cs`
 - `Assets/Scripts/Domain/Core/FactionId.cs`
 - `Assets/Scripts/Domain/World/FactionRecord.cs`
 - `Assets/Scripts/Domain/World/FactionStore.cs`
@@ -115,7 +119,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 ### Faz 7 Combat + Equipment
 - `Assets/Scripts/Data/Save/ItemSaveMapper.cs`
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.cs`
 - `Assets/Scripts/Domain/Actors/ActorRecord.cs`
 - `Assets/Scripts/Domain/Actors/ActorVitals.cs`
 - `Assets/Scripts/Domain/Actors/VitalStat.cs`
@@ -273,7 +277,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### Faz 9 Dialogue + Memory + Faction reputation
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.cs`
 - `Assets/Scripts/Domain/Actors/ActorRecord.cs`
 - `Assets/Scripts/Domain/Memory/ActorMemory.cs`
 - `Assets/Scripts/Domain/Memory/ActorMemoryEventTypes.cs`
@@ -294,7 +298,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### Faz 10 DM Query API
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.cs`
 - `Assets/Scripts/Domain/World/ReasonTrace.cs`
 - `Assets/Scripts/Domain/World/SliceWorldState.cs`
 - `Assets/Scripts/Domain/World/WorldEvent.cs`
@@ -349,7 +353,7 @@ Purpose: make the backend visible as a class/method inventory before continuing 
 
 ### Faz 12 LLM / NPC fallback flavour
 - `Assets/Scripts/Data/Save/SliceSaveData.cs`
-- `Assets/Scripts/Data/Save/SliceJson/SliceSaveMapper.cs`
+- `Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.cs`
 - `Assets/Scripts/Domain/Core/GameTime.cs`
 - `Assets/Scripts/Domain/Memory/NpcMemoryStore.cs`
 - `Assets/Scripts/Simulation/Living/NeedMoodEvaluator.cs`
@@ -472,10 +476,10 @@ Purpose: make the backend visible as a class/method inventory before continuing 
   - L350: `class ShieldBuffSaveData`
   - L356: `class ShieldBuffEntrySaveData`
 
-#### `SliceSaveMapper.cs`
+#### `WorldSaveMapper.cs`
 - namespace: `EmberCrpg.Data.Save`
 - types:
-  - L21: `class SliceSaveMapper`
+  - L21: `class WorldSaveMapper`
 - members:
   - L23: `public static SliceSaveData ToData(SliceWorldState world)`
   - L68: `public static SliceWorldState ToWorld(SliceSaveData data)`

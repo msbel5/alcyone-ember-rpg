@@ -1,5 +1,9 @@
 # Ember CRPG — Design System
 
+> Historical/creative reference document. For current runtime and validation
+> truth use `docs/CURRENT_STATE.md`, `docs/AI_STACK.md`, and
+> `docs/REPO_HYGIENE.md`.
+
 > A deterministic, living-world CRPG that runs like a colony sim and reads like
 > a text adventure. Ember is the game that "should have come after the original
 > *Hitchhiker's Guide to the Galaxy: Anniversary Edition*, evolved through
@@ -25,7 +29,7 @@ Ember is a single-player CRPG built on three stacked ideas:
    faction reputation, skill-gated dialogue, save/load.
 3. **AI agent layer** (the last thing built) — every named NPC and the **DM**
    are persistent agents. They run a deterministic local mind 99% of the time
-   and only fall back to a local LLM (`Qwen3:1.7B`, larger via Copilot) when the
+   and only fall back to a local LLM (`Qwen2.5` local runtime path) when the
    deterministic path genuinely can't answer. **The simulation is always
    authoritative; the LLM never writes the world.** No chat overlays, ever —
    model output is always translated into in-game tool calls.
@@ -66,12 +70,12 @@ Files this system was built from (all paths within the primary repo):
 | `Assets/Scripts/Presentation/Ember/UI/*.cs` | **Every color, font size, layout and animation token** (programmatic HUD) |
 | `Assets/Scripts/Domain/CharacterCreation/CharacterCreationCatalog.cs` | Classes, birthsigns, scenario questions, stat block |
 | `Assets/Resources/loading-flavors.json` | Loading-screen voice samples |
-| `GeneratedAssets/**` | Real painterly character billboards (goblin, bandit, beggar) + their generation prompts |
+| `Assets/Generated/Core/**` | Runtime-generated painterly billboards/icons cache paths |
 | `docs/forge-samples/grid.png` | Generated terrain texture sample |
 
 > The repo is large (Unity project, 1500+ asset stubs). Most `Assets/Art/*.png`
 > are 131-byte placeholders — the *real* art is generated at runtime, so look in
-> `GeneratedAssets/` and at the forge prompts, not `Assets/Art/`.
+> `Assets/Generated/Core/` and forge prompts, not only placeholder source art under `Assets/Art/`.
 
 ---
 

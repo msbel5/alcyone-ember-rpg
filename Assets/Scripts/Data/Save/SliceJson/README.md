@@ -25,7 +25,7 @@ is what matters:
 
 | File | Role |
 |---|---|
-| `WorldSaveMapper.cs` + `.World` / `.Process` / `.Economy` / `.Narrative` / `.ActorDetail` partials | Translates `WorldState` ↔ `WorldSaveData` DTO graph (carries `schemaVersion` + a documented bump/migration protocol). This **replaced** the former monolithic `SliceSaveMapper.cs`. |
+| `WorldSaveMapper.cs` + `.World` / `.Process` / `.Economy` / `.Narrative` / `.ActorDetail` partials | Translates `WorldState` ↔ `WorldSaveData` DTO graph (carries `schemaVersion` + a documented bump/migration protocol). This replaced the old single-file mapper implementation. |
 
 > The `UnityEngine.JsonUtility` wrapper (`JsonSliceSaveService.cs`) — the single save↔Unity
 > touch-point — now lives in `Assets/Scripts/Presentation/Ember/Save/`, not here. It is the

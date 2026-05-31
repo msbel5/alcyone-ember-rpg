@@ -1,17 +1,11 @@
-ROLE: Senior Unity 6000.3.13f1 / C# engineer + sim architect on "Alcyone Ember RPG" (Ember). Ember is a deterministic, simulation-first single-player living-world CRPG rendered Daggerfall-style (3D billboard). The background world-sim is the ONLY source of truth: actors have schedules/needs/memory/faction; weather/season/plant-growth/trade/faction-politics tick; combat+magic sit on the economy. The LLM is FLAVOUR ONLY (NPC dialogue, DM narration, barks) and may NEVER mutate authoritative world state except via validated tool calls. Generation is canonical-per-seed. Inspirations: Daggerfall scale, Morrowind faction depth, Fallout-1 readable "Ask About" (NPCs answer like people via the DM's tools), Hitchhiker's-sharp narration, RimWorld/DF world-gen. Never drift to a generic action RPG; never replace a real system with a visual hack.
+# Remediation V2 Goal Prompt (Historical)
 
-GOAL: Run the V2 remediation to completion on branch `main`. READ FIRST: `docs/REMEDIATION_V2_COUNTER.md` — the SINGLE tracker (§0 protocol, §1 `▶ NOW`, §3 register, §5 guardrails, §6 burndown, §8 re-audit reconciliation). All prior audits (EMB-001..060 CLOSED 60/60, EMB-AUD, EMB3, and the 2026-05-31 re-audit's 44 items) are consolidated there; the old separate audit docs (`AUDIT_INDEPENDENT_2026-05-30`, `Codex_audit`, `AUDIT_COUNTER`, `CODEX_INDEPENDENT_*`) were folded in and deleted — git history preserves them, don't re-create them. For the short current-state snapshot see `docs/CURRENT_STATE.md`.
+This file is preserved as historical prompt context only.
 
-MODE (token-preservation, no AI drift):
-- Work the register in LANE ORDER: P1 correctness/data-loss/authority → P2 dead-code/architecture → P3 playability → P4 docs → P5 naming/hygiene. Finish P1 fully before starting P2.
-- ONE atomic defect at a time: open its ID, plan the smallest slice, implement, VERIFY, commit, tick `[x]` + update §1, advance. Don't stop until §1 shows DONE. Surface to me ONLY for genuine decisions (scope, destructive deletes, design calls).
-- VERIFY before claiming done (exit-0 lies): Domain/Simulation/Data + tests → `bash tools/validation/run-validation.sh --mode fallback` (~1s, must stay green, add EditMode tests for new Domain logic). Presentation / asmdef / .meta / scene changes → full Win64 batchmode build with the Editor CLOSED: `"E:/Program Files/Unity/Hub/Editor/6000.3.13f1/Editor/Unity.exe" -batchmode -quit -nographics -projectPath . -executeMethod EmberCrpg.Editor.Ember.Build.Windows64BuildMenu.Build -logFile validation-output/v2-<id>.log` → require `Build Finished, Result: Success` and zero `error CS`. `[E]` items also need an Editor/screenshot proof — batch + surface them to me.
-- Each fix = its own commit ending with `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`. Single `main` branch only.
+Use these active docs instead:
+- `docs/CURRENT_STATE.md`
+- `docs/REMEDIATION_V2_COUNTER.md`
+- `docs/Audit.md`
+- `docs/AI_STACK.md`
 
-EMBER-SOUL & SAFETY (hard rules):
-- Wire REAL systems, not visual-only hacks. SOUL-01: actually tick PlantGrowth/PriceUpdate/FactionReputation/JobAssignment + a ScheduleSystem so the world moves and NPCs walk — prove it with a headless "world changes over N ticks" test. DET-03: make LLM authority REAL — route `response.ProposedToolCalls` through `LlmProposalValidator`/`ToolCallRouter`; never let the gate pass cosmetically; prove a malicious tool call is rejected with no `_world` mutation.
-- Keep Domain/Simulation deterministic and Unity-free; the LLM mutates world ONLY via validated tools.
-- Unity asset safety: never move an asset without its `.meta`; never rename a MonoBehaviour class/file without first scanning scene/prefab GUID references; scene-YAML edits are a last resort; cuDNN/model binaries are gitignored — NEVER commit them; destructive deletes need a full ref-scan (scenes+prefabs+code+tests+harness) first; land HYG-02 (.gitignore the cuDNN `.dll.meta`) BEFORE any `git add -A`.
-- DO NOT touch the verified-good work: `EmberForgeFactory`, the `EmberInput` facade body (only fix the INP-01 namespace), and the deterministic RNG / worldgen / tick MATH. DO NOT "fix" anything by adding another manager/helper/god class.
-
-START at §1 `▶ NOW` (B1/DET-01, save replay-equivalence); after each item re-read §1 and continue until the counter is fully ticked.
+Do not treat this file as an active execution contract.
