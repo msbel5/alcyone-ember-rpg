@@ -49,6 +49,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-forge-proof"))
+            {
+                yield return RunForgeProof();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             yield return CaptureAfter(1.5f, "boot");
             yield return CaptureAfter(0.5f, "assetgen");
             LoadingScreen.Dismiss();
@@ -266,6 +273,80 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             ScreenCapture.CaptureScreenshot(path);
             Debug.Log("[EmberProofScreenshotDriver] wrote " + path);
             yield return new WaitForSeconds(0.25f);
+        }
+
+        // SDXL D1 verification: generate a fixed "carved bone die" through the LIVE IAssetForge
+        // (whatever flavour the game wired — SDXL-Turbo in the CUDA build) and write the raw PNG +
+        // provenance. Lets us check structure-vs-noise headlessly (FFT/variance) before a human
+        // eyeballs the result. Mirrors RunLlmProof's wait+poll pattern; gen runs off the main thread
+        // inside SdxlTurboPipeline.RunAsync, so we just poll the returned Task.
+        private IEnumerator RunForgeProof()
+        {
+            float deadline = Time.realtimeSinceStartup + 90f;
+            while (EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge == null
+                   && Time.realtimeSinceStartup < deadline)
+                yield return new WaitForSecondsRealtime(0.5f);
+
+            var txt = Path.Combine(_outputDir, "forge-die.txt");
+            var pngPath = Path.Combine(_outputDir, "forge-die.png");
+            var forge = EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge;
+            if (forge == null)
+            {
+                File.WriteAllText(txt, "FAIL: ForgeLocator.AssetForge was never registered (forge not wired).\n");
+                yield break;
+            }
+
+            var request = new EmberCrpg.Domain.Forge.AssetGenerationRequest(
+                "forge-die-proof",
+                EmberCrpg.Domain.Forge.AssetSubjectKind.Item,
+                EmberCrpg.Domain.Worldgen.WorldStyle.LowFantasy,
+                EmberCrpg.Domain.Worldgen.WorldGenre.Survival,
+                "grim",
+                "die-proof-512",
+                512, 512, 42u,
+                "a single carved bone die, six-sided, studio lighting, dark fantasy, centered, plain dark background, sharp focus",
+                "blurry, text, watermark, multiple dice, hands",
+                240,
+                "");
+
+            System.Threading.Tasks.Task<EmberCrpg.Domain.Forge.AssetGenerationResult> task = null;
+            string syncError = null;
+            try { task = forge.GenerateAsync(request, System.Threading.CancellationToken.None); }
+            catch (Exception ex) { syncError = ex.ToString(); }
+            if (syncError != null)
+            {
+                File.WriteAllText(txt, "FAIL: GenerateAsync threw synchronously:\n" + syncError + "\n");
+                yield break;
+            }
+
+            float infDeadline = Time.realtimeSinceStartup + 300f;
+            while (!task.IsCompleted && Time.realtimeSinceStartup < infDeadline)
+                yield return new WaitForSecondsRealtime(0.5f);
+
+            if (!task.IsCompleted)
+            {
+                File.WriteAllText(txt, "FAIL: generation timed out (no result within 300s).\n");
+                yield break;
+            }
+            if (task.IsFaulted)
+            {
+                File.WriteAllText(txt, "FAIL: generation faulted:\n" + task.Exception + "\n");
+                yield break;
+            }
+
+            var result = task.Result;
+            if (result.ImageBytes != null && result.ImageBytes.Length > 0)
+                File.WriteAllBytes(pngPath, result.ImageBytes);
+
+            File.WriteAllText(txt,
+                "ForgeType: " + forge.GetType().FullName + "\n" +
+                "Success: " + result.Success + "\n" +
+                "IsPlaceholder: " + result.IsPlaceholder + "\n" +
+                "FailureReason: " + result.FailureReason + "\n" +
+                "GenerationTimeMs: " + result.GenerationTimeMs + "\n" +
+                "MimeType: " + result.MimeType + "\n" +
+                "ImageBytes: " + (result.ImageBytes?.Length ?? 0) + "\n" +
+                "PngPath: " + pngPath + "\n");
         }
 
         private static string ResolveOutputDir()

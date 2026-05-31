@@ -17,6 +17,15 @@ namespace EmberCrpg.Simulation.Forge
         private const float SigmaMax = 14.6146f;
         private const float VaeScale = 0.13025f;
 
+        // SDXL conditions cross-attention on the PENULTIMATE CLIP hidden state (diffusers: hidden_states[-2]),
+        // NOT last_hidden_state. The exported encoders expose every layer:
+        //   text_encoder   (ViT-L,    13 hidden states 0..12) -> penultimate = hidden_states.11
+        //   text_encoder_2 (ViT-bigG, 33 hidden states 0..32) -> penultimate = hidden_states.31
+        // Feeding last_hidden_state (post-final-layernorm, wrong scale/distribution) gave the UNet
+        // out-of-distribution conditioning -> garbage epsilon -> noise/"rainbow" decode.
+        private const string Encoder1PenultimateHiddenState = "hidden_states.11";
+        private const string Encoder2PenultimateHiddenState = "hidden_states.31";
+
         private readonly OnnxModelBundle _models;
         private readonly OnnxSessionFactory _sessionFactory;
 
@@ -81,7 +90,7 @@ namespace EmberCrpg.Simulation.Forge
             var tokenizer = ClipBpeTokenizer.LoadFromVocab(_models.TokenizerVocab);
             var tokens = ToIntTokens(tokenizer.Tokenize(request.Prompt, ClipTokenLength, ClipBosId, ClipEosId));
 
-            var hidden768 = EncodeText(_models.TextEncoder, tokens, "last_hidden_state");
+            var hidden768 = EncodeText(_models.TextEncoder, tokens, Encoder1PenultimateHiddenState);
             cancellationToken.ThrowIfCancellationRequested();
 
             var encoder2 = EncodeText2(tokens);
@@ -118,7 +127,7 @@ namespace EmberCrpg.Simulation.Forge
             using (var outputs = session.Run(new[] { _sessionFactory.CreateTokenInput(session, tokens) }))
             {
                 var pooled = OnnxSessionFactory.ReadFloatTensor(outputs, "text_embeds");
-                var hidden = OnnxSessionFactory.ReadFloatTensor(outputs, "last_hidden_state");
+                var hidden = OnnxSessionFactory.ReadFloatTensor(outputs, Encoder2PenultimateHiddenState);
                 return new SdxlEncoder2Output(hidden, pooled);
             }
         }
