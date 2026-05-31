@@ -15,7 +15,18 @@ using EmberCrpg.Simulation.Inventory;
 
 namespace EmberCrpg.Simulation.World
 {
-    /// <summary>Creates the initial deterministic world snapshot for the vertical slice.</summary>
+    /// <summary>
+    /// Creates the initial deterministic world snapshot for the vertical slice.
+    ///
+    /// EMB3-039 note: <see cref="Create"/> intentionally seeds a FIXED authored actor cast of five
+    /// (Warden / Sage Nera / Quartermaster Ivo / Sentinel Rook / Ash Rat). This is by design for the
+    /// slice, not a worldgen defect: the deterministic worldgen NPC population (WorldState.Actors /
+    /// NpcSeeds) exists and ticks in the simulation, but projecting that full cast into the playable
+    /// scenes — a runtime billboard spawner that instantiates one ActorView per generated NPC at its
+    /// world->scene position — is tracked separately as SOUL-04 (see
+    /// EmberCrpg.Presentation.Ember.Views.ActorView, "spawn-from-worldgen — STILL FLAGGED"). Until
+    /// SOUL-04 lands, only this authored cast renders; do not mistake the small fixed cast for a bug.
+    /// </summary>
     public sealed class WorldFactory
     {
         private readonly ProceduralRoomGenerator _rooms = new ProceduralRoomGenerator();
@@ -49,6 +60,9 @@ namespace EmberCrpg.Simulation.World
             world.DungeonDoorStates = dungeon.Doors.Select(door => new DungeonDoorState(door.Id, door.StartsOpen)).ToList();
             if (seedWorldAnchors)
                 SeedWorldAnchors(world);
+            // EMB3-039: fixed authored cast (5 actors). This is the slice's intentional hand-placed cast,
+            // NOT the generated worldgen population. Projecting the full generated NPC set into scenes is
+            // tracked as SOUL-04 (runtime ActorView spawner); see the class summary above.
             world.ReplaceActorView(ActorRole.Player, _actors.Create(new ActorId(1), "Warden", ActorRole.Player, playerSpawn.Position));
             world.ReplaceActorView(ActorRole.Talker, _actors.Create(new ActorId(2), "Sage Nera", ActorRole.Talker, talkerSpawn.Position, talkTopics));
             world.ReplaceActorView(ActorRole.Merchant, _actors.Create(new ActorId(3), "Quartermaster Ivo", ActorRole.Merchant, merchantSpawn.Position));

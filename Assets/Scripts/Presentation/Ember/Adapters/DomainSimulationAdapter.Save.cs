@@ -49,8 +49,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // DET-01: re-derive the composer's hourly/daily tick accumulators from the restored
             // world time (the single source of truth) so save/load is replay-equivalent on a COLD
             // load too — not just a same-session reload. ResetAnchor() alone preserved the in-memory
-            // accumulators, which are 0 after a fresh process start, desyncing the needs/caravan
-            // cadence vs a continuous run. RebuildAccumulatorsFrom subsumes the anchor reset
+            // accumulators, which are 0 after a fresh process start, desyncing the composer's hourly
+            // cadence (job assignment, schedule stepping, needs decay) and daily cadence (caravan
+            // motion, plant growth, price drift) vs a continuous run. RebuildAccumulatorsFrom subsumes the anchor reset
             // (_lastTickIndex = -1) and re-aligns the cadence to absolute game time.
             _tickComposer.RebuildAccumulatorsFrom(_world.Time);
         }

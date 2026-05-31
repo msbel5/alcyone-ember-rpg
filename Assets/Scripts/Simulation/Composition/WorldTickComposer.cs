@@ -18,14 +18,26 @@ namespace EmberCrpg.Simulation.Composition
     /// per-tick orchestration — <c>DomainSimulationAdapter.AdvanceTick(int)</c>
     /// was a plain setter, so every Ember scene ran a frozen simulation.
     /// This composer owns the ordered call list of deterministic systems
-    /// that must move forward per Ember tick. It is intentionally conservative:
-    /// only systems whose schedule is well-defined for "1 ember-tick =
-    /// <c>MinutesPerTick</c> game minutes" are wired here. Higher-frequency
-    /// system composition (plant growth, faction reputation decay, caravan
-    /// motion) will land in subsequent passes once their tick contracts are
-    /// re-examined; the audit's primary risk call specifically warned
-    /// against wiring them at the raw 10 Hz Presentation tick driver (EmberTickDriver)
-    /// rate without first auditing their cost gating.
+    /// that move forward per Ember tick, gated into three cadence bands so
+    /// each system runs at its design rate ("1 ember-tick =
+    /// <c>MinutesPerTick</c> game minutes"):
+    /// <list type="bullet">
+    ///   <item>per-tick: <see cref="GameTimeAdvanceSystem"/> (clock) and
+    ///   <see cref="MagicTickDriver"/> (spell cooldowns / shield buffs);</item>
+    ///   <item>hourly (<see cref="TicksPerGameHour"/>): <see cref="JobAssignmentSystem"/>
+    ///   claims pending jobs, <see cref="ScheduleSystem"/> steps assigned actors
+    ///   toward their worksite/home, then <see cref="NeedsSystem"/> decays needs;</item>
+    ///   <item>daily (<see cref="TicksPerGameDay"/>): <see cref="CaravanSystem"/>
+    ///   motion, <see cref="PlantGrowthSystem"/> crop growth, and
+    ///   <see cref="PriceUpdateSystem"/> stockpile-driven price drift.</item>
+    /// </list>
+    /// The SOUL-01/03 production-economy + living systems (plant growth, job
+    /// assignment, price update, schedule) were originally deferred here; they
+    /// are now wired into the cadence bands above. The sixth-pass audit's
+    /// primary risk call — never run them at the raw 10 Hz Presentation tick
+    /// driver (EmberTickDriver) rate — is honored by the hourly/daily gating,
+    /// not by leaving them out. Faction reputation decay remains unwired
+    /// pending its own tick-contract review.
     /// </summary>
     public sealed class WorldTickComposer
     {
