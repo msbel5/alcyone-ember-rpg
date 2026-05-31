@@ -4,10 +4,17 @@
 > is tracked source vs cache vs reference vs archive, so nobody mistakes generated/sample/report
 > clutter for canonical content. Enforced where possible by `tools/validation/static-audit.sh`.
 
-## Generated assets (EMB-021)
+## Generated assets (EMB-021 / EMB3-009 / EMB3-052)
 - Runtime image generation is a **per-playthrough cache on the player's machine**, not tracked source.
-- `GeneratedAssets/` (root) and `Assets/Generated/Core/*.png|*.json` are **gitignored**. The
-  `Assets/Generated/Core/` folder + its `.meta` stay tracked as a stable output location.
+- **Code load path:** the forge writes PNGs to `Assets/Generated/Core/` and runtime code reads them
+  back from that exact folder (e.g. `LoadingScreenController`, `SceneEnvironmentDresser`, and the
+  manifest paths in `CoreAssetManifest`). Code depends on the *path*, not on any file being committed.
+- **What is tracked vs ignored (the coherent contract):**
+  - **Tracked:** `Assets/Generated/Core.meta`, the `Assets/Generated/Core/` folder, and its
+    `Assets/Generated/Core/.gitkeep` — so the load directory exists on a clean clone.
+  - **Gitignored (regenerated outputs):** `GeneratedAssets/` (root) plus
+    `Assets/Generated/Core/*.png`, `*.png.meta`, `*.jpg`, `*.jpg.meta`, and `*.json`. These are
+    present on disk after a run but are **never staged** — they regenerate per machine/playthrough.
 - Only seed manifests + curated authored art are tracked. Generation must surface failures (EMB-042),
   never silently ship a placeholder as canonical.
 
@@ -17,6 +24,36 @@
   (`ModelManifest` + `ModelBootstrap`, see `docs/AI_STACK.md`). cuDNN is gitignored. This matches
   Ember's bet: ship code, generate/download assets locally. (LFS holds the dev-convenience copies, but
   the *shipping* contract is code-only + downloader.)
+
+## Plugins & native binaries (EMB3-043 / EMB3-053 / EMB-038 / EMB-039 / HYG-05)
+Three distinct classes of binary live under `Assets/Plugins/` — they are tracked very differently on
+purpose. (See `.gitattributes` for the LFS filters and `.gitignore` for the ignore rules.)
+
+- **LFS-tracked native runtime DLLs** — `Assets/Plugins/x86_64/*.dll` (llama.cpp: `llama.dll`,
+  `ggml*.dll`, `mtmd.dll`, `LLamaSharp.dll`; ONNX Runtime: `Microsoft.ML.OnnxRuntime.dll`,
+  `onnxruntime.dll`) plus the committed CUDA execution-provider DLLs under
+  `Assets/Plugins/x86_64/cuda/` (`onnxruntime.dll`, `onnxruntime_providers_cuda.dll` (~299 MB),
+  `onnxruntime_providers_tensorrt.dll`, `onnxruntime_providers_shared.dll`). These are the actual
+  inference backends, are **tracked via Git LFS** (`*.dll filter=lfs`), and need `git lfs pull` to
+  become real bytes in a source-only checkout. `.so`/`.dylib` siblings are LFS-tracked too.
+- **Gitignored cuDNN** — `Assets/Plugins/x86_64/cuda/cudnn*.dll` (~527 MB across `cudnn_*64_9.dll`)
+  **and their `.meta`** are gitignored (HYG-02). They are too large and redistribution-restricted, so
+  devs install them locally from the NVIDIA cuDNN 9 archive and the forge picks them up at runtime.
+  The `cuda/` folder is therefore intentionally **mixed**: LFS-tracked onnxruntime providers next to
+  ignored cuDNN.
+- **Dev-only NuGet / Roslyn / MCP DLLs** — `Assets/Plugins/NuGet/` (~19 MB). These are **plain tracked
+  binaries (NOT LFS)** — `McpPlugin*.dll`, `ReflectorNet.dll`, `Microsoft.CodeAnalysis*` (Roslyn),
+  `Microsoft.AspNetCore.SignalR.*`, `Microsoft.Extensions.*`, `System.*` shims, `R3.dll`. They exist to
+  drive the in-editor MCP/agent tooling (the same agent skills under `.claude/skills/`), not gameplay.
+  - **Recommendation (not applied — do not move here):** these dev-tooling assemblies do not belong to
+    the *game* and would be better hosted **outside `Assets/`** (e.g. a `Tools/`-style folder loaded
+    only by the editor MCP host, or pulled via UPM/NuGetForUnity) so a player build never imports
+    ~19 MB of Roslyn/SignalR. Treat as a future relocation, gated on confirming nothing in a shipped
+    assembly references them; **left in place for now** to avoid breaking the MCP plugin wiring.
+- **TMP examples/samples footprint** — `Assets/TextMesh Pro/Examples & Extras/` (~284 files) is package
+  sample clutter, **not** runtime content (see *Samples (EMB-024)* below). It inflates the asset tree
+  and should be removed via Package Manager after a GUID reference scan — pending Editor pass, not a
+  blind delete.
 
 ## Samples (EMB-024)
 - `Assets/TextMesh Pro/Examples & Extras/` (~284 files) is package sample clutter. **To be removed via

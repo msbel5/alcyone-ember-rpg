@@ -26,6 +26,15 @@
 ## Embeddings
 - all-MiniLM-L6-v2 ONNX — `Assets/StreamingAssets/Models/all-minilm-l6-v2/model.onnx`.
 
+## Model manifest hashes (EMB3-010 / EMB3-012)
+- `Assets/StreamingAssets/Models/manifest.json` pins a `sha256` per model file. As of 2026-05-31
+  every entry whose real bytes are resolved locally has its hash **filled** (the previous `"TBD"`
+  placeholders are gone). `ModelManifest.VerifyAllPresent` recomputes the SHA on first run and only
+  re-downloads on a mismatch, so the manifest is now a real integrity contract, not a stub. Entries
+  whose file is still a Git-LFS pointer (or absent) in a source-only checkout should carry a
+  placeholder (`TBD`/`PENDING`/`placeholder…`, which `IsHashPlaceholder` skips) until `git lfs pull`
+  resolves the bytes and a real hash can be computed — never hand-fake a hash.
+
 ## Fallback order (LLM capability states — EMB-006)
 1. **local-real** — `NativeLlmClient` with `USE_LLAMASHARP` + native DLLs + the GGUF present →
    genuine Qwen inference. This is the shipped path.
@@ -44,6 +53,27 @@
 - **LLM is flavour-only.** It never writes authoritative world state except through declared tools
   routed via the validator/tool router (EMB-008). Canned/templated shell answers are a graceful
   floor, not a claim of real inference.
+
+## Model-download policy & forge-provider seam (EMB3-014 / EMB3-017 / EMB-036)
+- **Model bytes are not bundled — they are pulled on first run.** Two on-device download paths exist:
+  - `ModelBootstrap` (Unity `MonoBehaviour`) reads `StreamingAssets/Models/manifest.json`, verifies
+    each entry against `persistentDataPath/Models` via SHA, and for any **missing** entry fetches the
+    file from its manifest `url` (HuggingFace) with `UnityWebRequest` + `DownloadHandlerFile`, then
+    re-hashes. An entry that fails SHA stays "missing" and is never wired in.
+  - `NativeLlmClient` can lazy-download the Qwen GGUF from `DefaultDownloadUrl`
+    (`huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/…`) into the model dir on first use.
+- **Large downloads must be explicit / opt-in, not silent.** A multi-GB GGUF/ONNX fetch is a
+  deliberate, surfaced action (loading-screen progress + logs), gated behind a missing-file check —
+  never a hidden background pull on launch. If a larger tier or a new model source is added, document
+  it here first (see the "larger tier (future, opt-in)" note above). The shipping contract is
+  **code-only + downloader** (see `docs/REPO_HYGIENE.md` → Build delivery); LFS copies are a
+  dev-convenience mirror, not the distribution channel.
+- **Forge-provider seam.** Providers are swapped behind a registration seam, not hard-wired:
+  `ForgeBootstrap` registers the on-device `NativeLlmClient` + `OnnxAssetForge` and hard-disables
+  network providers (`ComfyUiAvailable=false`, `OllamaAvailable=false`) by default. `CloudLlmClient`
+  / ComfyUI are opt-in experiment seams only and must never be the default authoritative path. This
+  keeps "where bytes come from" (download vs LFS vs local cache) decoupled from "who answers"
+  (native-local vs fallback vs disabled).
 
 ## Authority & determinism
 - LLM output is presentation/flavour; it is not part of the deterministic-replay digest

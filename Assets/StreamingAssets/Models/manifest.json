@@ -3,70 +3,70 @@
     "id": "qwen2.5-1.5b-q4km",
     "path": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
     "size": 986048576,
-    "sha256": "TBD",
+    "sha256": "3c5960d913d604bbc4a0b0b683de8a6d46d0556cec8214bb1441f6100aa7e9ce",
     "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
   },
   {
     "id": "sdxl-turbo-text-encoder",
     "path": "sdxl-turbo/text_encoder/model.onnx",
     "size": 248000000,
-    "sha256": "TBD",
+    "sha256": "92afb291fb3760769372d0e6660c243b018dff319bd7820dfb4ba033ec53c8db",
     "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/text_encoder/model.onnx"
   },
   {
     "id": "sdxl-turbo-text-encoder-2",
     "path": "sdxl-turbo/text_encoder_2/model.onnx",
     "size": 1430000000,
-    "sha256": "TBD",
+    "sha256": "8ef9d6ed1f90407421056518f4308da5ecbd4de069c173700575cd4140da86ea",
     "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/text_encoder_2/model.onnx"
   },
   {
     "id": "sdxl-turbo-unet",
     "path": "sdxl-turbo/unet/model.onnx",
     "size": 5200000000,
-    "sha256": "TBD",
+    "sha256": "d06947552e0581049be42679f6da402d63888a72134dc1d274014a5a3277ea8b",
     "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/unet/model.onnx"
   },
   {
     "id": "sdxl-turbo-vae-decoder",
     "path": "sdxl-turbo/vae_decoder/model.onnx",
     "size": 197000000,
-    "sha256": "TBD",
+    "sha256": "7987d20deef6934d7d30bd7486da698940765d5383a5ca009f0aad74c737ec70",
     "url": "https://huggingface.co/rocca/SDXL-Turbo-ONNX-FP16/resolve/main/vae_decoder/model.onnx"
   },
   {
     "id": "sd-1.5-text-encoder",
     "path": "sd-1.5/text_encoder/model.onnx",
     "size": 246000000,
-    "sha256": "TBD",
+    "sha256": "da837d5d2df136df347d0e8d7114d295d634d32b37b77be60418a7117d1f669b",
     "url": ""
   },
   {
     "id": "sd-1.5-unet",
     "path": "sd-1.5/unet/model.onnx",
     "size": 1720000000,
-    "sha256": "TBD",
+    "sha256": "879e4274bfc862c7733ed2b673600be8f9b78b45184b5702100f89508e69ca34",
     "url": ""
   },
   {
     "id": "sd-1.5-vae-decoder",
     "path": "sd-1.5/vae_decoder/model.onnx",
     "size": 99000000,
-    "sha256": "TBD",
+    "sha256": "ff78d16a387ece4e102e2548a8dbd93f048269bc23ac65fac3acff0ba88b6161",
     "url": ""
   },
   {
     "id": "minilm-l6-v2-model",
     "path": "all-minilm-l6-v2/model.onnx",
     "size": 90000000,
-    "sha256": "TBD",
+    "sha256": "6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452",
     "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx"
   },
   {
     "id": "minilm-l6-v2-tokenizer",
     "path": "all-minilm-l6-v2/tokenizer.json",
     "size": 470000,
-    "sha256": "TBD",
+    "sha256": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
     "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json"
   }
 ]
