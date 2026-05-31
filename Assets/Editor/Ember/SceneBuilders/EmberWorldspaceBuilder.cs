@@ -200,7 +200,9 @@ namespace EmberCrpg.Editor.Ember.SceneBuilders
             var type = ResolveRuntimeType("EmberCrpg.Presentation.Ember.Interaction.EmberInteractable");
             if (type == null) return;
             var interactable = host.AddComponent(type);
-            var setup = type.GetMethod("Setup");
+            // DLG-01 added a 3-arg Setup(string,string,ActorId) overload, so GetMethod("Setup")
+            // by name alone now throws AmbiguousMatchException — pin the 2-arg (name, topic) overload.
+            var setup = type.GetMethod("Setup", new[] { typeof(string), typeof(string) });
             if (setup != null) setup.Invoke(interactable, new object[] { name, "General" });
         }
     }
