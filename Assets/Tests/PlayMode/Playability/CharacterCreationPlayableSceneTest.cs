@@ -51,8 +51,13 @@ namespace EmberCrpg.Tests.PlayMode.Playability
         {
             controller.SetCommanderIdentity("Aria", "42", "ember");
             controller.Continue();
+            controller.SetWorldMood("grim");
+            controller.SetPlayerCalling("survival");
+            controller.SetFateBegins("crossroads");
             for (int i = 0; i < 10; i++) controller.SelectAnswerByIndex(i % 3);
             controller.SkipHistoryReveal();
+            controller.Continue();
+            controller.SelectBirthsign("the_ember");
             controller.Continue();
             controller.RollAllAttributes();
             controller.KeepThisRoll();
@@ -61,6 +66,7 @@ namespace EmberCrpg.Tests.PlayMode.Playability
             controller.SelectAlignment("neutral_good");
             controller.ToggleSkill("insight");
             controller.ToggleSkill("deception");
+            controller.Continue();
             controller.Continue();
             Assert.That(controller.CurrentStep, Is.EqualTo(CharacterCreationController.CreationStep.DossierLaunch));
         }

@@ -32,12 +32,24 @@ namespace EmberCrpg.Tests.PlayMode.CharacterCreation
             Assert.That(controller.CanAdvance, Is.True);
             controller.Continue();
 
+            Assert.That(controller.CurrentStep, Is.EqualTo(CharacterCreationController.CreationStep.WorldMood));
+            controller.SetWorldMood("grim");
+            Assert.That(controller.CurrentStep, Is.EqualTo(CharacterCreationController.CreationStep.PlayerCalling));
+            controller.SetPlayerCalling("survival");
+            Assert.That(controller.CurrentStep, Is.EqualTo(CharacterCreationController.CreationStep.FateBegins));
+            controller.SetFateBegins("crossroads");
+
             Assert.That(controller.CurrentStep, Is.EqualTo(CharacterCreationController.CreationStep.PersonalityQuestions));
             for (int i = 0; i < 10; i++)
                 controller.SelectAnswerByIndex(i % 3);
 
             Assert.That(controller.CurrentStep, Is.EqualTo(CharacterCreationController.CreationStep.WorldHistoryReveal));
             controller.SkipHistoryReveal();
+            Assert.That(controller.CanAdvance, Is.True);
+            controller.Continue();
+
+            Assert.That(controller.CurrentStep, Is.EqualTo(CharacterCreationController.CreationStep.Birthsign));
+            controller.SelectBirthsign("the_ember");
             Assert.That(controller.CanAdvance, Is.True);
             controller.Continue();
 
@@ -53,6 +65,11 @@ namespace EmberCrpg.Tests.PlayMode.CharacterCreation
             controller.SelectAlignment("neutral_good");
             controller.ToggleSkill("insight");
             controller.ToggleSkill("deception");
+            Assert.That(controller.CanAdvance, Is.True);
+            controller.Continue();
+
+            Assert.That(controller.CurrentStep, Is.EqualTo(CharacterCreationController.CreationStep.Portrait));
+            Assert.That(controller.PortraitJson, Does.Contain("archetype_id"));
             Assert.That(controller.CanAdvance, Is.True);
             controller.Continue();
 

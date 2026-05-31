@@ -10,6 +10,7 @@ using EmberCrpg.Simulation.Generation;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -75,7 +76,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             if (EventSystem.current != null) return;
             if (FindFirstObjectByType<EventSystem>() != null) return;
-            _ = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            _ = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
         }
 
         private static void UnlockCursor()

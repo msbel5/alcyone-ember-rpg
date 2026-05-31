@@ -1,6 +1,7 @@
 using EmberCrpg.Presentation.Ember.CharacterCreation;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace EmberCrpg.Presentation.Ember.UI
@@ -42,7 +43,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             if (EventSystem.current != null) return;
             var existing = FindFirstObjectByType<EventSystem>();
             if (existing != null) return;
-            _ = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            _ = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
         }
     }
 }

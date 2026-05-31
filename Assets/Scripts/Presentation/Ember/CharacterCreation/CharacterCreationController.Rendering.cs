@@ -7,6 +7,8 @@ using System.Text;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Loading;
+using EmberCrpg.Presentation.Ember.Worldgen;
+using EmberCrpg.Simulation.Worldgen;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 
@@ -303,10 +305,6 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         private IEnumerator BeginVisibleWorldgen()
         {
-            // Begin Your Story -> straight into the game. We intentionally do NOT mount the
-            // visible worldgen reveal panel any more: it flashed by before the player could read
-            // it. The authoritative world is generated in the target scene from
-            // EmberWorldGenIntent.Pending; here we only show a brief loading beat, then load.
             LoadingScreen.ShowForContext(new LoadingScreenContext("worldgen", "Entering the World", "generation"));
             var style = MoodToStyle(_worldMood);
             var genre = CallingToGenre(_playerCalling);
@@ -315,9 +313,17 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 + " => style=" + style + " genre=" + genre);
             LoadingScreen.SetProgress(0.6f, "Weaving your world from the embers");
             yield return null;
-            LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
-            yield return new WaitForSecondsRealtime(0.5f);
-            UnityEngine.SceneManagement.SceneManager.LoadScene(_firstSceneName);
+
+            var view = FindFirstObjectByType<WorldgenViewController>();
+            if (view == null)
+                view = new GameObject("WorldgenViewController").AddComponent<WorldgenViewController>();
+            view.Configure(_firstSceneName);
+            view.AutoAdvance = true;
+            view.PlayFromGeneratedWorld(
+                WorldgenService.Generate(_seed, WorldgenParameters.For(style, genre)),
+                new WorldgenProjectionOptions(maxRegions: 6, maxSettlements: 8, maxNpcs: 10, maxHistoryEvents: 8));
+
+            LoadingScreen.SetProgress(1f, "Worldgen log visible");
         }
 
         // ----- World-genesis choice screens (stages 2-4) -----------------------------------

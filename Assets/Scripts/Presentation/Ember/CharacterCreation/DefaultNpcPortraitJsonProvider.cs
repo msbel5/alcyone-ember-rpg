@@ -1,7 +1,8 @@
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using EmberCrpg.Domain.AiDm;
-using EmberCrpg.Simulation.AiDm;
 using EmberCrpg.Infrastructure.AiDm; // ARCH-05: LLM provider impls
 using EmberCrpg.Presentation.Ember.Forge; // BUG-3: reach the already-wired native Qwen
 
@@ -14,6 +15,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         public static string Request(uint seed, string correctionReason)
         {
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8)))
+                return SyncTaskBridge.Run(() => RequestAsync(seed, correctionReason, cts.Token));
+        }
+
+        public static async Task<string> RequestAsync(uint seed, string correctionReason, CancellationToken cancellationToken)
+        {
             // BUG-3 root cause: this used to spin up a fresh LocalQwenClient pointed at the OLLAMA HTTP
             // endpoint, which is NOT running in the default offline build — so every portrait request
             // failed and fell back to "invalid_json", leaving the deterministic placeholder forever.
@@ -24,9 +31,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             {
                 try
                 {
-                    var routing = new LlmRoutingService(request => wired.Complete(request), null);
-                    var response = routing.Complete(BuildRequest(seed, correctionReason), out _);
+                    var response = await wired.CompleteAsync(BuildRequest(seed, correctionReason), cancellationToken).ConfigureAwait(false);
                     return ExtractJsonObject(response?.Text);
+                }
+                catch (OperationCanceledException)
+                {
+                    return string.Empty;
                 }
                 catch
                 {
@@ -44,21 +54,26 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 var local = new LocalQwenClient(
                     new LlmClientConfig(LlmProviderKind.LocalQwen, endpoint, string.Empty, true),
                     http);
-                LlmDispatch dispatch = request => local.Complete(request);
 
                 var modelPath = Environment.GetEnvironmentVariable("EMBER_NATIVE_LLM_MODEL");
                 NativeLlmClient native = null;
                 try
                 {
+                    LlmResponse response;
                     if (!string.IsNullOrWhiteSpace(modelPath))
                     {
                         native = NativeLlmClient.FromModelFile(modelPath, local);
-                        dispatch = request => native.Complete(request);
+                        response = await native.CompleteAsync(BuildRequest(seed, correctionReason), cancellationToken).ConfigureAwait(false);
                     }
-
-                    var routing = new LlmRoutingService(dispatch, null);
-                    var response = routing.Complete(BuildRequest(seed, correctionReason), out _);
+                    else
+                    {
+                        response = await local.CompleteAsync(BuildRequest(seed, correctionReason), cancellationToken).ConfigureAwait(false);
+                    }
                     return ExtractJsonObject(response?.Text);
+                }
+                catch (OperationCanceledException)
+                {
+                    return string.Empty;
                 }
                 catch
                 {

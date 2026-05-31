@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Generation;
@@ -73,21 +74,31 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             // 3. Default network path: run OFF the main thread, upgrade when it lands (play mode).
             //    A seeded _llmJson (if any) is tried first, still off-thread for the network retry.
             string seededJson = _llmJson;
-            var task = Task.Run(() =>
-            {
-                var attempt = string.IsNullOrWhiteSpace(seededJson)
-                    ? DefaultNpcPortraitJsonProvider.Request(portraitSeed, string.Empty)
-                    : seededJson;
-                if (NpcPromptJsonValidator.TryValidate(attempt, manifest, out _, out var why))
-                    return attempt;
-                // One correction round-trip, also off-thread.
-                return DefaultNpcPortraitJsonProvider.Request(portraitSeed, why);
-            });
+            var task = ResolvePortraitJsonAsync(portraitSeed, seededJson, manifest);
 
             if (Application.isPlaying)
                 _portraitUpgradeRoutine = StartCoroutine(AwaitPortraitUpgrade(task, manifest, generation));
             // In edit-mode tests Application.isPlaying is false: we intentionally do NOT block on
             // the task. The deterministic placeholder already satisfies the synchronous contract.
+        }
+
+        private static async Task<string> ResolvePortraitJsonAsync(
+            uint portraitSeed,
+            string seededJson,
+            GenericNpcBaseManifest manifest)
+        {
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(12)))
+            {
+                var attempt = string.IsNullOrWhiteSpace(seededJson)
+                    ? await DefaultNpcPortraitJsonProvider.RequestAsync(portraitSeed, string.Empty, cts.Token)
+                        .ConfigureAwait(false)
+                    : seededJson;
+                if (NpcPromptJsonValidator.TryValidate(attempt, manifest, out _, out var why))
+                    return attempt;
+
+                return await DefaultNpcPortraitJsonProvider.RequestAsync(portraitSeed, why, cts.Token)
+                    .ConfigureAwait(false);
+            }
         }
 
         // Poll the off-thread LLM task without blocking the main thread; apply a valid result.
