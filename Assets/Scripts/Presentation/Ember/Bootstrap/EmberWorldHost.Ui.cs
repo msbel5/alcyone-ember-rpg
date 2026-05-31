@@ -38,8 +38,15 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 "PauseMenu",
                 typeof(RectTransform),
                 typeof(CanvasGroup),
+                typeof(Canvas),
+                typeof(UnityEngine.UI.GraphicRaycaster),
                 typeof(EmberCrpg.Presentation.Ember.UI.PauseMenu));
             pauseGo.transform.SetParent(canvas.transform, worldPositionStays: false);
+            // LIVE-1: give the pause menu its OWN sub-canvas (overrideSorting, high order) + raycaster so
+            // it always renders ABOVE the HUD and its buttons receive clicks regardless of HUD draw order.
+            var pauseCanvas = pauseGo.GetComponent<Canvas>();
+            pauseCanvas.overrideSorting = true;
+            pauseCanvas.sortingOrder = 5000;
             var rt = pauseGo.GetComponent<RectTransform>();
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
@@ -123,8 +130,42 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             rt.offsetMax = Vector2.zero;
             // Transparent container; EmberHud draws its own furniture. Matches the runtime EmberHud
             // that BindUiPanels used to create under a CombatHud canvas.
-            go.GetComponent<UnityEngine.UI.Image>().color = new Color(0f, 0f, 0f, 0f);
+            // LIVE-1: this full-screen backdrop is NOT interactive — it MUST NOT be a raycast target, or
+            // it sits on top of (and eats every mouse click meant for) the pause menu / dialog / anything
+            // behind it. Keyboard F5/F9 bypass UI raycasts, which is exactly why quick-save worked but the
+            // Escape-menu SAVE/LOAD/MAIN MENU/QUIT buttons were dead. The HUD's own buttons are children
+            // with their own raycast targets, so they stay clickable.
+            var hudImg = go.GetComponent<UnityEngine.UI.Image>();
+            hudImg.color = new Color(0f, 0f, 0f, 0f);
+            hudImg.raycastTarget = false;
             go.AddComponent<EmberHud>().Source = this;
+        }
+
+        /// <summary>
+        /// LIVE-2 (single UI source): the inventory used to open only in TradeMarket (the one scene that
+        /// authored an InventoryGrid). Host-ensure exactly one in EVERY scene — centered, wired to this
+        /// host (IInventorySource + ISpriteByName), and hidden by default — so Tab opens the SAME
+        /// inventory everywhere. Idempotent: a scene that authored its own grid is left untouched.
+        /// </summary>
+        private void EnsureInventoryGrid()
+        {
+            if (Object.FindFirstObjectByType<InventoryGrid>(FindObjectsInactive.Include) != null) return;
+
+            var canvas = ResolveOverlayCanvas();
+            var go = new GameObject("InventoryGrid",
+                typeof(RectTransform), typeof(CanvasGroup), typeof(UnityEngine.UI.Image), typeof(InventoryGrid));
+            go.transform.SetParent(canvas.transform, worldPositionStays: false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = new Vector2(0.30f, 0.16f);
+            rt.anchorMax = new Vector2(0.70f, 0.84f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var inv = go.GetComponent<InventoryGrid>();
+            inv.Source = this;
+            inv.SpriteLookup = this;
+            // Hidden until Tab; the Awake hide-loop + ToggleMap handler manage visibility (same as
+            // an authored grid). BindUiPanels also re-wires Source/SpriteLookup harmlessly.
+            go.SetActive(false);
         }
 
         /// <summary>

@@ -127,6 +127,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // would an authored panel.
             EnsureEmberHud();
             EnsureSidePanels();
+            EnsureInventoryGrid(); // LIVE-2: single inventory in every scene (before the scan below finds it)
 
             _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -509,6 +510,18 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             try
             {
                 var world = new EmberCrpg.Simulation.World.WorldFactory().Create(roomSeed: 1);
+                // LIVE-3: standalone scenes (not entered through the worldgen wizard) had no WorldProfile,
+                // so their HUD top-bar showed only "Tick/Day" while worldgen-entered scenes showed the full
+                // "<Style> / <Genre>  Pop <n>" line — inconsistent across the 10 scenes. Seed a default
+                // profile so the top-bar reads IDENTICALLY everywhere; the worldgen path overwrites it with
+                // the player's real choices when they come through character creation.
+                if (world.WorldProfile == null)
+                    world.WorldProfile = new EmberCrpg.Domain.Worldgen.WorldProfile(
+                        EmberCrpg.Domain.Worldgen.WorldStyle.LowFantasy,
+                        EmberCrpg.Domain.Worldgen.WorldGenre.Survival,
+                        seed: 1u, targetPopulation: 100000, regionCount: 3, factionCount: 3,
+                        historyYears: 50, moodKeyword: "grim", playerCallingKeyword: "wanderer",
+                        startLocationKeyword: "crossroads");
                 return new EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter(world);
             }
             catch (System.Exception ex)
