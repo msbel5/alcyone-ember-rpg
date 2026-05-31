@@ -158,5 +158,41 @@ namespace EmberCrpg.Tests.EditMode.AiDm
 
             Assert.Throws<ArgumentNullException>(() => client.Complete(null));
         }
+
+        [Test]
+        public async Task CompleteAsync_CanceledToken_ReturnsEmptyWithoutHttpCall()
+        {
+            var handler = new RecordingHandler();
+            var http = new HttpClient(handler);
+            var config = new LlmClientConfig(LlmProviderKind.LocalQwen, "http://test/v1", apiKey: null, enabled: true);
+            var client = new LocalQwenClient(config, http);
+
+            using (var cts = new CancellationTokenSource())
+            {
+                cts.Cancel();
+                var response = await client.CompleteAsync(NewRequest(), cts.Token);
+
+                Assert.That(response.Text, Is.EqualTo(string.Empty));
+                Assert.That(handler.CapturedUri, Is.Null);
+            }
+        }
+
+        [Test]
+        public async Task IsAvailableAsync_CanceledToken_ReturnsFalseWithoutHttpCall()
+        {
+            var handler = new RecordingHandler();
+            var http = new HttpClient(handler);
+            var config = new LlmClientConfig(LlmProviderKind.LocalQwen, "http://test/v1", apiKey: null, enabled: true);
+            var client = new LocalQwenClient(config, http);
+
+            using (var cts = new CancellationTokenSource())
+            {
+                cts.Cancel();
+                var available = await client.IsAvailableAsync(cts.Token);
+
+                Assert.That(available, Is.False);
+                Assert.That(handler.CapturedUri, Is.Null);
+            }
+        }
     }
 }

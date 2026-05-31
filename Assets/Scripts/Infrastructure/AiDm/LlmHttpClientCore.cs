@@ -5,6 +5,7 @@ using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading; // EMB-018: CancellationTokenSource for bounded HTTP timeouts
+using System.Threading.Tasks;
 using EmberCrpg.Domain.AiDm;
 
 namespace EmberCrpg.Infrastructure.AiDm
@@ -16,8 +17,19 @@ namespace EmberCrpg.Infrastructure.AiDm
 
         public static LlmResponse CompleteHttp(LlmClientConfig config, HttpClient http, LlmRequest request)
         {
+            return SyncTaskBridge.Run(() => CompleteHttpAsync(config, http, request, CancellationToken.None));
+        }
+
+        public static async Task<LlmResponse> CompleteHttpAsync(
+            LlmClientConfig config,
+            HttpClient http,
+            LlmRequest request,
+            CancellationToken cancellationToken)
+        {
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (!config.Enabled || string.IsNullOrWhiteSpace(config.EndpointUrl))
+                return new LlmResponse(string.Empty, null, 0);
+            if (cancellationToken.IsCancellationRequested)
                 return new LlmResponse(string.Empty, null, 0);
 
             // Hand-rolled JSON; Unity's default .NET Standard 2.1 profile does not
@@ -38,12 +50,13 @@ namespace EmberCrpg.Infrastructure.AiDm
                 string json;
                 try
                 {
-                    using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(HttpTimeoutSeconds)))
+                    using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                     {
-                        var response = http.SendAsync(message, timeout.Token).GetAwaiter().GetResult();
+                        timeout.CancelAfter(TimeSpan.FromSeconds(HttpTimeoutSeconds));
+                        var response = await http.SendAsync(message, timeout.Token).ConfigureAwait(false);
                         if (!response.IsSuccessStatusCode)
                             return new LlmResponse(string.Empty, null, 0);
-                        json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) { return new LlmResponse(string.Empty, null, 0); }

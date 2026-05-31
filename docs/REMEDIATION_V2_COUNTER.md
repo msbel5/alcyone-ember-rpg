@@ -79,7 +79,7 @@ Box: `[x]` done+verified · `[~]` partial/staged (reasoned) · `[-]` won't (reas
 | E7-012 | Adapter god object (1825 agg) | `[~]` | `.Dialog.cs` extracted (REF-a, 787→365 + 448); read-model/command/save/worldgen/combat are already separate partials. Further collaborator extraction (WorldHydrator, ILlmRouter DI) staged. |
 | E7-013 | Host god object (801) | `[x]` | `EmberWorldHost.Ui.cs` extracted (REF-3, 786→530 + 271). |
 | E7-014 | CharCreation god controller (1420) | `[~]` | Mechanical partial split in progress (this session). |
-| E7-015 | LLM blocking calls (6 sites) | `[~]` | All off the default UI hot path (CloudLlm/ComfyUI opt-in-disabled; `NativeLlmClient.Complete` already wrapped in `Task.Run` by the adapter). Async-layer refactor staged. |
+| E7-015 | LLM blocking calls (6 sites) | `[x]` | Local/cloud/native/Comfy providers expose async cancellation paths; sync compatibility is centralized in `SyncTaskBridge`; fallback `1250/1253` proves HTTP cancellation tests. |
 | E7-016 | Model download policy | `[x]` | `EnsureModelReady` now gates the multi-GB fetch behind explicit opt-in (`EMBER_ALLOW_MODEL_DOWNLOAD=1`); default = no silent download, fallback answers. |
 | E7-017 | Forge provider boundary | `[~]` | `OnnxAssetForge` in Simulation — documented-exception; moving the impl to Infrastructure is a staged asmdef change. |
 | E7-018 | Tick data-driven gap | `[x]` | Whole-world digest baseline captured, then `WorldTickComposer` moved to a deterministic `(cadence, order, id)` registry; fallback `1248/1251` proves digest unchanged. |

@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using EmberCrpg.Domain.AiDm;
 #if USE_LLAMASHARP
@@ -125,15 +126,22 @@ namespace EmberCrpg.Infrastructure.AiDm
 
         public LlmResponse Complete(LlmRequest request)
         {
+            return SyncTaskBridge.Run(() => CompleteAsync(request, CancellationToken.None));
+        }
+
+        public async Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken)
+        {
 #if USE_LLAMASHARP
             if (!_isInitialised)
             {
                 if (!IsUsableModelFile(_modelPath))
                 {
-                    return _fallback?.Complete(request) ?? new LlmResponse("Native model missing and no fallback.", null, 0);
+                    return _fallback != null
+                        ? await _fallback.CompleteAsync(request, cancellationToken).ConfigureAwait(false)
+                        : new LlmResponse("Native model missing and no fallback.", null, 0);
                 }
 
-                LoadModelSync();
+                await Task.Run(() => LoadModelSync(), cancellationToken).ConfigureAwait(false);
             }
 
             try
@@ -158,21 +166,22 @@ namespace EmberCrpg.Infrastructure.AiDm
                 // calling (worker) thread forever — the HTTP client got this in EMB-018, native did not.
                 // On timeout the CancellationToken trips MoveNextAsync, which throws and is caught below,
                 // degrading to the fallback/empty response (mirrors LlmHttpClientCore).
-                using (var timeout = new System.Threading.CancellationTokenSource(System.TimeSpan.FromSeconds(60)))
+                using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
+                    timeout.CancelAfter(TimeSpan.FromSeconds(60));
                     // Drain the async stream synchronously to keep the existing sync Complete() signature.
                     var enumerator = _executor.InferAsync(prompt, inferenceParams, timeout.Token)
                         .GetAsyncEnumerator(timeout.Token);
                     try
                     {
-                        while (enumerator.MoveNextAsync().AsTask().GetAwaiter().GetResult())
+                        while (await enumerator.MoveNextAsync().AsTask().ConfigureAwait(false))
                         {
                             resultText += enumerator.Current;
                         }
                     }
                     finally
                     {
-                        enumerator.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                        await enumerator.DisposeAsync().AsTask().ConfigureAwait(false);
                     }
                 }
 
@@ -180,10 +189,14 @@ namespace EmberCrpg.Infrastructure.AiDm
             }
             catch (Exception ex)
             {
-                return _fallback?.Complete(request) ?? new LlmResponse($"Native error: {ex.Message}", null, 0);
+                return _fallback != null
+                    ? await _fallback.CompleteAsync(request, cancellationToken).ConfigureAwait(false)
+                    : new LlmResponse($"Native error: {ex.Message}", null, 0);
             }
 #else
-            return _fallback?.Complete(request) ?? new LlmResponse("Native LLM (LLamaSharp) not enabled or package missing. Falling back.", null, 0);
+            return _fallback != null
+                ? await _fallback.CompleteAsync(request, cancellationToken).ConfigureAwait(false)
+                : new LlmResponse("Native LLM (LLamaSharp) not enabled or package missing. Falling back.", null, 0);
 #endif
         }
 

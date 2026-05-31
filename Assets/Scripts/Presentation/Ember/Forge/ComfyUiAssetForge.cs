@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EmberCrpg.Domain.Forge;
+using EmberCrpg.Infrastructure.AiDm;
 
 namespace EmberCrpg.Presentation.Ember.Forge
 {
@@ -23,16 +24,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
 
         public bool IsAvailable()
         {
-            try
-            {
-                var response = _http.GetAsync(_baseUrl + "/system_stats").GetAwaiter().GetResult();
-                using (response)
-                    return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
+            return SyncTaskBridge.Run(() => IsAvailableAsync(CancellationToken.None));
         }
 
         public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken)

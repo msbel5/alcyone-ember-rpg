@@ -2,6 +2,8 @@
 // LEFT-021: split out of the former LlmClients.cs (one public type per file).
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using EmberCrpg.Domain.AiDm;
 
 namespace EmberCrpg.Infrastructure.AiDm
@@ -31,7 +33,12 @@ namespace EmberCrpg.Infrastructure.AiDm
 
         public LlmResponse Complete(LlmRequest request)
         {
-            return LlmHttpClientCore.CompleteHttp(_config, _http, request);
+            return SyncTaskBridge.Run(() => CompleteAsync(request, CancellationToken.None));
+        }
+
+        public Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken)
+        {
+            return LlmHttpClientCore.CompleteHttpAsync(_config, _http, request, cancellationToken);
         }
     }
 }
