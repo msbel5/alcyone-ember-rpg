@@ -382,8 +382,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             switch ((mood ?? string.Empty).Trim().ToLowerInvariant())
             {
                 case "mythic": return WorldStyle.AncientMythology;
-                case "low": return WorldStyle.LowFantasyMorrowind;
-                case "heroic": return WorldStyle.HighFantasyTolkien;
+                case "low": return WorldStyle.LowFantasy;
+                case "heroic": return WorldStyle.HighFantasy;
                 default: return WorldStyle.DarkFantasyGrim;
             }
         }

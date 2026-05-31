@@ -23,7 +23,7 @@ namespace EmberCrpg.Simulation.Worldgen
             int npcCount,
             int historyYears,
             int worldStartYear,
-            WorldStyle style = WorldStyle.LowFantasyMorrowind,
+            WorldStyle style = WorldStyle.LowFantasy,
             WorldGenre genre = WorldGenre.Survival,
             int targetPopulation = 1_000_000)
         {
@@ -91,7 +91,7 @@ namespace EmberCrpg.Simulation.Worldgen
         {
             get
             {
-                return For(WorldStyle.LowFantasyMorrowind, WorldGenre.Survival);
+                return For(WorldStyle.LowFantasy, WorldGenre.Survival);
             }
         }
 
@@ -108,7 +108,7 @@ namespace EmberCrpg.Simulation.Worldgen
 
             switch (style)
             {
-                case WorldStyle.HighFantasyTolkien:
+                case WorldStyle.HighFantasy:
                     regionCount = 56; cityCount = 10; townCount = 44; villageCount = 166; factionCount = 24; npcCount = 860;
                     break;
                 case WorldStyle.DarkFantasyGrim:

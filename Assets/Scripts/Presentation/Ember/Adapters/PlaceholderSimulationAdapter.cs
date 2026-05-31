@@ -219,6 +219,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return "FAVOURABLE: Fortune smiles upon your endeavor.";
         }
 
+        // BUG-4: the placeholder adapter resolves ConsultFate() synchronously above, so there is never a
+        // deferred prophecy to hand back. Return null so the host keeps the line ConsultFate() already gave it.
+        public string TryConsumeResolvedFate() => null;
+
         private void UpdateHud()
 {
             var day = 1 + _tick / 240;

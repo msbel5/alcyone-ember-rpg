@@ -184,7 +184,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// </summary>
     public interface IConsultFateOracle
     {
+        // Kicks off a fate consult. Returns an IMMEDIATE line (a "consulting…" placeholder for the async
+        // LLM path, or the resolved line for a synchronous adapter).
         string ConsultFate();
+
+        // BUG-4: the async LLM prophecy resolves a frame or more after ConsultFate() returns. The host
+        // polls this each frame; it returns the resolved line (LLM-flavoured, or the deterministic fate
+        // bucket as a floor) exactly once when ready, then null until the next consult — so the real
+        // prophecy can replace the placeholder in the dialog panel instead of only hitting the combat log.
+        string TryConsumeResolvedFate();
     }
 
     /// <summary>

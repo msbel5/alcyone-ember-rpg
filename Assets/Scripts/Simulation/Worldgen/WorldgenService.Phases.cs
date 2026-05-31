@@ -75,7 +75,7 @@ namespace EmberCrpg.Simulation.Worldgen
             int weight = 10;
             switch (style)
             {
-                case WorldStyle.HighFantasyTolkien:
+                case WorldStyle.HighFantasy:
                     if (biome == BiomeKind.BorealForest || biome == BiomeKind.TemperatePlain || biome == BiomeKind.MountainHighland) weight += 8;
                     break;
                 case WorldStyle.DarkFantasyGrim:

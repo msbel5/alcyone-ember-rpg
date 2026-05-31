@@ -21,14 +21,26 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     public sealed partial class DomainSimulationAdapter
     {
         // ----- IConsultFateOracle -----
+        // BUG-4: set true for one poll when the async prophecy resolves, so the host can swap the real
+        // LLM line into the dialog instead of leaving the "consulting…" placeholder / only logging it.
+        private bool _fateReady;
+
         public string ConsultFate()
         {
             if (_isFateThinking) return "The oracle is gazing into the void...";
-            
+
+            _fateReady = false;
             // Fire async consult
             _ = ConsultFateAsync();
-            
+
             return "The oracle consults the fates...";
+        }
+
+        public string TryConsumeResolvedFate()
+        {
+            if (!_fateReady) return null;
+            _fateReady = false;
+            return _pendingFate;
         }
 
         private async Task ConsultFateAsync()
@@ -107,7 +119,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 }
 
                 _isFateThinking = false;
-                LogCombat(_pendingFate); // surface the prophecy once finished
+                _fateReady = true; // BUG-4: signal the host to swap this resolved prophecy into the dialog
+                LogCombat(_pendingFate); // surface the prophecy once finished (also kept in the combat log)
             });
         }
 

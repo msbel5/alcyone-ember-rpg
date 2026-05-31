@@ -86,8 +86,8 @@ namespace EmberCrpg.Domain.Worldgen
     /// <summary>High-level world tone selected by the world-generation wizard.</summary>
     public enum WorldStyle
     {
-        LowFantasyMorrowind = 0,
-        HighFantasyTolkien = 1,
+        LowFantasy = 0,
+        HighFantasy = 1,
         DarkFantasyGrim = 2,
         SteampunkRevolution = 3,
         AncientMythology = 4,

@@ -41,6 +41,12 @@ namespace EmberCrpg.Presentation.Ember.UI
                 _background.sprite = _panelFrame;
                 _background.type = Image.Type.Sliced;
             }
+            else if (_background != null)
+            {
+                // BUG-6: no frame asset assigned — give the panel a solid dark backing so the grid reads
+                // as a deliberate inventory window instead of the faint translucent ghost it used to be.
+                _background.color = new Color(0.06f, 0.05f, 0.04f, 0.94f);
+            }
 
             _layout = GetComponentInChildren<GridLayoutGroup>(includeInactive: true);
             if (_layout == null) _layout = BuildGrid();
@@ -124,33 +130,43 @@ namespace EmberCrpg.Presentation.Ember.UI
 
             public static InventoryCell Build(Transform parent, TMP_FontAsset font)
             {
-                var go = new GameObject("Cell", typeof(RectTransform), typeof(Image));
+                // BUG-6: a clearly-visible slot — opaque dark base + a gold hairline border — so the grid
+                // reads as real inventory cells instead of barely-there translucent squares.
+                var go = new GameObject("Cell", typeof(RectTransform), typeof(Image), typeof(Outline));
                 go.transform.SetParent(parent, worldPositionStays: false);
                 var image = go.GetComponent<Image>();
-                image.color = new Color(0.2f, 0.15f, 0.1f, 0.2f); // Darker base for slot
+                image.color = new Color(0.14f, 0.11f, 0.08f, 0.96f);
+                var slotOutline = go.GetComponent<Outline>();
+                slotOutline.effectColor = new Color(0.55f, 0.42f, 0.18f, 0.85f);
+                slotOutline.effectDistance = new Vector2(1.5f, 1.5f);
 
                 var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
                 iconGo.transform.SetParent(go.transform, worldPositionStays: false);
                 var iconRt = iconGo.GetComponent<RectTransform>();
                 iconRt.anchorMin = Vector2.zero;
                 iconRt.anchorMax = Vector2.one;
-                iconRt.offsetMin = new Vector2(4, 4);
-                iconRt.offsetMax = new Vector2(-4, -4);
+                iconRt.offsetMin = new Vector2(5, 5);
+                iconRt.offsetMax = new Vector2(-5, -5);
                 var iconImg = iconGo.GetComponent<Image>();
-                iconImg.color = new Color(1, 1, 1, 0.1f);
+                iconImg.preserveAspect = true;
+                iconImg.color = new Color(1, 1, 1, 0f); // empty until Update assigns a sprite
 
                 var countGo = new GameObject("Count", typeof(RectTransform), typeof(TextMeshProUGUI));
                 countGo.transform.SetParent(go.transform, worldPositionStays: false);
                 var rt = countGo.GetComponent<RectTransform>();
-                rt.anchorMin = new Vector2(0.4f, 0f);
-                rt.anchorMax = new Vector2(1.2f, 0.35f); // Move out slightly for better visibility
+                rt.anchorMin = new Vector2(0.35f, 0.02f);
+                rt.anchorMax = new Vector2(0.96f, 0.42f);
                 rt.offsetMin = Vector2.zero;
                 rt.offsetMax = Vector2.zero;
                 var text = countGo.GetComponent<TextMeshProUGUI>();
                 text.alignment = TextAlignmentOptions.BottomRight;
                 if (font != null) text.font = font;
-                text.fontSize = 18; // Bigger count
-                text.color = new Color(0.15f, 0.1f, 0.05f);
+                text.fontSize = 18;
+                text.fontStyle = FontStyles.Bold;
+                text.color = new Color(0.96f, 0.86f, 0.55f); // BUG-6: light gold, readable on the dark slot
+                var countOutline = countGo.AddComponent<Outline>();
+                countOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+                countOutline.effectDistance = new Vector2(1f, 1f);
 
                 return new InventoryCell { Image = iconImg, Count = text };
             }

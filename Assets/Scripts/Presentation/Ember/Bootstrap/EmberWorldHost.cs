@@ -43,6 +43,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         private string _fateLine = string.Empty;
         private float _fateTimer = 0f;
         private float _escHoldTimer = 0f;
+        // BUG-2: the standing colony overlay (JobQueue/Faction/ColonyNeeds) is host-ensured once but
+        // hidden by default and toggled with 'C', so action scenes are not cluttered by colony readouts.
+        private readonly List<CanvasGroup> _colonyPanelGroups = new List<CanvasGroup>();
+        private bool _colonyPanelsVisible = false;
 
         private void Awake()
         {
@@ -150,38 +154,28 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             if (EmberInput.RegenWorld)
             {
+                // Immediate placeholder line ("The oracle consults the fates…"); the real LLM prophecy
+                // resolves async and is swapped in below via TryConsumeResolvedFate (BUG-4).
                 _fateLine = _oracle.ConsultFate();
                 _fateTimer = 3f;
-
-                // Codex audit (eighth pass A-P1): the previous unconditional
-                // `d.Source = this` clobbered any active NPC dialog adapter
-                // (e.g. a DomainActorDialogSource bound via GetDialogSource),
-                // silently replacing per-NPC dialog with the host's oracle
-                // string. Guard the rebind: only adopt the panel when its
-                // Source is null OR already the host. When an adapter-owned
-                // source is bound, surface the fate text via the HUD's
-                // combat-log path instead so the player still sees it.
-                var dialogs = Object.FindObjectsByType<DialogBoxPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-                bool routedToPanel = false;
-                foreach (var d in dialogs)
-                {
-                    if (d.name.Contains("Narration") || d.name.Contains("Dialog"))
-                    {
-                        if (d.Source == null || ReferenceEquals(d.Source, this))
-                        {
-                            d.Source = this;
-                            d.gameObject.SetActive(true);
-                            routedToPanel = true;
-                        }
-                    }
-                }
-                if (!routedToPanel)
-                {
-                    // Adapter-owned dialog is active — keep its NPC line on the
-                    // panel and surface the fate response via the HUD log.
-                    _commands?.LogCombat(_fateLine);
-                }
+                RouteFateToDialog(_fateLine);
             }
+
+            // BUG-4: poll for the resolved oracle prophecy (LLM-flavoured, or the deterministic fate
+            // bucket as a floor). When it lands a frame+ later, replace the placeholder in the dialog
+            // and extend the dwell so the player can actually read it — previously this only hit the log.
+            var resolvedFate = _oracle.TryConsumeResolvedFate();
+            if (!string.IsNullOrEmpty(resolvedFate))
+            {
+                _fateLine = resolvedFate;
+                _fateTimer = 7f;
+                RouteFateToDialog(_fateLine);
+            }
+
+            // BUG-2: toggle the standing colony overlay (JobQueue / Faction / ColonyNeeds). Hidden by
+            // default so action scenes aren't cluttered; the player opens it on demand.
+            if (EmberInput.KeyDown(KeyCode.C))
+                SetColonyPanelsVisible(!_colonyPanelsVisible);
 
             if (_fateTimer > 0)
             {
@@ -618,12 +612,14 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         private void EnsureSidePanels()
         {
             var canvas = ResolveOverlayCanvas();
+            _colonyPanelGroups.Clear();
 
             if (Object.FindFirstObjectByType<JobQueuePanel>(FindObjectsInactive.Include) == null)
             {
                 var go = BuildSidePanel(canvas, "JobQueuePanel",
                     new Vector2(0f, 0.45f), new Vector2(0.22f, 0.94f));
                 go.AddComponent<JobQueuePanel>().Source = this;
+                _colonyPanelGroups.Add(go.GetComponent<CanvasGroup>());
             }
 
             if (Object.FindFirstObjectByType<FactionPanel>(FindObjectsInactive.Include) == null)
@@ -631,6 +627,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 var go = BuildSidePanel(canvas, "FactionPanel",
                     new Vector2(0.24f, 0.45f), new Vector2(0.5f, 0.94f));
                 go.AddComponent<FactionPanel>().Source = this;
+                _colonyPanelGroups.Add(go.GetComponent<CanvasGroup>());
             }
 
             if (Object.FindFirstObjectByType<ColonyNeedsPanel>(FindObjectsInactive.Include) == null)
@@ -638,7 +635,53 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 var go = BuildSidePanel(canvas, "ColonyNeedsPanel",
                     new Vector2(0.78f, 0.45f), new Vector2(1f, 0.94f));
                 go.AddComponent<ColonyNeedsPanel>().Source = this;
+                _colonyPanelGroups.Add(go.GetComponent<CanvasGroup>());
             }
+
+            // BUG-2: hidden by default — the player opens the colony overlay with 'C' when they want it.
+            SetColonyPanelsVisible(false);
+        }
+
+        /// <summary>
+        /// BUG-2: show/hide the standing colony overlay (JobQueue / Faction / ColonyNeeds) as a group via
+        /// their CanvasGroups, so action scenes (combat, tavern, ritual, trade) are not cluttered by the
+        /// living-world readout unless the player asks for it. Content still polls while hidden (cheap).
+        /// </summary>
+        private void SetColonyPanelsVisible(bool visible)
+        {
+            _colonyPanelsVisible = visible;
+            foreach (var g in _colonyPanelGroups)
+            {
+                if (g == null) continue;
+                g.alpha = visible ? 1f : 0f;
+                g.interactable = visible;
+                g.blocksRaycasts = visible;
+            }
+        }
+
+        /// <summary>
+        /// BUG-4: shared fate→dialog routing — used on R-press (placeholder line) and again when the async
+        /// LLM prophecy resolves. Eighth-pass guard preserved: never clobber an active NPC dialog adapter
+        /// source; if one is bound, surface the fate via the HUD combat log instead of stealing the panel.
+        /// </summary>
+        private void RouteFateToDialog(string line)
+        {
+            var dialogs = Object.FindObjectsByType<DialogBoxPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            bool routedToPanel = false;
+            foreach (var d in dialogs)
+            {
+                if (d.name.Contains("Narration") || d.name.Contains("Dialog"))
+                {
+                    if (d.Source == null || ReferenceEquals(d.Source, this))
+                    {
+                        d.Source = this;
+                        d.gameObject.SetActive(true);
+                        routedToPanel = true;
+                    }
+                }
+            }
+            if (!routedToPanel)
+                _commands?.LogCombat(line);
         }
 
         /// <summary>

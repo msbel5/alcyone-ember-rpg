@@ -113,8 +113,16 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var profile = _world.WorldProfile;
                 if (profile == null)
                     return $"Tick {_tick:0000}   Day {day:000}";
-                return $"Tick {_tick:0000}   Day {day:000}   {profile.Style}/{profile.Genre}   Pop {profile.TargetPopulation:N0}";
+                return $"Tick {_tick:0000}   Day {day:000}   {Spaced(profile.Style)} / {Spaced(profile.Genre)}   Pop {profile.TargetPopulation:N0}";
             }
+        }
+
+        // Render a CamelCase enum value as spaced Title Case for the HUD ("LowFantasy" -> "Low Fantasy").
+        // The brand codenames were renamed out of the WorldStyle enum (BUG-1), so this is pure display polish.
+        private static string Spaced(System.Enum value)
+        {
+            var s = value.ToString();
+            return System.Text.RegularExpressions.Regex.Replace(s, "(?<=[a-z0-9])(?=[A-Z])", " ");
         }
 
         public CombatHudState CombatHud
@@ -491,7 +499,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 : "Someone waits for you to speak.";
         }
 
-        // BUG-DIALOG-BRAND: WorldProfile.Style is an INTERNAL codename enum (e.g. "LowFantasyMorrowind").
+        // BUG-DIALOG-BRAND: WorldProfile.Style is an INTERNAL codename enum (e.g. "LowFantasy").
         // Interpolating it verbatim into an NPC prompt makes the local model narrate the real brand
         // ("Welcome to the world of Morrowind"). Produce a brand-safe, human descriptor instead: drop any
         // brand/codename token, split the CamelCase enum into spaced lowercase words, and fall back to a

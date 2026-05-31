@@ -15,12 +15,23 @@ namespace EmberCrpg.Tests.EditMode.Generation
             Assert.That(value.ArchetypeId, Is.EqualTo("humanoid_male"));
         }
 
+        // BUG-3: a small local model adds chatter keys ("name", "notes", …). Extra fields must be
+        // TOLERATED — only the core schema is required — so the portrait no longer falls back to the
+        // placeholder over a harmless extra key.
+        [Test]
+        public void ExtraFieldsAreTolerated()
+        {
+            const string withExtras = "{\"archetype_id\":\"humanoid_male\",\"primary_hue_degrees\":28,\"secondary_hue_degrees\":215,\"mood_keywords\":[\"wary\"],\"distinctive_features\":[\"scar\"],\"clothing_style\":\"leather\",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\",\"name\":\"Borin\",\"notes\":\"a quiet smith\"}";
+            Assert.That(NpcPromptJsonValidator.TryValidate(withExtras, GenericNpcBaseManifest.CreateDefault(), out var value, out var reason), Is.True, reason);
+            Assert.That(value.ArchetypeId, Is.EqualTo("humanoid_male"));
+            Assert.That(value.PrimaryHueDegrees, Is.EqualTo(28));
+        }
+
         [TestCase("{\"archetype_id\":\"dragon\",\"primary_hue_degrees\":28,\"secondary_hue_degrees\":215,\"mood_keywords\":[],\"distinctive_features\":[],\"clothing_style\":\"leather\",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\"}", "unknown_archetype")]
         [TestCase("{\"archetype_id\":\"humanoid_male\",\"primary_hue_degrees\":360,\"secondary_hue_degrees\":215,\"mood_keywords\":[],\"distinctive_features\":[],\"clothing_style\":\"leather\",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\"}", "hue_out_of_range")]
         [TestCase("{\"archetype_id\":\"humanoid_male\",\"primary_hue_degrees\":28,\"secondary_hue_degrees\":215,\"mood_keywords\":[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\"],\"distinctive_features\":[],\"clothing_style\":\"leather\",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\"}", "array_too_long")]
         [TestCase("{\"archetype_id\":\"humanoid_male\",\"primary_hue_degrees\":28,\"secondary_hue_degrees\":215,\"mood_keywords\":[],\"distinctive_features\":[],\"clothing_style\":\"abcdefghijklmnopqrstuvwxyzabcdefghijklmno\",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\"}", "string_too_long")]
         [TestCase("{\"archetype_id\":\"humanoid_male\",\"primary_hue_degrees\":28,\"secondary_hue_degrees\":215,\"mood_keywords\":[\"wary\"],\"distinctive_features\":[\"caf\\u00e9\"],\"clothing_style\":\"leather\",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\"}", "non_ascii")]
-        [TestCase("{\"archetype_id\":\"humanoid_male\",\"primary_hue_degrees\":28,\"secondary_hue_degrees\":215,\"mood_keywords\":[],\"distinctive_features\":[],\"clothing_style\":\"leather\",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\",\"foo\":1}", "unknown_field:foo")]
         [TestCase("{\"primary_hue_degrees\":28,\"secondary_hue_degrees\":215,\"mood_keywords\":[],\"distinctive_features\":[],\"clothing_style\":\"leather\",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\"}", "missing_field:archetype_id")]
         [TestCase("{\"archetype_id\":\"humanoid_male\",\"primary_hue_degrees\":28,\"secondary_hue_degrees\":215,\"mood_keywords\":[],\"distinctive_features\":[],\"clothing_style\":\"   \",\"accessory\":\"ring\",\"world_style_anchor\":\"ember-warm\"}", "empty_string")]
         public void InvalidJsonRejectsWithReason(string json, string expectedReason)

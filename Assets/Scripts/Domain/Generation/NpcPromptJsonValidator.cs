@@ -19,10 +19,12 @@ namespace EmberCrpg.Domain.Generation
             if (manifest == null) throw new ArgumentNullException(nameof(manifest));
             if (string.IsNullOrWhiteSpace(json)) { reason = "invalid_json"; return false; }
 
+            // BUG-3: TOLERATE unknown/extra fields. A small local model (Qwen-1.5B) routinely adds chatter
+            // keys ("name", "gender", "notes", …); rejecting the whole portrait over one extra field made
+            // every generated portrait fall back to the placeholder. We only require the core schema fields
+            // to be present + individually valid below; extras are ignored (we only read the Required ones).
             var keys = new HashSet<string>(StringComparer.Ordinal);
             foreach (Match match in Regex.Matches(json, "\\\"([^\\\"]+)\\\"\\s*:")) keys.Add(match.Groups[1].Value);
-            foreach (var key in keys)
-                if (Array.IndexOf(Required, key) < 0) { reason = "unknown_field:" + key; return false; }
             foreach (var key in Required)
                 if (!keys.Contains(key)) { reason = "missing_field:" + key; return false; }
 

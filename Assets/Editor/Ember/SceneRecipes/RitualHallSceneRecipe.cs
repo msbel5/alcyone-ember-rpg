@@ -49,15 +49,14 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             EmberWorldspaceBuilder.SpawnActor("Apprentice","necromancer", new Vector3( 1.5f, 0f, 0f), domainActorKey: "Ash Rat");
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Effigy", new Vector3(0f, 0.75f, 5f));
 
-            // UI-SINGLE-SOURCE: the standard HUD (EmberHud TopBar + action bar, side panels, pause,
-            // dialog) is host-ensured by EmberWorldHost, so the recipe no longer authors a TopBar. The
-            // SpellBar below is intentionally scene-specific — it is the ritual-casting UI thematic to
-            // this hall, not part of the shared default HUD — so it stays authored here.
-            var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var spellBar = EmberUiBuilder.BuildPanel(canvas, "SpellBar",
-                new Vector2(0.18f, 0f), new Vector2(0.82f, 0.12f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(spellBar.gameObject, "EmberCrpg.Presentation.Ember.UI.SpellBar");
+            // UI-SINGLE-SOURCE: the standard HUD (EmberHud TopBar + bottom action bar, the colony
+            // overlay, pause, dialog) is host-ensured by EmberWorldHost. We only author the empty
+            // EmberHUD overlay canvas so the host has a canvas to attach to.
+            // BUG-5: the scene-specific "SpellBar" used to sit at the very bottom (0–12% height) and
+            // overlapped the host's action bar, so the ritual hall showed TWO stacked slot strips. The
+            // action bar's CAST + number-key spell selection already covers casting, so the standalone
+            // SpellBar is removed to leave a single, clean bottom bar.
+            EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
 
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
             EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(RitualHallSceneRecipe));

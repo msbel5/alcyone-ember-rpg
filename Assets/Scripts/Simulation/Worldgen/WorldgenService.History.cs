@@ -127,7 +127,7 @@ namespace EmberCrpg.Simulation.Worldgen
 
             if (style == WorldStyle.DarkFantasyGrim && (kind == WorldHistoryKind.FactionWar || kind == WorldHistoryKind.Calamity || kind == WorldHistoryKind.NobleDeath))
                 weight += 12;
-            if (style == WorldStyle.HighFantasyTolkien && (kind == WorldHistoryKind.FactionAlliance || kind == WorldHistoryKind.SettlementFounded))
+            if (style == WorldStyle.HighFantasy && (kind == WorldHistoryKind.FactionAlliance || kind == WorldHistoryKind.SettlementFounded))
                 weight += 8;
             if (style == WorldStyle.SteampunkRevolution && kind == WorldHistoryKind.TradeRouteOpened)
                 weight += 12;

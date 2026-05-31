@@ -10,7 +10,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
         [Test]
         public void DefaultLowFantasySurvival_StaysDaggerfallScale()
         {
-            var parameters = WorldgenParameters.For(WorldStyle.LowFantasyMorrowind, WorldGenre.Survival);
+            var parameters = WorldgenParameters.For(WorldStyle.LowFantasy, WorldGenre.Survival);
             var world = WorldgenService.Generate(42u, parameters);
 
             Assert.That(parameters.RegionCount, Is.EqualTo(50));
@@ -35,7 +35,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
         [Test]
         public void SteampunkMerchantEmpire_ShiftsTowardUrbanSettlements()
         {
-            var baseline = WorldgenParameters.For(WorldStyle.LowFantasyMorrowind, WorldGenre.Survival);
+            var baseline = WorldgenParameters.For(WorldStyle.LowFantasy, WorldGenre.Survival);
             var steampunk = WorldgenParameters.For(WorldStyle.SteampunkRevolution, WorldGenre.MerchantEmpire);
 
             Assert.That(steampunk.CityCount + steampunk.TownCount, Is.GreaterThan(baseline.CityCount + baseline.TownCount));
@@ -56,7 +56,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
         [Test]
         public void DarkPolitical_HistoryWeightsFavorConflictAndCourtEvents()
         {
-            var baseline = WorldgenService.Generate(42u, WorldgenParameters.For(WorldStyle.LowFantasyMorrowind, WorldGenre.Survival));
+            var baseline = WorldgenService.Generate(42u, WorldgenParameters.For(WorldStyle.LowFantasy, WorldGenre.Survival));
             var dark = WorldgenService.Generate(42u, WorldgenParameters.For(WorldStyle.DarkFantasyGrim, WorldGenre.PoliticalIntrigue));
 
             int baselinePressure = CountPressureHistory(baseline);

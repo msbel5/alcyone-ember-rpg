@@ -415,10 +415,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             var text = (mood ?? string.Empty).ToLowerInvariant();
             if (text.Contains("grim") || text.Contains("dark") || text.Contains("bleak")) return WorldStyle.DarkFantasyGrim;
-            if (text.Contains("high") || text.Contains("tolkien") || text.Contains("heroic")) return WorldStyle.HighFantasyTolkien;
+            if (text.Contains("high") || text.Contains("tolkien") || text.Contains("heroic")) return WorldStyle.HighFantasy;
             if (text.Contains("steam") || text.Contains("industrial") || text.Contains("revolution")) return WorldStyle.SteampunkRevolution;
             if (text.Contains("ancient") || text.Contains("myth") || text.Contains("bronze")) return WorldStyle.AncientMythology;
-            return WorldStyle.LowFantasyMorrowind;
+            return WorldStyle.LowFantasy;
         }
 
         private static WorldGenre ParseGenre(string mood, string calling, string startLocation)
