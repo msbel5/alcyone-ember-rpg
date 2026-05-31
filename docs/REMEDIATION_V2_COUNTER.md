@@ -978,10 +978,19 @@ by unique resolution. Box: `[x]` done+verified · `[~]` partial/staged (reasoned
 ### Won't-fix — reasoned `[-]`
 | LEFT-024 obsolete role shims | The 5 remaining `[Obsolete]` shim accesses are intentional backward-compat tests under `#pragma warning disable` (BD-02). Removing the shims only after all call sites + save fixtures migrate; net churn > value now. |
 
+### Partly proven headlessly 2026-05-31 — real LLM round-trip ✅
+The **real local-Qwen round-trip is now proven** without the Editor: a headless LFS-resolved Win64 run
+(`--ember-llm-proof`) reported `IsAvailable: True` against the real 986 MB GGUF (validating LEFT-005's
+`IsUsableModelFile`) and `RESULT OK` with coherent on-prompt output — see
+`docs/proofs/llm-runtime-proof-2026-05-31.md`. It also surfaced a raw trailing `User:` leak, now fixed
+at the source (`NativeLlmClient.StripTrailingTurnMarkers` + 4 tests). So the re-audit's "real LLM proof"
+trap is closed for the round-trip + readiness; only the **visual** half remains below.
+
 ### Needs gameplay/Editor proof `[E]` (the real remaining blocker)
-LEFT-015 / PART-007(visual)/009 + the "looks-done-don't-close" traps (real LLM round-trip, scene dialog,
-generated-actor visibility, save/load replay) all reduce to **one live PlayMode/manual scene-tour with
-screenshots** — tracked as **BD-20**. Everything Codex-safe and headless-verifiable from the re-audit is
-now closed above; what is left genuinely needs the Unity Editor / a running player, which the user runs.
+LEFT-015 / PART-007(visual)/009 + the remaining "looks-done-don't-close" traps (scene dialog,
+**generated-actor visibility**, character-creation **portrait on screen**, single-source HUD layout,
+save/load replay) reduce to **one live PlayMode/manual scene-tour with screenshots** — tracked as
+**BD-20**. Everything Codex-safe and headless-verifiable from the re-audit is now closed above; what is
+left genuinely needs the Unity Editor / a running player with a display, which the user runs.
 
 **Re-audit tally:** 44 items → **12 closed `[x]`** this pass (+ the gameplay-bug commit) · **~25 `[~]` reasoned-staged** (overlap §6) · **1 `[-]`** · **remainder `[E]`** (one scene-tour proof). No item is unaccounted-for.
