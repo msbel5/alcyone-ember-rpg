@@ -617,12 +617,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     $"topic_selected id:{topicId}"));
             }
 
-            // Live LLM topic answer (Phase 12 production wire)
+            // Live LLM topic answer (Phase 12 production wire). Authored scene actors have no
+            // NpcSeed, so route them through the ad-hoc (name-based) path — otherwise selecting a
+            // topic ALWAYS showed the deterministic answer (the LLM-NOT-FIRING bug, same as greetings).
             var npc = _world.NpcSeeds.FirstOrDefault(n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
             if (npc != null)
-            {
                 _ = GenerateNpcTopicAnswerAsync(npc, topicId, topic);
-            }
+            else
+                _ = GenerateAdHocTopicAnswerAsync(_activeDialogActor, topicId, topic);
         }
 
         private async Task GenerateNpcTopicAnswerAsync(NpcSeedRecord npc, string topicId, AskAboutTopic topic)
@@ -650,6 +652,41 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 // BUG-DIALOG-EMPTY: same whitespace guard as the greeting path — never overwrite the
                 // deterministic topic answer with an empty/whitespace inference result.
+                if (response != null && !string.IsNullOrWhiteSpace(response.Text))
+                    _currentDialogLine = response.Text.Trim();
+                _isDialogThinking = false;
+            });
+        }
+
+        // LLM-NOT-FIRING fix (topic answers): name-based answer for authored/ad-hoc actors with no
+        // NpcSeed, so picking an Ask-About topic yields a real local-LLM answer instead of only the
+        // deterministic one. Mirrors GenerateNpcTopicAnswerAsync.
+        private async Task GenerateAdHocTopicAnswerAsync(string actorName, string topicId, AskAboutTopic topic)
+        {
+            var router = ForgeLocator.LlmRouter;
+            if (router == null || string.IsNullOrEmpty(actorName)) return;
+
+            _isDialogThinking = true;
+            var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
+            var worldStyle = _world.WorldProfile?.Style.ToString() ?? "fantasy";
+            ulong seed = 1469598103934665603UL;
+            foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
+            foreach (var ch in topicId ?? string.Empty) { seed ^= ch; seed *= 1099511628211UL; }
+
+            var request = new LlmRequest(
+                "npc_topic_answer",
+                "npc:" + actorName + ":topic:" + topicId,
+                null,
+                180,
+                seed,
+                $"You are {actorName}, a character in a {worldStyle} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
+                new List<string>());
+
+            var response = await Task.Run(() => router.Complete(request, out _));
+            _mainThreadApply.Enqueue(() =>
+            {
+                UnityEngine.Debug.Log($"[NpcTopic-adhoc] actor={actorName} topic={topicId} " +
+                    $"llm-len={(response?.Text?.Length ?? -1)} used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
                 if (response != null && !string.IsNullOrWhiteSpace(response.Text))
                     _currentDialogLine = response.Text.Trim();
                 _isDialogThinking = false;
