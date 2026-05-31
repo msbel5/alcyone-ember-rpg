@@ -184,6 +184,74 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 int radius = settlement.Size == SettlementSize.Capital ? 6 : settlement.Size == SettlementSize.City ? 5 : settlement.Size == SettlementSize.Town ? 3 : 2;
                 _world.Sites.Add(new SiteRecord(id, SiteKind.Settlement, settlement.Name, new GridPosition(x, y), new GridPosition(x + radius, y + radius)));
             }
+
+            SeedStartingProductionSites();
+        }
+
+        /// <summary>
+        /// SOUL-01: give the running world something the per-tick economy systems can actually advance —
+        /// a farm plot (soil + a seeded crop that PlantGrowthSystem grows each game-day), a forge
+        /// worksite, and one pending JobRequest on the JobBoard. Everything is derived deterministically
+        /// from the starting settlement's stable SiteId so the same seed always produces the same setup.
+        /// Without this, the newly-wired growth/job systems would tick over empty stores forever.
+        /// </summary>
+        private void SeedStartingProductionSites()
+        {
+            if (_world.Sites == null) return;
+
+            // Deterministic anchor: the chosen starting settlement, else the first settlement site,
+            // else the first site of any kind. SiteId.Value seeds every derived id/position below.
+            SiteId anchor = StartingSettlement.IsEmpty ? default : SettlementSiteId(StartingSettlement);
+            if (anchor.IsEmpty || !_world.Sites.TryGet(anchor, out _))
+            {
+                foreach (var site in _world.Sites.Records)
+                {
+                    if (site.Kind == SiteKind.Settlement) { anchor = site.Id; break; }
+                }
+            }
+            if (anchor.IsEmpty || !_world.Sites.TryGet(anchor, out _))
+                anchor = FirstSiteId();
+            if (anchor.IsEmpty || !_world.Sites.TryGet(anchor, out var anchorSite))
+                return;
+
+            // Worksite cells: anchored to the site's min corner so they never collide with the
+            // center worksite the adapter ctor may have already registered for this site.
+            var farmPos = anchorSite.MinBound;
+            var forgePos = anchorSite.MinBound.Translate(1, 0);
+
+            // Farm plot: soil + a seeded "wheat" crop at its first growth stage. Growth advances daily
+            // via WorldTickComposer -> PlantGrowthSystem (species catalog lives on the composer).
+            if (!_world.Worksites.Contains(anchor, farmPos))
+                _world.Worksites.Add(new WorksiteRecord(anchor, farmPos, WorksiteKind.Field, isActive: true));
+
+            ulong baseId = anchor.Value;
+            var soilId = new WorldComponentId(baseId * 10UL + 1UL);
+            var plantId = new WorldComponentId(baseId * 10UL + 2UL);
+            if (!_world.Plants.TryGet(plantId, out _))
+                _world.Plants.Add(plantId, new PlantComponent(plantId, anchor, farmPos, "wheat", new PlantStageId("seed"), 0));
+            if (!_world.Soils.TryGet(soilId, out _))
+                _world.Soils.Add(soilId, new SoilComponent(soilId, anchor, farmPos, fertility: 70, moisture: 60, plantId: plantId));
+
+            // Forge worksite + one pending smelting job. JobKind.Smith / WorksiteKind.Furnace /
+            // SmeltIronIngot recipe matches the production registry so the job is workable in-game
+            // once an actor with a Smith preference is present (see HydrateNpcs).
+            if (!_world.Worksites.Contains(anchor, forgePos))
+                _world.Worksites.Add(new WorksiteRecord(anchor, forgePos, WorksiteKind.Furnace, isActive: true));
+
+            var jobId = new JobId(baseId * 10UL + 3UL);
+            if (!_world.Jobs.Contains(jobId))
+            {
+                _world.Jobs.Add(new JobRequest(
+                    jobId,
+                    EmberCrpg.Data.Recipes.ProductionRecipeRegistry.SmeltIronIngotId,
+                    anchor,
+                    forgePos,
+                    WorksiteKind.Furnace,
+                    JobKind.Smith,
+                    JobPriority.Active(1),
+                    quantity: 1,
+                    requesterId: anchor.Value == 0UL ? new ActorId(1UL) : new ActorId(anchor.Value)));
+            }
         }
 
         private void HydrateFactions(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
@@ -227,6 +295,29 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     baseDamage: npc.Role == NpcRole.Outlaw ? 10 : 4,
                     topicIds: new[] { "rumors", "work", "trade" }));
             }
+
+            GrantStartingJobPreference();
+        }
+
+        /// <summary>
+        /// SOUL-01: give exactly one deterministic worker an active Smith preference so the pending
+        /// smelting job seeded in <see cref="SeedStartingProductionSites"/> actually gets claimed and
+        /// worked by JobAssignmentSystem in the live game. The first generated NPC homed at the
+        /// starting settlement is chosen; falls back to the first NPC overall. Idle, alive NPCs only.
+        /// </summary>
+        private void GrantStartingJobPreference()
+        {
+            if (_world.Actors == null) return;
+
+            ActorRecord worker = null;
+            foreach (var actor in _world.Actors.Records)
+            {
+                if (actor == null || !actor.IsAlive || actor.Id.Value < GeneratedNpcActorOffset)
+                    continue;
+                worker ??= actor; // deterministic first generated NPC, by insertion order
+            }
+
+            worker?.ApplyJobPreferences(new[] { new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)) });
         }
 
         private void HydrateHistory(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)

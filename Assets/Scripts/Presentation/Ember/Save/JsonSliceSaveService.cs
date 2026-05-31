@@ -19,42 +19,56 @@ namespace EmberCrpg.Presentation.Ember.Save
     {
         private readonly Func<RecipeId, RecipeDef> _resolveRecipe;
         private List<RecipeWorkOrder> _recipeWorkOrders = new List<RecipeWorkOrder>();
-        private WorksiteStore _worksites = new WorksiteStore();
-        private JobBoard _jobs = new JobBoard();
-        private ComponentStore<SoilComponent> _soils = new ComponentStore<SoilComponent>();
-        private ComponentStore<PlantComponent> _plants = new ComponentStore<PlantComponent>();
+
+        // SOUL-01: worksites/jobs/soils/plants are now the world root's canonical stores. This bridge
+        // world holds them for callers that touch the save service directly (round-trip tests, the
+        // pre-world-bound adapter ctor). BindWorld(world) repoints the bridge at the live world so
+        // SaveToJson/LoadFromJson and the per-tick systems all read/write the same store instances.
+        private WorldState _bridge = new WorldState();
 
         public JsonSliceSaveService(Func<RecipeId, RecipeDef> resolveRecipe = null)
         {
             _resolveRecipe = resolveRecipe;
         }
 
-        /// <summary>Process worksites carried by this save bridge until the full world-root process store lands.</summary>
+        /// <summary>
+        /// Repoints this bridge's process stores at the supplied live world so the save service and
+        /// the per-tick simulation share one set of Worksite/Job/Soil/Plant instances. Returns the
+        /// bound world for fluent use.
+        /// </summary>
+        public WorldState BindWorld(WorldState world)
+        {
+            _bridge = world ?? throw new ArgumentNullException(nameof(world));
+            _bridge.EnsureInvariants();
+            return _bridge;
+        }
+
+        /// <summary>Process worksites homed on the world root (exposed here for save-bridge callers).</summary>
         public WorksiteStore Worksites
         {
-            get { return _worksites; }
-            set { _worksites = value ?? throw new ArgumentNullException(nameof(value)); }
+            get { return _bridge.Worksites; }
+            set { _bridge.Worksites = value ?? throw new ArgumentNullException(nameof(value)); }
         }
 
-        /// <summary>Pending and claimed process jobs carried by this save bridge until the full world-root process store lands.</summary>
+        /// <summary>Pending and claimed process jobs homed on the world root (exposed here for save-bridge callers).</summary>
         public JobBoard Jobs
         {
-            get { return _jobs; }
-            set { _jobs = value ?? throw new ArgumentNullException(nameof(value)); }
+            get { return _bridge.Jobs; }
+            set { _bridge.Jobs = value ?? throw new ArgumentNullException(nameof(value)); }
         }
 
-        /// <summary>Soil components carried by this save bridge until they move onto the full world root.</summary>
+        /// <summary>Soil components homed on the world root (exposed here for save-bridge callers).</summary>
         public ComponentStore<SoilComponent> Soils
         {
-            get { return _soils; }
-            set { _soils = value ?? throw new ArgumentNullException(nameof(value)); }
+            get { return _bridge.Soils; }
+            set { _bridge.Soils = value ?? throw new ArgumentNullException(nameof(value)); }
         }
 
-        /// <summary>Plant components carried by this save bridge until they move onto the full world root.</summary>
+        /// <summary>Plant components homed on the world root (exposed here for save-bridge callers).</summary>
         public ComponentStore<PlantComponent> Plants
         {
-            get { return _plants; }
-            set { _plants = value ?? throw new ArgumentNullException(nameof(value)); }
+            get { return _bridge.Plants; }
+            set { _bridge.Plants = value ?? throw new ArgumentNullException(nameof(value)); }
         }
 
         /// <summary>Active recipe work orders loaded by the latest JSON round-trip.</summary>
@@ -69,12 +83,16 @@ namespace EmberCrpg.Presentation.Ember.Save
 
         public string SaveToJson(WorldState world)
         {
+            // ToData now reads the four process stores from the world root. When a caller has staged
+            // worksites/jobs/soils/plants on this bridge (round-trip tests, or the adapter before it
+            // binds the live world), override those DTO fields from the bridge so they still persist.
+            // For a bound adapter the bridge IS the saved world, making the override idempotent.
             var data = WorldSaveMapper.ToData(world);
-            data.worksites = WorldSaveMapper.ToWorksiteData(_worksites);
+            data.worksites = WorldSaveMapper.ToWorksiteData(_bridge.Worksites);
             data.recipeWorkOrders = _recipeWorkOrders.Select(EmberCrpg.Simulation.Process.WorldSaveRehydration.ToRecipeWorkOrderData).ToArray();
-            data.jobs = WorldSaveMapper.ToJobBoardData(_jobs);
-            data.soils = WorldSaveMapper.ToSoilComponentData(_soils);
-            data.plants = WorldSaveMapper.ToPlantComponentData(_plants);
+            data.jobs = WorldSaveMapper.ToJobBoardData(_bridge.Jobs);
+            data.soils = WorldSaveMapper.ToSoilComponentData(_bridge.Soils);
+            data.plants = WorldSaveMapper.ToPlantComponentData(_bridge.Plants);
             return JsonUtility.ToJson(data, true);
         }
 
@@ -97,11 +115,14 @@ namespace EmberCrpg.Presentation.Ember.Save
             // Simulation type into Data). Build the seed here, then map.
             var seedWorld = EmberCrpg.Simulation.Process.WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed);
             var world = WorldSaveMapper.ToWorld(data, seedWorld);
-            _worksites = WorldSaveMapper.ToWorksiteStore(data.worksites);
+            // ToWorld already rehydrated world.Worksites/Jobs/Soils/Plants from the DTO. Mirror those
+            // store instances onto the bridge so callers reading service.Worksites/Jobs/Soils/Plants
+            // (round-trip tests, view-models) observe the loaded state.
+            _bridge.Worksites = world.Worksites;
+            _bridge.Jobs = world.Jobs;
+            _bridge.Soils = world.Soils;
+            _bridge.Plants = world.Plants;
             _recipeWorkOrders = ToRecipeWorkOrders(data.recipeWorkOrders);
-            _jobs = WorldSaveMapper.ToJobBoard(data.jobs);
-            _soils = WorldSaveMapper.ToSoilComponentStore(data.soils);
-            _plants = WorldSaveMapper.ToPlantComponentStore(data.plants);
             return world;
         }
 

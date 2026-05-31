@@ -45,6 +45,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 EmberCrpg.Data.Recipes.ProductionRecipeRegistry.Resolve);
             _tickComposer = new EmberCrpg.Simulation.Composition.WorldTickComposer();
 
+            // SOUL-01: bind the save bridge to the live world so _saveService.Worksites/Jobs/Soils/Plants
+            // resolve to the same store instances the WorldTickComposer advances each tick. Without this
+            // the seeded worksites/jobs would sit on a detached bridge world and never tick.
+            _saveService.BindWorld(_world);
+
             if (_saveService.Worksites != null && _world.Sites != null)
             {
                 foreach (var site in _world.Sites.Records)

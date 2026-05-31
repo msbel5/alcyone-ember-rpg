@@ -69,6 +69,13 @@ dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
                 stockpiles = ToStockpileData(world.Stockpiles),
                 tradeRoutes = ToTradeRouteData(world.TradeRoutes),
                 caravans = ToCaravanData(world.Caravans),
+                // SOUL-01: the production-economy process stores are now read from the world root
+                // (not the JsonSliceSaveService side-stores). recipeWorkOrders stays a Simulation
+                // type composed by the Presentation save bridge, so it is intentionally absent here.
+                worksites = ToWorksiteData(world.Worksites),
+                jobs = ToJobBoardData(world.Jobs),
+                soils = ToSoilComponentData(world.Soils),
+                plants = ToPlantComponentData(world.Plants),
                 worldEvents = ToWorldEventLogData(world.Events),
                 toolCallTrace = ToToolCallTraceData(world.ToolCallTrace),
                 llmProposalLog = ToLlmProposalLogData(world.LlmProposalLog),
@@ -137,6 +144,11 @@ world.Items = ToItemStore(data.itemRecords);
             world.Stockpiles = ToStockpiles(data.stockpiles);
             world.TradeRoutes = ToTradeRoutes(data.tradeRoutes);
             world.Caravans = ToCaravans(data.caravans);
+            // SOUL-01: rehydrate the production-economy process stores onto the world root.
+            world.Worksites = ToWorksiteStore(data.worksites);
+            world.Jobs = ToJobBoard(data.jobs);
+            world.Soils = ToSoilComponentStore(data.soils);
+            world.Plants = ToPlantComponentStore(data.plants);
             world.Events = ToWorldEventLog(data.worldEvents);
             world.ToolCallTrace = ToToolCallTrace(data.toolCallTrace);
             world.LlmProposalLog = ToLlmProposalLog(data.llmProposalLog);

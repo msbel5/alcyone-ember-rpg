@@ -13,6 +13,14 @@ namespace EmberCrpg.Presentation.Ember.Views
         void Apply(int amount);
     }
 
+    // TODO(SOUL-04, deferred — needs the Editor): there is no overworld spawner that instantiates one
+    // ActorView per WorldState.Actors entry at its world->scene position and re-pushes ActorViewState
+    // each tick from SOUL-03 (ScheduleSystem) movement. SOUL-01/03 made the simulation actually move
+    // actors headlessly (proven by WorldLivesOverNTicksTests + ScheduleSystemTests); wiring those
+    // moves to visible billboards is the remaining visual gap. Implement an ActorView spawner/sync in
+    // Presentation (or, if overworld spawning stays out of scope, document the 10 authored scenes as
+    // fixed vignettes) — decide with the user. This requires a Unity Editor build to prove (screenshot),
+    // so it is intentionally NOT wired in this headless pass.
     [DisallowMultipleComponent]
     public sealed class ActorView : MonoBehaviour, IDamageSink
     {

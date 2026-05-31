@@ -46,6 +46,16 @@ namespace EmberCrpg.Domain.World
         public List<NpcSeedRecord> NpcSeeds = new List<NpcSeedRecord>();
         public WorldProfile WorldProfile;
 
+        // SOUL-01: the production-economy stores now live on the world root so the
+        // per-tick systems (PlantGrowthSystem / JobAssignmentSystem / PriceUpdateSystem)
+        // tick canonical state instead of side-stores carried by the save bridge. Their
+        // absence here was the SOUL-01/02 root cause: worksites/jobs/plants/soils existed
+        // only in JsonSliceSaveService and were therefore never advanced.
+        public ComponentStore<PlantComponent> Plants = new ComponentStore<PlantComponent>();
+        public ComponentStore<SoilComponent> Soils = new ComponentStore<SoilComponent>();
+        public JobBoard Jobs = new JobBoard();
+        public WorksiteStore Worksites = new WorksiteStore();
+
         /// <summary>
         /// EMB-013: re-establish the non-null collection/store invariants after a deserialize or a
         /// reflection-based restore. A corrupt or partial save (or a future field the loader did not
@@ -68,6 +78,10 @@ namespace EmberCrpg.Domain.World
             ToolCallTrace ??= new List<ToolCallTraceRecord>();
             LlmProposalLog ??= new List<LlmProposalLogEntry>();
             NpcSeeds ??= new List<NpcSeedRecord>();
+            Plants ??= new ComponentStore<PlantComponent>();
+            Soils ??= new ComponentStore<SoilComponent>();
+            Jobs ??= new JobBoard();
+            Worksites ??= new WorksiteStore();
         }
 
         // Codex audit (sixth pass D-P3 #D2): the five named role views below
@@ -161,6 +175,10 @@ namespace EmberCrpg.Domain.World
             LlmProposalLog = other.LlmProposalLog;
             NpcSeeds = other.NpcSeeds;
             WorldProfile = other.WorldProfile;
+            Plants = other.Plants;
+            Soils = other.Soils;
+            Jobs = other.Jobs;
+            Worksites = other.Worksites;
             PlayerInventory = other.PlayerInventory;
             PlayerEquipment = other.PlayerEquipment;
             MerchantInventory = other.MerchantInventory;

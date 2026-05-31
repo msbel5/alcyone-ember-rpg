@@ -34,6 +34,15 @@ namespace EmberCrpg.Tests.EditMode.World
                 Assert.That(f.GetValue(dst), Is.EqualTo(f.GetValue(src)),
                     $"CopyFrom did not mirror public field '{f.Name}'");
             }
+
+            // SOUL-01: explicit guard on the four production-economy stores now homed on the world
+            // root. The reflection walk above already covers them, but pin them by reference so a
+            // future CopyFrom edit that drops one of these fails with an unambiguous message rather
+            // than a generic field-name mismatch.
+            Assert.That(dst.Plants, Is.SameAs(src.Plants), "CopyFrom did not mirror Plants");
+            Assert.That(dst.Soils, Is.SameAs(src.Soils), "CopyFrom did not mirror Soils");
+            Assert.That(dst.Jobs, Is.SameAs(src.Jobs), "CopyFrom did not mirror Jobs");
+            Assert.That(dst.Worksites, Is.SameAs(src.Worksites), "CopyFrom did not mirror Worksites");
         }
 
         [Test]
