@@ -4,7 +4,8 @@ docs/inspector-audit-checklist.md.
 
 Captain: fill in every field below. Inspector rejects PRs missing the block
 or any field. State vocabulary for the Carry-over field is defined in
-docs/sprint-faz-4-atom-map.md (top-of-file Debt ledger).
+docs/agent-rules-v2.md Rule 8 and the active sprint atom map's top-of-file
+Debt ledger (under docs/archive/sprint/).
 -->
 
 ## PR audit fields

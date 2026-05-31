@@ -1,6 +1,6 @@
 # Faz 12 — LLM / NPC fallback flavour
 
-> _Captain atom-map_: `docs/sprint-faz-12-atom-map.md` (Captain narrow vertical-slice decomposition).  
+> _Captain atom-map_: authored under `docs/archive/sprint/` as `sprint-faz-12-atom-map.md` when this slice is scheduled (Captain narrow vertical-slice decomposition).  
 > _Naming_: aligned with Captain types (`JobRequest`, `ActorScheduleState`, `JobAssignmentSystem`).  
 > _Spec covers full architecture; Captain may implement subset and extend later._
 

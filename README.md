@@ -39,7 +39,7 @@ Faz 0 lands the canonical maps and rules:
 
 - `docs/alcyone-audit-2026-05-09.md` — what is in the repo, why the loop
   stalled, what to do about it
-- `docs/mechanic-map-v1.md` — the **8-box living-world model** every
+- `docs/mechanics/MASTER_MECHANICS_BIBLE.md` — the **8-box living-world model** every
   sprint must target
 - `docs/agent-rules-v2.md` — five new agent rules: product-visible
   increment, no speculative utility, data-driven effect, world-store
@@ -82,7 +82,7 @@ against the canonical mechanic list rather than the bare magic enum.
 
 1. The **Captain** cron (`@EMSPR`) reads
    `/home/msbel/.openclaw/workspace/CRON_CODES.md` and decomposes the
-   active sprint phase against `docs/mechanic-map-v1.md`. Every atom
+   active sprint phase against `docs/mechanics/MASTER_MECHANICS_BIBLE.md`. Every atom
    row carries a box tag like `[box=PROCESS]`.
 2. The **Builder** writes one atom (or a small bundle of atoms) and
    opens a PR.
@@ -117,10 +117,6 @@ all four before kicking off any atom and before opening any PR.
   self-checks against this before opening a PR. Failure-escalation
   table at the bottom tells Inspector when to revert versus when to
   request changes.
-- [The active sprint atom map](docs/archive/sprint/sprint-faz-4-atom-map.md) — top-of-
-  file **Debt ledger** is a gate, not a footnote. Before kicking off
-  the next atom, Captain takes one action against the ledger (close /
-  advance / defer) and records it in the kickoff doc.
 
 Mami territory: `Assets/Scenes/`, `Assets/Art/`, `Assets/Prefabs/`,
 `docs/screenshots/`, the Unity-bound parts of `Assets/Scripts/Presentation/`,

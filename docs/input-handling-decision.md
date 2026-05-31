@@ -52,7 +52,7 @@ Rejected because:
 
 ## When this decision changes
 
-Open a follow-up audit row under `docs/sprint-faz-14-atom-map.md` (once Faz
+Open a follow-up audit row under `docs/archive/sprint/sprint-faz-14-atom-map.md` (once Faz
 14 exists) titled `INPUT-MIGRATION` and link back to this file.
 
 ## Ninth-pass audit I-P3 / J-P3 — Submit / Cancel / debug axes

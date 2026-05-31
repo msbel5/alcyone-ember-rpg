@@ -8,10 +8,10 @@ override the older "exactly one small shippable increment" wording.
 
 In addition to this file, Captain reads the following before every atom-map kickoff doc and before every PR:
 
-- `docs/mechanic-map-v1.md` — the 8-box living-world model. Every atom row carries exactly one `primary_box` from this list.
+- `docs/mechanics/MASTER_MECHANICS_BIBLE.md` — the 8-box living-world model. Every atom row carries exactly one `primary_box` from this list.
 - `docs/EMBER_VISION_NOTES_MAMI.md` — operating constraints (Phase fences), 9-point Vision anchors, and Mami's verbatim intent. Captain's kickoff doc cites which anchors the sprint serves and which fences it honors.
 - `docs/inspector-audit-checklist.md` — the checklist Inspector applies to every Captain PR. Captain self-checks against this before opening a PR.
-- The active sprint atom map (currently `docs/archive/sprint/sprint-faz-4-atom-map.md`) — top-of-file **Debt ledger** is a gate, not a footnote. Before kicking off the next atom, Captain takes one action against the ledger (close / advance / defer) and records it in the kickoff doc.
+- The active sprint atom map (under `docs/archive/sprint/`, once a sprint is in flight) — top-of-file **Debt ledger** is a gate, not a footnote. Before kicking off the next atom, Captain takes one action against the ledger (close / advance / defer) and records it in the kickoff doc.
 
 ## 1. Product-visible increment rule
 
@@ -116,7 +116,7 @@ needs to widen, not the test surface.
 
 ## Enforcement notes for Captain
 
-- Decompose with `atom-of-thoughts` against `docs/mechanic-map-v1.md`,
+- Decompose with `atom-of-thoughts` against `docs/mechanics/MASTER_MECHANICS_BIBLE.md`,
   not against the old enum tree.
 - The atom-map (`docs/sprint-N-atom-map.md`) tracks which mechanic-map
   box the atom belongs to. Every atom row carries a box tag like
@@ -215,7 +215,7 @@ Branch naming: Captain ships in `agent/*` branches. Mami ships in `mami/*` branc
 
 ## 8-box tag schema (clarification)
 
-Per `docs/mechanic-map-v1.md` "every gameplay system fits into exactly one box":
+Per `docs/mechanics/MASTER_MECHANICS_BIBLE.md` "every gameplay system fits into exactly one box":
 
 - Every atom row carries exactly one `primary_box` from `{ TIME, WORLD, LIVING, MATTER, PROCESS, SOCIETY, CRPG, AI/DM }`.
 - Cross-cutting concerns (`infra`, `meta`, `playable`) are NOT boxes. They appear as commentary fields, not in the `primary_box` column.

@@ -4,9 +4,8 @@ _Last updated:_ 2026-05-09
 _Authoritative branch:_ `main`
 _Active branch:_ `realignment-faz-0`
 
-This roadmap supersedes the previous Sprint 0 roadmap (kept as
-`docs/sprint-0-recon.md` for history). It is aligned with
-`docs/mechanic-map-v1.md` (the 8-box living-world model) and gated
+This roadmap supersedes the previous Sprint 0 roadmap. It is aligned with
+`docs/mechanics/MASTER_MECHANICS_BIBLE.md` (the 8-box living-world model) and gated
 by `docs/agent-rules-v2.md` (five agent rules).
 
 The structure is **12 phases** (`Faz 0` through `Faz 12`). Each phase
@@ -23,7 +22,7 @@ Captain decomposes against the mechanic map rather than the magic enum.
 Deliverables:
 
 - `docs/alcyone-audit-2026-05-09.md`
-- `docs/mechanic-map-v1.md`
+- `docs/mechanics/MASTER_MECHANICS_BIBLE.md`
 - `docs/agent-rules-v2.md`
 - `docs/reference/` mirrors the canonical PRDs and architecture notes
   from `msbel5/ember-rpg`
@@ -35,7 +34,7 @@ Deliverables:
   not tracked in this repo)
 
 Acceptance: a fresh contributor opens the repo, reads `README.md`,
-`docs/ROADMAP.md`, `docs/mechanic-map-v1.md`, and within five minutes
+`docs/ROADMAP.md`, `docs/mechanics/MASTER_MECHANICS_BIBLE.md`, and within five minutes
 can answer the four orientation questions in `README.md`.
 
 ## Faz 1 — Core Store reset

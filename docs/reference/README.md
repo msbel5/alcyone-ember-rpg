@@ -47,7 +47,7 @@ reference/
 - Read the relevant PRD when starting a Faz N sprint, but treat the
   Godot/Python implementation suggestions as ideas, not constraints —
   this repo uses Unity + Pure C# core (see top-level `README.md`).
-- Cross-reference with `docs/mechanic-map-v1.md` (the 8-box model) to
+- Cross-reference with `docs/mechanics/MASTER_MECHANICS_BIBLE.md` (the 8-box model) to
   see which box a given upstream PRD belongs to.
 
 ## What is **not** in here

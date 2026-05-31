@@ -2,7 +2,7 @@
 
 Inspector applies this checklist to every Captain PR before merge. A single FAIL row blocks the merge.
 
-This checklist is referenced by `docs/agent-rules-v2.md` Rules 6-9 and by the top-of-file Debt ledger gate in every active sprint atom map (currently `docs/sprint-faz-4-atom-map.md`).
+This checklist is referenced by `docs/agent-rules-v2.md` Rules 6-9 and by the top-of-file Debt ledger gate in every active sprint atom map (under `docs/archive/sprint/`).
 
 ## A. Mandatory PR body fields (per `docs/agent-rules-v2.md` Rule 9)
 
@@ -38,7 +38,7 @@ This checklist is referenced by `docs/agent-rules-v2.md` Rules 6-9 and by the to
 
 - [ ] If the previous Captain PR had `Visible proof artifact: none-this-is-foundational` AND `Carry-over debt row advanced: none-ledger-empty`, the current PR MUST either close a CO row, advance a CO row (with diff evidence per Checklist G), OR present a visible proof artifact path. (Aligned with `agent-rules-v2.md` Rule 8: a concrete `CO-XX-advanced` report breaks the drift, since the audit fields are no longer `none-ledger-empty`.)
 
-## F. Box tag schema (per `docs/mechanic-map-v1.md`)
+## F. Box tag schema (per `docs/mechanics/MASTER_MECHANICS_BIBLE.md`)
 
 - [ ] Each atom row in any new atom map carries exactly one `primary_box` from the 8-box list.
 - [ ] Optional cross-cutting commentary (`infra`, `meta`, `playable`) appears in row commentary, not in the `primary_box` column.
