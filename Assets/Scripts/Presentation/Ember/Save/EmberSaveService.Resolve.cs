@@ -24,15 +24,7 @@ namespace EmberCrpg.Presentation.Ember.Save
         private static bool IsLoadableSaveJson(string raw)
         {
             if (string.IsNullOrEmpty(raw)) return false;
-            try
-            {
-                var probe = JsonUtility.FromJson<SaveData>(raw);
-                return probe != null && !string.IsNullOrEmpty(probe.sceneName);
-            }
-            catch (System.Exception)
-            {
-                return false;
-            }
+            return SaveEnvelopeCodec.TryDecode(raw, out _, out _);
         }
 
         private static bool IsKnownBuildScene(string sceneName)
@@ -126,15 +118,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             var json = ResolveLatestSaveJson(repo);
             if (string.IsNullOrEmpty(json)) return false;
 
-            try
-            {
-                data = JsonUtility.FromJson<SaveData>(json);
-            }
-            catch (System.Exception)
-            {
-                data = null;
-                return false;
-            }
+            if (!SaveEnvelopeCodec.TryDecode(json, out data, out _)) return false;
             // E7-008: validate the save's scene against the build registry HERE, at the single resolution
             // point, so NO load entry point (menu Continue/Load, in-game F9) can hand a SaveData that
             // names a renamed/removed scene to SceneManager.LoadScene. A save with an unknown scene is

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using EmberCrpg.Presentation.Ember.Save;
 
 namespace EmberCrpg.Presentation.Ember.Interaction
 {
@@ -28,6 +29,8 @@ namespace EmberCrpg.Presentation.Ember.Interaction
                 Debug.LogWarning($"EmberScenePortal: target scene '{_targetSceneName}' is not in the build; ignoring activation.");
                 return;
             }
+
+            EmberSaveService.TryAutosaveActiveScene();
             SceneManager.LoadScene(_targetSceneName);
         }
 

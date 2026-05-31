@@ -1,6 +1,6 @@
 # Remediation V2 Counter (Current)
 
-_Last updated: 2026-05-31_
+_Last updated: 2026-06-01_
 
 This is the active remediation register. It intentionally stays short; detailed
 historical audit narrative lives in `docs/Audit.md`.
@@ -8,7 +8,7 @@ historical audit narrative lives in `docs/Audit.md`.
 ## Status summary
 
 - Closed now (this pass): `LEFT-01`, `LEFT-02`, `LEFT-03`, `LEFT-04`,
-  `LEFT-05`, `LEFT-08`, `LEFT-10`, `LEFT-19`, `LEFT-20`
+  `LEFT-05`, `LEFT-08`, `LEFT-10`, `LEFT-18`, `LEFT-19`, `LEFT-20`
 - Open/staged: `LEFT-06`, `LEFT-07`, `LEFT-09`, `LEFT-11` to `LEFT-17`,
   `LEFT-21`
 
@@ -33,7 +33,7 @@ historical audit narrative lives in `docs/Audit.md`.
 | LEFT-15 | P2 | ⏳ staged | ONNX provider placement boundary cleanup |
 | LEFT-16 | P3 | ⏳ staged | Generated actor runtime screenshot/interaction proof |
 | LEFT-17 | P3 | ✅ closed | Faction decay is wired/tested; tick composition now runs through a deterministic registry guarded by a whole-world digest baseline |
-| LEFT-18 | P3 | ⏳ staged | Legacy input facade migration to action maps |
+| LEFT-18 | P3 | ✅ closed | Input System 1.14.2 active; `EmberInput` facade migrated behind action maps/hardware passthroughs; targeted PlayMode contract `5/5` green |
 | LEFT-19 | P4 | ✅ closed | PRD matrix normalized to `active` vs `reference` |
 | LEFT-20 | P4 | ✅ closed | Stale doc/path references removed or re-labeled |
 | LEFT-21 | P5 | ⏳ staged | `Resources.Load` footprint reduction/registry path |
@@ -71,7 +71,7 @@ Box: `[x]` done+verified · `[~]` partial/staged (reasoned) · `[-]` won't (reas
 | E7-004 | Scene-authored actor IDs | `[E]` next-P1 | ActorView carries `_domainActorKey` but empty `_domainActorId`; runtime bridges key→domain-actor→id. A correct fix needs a deterministic stable-hash `ActorId` stamped at author-time AND matched at runtime actor-creation — a real identity-scheme change, Editor-gated. Stamping an arbitrary id would break dialog. Recorded as the next P1 (design: deterministic key→ActorId; Editor migration + SceneValidation gate). |
 | E7-005 | Dialog identity name fallback | `[x]` | Verified **id-primary already**: `SelectTopic`/`BeginConversation` resolve via `_conversation.ActorId`/`NpcId` first; the name match is an explicit `??=` LEGACY fallback (now commented) that only fires for pre-E7-004 authored actors without ids — eliminated once E7-004 lands. |
 | E7-006 | Interaction identity | `[E]` | Raycaster already prefers `TryInteract(ActorId)` when present; the name path only runs for id-less authored actors → resolved by E7-004. |
-| E7-007 | Save architecture (slots/migration) | `[~]` | File slot + corrupt-quarantine + unified Continue/Load path + (new E7-008) scene validation done. Multi-slot UI + typed envelope + replay digest are staged (need PlayMode). |
+| E7-007 | Save architecture (slots/migration) | `[~]` | Typed save envelope, legacy migration, Quick/Auto/Manual slot model, pause-menu slot browser, delete button, corrupt quarantine, unified Continue/Load path, and portal autosave are implemented. Main-menu full named-slot browser remains an Editor/player UX gate. |
 | E7-008 | Save validation gap | `[x]` | `TryResolveLatestSave` now validates the save's scene via `IsKnownBuildScene` at the single resolution point, so NO load entry point can hand a bogus scene to `LoadScene`. |
 | E7-009 | Full 13-scene PlayMode tour | `[x]` load-gate | **Scene-tour PASS** (headless 2026-05-31): all 10 gameplay scenes load + render, **0 exceptions / 0 null-refs**, 20 screenshots on disk + `[UrpMaterialRescue]` auto-repaired magenta per scene (`docs/proofs/scene-tour-2026-05-31.md`). Interactive movement/dialog/portal-traversal/save still `[E]` for a human/PlayMode pass. |
 | E7-010 | Scene static-limit (camera/collision) | `[E]` | Only provable in Editor/PlayMode (SceneValidationMenu + manual). Gate, not a code fix. |
@@ -84,7 +84,7 @@ Box: `[x]` done+verified · `[~]` partial/staged (reasoned) · `[-]` won't (reas
 | E7-017 | Forge provider boundary | `[~]` | `OnnxAssetForge` in Simulation — documented-exception; moving the impl to Infrastructure is a staged asmdef change. |
 | E7-018 | Tick data-driven gap | `[x]` | Whole-world digest baseline captured, then `WorldTickComposer` moved to a deterministic `(cadence, order, id)` registry; fallback `1248/1251` proves digest unchanged. |
 | E7-019 | Faction politics (decay) | `[x]` | Deterministic faction-reputation decay wired as last daily tick; fallback `1242/1245` proves unit, convergence, catch-up, and save/load replay tests. |
-| E7-020 | Input System migration | `[~]` | `EmberInput` is a verified single choke point; migration = add package + InputActions + swap internals behind the frozen facade + rebind UI, gated on a PlayMode baseline. Staged plan in §6 BD-19. |
+| E7-020 | Input System migration | `[x]` | `activeInputHandler=1`, Input System 1.14.2, `EmberControls.inputactions`, and `EmberInput` facade migration are live. Direct legacy executable polling is gone from `Assets/Scripts/**`; targeted PlayMode input/save tests pass `5/5`. |
 | E7-021 | Resources.Load footprint | `[~]` | Keep tiny global fallbacks (fonts/theme); move new UI assets to explicit refs. Staged inventory. |
 | E7-022 | UI Foundation boundary | `[-]` | `noEngineReferences:false` is honest — `IUiPanel`/`UiTokens` legitimately use `RectTransform`/`Color`; "Foundation" = the shared UI-contract layer. Reasoned won't-rename (BD-16). |
 | E7-023 | Agent rules stale/conflicting | `[x]` | `docs/agent-rules-v2.md` + `inspector-audit-checklist.md` banner-marked **LEGACY / NOT ACTIVE** (they reference a dead path + hard-fail Presentation touches). |

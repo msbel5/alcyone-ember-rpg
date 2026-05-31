@@ -1,3 +1,4 @@
+// Why this file is intentionally long: EmberSaveService owns the Unity-facing save/load orchestration, status UI, and slot metadata bridge while pure file IO remains in Data.Save.
 using System;
 using System.Collections;
 using UnityEngine;
@@ -61,7 +62,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             Debug.Log("[EmberSave] quick-save start");
             try
             {
-                SaveInternal();
+                SaveInternal(SaveSlotId.Quick);
                 Debug.Log("[EmberSave] quick-save ok");
             }
             catch (System.Exception ex)
@@ -71,7 +72,60 @@ namespace EmberCrpg.Presentation.Ember.Save
             }
         }
 
-        private void SaveInternal()
+        public void SaveSlot(SaveSlotId slot)
+        {
+            Debug.Log("[EmberSave] slot-save start " + slot);
+            try
+            {
+                SaveInternal(slot);
+                Debug.Log("[EmberSave] slot-save ok " + slot);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[EmberSave] slot-save failed: " + ex);
+                ShowStatus("Save failed.");
+            }
+        }
+
+        public void SaveAuto()
+        {
+            SaveSlot(SaveSlotId.Auto);
+        }
+
+        public void DeleteSlot(SaveSlotId slot)
+        {
+            Debug.Log("[EmberSave] slot-delete start " + slot);
+            try
+            {
+                if (_repo == null) throw new System.InvalidOperationException("no save repository");
+                bool existed = _repo.Delete(slot);
+                ShowStatus(existed ? "Save slot deleted." : "Save slot empty.");
+                Debug.Log("[EmberSave] slot-delete ok " + slot);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[EmberSave] slot-delete failed: " + ex);
+                ShowStatus("Delete failed.");
+            }
+        }
+
+        public static bool TryAutosaveActiveScene()
+        {
+            try
+            {
+                var svc = UnityEngine.Object.FindFirstObjectByType<EmberSaveService>(FindObjectsInactive.Include);
+                if (svc == null) return false;
+                svc.SaveAuto();
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("[EmberSave] autosave skipped: " + ex.Message);
+                return false;
+            }
+        }
+
+        private void SaveInternal(SaveSlotId slot)
         {
             var player = GameObject.Find("PlayerRig");
             if (player == null) return;
@@ -113,7 +167,7 @@ namespace EmberCrpg.Presentation.Ember.Save
                 domainStateJson = domainJson,
             };
 
-            var jsonStr = JsonUtility.ToJson(data);
+            var jsonStr = SaveEnvelopeCodec.Encode(data);
             // DET-05: write the durable file slot FIRST; only mirror to the legacy PlayerPrefs blob +
             // last-slot pointer AFTER it succeeds. Previously the blob was written unconditionally and
             // the file slot in a swallowed try/catch — so a file-write failure left the NEW save in
@@ -124,7 +178,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             try
             {
                 if (_repo == null) throw new System.InvalidOperationException("no save repository");
-                _repo.Save(SaveSlotId.Quick, jsonStr, BuildMetadata(SaveSlotId.Quick, data, domainJson));
+                _repo.Save(slot, jsonStr, BuildMetadata(slot, data, domainJson));
                 durableOk = true;
             }
             catch (System.Exception)
@@ -134,7 +188,7 @@ namespace EmberCrpg.Presentation.Ember.Save
 
             if (durableOk)
             {
-                PlayerPrefs.SetInt(LastSlotKey, DefaultSlot);
+                PlayerPrefs.SetInt(LastSlotKey, slot.Kind == SaveSlotKind.Manual ? slot.Index : DefaultSlot);
                 PlayerPrefs.SetString(SaveKey, jsonStr); // legacy mirror, consistent with the file slot
                 PlayerPrefs.Save();
                 ShowStatus(domainAvailable && domainFailed ? "Save partial: domain export failed." : "Saved.");
@@ -173,11 +227,11 @@ namespace EmberCrpg.Presentation.Ember.Save
             return new SaveSlotMetadata
             {
                 metadataVersion = 1,
-                envelopeVersion = 0,
+                envelopeVersion = SaveEnvelope.CurrentVersion,
                 schemaVersion = ExtractInt(domainJson, "\"schemaVersion\""),
                 slotKind = slot.Kind.ToString(),
                 slotIndex = slot.Kind == SaveSlotKind.Manual ? slot.Index : 0,
-                label = slot.Kind == SaveSlotKind.Quick ? "Quicksave" : slot.Kind.ToString(),
+                label = slot.Kind == SaveSlotKind.Manual ? "Manual " + (slot.Index + 1) : slot.Kind.ToString(),
                 sceneName = data?.sceneName ?? string.Empty,
                 playtimeMinutes = ExtractLong(domainJson, "\"totalMinutes\""),
                 savedAtUtcIso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),

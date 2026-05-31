@@ -79,6 +79,46 @@ namespace EmberCrpg.Tests.EditMode.Save
         }
 
         [Test]
+        public void AuditIsLoadableSaveJson_AcceptsTypedEnvelopeAndLegacyPayload()
+        {
+            var envelope = SaveEnvelopeCodec.Encode(new SaveData { sceneName = EmberScenes.SmithingOverworld });
+            var legacy = Json(EmberScenes.SmithingOverworld);
+
+            Assert.That(EmberSaveService.AuditIsLoadableSaveJson(envelope), Is.True);
+            Assert.That(EmberSaveService.AuditIsLoadableSaveJson(legacy), Is.True);
+        }
+
+        [Test]
+        public void AuditResolveLatestSaveJson_UsesTypedEnvelopeFromQuickSlot()
+        {
+            var root = NewTempRoot();
+            try
+            {
+                var repo = new FileSaveRepository(root);
+                var envelope = SaveEnvelopeCodec.Encode(new SaveData { sceneName = EmberScenes.SmithingOverworld });
+                var fallbackLegacy = Json(EmberScenes.SeasonFarm);
+
+                repo.Save(SaveSlotId.Quick, envelope, new SaveSlotMetadata
+                {
+                    metadataVersion = 1,
+                    envelopeVersion = SaveEnvelope.CurrentVersion,
+                    slotKind = SaveSlotKind.Quick.ToString(),
+                    slotIndex = 0,
+                    label = "Quick",
+                    sceneName = EmberScenes.SmithingOverworld,
+                });
+                repo.Save(EmberSaveService.AuditDefaultSlot, fallbackLegacy);
+                PlayerPrefs.SetInt(EmberSaveService.AuditLastSlotKey, EmberSaveService.AuditDefaultSlot);
+
+                Assert.That(EmberSaveService.AuditResolveLatestSaveJson(repo), Is.EqualTo(envelope));
+            }
+            finally
+            {
+                Directory.Delete(root, true);
+            }
+        }
+
+        [Test]
         public void AuditResolveLatestSaveJson_CorruptQuickSlotFallsBackToLegacyIntegerSlot()
         {
             var root = NewTempRoot();

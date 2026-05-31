@@ -31,6 +31,9 @@
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldgenEventProjector.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/JsonSliceSaveService.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveData.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveEnvelopeCodec.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveSlotBrowserState.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveSlotLabelFormatter.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/EmberWorldGenIntent.cs" />
     <Compile Include="../../../Assets/Tests/EditMode/**/*.cs" />
     <Compile Include="UnityJsonUtilityStub.cs" />

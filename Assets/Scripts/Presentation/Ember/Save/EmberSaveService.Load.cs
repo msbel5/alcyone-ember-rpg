@@ -27,6 +27,27 @@ namespace EmberCrpg.Presentation.Ember.Save
             }
         }
 
+        public void LoadSlot(EmberCrpg.Data.Save.SaveSlotId slot)
+        {
+            Debug.Log("[EmberSave] slot-load start " + slot);
+            try
+            {
+                if (_repo == null || !_repo.TryLoadPayload(slot, IsLoadableSaveJson, out var json))
+                {
+                    ShowStatus("No save found.");
+                    return;
+                }
+
+                LoadJson(json, slot);
+                Debug.Log("[EmberSave] slot-load ok " + slot);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[EmberSave] slot-load failed: " + ex);
+                ShowStatus("Load failed.");
+            }
+        }
+
         private void LoadInternal()
         {
             // EMB-011 / BD-14: resolve the save JSON through the SAME store-precedence helper the
@@ -39,12 +60,12 @@ namespace EmberCrpg.Presentation.Ember.Save
                 return;
             }
 
-            SaveData data;
-            try
-            {
-                data = JsonUtility.FromJson<SaveData>(json);
-            }
-            catch (System.Exception)
+            LoadJson(json, null);
+        }
+
+        private void LoadJson(string json, EmberCrpg.Data.Save.SaveSlotId? migratedSlot)
+        {
+            if (!SaveEnvelopeCodec.TryDecode(json, out var data, out var migratedFromLegacy))
             {
                 ShowStatus("Load failed: save corrupt.");
                 return;
@@ -53,6 +74,23 @@ namespace EmberCrpg.Presentation.Ember.Save
             {
                 ShowStatus("Load failed: invalid save payload.");
                 return;
+            }
+
+            // E7-007: a legacy pre-envelope slot remains loadable, but when it is loaded from an
+            // explicit slot target we immediately rewrite it in the current typed envelope shape so
+            // subsequent loads follow one stable payload format.
+            if (migratedFromLegacy && migratedSlot.HasValue && _repo != null)
+            {
+                try
+                {
+                    var slot = migratedSlot.Value;
+                    var migratedJson = SaveEnvelopeCodec.Encode(data);
+                    _repo.Save(slot, migratedJson, BuildMetadata(slot, data, data.domainStateJson));
+                }
+                catch (System.Exception)
+                {
+                    // Best-effort migration: keep the successful in-memory load even if write-back fails.
+                }
             }
 
             if (SceneManager.GetActiveScene().name != data.sceneName)

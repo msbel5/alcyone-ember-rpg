@@ -2,7 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
+using EmberCrpg.Data.Save;
 using EmberCrpg.Presentation.Ember.Inputs;
+using EmberCrpg.Presentation.Ember.Save;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
@@ -14,6 +16,8 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private CanvasGroup _canvasGroup;
         private bool _isPaused;
+        private SaveSlotBrowserState _slotState;
+        private TextMeshProUGUI _slotText;
 
         private void Awake()
         {
@@ -42,6 +46,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             _isPaused = true;
             Time.timeScale = 0f;
+            RefreshSlotLabel();
             _canvasGroup.interactable = true;
             _canvasGroup.blocksRaycasts = true;
             StartCoroutine(UiAnimationHelper.AnimateOpen(_canvasGroup, GetComponent<RectTransform>()));
@@ -85,8 +90,16 @@ namespace EmberCrpg.Presentation.Ember.UI
             CreateButton(layoutGo.transform, "RESUME", Resume);
             CreateButton(layoutGo.transform, "SAVE (F5)", InvokeSave);
             CreateButton(layoutGo.transform, "LOAD (F9)", InvokeLoad);
+            _slotState = new SaveSlotBrowserState(10);
+            _slotText = CreateLabel(layoutGo.transform, "Quick | Empty");
+            CreateButton(layoutGo.transform, "PREV SLOT", PreviousSlot);
+            CreateButton(layoutGo.transform, "NEXT SLOT", NextSlot);
+            CreateButton(layoutGo.transform, "SAVE SLOT", SaveSelectedSlot);
+            CreateButton(layoutGo.transform, "LOAD SLOT", LoadSelectedSlot);
+            CreateButton(layoutGo.transform, "DELETE SLOT", DeleteSelectedSlot);
             CreateButton(layoutGo.transform, "MAIN MENU", () => { Time.timeScale = 1f; SceneManager.LoadScene(EmberScenes.MainMenu); });
             CreateButton(layoutGo.transform, "QUIT", Application.Quit);
+            RefreshSlotLabel();
         }
 
         private static void InvokeSave()
@@ -99,6 +112,52 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             var svc = Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.Save.EmberSaveService>(FindObjectsInactive.Include);
             if (svc != null) svc.Load();
+        }
+
+        private void PreviousSlot()
+        {
+            _slotState.MovePrevious();
+            RefreshSlotLabel();
+        }
+
+        private void NextSlot()
+        {
+            _slotState.MoveNext();
+            RefreshSlotLabel();
+        }
+
+        private void SaveSelectedSlot()
+        {
+            var svc = Object.FindFirstObjectByType<EmberSaveService>(FindObjectsInactive.Include);
+            if (svc != null) svc.SaveSlot(_slotState.CurrentSlot);
+            RefreshSlotLabel();
+        }
+
+        private void LoadSelectedSlot()
+        {
+            var svc = Object.FindFirstObjectByType<EmberSaveService>(FindObjectsInactive.Include);
+            if (svc != null) svc.LoadSlot(_slotState.CurrentSlot);
+            RefreshSlotLabel();
+        }
+
+        private void DeleteSelectedSlot()
+        {
+            var svc = Object.FindFirstObjectByType<EmberSaveService>(FindObjectsInactive.Include);
+            if (svc != null) svc.DeleteSlot(_slotState.CurrentSlot);
+            RefreshSlotLabel();
+        }
+
+        private void RefreshSlotLabel()
+        {
+            if (_slotText == null || _slotState == null) return;
+            SaveSlotMetadata meta = null;
+            try
+            {
+                var repo = new FileSaveRepository(Application.persistentDataPath);
+                repo.TryLoadMetadata(_slotState.CurrentSlot, out meta);
+            }
+            catch { /* metadata is optional */ }
+            _slotText.text = _slotState.DescribeCurrent(meta);
         }
 
         private void CreateButton(Transform parent, string label, UnityEngine.Events.UnityAction action)
@@ -120,6 +179,19 @@ namespace EmberCrpg.Presentation.Ember.UI
             if (_font != null) text.font = _font;
             text.fontSize = 18;
             text.color = Color.white;
+        }
+
+        private TextMeshProUGUI CreateLabel(Transform parent, string label)
+        {
+            var go = new GameObject("SAVE SLOT STATUS", typeof(RectTransform), typeof(TextMeshProUGUI));
+            go.transform.SetParent(parent, worldPositionStays: false);
+            var text = go.GetComponent<TextMeshProUGUI>();
+            text.text = label;
+            text.alignment = TextAlignmentOptions.Center;
+            if (_font != null) text.font = _font;
+            text.fontSize = 16;
+            text.color = new Color(0.9f, 0.82f, 0.68f, 1f);
+            return text;
         }
     }
 }

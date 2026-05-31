@@ -10,6 +10,7 @@
         "EmberCrpg.Ui.Foundation",
         "EmberCrpg.Ui.Backends.UiToolkit",
         "Unity.TextMeshPro",
+        "Unity.InputSystem",
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.Cinemachine"

@@ -6,7 +6,9 @@
         "EmberCrpg.Simulation",
         "EmberCrpg.Presentation",
         "EmberCrpg.Ui.Foundation",
-        "UnityEngine.TestRunner"
+        "UnityEngine.TestRunner",
+        "Unity.InputSystem",
+        "Unity.InputSystem.TestFramework"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
