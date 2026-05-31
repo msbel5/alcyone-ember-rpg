@@ -21,13 +21,18 @@ namespace EmberCrpg.Presentation.Ember.Views
     // existing billboards. SetTarget below interpolates toward that position. No name uniqueness is
     // required when an id is authored.
     //
-    // SOUL-04 (spawn-from-worldgen — STILL FLAGGED, needs an Editor/black-box pass): scenes still author
-    // a FIXED cast of ~5 ActorViews. Making the full generated population visible needs a runtime
-    // spawner that instantiates one billboard ActorView per WorldState.Actors / NpcSeeds entry at its
-    // world->scene position and stamps DomainActorId on each. That is scene/prefab-authoring work
-    // (billboard prefab, sprite/material wiring, culling) that must be proven with a Unity Editor
-    // screenshot — deliberately NOT done in this headless presentation pass. Until then, generated NPCs
-    // exist and move in the simulation but only the authored views render them.
+    // SOUL-04 (spawn-from-worldgen — IMPLEMENTED, build-safe; sprite polish still wants a visual pass):
+    // scenes still author only a FIXED cast of ~5 ActorViews, so the generated population was invisible.
+    // EmberGeneratedActorSpawner (ensured by EmberWorldHost) now instantiates one billboard ActorView per
+    // nearby WorldState.Actors record that has no authored view, stamps its stable id via
+    // BindDomainActorId, and positions it by the SAME GridPosition->world projection the adapter uses;
+    // EmberWorldHost re-scans its ActorView set afterwards so the existing id-keyed PushWorldViews sync
+    // drives SOUL-03 (ScheduleSystem) movement on the spawned views too. The spawn is CAPPED to the
+    // nearest N (<=12) so a 750-NPC world never floods the scene. The construction (root + "Billboard"
+    // child + SpriteRenderer + CameraFacingBillboard + ActorView, mirroring EmberWorldspaceBuilder.
+    // SpawnActor) is build-safe and uses the host SpriteRegistry's placeholder sprite; choosing a real
+    // per-role sprite/material and confirming billboard facing/scale is the only part that still wants a
+    // Unity Editor screenshot (see EmberGeneratedActorSpawner's header for the precise visual-proof TODO).
     [DisallowMultipleComponent]
     public sealed class ActorView : MonoBehaviour, IDamageSink
     {
@@ -61,6 +66,19 @@ namespace EmberCrpg.Presentation.Ember.Views
             if (!ulong.TryParse(_domainActorId.Trim(), out var value) || value == 0UL) return false;
             id = new ActorId(value);
             return true;
+        }
+
+        /// <summary>
+        /// SOUL-04 (spawn-from-worldgen): stamp the stable actor id onto a billboard built at
+        /// RUNTIME (the spawner can't use the Editor's SerializedObject path the scene builder uses).
+        /// Authored scenes still serialize <c>_domainActorId</c> in the asset; this is only for views
+        /// instantiated live by <see cref="EmberGeneratedActorSpawner"/>. Stored as the same text form
+        /// the inspector uses so the id read path (TryGetDomainActorId) is identical for both origins.
+        /// Ignores the empty sentinel so a bad id never silently shadows the name-keyed fallback.
+        /// </summary>
+        public void BindDomainActorId(ActorId id)
+        {
+            _domainActorId = id.IsEmpty ? string.Empty : id.Value.ToString();
         }
 
         private ActorViewState _target;

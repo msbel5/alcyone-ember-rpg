@@ -119,7 +119,15 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _inventoryGrids = Object.FindObjectsByType<InventoryGrid>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            
+
+            // SOUL-04 (spawn-from-worldgen): scenes author only a fixed cast of ~5 ActorViews, so the
+            // ~750 generated worldgen NPCs in WorldState.Actors were invisible. Materialise billboards
+            // for the nearest few that have no authored view, then RE-SCAN _actorViews so the spawned
+            // views join the existing id-keyed PushWorldViews sync below (SOUL-03 movement) on the very
+            // first push. Additive + capped + idempotent; no-ops when there is no worldgen population.
+            if (EnsureGeneratedActorSpawner().SpawnMissingNearbyActors() > 0)
+                _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
             BindUiPanels();
             PushWorldViews();
             
@@ -579,6 +587,22 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // Hidden until the player interacts; matches scene-authored DialogBoxPanels,
             // which the raycaster finds via FindObjectsInactive.Include and activates.
             dialogGo.SetActive(false);
+        }
+
+        /// <summary>
+        /// SOUL-04 (spawn-from-worldgen): ensure exactly one <see cref="EmberGeneratedActorSpawner"/>
+        /// exists and is configured with this host's sprite registry, mirroring the EnsurePauseMenu /
+        /// EnsureDialogBoxPanel pattern. The spawner is the single-responsibility component that
+        /// materialises billboards for nearby generated NPCs that have no authored ActorView; the host
+        /// only owns its lifecycle, not the spawn logic. Idempotent: reuses an existing instance so a
+        /// host re-run (additive load / domain reload) never attaches a second.
+        /// </summary>
+        private EmberGeneratedActorSpawner EnsureGeneratedActorSpawner()
+        {
+            var existing = GetComponent<EmberGeneratedActorSpawner>();
+            var spawner = existing == null ? gameObject.AddComponent<EmberGeneratedActorSpawner>() : existing;
+            spawner.Configure(_spriteRegistry);
+            return spawner;
         }
 
         private static IDomainSimulationAdapter CreateFallbackAdapter()

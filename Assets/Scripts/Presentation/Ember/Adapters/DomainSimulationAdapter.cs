@@ -283,6 +283,27 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 visible: true);
         }
 
+        // SOUL-04 (spawn-from-worldgen): hand the host a flat, Domain-free list of candidate
+        // billboards. Reuse the SAME grid->world XZ projection as ProjectActor so a spawned view
+        // lands exactly where the per-tick sync will then push it (no first-frame jump). The Player
+        // actor is excluded — the player is the rig/camera, not a billboard. Deterministic order
+        // (ActorStore.Records is insertion-ordered); the host caps/culls, so we never pre-truncate.
+        public IReadOnlyList<SpawnableActor> GetSpawnableActors()
+        {
+            if (_world.Actors == null) return System.Array.Empty<SpawnableActor>();
+            var list = new List<SpawnableActor>();
+            foreach (var actor in _world.Actors.Records)
+            {
+                if (actor == null || actor.Role == ActorRole.Player) continue;
+                list.Add(new SpawnableActor(
+                    actor.Id.Value,
+                    actor.Name ?? string.Empty,
+                    actor.Position.X,
+                    actor.Position.Y));
+            }
+            return list;
+        }
+
         public bool TryReadWorksite(string siteName, out WorksiteViewState state)
         {
             state = default;

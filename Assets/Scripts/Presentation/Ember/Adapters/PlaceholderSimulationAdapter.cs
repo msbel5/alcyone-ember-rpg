@@ -54,7 +54,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _actorStates.TryGetValue(actorName, out state);
 
         // SOUL-04: the placeholder fabricates actor states keyed by name and has no stable-id model,
-        // so the id read path never resolves. The host falls back to the name path for these scenes.
+        // so the id read path never resolves AND there is no worldgen population to spawn. The host
+        // falls back to the name path for these scenes, and the spawner no-ops on the empty list.
+        public IReadOnlyList<SpawnableActor> GetSpawnableActors() => System.Array.Empty<SpawnableActor>();
+
         public bool TryReadActor(ActorId id, out ActorViewState state)
         {
             state = default;

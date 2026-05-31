@@ -65,6 +65,41 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// </summary>
         bool TryReadActor(ActorId id, out ActorViewState state);
         bool TryReadWorksite(string siteName, out WorksiteViewState state);
+
+        /// <summary>
+        /// SOUL-04 (spawn-from-worldgen): enumerate the actors that a runtime spawner may
+        /// materialise as billboards, as flat presentation DTOs (<see cref="SpawnableActor"/>)
+        /// so the spawner never imports a Domain store type. The adapter projects each
+        /// <c>WorldState.Actors</c> record's <c>GridPosition</c> to the same world XZ point
+        /// <c>TryReadActor</c> uses and carries the actor's stable id (as a ulong) plus name.
+        /// The host filters/caps this list (nearest-N to the player) and skips ids that already
+        /// have an authored ActorView, so implementations should return the full candidate set
+        /// in deterministic order and NOT pre-cull. Placeholder adapters return an empty list.
+        /// </summary>
+        IReadOnlyList<SpawnableActor> GetSpawnableActors();
+    }
+
+    /// <summary>
+    /// SOUL-04 flat DTO for a worldgen-generated actor the host may spawn as a billboard.
+    /// Presentation-only: <see cref="Id"/> is the actor's stable id as a raw ulong (the host
+    /// rebuilds an <see cref="ActorId"/> from it via <c>ActorView.BindDomainActorId</c>), and
+    /// <see cref="WorldX"/>/<see cref="WorldZ"/> are the already-projected world position so the
+    /// spawner does no Domain math. Carries no Domain type, keeping the spawner Domain-free.
+    /// </summary>
+    public readonly struct SpawnableActor
+    {
+        public readonly ulong Id;
+        public readonly string Name;
+        public readonly float WorldX;
+        public readonly float WorldZ;
+
+        public SpawnableActor(ulong id, string name, float worldX, float worldZ)
+        {
+            Id = id;
+            Name = name;
+            WorldX = worldX;
+            WorldZ = worldZ;
+        }
     }
 
     /// <summary>Player-driven write surface: log combat, take damage, cast spells, interact.</summary>
