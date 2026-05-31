@@ -91,5 +91,32 @@ namespace EmberCrpg.Tests.EditMode.AiDm
             Assert.That(NativeLlmClient.IsUsableModelFile(null), Is.False);
             Assert.That(NativeLlmClient.IsUsableModelFile(string.Empty), Is.False);
         }
+
+        // Defense-in-depth for the "User:" leak the runtime LLM proof surfaced.
+        [Test]
+        public void StripTrailingTurnMarkers_CutsTheProofLeak()
+        {
+            // The exact raw response from the 2026-05-31 headless LLM proof.
+            const string leaked = "The tavern buzzes with whispers of the impending raid, tales of a powerful beast that roams the dark woods.\nUser:";
+            Assert.That(NativeLlmClient.StripTrailingTurnMarkers(leaked),
+                Is.EqualTo("The tavern buzzes with whispers of the impending raid, tales of a powerful beast that roams the dark woods."));
+        }
+
+        [Test]
+        public void StripTrailingTurnMarkers_CutsAssistantSystemMemoryAndImTags()
+        {
+            Assert.That(NativeLlmClient.StripTrailingTurnMarkers("Hello there.Assistant: more"), Is.EqualTo("Hello there."));
+            Assert.That(NativeLlmClient.StripTrailingTurnMarkers("Hi.\nMemory: stuff"), Is.EqualTo("Hi."));
+            Assert.That(NativeLlmClient.StripTrailingTurnMarkers("Greetings<|im_end|>"), Is.EqualTo("Greetings"));
+        }
+
+        [Test]
+        public void StripTrailingTurnMarkers_LeavesCleanProseUntouched()
+        {
+            const string clean = "A quiet ember glows in the hearth, and the smith remembers old debts.";
+            Assert.That(NativeLlmClient.StripTrailingTurnMarkers(clean), Is.EqualTo(clean));
+            Assert.That(NativeLlmClient.StripTrailingTurnMarkers(null), Is.Null);
+            Assert.That(NativeLlmClient.StripTrailingTurnMarkers(string.Empty), Is.EqualTo(string.Empty));
+        }
     }
 }

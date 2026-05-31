@@ -103,6 +103,26 @@ namespace EmberCrpg.Infrastructure.AiDm
 
         public bool IsAvailable => _isInitialised || IsUsableModelFile(_modelPath);
 
+        // The runtime LLM proof (docs/proofs) showed llama.cpp's AntiPrompt stops generation only AFTER
+        // emitting the "User:" turn-marker, so a trailing "User:"/"<|im…"/"Memory:" can leak into the raw
+        // response. The adapter's SanitizeNpcLine already cuts this on the gameplay dialog path; do it at
+        // the source too so NO consumer of Complete() can surface a turn-marker. Markers are colon/tag
+        // anchored to avoid clipping ordinary prose that merely contains the word.
+        private static readonly string[] TurnMarkers =
+            { "User:", "Assistant:", "System:", "Memory:", "<|im", "\nUser", "\nMemory" };
+
+        public static string StripTrailingTurnMarkers(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return raw;
+            int cut = raw.Length;
+            foreach (var m in TurnMarkers)
+            {
+                int idx = raw.IndexOf(m, StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0 && idx < cut) cut = idx;
+            }
+            return raw.Substring(0, cut).TrimEnd(' ', '\t', '\r', '\n');
+        }
+
         public LlmResponse Complete(LlmRequest request)
         {
 #if USE_LLAMASHARP
@@ -156,7 +176,7 @@ namespace EmberCrpg.Infrastructure.AiDm
                     }
                 }
 
-                return new LlmResponse(resultText, null, 0);
+                return new LlmResponse(StripTrailingTurnMarkers(resultText), null, 0);
             }
             catch (Exception ex)
             {
