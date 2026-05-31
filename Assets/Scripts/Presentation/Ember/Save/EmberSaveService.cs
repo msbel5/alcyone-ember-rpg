@@ -49,6 +49,29 @@ namespace EmberCrpg.Presentation.Ember.Save
 
         public void Save()
         {
+            // BUG-SAVE-CRASH: a quick-save (F5) in some scenes closed the game with NO managed
+            // exception in Player.log — i.e. it escaped as a hard quit. The inner domain export was
+            // already guarded, but anything else in this method (a null deref outside those guards,
+            // a scene missing an expected component) would propagate out of Update and take the
+            // process down. Wrap the WHOLE body so a quick-save can NEVER crash/close the game:
+            // every catchable managed failure is logged and surfaced as a "Save failed" status, and
+            // the player keeps playing. (A StackOverflowException is uncatchable by design, but the
+            // save path is flat field-mapping with no recursion, so that is not a live risk here.)
+            Debug.Log("[EmberSave] quick-save start");
+            try
+            {
+                SaveInternal();
+                Debug.Log("[EmberSave] quick-save ok");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[EmberSave] quick-save failed: " + ex);
+                ShowStatus("Save failed.");
+            }
+        }
+
+        private void SaveInternal()
+        {
             var player = GameObject.Find("PlayerRig");
             if (player == null) return;
 
@@ -124,6 +147,24 @@ namespace EmberCrpg.Presentation.Ember.Save
         }
 
         public void Load()
+        {
+            // BUG-SAVE-CRASH (symmetry with Save): a quick-load (F9) must never crash/close the game
+            // either. Wrap the whole body so any catchable managed failure is logged and surfaced as
+            // a "Load failed" status rather than escaping out of Update as a hard quit.
+            Debug.Log("[EmberSave] quick-load start");
+            try
+            {
+                LoadInternal();
+                Debug.Log("[EmberSave] quick-load ok");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[EmberSave] quick-load failed: " + ex);
+                ShowStatus("Load failed.");
+            }
+        }
+
+        private void LoadInternal()
         {
             // EMB-011: prefer the durable file slot (with corrupt-save quarantine); fall back to the
             // legacy PlayerPrefs blob so saves written before file slots existed still load.

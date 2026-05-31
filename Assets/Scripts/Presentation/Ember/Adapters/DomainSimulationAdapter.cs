@@ -395,7 +395,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             _suppressGlobalTopicFallback = false;
             _activeDialogActor = actorName ?? string.Empty;
-            _currentDialogLine = "You approach " + _activeDialogActor + "...";
             _currentPortrait = "portrait_npc_placeholder";
 
             if (npc != null)
@@ -404,6 +403,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
                 var perActorTopics = NpcTopicCatalog.For(npc.Role, npc.Faction.Value, _world.Topics);
                 _conversation = new ConversationState(_activeDialogActor, _currentPortrait, perActorTopics);
+
+                // BUG-DIALOG-EMPTY: seed a DETERMINISTIC opening line synchronously, up front, so the
+                // panel always renders a real sentence even when native inference returns nothing (no
+                // model bytes). Prefer the per-actor AskAbout/persona answer (e.g. a Guard's "watch"
+                // topic => "Sentinel Rook keeps count of every footstep, including yours."); only fall
+                // back to a role+name greeting when no topic answer is available. The async LLM call
+                // below REPLACES this line only if it yields a non-empty (non-whitespace) response.
+                _currentDialogLine = DeterministicGreeting(_activeDialogActor, npc, perActorTopics);
 
                 _ = GenerateNpcGreetingAsync(npc);
             }
@@ -414,7 +421,48 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // a single source of truth.
                 _conversation = new ConversationState(
                     _activeDialogActor, _currentPortrait, _world.Topics ?? new List<AskAboutTopic>());
+
+                // BUG-DIALOG-EMPTY: still seed a deterministic, non-empty opening line for the ad-hoc
+                // path (no async greeting fires here, so this is the only line the panel shows until
+                // the player picks a topic). Lead with a shared world topic answer when present.
+                _currentDialogLine = DeterministicGreeting(_activeDialogActor, npc, _world.Topics);
             }
+        }
+
+        /// <summary>
+        /// BUG-DIALOG-EMPTY: the deterministic, offline-safe opening line for a conversation. NEVER
+        /// returns null/empty/whitespace. Prefers the leading per-actor AskAbout answer (the same
+        /// deterministic copy NpcTopicCatalog / the WorldFactory seed produce, e.g. "Sentinel Rook
+        /// keeps count of every footstep, including yours."); otherwise composes a role+name greeting;
+        /// otherwise a generic safe fallback. Used as the synchronous line the async LLM may replace.
+        /// </summary>
+        private static string DeterministicGreeting(
+            string actorName, NpcSeedRecord npc, IReadOnlyList<AskAboutTopic> topics)
+        {
+            // 1) Lead with the first topic answer that carries real copy — this is the persona/AskAbout
+            //    line the player reads as the NPC speaking in character.
+            if (topics != null)
+            {
+                foreach (var t in topics)
+                {
+                    if (t != null && !string.IsNullOrWhiteSpace(t.Answer))
+                        return t.Answer.Trim();
+                }
+            }
+
+            // 2) No topic copy available: greet from role + name when we have a seed.
+            bool hasName = !string.IsNullOrWhiteSpace(actorName);
+            if (npc != null)
+            {
+                return hasName
+                    ? $"{actorName} the {npc.Role} regards you. \"Speak your piece.\""
+                    : $"The {npc.Role} regards you. \"Speak your piece.\"";
+            }
+
+            // 3) Last-resort generic line (still never empty).
+            return hasName
+                ? $"{actorName} waits for you to speak."
+                : "Someone waits for you to speak.";
         }
 
         private async Task GenerateNpcGreetingAsync(NpcSeedRecord npc)
@@ -441,7 +489,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // DET-02: apply the result on the main-thread tick, not on the await's resumption thread.
             _mainThreadApply.Enqueue(() =>
             {
-                if (response != null && !string.IsNullOrEmpty(response.Text))
+                // BUG-DIALOG-EMPTY: a whitespace-only inference result (the native model returning no
+                // real bytes) used to pass the IsNullOrEmpty guard, Trim() to "", and BLANK the good
+                // deterministic greeting. Require non-whitespace before replacing; otherwise keep the
+                // deterministic line that BeginConversation already set.
+                if (response != null && !string.IsNullOrWhiteSpace(response.Text))
                     _currentDialogLine = response.Text.Trim();
                 _isDialogThinking = false;
             });
@@ -466,11 +518,16 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // Mami: _isDialogThinking surfaces a "thinking …" placeholder while
         // the NPC LLM (or DM ConsultFate) is still generating, so the panel
         // never shows a stale or empty line during background inference.
-        public string GetCurrentLine() => _isDialogThinking
-            ? (string.IsNullOrEmpty(_activeDialogActor)
-                ? "Thinking…"
-                : _activeDialogActor + " thinks…")
-            : _currentDialogLine;
+        public string GetCurrentLine()
+        {
+            if (_isDialogThinking)
+                return string.IsNullOrEmpty(_activeDialogActor) ? "Thinking…" : _activeDialogActor + " thinks…";
+            // BUG-DIALOG-EMPTY: final guarantee — the dialog panel renders this string verbatim into a
+            // label, so it must NEVER be null/empty/whitespace. BeginConversation/SelectTopic always
+            // set a deterministic line, but guard here too so no future caller (or a read before any
+            // conversation begins) can surface a blank box.
+            return string.IsNullOrWhiteSpace(_currentDialogLine) ? "..." : _currentDialogLine;
+        }
         public bool IsThinking => _isDialogThinking;
         public string GetPortraitName() => _currentPortrait;
         // EMB-045: surface THIS actor's topics (role/faction-derived), not the global menu. Falls back
@@ -547,7 +604,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var response = await Task.Run(() => router.Complete(request, out _));
             _mainThreadApply.Enqueue(() =>
             {
-                if (response != null && !string.IsNullOrEmpty(response.Text))
+                // BUG-DIALOG-EMPTY: same whitespace guard as the greeting path — never overwrite the
+                // deterministic topic answer with an empty/whitespace inference result.
+                if (response != null && !string.IsNullOrWhiteSpace(response.Text))
                     _currentDialogLine = response.Text.Trim();
                 _isDialogThinking = false;
             });

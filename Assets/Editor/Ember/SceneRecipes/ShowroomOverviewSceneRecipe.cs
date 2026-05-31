@@ -5,10 +5,17 @@ using UnityEngine;
 namespace EmberCrpg.Editor.Ember.SceneRecipes
 {
     /// <summary>
-    /// Phase 11 acceptance: every previous phase has a one-screenshot Unity proof.
-    /// This recipe builds a "showroom" scene that hosts the JobDebugSnapshot,
-    /// ColonyNeedsPanel, InventoryGrid, and DialogBoxPanel side by side so a single
-    /// capture demonstrates that the view layer can read deterministic backend snapshots.
+    /// "Overview" hub scene, reachable in normal play through the OracleShrine -> ShowroomOverview
+    /// -> TavernFlavour portal loop, so it must be a consistent PLAYABLE scene rather than a dev
+    /// demo wall. UI-AUDIT (BUG-STRAY-UI): the recipe previously authored eight side-by-side
+    /// showcase panels (Job/Colony/Faction/Combat/Inventory/Dialog/Spell + HUD) stacked across the
+    /// screen. Reduced to the standard playable set (EmberHud + one DialogBoxPanel; pause is added
+    /// at runtime by EmberWorldHost) PLUS the three living-world panels that genuinely fit an
+    /// overview hub and each appear exactly once: JobQueuePanel, FactionPanel, ColonyNeedsPanel.
+    /// The combat HUD, spell bar, and inventory showcase panels were removed (CombatHud was already
+    /// auto-disabled at runtime when an EmberHud exists; SpellBar/InventoryGrid are combat/loadout
+    /// UI not thematic to an overview hub, and inventory-less is consistent with the other hub
+    /// scenes such as ColonyNeeds and SeasonFarm).
     /// </summary>
     public sealed class ShowroomOverviewSceneRecipe : IEmberSceneRecipe
     {
@@ -72,25 +79,12 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(factions.gameObject, "EmberCrpg.Presentation.Ember.UI.FactionPanel");
 
-            var combatHud = EmberUiBuilder.BuildPanel(canvas, "CombatHud",
-                new Vector2(0.52f, 0.45f), new Vector2(0.76f, 0.94f),
-                new Color(0f, 0f, 0f, 0.45f));
-            EmberUiBuilder.AttachRuntimeScript(combatHud.gameObject, "EmberCrpg.Presentation.Ember.UI.CombatHud");
-
-            var inventory = EmberUiBuilder.BuildPanel(canvas, "InventoryGrid",
-                new Vector2(0f, 0f), new Vector2(0.55f, 0.4f),
-                new Color(0f, 0f, 0f, 0.45f));
-            EmberUiBuilder.AttachRuntimeScript(inventory.gameObject, "EmberCrpg.Presentation.Ember.UI.InventoryGrid");
-
+            // Standard single dialog box (bottom band). DialogBoxPanel.Awake self-pins to the
+            // canonical bottom-centered footprint; seed the same band so it is never a stray tile.
             var dialog = EmberUiBuilder.BuildPanel(canvas, "DialogBox",
-                new Vector2(0.56f, 0f), new Vector2(1f, 0.4f),
+                new Vector2(0.14f, 0.05f), new Vector2(0.86f, 0.4f),
                 new Color(0f, 0f, 0f, 0.55f));
             EmberUiBuilder.AttachRuntimeScript(dialog.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
-
-            var spellBar = EmberUiBuilder.BuildPanel(canvas, "SpellBar",
-                new Vector2(0.35f, 0.42f), new Vector2(0.65f, 0.48f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(spellBar.gameObject, "EmberCrpg.Presentation.Ember.UI.SpellBar");
 
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
             EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(ShowroomOverviewSceneRecipe));
