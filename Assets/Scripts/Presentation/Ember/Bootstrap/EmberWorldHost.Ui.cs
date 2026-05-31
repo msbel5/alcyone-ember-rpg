@@ -38,15 +38,16 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 "PauseMenu",
                 typeof(RectTransform),
                 typeof(CanvasGroup),
-                typeof(Canvas),
-                typeof(UnityEngine.UI.GraphicRaycaster),
                 typeof(EmberCrpg.Presentation.Ember.UI.PauseMenu));
             pauseGo.transform.SetParent(canvas.transform, worldPositionStays: false);
-            // LIVE-1: give the pause menu its OWN sub-canvas (overrideSorting, high order) + raycaster so
-            // it always renders ABOVE the HUD and its buttons receive clicks regardless of HUD draw order.
-            var pauseCanvas = pauseGo.GetComponent<Canvas>();
-            pauseCanvas.overrideSorting = true;
-            pauseCanvas.sortingOrder = 5000;
+            // LIVE-1 (revised): NO sub-canvas. EnsurePauseMenu is now called LAST in Awake, so the pause
+            // menu is the top sibling of the shared overlay canvas and renders above the HUD; with the HUD
+            // backdrop's raycastTarget off, its buttons receive clicks through the canvas's shared
+            // GraphicRaycaster. The earlier sub-canvas (overrideSorting) regressed visibility: it was a
+            // SECOND Canvas created BEFORE the HUD/dialog/panels, so their FindFirstObjectByType<Canvas>
+            // grabbed IT as their parent and the whole HUD inherited the pause CanvasGroup's hidden alpha
+            // (HUD/dialog only appeared on Escape).
+            pauseGo.transform.SetAsLastSibling();
             var rt = pauseGo.GetComponent<RectTransform>();
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;

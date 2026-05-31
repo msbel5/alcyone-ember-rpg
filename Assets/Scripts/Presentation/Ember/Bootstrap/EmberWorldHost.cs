@@ -117,7 +117,6 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 gameObject.AddComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
             }
 
-            EnsurePauseMenu();
             EnsureDialogBoxPanel();
             // UI-SINGLE-SOURCE (player report "default UI elements every scene ... ui is coming from
             // one place"): the standard HUD set is now host-owned so every gameplay scene shows the
@@ -128,6 +127,9 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             EnsureEmberHud();
             EnsureSidePanels();
             EnsureInventoryGrid(); // LIVE-2: single inventory in every scene (before the scan below finds it)
+            // LIVE-1 (revised): pause menu LAST — top sibling of the overlay canvas, and creating it after
+            // the HUD/dialog/panels means their FindFirstObjectByType<Canvas> can't grab a pause sub-canvas.
+            EnsurePauseMenu();
 
             _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
