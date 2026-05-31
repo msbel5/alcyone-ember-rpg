@@ -49,3 +49,4 @@ Never treat source-only green as runtime completeness.
 - `Resources.Load` is allowed only for small global fallbacks/defaults. New
   gameplay/runtime assets should use explicit references or registries; new
   `Assets/Resources/**` entries require owner + reason in the PR.
+- NuGet restore marker (Assets/Plugins/NuGet/.nuget-installed.json) is an intentional NuGetForUnity marker; Unity ignores dot-prefixed files (E7-025).
