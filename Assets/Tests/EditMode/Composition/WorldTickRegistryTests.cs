@@ -1,0 +1,125 @@
+using System;
+using System.Linq;
+using EmberCrpg.Domain.Process;
+using EmberCrpg.Domain.Time;
+using EmberCrpg.Domain.World;
+using EmberCrpg.Simulation.Composition;
+using EmberCrpg.Simulation.Living;
+using EmberCrpg.Simulation.Magic;
+using EmberCrpg.Simulation.Process;
+using EmberCrpg.Simulation.Time;
+using EmberCrpg.Simulation.World;
+using NUnit.Framework;
+
+namespace EmberCrpg.Tests.EditMode.Composition
+{
+    public sealed class WorldTickRegistryTests
+    {
+        [Test]
+        public void Constructor_SortsByCadenceOrderThenId()
+        {
+            var registry = new WorldTickRegistry(new IWorldTickSystem[]
+            {
+                new StubStep("b", TickCadence.Hourly, 20),
+                new StubStep("a", TickCadence.PerTick, 30),
+                new StubStep("c", TickCadence.PerTick, 30),
+                new StubStep("d", TickCadence.Daily, 10),
+            });
+
+            var ids = registry.Ordered.Select(s => s.Id).ToArray();
+            Assert.That(ids, Is.EqualTo(new[] { "a", "c", "b", "d" }));
+        }
+
+        [Test]
+        public void Constructor_RejectsDuplicateIds()
+        {
+            Assert.Throws<InvalidOperationException>(() => new WorldTickRegistry(new IWorldTickSystem[]
+            {
+                new StubStep("dup", TickCadence.PerTick, 10),
+                new StubStep("dup", TickCadence.Daily, 10),
+            }));
+        }
+
+        [Test]
+        public void DefaultRegistry_DeclaresCanonicalOrder()
+        {
+            var registry = DefaultTickSystems.Create(
+                new GameTimeAdvanceSystem(DefaultCalendar()),
+                new NeedsSystem(),
+                new MagicTickDriver(new SpellCooldownService(), new ShieldBuffService()),
+                new CaravanSystem(),
+                new PlantGrowthSystem(),
+                new JobAssignmentSystem(),
+                new PriceUpdateSystem(),
+                new ScheduleSystem(),
+                new FactionReputationDecaySystem(),
+                FactionDecayConfig.Default,
+                DefaultCalendar(),
+                DefaultPlantSpecies());
+
+            var triples = registry.Ordered
+                .Select(s => $"{s.Cadence}:{s.Order}:{s.Id}")
+                .ToArray();
+
+            Assert.That(triples, Is.EqualTo(new[]
+            {
+                "PerTick:10:core.time",
+                "PerTick:20:core.magic",
+                "Hourly:10:econ.jobs",
+                "Hourly:20:living.schedule",
+                "Hourly:30:living.needs",
+                "Daily:10:world.caravans",
+                "Daily:20:econ.plantgrowth",
+                "Daily:30:econ.prices",
+                "Daily:40:politics.faction_decay",
+            }));
+        }
+
+        private static SeasonCalendar DefaultCalendar()
+        {
+            return new SeasonCalendar(new[]
+            {
+                new SeasonDefinition(Season.Spring, 1, 90),
+                new SeasonDefinition(Season.Summer, 91, 180),
+                new SeasonDefinition(Season.Autumn, 181, 270),
+                new SeasonDefinition(Season.Winter, 271, 360),
+            });
+        }
+
+        private static PlantSpeciesDef[] DefaultPlantSpecies()
+        {
+            return new[]
+            {
+                new PlantSpeciesDef(
+                    "wheat",
+                    "wheat_seed",
+                    "wheat_grain",
+                    new[]
+                    {
+                        new PlantGrowthStageDef(new PlantStageId("seed"), "Seed", 1, false),
+                        new PlantGrowthStageDef(new PlantStageId("sprout"), "Sprout", 1, false),
+                        new PlantGrowthStageDef(new PlantStageId("ripe"), "Ripe", 0, true),
+                    },
+                    new[]
+                    {
+                        new PlantGrowthRule(Season.None, true, false),
+                    }),
+            };
+        }
+
+        private sealed class StubStep : IWorldTickSystem
+        {
+            public StubStep(string id, TickCadence cadence, int order)
+            {
+                Id = id;
+                Cadence = cadence;
+                Order = order;
+            }
+
+            public string Id { get; }
+            public TickCadence Cadence { get; }
+            public int Order { get; }
+            public void Run(in TickContext context) { }
+        }
+    }
+}

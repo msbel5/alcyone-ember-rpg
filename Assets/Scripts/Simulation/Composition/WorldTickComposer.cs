@@ -65,28 +65,7 @@ namespace EmberCrpg.Simulation.Composition
         /// </summary>
         public const int TicksPerGameHour = TicksPerGameDay / 24;
 
-        private readonly GameTimeAdvanceSystem _timeAdvance;
-        private readonly NeedsSystem _needs;
-        private readonly MagicTickDriver _magic;
-        private readonly CaravanSystem _caravans;
-        // SOUL-01/03: production-economy + living systems wired into the cadence blocks below.
-        private readonly PlantGrowthSystem _plantGrowth;
-        private readonly JobAssignmentSystem _jobAssignment;
-        private readonly PriceUpdateSystem _priceUpdate;
-        private readonly ScheduleSystem _schedule;
-        private readonly FactionReputationDecaySystem _factionDecay;
-        private readonly FactionDecayConfig _factionDecayConfig;
-        // The composer owns its own SeasonCalendar (same canonical 4-season layout the time-advance
-        // system uses) so the daily growth block can resolve a Season from world.Time without reaching
-        // into the time system. The species catalog is the deterministic set of crops growth runs over.
-        private readonly SeasonCalendar _seasonCalendar;
-        private readonly IReadOnlyList<PlantSpeciesDef> _plantSpecies;
-
-        // SOUL-01 price-update gating constants. A stockpile tag below LowStock pushes its site price up
-        // by PriceStep; above HighStock pushes it down. Conservative defaults kept local to the composer.
-        private const int LowStock = 4;
-        private const int HighStock = 64;
-        private const int PriceStep = 1;
+        private readonly WorldTickRegistry _tickRegistry;
 
         private int _lastTickIndex = -1;
         private int _ticksSinceHourly;
@@ -198,20 +177,19 @@ namespace EmberCrpg.Simulation.Composition
             FactionReputationDecaySystem factionDecay,
             FactionDecayConfig factionDecayConfig)
         {
-            _timeAdvance = timeAdvance ?? throw new ArgumentNullException(nameof(timeAdvance));
-            _needs = needs ?? throw new ArgumentNullException(nameof(needs));
-            _magic = magic ?? throw new ArgumentNullException(nameof(magic));
-            _caravans = caravans ?? throw new ArgumentNullException(nameof(caravans));
-            _plantGrowth = plantGrowth ?? throw new ArgumentNullException(nameof(plantGrowth));
-            _jobAssignment = jobAssignment ?? throw new ArgumentNullException(nameof(jobAssignment));
-            _priceUpdate = priceUpdate ?? throw new ArgumentNullException(nameof(priceUpdate));
-            _schedule = schedule ?? throw new ArgumentNullException(nameof(schedule));
-            _factionDecay = factionDecay ?? throw new ArgumentNullException(nameof(factionDecay));
-            _factionDecayConfig = factionDecayConfig.DaysPerDecayStep < 1
-                ? FactionDecayConfig.Default
-                : factionDecayConfig;
-            _seasonCalendar = BuildDefaultCalendar();
-            _plantSpecies = BuildDefaultPlantSpecies();
+            _tickRegistry = DefaultTickSystems.Create(
+                timeAdvance ?? throw new ArgumentNullException(nameof(timeAdvance)),
+                needs ?? throw new ArgumentNullException(nameof(needs)),
+                magic ?? throw new ArgumentNullException(nameof(magic)),
+                caravans ?? throw new ArgumentNullException(nameof(caravans)),
+                plantGrowth ?? throw new ArgumentNullException(nameof(plantGrowth)),
+                jobAssignment ?? throw new ArgumentNullException(nameof(jobAssignment)),
+                priceUpdate ?? throw new ArgumentNullException(nameof(priceUpdate)),
+                schedule ?? throw new ArgumentNullException(nameof(schedule)),
+                factionDecay ?? throw new ArgumentNullException(nameof(factionDecay)),
+                factionDecayConfig,
+                BuildDefaultCalendar(),
+                BuildDefaultPlantSpecies());
         }
 
         // Codex audit (seventh pass review on PR #198): single-arg constructor
@@ -240,10 +218,9 @@ namespace EmberCrpg.Simulation.Composition
             _lastTickIndex = tickIndex;
             if (delta <= 0) return;
 
-            // 1) Always advance game time (cheap, monotonic).
-            world.Time = _timeAdvance.Advance(world.Time, delta * MinutesPerTick);
-            if (world.PlayerSpellCooldowns != null && world.PlayerShieldBuffs != null)
-                _magic.AdvanceTicks(world.PlayerSpellCooldowns, world.PlayerShieldBuffs, delta);
+            // 1) Always advance game time and per-tick magic through the declarative registry.
+            foreach (var system in _tickRegistry.PerTick)
+                system.Run(new TickContext(world, world.Time, delta));
 
             // 2) Hourly tick: NeedsSystem decays per-actor needs at its
             // design rate. Codex audit (seventh pass A-P1 #1): previously the
@@ -271,21 +248,8 @@ namespace EmberCrpg.Simulation.Composition
                                     - ((long)hourlyCrossings - i) * TicksPerGameHour;
                 var stamp = new GameTime(stampMinutes < 0 ? 0 : stampMinutes);
 
-                // SOUL-01: assign pending jobs to idle, willing actors BEFORE needs decay this hour, so
-                // the first crossing can claim while hunger is still below the refusal threshold. The
-                // basic TryAssignNext overload already sets the claimed actor's ScheduleState to
-                // Assigned; we re-affirm it (idempotent) and append a JobAssigned event for the log.
-                AssignPendingJobs(world, stamp);
-
-                // SOUL-03: step every assigned actor one tile toward its worksite (or home at night).
-                if (world.Actors != null)
-                    _schedule.Advance(world.Actors, stamp);
-
-                foreach (var actor in world.Actors.Records)
-                {
-                    if (actor == null) continue;
-                    _needs.TickActorNeeds(actor, world.Events, stamp, ticks: 1);
-                }
+                foreach (var system in _tickRegistry.Hourly)
+                    system.Run(new TickContext(world, stamp, delta));
             }
 
             _ticksSinceDaily += delta;
@@ -299,121 +263,9 @@ namespace EmberCrpg.Simulation.Composition
                                     - ((long)dailyCrossings - i) * TicksPerGameDay;
                 var stamp = new GameTime(stampMinutes < 0 ? 0 : stampMinutes);
 
-                if (world.Caravans != null)
-                    _caravans.Tick(world.Caravans, world.FindTradeRoute, world.FindStockpile, stamp, world.Events);
-
-                // SOUL-01: advance crops one game-day and drift site prices with stockpile levels.
-                AdvancePlantGrowth(world, stamp);
-                RecomputePrices(world, stamp);
-                DecayFactionReputation(world, stamp);
+                foreach (var system in _tickRegistry.Daily)
+                    system.Run(new TickContext(world, stamp, delta));
             }
-        }
-
-        /// <summary>
-        /// SOUL-01: claim as many pending jobs as currently possible. The basic assignment overload is
-        /// deterministic and self-terminating (returns false once no idle, willing actor matches a
-        /// pending job). Each claim re-affirms the actor's Assigned schedule state and logs an event.
-        /// </summary>
-        private void AssignPendingJobs(WorldState world, GameTime stamp)
-        {
-            if (world.Actors == null || world.Jobs == null || world.Worksites == null)
-                return;
-
-            while (_jobAssignment.TryAssignNext(world.Actors, world.Jobs, world.Worksites, out var result))
-            {
-                if (world.Actors.TryGet(result.ActorId, out var actor) && actor != null)
-                {
-                    actor.ApplyScheduleState(ActorScheduleState.Assigned(
-                        result.JobId, result.SiteId, result.WorksitePosition));
-                }
-
-                world.Events?.Append(new WorldEvent(
-                    stamp,
-                    WorldEventKind.JobAssigned,
-                    result.ActorId,
-                    result.SiteId,
-                    $"job_assigned:{result.JobId.Value}",
-                    new ReasonTrace(new[]
-                    {
-                        $"job:{result.JobId.Value}",
-                        $"actor:{result.ActorId.Value}",
-                        $"site:{result.SiteId.Value}",
-                        $"worksite:{result.WorksitePosition.X},{result.WorksitePosition.Y}",
-                    })));
-            }
-        }
-
-        /// <summary>
-        /// SOUL-01: advance every catalogued crop species by one game-day. PlantGrowthSystem no-ops for
-        /// species/seasons that cannot grow and for empty plant stores, so this is safe every day.
-        /// </summary>
-        private void AdvancePlantGrowth(WorldState world, GameTime stamp)
-        {
-            if (world.Plants == null || world.Events == null || _plantSpecies == null)
-                return;
-
-            var season = ResolveSeason(stamp);
-            for (int s = 0; s < _plantSpecies.Count; s++)
-            {
-                _plantGrowth.AdvanceOneDay(
-                    _plantSpecies[s],
-                    world.Plants,
-                    world.Events,
-                    stamp,
-                    season,
-                    isSnowing: false);
-            }
-        }
-
-        /// <summary>
-        /// SOUL-01: drift each site price toward scarcity/surplus. For every stockpile, every tracked
-        /// item tag is recomputed: below LowStock the price rises by PriceStep, above HighStock it
-        /// falls. PriceUpdateSystem only emits a PriceChanged event when a price actually moves.
-        /// </summary>
-        private void RecomputePrices(WorldState world, GameTime stamp)
-        {
-            if (world.Prices == null || world.Stockpiles == null || world.Events == null)
-                return;
-
-            foreach (var stockpile in world.Stockpiles)
-            {
-                if (stockpile == null) continue;
-                foreach (var entry in stockpile.Entries)
-                {
-                    _priceUpdate.Recompute(
-                        world.Prices,
-                        stockpile,
-                        entry.Key,
-                        LowStock,
-                        HighStock,
-                        PriceStep,
-                        stamp,
-                        world.Events);
-                }
-            }
-        }
-
-        private void DecayFactionReputation(WorldState world, GameTime stamp)
-        {
-            if (world.Factions == null || world.Events == null)
-                return;
-            if (!ShouldApplyFactionDecay(stamp))
-                return;
-
-            _factionDecay.Apply(world.Factions, _factionDecayConfig, stamp, world.Events);
-        }
-
-        private bool ShouldApplyFactionDecay(GameTime stamp)
-        {
-            long composerDay = stamp.TotalMinutes / (TicksPerGameDay * MinutesPerTick);
-            return composerDay % _factionDecayConfig.DaysPerDecayStep == 0;
-        }
-
-        private Season ResolveSeason(GameTime time)
-        {
-            return _seasonCalendar != null && _seasonCalendar.TryGetSeason(time, out var season)
-                ? season
-                : Season.Spring;
         }
 
         /// <summary>
