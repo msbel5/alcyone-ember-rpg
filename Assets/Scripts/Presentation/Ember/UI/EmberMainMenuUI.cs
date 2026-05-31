@@ -16,7 +16,7 @@ namespace EmberCrpg.Presentation.Ember.UI
 {
     public sealed class EmberMainMenuUI : MonoBehaviour
     {
-        [SerializeField] private string _firstSceneName = "CharacterCreation";
+        [SerializeField] private string _firstSceneName = EmberScenes.CharacterCreation;
 
         private IUiPanel _titlePanel;
 

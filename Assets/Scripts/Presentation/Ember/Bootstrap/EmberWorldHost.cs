@@ -114,6 +114,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             }
 
             EnsurePauseMenu();
+            EnsureDialogBoxPanel();
 
             _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -519,6 +520,51 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             rt.anchorMax = Vector2.one;
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>
+        /// HUD-02: Ask-About was dead in ~6/10 scenes because no DialogBoxPanel was
+        /// authored there, and EmberPlayerInteractRaycaster only opens dialog when one
+        /// already exists. Mirror the EnsurePauseMenu pattern: ensure exactly one
+        /// DialogBoxPanel exists on a Canvas at runtime, wired the same way BindUiPanels
+        /// wires authored panels (Source = this). Created inactive — like scene-authored
+        /// panels, it stays hidden until the raycaster's OpenDialog flips it active on
+        /// interaction (and Close() flips it back off). Idempotent: never creates a second.
+        /// </summary>
+        private void EnsureDialogBoxPanel()
+        {
+            var existing = Object.FindFirstObjectByType<DialogBoxPanel>(FindObjectsInactive.Include);
+            if (existing != null) return;
+
+            var canvas = Object.FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+            if (canvas == null)
+            {
+                var canvasGo = new GameObject(
+                    "DialogCanvas",
+                    typeof(Canvas),
+                    typeof(UnityEngine.UI.CanvasScaler),
+                    typeof(UnityEngine.UI.GraphicRaycaster));
+                canvas = canvasGo.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 1000;
+            }
+
+            var dialogGo = new GameObject(
+                "DialogBoxPanel",
+                typeof(RectTransform),
+                typeof(CanvasGroup),
+                typeof(UnityEngine.UI.Image),
+                typeof(DialogBoxPanel));
+            dialogGo.transform.SetParent(canvas.transform, worldPositionStays: false);
+            var rt = dialogGo.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            dialogGo.GetComponent<DialogBoxPanel>().Source = this;
+            // Hidden until the player interacts; matches scene-authored DialogBoxPanels,
+            // which the raycaster finds via FindObjectsInactive.Include and activates.
+            dialogGo.SetActive(false);
         }
 
         private static IDomainSimulationAdapter CreateFallbackAdapter()

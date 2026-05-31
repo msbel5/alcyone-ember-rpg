@@ -14,7 +14,7 @@ namespace EmberCrpg.Presentation.Ember.Boot
 {
     public sealed class BootBootstrap : MonoBehaviour
     {
-        [SerializeField] private string _nextScene = "MainMenu";
+        [SerializeField] private string _nextScene = EmberScenes.MainMenu;
 
         private async void Awake()
         {
@@ -45,7 +45,7 @@ namespace EmberCrpg.Presentation.Ember.Boot
         public static Task<BootFlowResult> RunForTestsAsync(IAssetForge forge)
         {
             var root = Path.Combine(Path.GetTempPath(), "ember-boot-test-" + Guid.NewGuid().ToString("N"));
-            return RunAsync(forge, root, "MainMenu", CancellationToken.None, maxEntries: 6);
+            return RunAsync(forge, root, EmberScenes.MainMenu, CancellationToken.None, maxEntries: 6);
         }
 
         private static async Task<BootFlowResult> RunAsync(IAssetForge forge, string root, string nextScene, CancellationToken ct, int maxEntries = int.MaxValue)
