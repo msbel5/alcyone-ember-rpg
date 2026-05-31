@@ -23,8 +23,8 @@ The game will be open source and free.
 claimed, current blockers, and the AI stack). That tracker is kept current;
 this README intentionally no longer carries a dated status block that drifts.
 
-Active cleanup work is tracked in [docs/AUDIT_COUNTER.md](docs/AUDIT_COUNTER.md);
-the original audit in [docs/Codex_audit.md](docs/Codex_audit.md) + [docs/AUDIT_INDEPENDENT_2026-05-30.md](docs/AUDIT_INDEPENDENT_2026-05-30.md); the live V2 fix tracker in [docs/REMEDIATION_V2_COUNTER.md](docs/REMEDIATION_V2_COUNTER.md). The canonical vision is [docs/EMBER_VISION_BIBLE.md](docs/EMBER_VISION_BIBLE.md).
+Active cleanup **and every prior audit** are consolidated into one tracker:
+[docs/REMEDIATION_V2_COUNTER.md](docs/REMEDIATION_V2_COUNTER.md) (the older `AUDIT_COUNTER` / `Codex_audit` / `AUDIT_INDEPENDENT` / `CODEX_INDEPENDENT` audit docs were folded in and removed — git history preserves them). For a short truthful current-state snapshot see [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md). The canonical vision is [docs/EMBER_VISION_BIBLE.md](docs/EMBER_VISION_BIBLE.md).
 
 ---
 

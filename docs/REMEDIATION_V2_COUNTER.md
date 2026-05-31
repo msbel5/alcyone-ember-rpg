@@ -1,11 +1,12 @@
-# EMBER REMEDIATION V2 — COUNTER (post-independent-audit)
+# EMBER REMEDIATION V2 — COUNTER (single audit + fix tracker)
 
-> **READ THIS FILE + §0 + §1 FIRST WHEN RESUMING.** Single source of truth for the V2 fix campaign.
-> Survives compaction: §1 counter + §3 register tell you exactly what's done / next / blocked.
-> Detail/evidence lives in `docs/AUDIT_INDEPENDENT_2026-05-30.md` (our 4-agent audit) — grep it by ID,
-> don't re-derive. The original Codex/ChatGPT audit (`docs/Codex_audit.md`, EMB-001..060) is CLOSED
-> 60/60 in `docs/AUDIT_COUNTER.md`; V2 RE-OPENS the items that were closed cosmetically + adds the
-> structural/soul findings that audit missed. Document is updated with codex audit you must address them too.
+> **READ THIS FILE + §0 + §1 FIRST WHEN RESUMING.** This is the **single source of truth** for the fix
+> campaign. **Consolidated 2026-05-31:** the older audit docs (`Codex_audit.md`, `AUDIT_COUNTER.md`,
+> `AUDIT_INDEPENDENT_2026-05-30.md`, `CODEX_INDEPENDENT_2026-05-30/31/31-ReAudit.md`) were folded in here
+> and **deleted** — git history preserves them; do not re-create them. Survives compaction: §1 counter +
+> §3 register tell you what's done / next / blocked; §5 EMB-AUD + §6 FINAL BURNDOWN consolidate every
+> prior audit (EMB-001..060 closed 60/60, EMB-AUD, EMB3); §8 reconciles the 2026-05-31 re-audit (44 items).
+> For the short current-state snapshot see `docs/CURRENT_STATE.md`; for AI policy see `docs/AI_STACK.md`.
 > You can use subagents for surgical jobs. Assign them detailed instructions and guardrails and execute them.
 
 ---
@@ -28,7 +29,7 @@ Box: `[ ]` todo · `[~]` in progress · `[x]` done+verified · `[-]` won't-do/su
 PROJECT : Alcyone Ember RPG (Unity 6000.3.13f1 · URP 17.3 · deterministic living-world CRPG + AI DM)
 EFFORT  : V2 remediation — independent-audit findings (DET/ARCH/HYG/SOUL/HUD/DLG/SCN/DOC/NAME)
 BRANCH  : main (only)
-UPDATED : 2026-05-30
+UPDATED : 2026-05-31 (re-audit reconciliation §8 + docs consolidation + gameplay-bug + hardening pass)
 ```
 **Progress: ~31/34 done. Done: P1(9) + P2 dead-code(ARCH-01/03/05/11/12) + hygiene + DOC-01/02/03 + INP-01 + NAME-01/02/03 + LOC-split(SliceSaveMapper, adapter=ARCH-02 structural) + SOUL-01/02/03 (living world, headless-proven) + HUD-02 + SCN-01 + DLG-01 + SOUL-04 (sync half). BLACK-BOX PLAY-PROOF PASSED: boot→menu→New Game→live gameplay; the in-game tick advanced 0015→0096 in ~6s (WorldTickComposer w/ SOUL systems runs live), billboard NPCs + HUD + TALK action bar + a "Showroom Gate" portal visible, no regression (`docs/proofs/playproof-2026-05-31-soul.md`). Also: Codex audit landed + quick-remedies EMB-AUD-001/002/003/005/006/015/016/042/043/044. · ▶ NOW = optional: SOUL-04 worldgen spawner (scene-authoring, [E]) + remaining decision items. · REMAINING decision/[E]: ARCH-04(save dedup, design-debatable), ARCH-06(`[E]` OracleShrine), ARCH-07(DI, low-ROI). · prior Codex EMB-001..060 = 60/60**
 
@@ -48,7 +49,7 @@ Lane order is the fix order: **P1 correctness → P2 architecture/dead-code → 
 ---
 
 ## §2 — HOW TO READ
-Each row: `[box] ID · severity · file(s) · one-line fix`. Full evidence (exact path+line, why, validation) is in `docs/AUDIT_INDEPENDENT_2026-05-30.md` §4 under the same ID. Drill in only when you start the item.
+Each row: `[box] ID · severity · file(s) · one-line fix`. Full per-ID evidence (exact path+line, why, validation) lived in `AUDIT_INDEPENDENT_2026-05-30.md`, which was folded into this counter and **deleted** in the 2026-05-31 consolidation — recover it from git history if you ever need the long-form evidence. The one-line fix here + the commit it landed in are enough to navigate. (Mentions of `AUDIT_COUNTER.md` / `Codex_audit.md` / `CODEX_INDEPENDENT_*` / `AUDIT_INDEPENDENT_*` in the rows below are **historical references to those now-deleted docs**, kept as audit trail.)
 
 ---
 
@@ -921,3 +922,59 @@ Goal: address EVERY remaining defect across V2 + EMB-AUD(50) + EMB3(55). Heavy o
 ### B-PROOF — [E] gameplay/Editor (Windows-MCP)
 - `[E]` BD-20 · scene-tour proof of all build scenes (EMB3-020/030/031, EMB-AUD scene-proof): movement/camera/collision/dialog/HUD/save/portals + screenshots; HUD-01 action-bar reachability; SCN-03 charcreation walk.
 - `[ ]` BD-21 · HYG-08 CI Win64 build job (nightly); EMB3-051 proof reproducibility note; EMB3-047 fallback-limitation doc.
+
+---
+
+## §8 — RE-AUDIT RECONCILIATION (CODEX_INDEPENDENT_2026-05-31 ReAudit) — 2026-05-31
+
+The 2026-05-31 delta re-audit counted **44 items: 14 PART-001..014 + 30 LEFT-001..030**. It was run by
+**static inspection of a source-only ZIP** (no Unity, no `git lfs pull`), so its LFS-pointer findings
+(LEFT-002, PART-003/004/007 "pointer" half, "908 pointer PNGs", "25 plugin/model pointers") are
+artifacts of an **unresolved-LFS checkout** and are **false in this LFS-pulled working tree** — the
+986 MB GGUF + native LLamaSharp DLLs + art are real bytes here (`manifest.json` pins real sha256). Those
+collapse to the standing **live-runtime visual proof** ask (still `[E]`). Heavy overlap with §6; mapped
+by unique resolution. Box: `[x]` done+verified · `[~]` partial/staged (reasoned) · `[-]` won't (reasoned) · `[E]` needs gameplay/Editor proof.
+
+### Done + verified this pass `[x]`
+| Re-audit ID | Resolution (commit) |
+| --- | --- |
+| **LEFT-001 / PART-001** docs source-of-truth | Created `docs/CURRENT_STATE.md` (concise truthful snapshot). THIS counter is the single audit+counter tracker. Deleted 6 redundant audit docs (Codex_audit, AUDIT_COUNTER, AUDIT_INDEPENDENT_2026-05-30, CODEX_INDEPENDENT_2026-05-30/31/31-ReAudit) and rewired all links. |
+| **LEFT-004** orphan `.meta` | 12 clone-orphan folder metas → tracked `.gitkeep` in each (AI Toolkit, Art/Portraits, Audio, Editor/Ember/Patches, Presentation/Ember/AiDm, 7×Art/UI/*). No meta deleted, no GUID/ref change; ref-scan clean; local orphan scan = 0. |
+| **LEFT-005** native LLM readiness | `NativeLlmClient.IsUsableModelFile` gates on `GGUF` magic + ≥1 MB (was bare `File.Exists`); used by IsAvailable / Complete / EnsureModelReady (pointer now re-fetches). +6 EditMode tests (pointer/real/truncated/wrong-magic/missing/null). |
+| **LEFT-011** player-build scene validation | `IsKnownBuildScene` `#else` (both EmberSaveService + EmberMainMenuUI) now `Application.CanStreamedLevelBeLoaded` instead of `return true`. |
+| **LEFT-014** portal raw strings | `EmberScenePortal.Activate` validates target via `CanStreamedLevelBeLoaded`, warns+ignores stale/renamed targets. |
+| **LEFT-016** package skew | `com.unity.test-framework` manifest `1.4.6` → `1.6.0` (matches resolved builtin lock). |
+| **LEFT-009** stale SliceJson README | Rewrote the "what lives here" table: `WorldSaveMapper.*` (replaced `SliceSaveMapper`), `JsonSliceSaveService` relocated to Presentation/Ember/Save. |
+| **LEFT-025 / PART-002** PRD matrix stale | Added a REFERENCE-ONLY banner: every `frp-backend/`/`godot-client/`/`docs/prd/active/` path is the old prototype, not active Unity work; pointed at CURRENT_STATE/counter/vision. |
+| **LEFT-026** repo-hygiene stale | Marked TMP Examples & Extras / root scenes (CombatPlayground+Sprint4Foundation) / `Reports/**` as **DONE/removed** (re-audit §2 confirms all absent). |
+| **LEFT-027** proof docs stale | Updated `playproof-2026-05-31-soul.md` SOUL-04 note: the from-worldgen spawner now exists + was fixed (sprites/scatter/cap); only the visual confirmation is `[E]`. |
+| **PART-007 (code) / PART-010** | Generated-actor visuals (real sprites + 2.1u + ring-spiral scatter + cap 6) and single-source HUD (`EmberWorldHost.EnsureEmberHud/EnsureSidePanels` + 10 recipes stripped) fixed in the 2026-05-31 gameplay commit. Visual confirmation = `[E]`. |
+| **PART-013** save schema split | Already split (`WorldSaveMapper*` + `schemaVersion`); only the WorldSaveData LOC trim is staged. |
+
+### Partial / staged — reasoned, overlaps §6 `[~]`
+| Re-audit ID | Why not closed now |
+| --- | --- |
+| LEFT-002 / PART-003 / PART-004 runtime+art LFS proof | **False in repo** (LFS resolved). Reduces to live-runtime + screenshot proof → `[E]` (BD-20). Optional art-pointer audit mode is a tooling add (LEFT-003), staged. |
+| LEFT-003 static-audit art-pointer mode | Tooling enhancement; `--require-runtime` already catches plugin/model pointers. Staged (low ROI vs live proof). |
+| LEFT-006 AI download policy | Mostly addressed: `ModelBootstrap` surfaces progress + verifies SHA; `EnsureModelReady` now re-fetches on pointer; default build makes no network call (AI_STACK policy). Remaining timeout/cancellation UI is staged. |
+| LEFT-007 sync-over-async (6 `.GetAwaiter().GetResult()`) | All 6 are off the default UI hot path: 3 in `CloudLlmClient` + 1 in `ComfyUiAssetForge` (opt-in providers, hard-disabled by default), 2 inside `NativeLlmClient.Complete` which the adapter already runs via `Task.Run` off the main thread. Not a default-path freeze; async provider-layer refactor staged. |
+| LEFT-008 / LEFT-022 Simulation→Data.SliceJson + forge boundary | Architecture-boundary decision; one focused cross-asmdef PR (see §6 BD-10 rationale). Staged. |
+| LEFT-010 save architecture (slots/migration) | File slot + corrupt-quarantine + menu-Continue done (DET-05, BD-14); full multi-slot UI + golden migration fixtures staged (BD-11 keeps the layer seam). |
+| LEFT-012 / PART-006 authored-actor IDs | Generated actors stamped (`SOUL-04`); authored-scene actor ID migration is Editor/scene work → `[E]` (BD-18/20). |
+| LEFT-013 dialog name seams | `GetDialogSource(ActorId)` exists + `GetDialogSource(string)` self-upgrades name→id (DLG-01); extending id seams to the interaction/raycaster layer mirrors DLG-01 as a dedicated pass (BD-13). |
+| LEFT-017 UI Foundation purity / LEFT-018 Resources | BD-16 decision (honest "shared UI contract" naming) + BD-07 (Resources inventory). Staged. |
+| LEFT-019 / LEFT-020 / LEFT-021 large classes | Adapter/host/UI/LLM-client splits = one no-behaviour-change PR each, gated on the `[E]` screenshot baseline (BD-10/17/20). Staged. |
+| LEFT-023 hardcoded tick defaults | Move catalogs/cadence to data **after** a same-seed digest test exists (don't risk determinism blind). Staged. |
+| LEFT-028 test bloat / LEFT-029 dev tooling / LEFT-030 reference data | Low-severity classification/cleanup; tracked, deferred behind correctness/proof work. |
+| PART-005/008/009/011/012/014 | All map onto the §6 items above (save, input INP-01/BD-19, scene proof BD-20, determinism SOUL-01..03, CI BD-21, LLM tool-authority tests). |
+
+### Won't-fix — reasoned `[-]`
+| LEFT-024 obsolete role shims | The 5 remaining `[Obsolete]` shim accesses are intentional backward-compat tests under `#pragma warning disable` (BD-02). Removing the shims only after all call sites + save fixtures migrate; net churn > value now. |
+
+### Needs gameplay/Editor proof `[E]` (the real remaining blocker)
+LEFT-015 / PART-007(visual)/009 + the "looks-done-don't-close" traps (real LLM round-trip, scene dialog,
+generated-actor visibility, save/load replay) all reduce to **one live PlayMode/manual scene-tour with
+screenshots** — tracked as **BD-20**. Everything Codex-safe and headless-verifiable from the re-audit is
+now closed above; what is left genuinely needs the Unity Editor / a running player, which the user runs.
+
+**Re-audit tally:** 44 items → **12 closed `[x]`** this pass (+ the gameplay-bug commit) · **~25 `[~]` reasoned-staged** (overlap §6) · **1 `[-]`** · **remainder `[E]`** (one scene-tour proof). No item is unaccounted-for.

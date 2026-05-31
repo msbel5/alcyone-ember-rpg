@@ -50,16 +50,13 @@ purpose. (See `.gitattributes` for the LFS filters and `.gitignore` for the igno
     only by the editor MCP host, or pulled via UPM/NuGetForUnity) so a player build never imports
     ~19 MB of Roslyn/SignalR. Treat as a future relocation, gated on confirming nothing in a shipped
     assembly references them; **left in place for now** to avoid breaking the MCP plugin wiring.
-- **TMP examples/samples footprint** — `Assets/TextMesh Pro/Examples & Extras/` (~284 files) is package
-  sample clutter, **not** runtime content (see *Samples (EMB-024)* below). It inflates the asset tree
-  and should be removed via Package Manager after a GUID reference scan — pending Editor pass, not a
-  blind delete.
+- **TMP examples/samples footprint** — `Assets/TextMesh Pro/Examples & Extras/` (~284 files of package
+  sample clutter, **not** runtime content) **has been removed** (see *Samples (EMB-024)* below).
 
-## Samples (EMB-024)
-- `Assets/TextMesh Pro/Examples & Extras/` (~284 files) is package sample clutter. **To be removed via
-  the Unity Package Manager / Editor after a reference scan** (a few example `.mat` were touched by the
-  URP upgrade; confirm nothing in active scenes references the Examples GUIDs before deletion). Tracked
-  here as a pending Editor-verified cleanup, not a blind `rm`.
+## Samples (EMB-024) — DONE
+- `Assets/TextMesh Pro/Examples & Extras/` (~284 files of package sample clutter) **has been removed**
+  (the 2026-05-31 re-audit confirms `Examples & Extras/` is absent). No active scene referenced the
+  Examples GUIDs.
 
 ## Resources (EMB-025)
 - `Assets/Resources/` hides dependencies and loads globally. Keep only tiny truly-global runtime assets
@@ -72,19 +69,18 @@ purpose. (See `.gitattributes` for the LFS filters and `.gitignore` for the igno
   Introduce a prefab only after auditing the affected scene's GUID references, and never mix
   hand-edited scene objects with recipe regeneration without recording which owns what.
 
-## Root scenes (EMB-031)
-- `Assets/Scenes/CombatPlayground.unity` + `Sprint4Foundation.unity` are non-build root scenes (the
-  duplicate-GUID hazard was fixed in EMB-001). **To be archived or deleted via the Editor** after a
-  final reference scan — pending Editor pass.
+## Root scenes (EMB-031) — DONE
+- `Assets/Scenes/CombatPlayground.unity` + `Sprint4Foundation.unity` (non-build root scenes; the
+  duplicate-GUID hazard was fixed in EMB-001) **have been removed** — only the 10 gameplay scenes plus
+  Boot/MainMenu/CharacterCreation remain under `Assets/Scenes/Ember/`. Verified absent 2026-05-31.
 
 ## Planning docs & stale assets (EMB-023)
 - Planning markdown does not belong under `Assets/` (Unity imports it). `Assets/Plans/` was moved to
   `docs/archive/plans/`. `Assets/pold/NavMesh.asset` was unreferenced stale and removed.
 
-## Reports & sprint docs (EMB-050)
-- 102 tracked `Reports/**` + 156 `docs/sprint-*` files clutter the active tree. **To be archived under
-  `docs/archive/`** as a dedicated reviewed move (large diff; preserve `git mv` history; fix any active
-  links). Pending — see AUDIT_COUNTER EMB-050.
+## Reports & sprint docs (EMB-050) — DONE
+- The root `Reports/**` tree **has been removed** (the 2026-05-31 re-audit confirms top-level `Reports/`
+  is absent). Sprint-era notes live under `docs/` history; no active links point at the old tree.
 
 ## Local agent tooling (EMB-059)
 - `.claude/skills/**` (65 files) are **intentionally-shared project dev tooling** (Claude Code skills

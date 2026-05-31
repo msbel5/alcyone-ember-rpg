@@ -1,6 +1,15 @@
 # PRD Implementation Matrix
 
-Generated from `docs/doc_registry.json` via `python -m tools.doc_inventory`.
+> ⚠️ **REFERENCE ONLY — NOT active Unity work (re-audit LEFT-025 / PART-002).** Every "Runtime Surface"
+> path in the table below points at the **old Godot/Python prototype** (`frp-backend/…`, `godot-client/…`)
+> and the `docs/prd/active/…` PRD tree from that prototype — all of which is now **read-only reference**
+> (`Reference/**`, `docs/reference/**`), deliberately NOT ported 1:1. The Unity rewrite is a fresh,
+> Ember-core implementation; do **not** treat these rows as active Unity PRDs or as a porting checklist.
+> For the real current status read `docs/CURRENT_STATE.md`; for the live fix register read
+> `docs/REMEDIATION_V2_COUNTER.md`; for the canonical vision read `docs/EMBER_VISION_BIBLE.md`. The
+> "Active PRDs: 94" count below is the **prototype's** PRD count, not the Unity project's.
+
+Generated from `docs/doc_registry.json` via `python -m tools.doc_inventory` (prototype-era inventory).
 
 ## Summary
 

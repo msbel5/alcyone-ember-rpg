@@ -32,5 +32,5 @@
 - When a `Reference/PRDs/` PRD is implemented in Unity, record it in the canonical matrix with an
   `active / reference / deprecated` tag rather than forking another copy.
 - Physical consolidation (removing the deprecated mirror, archiving stale reports/sprint docs) is a
-  separate, reviewed cleanup — see `docs/AUDIT_COUNTER.md` EMB-050 / EMB-022. Until then, this
+  separate, reviewed cleanup — see `docs/REMEDIATION_V2_COUNTER.md` (EMB-050 / EMB-022). Until then, this
   governance page is the authority on precedence.

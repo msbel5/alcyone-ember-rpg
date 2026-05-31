@@ -24,7 +24,7 @@ re-verify one:
 
 Treat the dated files here as **"this worked once when the binaries were wired,"** not as a standing
 "verified" status. The authoritative (and where still open, honestly-UNVERIFIED) state lives in
-`docs/AI_STACK.md` and `docs/AUDIT_COUNTER.md` (EMB-006 / T-LLM-Verify).
+`docs/AI_STACK.md` and `docs/REMEDIATION_V2_COUNTER.md` (EMB-006 / T-LLM-Verify).
 
 ### CI corollary — the opt-in Win64 build job is a compile proof, not a runtime-asset proof
 

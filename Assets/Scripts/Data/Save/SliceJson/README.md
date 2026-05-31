@@ -25,8 +25,11 @@ is what matters:
 
 | File | Role |
 |---|---|
-| `SliceSaveMapper.cs` | Translates `SliceWorldState` ↔ `SliceSaveData` DTO graph. Needs Simulation types for `SliceWorldFactory` bootstrap + `WorksiteStore` mapping. |
-| `JsonSliceSaveService.cs` | Wraps `UnityEngine.JsonUtility` around the mapper output. The single touch-point that couples save to Unity. |
+| `WorldSaveMapper.cs` + `.World` / `.Process` / `.Economy` / `.Narrative` / `.ActorDetail` partials | Translates `WorldState` ↔ `WorldSaveData` DTO graph (carries `schemaVersion` + a documented bump/migration protocol). This **replaced** the former monolithic `SliceSaveMapper.cs`. |
+
+> The `UnityEngine.JsonUtility` wrapper (`JsonSliceSaveService.cs`) — the single save↔Unity
+> touch-point — now lives in `Assets/Scripts/Presentation/Ember/Save/`, not here. It is the
+> presentation-side save bridge; this sub-assembly owns the pure mapper graph.
 
 ## Where new save code should live
 

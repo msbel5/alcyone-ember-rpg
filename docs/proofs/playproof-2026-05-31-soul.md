@@ -38,7 +38,10 @@ not a static green.
 
 ## Still requires an Editor/visual pass (flagged, not faked)
 - **SOUL-04 worldgen spawner**: the per-tick id-keyed ActorView position-sync is wired (so SOUL-03
-  movement reaches existing billboards), but the from-worldgen spawner that instantiates one
-  billboard per generated NPC is scene/prefab-authoring work (see the note atop `ActorView.cs`).
+  movement reaches existing billboards). The from-worldgen spawner now **exists** —
+  `EmberGeneratedActorSpawner` instantiates one camera-facing billboard per generated NPC, stamps each
+  with its `ActorId`, and (fixed 2026-05-31) uses real registry sprite keys + 2.1u sizing + ring-spiral
+  scatter + a 6-actor cap so they no longer stack as magenta giants. What remains is the **visual
+  confirmation** (same-seed screenshot of a readable, speakable generated population) — still `[E]`.
 - **ARCH-06 OracleShrine dialog**, deep Ask-About topic exchange, and the SCN-01 portal *traversal*
   between all scenes were not click-walked end-to-end here.
