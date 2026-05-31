@@ -1015,3 +1015,33 @@ the LLM pipeline re-proven headlessly (`IsAvailable: True`, `RESULT OK`, **`User
 **Still needs the user's display `[E]`:** the on-screen confirmation of each (portrait rendering, 'C'
 colony toggle, oracle dialog line, single ritual bar, inventory readability) — the code paths are
 fixed + compiled + the LLM half is headless-proven, but the visual layout needs a running screen.
+
+---
+
+## §10 — REFACTOR CAMPAIGN (god-class / LOC splits) — started 2026-05-31 pm
+
+User opted to do the reasoned-staged refactors (the "25"). Approach: **one focused, verified commit at
+a time on `main`** — Domain/Sim/Data/Infra splits gated on the fallback harness (~1s), Presentation/
+Editor splits gated on a Win64 batchmode build (Build Success + 0 `error CS`). Partial-class / per-type
+file splits are **zero-behaviour-change** (compiler + tests prove equivalence). Box: `[x]` done+pushed · `[ ]` queued.
+
+| ID | Target (LOC) | Split | Verify | Status |
+| --- | --- | --- | --- | --- |
+| REF-1 | `LlmClients.cs` (517) | → LlmClientConfig / LocalQwenClient / CloudLlmClient / LlmHttpClientCore | fallback | `[x]` b47a9a37 |
+| REF-3 | `EmberWorldHost.cs` (786) | → `.Ui.cs` partial (UI-ensure cluster), host 786→530 | Win64 | `[x]` 5f16389c |
+| REF-a | `DomainSimulationAdapter*` (697+472) | extract dialog/HUD-read + char-creation cluster to new partials; introduce `ILlmRouter` + `WorldHydrator` collaborator (BD-10) | Win64 | `[ ]` |
+| REF-b | `EmberSaveService.cs` (460) | partials: core/save · load/restore · resolve/scene-validation | Win64 | `[ ]` |
+| REF-c | `EmberHud.cs` (538) | partials by HUD region (topbar / vitals / action-bar) | Win64 | `[ ]` |
+| REF-d | `DialogBoxPanel.cs` (369) | partial: build vs poll/render | Win64 | `[ ]` |
+| REF-e | `EmberMainMenuUI.cs` (347) | partial: menu build vs save-continue/scene-transition | Win64 | `[ ]` |
+| REF-f | `WorldSaveData.cs` (527) | split DTO groups into partials | fallback | `[ ]` |
+| REF-g | `OnnxAssetForge.cs` (320) + LEFT-022 | move provider impl off the deterministic Simulation boundary | fallback/Win64 | `[ ]` |
+| REF-2 | `SpellEffectResolutionServiceTests.cs` (1033) | split by effect category | fallback | `[ ]` |
+| REF-h | LEFT-008 | remove `EmberCrpg.Simulation → Data.SliceJson` asmdef edge (or document accepted boundary) | fallback | `[ ]` |
+| REF-i | BD-19 | Input System migration (add package + InputActions, swap EmberInput internals behind frozen API, rebind UI) | Win64 + PlayMode | `[ ]` |
+| REF-j | LEFT-017/018 | UI Foundation purity / Resources.Load inventory | Win64 | `[ ]` |
+| REF-k | LEFT-023 | hardcoded tick catalogs/cadence → data (after a same-seed digest test) | fallback | `[ ]` |
+| REF-l | LEFT-024 | remove `[Obsolete]` WorldState role shims after call-site migration + round-trip | fallback | `[ ]` |
+
+**Done this session: REF-1 + REF-3.** Resume at REF-a. Riskier items (REF-i Input System, REF-h asmdef
+boundary, REF-l shim removal) come last — they change behaviour/settings and need their own regression pass.
