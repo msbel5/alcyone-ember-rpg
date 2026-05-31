@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using EmberCrpg.Data.Save;
 using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.Save
@@ -123,7 +124,7 @@ namespace EmberCrpg.Presentation.Ember.Save
             try
             {
                 if (_repo == null) throw new System.InvalidOperationException("no save repository");
-                _repo.Save(DefaultSlot, jsonStr);
+                _repo.Save(SaveSlotId.Quick, jsonStr, BuildMetadata(SaveSlotId.Quick, data, domainJson));
                 durableOk = true;
             }
             catch (System.Exception)
@@ -165,6 +166,43 @@ namespace EmberCrpg.Presentation.Ember.Save
                 else
                     ShowStatus("Loaded.");
             }
+        }
+
+        private static SaveSlotMetadata BuildMetadata(SaveSlotId slot, SaveData data, string domainJson)
+        {
+            return new SaveSlotMetadata
+            {
+                metadataVersion = 1,
+                envelopeVersion = 0,
+                schemaVersion = ExtractInt(domainJson, "\"schemaVersion\""),
+                slotKind = slot.Kind.ToString(),
+                slotIndex = slot.Kind == SaveSlotKind.Manual ? slot.Index : 0,
+                label = slot.Kind == SaveSlotKind.Quick ? "Quicksave" : slot.Kind.ToString(),
+                sceneName = data?.sceneName ?? string.Empty,
+                playtimeMinutes = ExtractLong(domainJson, "\"totalMinutes\""),
+                savedAtUtcIso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                thumbnailPath = string.Empty,
+            };
+        }
+
+        private static int ExtractInt(string json, string marker)
+        {
+            long value = ExtractLong(json, marker);
+            return value < int.MinValue || value > int.MaxValue ? 0 : (int)value;
+        }
+
+        private static long ExtractLong(string json, string marker)
+        {
+            if (string.IsNullOrEmpty(json) || string.IsNullOrEmpty(marker)) return 0L;
+            int start = json.IndexOf(marker, StringComparison.Ordinal);
+            if (start < 0) return 0L;
+            int colon = json.IndexOf(':', start + marker.Length);
+            if (colon < 0) return 0L;
+            int cursor = colon + 1;
+            while (cursor < json.Length && char.IsWhiteSpace(json[cursor])) cursor++;
+            int end = cursor;
+            while (end < json.Length && (char.IsDigit(json[end]) || json[end] == '-')) end++;
+            return long.TryParse(json.Substring(cursor, end - cursor), out var parsed) ? parsed : 0L;
         }
 
         private void ShowStatus(string msg)

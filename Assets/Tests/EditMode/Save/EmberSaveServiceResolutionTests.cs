@@ -54,6 +54,53 @@ namespace EmberCrpg.Tests.EditMode.Save
         }
 
         [Test]
+        public void AuditResolveLatestSaveJson_PrefersNamedQuickSlotOverLegacyIntegerSlot()
+        {
+            var root = NewTempRoot();
+            try
+            {
+                var repo = new FileSaveRepository(root);
+                var legacyJson = Json(EmberScenes.SeasonFarm);
+                var quickJson = Json(EmberScenes.SmithingOverworld);
+                repo.Save(EmberSaveService.AuditDefaultSlot, legacyJson);
+                repo.Save(SaveSlotId.Quick, quickJson, new SaveSlotMetadata
+                {
+                    label = "Quicksave",
+                    sceneName = EmberScenes.SmithingOverworld,
+                });
+                PlayerPrefs.SetInt(EmberSaveService.AuditLastSlotKey, EmberSaveService.AuditDefaultSlot);
+
+                Assert.That(EmberSaveService.AuditResolveLatestSaveJson(repo), Is.EqualTo(quickJson));
+            }
+            finally
+            {
+                Directory.Delete(root, true);
+            }
+        }
+
+        [Test]
+        public void AuditResolveLatestSaveJson_CorruptQuickSlotFallsBackToLegacyIntegerSlot()
+        {
+            var root = NewTempRoot();
+            try
+            {
+                var repo = new FileSaveRepository(root);
+                var legacyJson = Json(EmberScenes.SeasonFarm);
+                repo.Save(EmberSaveService.AuditDefaultSlot, legacyJson);
+                Directory.CreateDirectory(Path.GetDirectoryName(repo.SlotPath(SaveSlotId.Quick)));
+                File.WriteAllText(repo.SlotPath(SaveSlotId.Quick), "{");
+                PlayerPrefs.SetInt(EmberSaveService.AuditLastSlotKey, EmberSaveService.AuditDefaultSlot);
+
+                Assert.That(EmberSaveService.AuditResolveLatestSaveJson(repo), Is.EqualTo(legacyJson));
+                Assert.That(File.Exists(repo.SlotPath(SaveSlotId.Quick) + ".corrupt"), Is.True);
+            }
+            finally
+            {
+                Directory.Delete(root, true);
+            }
+        }
+
+        [Test]
         public void AuditResolveLatestSaveJson_QuarantinesCorruptSlotThenFallsBackToLegacy()
         {
             var root = NewTempRoot();

@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using EmberCrpg.Data.Save;
 using EmberCrpg.Presentation.Ember.Inputs;
 
 namespace EmberCrpg.Presentation.Ember.Save
@@ -81,6 +82,9 @@ namespace EmberCrpg.Presentation.Ember.Save
             string json = null;
             if (repo != null)
             {
+                if (repo.TryLoadPayload(SaveSlotId.Quick, IsLoadableSaveJson, out var quickJson))
+                    return quickJson;
+
                 int lastSlot = PlayerPrefs.GetInt(LastSlotKey, DefaultSlot);
                 if (repo.TryLoad(lastSlot, IsLoadableSaveJson, out var fileJson))
                     json = fileJson;
