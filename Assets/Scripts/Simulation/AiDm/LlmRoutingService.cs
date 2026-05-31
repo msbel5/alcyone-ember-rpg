@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.AiDm
     /// Routes an LLM request to the local provider first; falls back to cloud
     /// when local returns null/empty. Phase 12 Atom 5.
     /// </summary>
-    public sealed class LlmRoutingService
+    public sealed class LlmRoutingService : ILlmRouter
     {
         private readonly LlmDispatch _local;
         private readonly LlmDispatch _cloud;
@@ -63,6 +63,13 @@ namespace EmberCrpg.Simulation.AiDm
 
             chosen = LlmProviderKind.Mock;
             return new LlmResponse(string.Empty, null, 0);
+        }
+
+        LlmResponse ILlmRouter.Complete(LlmRequest req, out string chosen)
+        {
+            var response = Complete(req, out var provider);
+            chosen = provider.ToString();
+            return response;
         }
 
         private static bool HasUsefulPayload(LlmResponse response)

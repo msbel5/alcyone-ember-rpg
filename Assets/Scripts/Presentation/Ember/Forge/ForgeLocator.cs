@@ -8,10 +8,10 @@ namespace EmberCrpg.Presentation.Ember.Forge
     {
         public static IAssetForge AssetForge { get; private set; }
         public static NativeLlmClient NativeLlm { get; private set; }
-        public static LlmRoutingService LlmRouter { get; private set; }
+        public static ILlmRouter LlmRouter { get; private set; }
         public static EmbeddingClient Embedding { get; private set; }
 
-        public static void Register(IAssetForge forge, NativeLlmClient llm, LlmRoutingService router)
+        public static void Register(IAssetForge forge, NativeLlmClient llm, ILlmRouter router)
         {
             AssetForge = forge;
             NativeLlm = llm;

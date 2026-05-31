@@ -33,7 +33,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
 
             _activeForge = EmberForgeFactory.BuildForge(modelRoot, out _onnxForge, out _forgeInitFailure);
 
-            var router = new LlmRoutingService(
+            ILlmRouter router = new LlmRoutingService(
                 req => _nativeLlm.Complete(req),
                 cloud: null,
                 cloudKind: LlmProviderKind.Mock);
