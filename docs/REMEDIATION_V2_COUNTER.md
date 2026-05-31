@@ -886,3 +886,38 @@ Required proof:
 - Don't touch the deterministic Domain/Sim RNG/worldgen/tick MATH, `EmberForgeFactory`, or the `EmberInput` facade body (only the INP-01 namespace).
 - Don't delete docs/PRDs before a ref-scan; don't rename MonoBehaviours without a scene/prefab GUID scan; don't `git add -A` before HYG-02.
 - Don't let the LLM mutate world state except via validated tool calls.
+
+---
+
+## §6 — FINAL BURNDOWN (all 3 audits consolidated, de-duplicated) — 2026-05-31
+
+Goal: address EVERY remaining defect across V2 + EMB-AUD(50) + EMB3(55). Heavy overlap; tracked by unique work-item. Box: `[ ]` todo · `[x]` done · `[~]` partial · `[E]` needs-Editor/gameplay proof · `[-]` won't (reasoned).
+
+### B-HYG — small/medium hygiene (safe, parallel)
+- `[ ]` BD-01 · stale inline comments (EMB3-037/038): WorldTickComposer + adapter comments say "only time/magic/needs/caravans" — update to the real composed set.
+- `[ ]` BD-02 · obsolete role shims (EMB3-055): WorldState `[Obsolete]` Slice-era Player/Talker/Merchant/Guard/Enemy props — remove after call-site migration + round-trip test.
+- `[ ]` BD-03 · model verification + native LLM readiness (EMB3-010/012, EMB-AUD-008/009): manifest hashes TBD → fill sha256 (model present) or mark lfs-pulled; readiness check rejects pointer stubs.
+- `[ ]` BD-04 · generated-art build path + generated-asset policy (EMB3-052/009, EMB-AUD-007): verify CoreAssetManifest/EmberMainMenuUI path policy is coherent.
+- `[ ]` BD-05 · network/download + provider boundary (EMB3-014/017, EMB-AUD-036): document/guard download policy + forge provider seam.
+- `[ ]` BD-06 · plugin/dependency + TMP footprint (EMB3-043/053, EMB-AUD-038/039, HYG-05): classify NuGet/MCP DLLs; TMP samples note.
+- `[ ]` BD-07 · Resources dependency (EMB3-034, EMB-AUD-037): inventory Resources.Load; move UI/theme to explicit refs where cheap.
+- `[ ]` BD-08 · fixed-seed world (EMB3-039): WorldFactory fixed cast note vs worldgen (ties to SOUL-04).
+- `[ ]` BD-09 · package mismatch (EMB3-044): manifest/lock normalized (mostly done — verify).
+
+### B-ARCH — architecture (medium-large, careful)
+- `[~]` BD-10 · ARCH-02/EMB3-023 adapter god object: structural partial done; extract collaborators + inject ILlmRouter.
+- `[ ]` BD-11 · ARCH-04/EMB3-018/021/022, EMB-AUD-017/018/020 save: kill save-within-a-save; persistence naming; schema version.
+- `[ ]` BD-12 · ARCH-07 locator→DI (two mutable statics).
+- `[ ]` BD-13 · ARCH-08 primitive obsession (ActorId/SiteId across seams) + ARCH-09 placeholder trim + interface segregation (EMB3-036).
+- `[ ]` BD-14 · EMB3-019/EMB-AUD-019 main-menu Continue reads PlayerPrefs directly; route through the save service.
+- `[ ]` BD-15 · EMB3-015/024, EMB-AUD-010/011 async/threading: blocking calls + result pump audit.
+- `[ ]` BD-16 · EMB3-032/033, EMB-AUD-033/034 UI architecture/foundation boundary.
+- `[ ]` BD-17 · EMB3-040/041, EMB-AUD-047 charcreation complexity + menu/loading/generation coupling.
+
+### B-FEATURE / INPUT
+- `[E]` BD-18 · SOUL-04/EMB3-026/027, EMB-AUD-026: worldgen-NPC spawner — scene actors authored with stable ids; generated population visible + LLM-flavoured.
+- `[ ]` BD-19 · EMB3-035/EMB-AUD-032 Input System migration (legacy Input → actions/rebinding).
+
+### B-PROOF — [E] gameplay/Editor (Windows-MCP)
+- `[E]` BD-20 · scene-tour proof of all build scenes (EMB3-020/030/031, EMB-AUD scene-proof): movement/camera/collision/dialog/HUD/save/portals + screenshots; HUD-01 action-bar reachability; SCN-03 charcreation walk.
+- `[ ]` BD-21 · HYG-08 CI Win64 build job (nightly); EMB3-051 proof reproducibility note; EMB3-047 fallback-limitation doc.
