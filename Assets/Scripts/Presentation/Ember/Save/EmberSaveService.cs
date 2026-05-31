@@ -166,17 +166,10 @@ namespace EmberCrpg.Presentation.Ember.Save
 
         private void LoadInternal()
         {
-            // EMB-011: prefer the durable file slot (with corrupt-save quarantine); fall back to the
-            // legacy PlayerPrefs blob so saves written before file slots existed still load.
-            string json = null;
-            if (_repo != null)
-            {
-                int lastSlot = PlayerPrefs.GetInt(LastSlotKey, DefaultSlot);
-                if (_repo.TryLoad(lastSlot, IsLoadableSaveJson, out var fileJson))
-                    json = fileJson;
-            }
-            if (string.IsNullOrEmpty(json))
-                json = PlayerPrefs.GetString(SaveKey);   // legacy fallback
+            // EMB-011 / BD-14: resolve the save JSON through the SAME store-precedence helper the
+            // main-menu Continue path now uses (durable file slot first, legacy PlayerPrefs blob as
+            // fallback) so the menu and in-game load can never diverge.
+            string json = ResolveLatestSaveJson(_repo);
             if (string.IsNullOrEmpty(json))
             {
                 ShowStatus("No save found.");
@@ -288,6 +281,59 @@ namespace EmberCrpg.Presentation.Ember.Save
         public static void PreparePendingLoad(SaveData data)
         {
             _pendingLoad = data;
+        }
+
+        /// <summary>
+        /// BD-14 (EMB3-019): single source of truth for "where does the latest save live". Mirrors
+        /// the EMB-011 precedence the in-game quick-load uses: the durable file slot pointed to by
+        /// <see cref="LastSlotKey"/> first (with the same <see cref="IsLoadableSaveJson"/> corrupt-save
+        /// quarantine), then the legacy single-blob PlayerPrefs key as a back-compat fallback. The
+        /// menu Continue/Load path and <see cref="LoadInternal"/> both call this so they can never
+        /// diverge (previously the menu read PlayerPrefs(SaveKey) directly and skipped the file slot).
+        /// </summary>
+        private static string ResolveLatestSaveJson(EmberCrpg.Data.Save.FileSaveRepository repo)
+        {
+            string json = null;
+            if (repo != null)
+            {
+                int lastSlot = PlayerPrefs.GetInt(LastSlotKey, DefaultSlot);
+                if (repo.TryLoad(lastSlot, IsLoadableSaveJson, out var fileJson))
+                    json = fileJson;
+            }
+            if (string.IsNullOrEmpty(json))
+                json = PlayerPrefs.GetString(SaveKey);   // legacy fallback
+            return json;
+        }
+
+        /// <summary>
+        /// BD-14 (EMB3-019): resolves the latest save through the service's durable-file-slot-first
+        /// path (PlayerPrefs only as the legacy fallback INSIDE here) and deserializes it. The
+        /// main-menu Continue/Load buttons call this instead of reading PlayerPrefs(SaveKey)
+        /// themselves, so the menu and in-game load share one path. Returns false when no loadable
+        /// save exists or the payload is corrupt/empty.
+        /// </summary>
+        public static bool TryResolveLatestSave(out SaveData data)
+        {
+            data = null;
+            // The menu has no live service instance, so build a repository over the same root Awake
+            // uses (persistentDataPath/saves). Construction is cheap and side-effect-free.
+            EmberCrpg.Data.Save.FileSaveRepository repo = null;
+            try { repo = new EmberCrpg.Data.Save.FileSaveRepository(Application.persistentDataPath); }
+            catch (System.Exception) { /* fall through to PlayerPrefs-only resolution */ }
+
+            var json = ResolveLatestSaveJson(repo);
+            if (string.IsNullOrEmpty(json)) return false;
+
+            try
+            {
+                data = JsonUtility.FromJson<SaveData>(json);
+            }
+            catch (System.Exception)
+            {
+                data = null;
+                return false;
+            }
+            return data != null && !string.IsNullOrEmpty(data.sceneName);
         }
 
         private void Start()

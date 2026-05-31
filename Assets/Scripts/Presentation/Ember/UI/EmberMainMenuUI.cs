@@ -153,9 +153,11 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         public void LoadGame()
         {
-            // Wire to PlayerPrefs check; if no save exists, fall back to Continue's no-save path.
-            string json = PlayerPrefs.GetString("ember.save.v1");
-            if (string.IsNullOrEmpty(json))
+            // BD-14 (EMB3-019): probe through EmberSaveService (durable file slot first, PlayerPrefs
+            // legacy fallback inside the service) instead of reading PlayerPrefs("ember.save.v1")
+            // directly, so the "no saves" decision matches what Continue()/in-game load will actually
+            // find. If a save exists, Continue() reloads it via the same unified path.
+            if (!EmberCrpg.Presentation.Ember.Save.EmberSaveService.TryResolveLatestSave(out _))
             {
                 _titlePanel?.SetText("status", "No saves yet — starting a new game.");
                 NewGame();
@@ -258,17 +260,17 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         public void Continue()
         {
-            string json = PlayerPrefs.GetString("ember.save.v1");
-            if (!string.IsNullOrEmpty(json))
+            // BD-14 (EMB3-019): resolve the save through EmberSaveService so the menu uses the SAME
+            // store precedence as the in-game quick-load (durable file slot first, legacy PlayerPrefs
+            // blob only as a fallback INSIDE the service). Previously this read PlayerPrefs("ember.save.v1")
+            // directly, which skipped the file slot and let the menu and in-game load diverge.
+            if (EmberCrpg.Presentation.Ember.Save.EmberSaveService.TryResolveLatestSave(out var data)
+                && IsKnownBuildScene(data.sceneName))
             {
-                var data = JsonUtility.FromJson<EmberCrpg.Presentation.Ember.Save.SaveData>(json);
-                if (data != null && !string.IsNullOrEmpty(data.sceneName) && IsKnownBuildScene(data.sceneName))
-                {
-                    EmberCrpg.Presentation.Ember.Save.EmberSaveService.PreparePendingLoad(data);
-                    LoadingScreen.ShowForContext(new LoadingScreenContext(data.sceneName, data.sceneName, "area_transition"));
-                    SceneManager.LoadScene(data.sceneName);
-                    return;
-                }
+                EmberCrpg.Presentation.Ember.Save.EmberSaveService.PreparePendingLoad(data);
+                LoadingScreen.ShowForContext(new LoadingScreenContext(data.sceneName, data.sceneName, "area_transition"));
+                SceneManager.LoadScene(data.sceneName);
+                return;
             }
             NewGame();
         }
