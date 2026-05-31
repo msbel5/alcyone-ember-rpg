@@ -1,7 +1,6 @@
-// EMB-019/ARCH-05: this non-deterministic LLM provider lives in the EmberCrpg.Infrastructure
-// assembly AND namespace (EmberCrpg.Infrastructure.AiDm), so the deterministic, headless Simulation
-// core can never reference HTTP/native inference at compile time and the namespace matches the
-// assembly that actually owns the type.
+// EMB-019/ARCH-05: lives in EmberCrpg.Infrastructure.AiDm (see LlmClientConfig.cs header).
+// LEFT-021: split out of the former LlmClients.cs — the shared HTTP envelope, request serializer, and
+// tolerant hand-rolled JSON parser used by both LocalQwenClient and CloudLlmClient.
 using System;
 using System.Net.Http;
 using System.Text;
@@ -10,125 +9,6 @@ using EmberCrpg.Domain.AiDm;
 
 namespace EmberCrpg.Infrastructure.AiDm
 {
-    /// <summary>
-    /// Explicit endpoint config for sync LLM clients. Disabled by default.
-    /// Codex audit (D-P3): currently consumed only by LocalQwenClient /
-    /// CloudLlmClient (also experimental) and the AiDm test suite. Kept
-    /// public so external setup code and integration tests can build a
-    /// real-provider client; do not depend on this type in production
-    /// pathways until the routing surface is wired.
-    /// </summary>
-    // Codex audit (seventh pass J-P3 #32): this file deliberately folds three
-    // related public types — LlmClientConfig, LocalQwenClient, CloudLlmClient
-    // — into a single file because they share the same HTTP envelope and
-    // config struct. The fold is documented in docs/sprint-phase-12-atom-map.md
-    // rows 3 + 4. Splitting them across three files would only multiply
-    // boilerplate (each would import the same envelope types and config). If
-    // a future code style sweep mandates one-public-type-per-file, the split
-    // points are obvious; do not split now.
-    public sealed class LlmClientConfig
-    {
-        public LlmClientConfig(LlmProviderKind provider, string endpointUrl, string apiKey, bool enabled)
-        {
-            Provider = provider.IsEmpty ? LlmProviderKind.Mock : provider;
-            EndpointUrl = endpointUrl ?? string.Empty;
-            ApiKey = apiKey ?? string.Empty;
-            Enabled = enabled;
-        }
-
-        public LlmProviderKind Provider { get; }
-        public string EndpointUrl { get; }
-        public string ApiKey { get; }
-        public bool Enabled { get; }
-    }
-
-    /// <summary>
-    /// HTTP client targeting a local Qwen-compatible endpoint.
-    /// Codex audit (D-P3, restated in seventh-pass #14): no production caller
-    /// wires this in any of the live Phase scenes; the only callers are
-    /// integration tests and a manual smoke harness. Production adoption is
-    /// gated on the Phase 12 LLM tool-calling sprint where LlmRoutingService
-    /// will be wired against this contract. Until then, treat this class as
-    /// experimental — do not couple gameplay code to it.
-    /// </summary>
-    public sealed class LocalQwenClient
-    {
-        public const string DefaultOllamaGenerateEndpoint = "http://localhost:11434/api/generate";
-
-        private readonly LlmClientConfig _config;
-        private readonly HttpClient _http;
-
-        public LocalQwenClient(LlmClientConfig config, HttpClient http = null)
-        {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
-            _http = http ?? new HttpClient();
-        }
-
-        public LlmProviderKind Kind => LlmProviderKind.LocalQwen;
-
-        public LlmResponse Complete(LlmRequest request)
-        {
-            return LlmHttpClientCore.CompleteHttp(_config, _http, request);
-        }
-
-        /// <summary>
-        /// Codex review (PR #203 P2): a non-null `Complete().Text` is not a
-        /// reliable availability signal because the response constructor
-        /// normalises null → string.Empty. Probe the explicit HTTP status of
-        /// a small HEAD/GET against the configured endpoint instead, so
-        /// callers get a true/false grounded in network reachability + 2xx.
-        /// </summary>
-        public bool IsAvailable()
-        {
-            if (!_config.Enabled || string.IsNullOrWhiteSpace(_config.EndpointUrl))
-                return false;
-            try
-            {
-                using (var probe = new HttpRequestMessage(HttpMethod.Get, _config.EndpointUrl))
-                using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5))) // EMB-018: probe must not hang
-                {
-                    var resp = _http.SendAsync(probe, timeout.Token).GetAwaiter().GetResult();
-                    // Ollama responds 200 OK on GET to /api/generate even
-                    // without a model selected; any 2xx-3xx is "service up".
-                    return (int)resp.StatusCode >= 200 && (int)resp.StatusCode < 400;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-    }
-
-    /// <summary>
-    /// HTTP client targeting a cloud provider (Anthropic/OpenAI/etc.). Provider
-    /// label is derived from <see cref="LlmClientConfig.Provider"/>.
-    /// Codex audit (D-P3, restated in seventh-pass #14): no production caller
-    /// is wired today; experimental alongside <see cref="LocalQwenClient"/>.
-    /// Same Phase 12 gate applies: do not couple gameplay to this class until
-    /// LlmRoutingService picks it up from configuration. The integration
-    /// tests under Assets/Tests/EditMode/Net/* are the only consumers right
-    /// now and they bypass the routing seam entirely.
-    /// </summary>
-    public sealed class CloudLlmClient
-    {
-        private readonly LlmClientConfig _config;
-        private readonly HttpClient _http;
-
-        public CloudLlmClient(LlmClientConfig config, HttpClient http = null)
-        {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
-            _http = http ?? new HttpClient();
-        }
-
-        public LlmProviderKind Kind => _config.Provider;
-
-        public LlmResponse Complete(LlmRequest request)
-        {
-            return LlmHttpClientCore.CompleteHttp(_config, _http, request);
-        }
-    }
-
     internal static class LlmHttpClientCore
     {
         // EMB-018: hard ceiling on the sync-over-async request so a hung endpoint can't pin the thread.
