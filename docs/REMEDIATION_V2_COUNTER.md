@@ -994,3 +994,24 @@ save/load replay) reduce to **one live PlayMode/manual scene-tour with screensho
 left genuinely needs the Unity Editor / a running player with a display, which the user runs.
 
 **Re-audit tally:** 44 items → **12 closed `[x]`** this pass (+ the gameplay-bug commit) · **~25 `[~]` reasoned-staged** (overlap §6) · **1 `[-]`** · **remainder `[E]`** (one scene-tour proof). No item is unaccounted-for.
+
+---
+
+## §9 — REPORTED GAMEPLAY BUGS (user screenshots, 2026-05-31 pm)
+
+The user reran the build and found the prior pass's fixes were incomplete/wrong. These are the REAL
+fixes — all built (Win64 `Build Finished, Result: Success`, 0 `error CS`), fallback-green (1229), and
+the LLM pipeline re-proven headlessly (`IsAvailable: True`, `RESULT OK`, **`User:` leak now 0**).
+
+| ID | Bug | Root cause | Fix |
+| --- | --- | --- | --- |
+| `[x]` BUG-1 | HUD still said "LowFantasyMorrowind/Survival" | StyleDescriptor only sanitized the LLM *prompt*, not the HUD; the brand was in the enum *name* | Renamed `WorldStyle.LowFantasyMorrowind→LowFantasy` + `HighFantasyTolkien→HighFantasy` (int-serialized → saves safe) across 9 files; HUD now `Spaced()` → "Low Fantasy / Survival" |
+| `[x]` BUG-2 | JobQueue/Faction/ColonyNeeds shown in EVERY scene | my "single source" fix wrongly *showed* them everywhere | Host-ensured once but **hidden by default** (CanvasGroup α0), toggled with **'C'** |
+| `[x]` BUG-3 | Char-creation portrait stuck on placeholder (`invalid_json`) | provider built its own **Ollama HTTP** client (not running offline) → always failed | Use the wired `ForgeLocator.NativeLlm`; extract `{...}` from prose; validator **tolerates extra fields** (+2 tests) |
+| `[x]` BUG-4 | Oracle (R) showed a deterministic line, never the LLM | `ConsultFate()` returned an immediate placeholder; the async LLM line only hit the combat log | New `IConsultFateOracle.TryConsumeResolvedFate()`; host polls + swaps the resolved LLM line into the dialog |
+| `[x]` BUG-5 | Ritual Hall had two stacked bottom bars | scene-specific `SpellBar` overlapped the host action bar | Removed the SpellBar (action-bar CAST + number keys cover casting); RitualHall regenerated (0 refs) |
+| `[x]` BUG-6 | Inventory grid (TradeMarket Tab) barely visible | cells α0.2, icons α0.1, near-black counts | Opaque slots + gold hairline borders + solid panel backing + readable outlined gold counts |
+
+**Still needs the user's display `[E]`:** the on-screen confirmation of each (portrait rendering, 'C'
+colony toggle, oracle dialog line, single ritual bar, inventory readability) — the code paths are
+fixed + compiled + the LLM half is headless-proven, but the visual layout needs a running screen.
