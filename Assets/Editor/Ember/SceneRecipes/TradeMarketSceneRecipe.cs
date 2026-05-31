@@ -21,7 +21,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 $"{EmberAssetPaths.TilesDir}/brick.png", tiling: 5f);
 
             var marketSquare = EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 40f, groundMat, "MarketSquare");
-            
+
             // Add some background walls for context
             EmberTerrainBuilder.BuildWall(new Vector3(0, 2, 20), new Vector3(40, 4, 1), wallMat, "NorthBoundary");
 
@@ -46,21 +46,18 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Caravan", new Vector3(-5f, 0.75f, 4f));
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Stall",   new Vector3(0f, 0.5f, 3.5f));
 
+            // UI-SINGLE-SOURCE: the standard HUD (EmberHud TopBar + action bar, the JobQueue/Faction/
+            // ColonyNeeds side panels, pause, dialog) is host-ensured by EmberWorldHost, so the recipe
+            // no longer authors a TopBar or a FactionPanel (the host-ensured FactionPanel is the single
+            // source). The InventoryGrid below is intentionally scene-specific — it is the trade/loadout
+            // surface thematic to the market and is authored inactive, toggled open by the player — so
+            // it stays here rather than becoming part of the always-on HUD.
             var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",
-                new Vector2(0f, 0.94f), new Vector2(1f, 1f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
             var inventory = EmberUiBuilder.BuildPanel(canvas, "InventoryGrid",
                 new Vector2(0.65f, 0.05f), new Vector2(0.98f, 0.55f),
                 new Color(0f, 0f, 0f, 0.45f));
             EmberUiBuilder.AttachRuntimeScript(inventory.gameObject, "EmberCrpg.Presentation.Ember.UI.InventoryGrid");
             inventory.gameObject.SetActive(false);
-
-            var factions = EmberUiBuilder.BuildPanel(canvas, "FactionPanel",
-                new Vector2(0.02f, 0.05f), new Vector2(0.38f, 0.55f),
-                new Color(0f, 0f, 0f, 0.45f));
-            EmberUiBuilder.AttachRuntimeScript(factions.gameObject, "EmberCrpg.Presentation.Ember.UI.FactionPanel");
 
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(marketSquare);
             EmberScenePlacement.AssertInsideFloorFootprint(marketSquare, portalSpawn, nameof(TradeMarketSceneRecipe));

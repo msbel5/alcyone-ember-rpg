@@ -115,6 +115,14 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             EnsurePauseMenu();
             EnsureDialogBoxPanel();
+            // UI-SINGLE-SOURCE (player report "default UI elements every scene ... ui is coming from
+            // one place"): the standard HUD set is now host-owned so every gameplay scene shows the
+            // identical surface. Recipes no longer author EmberHud / JobQueue / ColonyNeeds / Faction
+            // (the divergent per-scene copies were the orphans the player saw). Ensure them here BEFORE
+            // BindUiPanels so the bind loops below find and wire them (Source = this), exactly as they
+            // would an authored panel.
+            EnsureEmberHud();
+            EnsureSidePanels();
 
             _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -325,33 +333,14 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             }
             foreach (var faction in Object.FindObjectsByType<FactionPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 faction.Source = this;
-            // HUD consistency (T3): every scene must show the standard EmberHud (vitals pills +
-            // numbered hotbar), never the divergent bottom-bar CombatHud. CombatDungeon is the only
-            // scene authored without an EmberHud, so if none exists we create one under the CombatHud's
-            // Canvas, then disable the CombatHud. EmberHud reads combat vitals via ICombatHudSource
-            // (this host), so no combat info is lost. EmberHud builds its pills/hotbar procedurally and
-            // only needs a Canvas parent + an Image, so runtime creation is safe.
-            var emberHuds = Object.FindObjectsByType<EmberHud>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            // HUD consistency (T3 + UI-SINGLE-SOURCE): every scene must show the standard EmberHud
+            // (vitals pills + numbered hotbar), never the divergent bottom-bar CombatHud. EnsureEmberHud()
+            // ran before this bind, so an EmberHud is always present and reads combat vitals via
+            // ICombatHudSource (this host) — no combat info is lost. Any CombatHud a scene still carries
+            // is therefore redundant; disable it so it never stacks under the standard HUD.
             foreach (var combat in Object.FindObjectsByType<CombatHud>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 if (combat == null) continue;
-                if (emberHuds.Length == 0)
-                {
-                    var canvas = combat.GetComponentInParent<Canvas>();
-                    if (canvas != null)
-                    {
-                        var go = new GameObject("EmberHud", typeof(RectTransform), typeof(UnityEngine.UI.Image));
-                        go.transform.SetParent(canvas.transform, worldPositionStays: false);
-                        var rt = (RectTransform)go.transform;
-                        rt.anchorMin = Vector2.zero;
-                        rt.anchorMax = Vector2.one;
-                        rt.offsetMin = Vector2.zero;
-                        rt.offsetMax = Vector2.zero;
-                        go.GetComponent<UnityEngine.UI.Image>().color = new Color(0f, 0f, 0f, 0f);
-                        go.AddComponent<EmberHud>().Source = this;
-                        emberHuds = Object.FindObjectsByType<EmberHud>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-                    }
-                }
                 combat.gameObject.SetActive(false);
             }
             foreach (var spellBar in Object.FindObjectsByType<SpellBar>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -587,6 +576,110 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // Hidden until the player interacts; matches scene-authored DialogBoxPanels,
             // which the raycaster finds via FindObjectsInactive.Include and activates.
             dialogGo.SetActive(false);
+        }
+
+        /// <summary>
+        /// UI-SINGLE-SOURCE: EmberHud (the TopBar tick/day/pop readout + the numbered action bar)
+        /// is the one HUD every gameplay scene must show. Recipes used to author it per-scene, which
+        /// drifted (CombatDungeon authored a CombatHud instead, SeasonFarm once authored a duplicate).
+        /// Ensure exactly one here so the HUD comes from a single source and looks identical in every
+        /// scene. EmberHud.Awake self-pins its own RectTransform to full-screen and builds its pills +
+        /// hotbar procedurally, so a bare Canvas child + Image is all it needs. Idempotent: a scene that
+        /// still carries an EmberHud (or a re-run / additive load) is left untouched.
+        /// </summary>
+        private void EnsureEmberHud()
+        {
+            var existing = Object.FindFirstObjectByType<EmberHud>(FindObjectsInactive.Include);
+            if (existing != null) return;
+
+            var canvas = ResolveOverlayCanvas();
+            var go = new GameObject("EmberHud", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            go.transform.SetParent(canvas.transform, worldPositionStays: false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            // Transparent container; EmberHud draws its own furniture. Matches the runtime EmberHud
+            // that BindUiPanels used to create under a CombatHud canvas.
+            go.GetComponent<UnityEngine.UI.Image>().color = new Color(0f, 0f, 0f, 0f);
+            go.AddComponent<EmberHud>().Source = this;
+        }
+
+        /// <summary>
+        /// UI-SINGLE-SOURCE: the three living-world side panels — JobQueue (left), Faction (mid-left),
+        /// ColonyNeeds (right) — are now host-ensured in EVERY gameplay scene so the player sees the
+        /// same standing world readout everywhere instead of the old "needs/population in some scenes,
+        /// nothing in others" inconsistency (the reported orphan UI). Recipes no longer author them.
+        /// Unlike EmberHud these panels do NOT self-pin, so we set the canonical footprints here (the
+        /// same anchors the recipes used to seed). Each is created at most once; an authored copy or a
+        /// host re-run short-circuits the matching block.
+        /// </summary>
+        private void EnsureSidePanels()
+        {
+            var canvas = ResolveOverlayCanvas();
+
+            if (Object.FindFirstObjectByType<JobQueuePanel>(FindObjectsInactive.Include) == null)
+            {
+                var go = BuildSidePanel(canvas, "JobQueuePanel",
+                    new Vector2(0f, 0.45f), new Vector2(0.22f, 0.94f));
+                go.AddComponent<JobQueuePanel>().Source = this;
+            }
+
+            if (Object.FindFirstObjectByType<FactionPanel>(FindObjectsInactive.Include) == null)
+            {
+                var go = BuildSidePanel(canvas, "FactionPanel",
+                    new Vector2(0.24f, 0.45f), new Vector2(0.5f, 0.94f));
+                go.AddComponent<FactionPanel>().Source = this;
+            }
+
+            if (Object.FindFirstObjectByType<ColonyNeedsPanel>(FindObjectsInactive.Include) == null)
+            {
+                var go = BuildSidePanel(canvas, "ColonyNeedsPanel",
+                    new Vector2(0.78f, 0.45f), new Vector2(1f, 0.94f));
+                go.AddComponent<ColonyNeedsPanel>().Source = this;
+            }
+        }
+
+        /// <summary>
+        /// Shared scaffold for the host-ensured side panels: a Canvas-child RectTransform anchored to
+        /// the given footprint with a translucent backing Image. The panel scripts swap the Image for
+        /// the parchment frame when one is assigned and build their own child label, so a plain Image
+        /// is sufficient (mirrors the editor EmberUiBuilder.BuildPanel scaffold minus the editor-only
+        /// asset lookups).
+        /// </summary>
+        private static GameObject BuildSidePanel(Canvas canvas, string name, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup), typeof(UnityEngine.UI.Image));
+            go.transform.SetParent(canvas.transform, worldPositionStays: false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            go.GetComponent<UnityEngine.UI.Image>().color = new Color(0f, 0f, 0f, 0.45f);
+            return go;
+        }
+
+        /// <summary>
+        /// Resolve the scene's screen-space overlay canvas, creating a fallback one when a scene has no
+        /// canvas at all (UI-only sandbox). Every generated gameplay scene authors an "EmberHUD" canvas
+        /// via EmberUiBuilder.BuildOverlayCanvas, so the FindFirstObjectByType branch is the normal path.
+        /// </summary>
+        private static Canvas ResolveOverlayCanvas()
+        {
+            var canvas = Object.FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+            if (canvas != null) return canvas;
+
+            var canvasGo = new GameObject(
+                "EmberHUD",
+                typeof(Canvas),
+                typeof(UnityEngine.UI.CanvasScaler),
+                typeof(UnityEngine.UI.GraphicRaycaster));
+            canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 1000;
+            return canvas;
         }
 
         /// <summary>

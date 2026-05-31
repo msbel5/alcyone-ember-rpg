@@ -28,6 +28,15 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             ClearDynamicSlots();
             _panel.SetText("body", BuildBodyText());
 
+            // Portrait image + caption are shown from the Portrait stage onward (Portrait, Dossier,
+            // Complete) and hidden on every earlier stage. ApplyPortrait fills the actual swatch;
+            // Render owns visibility so navigating Back hides the box again. (LEFT-007.)
+            bool showPortrait = _step == CreationStep.Portrait
+                || _step == CreationStep.DossierLaunch
+                || _step == CreationStep.Complete;
+            _panel.SetVisible("portrait", showPortrait);
+            _panel.SetVisible("portraitCaption", showPortrait);
+
             if (_step == CreationStep.PersonalityQuestions)
                 RenderQuestionButtons();
             else if (_step == CreationStep.CommanderIdentity)

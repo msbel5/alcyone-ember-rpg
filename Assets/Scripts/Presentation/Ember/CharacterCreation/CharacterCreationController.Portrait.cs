@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Generation;
 using EmberCrpg.Presentation.Ember.Loading;
@@ -13,35 +14,136 @@ using EmberCrpg.Simulation.CharacterCreation;
 using EmberCrpg.Simulation.Generation;
 using EmberCrpg.Ui.Foundation;
 using EmberCrpg.Simulation.Worldgen;
+using UnityEngine;
 
 namespace EmberCrpg.Presentation.Ember.CharacterCreation
 {
     public sealed partial class CharacterCreationController
     {
+        // LEFT-007: portrait generation is now non-blocking AND always renders something.
+        //
+        // The blocking LLM Complete() (an 8s sync-over-async HTTP call inside
+        // DefaultNpcPortraitJsonProvider.Request) used to run on Unity's main thread here,
+        // freezing the game while the Portrait stage opened or a reroll fired. And the result
+        // was only ever pushed into a tiny text label — no image was ever built, so the portrait
+        // box rendered empty.
+        //
+        // New flow:
+        //  1. SYNCHRONOUSLY publish a deterministic placeholder (NpcPromptJsonDefaults.FromSeed)
+        //     into PortraitJson + the visible "portrait" image swatch, immediately. This means a
+        //     portrait is on screen the instant the stage opens (never an empty box), and the
+        //     synchronous post-condition tests rely on (PortraitJson contains archetype_id) holds
+        //     with zero blocking.
+        //  2. If a custom provider is injected (tests / non-network sources), call it
+        //     synchronously — it is a cheap in-memory delegate, not the blocking network path —
+        //     and apply its validated result over the placeholder right away.
+        //  3. Otherwise kick the real network LLM call onto a worker thread (Task.Run) and, in
+        //     play mode, poll it from a coroutine; when a valid JSON lands we upgrade PortraitJson
+        //     + the swatch on the main thread. Empty/invalid results keep the deterministic
+        //     placeholder (NpcPromptJsonDefaults.FromSeed). Seed handling is unchanged.
         private void GeneratePortrait()
         {
+            // Each generation gets a serial so a late async result from a superseded reroll
+            // (or a Lock) cannot clobber the current portrait.
+            int generation = ++_portraitGenSerial;
+            StopPortraitUpgrade();
+
             var manifest = GenericNpcBaseManifest.CreateDefault();
-            var raw = string.IsNullOrWhiteSpace(_llmJson) ? RequestPortraitJson(string.Empty) : _llmJson;
-            if (!NpcPromptJsonValidator.TryValidate(raw, manifest, out var json, out var reason))
+            uint portraitSeed = _seed + (uint)(3 - _rerollsRemaining);
+
+            // 1. Deterministic placeholder — visible immediately, no blocking.
+            var placeholder = NpcPromptJsonDefaults.FromSeed(portraitSeed, manifest);
+            ApplyPortrait(placeholder, "Forging your likeness…");
+
+            // 2. Injected provider (tests / custom): cheap + synchronous, apply now.
+            if (_portraitJsonProvider != null)
             {
-                raw = RequestPortraitJson(reason);
-                if (!NpcPromptJsonValidator.TryValidate(raw, manifest, out json, out reason))
-                {
-                    json = NpcPromptJsonDefaults.FromSeed(_seed + (uint)(3 - _rerollsRemaining), manifest);
-                    AddLog("[portrait] LLM invalid twice; deterministic fallback used: " + reason + ".");
-                }
+                var raw = string.IsNullOrWhiteSpace(_llmJson)
+                    ? _portraitJsonProvider(portraitSeed, string.Empty)
+                    : _llmJson;
+                if (TryUpgradePortrait(raw, manifest, out var reason))
+                    return;
+
+                raw = _portraitJsonProvider(portraitSeed, reason);
+                if (!TryUpgradePortrait(raw, manifest, out reason))
+                    AddLog("[portrait] provider invalid twice; deterministic placeholder kept: " + reason + ".");
+                return;
             }
 
-            PortraitJson = json.ToCanonicalJson();
-            _panel?.SetText("portraitJson", PortraitJson);
-            AddLog("[portrait] JSON ready.");
+            // 3. Default network path: run OFF the main thread, upgrade when it lands (play mode).
+            //    A seeded _llmJson (if any) is tried first, still off-thread for the network retry.
+            string seededJson = _llmJson;
+            var task = Task.Run(() =>
+            {
+                var attempt = string.IsNullOrWhiteSpace(seededJson)
+                    ? DefaultNpcPortraitJsonProvider.Request(portraitSeed, string.Empty)
+                    : seededJson;
+                if (NpcPromptJsonValidator.TryValidate(attempt, manifest, out _, out var why))
+                    return attempt;
+                // One correction round-trip, also off-thread.
+                return DefaultNpcPortraitJsonProvider.Request(portraitSeed, why);
+            });
+
+            if (Application.isPlaying)
+                _portraitUpgradeRoutine = StartCoroutine(AwaitPortraitUpgrade(task, manifest, generation));
+            // In edit-mode tests Application.isPlaying is false: we intentionally do NOT block on
+            // the task. The deterministic placeholder already satisfies the synchronous contract.
         }
 
-        private string RequestPortraitJson(string correctionReason)
+        // Poll the off-thread LLM task without blocking the main thread; apply a valid result.
+        private IEnumerator AwaitPortraitUpgrade(Task<string> task, GenericNpcBaseManifest manifest, int generation)
         {
-            if (_portraitJsonProvider != null)
-                return _portraitJsonProvider(_seed + (uint)(3 - _rerollsRemaining), correctionReason ?? string.Empty);
-            return DefaultNpcPortraitJsonProvider.Request(_seed + (uint)(3 - _rerollsRemaining), correctionReason);
+            while (!task.IsCompleted)
+                yield return null;
+
+            _portraitUpgradeRoutine = null;
+
+            // A newer reroll (or Lock) superseded this request — drop the stale result.
+            if (generation != _portraitGenSerial)
+                yield break;
+
+            string raw = task.Status == TaskStatus.RanToCompletion ? task.Result : string.Empty;
+            if (TryUpgradePortrait(raw, manifest, out var reason))
+                AddLog("[portrait] LLM portrait ready.");
+            else
+                AddLog("[portrait] LLM unavailable/invalid; deterministic placeholder kept: " + reason + ".");
+        }
+
+        // Validate raw JSON and, if good, publish it as the portrait (JSON + visible swatch).
+        private bool TryUpgradePortrait(string raw, GenericNpcBaseManifest manifest, out string reason)
+        {
+            if (NpcPromptJsonValidator.TryValidate(raw, manifest, out var json, out reason))
+            {
+                ApplyPortrait(json, "Your likeness, drawn from the embers.");
+                return true;
+            }
+            return false;
+        }
+
+        // Single place that writes the portrait: canonical JSON into PortraitJson + the label, and
+        // a deterministic visible swatch into the "portrait" image slot with a caption.
+        private void ApplyPortrait(NpcPromptJson json, string caption)
+        {
+            PortraitJson = json.ToCanonicalJson();
+            if (_panel != null)
+            {
+                _panel.SetText("portraitJson", PortraitJson);
+                _panel.SetThumbnail("portrait", CharacterCreationPortraitSwatch.Build(json));
+                _panel.SetVisible("portrait", true);
+                _panel.SetText("portraitCaption", caption);
+                _panel.SetVisible("portraitCaption", true);
+            }
+        }
+
+        // Stop any in-flight upgrade coroutine (used on reroll/lock/regenerate). The Task keeps
+        // running to completion harmlessly; its result is discarded via the generation check.
+        private void StopPortraitUpgrade()
+        {
+            if (_portraitUpgradeRoutine != null)
+            {
+                StopCoroutine(_portraitUpgradeRoutine);
+                _portraitUpgradeRoutine = null;
+            }
         }
 
         private void AddLog(string line)

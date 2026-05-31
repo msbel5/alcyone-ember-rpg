@@ -53,6 +53,27 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
                 ccProgress.style.marginBottom = 12;
                 Register("progress", ccProgress);
 
+                // Portrait image slot (LEFT-007 visibility fix). The Portrait/Dossier stages call
+                // SetThumbnail("portrait", ...) with a deterministic swatch (and later a forge
+                // texture). Before this slot existed the controller only pushed raw JSON into the
+                // tiny "portraitJson" label, so the portrait box rendered empty. Centered, fixed
+                // square, hidden until the controller shows it on the Portrait stage.
+                var ccPortrait = new Image();
+                ccPortrait.scaleMode = ScaleMode.ScaleToFit;
+                ccPortrait.style.width = 192;
+                ccPortrait.style.height = 192;
+                ccPortrait.style.alignSelf = Align.Center;
+                ccPortrait.style.marginBottom = 6;
+                ccPortrait.style.display = DisplayStyle.None;
+                Register("portrait", ccPortrait);
+
+                var ccPortraitCaption = MakeLabel("", 12, false);
+                ccPortraitCaption.style.unityTextAlign = TextAnchor.MiddleCenter;
+                ccPortraitCaption.style.alignSelf = Align.Center;
+                ccPortraitCaption.style.marginBottom = 8;
+                ccPortraitCaption.style.display = DisplayStyle.None;
+                Register("portraitCaption", ccPortraitCaption);
+
                 // Body holds the per-stage prompt text. flexShrink=0 stops the build columns /
                 // log (both flexGrow=1) from squeezing it to zero and clipping the text; the Auto
                 // scroller hides the scrollbar unless the prompt overflows (the stray up/down

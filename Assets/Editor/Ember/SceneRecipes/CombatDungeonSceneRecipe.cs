@@ -110,11 +110,12 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             ambience.transform.position = new Vector3(0f, 1.5f, 4f);
 
             // 9. HUD overlay
-            var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var combatHud = EmberUiBuilder.BuildPanel(canvas, "CombatHud",
-                new Vector2(0f, 0f), new Vector2(1f, 0.18f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(combatHud.gameObject, "EmberCrpg.Presentation.Ember.UI.CombatHud");
+            // UI-SINGLE-SOURCE: HUD comes from one place. The recipe used to author a bottom-bar
+            // CombatHud, but EmberWorldHost always ensures the standard EmberHud (which reads combat
+            // vitals via ICombatHudSource) and disables any CombatHud at runtime — so authoring one
+            // here only produced a redundant panel that was immediately hidden. Author just the overlay
+            // canvas; the host mounts the standard HUD set onto it.
+            EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
 
             // 10. Exit portal to RitualHall
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);

@@ -54,15 +54,12 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
 
             EmberWorldspaceBuilder.SpawnActor("Oracle", "fairy", new Vector3(0f, 0.5f, 3f), domainActorKey: "Sage Nera");
 
-            var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",
-                new Vector2(0f, 0.94f), new Vector2(1f, 1f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
-            var card = EmberUiBuilder.BuildPanel(canvas, "DmCard",
-                new Vector2(0.2f, 0.18f), new Vector2(0.8f, 0.5f),
-                new Color(0f, 0f, 0f, 0.7f));
-            EmberUiBuilder.AttachRuntimeScript(card.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
+            // UI-SINGLE-SOURCE: HUD + dialog come from one place. EmberWorldHost ensures the standard
+            // EmberHud and a single DialogBoxPanel (which self-pins to the canonical bottom-centered
+            // footprint) at runtime, so the oracle's "Consult Fate" answer surfaces through the same
+            // host-ensured dialog box every other scene uses — no per-scene DmCard duplicate. This
+            // recipe authors only the overlay canvas as the host-ensured panels' parent.
+            EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
 
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(shrineFloor);
             EmberScenePlacement.AssertInsideFloorFootprint(shrineFloor, portalSpawn, nameof(OracleShrineSceneRecipe));

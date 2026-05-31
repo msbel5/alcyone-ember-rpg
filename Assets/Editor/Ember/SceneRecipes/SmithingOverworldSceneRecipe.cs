@@ -104,15 +104,13 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             ambience.transform.position = new Vector3(0f, 1.5f, 3f);
 
             // 10. HUD overlay
-            var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",
-                anchorMin: new Vector2(0f, 0.94f), anchorMax: new Vector2(1f, 1f),
-                background: new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
-            var jobPanel = EmberUiBuilder.BuildPanel(canvas, "JobQueuePanel",
-                anchorMin: new Vector2(0f, 0.35f), anchorMax: new Vector2(0.22f, 0.94f),
-                background: new Color(0f, 0f, 0f, 0.45f));
-            EmberUiBuilder.AttachRuntimeScript(jobPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.JobQueuePanel");
+            // UI-SINGLE-SOURCE: HUD comes from one place. The recipe used to author a TopBar (EmberHud)
+            // and a JobQueuePanel inline, but EmberWorldHost now ensures the standard HUD set — EmberHud
+            // (TopBar + action bar), the JobQueue/Faction/ColonyNeeds living-world side panels, pause,
+            // and the dialog box — at runtime in every gameplay scene. The forge job queue the player
+            // expects here is now the host-ensured JobQueuePanel (single source, no per-scene orphan).
+            // Author only the overlay canvas so those host-ensured panels have a parent.
+            EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
 
             // 11. Exit portal to ColonyNeeds
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);

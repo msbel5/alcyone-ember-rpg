@@ -491,6 +491,57 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 : "Someone waits for you to speak.";
         }
 
+        // BUG-DIALOG-BRAND: WorldProfile.Style is an INTERNAL codename enum (e.g. "LowFantasyMorrowind").
+        // Interpolating it verbatim into an NPC prompt makes the local model narrate the real brand
+        // ("Welcome to the world of Morrowind"). Produce a brand-safe, human descriptor instead: drop any
+        // brand/codename token, split the CamelCase enum into spaced lowercase words, and fall back to a
+        // generic phrase when nothing usable remains.
+        private string StyleDescriptor()
+        {
+            var raw = _world.WorldProfile?.Style.ToString();
+            if (string.IsNullOrWhiteSpace(raw)) raw = "low-fantasy";
+
+            // Strip known IP brand/codenames (case-insensitive). "elder ?scrolls" matches "elderscrolls"
+            // and "elder scrolls".
+            raw = System.Text.RegularExpressions.Regex.Replace(
+                raw,
+                "morrowind|daggerfall|tamriel|skyrim|oblivion|elder ?scrolls",
+                string.Empty,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // Split CamelCase / PascalCase boundaries into spaces, then lowercase. "LowFantasy" -> "Low Fantasy".
+            raw = System.Text.RegularExpressions.Regex.Replace(raw, "(?<=[a-z0-9])(?=[A-Z])", " ");
+            // Collapse runs of whitespace that the brand strip may have left behind.
+            raw = System.Text.RegularExpressions.Regex.Replace(raw, "\\s+", " ").Trim().ToLowerInvariant();
+
+            return string.IsNullOrWhiteSpace(raw) ? "low-fantasy" : raw;
+        }
+
+        // BUG-DIALOG-TURNLEAK: the local model sometimes echoes the prompt's chat-turn scaffolding back
+        // into its completion (e.g. "...What brings you here?\nUser:"). Cut the response at the FIRST
+        // leaked turn/role/memory marker so only the in-character head survives. Returns "" when there is
+        // nothing usable, so callers keep their deterministic line.
+        private static string SanitizeNpcLine(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+            string[] markers =
+            {
+                "User:", "Assistant:", "System:", "<|im", "Memory:", "\nUser", "\nMemory"
+            };
+
+            int cut = -1;
+            foreach (var marker in markers)
+            {
+                int idx = raw.IndexOf(marker, System.StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0 && (cut < 0 || idx < cut))
+                    cut = idx;
+            }
+
+            var head = cut >= 0 ? raw.Substring(0, cut) : raw;
+            return head.Trim();
+        }
+
         private async Task GenerateNpcGreetingAsync(NpcSeedRecord npc)
         {
             var router = ForgeLocator.LlmRouter;
@@ -503,7 +554,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 100,
                 npc.Id.Value,
-                $"You are {npc.Name}, a {npc.Role} in a {_world.WorldProfile?.Style} world. Greet the player character briefly in character.",
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. Greet the player character briefly in character.",
                 new List<string>()
             );
 
@@ -524,8 +575,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // real bytes) used to pass the IsNullOrEmpty guard, Trim() to "", and BLANK the good
                 // deterministic greeting. Require non-whitespace before replacing; otherwise keep the
                 // deterministic line that BeginConversation already set.
-                if (response != null && !string.IsNullOrWhiteSpace(response.Text))
-                    _currentDialogLine = response.Text.Trim();
+                // BUG-DIALOG-TURNLEAK: also strip any echoed chat-turn scaffolding; only a non-empty
+                // cleaned line replaces the deterministic greeting.
+                var greeting = SanitizeNpcLine(response?.Text);
+                if (!string.IsNullOrEmpty(greeting))
+                    _currentDialogLine = greeting;
                 _isDialogThinking = false;
             });
         }
@@ -549,7 +603,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 100,
                 seed,
-                $"You are {actorName}, a character in a {_world.WorldProfile?.Style} world. Greet the player character briefly, in character.",
+                $"You are {actorName}, a character in a {StyleDescriptor()} world. Greet the player character briefly, in character.",
                 new List<string>()
             );
 
@@ -558,8 +612,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 UnityEngine.Debug.Log($"[NpcGreeting-adhoc] actor={actorName} llm-len={(response?.Text?.Length ?? -1)} " +
                     $"used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
-                if (response != null && !string.IsNullOrWhiteSpace(response.Text))
-                    _currentDialogLine = response.Text.Trim();
+                // BUG-DIALOG-TURNLEAK: strip echoed chat-turn scaffolding; only a non-empty cleaned line
+                // replaces the deterministic greeting.
+                var greeting = SanitizeNpcLine(response?.Text);
+                if (!string.IsNullOrEmpty(greeting))
+                    _currentDialogLine = greeting;
                 _isDialogThinking = false;
             });
         }
@@ -655,7 +712,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             _isDialogThinking = true;
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
-            var worldStyle = _world.WorldProfile?.Style.ToString() ?? "fantasy";
 
             var request = new LlmRequest(
                 "npc_topic_answer",
@@ -663,7 +719,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 180,
                 npc.Id.Value,
-                $"You are {npc.Name}, a {npc.Role} in a {worldStyle} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
                 new List<string>());
 
             // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and
@@ -673,8 +729,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 // BUG-DIALOG-EMPTY: same whitespace guard as the greeting path — never overwrite the
                 // deterministic topic answer with an empty/whitespace inference result.
-                if (response != null && !string.IsNullOrWhiteSpace(response.Text))
-                    _currentDialogLine = response.Text.Trim();
+                // BUG-DIALOG-TURNLEAK: also strip echoed chat-turn scaffolding; only a non-empty cleaned
+                // line replaces the deterministic topic answer.
+                var answer = SanitizeNpcLine(response?.Text);
+                if (!string.IsNullOrEmpty(answer))
+                    _currentDialogLine = answer;
                 _isDialogThinking = false;
             });
         }
@@ -689,7 +748,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             _isDialogThinking = true;
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
-            var worldStyle = _world.WorldProfile?.Style.ToString() ?? "fantasy";
             ulong seed = 1469598103934665603UL;
             foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
             foreach (var ch in topicId ?? string.Empty) { seed ^= ch; seed *= 1099511628211UL; }
@@ -700,7 +758,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 180,
                 seed,
-                $"You are {actorName}, a character in a {worldStyle} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
+                $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
                 new List<string>());
 
             var response = await Task.Run(() => router.Complete(request, out _));
@@ -708,8 +766,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 UnityEngine.Debug.Log($"[NpcTopic-adhoc] actor={actorName} topic={topicId} " +
                     $"llm-len={(response?.Text?.Length ?? -1)} used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
-                if (response != null && !string.IsNullOrWhiteSpace(response.Text))
-                    _currentDialogLine = response.Text.Trim();
+                // BUG-DIALOG-TURNLEAK: strip echoed chat-turn scaffolding; only a non-empty cleaned line
+                // replaces the deterministic topic answer.
+                var answer = SanitizeNpcLine(response?.Text);
+                if (!string.IsNullOrEmpty(answer))
+                    _currentDialogLine = answer;
                 _isDialogThinking = false;
             });
         }

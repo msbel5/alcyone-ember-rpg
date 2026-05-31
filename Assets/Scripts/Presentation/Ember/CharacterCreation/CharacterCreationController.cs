@@ -86,6 +86,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private int _rerollsRemaining = 3;
         private bool _storyLaunched;
         private Func<uint, string, string> _portraitJsonProvider;
+        // LEFT-007: handle to the in-flight off-thread portrait-upgrade coroutine, and a serial
+        // that invalidates a stale async result when a newer reroll/lock supersedes it.
+        private Coroutine _portraitUpgradeRoutine;
+        private int _portraitGenSerial;
 
         public IReadOnlyList<string> LogLines => _logLines;
         public CreationStep CurrentStep => _step;
@@ -161,6 +165,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         private void OnDestroy()
         {
+            StopPortraitUpgrade();
             if (_panel == null) return;
             UiSurfaceLocator.Current?.Unmount(_panel);
             _panel = null;
@@ -525,6 +530,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         public void LockPortrait()
         {
             _rerollsRemaining = 0;
+            // Freeze whatever portrait is currently shown: bump the serial so any in-flight
+            // off-thread LLM upgrade is discarded when it lands, and stop polling for it.
+            _portraitGenSerial++;
+            StopPortraitUpgrade();
         }
 
         private bool ComputeCanAdvance()

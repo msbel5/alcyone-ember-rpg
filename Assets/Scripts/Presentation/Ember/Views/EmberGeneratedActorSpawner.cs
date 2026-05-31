@@ -23,7 +23,7 @@ namespace EmberCrpg.Presentation.Ember.Views
     ///  - One-shot: spawns once in <see cref="SpawnMissingNearbyActors"/>, called by the host AFTER it
     ///    has cached the authored views. Re-entrant-safe (skips ids it already spawned / that already
     ///    have a view), so a second call (additive scene load, host re-run) never double-spawns.
-    ///  - CAPPED: only the nearest <see cref="_maxSpawnCount"/> (&lt;=12 by default) candidates to the
+    ///  - CAPPED: only the nearest <see cref="_maxSpawnCount"/> (6 by default) candidates to the
     ///    player are materialised — never all 750 — so a large world cannot blow up the frame budget.
     ///  - ADDITIVE: it only ADDS GameObjects under its own root; it never touches, moves, or deletes the
     ///    authored actors, and it no-ops cleanly when there is no world / no player / no candidates.
@@ -36,23 +36,47 @@ namespace EmberCrpg.Presentation.Ember.Views
     /// CameraFacingBillboard, and an ActorView on the root — but built with RUNTIME APIs only (the
     /// Editor builder's AssetDatabase/SerializedObject paths are unavailable at play time).
     ///
-    /// VISUAL-PROOF TODO (the only part still needing a Unity Editor screenshot): the placeholder sprite
-    /// comes from the host's <see cref="SpriteRegistry"/> ("npc_placeholder", falling back to a generated
-    /// 1x1 magenta texture so the billboard is never an invisible null sprite). Choosing a real per-role
-    /// sprite/material and confirming the billboard's facing + world scale read correctly in-scene is the
-    /// deliberately-deferred visual pass — the spawn, the stable-id stamping, the nearest-N cap, and the
-    /// world positioning are all build-safe and headless-verifiable without it.
+    /// SPRITE + SIZE + SCATTER (SOUL-04 visual fix): each billboard draws a REAL character sprite from
+    /// the host's <see cref="SpriteRegistry"/> using the SAME keys authored ActorViews use (see
+    /// <see cref="_placeholderSpriteKeys"/>; "blacksmith" is EmberWorldspaceBuilder's universal fallback,
+    /// so it is effectively guaranteed). It is sized by <see cref="FitBillboardToPlayableHeight"/> to the
+    /// same ~2.1u height as authored actors, and fanned out on concentric rings by spawn index so the
+    /// co-located worldgen crowd does not stack on one tile / the camera. The earlier build resolved an
+    /// UNREGISTERED "npc_placeholder" key, which fell back to a 1x1 magenta texture that scaled into a
+    /// screen-filling shape — that path is gone; the only remaining fallback is a small neutral quad sized
+    /// to the same height, used solely when no registry is wired.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class EmberGeneratedActorSpawner : MonoBehaviour
     {
-        // Cap: nearest-N generated NPCs to the player get a billboard. <=12 keeps the starting
-        // settlement populated without instantiating a 750-strong crowd.
-        [SerializeField] private int _maxSpawnCount = 12;
+        // Cap: nearest-N generated NPCs to the player get a billboard. A small cap keeps the starting
+        // settlement populated (and visually readable) without instantiating a 750-strong crowd or a
+        // pile of overlapping billboards.
+        [SerializeField] private int _maxSpawnCount = 6;
 
-        // Sprite registry key for the placeholder character sprite. Resolved against the host's
-        // registry; a miss falls back to a generated texture so the billboard always renders.
-        [SerializeField] private string _placeholderSpriteKey = "npc_placeholder";
+        // On-screen billboard height in world units. Mirrors EmberWorldspaceBuilder.SpawnActor's
+        // FitBillboardToPlayableHeight target (2.1) so spawned NPCs read at the SAME size as authored
+        // actors — never giant.
+        [SerializeField] private float _billboardTargetHeight = 2.1f;
+
+        // World-unit spacing between spawned NPCs. Worldgen seeds most NPCs at the settlement origin
+        // tile, so without an offset every billboard would stack on the same XZ (and on the player).
+        // We fan them out on a ring/grid by spawn index using this spacing; ~1.5u clears 2.1u-tall
+        // billboards comfortably.
+        [SerializeField] private float _spawnSpacing = 1.5f;
+
+        // Sprite registry keys, in priority order, resolved against the host's registry. These are
+        // REAL character-sprite file names that SpriteRegistryAutoBuilder always writes from
+        // Assets/Art/Characters — the SAME source authored ActorViews draw from. "blacksmith" is the
+        // authored universal fallback (EmberWorldspaceBuilder.ResolveSpriteAlias's default), so it is
+        // effectively guaranteed present. The first hit wins; we NEVER use an unregistered key (which
+        // would yield the 1x1 magenta "missing texture" placeholder that previously stretched into a
+        // screen-filling shape).
+        [SerializeField]
+        private string[] _placeholderSpriteKeys =
+        {
+            "blacksmith", "merchant", "innkeeper", "warrior", "knight"
+        };
 
         private SpriteRegistry _spriteRegistry;
         private Sprite _fallbackSprite;
@@ -110,23 +134,27 @@ namespace EmberCrpg.Presentation.Ember.Views
             int spawned = 0;
             for (int i = 0; i < toSpawn; i++)
             {
-                if (SpawnOne(pending[i]))
+                if (SpawnOne(pending[i], spawned))
                     spawned++;
             }
             return spawned;
         }
 
-        private bool SpawnOne(SpawnableActor candidate)
+        private bool SpawnOne(SpawnableActor candidate, int spawnIndex)
         {
             var id = new ActorId(candidate.Id);
             string actorName = string.IsNullOrEmpty(candidate.Name) ? $"NPC {candidate.Id}" : candidate.Name;
 
             // Root GameObject parented under the spawner so the generated crowd is one tidy subtree and
-            // never collides with authored hierarchy. Positioned by the pre-projected world XZ (Y up = 0),
-            // matching DomainSimulationAdapter.ProjectActor so the first per-tick sync causes no jump.
+            // never collides with authored hierarchy. Base position is the pre-projected world XZ (Y up = 0),
+            // matching DomainSimulationAdapter.ProjectActor. Worldgen seeds most NPCs at the SAME settlement
+            // tile, so we add a deterministic per-index ring/grid offset to spread them out — otherwise every
+            // billboard (and the player) would stack on one point. The first per-tick id-keyed sync may later
+            // pull each view to its authored grid position; until the sim moves them this keeps them legible.
+            var offset = SpawnOffset(spawnIndex);
             var root = new GameObject(actorName);
             root.transform.SetParent(transform, worldPositionStays: false);
-            root.transform.position = new Vector3(candidate.WorldX, 0f, candidate.WorldZ);
+            root.transform.position = new Vector3(candidate.WorldX + offset.x, 0f, candidate.WorldZ + offset.y);
 
             // "Billboard" child — ActorView.Awake binds it by this exact name. Same local offset and
             // SpriteRenderer sorting order as EmberWorldspaceBuilder.SpawnActor's authored billboard.
@@ -137,7 +165,7 @@ namespace EmberCrpg.Presentation.Ember.Views
             var renderer = billboard.AddComponent<SpriteRenderer>();
             renderer.sprite = ResolvePlaceholderSprite();
             renderer.sortingOrder = 10;
-            FitBillboardToPlayableHeight(billboard.transform, renderer, 2.1f);
+            FitBillboardToPlayableHeight(billboard.transform, renderer, _billboardTargetHeight);
             billboard.AddComponent<CameraFacingBillboard>();
 
             // ActorView on the root, stamped with the stable id so the host's id-keyed PushWorldViews
@@ -197,6 +225,32 @@ namespace EmberCrpg.Presentation.Ember.Views
             return dx * dx + dz * dz;
         }
 
+        // Deterministic XZ offset (world units) per spawn index so co-located worldgen NPCs fan out
+        // instead of stacking on one tile / the player. Index 0 sits at the origin; the rest spiral
+        // outward on concentric square rings (8, 16, 24 ... slots per ring) — a compact, overlap-free
+        // settlement scatter that needs no scene data and is stable across runs. Spacing comes from
+        // _spawnSpacing so the spread always clears the billboard footprint.
+        private Vector2 SpawnOffset(int index)
+        {
+            float spacing = Mathf.Max(0f, _spawnSpacing);
+            if (index <= 0 || spacing <= 0f) return Vector2.zero;
+
+            // Ring r (1-based) holds 8*r slots; find the ring this index lands in.
+            int ring = 1;
+            int remaining = index;
+            while (remaining > 8 * ring)
+            {
+                remaining -= 8 * ring;
+                ring++;
+            }
+
+            // Position evenly around this ring's perimeter, radius = ring * spacing.
+            int slots = 8 * ring;
+            float angle = (Mathf.PI * 2f) * ((remaining - 1) / (float)slots);
+            float radius = ring * spacing;
+            return new Vector2(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius);
+        }
+
         // Same scale-to-target-height behaviour as EmberWorldspaceBuilder so spawned billboards read at a
         // comparable size to authored ones. No-op for a null/degenerate sprite (e.g. the 1x1 fallback).
         private static void FitBillboardToPlayableHeight(Transform t, SpriteRenderer renderer, float targetHeight)
@@ -208,30 +262,50 @@ namespace EmberCrpg.Presentation.Ember.Views
             t.localScale = new Vector3(scale, scale, scale);
         }
 
+        // Resolve the SAME sprite source authored ActorViews use: a real key in the host's registry,
+        // which SpriteRegistryAutoBuilder populates from Assets/Art/Characters. We try each configured
+        // key in order and take the first hit; "blacksmith" (the authored universal fallback) is
+        // effectively guaranteed, so a spawned billboard almost always gets real character art. Only if
+        // the registry is missing/empty do we fall back to a generated sprite — and that sprite is sized
+        // to read at the SAME height as the others, so it can never balloon to fill the screen.
         private Sprite ResolvePlaceholderSprite()
         {
-            if (_spriteRegistry != null)
+            if (_spriteRegistry != null && _placeholderSpriteKeys != null)
             {
-                var s = _spriteRegistry.GetSprite(_placeholderSpriteKey);
-                if (s != null) return s;
+                for (int i = 0; i < _placeholderSpriteKeys.Length; i++)
+                {
+                    var key = _placeholderSpriteKeys[i];
+                    if (string.IsNullOrEmpty(key)) continue;
+                    var s = _spriteRegistry.GetSprite(key);
+                    if (s != null) return s;
+                }
             }
             return GetOrCreateFallbackSprite();
         }
 
-        // Last-resort sprite so a spawned billboard is never an invisible null. A 1x1 magenta texture
-        // doubles as a visible "placeholder art missing" flag for the deferred visual pass. Cached so we
-        // allocate it at most once per spawner.
+        // Last-resort sprite for the (rare) case where no registry sprite resolves, so a billboard is
+        // never an invisible null. Deliberately built as a small, neutral-grey 1-world-unit quad: a 64px
+        // texture at 64 PPU gives bounds.size.y == 1, so FitBillboardToPlayableHeight scales it to the
+        // SAME ~2.1u height as every other actor — NEVER the giant magenta the old 1x1 placeholder
+        // produced. Cached so we allocate it at most once per spawner.
         private Sprite GetOrCreateFallbackSprite()
         {
             if (_fallbackSprite != null) return _fallbackSprite;
-            var tex = new Texture2D(1, 1, TextureFormat.RGBA32, mipChain: false)
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: false)
             {
                 name = "EmberGeneratedActorFallback",
-                filterMode = FilterMode.Point
+                filterMode = FilterMode.Bilinear
             };
-            tex.SetPixel(0, 0, new Color(1f, 0f, 1f, 1f));
+            var fill = new Color32(110, 110, 120, 255);
+            var pixels = new Color32[size * size];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = fill;
+            tex.SetPixels32(pixels);
             tex.Apply();
-            _fallbackSprite = Sprite.Create(tex, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
+            // pixelsPerUnit == size -> sprite bounds are exactly 1x1 world unit (same convention the
+            // height-fit math expects); the billboard is then scaled to _billboardTargetHeight.
+            _fallbackSprite = Sprite.Create(
+                tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
             _fallbackSprite.name = "EmberGeneratedActorFallback";
             return _fallbackSprite;
         }

@@ -60,7 +60,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 tools,
                 150,
                 (ulong)_tick,
-                $"You are the Oracle of Ember. The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy reflecting this result for the player. The world is {_world.WorldProfile?.Style}.",
+                $"You are the Oracle of Ember. The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy reflecting this result for the player. The world is {StyleDescriptor()}.",
                 new List<string>()
             );
 
@@ -71,9 +71,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var response = await Task.Run(() => router.Complete(request, out _));
             _mainThreadApply.Enqueue(() =>
             {
-                _pendingFate = (response != null && !string.IsNullOrEmpty(response.Text))
-                    ? response.Text.Trim()
-                    : $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)";
+                // The OUTCOME (bucket/roll) stays deterministic; only the FLAVOUR text becomes the LLM line.
+                // BUG-DIALOG-TURNLEAK: strip any echoed chat-turn scaffolding the local model leaked into
+                // its completion, and only adopt the cleaned line when it is non-empty — otherwise keep the
+                // deterministic prophecy.
+                var deterministicFate = $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)";
+                var oracleLine = SanitizeNpcLine(response?.Text);
+                _pendingFate = !string.IsNullOrEmpty(oracleLine) ? oracleLine : deterministicFate;
 
                 // DET-03: the LLM's tool authority is REAL, not cosmetic. Route the model's ACTUAL
                 // response.ProposedToolCalls through the governed gate — LlmProposalValidator over the

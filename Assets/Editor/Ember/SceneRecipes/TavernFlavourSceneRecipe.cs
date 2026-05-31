@@ -49,15 +49,12 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             EmberWorldspaceBuilder.SpawnActor("Innkeeper", "innkeeper",  new Vector3( 2f, 0f, 1f), domainActorKey: "Quartermaster Ivo");
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Hearth", new Vector3(0f, 0.5f, 3.5f));
 
-            var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",
-                new Vector2(0f, 0.94f), new Vector2(1f, 1f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
-            var narration = EmberUiBuilder.BuildPanel(canvas, "NarrationBox",
-                new Vector2(0.05f, 0.02f), new Vector2(0.95f, 0.32f),
-                new Color(0f, 0f, 0f, 0.75f));
-            EmberUiBuilder.AttachRuntimeScript(narration.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
+            // UI-SINGLE-SOURCE: HUD + dialog come from one place. The recipe used to author a TopBar
+            // (EmberHud) and a NarrationBox (DialogBoxPanel) inline, but EmberWorldHost now ensures the
+            // standard EmberHud and a single DialogBoxPanel at runtime in every scene. The LLM-gated
+            // flavour lines surface through that one host-ensured dialog box (same source contract),
+            // so there is no per-scene narration-panel duplicate. Author only the overlay canvas.
+            EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
 
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
             EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(TavernFlavourSceneRecipe));

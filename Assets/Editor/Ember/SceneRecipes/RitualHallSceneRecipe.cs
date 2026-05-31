@@ -49,11 +49,11 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             EmberWorldspaceBuilder.SpawnActor("Apprentice","necromancer", new Vector3( 1.5f, 0f, 0f), domainActorKey: "Ash Rat");
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Effigy", new Vector3(0f, 0.75f, 5f));
 
+            // UI-SINGLE-SOURCE: the standard HUD (EmberHud TopBar + action bar, side panels, pause,
+            // dialog) is host-ensured by EmberWorldHost, so the recipe no longer authors a TopBar. The
+            // SpellBar below is intentionally scene-specific — it is the ritual-casting UI thematic to
+            // this hall, not part of the shared default HUD — so it stays authored here.
             var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",
-                new Vector2(0f, 0.94f), new Vector2(1f, 1f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
             var spellBar = EmberUiBuilder.BuildPanel(canvas, "SpellBar",
                 new Vector2(0.18f, 0f), new Vector2(0.82f, 0.12f),
                 new Color(0f, 0f, 0f, 0.55f));

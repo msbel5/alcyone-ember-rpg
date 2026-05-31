@@ -122,15 +122,12 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             ambience.transform.position = new Vector3(0f, 1.5f, 3f);
 
             // 10. HUD overlay
-            var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",
-                new Vector2(0f, 0.94f), new Vector2(1f, 1f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
-            var dialog = EmberUiBuilder.BuildPanel(canvas, "DialogBox",
-                new Vector2(0.1f, 0.02f), new Vector2(0.9f, 0.45f),
-                new Color(0f, 0f, 0f, 0.7f));
-            EmberUiBuilder.AttachRuntimeScript(dialog.gameObject, "EmberCrpg.Presentation.Ember.UI.DialogBoxPanel");
+            // UI-SINGLE-SOURCE: HUD + dialog come from one place. The recipe used to author a TopBar
+            // (EmberHud) and a DialogBox inline, but EmberWorldHost now ensures the standard EmberHud and
+            // a single DialogBoxPanel (self-pinned to the canonical bottom-centered footprint) at runtime
+            // in every scene. The Ask-About conversation here surfaces through that host-ensured dialog
+            // box (single source, no per-scene duplicate). Author only the overlay canvas as their parent.
+            EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
 
             // 11. Exit portal to OracleShrine
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);

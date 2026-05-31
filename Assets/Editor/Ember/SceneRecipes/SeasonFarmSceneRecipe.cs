@@ -20,7 +20,7 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 $"{EmberAssetPaths.TilesDir}/dirt_path.png", tiling: 4f);
 
             var field = EmberTerrainBuilder.BuildGroundPlane(Vector3.zero, 60f, groundMat, "Field");
-            
+
             // Path to harvest shed
             EmberTerrainBuilder.BuildGroundPlane(new Vector3(2f, 0.01f, 0f), 10f, dirtMat, "Path");
 
@@ -51,18 +51,13 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
             EmberWorldspaceBuilder.SpawnActor("Farmer", "warrior", new Vector3(-3f, 0f, -2f), domainActorKey: "Warden");
             EmberWorldspaceBuilder.SpawnWorksiteMarker("HarvestShed", new Vector3(4f, 0.75f, 1f));
 
-            var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",
-                new Vector2(0f, 0.94f), new Vector2(1f, 1f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
-            // DLG-SIZE-01 audit — removed a stray "SeasonPanel" that attached a SECOND
-            // EmberHud to a small top-right rect. EmberHud.Awake self-pins its own
-            // RectTransform to full-screen, so that panel rendered a duplicate full HUD
-            // (action bar + stat strips) stacked on the real TopBar HUD. No SeasonPanel
-            // component exists; the season readout lives on the standard HUD. Normalized
-            // SeasonFarm to the standard gameplay UI set: one EmberHud (+ runtime pause &
-            // dialog fallback), nothing stray.
+            // UI-SINGLE-SOURCE: HUD comes from one place — EmberWorldHost ensures the standard
+            // EmberHud (the season readout lives on that HUD), the living-world side panels, pause, and
+            // the dialog box at runtime. This recipe authors only the overlay canvas as their parent.
+            // (Historical: this scene once authored a stray "SeasonPanel" that attached a SECOND
+            // EmberHud; with the HUD now fully host-owned, that whole class of per-scene duplicate is
+            // structurally impossible.)
+            EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
 
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(field);
             EmberScenePlacement.AssertInsideFloorFootprint(field, portalSpawn, nameof(SeasonFarmSceneRecipe));

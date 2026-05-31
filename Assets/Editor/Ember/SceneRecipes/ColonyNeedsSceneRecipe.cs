@@ -52,16 +52,12 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
 
             EmberWorldspaceBuilder.SpawnWorksiteMarker("Hearth", new Vector3(0f, 0.5f, 4f));
 
-            var canvas = EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
-            var topBar = EmberUiBuilder.BuildPanel(canvas, "TopBar",
-                new Vector2(0f, 0.94f), new Vector2(1f, 1f),
-                new Color(0f, 0f, 0f, 0.55f));
-            EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
-
-            var needsPanel = EmberUiBuilder.BuildPanel(canvas, "ColonyNeedsPanel",
-                new Vector2(0.78f, 0.35f), new Vector2(1f, 0.94f),
-                new Color(0f, 0f, 0f, 0.45f));
-            EmberUiBuilder.AttachRuntimeScript(needsPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.ColonyNeedsPanel");
+            // UI-SINGLE-SOURCE: HUD comes from one place. EmberWorldHost ensures the standard
+            // gameplay HUD at runtime (EmberHud TopBar + action bar, the JobQueue/Faction/ColonyNeeds
+            // side panels, pause, and the dialog box). This recipe authors only the overlay canvas so
+            // those host-ensured panels have a parent + a single EventSystem; the colony-needs panel the
+            // player expects here is now the host-ensured one (no per-scene duplicate / orphan).
+            EmberUiBuilder.BuildOverlayCanvas("EmberHUD");
 
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(roomFloor);
             EmberScenePlacement.AssertInsideFloorFootprint(roomFloor, portalSpawn, nameof(ColonyNeedsSceneRecipe));
