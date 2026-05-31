@@ -422,10 +422,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 _conversation = new ConversationState(
                     _activeDialogActor, _currentPortrait, _world.Topics ?? new List<AskAboutTopic>());
 
-                // BUG-DIALOG-EMPTY: still seed a deterministic, non-empty opening line for the ad-hoc
-                // path (no async greeting fires here, so this is the only line the panel shows until
-                // the player picks a topic). Lead with a shared world topic answer when present.
+                // BUG-DIALOG-EMPTY: seed a deterministic, non-empty opening line first so the panel
+                // is never blank. Lead with a shared world topic answer when present.
                 _currentDialogLine = DeterministicGreeting(_activeDialogActor, npc, _world.Topics);
+
+                // LLM-NOT-FIRING fix: the playable scenes use authored actors with no NpcSeed, so the
+                // seeded greeting path above never ran for them and the player ALWAYS saw the
+                // deterministic line. Fire a name-based LLM greeting here too; it replaces the
+                // deterministic line only if the local model returns real text (else the line stays).
+                _ = GenerateAdHocGreetingAsync(_activeDialogActor);
             }
         }
 
@@ -489,10 +494,49 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // DET-02: apply the result on the main-thread tick, not on the await's resumption thread.
             _mainThreadApply.Enqueue(() =>
             {
+                // DIAG (LLM-not-firing): surface exactly what the native model returned so a runtime
+                // log reveals whether inference is empty (len<=0 -> llama.cpp produced no tokens) or
+                // working. Remove once the local LLM is confirmed generating in-game.
+                UnityEngine.Debug.Log($"[NpcGreeting] npc={npc.Name} llm-len={(response?.Text?.Length ?? -1)} " +
+                    $"used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
                 // BUG-DIALOG-EMPTY: a whitespace-only inference result (the native model returning no
                 // real bytes) used to pass the IsNullOrEmpty guard, Trim() to "", and BLANK the good
                 // deterministic greeting. Require non-whitespace before replacing; otherwise keep the
                 // deterministic line that BeginConversation already set.
+                if (response != null && !string.IsNullOrWhiteSpace(response.Text))
+                    _currentDialogLine = response.Text.Trim();
+                _isDialogThinking = false;
+            });
+        }
+
+        // LLM-NOT-FIRING fix: name-based greeting for authored/ad-hoc actors (no NpcSeed), so the
+        // playable scene cast also gets a local-LLM line instead of only the deterministic one. Same
+        // off-main-thread + main-thread-apply pattern as GenerateNpcGreetingAsync.
+        private async Task GenerateAdHocGreetingAsync(string actorName)
+        {
+            var router = ForgeLocator.LlmRouter;
+            if (router == null || string.IsNullOrEmpty(actorName)) return;
+
+            _isDialogThinking = true;
+            // Stable per-name seed (string.GetHashCode is process-randomised, so fold the chars via FNV).
+            ulong seed = 1469598103934665603UL;
+            foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
+
+            var request = new LlmRequest(
+                "npc_greeting",
+                "npc:" + actorName,
+                null,
+                100,
+                seed,
+                $"You are {actorName}, a character in a {_world.WorldProfile?.Style} world. Greet the player character briefly, in character.",
+                new List<string>()
+            );
+
+            var response = await Task.Run(() => router.Complete(request, out _));
+            _mainThreadApply.Enqueue(() =>
+            {
+                UnityEngine.Debug.Log($"[NpcGreeting-adhoc] actor={actorName} llm-len={(response?.Text?.Length ?? -1)} " +
+                    $"used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
                 if (response != null && !string.IsNullOrWhiteSpace(response.Text))
                     _currentDialogLine = response.Text.Trim();
                 _isDialogThinking = false;
