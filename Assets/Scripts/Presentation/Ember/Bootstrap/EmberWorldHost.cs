@@ -371,7 +371,14 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             for (int i = 0; i < _actorViews.Length; i++)
             {
                 var actor = _actorViews[i];
-                if (_worldView.TryReadActor(actor.DomainActorKey, out var state))
+                // SOUL-04: prefer the STABLE-id read so SOUL-03 (ScheduleSystem) movement projects onto
+                // the billboard even when two world actors share a display name. Falls back to the
+                // legacy DomainActorKey/name read for views that do not author an id (existing scenes).
+                ActorViewState state;
+                bool resolved = actor.HasDomainActorId
+                    ? _worldView.TryReadActor(actor.DomainActorId, out state)
+                    : _worldView.TryReadActor(actor.DomainActorKey, out state);
+                if (resolved)
                     actor.SetTarget(state);
             }
 

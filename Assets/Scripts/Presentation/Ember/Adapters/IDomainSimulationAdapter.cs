@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EmberCrpg.Domain.Core;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 using UnityEngine;
@@ -52,6 +53,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         IReadOnlyList<string> SpellSlots { get; }
 
         bool TryReadActor(string actorName, out ActorViewState state);
+
+        /// <summary>
+        /// SOUL-04: read an actor's per-tick visual snapshot by its STABLE
+        /// <see cref="ActorId"/> instead of its display-name string. This is the
+        /// id-keyed position-sync path the host uses to project SOUL-03
+        /// (ScheduleSystem) movement onto an existing billboard view: it looks
+        /// the record up in <c>WorldState.Actors</c> by id and projects its
+        /// <c>GridPosition</c> to world space. Returns false (default state)
+        /// when the id is empty or unregistered.
+        /// </summary>
+        bool TryReadActor(ActorId id, out ActorViewState state);
         bool TryReadWorksite(string siteName, out WorksiteViewState state);
     }
 
@@ -100,6 +112,22 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// next to the other player-driven verbs.
         /// </summary>
         IDialogSource GetDialogSource(string actorName);
+
+        /// <summary>
+        /// DLG-01: resolve an NPC conversation by the actor's STABLE
+        /// <see cref="ActorId"/> instead of its display-name string. This is
+        /// the canonical lookup path now that SOUL-01/03 give every world
+        /// actor a stable id in <c>WorldState.Actors</c>: the adapter finds the
+        /// ActorRecord by id (and the matching NpcSeed when the id maps to a
+        /// generated NPC) rather than scanning by name, which broke whenever
+        /// two actors shared a name or a view authored a divergent label.
+        /// Implementations MUST log a warning and return a non-null but
+        /// deliberately empty/global-less source when the id does not resolve,
+        /// rather than silently dropping the player into global world topics.
+        /// The <see cref="GetDialogSource(string)"/> overload stays as a
+        /// best-effort fallback for legacy callers that only have a name.
+        /// </summary>
+        IDialogSource GetDialogSource(ActorId id);
 
         /// <summary>
         /// World seeding command — applies the MainMenu/world-gen wizard's

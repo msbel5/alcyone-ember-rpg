@@ -95,7 +95,12 @@ namespace EmberCrpg.Presentation.Ember.Interaction
                 if (commands != null)
                 {
                     commands.TryInteract(target.DisplayName);
-                    _dialogPanel.Source = commands.GetDialogSource(target.DisplayName);
+                    // DLG-01: prefer the STABLE-id resolution path when the interactable carries an
+                    // actor id (set per-actor in the scene or by a runtime spawner). Only fall back to
+                    // the brittle display-name lookup for legacy interactables with no id authored.
+                    _dialogPanel.Source = target.HasActorId
+                        ? commands.GetDialogSource(target.ActorId)
+                        : commands.GetDialogSource(target.DisplayName);
                     _dialogPanel.gameObject.SetActive(true);
 
                     Cursor.lockState = CursorLockMode.None;

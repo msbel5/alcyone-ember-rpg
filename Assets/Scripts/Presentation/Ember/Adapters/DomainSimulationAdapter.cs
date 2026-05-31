@@ -34,6 +34,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _pendingFate = string.Empty;
         private bool _isFateThinking;
         private bool _isDialogThinking;
+        // DLG-01: set true when an id-keyed GetDialogSource lookup misses, so the
+        // read methods surface an explicit "no one here" state instead of silently
+        // dropping the player into the shared global _world.Topics menu. Reset on
+        // every successful bind (both the id and the name overloads).
+        private bool _suppressGlobalTopicFallback;
         private const ulong RegionSiteOffset = 100_000UL;
         private const ulong SettlementSiteOffset = 200_000UL;
         private const ulong GeneratedNpcActorOffset = 10_000UL;
@@ -245,19 +250,37 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public bool TryReadActor(string actorName, out ActorViewState state)
         {
             state = default;
-            if (string.IsNullOrEmpty(actorName)) return false;
+            if (string.IsNullOrEmpty(actorName) || _world.Actors == null) return false;
             foreach (var actor in _world.Actors.Records)
             {
                 if (string.Equals(actor.Name, actorName, System.StringComparison.Ordinal))
                 {
-                    state = new ActorViewState(
-                        new UnityEngine.Vector3(actor.Position.X, 0f, actor.Position.Y),
-                        UnityEngine.Quaternion.identity,
-                        visible: true);
+                    state = ProjectActor(actor);
                     return true;
                 }
             }
             return false;
+        }
+
+        // SOUL-04: id-keyed read so the host can sync a billboard from the actor's stable id and see
+        // SOUL-03 (ScheduleSystem) grid movement without depending on name uniqueness.
+        public bool TryReadActor(ActorId id, out ActorViewState state)
+        {
+            state = default;
+            if (id.IsEmpty || _world.Actors == null) return false;
+            if (!_world.Actors.TryGet(id, out var actor) || actor == null) return false;
+            state = ProjectActor(actor);
+            return true;
+        }
+
+        // Single projection so the name and id read paths can never drift: domain grid (X,Y) maps to
+        // the world-space XZ plane (Y up stays 0); actors are always visible while alive in the store.
+        private static ActorViewState ProjectActor(ActorRecord actor)
+        {
+            return new ActorViewState(
+                new UnityEngine.Vector3(actor.Position.X, 0f, actor.Position.Y),
+                UnityEngine.Quaternion.identity,
+                visible: true);
         }
 
         public bool TryReadWorksite(string siteName, out WorksiteViewState state)
@@ -310,34 +333,88 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         public IDialogSource GetDialogSource(string actorName)
         {
+            // Legacy/fallback path: callers that only have a display-name string. Try to upgrade the
+            // name to the actor's STABLE id so we get identical resolution to the id overload; only
+            // when no actor carries that name do we bind by raw name (ad-hoc / scene-authored label).
+            var byName = _world.Actors?.Records.FirstOrDefault(
+                a => string.Equals(a.Name, actorName, System.StringComparison.Ordinal));
+            if (byName != null)
+                return GetDialogSource(byName.Id);
+
+            var npc = _world.NpcSeeds.FirstOrDefault(
+                n => string.Equals(n.Name, actorName, System.StringComparison.Ordinal));
+            BeginConversation(actorName, npc);
+            return this;
+        }
+
+        // ----- IPlayerCommandSink (DLG-01) -----
+        public IDialogSource GetDialogSource(ActorId id)
+        {
+            // DLG-01: resolve by the stable ActorId rather than by display-name string.
+            if (id.IsEmpty || _world.Actors == null || !_world.Actors.TryGet(id, out var actor) || actor == null)
+            {
+                // A mismatch must be LOUD and must NOT silently drop the player into the shared
+                // global topic menu (the old name-resolution bug). Surface an explicit empty state.
+                _suppressGlobalTopicFallback = true;
+                _activeDialogActor = string.Empty;
+                _currentDialogLine = "There is no one here to talk to.";
+                _currentPortrait = "portrait_npc_placeholder";
+                _isDialogThinking = false;
+                _conversation = ConversationState.None;
+                UnityEngine.Debug.LogWarning(
+                    $"DLG-01: GetDialogSource({id}) found no actor in WorldState.Actors; " +
+                    "refusing to fall back to global world topics.");
+                return this;
+            }
+
+            // Recover the matching NpcSeed for generated NPCs. HydrateNpcs mints ActorIds as
+            // GeneratedNpcActorOffset + NpcId.Value, so the seed is recoverable by subtracting the
+            // offset. Authored slice actors (ids 1..5) have no seed and fall through to name match.
+            NpcSeedRecord npc = null;
+            if (id.Value >= GeneratedNpcActorOffset)
+            {
+                var npcId = new EmberCrpg.Domain.Worldgen.NpcId(id.Value - GeneratedNpcActorOffset);
+                npc = _world.NpcSeeds.FirstOrDefault(n => n.Id.Equals(npcId));
+            }
+            npc ??= _world.NpcSeeds.FirstOrDefault(
+                n => string.Equals(n.Name, actor.Name, System.StringComparison.Ordinal));
+
+            BeginConversation(actor.Name, npc);
+            return this;
+        }
+
+        /// <summary>
+        /// DLG-01/EMB-020/EMB-045: single funnel that binds the active speaker, portrait, and the
+        /// per-actor topic set into the one <see cref="ConversationState"/> the dialog surface reads.
+        /// When <paramref name="npc"/> is non-null the topics come from THEIR role + faction (not the
+        /// global menu) and a persona greeting is fired; otherwise the shared world topics back the
+        /// conversation. Both <see cref="GetDialogSource(string)"/> and
+        /// <see cref="GetDialogSource(ActorId)"/> route through here so the two paths can never drift.
+        /// </summary>
+        private void BeginConversation(string actorName, NpcSeedRecord npc)
+        {
+            _suppressGlobalTopicFallback = false;
             _activeDialogActor = actorName ?? string.Empty;
             _currentDialogLine = "You approach " + _activeDialogActor + "...";
             _currentPortrait = "portrait_npc_placeholder";
 
-            // If we have an NpcSeedRecord for this actor, use its name and role for a persona-driven greeting
-            var npc = _world.NpcSeeds.FirstOrDefault(n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
             if (npc != null)
             {
                 if (!string.IsNullOrEmpty(npc.PortraitAssetPath)) _currentPortrait = npc.PortraitAssetPath;
 
-                // EMB-045: this NPC's Ask-About topics come from THEIR role + faction (+ a little shared
-                // world lore), not the global _world.Topics menu. EMB-020: bind speaker + portrait +
-                // topics into the one ConversationState the dialog surface reads.
                 var perActorTopics = NpcTopicCatalog.For(npc.Role, npc.Faction.Value, _world.Topics);
                 _conversation = new ConversationState(_activeDialogActor, _currentPortrait, perActorTopics);
 
-                // Fire async greeting
                 _ = GenerateNpcGreetingAsync(npc);
             }
             else
             {
-                // No seed record (ad-hoc actor): fall back to the shared world topics, still funneled
-                // through the one ConversationState model so GetTopics/SelectTopic have a single source.
+                // No seed record (ad-hoc / authored slice actor): fall back to the shared world topics,
+                // still funneled through the one ConversationState model so GetTopics/SelectTopic have
+                // a single source of truth.
                 _conversation = new ConversationState(
                     _activeDialogActor, _currentPortrait, _world.Topics ?? new List<AskAboutTopic>());
             }
-
-            return this;
         }
 
         private async Task GenerateNpcGreetingAsync(NpcSeedRecord npc)
@@ -402,6 +479,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             if (_conversation != null && _conversation.Topics.Count > 0)
                 return _conversation.Topics.Select(t => t.Id).ToList();
+            // DLG-01: when an id-keyed lookup missed, do NOT leak the global world topics — the
+            // player is looking at "no one"; an empty topic list is the honest answer.
+            if (_suppressGlobalTopicFallback)
+                return new List<string>();
             return _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
         }
 

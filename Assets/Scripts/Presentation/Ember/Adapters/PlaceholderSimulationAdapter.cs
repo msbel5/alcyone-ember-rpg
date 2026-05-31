@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EmberCrpg.Domain.Core;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 using UnityEngine;
@@ -52,6 +53,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public bool TryReadActor(string actorName, out ActorViewState state) =>
             _actorStates.TryGetValue(actorName, out state);
 
+        // SOUL-04: the placeholder fabricates actor states keyed by name and has no stable-id model,
+        // so the id read path never resolves. The host falls back to the name path for these scenes.
+        public bool TryReadActor(ActorId id, out ActorViewState state)
+        {
+            state = default;
+            return false;
+        }
+
         public bool TryReadWorksite(string siteName, out WorksiteViewState state) =>
             _worksiteStates.TryGetValue(siteName, out state);
 
@@ -63,6 +72,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _currentPortrait = string.IsNullOrEmpty(actorName)
                 ? "portrait_npc_placeholder"
                 : $"portrait_{actorName.ToLowerInvariant()}_placeholder";
+            return this;
+        }
+
+        // DLG-01: the placeholder has no WorldState to resolve a stable id against,
+        // so it just produces a deterministic line keyed on the id value. Real
+        // resolution lives in DomainSimulationAdapter.GetDialogSource(ActorId).
+        public IDialogSource GetDialogSource(ActorId id)
+        {
+            _currentDialogLine = id.IsEmpty
+                ? "There is no one here to talk to."
+                : $"Greetings, traveler. (npc #{id.Value})";
+            _currentPortrait = "portrait_npc_placeholder";
             return this;
         }
 
