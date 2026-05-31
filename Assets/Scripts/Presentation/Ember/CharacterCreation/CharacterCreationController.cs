@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Generation;
 using EmberCrpg.Presentation.Ember.Loading;
@@ -89,6 +90,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         // LEFT-007: handle to the in-flight off-thread portrait-upgrade coroutine, and a serial
         // that invalidates a stale async result when a newer reroll/lock supersedes it.
         private Coroutine _portraitUpgradeRoutine;
+        private Coroutine _portraitForgeUpgradeRoutine;
+        private CancellationTokenSource _portraitForgeCancellation;
         private int _portraitGenSerial;
 
         public IReadOnlyList<string> LogLines => _logLines;

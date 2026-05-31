@@ -7,7 +7,8 @@ namespace EmberCrpg.Domain.Forge
     {
         private const int TurboSteps = 4;
         private const float TurboGuidance = 0f;
-        private const string SharedNegativePrompt = "blurry, lowres, text, watermark, extra limbs, deformed";
+        private const string SharedNegativePrompt =
+            "blurry, lowres, text, watermark, extra limbs, deformed, multiple, group, collage, tiled, grid, many objects, two heads, scattered, border, frame";
 
         private static readonly Dictionary<AssetKind, ImageGenKindTemplate> Templates =
             new Dictionary<AssetKind, ImageGenKindTemplate>
@@ -26,7 +27,7 @@ namespace EmberCrpg.Domain.Forge
                     512,
                     TurboSteps,
                     TurboGuidance,
-                    "head-and-shoulders portrait of {subject}, dark fantasy",
+                    "a single centered head-and-shoulders portrait of {subject}, one person, facing forward, symmetrical, plain dark studio background, dark fantasy, painterly, sharp focus",
                     SharedNegativePrompt),
                 [AssetKind.Item] = new ImageGenKindTemplate(
                     AssetKind.Item,
@@ -34,7 +35,7 @@ namespace EmberCrpg.Domain.Forge
                     384,
                     TurboSteps,
                     TurboGuidance,
-                    "a single {subject}, centered, studio lighting, dark fantasy, plain background",
+                    "a single {subject}, one object, centered, isolated on a plain flat background, studio product shot, sharp focus, dark fantasy",
                     SharedNegativePrompt),
                 [AssetKind.Furniture] = new ImageGenKindTemplate(
                     AssetKind.Furniture,

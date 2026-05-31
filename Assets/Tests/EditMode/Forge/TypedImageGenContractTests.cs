@@ -32,6 +32,29 @@ namespace EmberCrpg.Tests.EditMode.Forge
         }
 
         [Test]
+        public void PortraitTemplate_UsesOneCenteredScaffold_AndExpandedNegativeTokens()
+        {
+            var template = ImageGenKindTemplate.For(AssetKind.Portrait);
+            const string expectedScaffold =
+                "a single centered head-and-shoulders portrait of {subject}, one person, facing forward, symmetrical, plain dark studio background, dark fantasy, painterly, sharp focus";
+
+            Assert.That(template.PromptScaffold, Is.EqualTo(expectedScaffold));
+            Assert.That(template.NegativePrompt, Does.Contain("multiple"));
+            Assert.That(template.NegativePrompt, Does.Contain("group"));
+            Assert.That(template.NegativePrompt, Does.Contain("collage"));
+            Assert.That(template.NegativePrompt, Does.Contain("tiled"));
+            Assert.That(template.NegativePrompt, Does.Contain("grid"));
+            Assert.That(template.NegativePrompt, Does.Contain("many objects"));
+            Assert.That(template.NegativePrompt, Does.Contain("two heads"));
+            Assert.That(template.NegativePrompt, Does.Contain("extra limbs"));
+            Assert.That(template.NegativePrompt, Does.Contain("scattered"));
+            Assert.That(template.NegativePrompt, Does.Contain("border"));
+            Assert.That(template.NegativePrompt, Does.Contain("frame"));
+            Assert.That(template.NegativePrompt, Does.Contain("text"));
+            Assert.That(template.NegativePrompt, Does.Contain("watermark"));
+        }
+
+        [Test]
         public void ImageGenSpec_HasReference_FollowsReferenceIdPresence()
         {
             var noReference = new ImageGenSpec(AssetKind.Item, 128, 128, 4, 0f, "prompt", "neg", 1u);

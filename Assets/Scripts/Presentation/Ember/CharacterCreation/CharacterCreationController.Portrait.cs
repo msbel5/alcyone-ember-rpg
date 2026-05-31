@@ -2,16 +2,21 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EmberCrpg.Domain.CharacterCreation;
+using EmberCrpg.Domain.Forge;
 using EmberCrpg.Domain.Generation;
+using EmberCrpg.Domain.Worldgen;
+using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.Loading;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Simulation.CharacterCreation;
+using EmberCrpg.Simulation.Forge;
 using EmberCrpg.Simulation.Generation;
 using EmberCrpg.Ui.Foundation;
 using EmberCrpg.Simulation.Worldgen;
@@ -54,7 +59,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             // 1. Deterministic placeholder — visible immediately, no blocking.
             var placeholder = NpcPromptJsonDefaults.FromSeed(portraitSeed, manifest);
-            ApplyPortrait(placeholder, "Forging your likeness…");
+            ApplyPortrait(placeholder, "Forging your likeness…", portraitSeed, generation);
 
             // 2. Injected provider (tests / custom): cheap + synchronous, apply now.
             if (_portraitJsonProvider != null)
@@ -62,11 +67,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 var raw = string.IsNullOrWhiteSpace(_llmJson)
                     ? _portraitJsonProvider(portraitSeed, string.Empty)
                     : _llmJson;
-                if (TryUpgradePortrait(raw, manifest, out var reason))
+                if (TryUpgradePortrait(raw, manifest, portraitSeed, generation, out var reason))
                     return;
 
                 raw = _portraitJsonProvider(portraitSeed, reason);
-                if (!TryUpgradePortrait(raw, manifest, out reason))
+                if (!TryUpgradePortrait(raw, manifest, portraitSeed, generation, out reason))
                     AddLog("[portrait] provider invalid twice; deterministic placeholder kept: " + reason + ".");
                 return;
             }
@@ -77,7 +82,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             var task = ResolvePortraitJsonAsync(portraitSeed, seededJson, manifest);
 
             if (Application.isPlaying)
-                _portraitUpgradeRoutine = StartCoroutine(AwaitPortraitUpgrade(task, manifest, generation));
+                _portraitUpgradeRoutine = StartCoroutine(AwaitPortraitUpgrade(task, manifest, portraitSeed, generation));
             // In edit-mode tests Application.isPlaying is false: we intentionally do NOT block on
             // the task. The deterministic placeholder already satisfies the synchronous contract.
         }
@@ -102,7 +107,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         }
 
         // Poll the off-thread LLM task without blocking the main thread; apply a valid result.
-        private IEnumerator AwaitPortraitUpgrade(Task<string> task, GenericNpcBaseManifest manifest, int generation)
+        private IEnumerator AwaitPortraitUpgrade(Task<string> task, GenericNpcBaseManifest manifest, uint portraitSeed, int generation)
         {
             while (!task.IsCompleted)
                 yield return null;
@@ -114,18 +119,18 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 yield break;
 
             string raw = task.Status == TaskStatus.RanToCompletion ? task.Result : string.Empty;
-            if (TryUpgradePortrait(raw, manifest, out var reason))
+            if (TryUpgradePortrait(raw, manifest, portraitSeed, generation, out var reason))
                 AddLog("[portrait] LLM portrait ready.");
             else
                 AddLog("[portrait] LLM unavailable/invalid; deterministic placeholder kept: " + reason + ".");
         }
 
         // Validate raw JSON and, if good, publish it as the portrait (JSON + visible swatch).
-        private bool TryUpgradePortrait(string raw, GenericNpcBaseManifest manifest, out string reason)
+        private bool TryUpgradePortrait(string raw, GenericNpcBaseManifest manifest, uint portraitSeed, int generation, out string reason)
         {
             if (NpcPromptJsonValidator.TryValidate(raw, manifest, out var json, out reason))
             {
-                ApplyPortrait(json, "Your likeness, drawn from the embers.");
+                ApplyPortrait(json, "Your likeness, drawn from the embers.", portraitSeed, generation);
                 return true;
             }
             return false;
@@ -133,7 +138,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         // Single place that writes the portrait: canonical JSON into PortraitJson + the label, and
         // a deterministic visible swatch into the "portrait" image slot with a caption.
-        private void ApplyPortrait(NpcPromptJson json, string caption)
+        private void ApplyPortrait(NpcPromptJson json, string caption, uint portraitSeed, int generation)
         {
             PortraitJson = json.ToCanonicalJson();
             if (_panel != null)
@@ -143,6 +148,134 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 _panel.SetVisible("portrait", true);
                 _panel.SetText("portraitCaption", caption);
                 _panel.SetVisible("portraitCaption", true);
+            }
+
+            StartPortraitForgeUpgrade(json, portraitSeed, generation);
+        }
+
+        private void StartPortraitForgeUpgrade(NpcPromptJson json, uint portraitSeed, int generation)
+        {
+            if (!Application.isPlaying) return;
+            if (generation != _portraitGenSerial) return;
+
+            var forge = ForgeLocator.AssetForge;
+            if (forge == null) return;
+            try
+            {
+                if (!forge.IsAvailable()) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            StopPortraitForgeUpgrade();
+
+            var subject = PortraitPromptBuilder.Build(json);
+            var kind = AssetKind.Portrait;
+            var spec = new DefaultImageGenSpecFactory().Create(kind, subject, portraitSeed);
+            var request = BuildPortraitRequest(kind, spec, generation);
+
+            _portraitForgeCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            Task<AssetGenerationResult> task;
+            try
+            {
+                task = forge.GenerateAsync(request, _portraitForgeCancellation.Token);
+            }
+            catch (Exception ex)
+            {
+                _portraitForgeCancellation.Dispose();
+                _portraitForgeCancellation = null;
+                AddLog("[portrait] Forge request failed to start: " + ex.Message);
+                return;
+            }
+
+            _portraitForgeUpgradeRoutine = StartCoroutine(AwaitPortraitForgeUpgrade(task, generation));
+        }
+
+        private AssetGenerationRequest BuildPortraitRequest(AssetKind kind, ImageGenSpec spec, int generation)
+        {
+            var style = MoodToStyle(_worldMood);
+            var genre = CallingToGenre(_playerCalling);
+            var mood = string.IsNullOrWhiteSpace(_worldMood) ? "grim" : _worldMood.Trim();
+            var promptHash = PromptHash.Sha256(
+                (spec.Prompt ?? string.Empty)
+                + "|"
+                + (spec.NegativePrompt ?? string.Empty)
+                + "|"
+                + spec.Width.ToString(CultureInfo.InvariantCulture)
+                + "x"
+                + spec.Height.ToString(CultureInfo.InvariantCulture)
+                + "|"
+                + spec.Seed.ToString(CultureInfo.InvariantCulture));
+
+            var requestId = "cc_portrait_"
+                + generation.ToString(CultureInfo.InvariantCulture)
+                + "_"
+                + spec.Seed.ToString(CultureInfo.InvariantCulture);
+
+            return new AssetGenerationRequest(
+                requestId,
+                kind.ToSubjectKind(),
+                style,
+                genre,
+                mood,
+                promptHash,
+                spec.Width,
+                spec.Height,
+                spec.Seed,
+                spec.Prompt,
+                spec.NegativePrompt);
+        }
+
+        private IEnumerator AwaitPortraitForgeUpgrade(Task<AssetGenerationResult> task, int generation)
+        {
+            while (!task.IsCompleted)
+                yield return null;
+
+            _portraitForgeUpgradeRoutine = null;
+            if (_portraitForgeCancellation != null)
+            {
+                _portraitForgeCancellation.Dispose();
+                _portraitForgeCancellation = null;
+            }
+
+            if (generation != _portraitGenSerial)
+                yield break;
+
+            if (task.IsCanceled || task.IsFaulted || task.Status != TaskStatus.RanToCompletion)
+                yield break;
+
+            var result = task.Result;
+            if (!result.Success || result.IsPlaceholder || result.ImageBytes == null || result.ImageBytes.Length == 0)
+                yield break;
+
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!texture.LoadImage(result.ImageBytes))
+            {
+                UnityEngine.Object.Destroy(texture);
+                yield break;
+            }
+
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            _panel?.SetThumbnail("portrait", texture);
+        }
+
+        private void StopPortraitForgeUpgrade()
+        {
+            if (_portraitForgeUpgradeRoutine != null)
+            {
+                StopCoroutine(_portraitForgeUpgradeRoutine);
+                _portraitForgeUpgradeRoutine = null;
+            }
+
+            if (_portraitForgeCancellation != null)
+            {
+                try { _portraitForgeCancellation.Cancel(); }
+                catch (ObjectDisposedException) { }
+                _portraitForgeCancellation.Dispose();
+                _portraitForgeCancellation = null;
             }
         }
 
@@ -155,6 +288,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 StopCoroutine(_portraitUpgradeRoutine);
                 _portraitUpgradeRoutine = null;
             }
+
+            StopPortraitForgeUpgrade();
         }
 
         private void AddLog(string line)

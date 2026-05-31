@@ -305,16 +305,25 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            // Parameterized so any prompt/kind can be eyeballed headlessly (portrait, item, etc.):
+            //   --ember-forge-prompt "..." --ember-forge-negative "..." --ember-forge-size 512 --ember-forge-seed 42
+            string prompt = GetArg("--ember-forge-prompt",
+                "a single carved bone die, six-sided, studio lighting, dark fantasy, centered, plain dark background, sharp focus");
+            string negative = GetArg("--ember-forge-negative", "blurry, text, watermark, multiple dice, hands");
+            int size = 512;
+            if (!int.TryParse(GetArg("--ember-forge-size", "512"), out size) || size < 64) size = 512;
+            uint seed = 42u;
+            if (!uint.TryParse(GetArg("--ember-forge-seed", "42"), out seed)) seed = 42u;
             var request = new EmberCrpg.Domain.Forge.AssetGenerationRequest(
-                "forge-die-proof",
+                "forge-proof",
                 EmberCrpg.Domain.Forge.AssetSubjectKind.Item,
                 EmberCrpg.Domain.Worldgen.WorldStyle.LowFantasy,
                 EmberCrpg.Domain.Worldgen.WorldGenre.Survival,
                 "grim",
-                "die-proof-512",
-                512, 512, 42u,
-                "a single carved bone die, six-sided, studio lighting, dark fantasy, centered, plain dark background, sharp focus",
-                "blurry, text, watermark, multiple dice, hands",
+                "forge-proof-" + size,
+                size, size, seed,
+                prompt,
+                negative,
                 240,
                 "");
 
@@ -432,6 +441,15 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             for (int i = 0; i < args.Length; i++)
                 if (string.Equals(args[i], arg, StringComparison.Ordinal)) return true;
             return false;
+        }
+
+        private static string GetArg(string name, string fallback)
+        {
+            var args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+                if (string.Equals(args[i], name, StringComparison.Ordinal))
+                    return args[i + 1];
+            return fallback;
         }
     }
 }
