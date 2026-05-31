@@ -564,8 +564,15 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 typeof(DialogBoxPanel));
             dialogGo.transform.SetParent(canvas.transform, worldPositionStays: false);
             var rt = dialogGo.GetComponent<RectTransform>();
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
+            // DLG-SIZE-01 — do NOT full-screen-stretch the runtime fallback. The earlier
+            // anchorMin=0,0/anchorMax=1,1/offsets=0 made ensured dialogs cover the whole
+            // screen (Ask-About scenes that authored no panel got a full-screen box).
+            // DialogBoxPanel.Awake now self-pins its own RectTransform to the canonical
+            // bottom-centered footprint, so it owns the final size regardless of what we
+            // set here; we seed the same bottom band purely so the fallback is never
+            // full-screen even for a single frame before Awake runs.
+            rt.anchorMin = new Vector2(0.14f, 0.05f);
+            rt.anchorMax = new Vector2(0.86f, 0.40f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             dialogGo.GetComponent<DialogBoxPanel>().Source = this;

@@ -45,6 +45,19 @@ namespace EmberCrpg.Presentation.Ember.UI
             _canvasGroup = GetComponent<CanvasGroup>();
             _frameImage = GetComponent<Image>();
 
+            // DLG-SIZE-01 — single source of truth for the dialog box footprint.
+            // The internal layout (BackingFill, frame, portrait, line, topics) is all
+            // anchored RELATIVE to this RectTransform, so the on-screen dialog size is
+            // exactly whatever rect this transform is given. Scenes authored wildly
+            // different rects (TavernDialog 0.1→0.9, OracleShrine 0.2→0.8, TavernFlavour
+            // 0.05→0.95) and EmberWorldHost.EnsureDialogBoxPanel stretched the runtime
+            // fallback FULL-SCREEN — producing full-screen dialogs in some scenes, tiny
+            // in others. Mirror EmberHud, which already self-pins its own RectTransform
+            // in Awake: enforce ONE canonical bottom-centered CRPG dialog box here so the
+            // result is identical in every scene regardless of how the panel was authored
+            // or runtime-ensured. Bottom-centered, ~72% wide, lower ~35% of the screen.
+            EnforceDialogBoxRect();
+
             // T-Dialog-AskAbout slice 1 — readability rebuild. The legacy panel:
             //   - used charcoal-brown #26190D text on the dark void background -> invisible
             //   - had a transparent panel background (scene-authored Image left empty)
@@ -70,6 +83,27 @@ namespace EmberCrpg.Presentation.Ember.UI
             _topicsRoot = BuildPanelRoot(transform, anchorMinX: 0.2f, anchorMaxX: 0.95f, anchorMinY: 0.05f, anchorMaxY: 0.5f);
 
             RebuildTopicLabels();
+        }
+
+        // DLG-SIZE-01 — canonical dialog-box footprint. Bottom-centered CRPG box:
+        // anchors span the lower band of the screen, offsets zeroed so the box scales
+        // cleanly with resolution. This OVERRIDES whatever rect the scene recipe or the
+        // runtime EnsureDialogBoxPanel handed us, so the dialog is pixel-for-pixel the
+        // same everywhere. Tuned to read as a proper dialog box (not full-screen, not a
+        // tiny chip): ~72% screen width, occupying ~5%–40% up from the bottom edge.
+        private static readonly Vector2 DialogAnchorMin = new Vector2(0.14f, 0.05f);
+        private static readonly Vector2 DialogAnchorMax = new Vector2(0.86f, 0.40f);
+
+        private void EnforceDialogBoxRect()
+        {
+            var rt = GetComponent<RectTransform>();
+            if (rt == null) return;
+            rt.anchorMin = DialogAnchorMin;
+            rt.anchorMax = DialogAnchorMax;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.localScale = Vector3.one;
         }
 
         // Solid void-cool fill at 92% alpha so the dialog text always has a readable surface.

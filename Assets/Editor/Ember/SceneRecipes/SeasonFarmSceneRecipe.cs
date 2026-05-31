@@ -56,10 +56,13 @@ namespace EmberCrpg.Editor.Ember.SceneRecipes
                 new Vector2(0f, 0.94f), new Vector2(1f, 1f),
                 new Color(0f, 0f, 0f, 0.55f));
             EmberUiBuilder.AttachRuntimeScript(topBar.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
-            var seasonPanel = EmberUiBuilder.BuildPanel(canvas, "SeasonPanel",
-                new Vector2(0.78f, 0.78f), new Vector2(1f, 0.94f),
-                new Color(0f, 0f, 0f, 0.45f));
-            EmberUiBuilder.AttachRuntimeScript(seasonPanel.gameObject, "EmberCrpg.Presentation.Ember.UI.EmberHud");
+            // DLG-SIZE-01 audit — removed a stray "SeasonPanel" that attached a SECOND
+            // EmberHud to a small top-right rect. EmberHud.Awake self-pins its own
+            // RectTransform to full-screen, so that panel rendered a duplicate full HUD
+            // (action bar + stat strips) stacked on the real TopBar HUD. No SeasonPanel
+            // component exists; the season readout lives on the standard HUD. Normalized
+            // SeasonFarm to the standard gameplay UI set: one EmberHud (+ runtime pause &
+            // dialog fallback), nothing stray.
 
             var portalSpawn = EmberScenePlacement.ComputeEastPortalSpawn(field);
             EmberScenePlacement.AssertInsideFloorFootprint(field, portalSpawn, nameof(SeasonFarmSceneRecipe));
