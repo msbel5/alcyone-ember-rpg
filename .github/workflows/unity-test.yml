@@ -39,6 +39,10 @@ on:
       - 'Packages/**'
       - 'ProjectSettings/**'
       - '.github/workflows/**'
+  # Nightly cron ONLY gates the heavy opt-in Win64 build job below (see its `if:`);
+  # the light EditMode/static-audit jobs intentionally do NOT key off this schedule.
+  schedule:
+    - cron: '0 7 * * *'  # 07:00 UTC nightly (BD-21 / HYG-08)
   workflow_dispatch:
     inputs:
       run_playmode:
@@ -47,6 +51,10 @@ on:
         default: false
       run_build:
         description: 'Also build StandaloneLinux64 artifact'
+        type: boolean
+        default: false
+      run_build_windows:
+        description: 'Also build StandaloneWindows64 artifact (heavy; needs LFS for runtime-proof)'
         type: boolean
         default: false
 
@@ -272,3 +280,76 @@ jobs:
           name: build-linux64
           path: build/StandaloneLinux64
           retention-days: 14
+
+  # Windows64 Build — OPT-IN ONLY: manual workflow_dispatch (run_build_windows=true)
+  # or the nightly cron above. Deliberately NOT run on push/PR — a full Win64 player
+  # build is heavy (Mono backend, no stripping, native ONNX/llama plugins) and would
+  # blow the per-push CI budget. Mirrors build-linux's structure but targets
+  # StandaloneWindows64 through the project's own Ember build menu so the produced
+  # player gets the same scene registration + native-plugin config + scripting
+  # defines (USE_LLAMASHARP etc.) as a local build — game-ci's default builder would
+  # NOT apply those, so we pass buildMethod explicitly.
+  #
+  # LFS HONESTY (EMB3-051 / EMB3-006/007): this job checks out lfs: false to match the
+  # other jobs and stay inside the LFS budget. The result therefore proves the project
+  # COMPILES into a Win64 player shell — it is NOT a runtime-asset proof: the model/art
+  # binaries are unresolved LFS pointer stubs in the artifact. For a runtime-reproducible
+  # proof, re-run with `git lfs pull` (flip the checkout to lfs: true) + an actual play
+  # session — see docs/proofs/README.md.
+  build-windows:
+    name: Build Windows64 (Ember menu, lfs:false - compiles, NOT a runtime-asset proof)
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_build_windows == true) || github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: editmode-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # lfs: false to stay in budget (see build-linux). Flip to true (or add a
+          # tolerant `git lfs pull` follow-up) when a runtime-asset-complete Win64
+          # artifact is required — the default artifact ships LFS pointer stubs.
+          lfs: false
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-BuildWin-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-BuildWin-
+
+      - name: Strip editor-only embedded packages from manifest
+        run: |
+          if grep -q '"com.unity.ai.assistant"' Packages/manifest.json; then
+            sed -i '/"com.unity.ai.assistant"/d' Packages/manifest.json
+          fi
+          if grep -q '"com.unity.ai.inference"' Packages/manifest.json; then
+            sed -i '/"com.unity.ai.inference"/d' Packages/manifest.json
+          fi
+
+      - name: Build Windows64
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneWindows64
+          buildMethod: EmberCrpg.Editor.Ember.Build.Windows64BuildMenu.Build
+          buildName: alcyone-ember-rpg
+          buildsPath: build
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-windows64
+          # The Ember build menu writes to Builds/Windows64; also capture game-ci's
+          # default build/ tree so the artifact is non-empty whichever path is used.
+          path: |
+            Builds/Windows64
+            build/StandaloneWindows64
+          retention-days: 14
+          if-no-files-found: warn
