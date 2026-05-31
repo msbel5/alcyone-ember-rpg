@@ -10,7 +10,7 @@
 
 ## Local LLM (dialogue, DM narration, ambient barks)
 - **Model:** `Qwen2.5-1.5B-Instruct` GGUF (Q4_K_M) —
-  `Assets/StreamingAssets/Models/qwen2.5-1.5b-instruct-q4_k_m.gguf` (~986 MB, real on disk).
+  `Assets/StreamingAssets/Models/qwen2.5-1.5b-instruct-q4_k_m.gguf` (~986 MB **once `git lfs pull` resolves it** — it is a Git-LFS pointer, NOT real bytes, in a source-only checkout).
 - **Runtime:** LLamaSharp 0.27 + llama.cpp native (`llama.dll` + `ggml*.dll` + `mtmd.dll` in
   `Assets/Plugins/x86_64/`). Real inference compiles only under the **`USE_LLAMASHARP`** define
   (currently ON in `Windows64BuildMenu.cs`).

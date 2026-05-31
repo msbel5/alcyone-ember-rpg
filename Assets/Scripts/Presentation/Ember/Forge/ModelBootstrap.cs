@@ -186,7 +186,11 @@ namespace EmberCrpg.Presentation.Ember.Forge
             // Build resolved disk paths for the three runtime consumers and
             // register them on the locator. ForgeBootstrap may already have run
             // — overwriting is fine, the locator is a simple static container.
-            var miniLmDir = Path.Combine(_persistentRoot, "minilm-l6-v2");
+            // Codex 2026-05-31: must match the manifest's declared path ("all-minilm-l6-v2/"),
+            // the HuggingFace model id (sentence-transformers/all-MiniLM-L6-v2). The old
+            // "minilm-l6-v2" (missing the "all-" prefix) looked the embedding model up at a path
+            // the manifest never populates, so the embedding client silently never loaded.
+            var miniLmDir = Path.Combine(_persistentRoot, "all-minilm-l6-v2");
 
             try
             {
