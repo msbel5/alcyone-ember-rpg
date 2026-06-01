@@ -10,8 +10,8 @@ namespace EmberCrpg.Tests.EditMode.Composition
     public sealed class WorldTickDigestGoldenTests
     {
         private const string BaselineHash = "5ee9f9bf71a6f05f67fd6585434a990a0de2e94ce5765434fd7dc2ebe669741a";
-        private const int OneGameDayTicks = WorldTickComposer.TicksPerGameDay;
-        private const int TwoGameDaysTicks = 2 * WorldTickComposer.TicksPerGameDay;
+        private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
+        private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 
         private static readonly SiteId Site = new SiteId(77UL);
         private static readonly GridPosition ForgeCell = new GridPosition(4, 5);

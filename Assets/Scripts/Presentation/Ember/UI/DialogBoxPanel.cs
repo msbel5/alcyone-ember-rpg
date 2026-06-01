@@ -159,9 +159,9 @@ namespace EmberCrpg.Presentation.Ember.UI
             // lookup through any ISpriteByName-capable source (typically
             // EmberWorldHost), then assign to a child Image named "Portrait"
             // (created lazily by BuildPortrait above).
-            if (_portraitImage != null && Source is IDialogSourcePortrait portraitSource)
+            if (_portraitImage != null)
             {
-                var portraitName = DialogPortraitKey.Normalize(portraitSource.GetPortraitName());
+                var portraitName = DialogPortraitKey.FromSource(Source);
                 var portrait = ResolvePortraitSprite(portraitName)
                     ?? ResolvePortraitSprite(DialogPortraitKey.Default)
                     ?? ResolveFallbackPortrait();

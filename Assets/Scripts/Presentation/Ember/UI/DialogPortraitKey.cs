@@ -1,11 +1,19 @@
 using System;
 using System.IO;
+using EmberCrpg.Presentation.Ember.Adapters;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
     public static class DialogPortraitKey
     {
         public const string Default = "blacksmith";
+
+        public static string FromSource(IDialogSource source)
+        {
+            if (source is IDialogSourcePortrait portraitSource)
+                return Normalize(portraitSource.GetPortraitName());
+            return Default;
+        }
 
         public static string Normalize(string raw)
         {

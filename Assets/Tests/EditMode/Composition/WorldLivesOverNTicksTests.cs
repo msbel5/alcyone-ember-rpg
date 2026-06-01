@@ -17,8 +17,8 @@ namespace EmberCrpg.Tests.EditMode.Composition
     /// </summary>
     public sealed class WorldLivesOverNTicksTests
     {
-        // 1 tick == 1 game-minute; 240 ticks == 1 game-day. Two game-days = 480 ticks.
-        private const int TwoGameDaysTicks = 2 * WorldTickComposer.TicksPerGameDay;
+        // 1 tick == 1 game-minute; runtime options define game-day length.
+        private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 
         private static readonly SiteId Site = new SiteId(77UL);
         private static readonly GridPosition ForgeCell = new GridPosition(4, 5);

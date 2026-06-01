@@ -22,6 +22,8 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private void Awake()
         {
+            _ = EmberInput.PauseHeld;
+
             // Codex ninth-pass A-P1 / D-P1: previously SetActive(false) on the
             // host GameObject — that turned Update() into dead code so Esc was
             // never read. Use CanvasGroup transparency + blocksRaycasts toggle

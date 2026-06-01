@@ -10,7 +10,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
 {
     public sealed class WorldTickFactionDecayTests
     {
-        private const int FifteenDays = 15 * WorldTickComposer.TicksPerGameDay;
+        private static int FifteenDays => 15 * WorldTickComposer.TicksPerGameDay;
 
         [Test]
         public void Advance_DailyTick_DecaysSeededFactionReputationsToNeutral()
@@ -61,8 +61,8 @@ namespace EmberCrpg.Tests.EditMode.Composition
         [Test]
         public void Advance_SaveLoadReplay_PreservesDecayCadence()
         {
-            const int saveTick = WorldTickComposer.TicksPerGameDay + 13;
-            const int finalTick = 5 * WorldTickComposer.TicksPerGameDay;
+            int saveTick = WorldTickComposer.TicksPerGameDay + 13;
+            int finalTick = 5 * WorldTickComposer.TicksPerGameDay;
 
             var continuous = new WorldFactory().Create(roomSeed: 1);
             RunTicks(continuous, new WorldTickComposer(), finalTick);
