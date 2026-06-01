@@ -314,16 +314,14 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             LoadingScreen.SetProgress(0.6f, "Weaving your world from the embers");
             yield return null;
 
-            var view = FindFirstObjectByType<WorldgenViewController>();
-            if (view == null)
-                view = new GameObject("WorldgenViewController").AddComponent<WorldgenViewController>();
-            view.Configure(_firstSceneName);
-            view.AutoAdvance = true;
-            view.PlayFromGeneratedWorld(
-                WorldgenService.Generate(_seed, WorldgenParameters.For(style, genre)),
-                new WorldgenProjectionOptions(maxRegions: 6, maxSettlements: 8, maxNpcs: 10, maxHistoryEvents: 8));
-
-            LoadingScreen.SetProgress(1f, "Worldgen log visible");
+            // DO NOT mount the visible worldgen reveal panel here. It was deliberately removed because it
+            // flashed past before the player could read it AND its "where should the commander begin?"
+            // start-scene question is NOT wired to the actual start location (it loaded the same scene
+            // regardless). f3f6ef28 re-added it via AI drift — this re-removes it. The authoritative world
+            // is generated in the TARGET SCENE from EmberWorldGenIntent.Pending. Keep this straight-to-game.
+            LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
+            yield return new WaitForSecondsRealtime(0.5f);
+            UnityEngine.SceneManagement.SceneManager.LoadScene(_firstSceneName);
         }
 
         // ----- World-genesis choice screens (stages 2-4) -----------------------------------
