@@ -159,13 +159,14 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             if (generation != _portraitGenSerial) return;
 
             var forge = ForgeLocator.AssetForge;
-            if (forge == null) return;
+            if (forge == null) { AddLog("[portrait] forge image: no forge wired."); return; }
             try
             {
-                if (!forge.IsAvailable()) return;
+                if (!forge.IsAvailable()) { AddLog("[portrait] forge image: forge unavailable (models missing)."); return; }
             }
             catch
             {
+                AddLog("[portrait] forge image: IsAvailable() threw.");
                 return;
             }
 
@@ -190,6 +191,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 return;
             }
 
+            AddLog("[portrait] forge image: generating " + spec.Width + "x" + spec.Height + "…");
             _portraitForgeUpgradeRoutine = StartCoroutine(AwaitPortraitForgeUpgrade(task, generation));
         }
 
@@ -244,11 +246,18 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 yield break;
 
             if (task.IsCanceled || task.IsFaulted || task.Status != TaskStatus.RanToCompletion)
+            {
+                AddLog("[portrait] forge image canceled/faulted: " + (task.Exception?.GetBaseException().Message ?? task.Status.ToString()) + ".");
                 yield break;
+            }
 
             var result = task.Result;
             if (!result.Success || result.IsPlaceholder || result.ImageBytes == null || result.ImageBytes.Length == 0)
+            {
+                AddLog("[portrait] forge image skipped: success=" + result.Success + " placeholder=" + result.IsPlaceholder
+                    + " bytes=" + (result.ImageBytes == null ? 0 : result.ImageBytes.Length) + " reason=" + result.FailureReason + ".");
                 yield break;
+            }
 
             var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
             if (!texture.LoadImage(result.ImageBytes))

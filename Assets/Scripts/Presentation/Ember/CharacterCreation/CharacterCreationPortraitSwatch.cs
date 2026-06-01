@@ -52,9 +52,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             float cx = Size * 0.5f;
             // Head center sits a little above middle; shoulders fill the bottom.
             float headCx = cx;
-            float headCy = Size * 0.42f;
+            // Unity Texture2D row 0 is the BOTTOM (the gradient `t` above says so) — so the head must sit
+            // ABOVE middle and the shoulders fill the BOTTOM. The old values (head 0.42 / shoulder 1.04)
+            // were authored as if y=0 were the top, which rendered the bust UPSIDE DOWN.
+            float headCy = Size * 0.62f;
             float headR = Size * 0.17f;
-            float shoulderCy = Size * 1.04f; // pushed mostly below the frame so only the upper bust shows
+            float shoulderCy = Size * -0.04f; // shoulder disc mostly below the frame; only the upper bust shows
             float shoulderR = Size * 0.34f;
             float maxDist = Mathf.Sqrt(cx * cx + cx * cx);
 
