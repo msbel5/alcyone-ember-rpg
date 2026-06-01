@@ -21,7 +21,8 @@ namespace EmberCrpg.Presentation.Ember.Camera
         [SerializeField] private float _jumpForce = 7f;
 
         [Header("Look")]
-        [SerializeField] private float _mouseSensitivity = 4.5f; // Increased from 2.1
+        [SerializeField] private float _mouseSensitivity = 2.0f; // ~2.0 feels right; 4.5 was too high
+        private const float MaxMouseSensitivity = 2.0f; // cap: the 10 scenes baked an over-high 4.5
         [SerializeField] private float _lookSmoothing = 0.02f; // Reduced from 0.05 for snappier feel
         [SerializeField] private AnimationCurve _mouseCurve = AnimationCurve.Linear(0, 0, 1, 1);
         [SerializeField] private float _mouseCurveStrength = 0.5f;
@@ -109,7 +110,9 @@ namespace EmberCrpg.Presentation.Ember.Camera
             float curvedMag = _mouseCurve.Evaluate(mag);
             float multiplier = Mathf.Lerp(1f, curvedMag / Mathf.Max(mag, 0.001f), _mouseCurveStrength);
 
-            Vector2 targetMouseDelta = new Vector2(rawX, rawY) * _mouseSensitivity * multiplier;
+            // Cap so a scene-baked over-high value (4.5) can't make the look feel twitchy.
+            float sensitivity = Mathf.Min(_mouseSensitivity, MaxMouseSensitivity);
+            Vector2 targetMouseDelta = new Vector2(rawX, rawY) * sensitivity * multiplier;
             _currentMouseDelta = Vector2.SmoothDamp(_currentMouseDelta, targetMouseDelta, ref _mouseDeltaVelocity, _lookSmoothing);
 
             _yawDegrees += _currentMouseDelta.x;

@@ -227,7 +227,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 spec.Height,
                 spec.Seed,
                 spec.Prompt,
-                spec.NegativePrompt);
+                spec.NegativePrompt,
+                steps: spec.Steps);
         }
 
         private IEnumerator AwaitPortraitForgeUpgrade(Task<AssetGenerationResult> task, int generation)

@@ -5,7 +5,9 @@ namespace EmberCrpg.Domain.Forge
 {
     public sealed class ImageGenKindTemplate
     {
-        private const int TurboSteps = 4;
+        // Fidelity is a CONFIG VARIABLE per kind. 1-step SDXL-Turbo looked better + is faster than 4-step
+        // (and 4-step was especially bad on small canvases). Change here to retune any kind instantly.
+        private const int TurboSteps = 1;
         private const float TurboGuidance = 0f;
         private const string SharedNegativePrompt =
             "blurry, lowres, text, watermark, extra limbs, deformed, multiple, group, collage, tiled, grid, many objects, two heads, scattered, border, frame";
@@ -31,8 +33,8 @@ namespace EmberCrpg.Domain.Forge
                     SharedNegativePrompt),
                 [AssetKind.Item] = new ImageGenKindTemplate(
                     AssetKind.Item,
-                    384,
-                    384,
+                    512,
+                    512,
                     TurboSteps,
                     TurboGuidance,
                     "a single {subject}, one object, centered, isolated on a plain flat background, studio product shot, sharp focus, dark fantasy",
@@ -47,16 +49,16 @@ namespace EmberCrpg.Domain.Forge
                     SharedNegativePrompt),
                 [AssetKind.Logo] = new ImageGenKindTemplate(
                     AssetKind.Logo,
-                    256,
-                    256,
+                    512,
+                    512,
                     TurboSteps,
                     TurboGuidance,
                     "minimal heraldic emblem of {subject}, flat, gold on dark",
                     SharedNegativePrompt),
                 [AssetKind.InventoryIcon] = new ImageGenKindTemplate(
                     AssetKind.InventoryIcon,
-                    128,
-                    128,
+                    512,
+                    512,
                     TurboSteps,
                     TurboGuidance,
                     "inventory icon of {subject}, top-down, plain dark background",

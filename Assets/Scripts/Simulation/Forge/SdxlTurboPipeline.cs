@@ -21,7 +21,7 @@ namespace EmberCrpg.Simulation.Forge
         // StepCount=1 reduces EXACTLY to the prior single sigma_max step (x -= sigma_max*eps),
         // so it is a safe floor. Sigmas come from the SDXL scaled_linear beta schedule; the
         // terminal sigma is 0. See BuildEulerSchedule. (sigma(999)=14.6146 verified.)
-        private const int StepCount = 4;
+        private const int DefaultSteps = 1; // fidelity is request-driven (request.Steps); set per AssetKind via ImageGenSpec.Steps
         private const int TrainTimesteps = 1000;
         private const float BetaStart = 0.00085f;
         private const float BetaEnd = 0.012f;
@@ -108,10 +108,11 @@ namespace EmberCrpg.Simulation.Forge
             var conditioning = SdxlConditioning.Concat(hidden768, encoder2.HiddenStates1280, encoder2.Pooled1280);
             var timeIds = new[] { (float)height, (float)width, 0f, 0f, (float)height, (float)width };
 
-            BuildEulerSchedule(StepCount, out var timesteps, out var sigmas);
+            int steps = request.Steps >= 1 ? request.Steps : DefaultSteps;
+            BuildEulerSchedule(steps, out var timesteps, out var sigmas);
             var latents = LatentNoiseSampler.SampleGaussian(request.Seed, latentLength, sigmas[0]);
 
-            for (int step = 0; step < StepCount; step++)
+            for (int step = 0; step < steps; step++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 float sigma = sigmas[step];

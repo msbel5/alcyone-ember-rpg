@@ -26,7 +26,8 @@ namespace EmberCrpg.Domain.Forge
             string prompt,
             string negativePrompt,
             int timeoutSeconds = 300,
-            string modelHint = "")
+            string modelHint = "",
+            int steps = 1)
         {
             if (string.IsNullOrWhiteSpace(requestId)) throw new ArgumentException("RequestId is required.", nameof(requestId));
             if (string.IsNullOrWhiteSpace(promptHash)) throw new ArgumentException("PromptHash is required.", nameof(promptHash));
@@ -47,6 +48,7 @@ namespace EmberCrpg.Domain.Forge
             NegativePrompt = negativePrompt ?? string.Empty;
             TimeoutSeconds = timeoutSeconds;
             ModelHint = modelHint ?? string.Empty;
+            Steps = steps < 1 ? 1 : steps;
         }
 
         public string RequestId { get; }
@@ -62,6 +64,10 @@ namespace EmberCrpg.Domain.Forge
         public string NegativePrompt { get; }
         public int TimeoutSeconds { get; }
         public string ModelHint { get; }
+
+        /// <summary>Diffusion fidelity steps — a CONFIG VARIABLE (default 1), not a hardcoded constant.
+        /// The pipeline honours this; set it per AssetKind via ImageGenKindTemplate / ImageGenSpec.Steps.</summary>
+        public int Steps { get; }
     }
 }
 
