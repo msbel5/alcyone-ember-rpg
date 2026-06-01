@@ -1,5 +1,3 @@
-using System;
-
 namespace EmberCrpg.Domain.Forge
 {
     public interface IImageGenSpecFactory
@@ -9,11 +7,18 @@ namespace EmberCrpg.Domain.Forge
 
     public sealed class DefaultImageGenSpecFactory : IImageGenSpecFactory
     {
+        private readonly IPromptComposer _promptComposer;
+
+        public DefaultImageGenSpecFactory(IPromptComposer promptComposer = null)
+        {
+            _promptComposer = promptComposer ?? new DefaultPromptComposer();
+        }
+
         public ImageGenSpec Create(AssetKind kind, string subject, uint seed, string referenceImageId = null)
         {
             var template = ImageGenKindTemplate.For(kind);
-            var trimmedSubject = string.IsNullOrWhiteSpace(subject) ? "figure" : subject.Trim();
-            var prompt = template.PromptScaffold.Replace("{subject}", trimmedSubject);
+            var prompt = _promptComposer.ComposePositive(kind, subject);
+            var negativePrompt = _promptComposer.ComposeNegative(kind, subject);
 
             return new ImageGenSpec(
                 kind,
@@ -22,7 +27,7 @@ namespace EmberCrpg.Domain.Forge
                 template.Steps,
                 template.Guidance,
                 prompt,
-                template.NegativePrompt,
+                negativePrompt,
                 seed,
                 referenceImageId);
         }
