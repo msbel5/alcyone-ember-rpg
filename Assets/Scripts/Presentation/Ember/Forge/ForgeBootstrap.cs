@@ -16,10 +16,11 @@ namespace EmberCrpg.Presentation.Ember.Forge
         public bool ComfyUiAvailable { get; private set; }
         public bool OllamaAvailable { get; private set; }
         public bool NativeLlmAvailable => _nativeLlm?.IsAvailable ?? false;
-        public bool OnnxForgeAvailable => _activeForge is OnnxAssetForge onnx && onnx.IsAvailable() && !onnx.PlaceholderMode;
+        public bool OnnxForgeAvailable => _onnxForge != null && _onnxForge.IsAvailable() && !_onnxForge.PlaceholderMode;
 
         private NativeLlmClient _nativeLlm;
         private OnnxAssetForge _onnxForge;
+        private SerializedAssetForge _serializedForge;
         private IAssetForge _activeForge;
         private CancellationTokenSource _cts;
         private string _forgeInitFailure = string.Empty;
@@ -31,7 +32,9 @@ namespace EmberCrpg.Presentation.Ember.Forge
             var modelRoot = ResolveModelDirectory();
             _nativeLlm = new NativeLlmClient(modelRoot, fallback: null);
 
-            _activeForge = EmberForgeFactory.BuildForge(modelRoot, out _onnxForge, out _forgeInitFailure);
+            var realForge = EmberForgeFactory.BuildForge(modelRoot, out _onnxForge, out _forgeInitFailure);
+            _serializedForge = new SerializedAssetForge(realForge, new UnityResourceProbe());
+            _activeForge = _serializedForge;
 
             ILlmRouter router = new LlmRoutingService(
                 req => _nativeLlm.Complete(req),
@@ -46,6 +49,8 @@ namespace EmberCrpg.Presentation.Ember.Forge
         {
             _cts?.Cancel();
             _cts?.Dispose();
+            _serializedForge?.Dispose();
+            _serializedForge = null;
             _nativeLlm?.Dispose();
             _onnxForge?.Dispose();
             ForgeLocator.Clear();

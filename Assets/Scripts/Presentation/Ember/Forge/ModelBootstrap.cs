@@ -195,7 +195,10 @@ namespace EmberCrpg.Presentation.Ember.Forge
             try
             {
                 var forge = EmberForgeFactory.BuildForge(_persistentRoot, out var onnx, out var failureReason);
-                ForgeLocator.SetAssetForge(forge);
+                // Wrap in SerializedAssetForge so the rebind keeps the one-at-a-time worker + RAM guard.
+                // ForgeLocator is engine-free and no longer wraps — the bootstrap callers own that (matches
+                // ForgeBootstrap). Passing a raw forge here would silently drop serialization on rebind.
+                ForgeLocator.SetAssetForge(new SerializedAssetForge(forge, new UnityResourceProbe()));
                 if (onnx != null)
                     Log($"ModelBootstrap: asset forge rebound -> {onnx.Flavor} (cuda={onnx.UsesCuda}).");
                 else if (!string.IsNullOrEmpty(failureReason))

@@ -1,3 +1,4 @@
+using System;
 using EmberCrpg.Domain.Forge;
 using EmberCrpg.Simulation.AiDm;
 using EmberCrpg.Infrastructure.AiDm; // ARCH-05: LLM provider impls
@@ -13,7 +14,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
 
         public static void Register(IAssetForge forge, NativeLlmClient llm, ILlmRouter router)
         {
-            AssetForge = forge;
+            SetAssetForge(forge);
             NativeLlm = llm;
             LlmRouter = router;
         }
@@ -23,6 +24,12 @@ namespace EmberCrpg.Presentation.Ember.Forge
         // wired. Hence these targeted setters.
         public static void SetAssetForge(IAssetForge forge)
         {
+            // Just store the forge + dispose the previous one. Serialization (one-at-a-time + the RAM guard)
+            // is applied by the BOOTSTRAP callers, which wrap the real forge in a SerializedAssetForge. That
+            // keeps this locator engine-free (no UnityResourceProbe reference) so the fallback harness — which
+            // compiles ForgeLocator — does not pull in UnityEngine.
+            if (object.ReferenceEquals(AssetForge, forge)) return;
+            (AssetForge as IDisposable)?.Dispose();
             AssetForge = forge;
         }
 
@@ -33,6 +40,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
 
         public static void Clear()
         {
+            (AssetForge as IDisposable)?.Dispose();
             AssetForge = null;
             NativeLlm = null;
             LlmRouter = null;

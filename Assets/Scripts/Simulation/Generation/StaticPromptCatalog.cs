@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using EmberCrpg.Domain.Forge;
 
 namespace EmberCrpg.Simulation.Generation
 {
@@ -29,9 +30,10 @@ namespace EmberCrpg.Simulation.Generation
         public static StaticPromptCatalog CreateDefault()
         {
             var prompts = new Dictionary<string, string>(StringComparer.Ordinal);
+            var geometricCatalog = new GeometricPromptCatalog();
             Add(prompts, "new_game", "a small ember-lit iron door icon, ash dust at the threshold");
             Add(prompts, "settings", "a blackened brass gear icon with soot in the teeth");
-            Add(prompts, "dice", "a single carved bone die marked with ember pips");
+            AddGeometric(prompts, geometricCatalog, "dice", "dice");
             Add(prompts, "skill", "a stitched leather skill ledger with a copper clasp");
             Add(prompts, "attack", "a chipped iron axe head angled forward");
             Add(prompts, "defend", "a dark oak shield rimmed with warm iron");
@@ -54,22 +56,22 @@ namespace EmberCrpg.Simulation.Generation
             prompts["env_trademarket"] = EmberFloorHeader + ", market square cobblestone, worn warm-grey pavers, dust and straw, lantern-lit, " + EmberNegativeFooter;
             prompts["env_showroomoverview"] = EmberFloorHeader + ", showroom floor, smooth dark stone with ember-gold seam trim, polished sheen, " + EmberNegativeFooter;
             prompts["env_tavernflavour"] = EmberFloorHeader + ", tavern wooden plank floor, warm aged oak timber, hearth-glow, knot details, " + EmberNegativeFooter;
-            Add(prompts, "item_sword", "a wrought-iron longsword with rune-etched fuller, oxblood leather grip");
-            Add(prompts, "item_bow", "a recurved yew bow strung with dark cord and brass nocks");
-            Add(prompts, "item_staff", "a charred ashwood staff capped with warm iron");
-            Add(prompts, "item_potion", "a squat glass potion vial filled with coal-red liquid");
-            Add(prompts, "item_scroll", "a sealed parchment scroll tied with black thread");
-            Add(prompts, "item_key", "an old iron key with a crown-shaped bit");
-            Add(prompts, "item_ring", "a tarnished ring set with a dull ember stone");
-            Add(prompts, "item_helm", "a dented sallet helm with soot along the visor");
-            Add(prompts, "item_boots", "travel boots with ash-caked soles and bronze buckles");
-            Add(prompts, "item_shield", "a kite shield painted with a fading coal sigil");
-            Add(prompts, "spell_sleep", "a blue-gray sleep charm drifting like smoke over a candle");
-            Add(prompts, "spell_heal", "a muted gold healing sigil stitched from warm light");
-            Add(prompts, "spell_fire", "a controlled coal flame cupped inside a black rune circle");
-            Add(prompts, "spell_ice", "a pale ice shard rimmed with soot-dark frost");
-            Add(prompts, "spell_shield", "a translucent ward disk hammered from amber light");
-            Add(prompts, "spell_lightning", "a fork of dull copper lightning over storm slate");
+            AddGeometric(prompts, geometricCatalog, "item_sword", "sword");
+            AddGeometric(prompts, geometricCatalog, "item_bow", "bow");
+            AddGeometric(prompts, geometricCatalog, "item_staff", "staff");
+            AddGeometric(prompts, geometricCatalog, "item_potion", "potion");
+            AddGeometric(prompts, geometricCatalog, "item_scroll", "scroll");
+            AddGeometric(prompts, geometricCatalog, "item_key", "key");
+            AddGeometric(prompts, geometricCatalog, "item_ring", "ring");
+            AddGeometric(prompts, geometricCatalog, "item_helm", "helm");
+            AddGeometric(prompts, geometricCatalog, "item_boots", "boots");
+            AddGeometric(prompts, geometricCatalog, "item_shield", "shield");
+            AddGeometric(prompts, geometricCatalog, "spell_sleep", "sleep");
+            AddGeometric(prompts, geometricCatalog, "spell_heal", "heal");
+            AddGeometric(prompts, geometricCatalog, "spell_fire", "fire");
+            AddGeometric(prompts, geometricCatalog, "spell_ice", "ice");
+            AddGeometric(prompts, geometricCatalog, "spell_shield", "shield");
+            AddGeometric(prompts, geometricCatalog, "spell_lightning", "lightning");
             Add(prompts, "logo_full", "the word Ember implied by a forged crest and coal-lit crown silhouette");
             Add(prompts, "logo_compact", "a compact ember crown mark cut from blackened brass");
             Add(prompts, "splash_background", "a first-person dark fantasy road toward a distant ember-lit citadel at dusk");
@@ -79,6 +81,16 @@ namespace EmberCrpg.Simulation.Generation
         private static void Add(Dictionary<string, string> prompts, string key, string body)
         {
             prompts[key] = EmberStyleHeader + ", " + body + ", " + EmberNegativeFooter;
+        }
+
+        private static void AddGeometric(
+            Dictionary<string, string> prompts,
+            GeometricPromptCatalog geometricCatalog,
+            string key,
+            string objectName)
+        {
+            geometricCatalog.TryGet(objectName, out var positive, out _);
+            Add(prompts, key, positive);
         }
     }
 }

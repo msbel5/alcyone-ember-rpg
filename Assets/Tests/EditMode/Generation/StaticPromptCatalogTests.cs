@@ -25,5 +25,28 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 Assert.That(prompt, Does.EndWith(StaticPromptCatalog.EmberNegativeFooter), entry.StaticPromptKey);
             }
         }
+
+        [Test]
+        public void DicePrompt_UsesGeometricCatalogDescription_AndNeverMentionsPips()
+        {
+            var catalog = StaticPromptCatalog.CreateDefault();
+            Assert.That(catalog.TryGetPrompt("dice", out var dicePrompt), Is.True);
+            Assert.That(dicePrompt, Does.Contain("single six-sided game die"));
+            Assert.That(dicePrompt, Does.Contain("dot markings"));
+            Assert.That(dicePrompt.ToLowerInvariant(), Does.Not.Contain("pips"));
+        }
+
+        [Test]
+        public void ObjectIconItemSpellEntries_UseSdxlTurboAt1024()
+        {
+            var manifest = CoreAssetManifest.CreateDefault();
+            foreach (var entry in manifest.Entries)
+            {
+                if (entry.Category != "ui" && entry.Category != "item" && entry.Category != "spell") continue;
+                Assert.That(entry.Width, Is.EqualTo(1024), entry.Id);
+                Assert.That(entry.Height, Is.EqualTo(1024), entry.Id);
+                Assert.That(entry.ModelHint, Is.EqualTo("sdxl-turbo"), entry.Id);
+            }
+        }
     }
 }

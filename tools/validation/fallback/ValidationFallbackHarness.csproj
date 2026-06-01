@@ -28,6 +28,9 @@
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Adapters/CharacterCreationViewModel.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/ComfyUiAssetForge.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/ForgeLocator.cs" />
+    <!-- Engine-free decorator (takes IResourceProbe, NOT the Unity probe) so it compiles in the fallback
+         harness; its SerializedAssetForgeTests are picked up by the Tests/EditMode wildcard below. -->
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/SerializedAssetForge.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/CharacterCreation/DefaultNpcPortraitJsonProvider.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/CharacterCreation/PortraitPromptBuilder.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldgenVisibleEvent.cs" />
