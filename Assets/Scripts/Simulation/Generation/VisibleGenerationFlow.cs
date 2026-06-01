@@ -57,7 +57,7 @@ namespace EmberCrpg.Simulation.Generation
                 if (!lookup.ContainsKey(manifestEntries[i].Id))
                     lookup[manifestEntries[i].Id] = manifestEntries[i];
 
-            var scan = await AssetManifestScanner.ScanAsync(manifestEntries, _projectRoot, cancellationToken);
+            var scan = await AssetManifestScanner.ScanAsync(manifestEntries, _projectRoot, cancellationToken, _catalog);
             var toGenerate = new List<ManifestEntry>();
             for (int i = 0; i < scan.Entries.Count; i++)
             {

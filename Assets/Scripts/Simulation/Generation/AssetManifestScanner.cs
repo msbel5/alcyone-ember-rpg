@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.Generation
 {
     public static class AssetManifestScanner
     {
-        public static Task<ManifestScanReport> ScanAsync(IReadOnlyList<ManifestEntry> entries, string projectRoot, CancellationToken cancellationToken)
+        public static Task<ManifestScanReport> ScanAsync(IReadOnlyList<ManifestEntry> entries, string projectRoot, CancellationToken cancellationToken, StaticPromptCatalog catalog = null)
         {
             if (entries == null) throw new ArgumentNullException(nameof(entries));
             if (string.IsNullOrWhiteSpace(projectRoot)) throw new ArgumentException("Project root is required.", nameof(projectRoot));
@@ -19,7 +19,16 @@ namespace EmberCrpg.Simulation.Generation
                 cancellationToken.ThrowIfCancellationRequested();
                 var entry = entries[i];
                 var fullPath = Resolve(projectRoot, entry.ExpectedPath);
-                if (File.Exists(fullPath)) rows.Add(new EntryRow(entry.Id, entry.Category, entry.ExpectedPath, EntryState.Cached, "cached"));
+                if (File.Exists(fullPath))
+                {
+                    if (catalog != null
+                        && entry.RequiresGeneration
+                        && !GeneratedAssetProvenance.IsFresh(fullPath, entry, catalog, out var staleReason))
+                    {
+                        rows.Add(new EntryRow(entry.Id, entry.Category, entry.ExpectedPath, EntryState.RequiresGeneration, staleReason));
+                    }
+                    else rows.Add(new EntryRow(entry.Id, entry.Category, entry.ExpectedPath, EntryState.Cached, "cached"));
+                }
                 else rows.Add(new EntryRow(entry.Id, entry.Category, entry.ExpectedPath, entry.RequiresGeneration ? EntryState.RequiresGeneration : EntryState.Missing, entry.RequiresGeneration ? "requires_generation" : "missing_non_generated_asset"));
             }
             return Task.FromResult(new ManifestScanReport(rows));

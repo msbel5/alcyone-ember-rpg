@@ -1,4 +1,5 @@
 using System.IO;
+using EmberCrpg.Simulation.Generation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -93,6 +94,7 @@ namespace EmberCrpg.Presentation.Ember.Visual
                 {
                     var path = candidates[i];
                     if (string.IsNullOrEmpty(path) || !File.Exists(path)) continue;
+                    if (!GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) continue;
                     var bytes = File.ReadAllBytes(path);
                     var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
                     if (!tex.LoadImage(bytes)) { Object.Destroy(tex); continue; }
@@ -106,5 +108,6 @@ namespace EmberCrpg.Presentation.Ember.Visual
             }
             return null;
         }
+
     }
 }

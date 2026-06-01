@@ -1,7 +1,5 @@
 using System;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EmberCrpg.Domain.Forge;
@@ -66,7 +64,7 @@ namespace EmberCrpg.Simulation.Generation
                 EntryProgress?.Invoke(entry, 0f);
                 var started = DateTime.UtcNow;
                 var prompt = ResolvePrompt(entry);
-                var promptHash = Hash(prompt + entry.Width + "x" + entry.Height + entry.ModelHint);
+                var promptHash = GeneratedAssetProvenance.ComputePromptHash(entry, _catalog);
                 try
                 {
                     using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
@@ -116,19 +114,21 @@ namespace EmberCrpg.Simulation.Generation
 
         private string ResolvePrompt(ManifestEntry entry)
         {
-            if (!entry.RequiresGeneration) return string.Empty;
-            if (_catalog.TryGetPrompt(entry.StaticPromptKey, out var prompt)) return prompt;
-            return StaticPromptCatalog.EmberStyleHeader + ", missing prompt key " + entry.StaticPromptKey + ", " + StaticPromptCatalog.EmberNegativeFooter;
+            return GeneratedAssetProvenance.ResolvePrompt(entry, _catalog);
         }
 
         private AssetGenerationRequest ToRequest(ManifestEntry entry, string prompt, string promptHash)
         {
-            return new AssetGenerationRequest(entry.Id, ToSubject(entry.Category), WorldStyle.DarkFantasyGrim, WorldGenre.Survival, "ember", promptHash, entry.Width, entry.Height, StableSeed(entry.Id), prompt, StaticPromptCatalog.EmberNegativeFooter, entry.TimeoutSeconds, entry.ModelHint);
+            return new AssetGenerationRequest(entry.Id, ToSubject(entry.Category), WorldStyle.DarkFantasyGrim, WorldGenre.Survival, "ember", promptHash, entry.Width, entry.Height, StableSeed(entry.Id), prompt, StaticPromptCatalog.EmberGenerationNegative, entry.TimeoutSeconds, entry.ModelHint);
         }
 
         private static AssetSubjectKind ToSubject(string category)
         {
             if (string.Equals(category, "item", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Item;
+            if (string.Equals(category, "ui", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Item;
+            if (string.Equals(category, "spell", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Item;
+            if (string.Equals(category, "logo", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Item;
+            if (string.Equals(category, "environment", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Region;
             if (string.Equals(category, "splash", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Splash;
             return AssetSubjectKind.Npc;
         }
@@ -138,6 +138,7 @@ namespace EmberCrpg.Simulation.Generation
             var fullPath = AssetManifestScanner.Resolve(_projectRoot, entry.ExpectedPath);
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
             File.WriteAllBytes(fullPath, bytes ?? Array.Empty<byte>());
+            if (entry.RequiresGeneration) GeneratedAssetProvenance.Write(fullPath, entry, _catalog);
         }
 
         private static uint StableSeed(string value)
@@ -150,15 +151,5 @@ namespace EmberCrpg.Simulation.Generation
             }
         }
 
-        private static string Hash(string value)
-        {
-            using (var sha = SHA256.Create())
-            {
-                var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(value ?? string.Empty));
-                var sb = new StringBuilder("sha256:");
-                for (int i = 0; i < bytes.Length; i++) sb.Append(bytes[i].ToString("x2"));
-                return sb.ToString();
-            }
-        }
     }
 }

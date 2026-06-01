@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using EmberCrpg.Simulation.Generation;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 
@@ -221,6 +222,7 @@ namespace EmberCrpg.Presentation.Ember.Loading
             var root = parent != null ? parent.FullName : Application.dataPath;
             var path = Path.Combine(root, "Assets", "Generated", "Core", entryId + ".png");
             if (!File.Exists(path)) return null;
+            if (!GeneratedAssetProvenance.IsFreshCoreAsset(entryId, path)) return null;
             try
             {
                 var bytes = File.ReadAllBytes(path);

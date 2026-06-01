@@ -157,6 +157,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             var root = parent != null ? parent.FullName : Application.dataPath;
             var path = Path.Combine(root, "Assets", "Generated", "Core", entryId + ".png");
             if (!File.Exists(path)) return null;
+            if (!GeneratedAssetProvenance.IsFreshCoreAsset(entryId, path)) return null;
             var bytes = File.ReadAllBytes(path);
             var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
             return texture.LoadImage(bytes) ? texture : null;

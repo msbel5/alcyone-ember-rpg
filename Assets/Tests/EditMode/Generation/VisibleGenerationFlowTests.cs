@@ -31,6 +31,7 @@ namespace EmberCrpg.Tests.EditMode.Generation
                     new ManifestEntry("item_missing", "item", generatedPath, "item_bow", 16, 16, true, 5, "sd15-lcm"),
                     new ManifestEntry("font_missing", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/never.asset", "", 1, 1, false, 5, ""),
                 };
+                GeneratedAssetProvenance.Write(cachedAbsolute, entries[0], StaticPromptCatalog.CreateDefault());
 
                 var scanStates = new List<EntryState>();
                 var scanThumbCount = 0;

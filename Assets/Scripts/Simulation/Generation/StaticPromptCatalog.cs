@@ -11,6 +11,7 @@ namespace EmberCrpg.Simulation.Generation
         // "transparent background, single subject centered" with a seamless-fill directive.
         public const string EmberFloorHeader = "dark-fantasy ember-warm palette, painterly low-saturation, seamless tileable texture, top-down orthographic surface filling the entire frame edge to edge, no central subject";
         public const string EmberNegativeFooter = "no text, no watermark, no border, no UI elements, no signature, no logo";
+        public const string EmberGenerationNegative = EmberNegativeFooter + ", no multiple objects, no group, no duplicate subject, no scattered objects, no collage";
 
         private readonly IReadOnlyDictionary<string, string> _prompts;
 
@@ -30,7 +31,7 @@ namespace EmberCrpg.Simulation.Generation
             var prompts = new Dictionary<string, string>(StringComparer.Ordinal);
             Add(prompts, "new_game", "a small ember-lit iron door icon, ash dust at the threshold");
             Add(prompts, "settings", "a blackened brass gear icon with soot in the teeth");
-            Add(prompts, "dice", "four bone dice marked with ember pips");
+            Add(prompts, "dice", "a single carved bone die marked with ember pips");
             Add(prompts, "skill", "a stitched leather skill ledger with a copper clasp");
             Add(prompts, "attack", "a chipped iron axe head angled forward");
             Add(prompts, "defend", "a dark oak shield rimmed with warm iron");
