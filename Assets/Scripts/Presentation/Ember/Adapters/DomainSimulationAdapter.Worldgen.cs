@@ -14,6 +14,7 @@ using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
+using EmberCrpg.Presentation.Ember.Worldgen;
 
 namespace EmberCrpg.Presentation.Ember.Adapters
 {
@@ -413,32 +414,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         private static WorldStyle ParseStyle(string mood)
         {
-            var text = (mood ?? string.Empty).ToLowerInvariant();
-            if (text.Contains("grim") || text.Contains("dark") || text.Contains("bleak")) return WorldStyle.DarkFantasyGrim;
-            if (text.Contains("high") || text.Contains("tolkien") || text.Contains("heroic")) return WorldStyle.HighFantasy;
-            if (text.Contains("steam") || text.Contains("industrial") || text.Contains("revolution")) return WorldStyle.SteampunkRevolution;
-            if (text.Contains("ancient") || text.Contains("myth") || text.Contains("bronze")) return WorldStyle.AncientMythology;
-            return WorldStyle.LowFantasy;
+            return WorldGenesisMapper.ToStyle(mood);
         }
 
         private static WorldGenre ParseGenre(string mood, string calling, string startLocation)
         {
-            var text = ((mood ?? string.Empty) + " " + (calling ?? string.Empty) + " " + (startLocation ?? string.Empty)).ToLowerInvariant();
-            if (text.Contains("politic") || text.Contains("diplomat") || text.Contains("court") || text.Contains("noble")) return WorldGenre.PoliticalIntrigue;
-            if (text.Contains("monster") || text.Contains("hunt") || text.Contains("beast")) return WorldGenre.MonsterHunt;
-            if (text.Contains("merchant") || text.Contains("trade") || text.Contains("caravan") || text.Contains("smith")) return WorldGenre.MerchantEmpire;
-            if (text.Contains("pilgrim") || text.Contains("shrine") || text.Contains("temple") || text.Contains("priest")) return WorldGenre.Pilgrimage;
-            return WorldGenre.Survival;
+            return WorldGenesisMapper.ToGenre(mood, calling, startLocation);
         }
 
         private static SettlementSize ParsePreferredSettlementSize(string startLocation)
         {
-            var text = (startLocation ?? string.Empty).ToLowerInvariant();
-            if (text.Contains("capital")) return SettlementSize.Capital;
-            if (text.Contains("city")) return SettlementSize.City;
-            if (text.Contains("hamlet")) return SettlementSize.Hamlet;
-            if (text.Contains("village") || text.Contains("farm")) return SettlementSize.Village;
-            return SettlementSize.Town;
+            return WorldGenesisMapper.ToPreferredSettlementSize(startLocation);
         }
 
         private static uint FoldSeed(string mood, string calling, string startLocation)

@@ -383,25 +383,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         // baseline so a never-touched stage still yields a coherent world.
         private static WorldStyle MoodToStyle(string mood)
         {
-            switch ((mood ?? string.Empty).Trim().ToLowerInvariant())
-            {
-                case "mythic": return WorldStyle.AncientMythology;
-                case "low": return WorldStyle.LowFantasy;
-                case "heroic": return WorldStyle.HighFantasy;
-                default: return WorldStyle.DarkFantasyGrim;
-            }
+            return WorldGenesisMapper.ToStyle(mood);
         }
 
         private static WorldGenre CallingToGenre(string calling)
         {
-            switch ((calling ?? string.Empty).Trim().ToLowerInvariant())
-            {
-                case "intrigue": return WorldGenre.PoliticalIntrigue;
-                case "hunt": return WorldGenre.MonsterHunt;
-                case "merchant": return WorldGenre.MerchantEmpire;
-                case "pilgrimage": return WorldGenre.Pilgrimage;
-                default: return WorldGenre.Survival;
-            }
+            return WorldGenesisMapper.ToGenre(string.Empty, calling, string.Empty);
         }
 
         private void RenderBirthsignButtons()

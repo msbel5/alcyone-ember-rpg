@@ -33,6 +33,7 @@
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/SerializedAssetForge.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/CharacterCreation/DefaultNpcPortraitJsonProvider.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/CharacterCreation/PortraitPromptBuilder.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldGenesisMapper.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldgenVisibleEvent.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldgenEventProjector.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/JsonSliceSaveService.cs" />
