@@ -117,6 +117,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 gameObject.AddComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
             }
 
+            // ESCAPE-FIX: gameplay scenes ship a legacy StandaloneInputModule that is dead under
+            // activeInputHandler=1 (Input System only) — swap to InputSystemUIInputModule FIRST so the
+            // pause menu and dialog-option clicks register again. Must precede the panel ensures.
+            EnsureEventSystem();
             EnsureDialogBoxPanel();
             // UI-SINGLE-SOURCE (player report "default UI elements every scene ... ui is coming from
             // one place"): the standard HUD set is now host-owned so every gameplay scene shows the

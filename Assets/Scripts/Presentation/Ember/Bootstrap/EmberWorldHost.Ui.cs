@@ -11,6 +11,44 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 {
     public sealed partial class EmberWorldHost
     {
+        // ESCAPE-FIX (E7-020 Input System regression): the 10 gameplay scenes bake an EventSystem with the
+        // legacy StandaloneInputModule, but the project now runs activeInputHandler=1 (Input System only),
+        // so that module receives NO pointer input — every uGUI click (pause menu, dialog options) was dead
+        // in gameplay. CC/MainMenu work only because they build their EventSystem in code with
+        // InputSystemUIInputModule. Single-source the same guarantee here: ensure exactly one EventSystem
+        // driven by InputSystemUIInputModule, retiring any legacy module. No 10-scene YAML edits.
+        private static void EnsureEventSystem()
+        {
+            var es = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include);
+            if (es == null)
+            {
+                new GameObject(
+                    "EventSystem",
+                    typeof(UnityEngine.EventSystems.EventSystem),
+                    typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
+                return;
+            }
+
+            bool hasInputSystemModule = false;
+            foreach (var module in es.GetComponents<UnityEngine.EventSystems.BaseInputModule>())
+            {
+                if (module is UnityEngine.InputSystem.UI.InputSystemUIInputModule)
+                {
+                    hasInputSystemModule = true;
+                }
+                else
+                {
+                    // Legacy module is inert under activeInputHandler=1 — disable now (immediate) and
+                    // destroy so it can't sit in front of the working module.
+                    module.enabled = false;
+                    Object.Destroy(module);
+                }
+            }
+
+            if (!hasInputSystemModule)
+                es.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        }
+
         /// <summary>
         /// Audit (eighth pass D-P1): PauseMenu was dormant — no scene authored it.
         /// Ensure exactly one PauseMenu exists on a Canvas so Escape actually
