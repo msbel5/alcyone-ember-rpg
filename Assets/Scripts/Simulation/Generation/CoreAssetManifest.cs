@@ -22,9 +22,12 @@ namespace EmberCrpg.Simulation.Generation
             // SD 1.5 LCM requires width/height divisible by 64. 720 was not; ONNX inference threw.
             // 768x512 (3:2) generates reliably and ScaleAndCrop fills 16:9 backdrops without artefacts.
             entries.Add(new ManifestEntry("splash_background", "splash", "Assets/Generated/Core/splash_background.png", "splash_background", 768, 512, true, 300, "sd15-lcm"));
-            entries.Add(new ManifestEntry("logo_full", "logo", "Assets/Generated/Core/logo_full.png", "logo_full", 256, 128, true, 300, "sd15-lcm"));
-            entries.Add(new ManifestEntry("logo_compact", "logo", "Assets/Generated/Core/logo_compact.png", "logo_compact", 128, 128, true, 300, "sd15-lcm"));
-            AddMany(entries, "ui", 64, 64, true, "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
+            // Generate everything at SD1.5's native 512² (÷64-safe). Small canvases (64-256) produced
+            // garbled "rainbow" output; the display layer downscales to the slot size. Uniform size keeps
+            // quality consistent across all UI/logo/item/spell assets.
+            entries.Add(new ManifestEntry("logo_full", "logo", "Assets/Generated/Core/logo_full.png", "logo_full", 512, 512, true, 300, "sd15-lcm"));
+            entries.Add(new ManifestEntry("logo_compact", "logo", "Assets/Generated/Core/logo_compact.png", "logo_compact", 512, 512, true, 300, "sd15-lcm"));
+            AddMany(entries, "ui", 512, 512, true, "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
             entries.Add(new ManifestEntry("font_body", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_heading", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_mono", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
@@ -34,8 +37,8 @@ namespace EmberCrpg.Simulation.Generation
             AddSilhouette(entries, "undead_humanoid");
             AddSilhouette(entries, "construct");
             AddSilhouette(entries, "aberration");
-            AddMany(entries, "item", 128, 128, true, "sword", "bow", "staff", "potion", "scroll", "key", "ring", "helm", "boots", "shield");
-            AddMany(entries, "spell", 96, 96, true, "sleep", "heal", "fire", "ice", "shield", "lightning");
+            AddMany(entries, "item", 512, 512, true, "sword", "bow", "staff", "potion", "scroll", "key", "ring", "helm", "boots", "shield");
+            AddMany(entries, "spell", 512, 512, true, "sleep", "heal", "fire", "ice", "shield", "lightning");
             AddSound(entries, "ui_click"); AddSound(entries, "ui_hover"); AddSound(entries, "dice_roll"); AddSound(entries, "level_up"); AddSound(entries, "error");
             // logos + splash moved to top of list (above) so menus get visuals before later stalls.
             // splash uses sd15-lcm @ 1280x720 to skip the cuDNN 9 dependency; re-up to sdxl-turbo

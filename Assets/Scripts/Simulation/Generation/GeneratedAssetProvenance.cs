@@ -9,7 +9,9 @@ namespace EmberCrpg.Simulation.Generation
 {
     public static class GeneratedAssetProvenance
     {
-        public const string Version = "real-images-v1";
+        // Bump to invalidate ALL cached generated assets. v2: uniform 512² sizing (small canvases gave
+        // "rainbow" garbage) + 1-step SDXL fidelity. Old small/garbled PNGs regenerate at 512 on next boot.
+        public const string Version = "real-images-v2";
 
         public static bool IsFresh(string assetPath, ManifestEntry entry, StaticPromptCatalog catalog, out string reason)
         {
