@@ -9,6 +9,7 @@ namespace EmberCrpg.Simulation.Forge
     public sealed class GenerationManager : IDisposable
     {
         private readonly IAssetForge _forge;
+        private readonly IResourceProbe _resourceProbe;
         private readonly AssetForgeQueue _queue;
         private readonly Dictionary<AssetGenerationRequest, Queue<WorkItem>> _pendingByRequest =
             new Dictionary<AssetGenerationRequest, Queue<WorkItem>>();
@@ -23,12 +24,13 @@ namespace EmberCrpg.Simulation.Forge
         // requests so the queue can order them by priority (PlayerFacing first). A value of 1 here would let
         // only one request sit in the queue, forcing the rest to block on enqueue and race for the freed
         // slot in undefined order — which breaks priority preemption.
-        public GenerationManager(IAssetForge forge, int maxPending = 4096)
+        public GenerationManager(IAssetForge forge, int maxPending = 4096, IResourceProbe resourceProbe = null)
         {
             if (forge == null) throw new ArgumentNullException(nameof(forge));
             if (maxPending <= 0) throw new ArgumentOutOfRangeException(nameof(maxPending));
 
             _forge = forge;
+            _resourceProbe = resourceProbe ?? new NullResourceProbe();
             _queue = new AssetForgeQueue(maxPending);
             _workerTask = Task.Run(WorkerLoopAsync);
         }
@@ -108,7 +110,8 @@ namespace EmberCrpg.Simulation.Forge
 
                 try
                 {
-                    var result = await _forge.GenerateAsync(workItem.Request, workItem.CancellationToken).ConfigureAwait(false);
+                    var guardedRequest = ApplyResourceGuard(workItem.Request);
+                    var result = await _forge.GenerateAsync(guardedRequest, workItem.CancellationToken).ConfigureAwait(false);
                     workItem.Completion.TrySetResult(result);
                 }
                 catch (OperationCanceledException)
@@ -216,6 +219,40 @@ namespace EmberCrpg.Simulation.Forge
         private void ThrowIfDisposed()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(GenerationManager));
+        }
+
+        private AssetGenerationRequest ApplyResourceGuard(AssetGenerationRequest request)
+        {
+            var requiredVideoMemoryMb = EstimateRequiredVideoMemoryMb(request.Width, request.Height);
+            var availableVideoMemoryMb = _resourceProbe.AvailableVideoMemoryMb();
+            var isLargerThan512 = request.Width > 512 || request.Height > 512;
+            if (availableVideoMemoryMb >= requiredVideoMemoryMb || !isLargerThan512)
+            {
+                return request;
+            }
+
+            // Resource guard decision: downscale heavy requests before forge execution to reduce OOM risk.
+            return new AssetGenerationRequest(
+                requestId: request.RequestId,
+                subject: request.Subject,
+                style: request.Style,
+                genre: request.Genre,
+                moodKeyword: request.MoodKeyword,
+                promptHash: request.PromptHash,
+                width: 512,
+                height: 512,
+                seed: request.Seed,
+                prompt: request.Prompt,
+                negativePrompt: request.NegativePrompt,
+                timeoutSeconds: request.TimeoutSeconds,
+                modelHint: request.ModelHint,
+                steps: request.Steps);
+        }
+
+        private static long EstimateRequiredVideoMemoryMb(int width, int height)
+        {
+            var pixels = (long)width * height;
+            return pixels <= 0 ? 1 : pixels / 256;
         }
 
         private sealed class WorkItem
