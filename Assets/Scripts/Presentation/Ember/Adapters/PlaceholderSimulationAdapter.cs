@@ -71,11 +71,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IDialogSource GetDialogSource(string actorName)
         {
             _currentDialogLine = $"Greetings, I am {actorName}. What brings you here?";
-            // Eighth-pass D-P2 + A-P3: was a dead conditional (both branches
-            // returned the same string) AND would NRE on null actorName.
-            _currentPortrait = string.IsNullOrEmpty(actorName)
-                ? "portrait_npc_placeholder"
-                : $"portrait_{actorName.ToLowerInvariant()}_placeholder";
+            _currentPortrait = DialogPortraitKey.Normalize(actorName);
             return this;
         }
 
@@ -87,7 +83,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _currentDialogLine = id.IsEmpty
                 ? "There is no one here to talk to."
                 : $"Greetings, traveler. (npc #{id.Value})";
-            _currentPortrait = "portrait_npc_placeholder";
+            _currentPortrait = DialogPortraitKey.Default;
             return this;
         }
 

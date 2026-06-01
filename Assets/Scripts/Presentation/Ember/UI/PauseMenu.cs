@@ -18,6 +18,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         private bool _isPaused;
         private SaveSlotBrowserState _slotState;
         private TextMeshProUGUI _slotText;
+        public bool IsPaused => _isPaused;
 
         private void Awake()
         {

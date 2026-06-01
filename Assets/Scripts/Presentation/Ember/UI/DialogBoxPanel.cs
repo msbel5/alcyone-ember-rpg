@@ -39,6 +39,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         private string _displayedLineText;
         private float _typewriterElapsed;
         private bool _isTypewriting;
+        private Sprite _portraitFallbackSprite;
 
         private void Awake()
         {
@@ -160,23 +161,16 @@ namespace EmberCrpg.Presentation.Ember.UI
             // (created lazily by BuildPortrait above).
             if (_portraitImage != null && Source is IDialogSourcePortrait portraitSource)
             {
-                var portraitName = portraitSource.GetPortraitName();
-                if (!string.IsNullOrEmpty(portraitName))
+                var portraitName = DialogPortraitKey.Normalize(portraitSource.GetPortraitName());
+                var portrait = ResolvePortraitSprite(portraitName)
+                    ?? ResolvePortraitSprite(DialogPortraitKey.Default)
+                    ?? ResolveFallbackPortrait();
+
+                if (portrait != null)
                 {
-                    Sprite portrait = null;
-                    if (Source is EmberCrpg.Presentation.Ember.UI.ISpriteByName lookup)
-                        portrait = lookup.GetSprite(portraitName);
-                    if (portrait == null)
-                    {
-                        var host = EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost
-                            .GetSpriteFromHost(portraitName);
-                        portrait = host;
-                    }
-                    if (portrait != null)
-                    {
-                        _portraitImage.sprite = portrait;
-                        _portraitImage.color = Color.white;
-                    }
+                    _portraitImage.sprite = portrait;
+                    _portraitImage.color = Color.white;
+                    _portraitImage.preserveAspect = true;
                 }
             }
 
@@ -206,10 +200,43 @@ namespace EmberCrpg.Presentation.Ember.UI
                 Close();
             }
         }
+
+        private Sprite ResolvePortraitSprite(string portraitName)
+        {
+            if (string.IsNullOrWhiteSpace(portraitName)) return null;
+
+            if (Source is EmberCrpg.Presentation.Ember.UI.ISpriteByName lookup)
+            {
+                var sprite = lookup.GetSprite(portraitName);
+                if (sprite != null) return sprite;
+            }
+
+            return EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost.GetSpriteFromHost(portraitName);
+        }
+
+        private Sprite ResolveFallbackPortrait()
+        {
+            if (_portraitFallbackSprite != null) return _portraitFallbackSprite;
+
+            var tex = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+            var pixels = new Color32[32 * 32];
+            for (int y = 0; y < 32; y++)
+            {
+                for (int x = 0; x < 32; x++)
+                {
+                    byte c = (byte)(x > 8 && x < 24 && y > 6 && y < 28 ? 190 : 120);
+                    pixels[y * 32 + x] = new Color32(c, (byte)(c - 25), (byte)(c - 45), 255);
+                }
+            }
+
+            tex.SetPixels32(pixels);
+            tex.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+            _portraitFallbackSprite = Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
+            return _portraitFallbackSprite;
+        }
     }
 
     // Audit (eighth pass B-P2): IDialogSource and IDialogSourcePortrait
     // moved to Assets/Scripts/Presentation/Ember/Adapters/IDialogSource.cs
     // in namespace EmberCrpg.Presentation.Ember.Adapters.
 }
-

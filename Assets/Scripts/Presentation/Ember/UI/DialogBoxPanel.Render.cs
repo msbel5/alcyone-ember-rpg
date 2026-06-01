@@ -30,8 +30,10 @@ namespace EmberCrpg.Presentation.Ember.UI
             yield return UiAnimationHelper.AnimateClose(_canvasGroup, GetComponent<RectTransform>());
             Source = null;
             gameObject.SetActive(false);
-            
-            if (!EmberWorldHost.IsModalOpen())
+
+            var pause = Object.FindFirstObjectByType<PauseMenu>(FindObjectsInactive.Include);
+            var pauseOpen = pause != null && pause.IsPaused;
+            if (DialogCursorPolicy.ShouldLockAfterDialogClose(EmberWorldHost.IsModalOpen(), pauseOpen))
             {
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;

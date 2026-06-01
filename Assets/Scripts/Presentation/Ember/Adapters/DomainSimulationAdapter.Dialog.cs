@@ -140,31 +140,24 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private static string ResolveConversationPortraitKey(NpcSeedRecord npc, string actorName)
         {
             if (npc != null && !string.IsNullOrWhiteSpace(npc.PortraitAssetPath))
-                return npc.PortraitAssetPath;
+                return DialogPortraitKey.Normalize(npc.PortraitAssetPath);
 
             if (npc != null)
             {
                 switch (npc.Role)
                 {
-                    case NpcRole.Merchant: return "merchant";
-                    case NpcRole.Scholar: return "sage";
-                    case NpcRole.Priest: return "sage";
-                    case NpcRole.Guard: return "knight";
-                    case NpcRole.Noble: return "knight";
-                    case NpcRole.Outlaw: return "warrior";
-                    case NpcRole.Artisan: return "blacksmith";
-                    case NpcRole.Farmer: return "innkeeper";
+                    case NpcRole.Merchant: return DialogPortraitKey.Normalize("merchant");
+                    case NpcRole.Scholar: return DialogPortraitKey.Normalize("sage");
+                    case NpcRole.Priest: return DialogPortraitKey.Normalize("sage");
+                    case NpcRole.Guard: return DialogPortraitKey.Normalize("knight");
+                    case NpcRole.Noble: return DialogPortraitKey.Normalize("knight");
+                    case NpcRole.Outlaw: return DialogPortraitKey.Normalize("warrior");
+                    case NpcRole.Artisan: return DialogPortraitKey.Normalize("blacksmith");
+                    case NpcRole.Farmer: return DialogPortraitKey.Normalize("innkeeper");
                 }
             }
 
-            var lower = (actorName ?? string.Empty).ToLowerInvariant();
-            if (lower.Contains("merchant")) return "merchant";
-            if (lower.Contains("sage") || lower.Contains("priest")) return "sage";
-            if (lower.Contains("guard") || lower.Contains("warden") || lower.Contains("knight")) return "knight";
-            if (lower.Contains("blacksmith") || lower.Contains("smith") || lower.Contains("artisan")) return "blacksmith";
-            if (lower.Contains("innkeeper") || lower.Contains("farmer")) return "innkeeper";
-            if (lower.Contains("warrior") || lower.Contains("outlaw")) return "warrior";
-            return "blacksmith";
+            return DialogPortraitKey.Normalize(actorName);
         }
 
         /// <summary>
