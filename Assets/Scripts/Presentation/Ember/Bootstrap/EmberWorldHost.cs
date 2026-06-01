@@ -275,6 +275,17 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // toggles cursor lock AND starts the >1s quit hold.
             if (IsModalOpen()) { _escHoldTimer = 0f; return; }
 
+            // ESC-001: PauseMenu already owns Escape in gameplay scenes and handles
+            // pause state + cursor visibility itself. Letting host toggle cursor on
+            // the same PauseDown frame creates a race (first press can hide cursor,
+            // second press shows it). If a PauseMenu exists, host must not consume
+            // Escape for cursor toggling / hold-to-quit.
+            if (Object.FindFirstObjectByType<PauseMenu>(FindObjectsInactive.Include) != null)
+            {
+                _escHoldTimer = 0f;
+                return;
+            }
+
             // Codex audit Batch 3 / Finding D-2: the previous structure
             //   if (GetKey(Escape)) { hold }
             //   else { if (GetKeyDown(Escape)) toggleCursor; reset; }
@@ -465,7 +476,9 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 var name = portraitSource.GetPortraitName();
                 if (!string.IsNullOrEmpty(name)) return name;
             }
-            return "portrait_npc_placeholder";
+            // DLG-PRT-001: canonical registry has no "portrait_npc_placeholder" key.
+            // Use a guaranteed in-registry actor sprite as the baseline fallback.
+            return "blacksmith";
         }
 
         public void SelectTopic(string topicId)
