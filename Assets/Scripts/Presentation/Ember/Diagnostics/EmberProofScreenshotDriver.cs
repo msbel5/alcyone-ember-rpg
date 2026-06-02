@@ -438,6 +438,12 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 if (overland != null)
                 {
                     report.AppendLine("OverlandSize: " + overland.Width + "x" + overland.Height);
+                    // Report the playable world scale in km^2 so the proof documents the open-world size goal
+                    // (default 16x16 grid x 40km region edge => 409,600 km^2, ~2x Daggerfall's ~200,000 km^2).
+                    double regionAreaKm2 = EmberCrpg.Domain.Overland.OverlandParameters.Default.RegionAreaKm2;
+                    long totalAreaKm2 = (long)System.Math.Round(overland.Width * overland.Height * regionAreaKm2);
+                    report.AppendLine("OverlandAreaKm2: " + totalAreaKm2.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)
+                        + " (" + overland.Width + "x" + overland.Height + " regions x " + regionAreaKm2.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " km^2)");
                     report.AppendLine("OverlandSettlements: " + overland.Settlements.Count);
                     var biomeCounts = new System.Collections.Generic.Dictionary<string, int>();
                     for (int i = 0; i < overland.Tiles.Count; i++)

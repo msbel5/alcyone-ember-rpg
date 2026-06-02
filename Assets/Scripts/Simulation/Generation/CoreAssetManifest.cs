@@ -29,6 +29,10 @@ namespace EmberCrpg.Simulation.Generation
             // env keep their own model+size below.
             entries.Add(new ManifestEntry("logo_full", "logo", "Assets/Generated/Core/logo_full.png", "logo_full", 512, 512, true, 300, "sd15-lcm"));
             entries.Add(new ManifestEntry("logo_compact", "logo", "Assets/Generated/Core/logo_compact.png", "logo_compact", 512, 512, true, 300, "sd15-lcm"));
+            // The AI Dungeon Master (the Oracle / narrator) had no face. Give it one, generated right after the
+            // logo so the menu shows it early. Its own "portrait" category so the Options Generated-Assets panel
+            // lists it as a distinct group, beside (not buried under) the logos.
+            entries.Add(new ManifestEntry("dm_portrait", "portrait", "Assets/Generated/Core/dm_portrait.png", "dm_portrait", 512, 512, true, 300, "sd15-lcm"));
             AddMany(entries, "ui", 512, 512, true, "sdxl-turbo", "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
             entries.Add(new ManifestEntry("font_body", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_heading", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));

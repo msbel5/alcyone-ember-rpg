@@ -74,6 +74,9 @@ namespace EmberCrpg.Simulation.Generation
             AddGeometric(prompts, geometricCatalog, "spell_lightning", "lightning");
             Add(prompts, "logo_full", "the word Ember implied by a forged crest and coal-lit crown silhouette");
             Add(prompts, "logo_compact", "a compact ember crown mark cut from blackened brass");
+            // The AI Dungeon Master / Oracle — the unseen narrator's face beside the Ember logo. EmberStyleHeader
+            // already enforces a centered single subject on a transparent background, so this reads as a bust.
+            Add(prompts, "dm_portrait", "a hooded loremaster oracle, the unseen dungeon master, weathered ember-lit face half in shadow beneath a deep cowl, faintly glowing coal-orange eyes, ancient keeper of the world's fate, solemn painterly character portrait bust");
             Add(prompts, "splash_background", "a first-person dark fantasy road toward a distant ember-lit citadel at dusk");
             return new StaticPromptCatalog(prompts);
         }
