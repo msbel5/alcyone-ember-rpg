@@ -12,6 +12,7 @@ using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Living;
 using EmberCrpg.Simulation.Magic;
 using EmberCrpg.Simulation.Process;
+using EmberCrpg.Simulation.Quest;
 using EmberCrpg.Simulation.Time;
 using EmberCrpg.Simulation.World;
 
@@ -42,6 +43,7 @@ namespace EmberCrpg.Simulation.Composition
                 new TimeStep(timeAdvance),
                 new MagicStep(magic),
                 new JobAssignmentStep(jobAssignment),
+                new QuestStep(new QuestSystem()),
                 new ScheduleStep(schedule),
                 new NeedsStep(needs),
                 new CaravanStep(caravans),
@@ -206,6 +208,22 @@ namespace EmberCrpg.Simulation.Composition
             {
                 if (context.World.Actors != null)
                     _schedule.Advance(context.World.Actors, context.Stamp);
+            }
+        }
+
+        private sealed class QuestStep : StepBase
+        {
+            private readonly QuestSystem _questSystem;
+
+            public QuestStep(QuestSystem questSystem)
+                : base("quest.tick", TickCadence.Hourly, 15)
+            {
+                _questSystem = questSystem ?? throw new ArgumentNullException(nameof(questSystem));
+            }
+
+            public override void Run(in TickContext context)
+            {
+                _questSystem.Tick(context.World);
             }
         }
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EmberCrpg.Data.Quests;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Domain.CharacterCreation;
@@ -10,6 +11,7 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
+using EmberCrpg.Domain.Quest;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Forge;
@@ -161,6 +163,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             HydrateNpcs(generated);
             HydrateHistory(generated);
             MovePlayerToStartingSettlement();
+            SeedStartingQuest();
         }
 
         private void HydrateSites(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
@@ -410,6 +413,16 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (StartingSettlement.IsEmpty || _world.Actors == null) return;
             if (!_world.Actors.TryFirstByRole(ActorRole.Player, out var player) || player == null) return;
             player.MoveTo(CenterOfSite(SettlementSiteId(StartingSettlement)));
+        }
+
+        private void SeedStartingQuest()
+        {
+            var quest = QuestCatalog.ForgeIronIngot();
+            _world.Quests ??= new QuestStore();
+            if (_world.Quests.Contains(quest.Id))
+                return;
+
+            _world.Quests.Add(quest.Id, new QuestState(quest.Tasks.Count, _world.Time));
         }
 
         private GridPosition CenterOfSite(SiteId siteId)

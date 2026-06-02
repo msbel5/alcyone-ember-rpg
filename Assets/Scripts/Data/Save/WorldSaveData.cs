@@ -17,7 +17,7 @@ using System;
 namespace EmberCrpg.Data.Save
 {
     [Serializable]
-    public sealed class WorldSaveData
+    public sealed partial class WorldSaveData
     {
         // EMB-012: explicit save schema version. Bump WorldSaveMapper.CurrentSchemaVersion when the
         // on-disk shape changes incompatibly and add a migration branch in ToWorld. Legacy saves

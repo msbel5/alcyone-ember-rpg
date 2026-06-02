@@ -14,6 +14,7 @@ using EmberCrpg.Domain.Magic;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
+using EmberCrpg.Domain.Quest;
 using EmberCrpg.Domain.Worldgen;
 
 namespace EmberCrpg.Domain.World
@@ -37,6 +38,7 @@ namespace EmberCrpg.Domain.World
         public SiteStore Sites = new SiteStore();
         public FactionStore Factions = new FactionStore();
         public WorldEventLog Events = new WorldEventLog();
+        public QuestStore Quests = new QuestStore();
         public PriceLedger Prices = new PriceLedger();
         public List<StockpileComponent> Stockpiles = new List<StockpileComponent>();
         public List<TradeRouteDef> TradeRoutes = new List<TradeRouteDef>();
@@ -71,6 +73,7 @@ namespace EmberCrpg.Domain.World
             Sites ??= new SiteStore();
             Factions ??= new FactionStore();
             Events ??= new WorldEventLog();
+            Quests ??= new QuestStore();
             Prices ??= new PriceLedger();
             Stockpiles ??= new List<StockpileComponent>();
             TradeRoutes ??= new List<TradeRouteDef>();
@@ -167,6 +170,7 @@ namespace EmberCrpg.Domain.World
             Sites = other.Sites;
             Factions = other.Factions;
             Events = other.Events;
+            Quests = other.Quests;
             Prices = other.Prices;
             Stockpiles = other.Stockpiles;
             TradeRoutes = other.TradeRoutes;
