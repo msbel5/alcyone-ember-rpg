@@ -9,16 +9,16 @@ using EmberCrpg.Simulation.Rng;
 // WorldgenService is the FOUNDATION's deterministic seed-to-world function.
 // Inputs: a uint seed and a WorldgenParameters knob set.
 // Outputs: a GeneratedWorld bundle (regions, settlements, factions, faction
-// relations, NPCs, 100-year history) shaped to the brief's Daggerfall-style
+// relations, NPCs, multi-century history) shaped to the brief's Daggerfall-style
 // targets — ~50 regions, ~200 settlements (1 capital + a few cities + dozens
 // of towns + hundreds of villages), ~20 factions, ~750 NPCs, total
-// population in [900K, 1.1M], 100-year history of macro events.
+// population in [900K, 1.1M], multi-century history of macro events.
 //
 // Determinism contract: the same (seed, parameters) pair produces a
 // byte-identical GeneratedWorld. The implementation uses ONE XorShiftRng
 // drawn through a strict call order (regions → settlements → factions →
 // relations → npcs → history) so the deterministic-replay test can pin
-// the first NPC's name and the history-event count to a fixed expectation.
+// the first NPC's name and the history-event stream to a fixed expectation.
 // No Unity, no I/O, no LINQ in the hot path (HashSet membership only).
 //
 // Population math: 1 Capital (~150K avg) + 8 Cities (~75K avg × 8 = 600K)
@@ -76,7 +76,7 @@ namespace EmberCrpg.Simulation.Worldgen
             var npcs = GenerateNpcs(rng, parameters, settlements, factions);
 
             // -- 6. History --------------------------------------------------
-            var history = GenerateHistory(rng, parameters, factions, settlements);
+            var history = GenerateHistory(seed, parameters, regions, factions, settlements);
 
             return new GeneratedWorld(seed, regions, settlements, factions, relations, npcs, history);
         }

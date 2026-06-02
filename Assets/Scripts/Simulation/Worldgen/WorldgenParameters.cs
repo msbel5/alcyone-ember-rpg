@@ -83,7 +83,7 @@ namespace EmberCrpg.Simulation.Worldgen
         /// <summary>
         /// Default Daggerfall-style knob set: 50 regions, 1 capital + 8 cities
         /// + 40 towns + 151 villages = 200 settlements, 20 factions, 750
-        /// NPCs, 100 years of history starting at year 1. Tuned so the
+        /// NPCs, 400 years of history starting at year 1. Tuned so the
         /// expected total population lands in [900K, 1.1M] for the
         /// PopulationCount acceptance test.
         /// </summary>
@@ -158,7 +158,7 @@ namespace EmberCrpg.Simulation.Worldgen
                 villageCount,
                 Math.Max(1, factionCount),
                 Math.Max(1, npcCount),
-                historyYears: 100,
+                historyYears: 400,
                 worldStartYear: 1,
                 style: style,
                 genre: genre,

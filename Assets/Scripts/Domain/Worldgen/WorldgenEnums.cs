@@ -63,7 +63,7 @@ namespace EmberCrpg.Domain.Worldgen
     }
 
     /// <summary>
-    /// Historical-event category emitted by the deterministic 100-year history
+    /// Historical-event category emitted by the deterministic world-history
     /// pass. Distinct from <c>EmberCrpg.Domain.World.WorldEventKind</c>: that
     /// enum chronicles per-tick PROCESS-box events on the runtime
     /// WorldEventLog (ActorSpawned, SiteEntered, ...), while
@@ -81,6 +81,23 @@ namespace EmberCrpg.Domain.Worldgen
         Calamity = 6,
         TradeRouteOpened = 7,
         Migration = 8,
+        LifeEmerged = 9,
+        MigrationWave = 10,
+        SiteGrew = 11,
+        SiteAbandoned = 12,
+        RoadBuilt = 13,
+        ImpassableZoneFormed = 14,
+        PopulationBoom = 15,
+        Famine = 16,
+        CivilizationFounded = 17,
+        WarDeclared = 18,
+        BattleFought = 19,
+        SiteSacked = 20,
+        CivilizationDestroyed = 21,
+        BorderDispute = 22,
+        LeaderCrowned = 23,
+        HeirBorn = 24,
+        FigureAssassinated = 25,
     }
 
     /// <summary>High-level world tone selected by the world-generation wizard.</summary>

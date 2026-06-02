@@ -82,7 +82,7 @@ namespace EmberCrpg.Simulation.Worldgen
     /// <summary>
     /// Immutable bundle of records produced by <see cref="WorldgenService.Generate"/>.
     /// Pairs the original seed with the generated regions, settlements,
-    /// factions, faction relations, NPCs, and the 100-year history events
+    /// factions, faction relations, NPCs, and the multi-century history events
     /// so callers can persist or replay the exact world.
     /// </summary>
     public sealed class GeneratedWorld

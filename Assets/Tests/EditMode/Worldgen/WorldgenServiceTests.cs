@@ -14,7 +14,7 @@ using NUnit.Framework;
 //  - total population sums into the design band (>900K, <1.1M);
 //  - settlement names are distinct globally;
 //  - NPC names are distinct within each settlement;
-//  - the 100-year history pass is deterministic for a given seed.
+//  - the multi-century history simulator is deterministic for a given seed.
 // The sample-output test is a Debug.WriteLine inspection helper and never
 // asserts — it just dumps the first 5 regions, 10 settlements, and 20
 // NPCs for seed=42 so the team can eyeball the generator output without
@@ -105,7 +105,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             }
         }
 
-        /// <summary>100-year history is deterministic for the same seed: same count, same first event, same last event.</summary>
+        /// <summary>Multi-century history is deterministic for the same seed: same count and same event stream.</summary>
         [Test]
         public void WorldgenService_HistoryDeterministic()
         {
@@ -114,8 +114,8 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             var worldA = WorldgenService.Generate(42u, parameters);
             var worldB = WorldgenService.Generate(42u, parameters);
 
-            Assert.That(worldA.History.Count, Is.EqualTo(parameters.HistoryYears));
-            Assert.That(worldB.History.Count, Is.EqualTo(parameters.HistoryYears));
+            Assert.That(worldA.History.Count, Is.EqualTo(worldB.History.Count));
+            Assert.That(worldA.History.Count, Is.GreaterThanOrEqualTo(150));
 
             for (int i = 0; i < worldA.History.Count; i++)
             {

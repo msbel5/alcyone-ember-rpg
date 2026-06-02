@@ -14,9 +14,10 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             var world = WorldgenService.Generate(42u, parameters);
 
             Assert.That(parameters.RegionCount, Is.EqualTo(50));
+            Assert.That(parameters.HistoryYears, Is.EqualTo(400));
             Assert.That(world.Settlements.Count, Is.EqualTo(200));
             Assert.That(world.TotalPopulation, Is.EqualTo(1_000_000));
-            Assert.That(world.History.Count, Is.EqualTo(100));
+            Assert.That(world.History.Count, Is.GreaterThanOrEqualTo(150));
         }
 
         [Test]
@@ -54,7 +55,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
         }
 
         [Test]
-        public void DarkPolitical_HistoryWeightsFavorConflictAndCourtEvents()
+        public void DarkPolitical_HistorySimulationFavorsConflictAndCourtEvents()
         {
             var baseline = WorldgenService.Generate(42u, WorldgenParameters.For(WorldStyle.LowFantasy, WorldGenre.Survival));
             var dark = WorldgenService.Generate(42u, WorldgenParameters.For(WorldStyle.DarkFantasyGrim, WorldGenre.PoliticalIntrigue));
@@ -87,7 +88,14 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
                 || h.Kind == WorldHistoryKind.FactionAlliance
                 || h.Kind == WorldHistoryKind.NobleMarriage
                 || h.Kind == WorldHistoryKind.NobleDeath
-                || h.Kind == WorldHistoryKind.Calamity);
+                || h.Kind == WorldHistoryKind.Calamity
+                || h.Kind == WorldHistoryKind.WarDeclared
+                || h.Kind == WorldHistoryKind.BattleFought
+                || h.Kind == WorldHistoryKind.SiteSacked
+                || h.Kind == WorldHistoryKind.CivilizationDestroyed
+                || h.Kind == WorldHistoryKind.BorderDispute
+                || h.Kind == WorldHistoryKind.Famine
+                || h.Kind == WorldHistoryKind.FigureAssassinated);
         }
     }
 }
