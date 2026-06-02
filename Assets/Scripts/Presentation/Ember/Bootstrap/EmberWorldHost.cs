@@ -6,6 +6,8 @@ using EmberCrpg.Presentation.Ember.Tick;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 using EmberCrpg.Presentation.Ember.Runtime;
+// Alias only WorldEventNarrator — a broad Presentation.Visual using collides with UI.ColonyNeedsRow.
+using WorldEventNarrator = EmberCrpg.Presentation.Visual.WorldEventNarrator;
 using UnityEngine;
 using EmberCrpg.Presentation.Ember.Inputs;
 
@@ -37,6 +39,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         private IWorldViewReadModel _worldView;
         private IPlayerCommandSink _commands;
         private IConsultFateOracle _oracle;
+        private readonly WorldEventNarrator _eventNarrator = new WorldEventNarrator();
+        private EventLogHudPanel _eventLogHud;
         private ActorView[] _actorViews;
         private WorksiteView[] _worksiteViews;
         private InventoryGrid[] _inventoryGrids;
@@ -136,6 +140,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // would an authored panel.
             EnsureEmberHud();
             EnsureSidePanels();
+            _eventLogHud = EnsureEventLogHudPanel();
             EnsureInventoryGrid(); // LIVE-2: single inventory in every scene (before the scan below finds it)
             // LIVE-1 (revised): pause menu LAST — top sibling of the overlay canvas, and creating it after
             // the HUD/dialog/panels means their FindFirstObjectByType<Canvas> can't grab a pause sub-canvas.
@@ -324,6 +329,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         {
             _clock.AdvanceTick(tickIndex);
             PushWorldViews();
+            _eventLogHud?.Render(_worldView.RecentWorldEvents(64), _eventNarrator);
         }
 
         private void PushWorldViews()

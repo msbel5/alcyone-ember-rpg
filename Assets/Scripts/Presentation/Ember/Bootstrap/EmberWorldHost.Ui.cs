@@ -224,6 +224,31 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         }
 
         /// <summary>
+        /// F1: ensure exactly one bottom-left runtime event log panel exists so deterministic world events
+        /// are visible without scene-by-scene authoring drift.
+        /// </summary>
+        private EventLogHudPanel EnsureEventLogHudPanel()
+        {
+            var existing = Object.FindFirstObjectByType<EventLogHudPanel>(FindObjectsInactive.Include);
+            if (existing != null) return existing;
+
+            var canvas = ResolveOverlayCanvas();
+            var go = new GameObject(
+                "EventLogHudPanel",
+                typeof(RectTransform),
+                typeof(CanvasGroup),
+                typeof(UnityEngine.UI.Image),
+                typeof(EventLogHudPanel));
+            go.transform.SetParent(canvas.transform, worldPositionStays: false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.01f, 0.01f);
+            rt.anchorMax = new Vector2(0.45f, 0.22f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            return go.GetComponent<EventLogHudPanel>();
+        }
+
+        /// <summary>
         /// BUG-2: show/hide the standing colony overlay (JobQueue / Faction / ColonyNeeds) as a group via
         /// their CanvasGroups, so action scenes (combat, tavern, ritual, trade) are not cluttered by the
         /// living-world readout unless the player asks for it. Content still polls while hidden (cheap).

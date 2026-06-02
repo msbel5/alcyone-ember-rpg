@@ -52,6 +52,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         IReadOnlyList<FactionRow> FactionRows { get; }
         IReadOnlyList<InventorySlot> InventorySlots { get; }
         IReadOnlyList<string> SpellSlots { get; }
+        System.Collections.Generic.IReadOnlyList<EmberCrpg.Presentation.Visual.WorldEventRow> RecentWorldEvents(int maxRows);
 
         bool TryReadActor(string actorName, out ActorViewState state);
 

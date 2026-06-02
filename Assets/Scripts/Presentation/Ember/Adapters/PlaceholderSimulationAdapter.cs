@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
+// Alias only WorldEventRow — a broad Presentation.Visual using collides with UI.ColonyNeedsRow.
+using WorldEventRow = EmberCrpg.Presentation.Visual.WorldEventRow;
 using UnityEngine;
 
 namespace EmberCrpg.Presentation.Ember.Adapters
@@ -39,6 +41,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IReadOnlyList<InventorySlot> InventorySlots => _inventorySlots;
         public IReadOnlyList<string> SpellSlots => _spellSlots;
         public CombatHudState CombatHud => _combatHud;
+        public IReadOnlyList<WorldEventRow> RecentWorldEvents(int maxRows) => System.Array.Empty<WorldEventRow>();
 
         public void AdvanceTick(int tickIndex)
         {
