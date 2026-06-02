@@ -7,6 +7,8 @@ using EmberCrpg.Domain.Generation;
 using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.Loading;
 using EmberCrpg.Presentation.Ember.Runtime;
+using EmberCrpg.Presentation.Ember.UI.Options;
+using TMPro;
 using EmberCrpg.Simulation.Generation;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
@@ -21,6 +23,9 @@ namespace EmberCrpg.Presentation.Ember.UI
         [SerializeField] private string _firstSceneName = EmberScenes.CharacterCreation;
 
         private IUiPanel _titlePanel;
+        private PauseMenu _optionsOwnerProxy;
+        private OptionsScreen _optionsScreen;
+        private Coroutine _optionsOwnerResetCoroutine;
 
         private void Awake()
         {
@@ -32,6 +37,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             {
                 newGameButton.onClick.AddListener(NewGame);
                 FindButton("Continue")?.onClick.AddListener(Continue);
+                FindOrCreateOptionsButton(newGameButton)?.onClick.AddListener(OpenOptions);
                 FindButton("Quit")?.onClick.AddListener(Quit);
                 return;
             }
@@ -141,8 +147,90 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         public void OpenOptions()
         {
-            // Placeholder until the Options panel ships; status row gives visible feedback.
-            _titlePanel?.SetText("status", "Options panel coming soon. Audio/Graphics/Controls planned for the next sprint.");
+            var owner = EnsureOptionsOwnerProxy();
+            var canvas = owner.GetComponentInParent<Canvas>();
+            if (_optionsScreen == null)
+            {
+                _optionsScreen = Object.FindFirstObjectByType<OptionsScreen>(FindObjectsInactive.Include);
+                if (_optionsScreen == null)
+                {
+                    var go = new GameObject("OptionsScreen", typeof(RectTransform), typeof(Image), typeof(CanvasGroup), typeof(OptionsScreen));
+                    go.transform.SetParent(canvas.transform, worldPositionStays: false);
+                    var rt = go.GetComponent<RectTransform>();
+                    rt.anchorMin = Vector2.zero;
+                    rt.anchorMax = Vector2.one;
+                    rt.offsetMin = Vector2.zero;
+                    rt.offsetMax = Vector2.zero;
+                    go.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.35f);
+                    _optionsScreen = go.GetComponent<OptionsScreen>();
+                }
+
+                _optionsScreen.Initialize(font: null, panelFrame: null);
+            }
+
+            if (_optionsOwnerResetCoroutine != null)
+                StopCoroutine(_optionsOwnerResetCoroutine);
+
+            HideOptionsOwnerProxy();
+            _optionsScreen.Open(owner);
+            _optionsOwnerResetCoroutine = StartCoroutine(ResetOptionsOwnerProxyWhenClosed());
+        }
+
+        private PauseMenu EnsureOptionsOwnerProxy()
+        {
+            if (_optionsOwnerProxy != null)
+                return _optionsOwnerProxy;
+
+            var canvas = Object.FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+            if (canvas == null)
+            {
+                var canvasGo = new GameObject(
+                    "MainMenuOptionsCanvas",
+                    typeof(Canvas),
+                    typeof(CanvasScaler),
+                    typeof(GraphicRaycaster));
+                canvas = canvasGo.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 2000;
+            }
+
+            var proxy = new GameObject("MainMenuOptionsOwnerProxy", typeof(RectTransform), typeof(CanvasGroup), typeof(PauseMenu));
+            proxy.transform.SetParent(canvas.transform, worldPositionStays: false);
+            var rt = proxy.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.zero;
+            rt.sizeDelta = Vector2.zero;
+            rt.anchoredPosition = Vector2.zero;
+            _optionsOwnerProxy = proxy.GetComponent<PauseMenu>();
+
+            for (int i = proxy.transform.childCount - 1; i >= 0; i--)
+                Destroy(proxy.transform.GetChild(i).gameObject);
+
+            HideOptionsOwnerProxy();
+            return _optionsOwnerProxy;
+        }
+
+        private void HideOptionsOwnerProxy()
+        {
+            if (_optionsOwnerProxy == null)
+                return;
+
+            _optionsOwnerProxy.enabled = false;
+            if (_optionsOwnerProxy.TryGetComponent<CanvasGroup>(out var group))
+            {
+                group.alpha = 0f;
+                group.interactable = false;
+                group.blocksRaycasts = false;
+            }
+        }
+
+        private System.Collections.IEnumerator ResetOptionsOwnerProxyWhenClosed()
+        {
+            var screenGroup = _optionsScreen != null ? _optionsScreen.GetComponent<CanvasGroup>() : null;
+            while (screenGroup != null && screenGroup.interactable)
+                yield return null;
+            HideOptionsOwnerProxy();
+            _optionsOwnerResetCoroutine = null;
         }
 
         private void ApplyGeneratedBackdrop()
@@ -264,6 +352,36 @@ namespace EmberCrpg.Presentation.Ember.UI
                 if (roots[i].name == name && roots[i].TryGetComponent<Button>(out var button))
                     return button;
             return null;
+        }
+
+        private static Button FindOrCreateOptionsButton(Button referenceButton)
+        {
+            var existing = FindButton("Options") ?? FindButton("OPTIONS");
+            if (existing != null || referenceButton == null)
+                return existing;
+
+            var clone = Object.Instantiate(referenceButton.gameObject, referenceButton.transform.parent);
+            clone.name = "Options";
+            if (clone.TryGetComponent<Button>(out var button))
+                button.onClick = new Button.ButtonClickedEvent();
+
+            var quit = FindButton("Quit");
+            clone.transform.SetSiblingIndex(quit != null
+                ? quit.transform.GetSiblingIndex()
+                : referenceButton.transform.GetSiblingIndex() + 1);
+            ApplyButtonLabel(clone.transform, "OPTIONS");
+            return clone.GetComponent<Button>();
+        }
+
+        private static void ApplyButtonLabel(Transform root, string label)
+        {
+            var tmp = root.GetComponentInChildren<TMP_Text>(includeInactive: true);
+            if (tmp != null)
+                tmp.text = label;
+
+            var legacy = root.GetComponentInChildren<Text>(includeInactive: true);
+            if (legacy != null)
+                legacy.text = label;
         }
     }
 }

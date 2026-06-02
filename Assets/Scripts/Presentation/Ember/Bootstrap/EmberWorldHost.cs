@@ -6,8 +6,6 @@ using EmberCrpg.Presentation.Ember.Tick;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 using EmberCrpg.Presentation.Ember.Runtime;
-// Alias only WorldEventNarrator — a broad Presentation.Visual using collides with UI.ColonyNeedsRow.
-using WorldEventNarrator = EmberCrpg.Presentation.Visual.WorldEventNarrator;
 using UnityEngine;
 using EmberCrpg.Presentation.Ember.Inputs;
 
@@ -39,10 +37,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         private IWorldViewReadModel _worldView;
         private IPlayerCommandSink _commands;
         private IConsultFateOracle _oracle;
-        private readonly WorldEventNarrator _eventNarrator = new WorldEventNarrator();
-        private EventLogHudPanel _eventLogHud;
-        private ActorView[] _actorViews;
-        private WorksiteView[] _worksiteViews;
+        private WorldViewProjector _worldViewProjector;
         private InventoryGrid[] _inventoryGrids;
         private int _selectedSpellSlot = 0;
         private string _selectedTopic = "rumors";
@@ -140,14 +135,14 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // would an authored panel.
             EnsureEmberHud();
             EnsureSidePanels();
-            _eventLogHud = EnsureEventLogHudPanel();
+            var eventLogHud = EnsureEventLogHudPanel();
             EnsureInventoryGrid(); // LIVE-2: single inventory in every scene (before the scan below finds it)
             // LIVE-1 (revised): pause menu LAST — top sibling of the overlay canvas, and creating it after
             // the HUD/dialog/panels means their FindFirstObjectByType<Canvas> can't grab a pause sub-canvas.
             EnsurePauseMenu();
 
-            _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            _worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _inventoryGrids = Object.FindObjectsByType<InventoryGrid>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
             // SOUL-04 (spawn-from-worldgen): scenes author only a fixed cast of ~5 ActorViews, so the
@@ -156,10 +151,12 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // views join the existing id-keyed PushWorldViews sync below (SOUL-03 movement) on the very
             // first push. Additive + capped + idempotent; no-ops when there is no worldgen population.
             if (EnsureGeneratedActorSpawner().SpawnMissingNearbyActors() > 0)
-                _actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            _worldViewProjector = new WorldViewProjector(_clock, _worldView, actorViews, worksiteViews, eventLogHud);
 
             BindUiPanels();
-            PushWorldViews();
+            _worldViewProjector.Project();
             
             // Hide inventory by default
             foreach (var inv in _inventoryGrids)
@@ -327,40 +324,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         public void OnTick(int tickIndex)
         {
-            _clock.AdvanceTick(tickIndex);
-            PushWorldViews();
-            _eventLogHud?.Render(_worldView.RecentWorldEvents(64), _eventNarrator);
-        }
-
-        private void PushWorldViews()
-        {
-            // Codex audit (fourth pass A-P1): the previous lookup used
-            // actor.name (the GameObject name like "Smith_A") to resolve a
-            // domain ActorRecord, which silently failed because
-            // WorldFactory creates actors named "Warden", "Sage Nera",
-            // etc. ActorView now exposes a DomainActorKey that scenes can
-            // author per-view (falling back to the GameObject name for
-            // legacy scenes).
-            for (int i = 0; i < _actorViews.Length; i++)
-            {
-                var actor = _actorViews[i];
-                // SOUL-04: prefer the STABLE-id read so SOUL-03 (ScheduleSystem) movement projects onto
-                // the billboard even when two world actors share a display name. Falls back to the
-                // legacy DomainActorKey/name read for views that do not author an id (existing scenes).
-                ActorViewState state;
-                bool resolved = actor.HasDomainActorId
-                    ? _worldView.TryReadActor(actor.DomainActorId, out state)
-                    : _worldView.TryReadActor(actor.DomainActorKey, out state);
-                if (resolved)
-                    actor.SetTarget(state);
-            }
-
-            for (int i = 0; i < _worksiteViews.Length; i++)
-            {
-                var worksite = _worksiteViews[i];
-                if (_worldView.TryReadWorksite(worksite.name, out var state))
-                    worksite.SetState(state);
-            }
+            _worldViewProjector?.ProjectTick(tickIndex);
         }
 
         public string GetHudText() => _hud.HudText;
