@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using EmberCrpg.Domain.Overland;
 using UnityEngine;
 
@@ -7,10 +8,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     /// Builds ONE seamless terrain TILE for the streaming world (Phase C). Each tile's heightmap is sampled
     /// from a single CONTINUOUS world-space height function, so adjacent tiles match exactly at their shared
     /// edge (no seams). The function is flat within <see cref="FlatRadius"/> of the world origin (where the
-    /// settlement + player sit) and ramps into gentle, seed-deterministic Perlin hills outward. Textured with
-    /// the biome's generated floor via a URP terrain material; the tile carries an automatic TerrainCollider.
-    /// Same seed -> identical terrain everywhere (roguelike-deterministic). The TerrainStreamer manages the
-    /// bubble of live tiles around the player, so the world renders as you walk and has no hard edge.
+    /// settlement + player sit) and ramps into gentle, seed-deterministic Perlin hills outward.
+    ///
+    /// MEMORY: the biome's TerrainLayer + URP material are created ONCE and cached per biome (a tiny bounded
+    /// set), so streaming hundreds of tiles does not allocate a fresh material/texture per tile. The only
+    /// per-tile allocation is the heightmap <see cref="TerrainData"/>, which the streamer explicitly frees
+    /// when it unloads a tile — together these stop the "RAM grows as you walk" stutter.
     /// </summary>
     public static class RuntimeTerrainBuilder
     {
@@ -19,6 +22,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         private const float TerrainHeight = 26f;
         private const float FlatRadius = 55f;   // flat central area (the settlement) in metres from world origin
         private const float HillRampMetres = 220f;
+
+        private static readonly Dictionary<BiomeKind, BiomeAssets> BiomeCache = new Dictionary<BiomeKind, BiomeAssets>();
 
         public static GameObject BuildTile(Transform parent, int tileX, int tileZ, float tileSize, BiomeKind biome, uint seed)
         {
@@ -30,7 +35,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             };
 
             data.SetHeights(0, 0, BuildHeights(tileX, tileZ, tileSize, seed));
-            data.terrainLayers = new[] { BiomeLayer(biome) };
+
+            var assets = GetBiomeAssets(biome);
+            data.terrainLayers = new[] { assets.Layer };
             data.SetAlphamaps(0, 0, FullCoverAlpha());
 
             var go = Terrain.CreateTerrainGameObject(data); // also adds a TerrainCollider
@@ -38,9 +45,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             go.transform.SetParent(parent, worldPositionStays: false);
             go.transform.localPosition = new Vector3(tileX * tileSize, 0f, tileZ * tileSize);
 
-            var terrain = go.GetComponent<Terrain>();
-            var urpTerrainShader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
-            if (urpTerrainShader != null) terrain.materialTemplate = new Material(urpTerrainShader);
+            if (assets.Material != null)
+                go.GetComponent<Terrain>().materialTemplate = assets.Material;
             return go;
         }
 
@@ -67,11 +73,20 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return heights;
         }
 
-        private static TerrainLayer BiomeLayer(BiomeKind biome)
+        // Create (once) and cache the biome's terrain layer + URP material, so streamed tiles share them.
+        private static BiomeAssets GetBiomeAssets(BiomeKind biome)
         {
+            if (BiomeCache.TryGetValue(biome, out var cached)) return cached;
+
             var texture = RuntimeMaterialPalette.LoadGeneratedTexture(RuntimeMaterialPalette.GroundTextureId(biome))
                           ?? SolidTexture(RuntimeMaterialPalette.GroundColor(biome));
-            return new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(14f, 14f) };
+            var layer = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(14f, 14f) };
+            var shader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
+            var material = shader != null ? new Material(shader) : null;
+
+            var assets = new BiomeAssets(layer, material);
+            BiomeCache[biome] = assets;
+            return assets;
         }
 
         private static float[,,] FullCoverAlpha()
@@ -89,6 +104,13 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             t.SetPixels(new[] { color, color, color, color });
             t.Apply();
             return t;
+        }
+
+        private readonly struct BiomeAssets
+        {
+            public BiomeAssets(TerrainLayer layer, Material material) { Layer = layer; Material = material; }
+            public TerrainLayer Layer { get; }
+            public Material Material { get; }
         }
     }
 }

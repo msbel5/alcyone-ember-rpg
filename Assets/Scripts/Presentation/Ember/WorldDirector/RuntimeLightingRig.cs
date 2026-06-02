@@ -25,6 +25,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             light.color = new Color(1f, 0.93f, 0.80f);
             light.intensity = 1.05f;
             light.shadows = LightShadows.Soft;
+
+            // Sky: a procedural skybox + a day/night cycle driven by the sim clock, so the sky is no longer
+            // black and the game's days/nights are visible. The controller drives the sun + ambient each frame.
+            sun.AddComponent<SkyController>().Bind(light);
         }
     }
 }

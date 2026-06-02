@@ -76,7 +76,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             }
             for (int i = 0; i < stale.Count; i++)
             {
-                if (_tiles[stale[i]] != null) Destroy(_tiles[stale[i]]);
+                var go = _tiles[stale[i]];
+                if (go != null)
+                {
+                    // Destroying the GameObject does NOT free the heightmap TerrainData — that leak is what
+                    // made RAM grow (and the game stutter) the longer you walked. Free it explicitly. The
+                    // shared per-biome material/layer are cached in RuntimeTerrainBuilder, so leave them.
+                    var terrain = go.GetComponent<Terrain>();
+                    if (terrain != null && terrain.terrainData != null) Destroy(terrain.terrainData);
+                    Destroy(go);
+                }
                 _tiles.Remove(stale[i]);
             }
         }
