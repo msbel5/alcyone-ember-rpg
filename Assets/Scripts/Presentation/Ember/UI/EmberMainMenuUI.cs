@@ -2,9 +2,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Domain.Generation;
 using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.Loading;
+using EmberCrpg.Presentation.Ember.Runtime;
 using EmberCrpg.Simulation.Generation;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
@@ -47,12 +49,13 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private System.Collections.IEnumerator RefreshDecorationsLoop()
         {
+            var seconds = EmberRuntimeOptionsProvider.Current.Menu.DecorationRefreshSeconds;
             // Hash-based change detection so we only rebuild the decoration strip when
             // the generated directory actually changes.
             string lastSignature = string.Empty;
             for (;;)
             {
-                yield return new UnityEngine.WaitForSecondsRealtime(2f);
+                yield return new UnityEngine.WaitForSecondsRealtime(seconds);
                 var sig = BuildGeneratedDirectorySignature();
                 if (sig != lastSignature)
                 {
@@ -64,8 +67,7 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private static string BuildGeneratedDirectorySignature()
         {
-            var parent = System.IO.Directory.GetParent(Application.dataPath);
-            var root = parent != null ? parent.FullName : Application.dataPath;
+            var root = ForgeRuntimeHelpers.ResolveRuntimeRoot();
             var dir = System.IO.Path.Combine(root, "Assets", "Generated", "Core");
             if (!System.IO.Directory.Exists(dir)) return string.Empty;
             var files = System.IO.Directory.GetFiles(dir, "*.png");
@@ -92,16 +94,15 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             try
             {
-                EnsureForgeBootstrap();
+                var options = EmberRuntimeOptionsProvider.Current;
+                ForgeRuntimeHelpers.EnsureForgeBootstrap();
                 // Yield until ForgeLocator.AssetForge is populated; otherwise we'd race ahead with
                 // a null forge (same trap Boot had).
-                for (int waited = 0; waited < 180 && ForgeLocator.AssetForge == null; waited++)
-                    await System.Threading.Tasks.Task.Yield();
+                await ForgeRuntimeHelpers.WaitForForgeAsync(options.Menu.ForgeWaitFrames);
                 var forge = ForgeLocator.AssetForge;
                 if (forge == null) return;
 
-                var parent = System.IO.Directory.GetParent(Application.dataPath);
-                var root = parent != null ? parent.FullName : Application.dataPath;
+                var root = ForgeRuntimeHelpers.ResolveRuntimeRoot();
                 var manifest = CoreAssetManifest.CreateDefault();
                 var failureLog = new GenerationFailureLog(System.IO.Path.Combine(root, "Logs", "generation-failures.json"));
                 var flow = new VisibleGenerationFlow(root, forge, StaticPromptCatalog.CreateDefault(), failureLog);
@@ -153,20 +154,25 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private static Texture2D LoadGeneratedTexture(string entryId)
         {
-            var parent = Directory.GetParent(Application.dataPath);
-            var root = parent != null ? parent.FullName : Application.dataPath;
+            var root = ForgeRuntimeHelpers.ResolveRuntimeRoot();
             var path = Path.Combine(root, "Assets", "Generated", "Core", entryId + ".png");
             if (!File.Exists(path)) return null;
             if (!GeneratedAssetProvenance.IsFreshCoreAsset(entryId, path)) return null;
             var bytes = File.ReadAllBytes(path);
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-            return texture.LoadImage(bytes) ? texture : null;
+            var texture = ForgeRuntimeHelpers.TryDecodeTexture(bytes);
+            if (texture != null)
+            {
+                texture.wrapMode = TextureWrapMode.Clamp;
+                texture.filterMode = FilterMode.Bilinear;
+            }
+            return texture;
         }
 
         private static async Task RunScenarioAssetTopUpAsync()
         {
-            EnsureForgeBootstrap();
-            await Task.Yield();
+            var options = EmberRuntimeOptionsProvider.Current;
+            ForgeRuntimeHelpers.EnsureForgeBootstrap();
+            await ForgeRuntimeHelpers.WaitForForgeAsync(options.Menu.ForgeWaitFrames);
 
             LoadingScreen.ShowForContext(new LoadingScreenContext("character_creation", "Preparing Character Creation", "generation"));
             LoadingScreen.SetProgress(0f, "Scanning scenario assets");
@@ -176,12 +182,12 @@ namespace EmberCrpg.Presentation.Ember.UI
             if (forge == null || !forge.IsAvailable())
             {
                 LoadingScreen.LogLine(UiLogSeverity.Warning, "[new-game] forge unavailable; cached assets only");
-                await Task.Delay(350);
+                await Task.Delay(options.Menu.PreSceneDelayMs);
                 return;
             }
 
             var selected = SelectScenarioEntries(CoreAssetManifest.CreateDefault().Entries);
-            var root = RuntimeRoot();
+            var root = ForgeRuntimeHelpers.ResolveRuntimeRoot();
             var flow = new VisibleGenerationFlow(
                 root,
                 forge,
@@ -196,7 +202,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                 LoadingScreen.SetProgress(selected.Count == 0 ? 1f : (float)scanned / selected.Count * 0.35f, "Scan " + row.EntryId);
                 LoadingScreen.LogLine(row.State == EntryState.Cached ? UiLogSeverity.Info : UiLogSeverity.Warning, "[scan] " + row.EntryId + " => " + row.State);
             };
-            flow.ScanThumbnail += (row, entry, bytes) => LoadingScreen.ShowThumbnail(ToTexture(bytes), row.EntryId + " cached");
+            flow.ScanThumbnail += (row, entry, bytes) => LoadingScreen.ShowThumbnail(ForgeRuntimeHelpers.TryDecodeTexture(bytes), row.EntryId + " cached");
             flow.EntryStarted += entry =>
             {
                 started++;
@@ -206,7 +212,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             flow.EntrySucceeded += (entry, bytes, elapsedMs) =>
             {
                 LoadingScreen.SetProgress(selected.Count == 0 ? 1f : 0.35f + (0.65f * started / selected.Count), "Generated " + entry.Id);
-                LoadingScreen.ShowThumbnail(ToTexture(bytes), entry.Id);
+                LoadingScreen.ShowThumbnail(ForgeRuntimeHelpers.TryDecodeTexture(bytes), entry.Id);
                 LoadingScreen.LogLine(UiLogSeverity.Success, "[ok] " + entry.Id + " " + elapsedMs + "ms");
             };
             flow.EntryFailed += (entry, reason, exceptionType) =>
@@ -215,42 +221,40 @@ namespace EmberCrpg.Presentation.Ember.UI
             var result = await flow.RunCoreAssetTopUpAsync(selected, CancellationToken.None);
             LoadingScreen.SetProgress(1f, "Scenario assets ready");
             LoadingScreen.LogLine(UiLogSeverity.Success, "[new-game] scenario top-up complete: " + result.SucceededGeneration + "/" + result.StartedGeneration + " generated");
-            await Task.Delay(300);
+            await Task.Delay(options.Menu.ScenarioReadyDelayMs);
         }
 
         private static List<ManifestEntry> SelectScenarioEntries(IReadOnlyList<ManifestEntry> entries)
         {
+            var tokens = EmberRuntimeOptionsProvider.Current.Menu.ScenarioManifestIds;
             var selected = new List<ManifestEntry>();
             for (int i = 0; i < entries.Count; i++)
             {
                 var entry = entries[i];
                 if (!entry.RequiresGeneration) continue;
-                if (entry.Id == "dice" || entry.Id == "skill" || entry.Id == "new_game" || entry.Id.StartsWith("logo_"))
+                if (MatchesScenarioId(entry.Id, tokens))
                     selected.Add(entry);
             }
             return selected;
         }
 
-        private static void EnsureForgeBootstrap()
+        private static bool MatchesScenarioId(string entryId, IReadOnlyList<string> tokens)
         {
-            if (ForgeLocator.AssetForge != null) return;
-            if (FindFirstObjectByType<ForgeBootstrap>() != null) return;
-            var go = new GameObject("ForgeBootstrap");
-            DontDestroyOnLoad(go);
-            go.AddComponent<ForgeBootstrap>();
-        }
-
-        private static string RuntimeRoot()
-        {
-            var parent = Directory.GetParent(Application.dataPath);
-            return parent != null ? parent.FullName : Application.dataPath;
-        }
-
-        private static Texture2D ToTexture(byte[] bytes)
-        {
-            if (bytes == null || bytes.Length == 0) return null;
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            return texture.LoadImage(bytes) ? texture : null;
+            if (string.IsNullOrWhiteSpace(entryId) || tokens == null || tokens.Count == 0) return false;
+            for (int i = 0; i < tokens.Count; i++)
+            {
+                var token = tokens[i];
+                if (string.IsNullOrWhiteSpace(token)) continue;
+                if (token.EndsWith("_", System.StringComparison.Ordinal))
+                {
+                    if (entryId.StartsWith(token, System.StringComparison.Ordinal)) return true;
+                }
+                else if (string.Equals(entryId, token, System.StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static Button FindButton(string name)

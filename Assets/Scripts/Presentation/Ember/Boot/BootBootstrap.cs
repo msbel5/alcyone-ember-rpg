@@ -2,9 +2,11 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Domain.Forge;
 using EmberCrpg.Domain.Generation;
 using EmberCrpg.Presentation.Ember.Loading;
+using EmberCrpg.Presentation.Ember.Runtime;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Simulation.Generation;
 using UnityEngine;
@@ -18,18 +20,19 @@ namespace EmberCrpg.Presentation.Ember.Boot
 
         private async void Awake()
         {
+            var options = EmberRuntimeOptionsProvider.Current;
             EnsureSurface();
-            EnsureForgeBootstrap();
+            ForgeRuntimeHelpers.EnsureForgeBootstrap();
             // ForgeBootstrap.Awake runs the frame after the GameObject is added, so we have to
             // yield until ForgeLocator.AssetForge is registered (max ~3s); otherwise the asset
             // forge resolves to SkipAssetForge and the visible generation pipeline silently no-ops.
-            for (int waited = 0; waited < 180 && EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge == null; waited++)
-                await System.Threading.Tasks.Task.Yield();
+            await ForgeRuntimeHelpers.WaitForForgeAsync(options.Boot.ForgeWaitFrames);
             var forge = EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge ?? new SkipAssetForge();
             // Limit Boot's blocking generation to the first 3 entries (splash_background, logo_full,
             // logo_compact). Remaining icons/items/spells generate visibly on-demand later so the
             // player isn't trapped on Boot waiting for ~34 SD15-LCM inferences in a row.
-            var result = await RunAsync(forge, RuntimeRoot(), _nextScene, CancellationToken.None, maxEntries: 3);
+            var nextScene = string.IsNullOrWhiteSpace(_nextScene) ? options.Boot.NextSceneDefault : _nextScene;
+            var result = await RunAsync(forge, ForgeRuntimeHelpers.ResolveRuntimeRoot(), nextScene, CancellationToken.None, options.Boot.CoreTopUpMaxEntries);
             if (!string.IsNullOrEmpty(result.RequestedScene))
             {
                 var op = SceneManager.LoadSceneAsync(result.RequestedScene);
@@ -44,8 +47,9 @@ namespace EmberCrpg.Presentation.Ember.Boot
 
         public static Task<BootFlowResult> RunForTestsAsync(IAssetForge forge)
         {
+            var options = EmberRuntimeOptionsProvider.Current;
             var root = Path.Combine(Path.GetTempPath(), "ember-boot-test-" + Guid.NewGuid().ToString("N"));
-            return RunAsync(forge, root, EmberScenes.MainMenu, CancellationToken.None, maxEntries: 6);
+            return RunAsync(forge, root, options.Boot.NextSceneDefault, CancellationToken.None, options.Boot.TestTopUpMaxEntries);
         }
 
         private static async Task<BootFlowResult> RunAsync(IAssetForge forge, string root, string nextScene, CancellationToken ct, int maxEntries = int.MaxValue)
@@ -76,7 +80,7 @@ namespace EmberCrpg.Presentation.Ember.Boot
             };
             flow.ScanThumbnail += (row, entry, bytes) =>
             {
-                LoadingScreen.ShowThumbnail(ToTexture(bytes), row.EntryId + " (cached)");
+                LoadingScreen.ShowThumbnail(ForgeRuntimeHelpers.TryDecodeTexture(bytes), row.EntryId + " (cached)");
             };
             flow.EntryStarted += e =>
             {
@@ -88,7 +92,7 @@ namespace EmberCrpg.Presentation.Ember.Boot
             {
                 succeeded++;
                 LoadingScreen.SetProgress(0.5f + (entries.Count == 0 ? 0f : 0.5f * ((float)started / entries.Count)), "Generated " + e.Id);
-                LoadingScreen.ShowThumbnail(ToTexture(bytes), e.Id + " (" + ms + "ms)");
+                LoadingScreen.ShowThumbnail(ForgeRuntimeHelpers.TryDecodeTexture(bytes), e.Id + " (" + ms + "ms)");
                 LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Success, "[ok] " + e.Id + " " + ms + "ms");
             };
             flow.EntryFailed += (e, reason, ex) =>
@@ -104,7 +108,8 @@ namespace EmberCrpg.Presentation.Ember.Boot
             started = result.StartedGeneration;
             LoadingScreen.LogLine(EmberCrpg.Ui.Foundation.UiLogSeverity.Success, "Generation complete: " + succeeded + "/" + started + " succeeded, " + failed + " failed.");
             LoadingScreen.SetProgress(1f, "Entering main menu");
-            await Task.Delay(2500, ct);
+            var delay = EmberRuntimeOptionsProvider.Current.Boot.PostGenerationDelayMs;
+            await Task.Delay(delay, ct);
             LoadingScreen.Dismiss();
             return new BootFlowResult(started, succeeded, failed, nextScene);
         }
@@ -112,29 +117,6 @@ namespace EmberCrpg.Presentation.Ember.Boot
         private static void EnsureSurface()
         {
             VisibleUiSurface.Ensure();
-        }
-
-        private static void EnsureForgeBootstrap()
-        {
-            if (EmberCrpg.Presentation.Ember.Forge.ForgeLocator.AssetForge != null) return;
-            var existing = FindFirstObjectByType<EmberCrpg.Presentation.Ember.Forge.ForgeBootstrap>();
-            if (existing != null) return;
-            var go = new GameObject("ForgeBootstrap");
-            DontDestroyOnLoad(go);
-            go.AddComponent<EmberCrpg.Presentation.Ember.Forge.ForgeBootstrap>();
-        }
-
-        private static Texture2D ToTexture(byte[] bytes)
-        {
-            if (bytes == null || bytes.Length == 0) return null;
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            return texture.LoadImage(bytes) ? texture : null;
-        }
-
-        private static string RuntimeRoot()
-        {
-            var parent = Directory.GetParent(Application.dataPath);
-            return parent != null ? parent.FullName : Application.dataPath;
         }
 
         private sealed class SkipAssetForge : IAssetForge

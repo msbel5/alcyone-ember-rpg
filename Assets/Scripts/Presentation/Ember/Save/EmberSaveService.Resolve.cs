@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using EmberCrpg.Data.Save;
 using EmberCrpg.Presentation.Ember.Inputs;
+using EmberCrpg.Presentation.Ember.Runtime;
 
 namespace EmberCrpg.Presentation.Ember.Save
 {
@@ -29,23 +30,7 @@ namespace EmberCrpg.Presentation.Ember.Save
 
         private static bool IsKnownBuildScene(string sceneName)
         {
-            if (string.IsNullOrWhiteSpace(sceneName)) return false;
-#if UNITY_EDITOR
-            foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
-            {
-                if (scene == null || string.IsNullOrEmpty(scene.path)) continue;
-                var stem = System.IO.Path.GetFileNameWithoutExtension(scene.path);
-                if (string.Equals(stem, sceneName, System.StringComparison.Ordinal))
-                    return true;
-            }
-            return false;
-#else
-            // LEFT-011: player builds previously returned true unconditionally, so a save carrying a
-            // bogus/renamed scene name reached SceneManager.LoadScene and hard-failed. CanStreamedLevelBeLoaded
-            // is the runtime-safe equivalent of the Editor build-settings scan — true only when the named
-            // scene is actually in the shipped player's build list.
-            return UnityEngine.Application.CanStreamedLevelBeLoaded(sceneName);
-#endif
+            return EmberSceneCatalog.IsKnownBuildScene(sceneName);
         }
 
         /// <summary>

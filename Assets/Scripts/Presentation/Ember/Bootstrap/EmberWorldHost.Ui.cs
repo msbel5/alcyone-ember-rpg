@@ -3,6 +3,7 @@
 // Canvas" furniture (pause/dialog/HUD/side-panels/spawner) lives here. Zero behaviour change.
 using System.Collections.Generic;
 using EmberCrpg.Presentation.Ember.Adapters;
+using EmberCrpg.Presentation.Ember.Runtime;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 using UnityEngine;
@@ -19,34 +20,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         // driven by InputSystemUIInputModule, retiring any legacy module. No 10-scene YAML edits.
         private static void EnsureEventSystem()
         {
-            var es = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include);
-            if (es == null)
-            {
-                new GameObject(
-                    "EventSystem",
-                    typeof(UnityEngine.EventSystems.EventSystem),
-                    typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
-                return;
-            }
-
-            bool hasInputSystemModule = false;
-            foreach (var module in es.GetComponents<UnityEngine.EventSystems.BaseInputModule>())
-            {
-                if (module is UnityEngine.InputSystem.UI.InputSystemUIInputModule)
-                {
-                    hasInputSystemModule = true;
-                }
-                else
-                {
-                    // Legacy module is inert under activeInputHandler=1 — disable now (immediate) and
-                    // destroy so it can't sit in front of the working module.
-                    module.enabled = false;
-                    Object.Destroy(module);
-                }
-            }
-
-            if (!hasInputSystemModule)
-                es.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            _ = EmberEventSystemPolicy.EnsureInputSystemEventSystem();
         }
 
         /// <summary>

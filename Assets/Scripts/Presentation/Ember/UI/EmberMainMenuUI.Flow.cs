@@ -1,18 +1,10 @@
 // REF-e (LEFT-020): menu flow (New Game / Continue / Load / Quit + scene transition) split out of EmberMainMenuUI.cs (partial, zero behaviour change).
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
-using EmberCrpg.Domain.Generation;
-using EmberCrpg.Presentation.Ember.Forge;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Presentation.Ember.Loading;
-using EmberCrpg.Simulation.Generation;
-using EmberCrpg.Ui.Foundation;
+using EmberCrpg.Presentation.Ember.Runtime;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
@@ -27,8 +19,11 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             await RunScenarioAssetTopUpAsync();
             LoadingScreen.Dismiss();
-            await Task.Delay(350);
-            SceneManager.LoadScene(string.IsNullOrWhiteSpace(_firstSceneName) ? EmberScenes.CharacterCreation : _firstSceneName);
+            await Task.Delay(EmberRuntimeOptionsProvider.Current.Menu.PreSceneDelayMs);
+            var sceneName = string.IsNullOrWhiteSpace(_firstSceneName)
+                ? EmberRuntimeOptionsProvider.Current.Menu.FirstSceneDefault
+                : _firstSceneName;
+            SceneManager.LoadScene(sceneName);
         }
 
         public void LoadGame()
@@ -74,9 +69,7 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private static void EnsureEventSystemExists()
         {
-            if (EventSystem.current != null) return;
-            if (FindFirstObjectByType<EventSystem>() != null) return;
-            _ = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+            _ = EmberEventSystemPolicy.EnsureInputSystemEventSystem();
         }
 
         private static void UnlockCursor()
@@ -87,20 +80,7 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private static bool IsKnownBuildScene(string sceneName)
         {
-            if (string.IsNullOrWhiteSpace(sceneName)) return false;
-#if UNITY_EDITOR
-            foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
-            {
-                if (scene == null || string.IsNullOrEmpty(scene.path)) continue;
-                var stem = Path.GetFileNameWithoutExtension(scene.path);
-                if (string.Equals(stem, sceneName, System.StringComparison.Ordinal)) return true;
-            }
-            return false;
-#else
-            // LEFT-011: don't trust an arbitrary save scene name in a player build — validate against the
-            // shipped build list at runtime (Application.CanStreamedLevelBeLoaded) instead of returning true.
-            return Application.CanStreamedLevelBeLoaded(sceneName);
-#endif
+            return EmberSceneCatalog.IsKnownBuildScene(sceneName);
         }
     }
 }
