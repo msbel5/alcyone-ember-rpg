@@ -10,11 +10,17 @@ namespace EmberCrpg.Domain.Forge
 
         private static readonly Dictionary<string, Entry> Entries = new Dictionary<string, Entry>
         {
+            // Empirical (forge-proof s5/s5b/s5c/s5d, 2026-06-01): SDXL-Turbo treats the WORDS
+            // "die"/"dice"/"six-sided"/"game die" as the RPG polyhedral-dice-SET training cluster and
+            // ALWAYS renders a pile/grid of dice — at 1024 it tiles into 40+, at 512 ~8. Describing the
+            // SAME object as a plain "cube" with a few dots (never naming it a die) produced exactly ONE
+            // clean die at 512. Turbo also ignores the negative prompt entirely (no CFG), so the singular
+            // constraint has to live in the POSITIVE ("one single ... exactly one cube ... no other objects").
             ["die"] = new Entry(
-                "a single six-sided game die, one solid ivory cube with smooth slightly rounded corners, neat round black dot markings on each face, exactly ONE die resting on a dark surface",
+                "one single solid ivory-white cube resting on a plain dark surface, smooth slightly rounded corners, a few small round black dots on its top face, exactly one cube, no other objects nearby",
                 DefaultNegative),
             ["dice"] = new Entry(
-                "a single six-sided game die, one solid ivory cube with smooth slightly rounded corners, neat round black dot markings on each face, exactly ONE die resting on a dark surface",
+                "one single solid ivory-white cube resting on a plain dark surface, smooth slightly rounded corners, a few small round black dots on its top face, exactly one cube, no other objects nearby",
                 DefaultNegative),
             ["sword"] = new Entry(
                 "a single straight longsword, one rigid steel blade with a centered fuller groove, a simple crossguard, a wrapped leather grip, and a round metal pommel",

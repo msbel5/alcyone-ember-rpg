@@ -9,9 +9,10 @@ namespace EmberCrpg.Simulation.Generation
 {
     public static class GeneratedAssetProvenance
     {
-        // Bump to invalidate ALL cached generated assets. v3: geometric object prompts + 1024 SDXL-Turbo
-        // for object/icon/item/spell entries so the next boot regenerates with the live S4 path.
-        public const string Version = "real-images-v3";
+        // Bump to invalidate ALL cached generated assets. v4: cube-only "die" prompt (no dice-set trigger
+        // words) + object icons back to SDXL-Turbo's native 512 — forge-proof showed dice-words + 1024
+        // produced a pile/grid; this combination produces a single clean object.
+        public const string Version = "real-images-v4";
 
         public static bool IsFresh(string assetPath, ManifestEntry entry, StaticPromptCatalog catalog, out string reason)
         {

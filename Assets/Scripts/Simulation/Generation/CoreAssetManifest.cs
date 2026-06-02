@@ -22,11 +22,14 @@ namespace EmberCrpg.Simulation.Generation
             // SD 1.5 LCM requires width/height divisible by 64. 720 was not; ONNX inference threw.
             // 768x512 (3:2) generates reliably and ScaleAndCrop fills 16:9 backdrops without artefacts.
             entries.Add(new ManifestEntry("splash_background", "splash", "Assets/Generated/Core/splash_background.png", "splash_background", 768, 512, true, 300, "sd15-lcm"));
-            // Keep logo assets on 512 while UI/item/spell icon entries now target SDXL-Turbo at 1024².
-            // The display layer downscales to slot size; larger generation preserves usable detail.
+            // SDXL-Turbo is a 512-NATIVE model. Forge-proof (2026-06-01) showed it TILES the subject at
+            // 1024 (a single die became a 40-die grid) and even cube-only prompts fill the extra 1024
+            // resolution with dot-noise; the clean SINGLE object only appears at 512. So object icons
+            // generate at Turbo's native 512² and the display layer downscales to slot size. Logos/splash/
+            // env keep their own model+size below.
             entries.Add(new ManifestEntry("logo_full", "logo", "Assets/Generated/Core/logo_full.png", "logo_full", 512, 512, true, 300, "sd15-lcm"));
             entries.Add(new ManifestEntry("logo_compact", "logo", "Assets/Generated/Core/logo_compact.png", "logo_compact", 512, 512, true, 300, "sd15-lcm"));
-            AddMany(entries, "ui", 1024, 1024, true, "sdxl-turbo", "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
+            AddMany(entries, "ui", 512, 512, true, "sdxl-turbo", "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
             entries.Add(new ManifestEntry("font_body", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_heading", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_mono", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
@@ -36,8 +39,8 @@ namespace EmberCrpg.Simulation.Generation
             AddSilhouette(entries, "undead_humanoid");
             AddSilhouette(entries, "construct");
             AddSilhouette(entries, "aberration");
-            AddMany(entries, "item", 1024, 1024, true, "sdxl-turbo", "sword", "bow", "staff", "potion", "scroll", "key", "ring", "helm", "boots", "shield");
-            AddMany(entries, "spell", 1024, 1024, true, "sdxl-turbo", "sleep", "heal", "fire", "ice", "shield", "lightning");
+            AddMany(entries, "item", 512, 512, true, "sdxl-turbo", "sword", "bow", "staff", "potion", "scroll", "key", "ring", "helm", "boots", "shield");
+            AddMany(entries, "spell", 512, 512, true, "sdxl-turbo", "sleep", "heal", "fire", "ice", "shield", "lightning");
             AddSound(entries, "ui_click"); AddSound(entries, "ui_hover"); AddSound(entries, "dice_roll"); AddSound(entries, "level_up"); AddSound(entries, "error");
             // logos + splash moved to top of list (above) so menus get visuals before later stalls.
             // splash uses sd15-lcm @ 1280x720 to skip the cuDNN 9 dependency; re-up to sdxl-turbo
