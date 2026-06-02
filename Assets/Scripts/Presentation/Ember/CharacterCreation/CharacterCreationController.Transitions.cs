@@ -28,6 +28,14 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 case CreationStep.Portrait:
                     GeneratePortrait();
                     break;
+                case CreationStep.WorldHistoryReveal:
+                    // World GENERATION happens HERE now — after the portrait, before the dossier — so the
+                    // world is awakened with the full character in hand (the genesis answers that seed it
+                    // were chosen back at steps 2-5). Builds the real-world reveal + starts its streaming.
+                    BuildHistoryTimeline();
+                    _historyRevealStartTime = Time.realtimeSinceStartup;
+                    _historySkipped = false;
+                    break;
             }
         }
 
@@ -157,6 +165,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         // path the gameplay scene uses, with the SAME seed, so the centuries of geography + civilisation shown
         // here ARE the world that loads after the dossier. Falls back to the templated reveal if generation
         // fails for any reason (the reveal must never block creation).
+        // Configured era span (years) of the previewed world — stamped by TryGenerateWorldPreview from
+        // WorldgenParameters.HistoryYears so the reveal shows a STABLE span, not a per-seed event delta.
+        private int _previewEraYears = 400;
+
         private void BuildHistoryTimeline()
         {
             _historyTimeline.Clear();
@@ -168,11 +180,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             }
 
             var history = world.History;
-            int firstYear = history[0].Year;
-            int lastYear = history[history.Count - 1].Year;
+            // Era span = the CONFIGURED history length (stable), not the per-seed first/last event delta
+            // (which wandered and showed a different number of years for every world).
             _historyTimeline.Add(
                 "The world awakens - a continent of " + world.Settlements.Count + " settlements across "
-                + world.Regions.Count + " regions, shaped over " + Mathf.Max(1, lastYear - firstYear)
+                + world.Regions.Count + " regions, shaped over " + _previewEraYears
                 + " years of history.");
 
             var notable = SelectNotableHistory(history, 24);
@@ -194,6 +206,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 var style = WorldGenesisMapper.ToStyle(_worldMood);
                 var genre = WorldGenesisMapper.ToGenre(_worldMood, _playerCalling, _fateStart);
                 var parameters = EmberCrpg.Simulation.Worldgen.WorldgenParameters.For(style, genre);
+                _previewEraYears = parameters.HistoryYears;
                 return EmberCrpg.Simulation.Worldgen.WorldgenService.Generate(_seed, parameters);
             }
             catch (Exception ex)

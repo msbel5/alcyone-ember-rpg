@@ -80,8 +80,13 @@ namespace EmberCrpg.Presentation.Ember.UI
             PositionPlayerMarker(playerTile, map.Width, map.Height);
 
             int settlements = map.Settlements.Count;
+            // Distinct REGIONS (administrative groupings of the tile grid) so the map reports the SAME region +
+            // settlement counts as the char-creation reveal — one authoritative world, not the raw 16x16 tile
+            // dimensions which read as a different "region" number than the world the history simulated.
+            var regionIds = new System.Collections.Generic.HashSet<EmberCrpg.Domain.Worldgen.RegionId>();
+            for (int i = 0; i < map.Tiles.Count; i++) regionIds.Add(map.Tiles[i].RegionId);
             if (_title != null)
-                _title.text = $"OVERLAND MAP - {map.Width}x{map.Height} regions - {settlements} settlements - 409,600 km2";
+                _title.text = $"OVERLAND MAP - {regionIds.Count} regions - {settlements} settlements - 409,600 km2";
             if (_footer != null)
             {
                 string where = string.IsNullOrEmpty(locationName)
@@ -130,7 +135,7 @@ namespace EmberCrpg.Presentation.Ember.UI
 
             Debug.Log(
                 $"[OverlandMap] built {image.Width}x{image.Height} fine map image " +
-                $"({map.Width}x{map.Height} regions, {map.Settlements.Count} settlements)");
+                $"({map.Width}x{map.Height} tiles, {map.Settlements.Count} settlements)");
         }
 
         private void EnsureSettlementMarkers(OverlandMap map)

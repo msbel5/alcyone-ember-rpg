@@ -31,11 +31,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             PlayerCalling = 2,        // 3. "What is the player's calling?" (worldgen)
             FateBegins = 3,           // 4. "Where does fate begin?" (worldgen)
             PersonalityQuestions = 4, // 5. 10 moral dilemmas, one per page
-            WorldHistoryReveal = 5,   // 6. DF-style worldgen streaming
-            Birthsign = 6,            // 7. pick 1 of 12 (player-picked now)
-            StatRolling = 7,          // 8. Abilities — roll + assign the six attributes
-            BuildSelection = 8,       // 9. Class / Alignment / Skills (combined 3-column)
-            Portrait = 9,             // 10. LLM portrait + reroll
+            Birthsign = 5,            // 6. pick 1 of 12 (player-picked now)
+            StatRolling = 6,          // 7. Abilities — roll + assign the six attributes
+            BuildSelection = 7,       // 8. Class / Alignment / Skills (combined 3-column)
+            Portrait = 8,             // 9. LLM portrait + reroll
+            WorldHistoryReveal = 9,   // 10. DF-style world GENERATION — runs AFTER the portrait, BEFORE the dossier
             DossierLaunch = 10,       // 11. Dossier review → Begin Adventure
             Complete = 11,
         }

@@ -60,11 +60,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             _questionIndex++;
             if (_questionIndex >= _questions.Count)
             {
-                BuildHistoryTimeline();
                 _suggestedClassId = _creationService.SuggestClass(_answerChoiceIds).Id;
-                _step = CreationStep.WorldHistoryReveal;
-                _historyRevealStartTime = Time.realtimeSinceStartup;
-                _historySkipped = false;
+                // Questions done -> proceed into the character build (Birthsign). The DF-style world
+                // GENERATION (BuildHistoryTimeline) now runs later, on entry to WorldHistoryReveal AFTER the
+                // portrait and BEFORE the dossier, so the world is generated with the full character in hand.
+                EnterStage(CreationStep.Birthsign);
                 AddLog("[history] Campaign genesis begins.");
             }
 
