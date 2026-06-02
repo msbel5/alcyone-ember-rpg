@@ -179,7 +179,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// sat on the aggregate IDomainSimulationAdapter; moved here so the
         /// host can call it through its narrow IPlayerCommandSink handle.
         /// </summary>
-        void SeedWorld(string mood, string calling, string startLocation);
+        void SeedWorld(string mood, string calling, string startLocation, uint? worldSeed = null);
     }
 
     /// <summary>

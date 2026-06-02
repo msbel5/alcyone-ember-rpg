@@ -20,13 +20,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 {
     public sealed partial class DomainSimulationAdapter
     {
-        public void SeedWorld(string mood, string calling, string startLocation)
+        public void SeedWorld(string mood, string calling, string startLocation, uint? worldSeed = null)
         {
             // Derive a deterministic uint seed from the three wizard strings
             // by FNV-1a-folding their concatenation. The same wizard inputs
             // therefore always produce the same world, which is what makes
             // "share your seed" a viable replay feature down the line.
-            uint seed = FoldSeed(mood, calling, startLocation);
+            uint seed = worldSeed ?? FoldSeed(mood, calling, startLocation);
             var style = ParseStyle(mood);
             var genre = ParseGenre(mood, calling, startLocation);
             var preferredSize = ParsePreferredSettlementSize(startLocation);

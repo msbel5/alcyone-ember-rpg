@@ -142,7 +142,8 @@ namespace EmberCrpg.Presentation.Ember.UI
             {
                 adapter.SeedWorld(EmberWorldGenIntent.Pending.Mood,
                                   EmberWorldGenIntent.Pending.Calling,
-                                  EmberWorldGenIntent.Pending.Start);
+                                  EmberWorldGenIntent.Pending.Start,
+                                  EmberWorldGenIntent.Pending.WorldSeed == 0u ? null : EmberWorldGenIntent.Pending.WorldSeed);
             }
             UnityEngine.SceneManagement.SceneManager.LoadScene(EmberScenes.CharacterCreation);
         }

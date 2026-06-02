@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.Sprites;
 using EmberCrpg.Presentation.Ember.Tick;
@@ -21,7 +22,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
     {
         [SerializeField] private SpriteRegistry _spriteRegistry;
 
-        private static readonly IReadOnlyList<string> Topics = new List<string> { "rumors", "work", "trade", "fate" };
+        private static IReadOnlyList<string> Topics => EmberRuntimeOptionsProvider.Current.WorldHost.DefaultTopics;
 
         private EmberTickDriver _tick;
         // Codex audit (seventh pass C-P2 #11): the host historically held a
@@ -84,7 +85,11 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             var pending = EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending;
             if (pending != null && !pending.IsEmpty)
             {
-                _commands?.SeedWorld(pending.Mood, pending.Calling, pending.Start);
+                _commands?.SeedWorld(
+                    pending.Mood,
+                    pending.Calling,
+                    pending.Start,
+                    pending.WorldSeed == 0u ? null : pending.WorldSeed);
                 if (_adapter is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter domainAdapter)
                     domainAdapter.ApplyCharacterCreation(pending.PlayerName, pending.CharacterClassId, pending.BirthsignId);
                 EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending = null;
@@ -164,7 +169,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 // Immediate placeholder line ("The oracle consults the fates…"); the real LLM prophecy
                 // resolves async and is swapped in below via TryConsumeResolvedFate (BUG-4).
                 _fateLine = _oracle.ConsultFate();
-                _fateTimer = 3f;
+                _fateTimer = EmberRuntimeOptionsProvider.Current.WorldHost.FatePlaceholderSeconds;
                 RouteFateToDialog(_fateLine);
             }
 
@@ -175,7 +180,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             if (!string.IsNullOrEmpty(resolvedFate))
             {
                 _fateLine = resolvedFate;
-                _fateTimer = 7f;
+                _fateTimer = EmberRuntimeOptionsProvider.Current.WorldHost.FateResolvedSeconds;
                 RouteFateToDialog(_fateLine);
             }
 
@@ -245,7 +250,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             if (!IsModalOpen())
             {
                 // Spell selection
-                for (int i = 0; i < 5; i++)
+                var spellSlotCount = EmberRuntimeOptionsProvider.Current.WorldHost.SpellSlotCount;
+                for (int i = 0; i < spellSlotCount; i++)
                 {
                     if (EmberInput.NumberKeyDown(i + 1))
                     {
@@ -307,7 +313,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             if (EmberInput.PauseHeld)
             {
                 _escHoldTimer += Time.unscaledDeltaTime;
-                if (_escHoldTimer > 1f)
+                if (_escHoldTimer > EmberRuntimeOptionsProvider.Current.WorldHost.EscapeHoldQuitSeconds)
                 {
 #if UNITY_EDITOR
                     UnityEditor.EditorApplication.isPlaying = false;
@@ -535,12 +541,20 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 // profile so the top-bar reads IDENTICALLY everywhere; the worldgen path overwrites it with
                 // the player's real choices when they come through character creation.
                 if (world.WorldProfile == null)
+                {
+                    var fallback = EmberRuntimeOptionsProvider.Current.WorldHost;
                     world.WorldProfile = new EmberCrpg.Domain.Worldgen.WorldProfile(
                         EmberCrpg.Domain.Worldgen.WorldStyle.LowFantasy,
                         EmberCrpg.Domain.Worldgen.WorldGenre.Survival,
-                        seed: 1u, targetPopulation: 100000, regionCount: 3, factionCount: 3,
-                        historyYears: 50, moodKeyword: "grim", playerCallingKeyword: "wanderer",
-                        startLocationKeyword: "crossroads");
+                        seed: fallback.FallbackWorldSeed,
+                        targetPopulation: fallback.FallbackTargetPopulation,
+                        regionCount: fallback.FallbackRegionCount,
+                        factionCount: fallback.FallbackFactionCount,
+                        historyYears: fallback.FallbackHistoryYears,
+                        moodKeyword: fallback.FallbackMood,
+                        playerCallingKeyword: fallback.FallbackCalling,
+                        startLocationKeyword: fallback.FallbackStart);
+                }
                 return new EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter(world);
             }
             catch (System.Exception ex)

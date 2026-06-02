@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using EmberCrpg.Domain.CharacterCreation;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Presentation.Ember.UI; // EmberWorldGenIntent lives here (E7-014 fix: was wrongly .Worldgen)
 using EmberCrpg.Presentation.Ember.Worldgen;
 using UnityEngine;
@@ -58,6 +59,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 _selectedSkills.OrderBy(v => v).ToArray(),
                 BuildAttributeRollSnapshot(),
                 _seed,
+                _seed,
                 _answerChoiceIds.ToArray(),
                 PortraitJson);
             if (AutoLaunchWorldgen && Application.isPlaying)
@@ -106,7 +108,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             if (_historySkipped) return true;
             if (_historyTimeline.Count == 0) return true;
             float elapsed = Mathf.Max(0f, Time.realtimeSinceStartup - _historyRevealStartTime);
-            return elapsed >= 8f || VisibleHistoryCharacterCount(elapsed) >= FullHistoryText().Length;
+            var options = EmberRuntimeOptionsProvider.Current.CharacterCreation;
+            return elapsed >= options.HistoryUnlockSeconds || VisibleHistoryCharacterCount(elapsed) >= FullHistoryText().Length;
         }
 
         private int VisibleHistoryCharacterCount(float elapsed)
@@ -114,8 +117,9 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             if (_historySkipped) return FullHistoryText().Length;
             if (_historyTimeline.Count == 0) return 0;
 
-            const float charsPerSecond = 30f;
-            const float lineDelaySeconds = 0.3f;
+            var options = EmberRuntimeOptionsProvider.Current.CharacterCreation;
+            var charsPerSecond = options.HistoryCharsPerSecond;
+            var lineDelaySeconds = options.HistoryLineDelaySeconds;
             int visibleCharacters = 0;
             for (int i = 0; i < _historyTimeline.Count; i++)
             {

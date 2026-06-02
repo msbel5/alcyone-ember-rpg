@@ -1,4 +1,5 @@
 using System;
+using EmberCrpg.Domain.Configuration;
 using UnityEngine.InputSystem;
 
 namespace EmberCrpg.Presentation.Ember.Inputs
@@ -9,20 +10,25 @@ namespace EmberCrpg.Presentation.Ember.Inputs
 
         public EmberInputActions()
         {
-            Jump = Button("Jump", "<Keyboard>/space");
-            Sprint = Button("Sprint", "<Keyboard>/leftShift");
-            Interact = Button("Interact", "<Keyboard>/e");
-            ToggleCursor = Button("ToggleCursor", "<Keyboard>/f1");
-            RegenWorld = Button("RegenWorld", "<Keyboard>/r");
-            ToggleMap = Button("ToggleMap", "<Keyboard>/tab");
-            SaveQuick = Button("SaveQuick", "<Keyboard>/f5");
-            LoadQuick = Button("LoadQuick", "<Keyboard>/f9");
-            Pause = Button("Pause", "<Keyboard>/escape");
-            Attack = Button("Attack", "<Mouse>/leftButton");
-            Secondary = Button("Secondary", "<Mouse>/rightButton");
-            MeleeSwing = Button("MeleeSwing", "<Keyboard>/f");
+            var options = EmberRuntimeOptionsProvider.Current.Input;
+            Move = Move2D("Move", options);
+            Look = Vector2Value("Look", options.LookPath);
+            Jump = Button("Jump", options.JumpPath);
+            Sprint = Button("Sprint", options.SprintPath);
+            Interact = Button("Interact", options.InteractPath);
+            ToggleCursor = Button("ToggleCursor", options.ToggleCursorPath);
+            RegenWorld = Button("RegenWorld", options.RegenWorldPath);
+            ToggleMap = Button("ToggleMap", options.ToggleMapPath);
+            SaveQuick = Button("SaveQuick", options.SaveQuickPath);
+            LoadQuick = Button("LoadQuick", options.LoadQuickPath);
+            Pause = Button("Pause", options.PausePath);
+            Attack = Button("Attack", options.AttackPath);
+            Secondary = Button("Secondary", options.SecondaryPath);
+            MeleeSwing = Button("MeleeSwing", options.MeleeSwingPath);
         }
 
+        public InputAction Move { get; }
+        public InputAction Look { get; }
         public InputAction Jump { get; }
         public InputAction Sprint { get; }
         public InputAction Interact { get; }
@@ -52,6 +58,55 @@ namespace EmberCrpg.Presentation.Ember.Inputs
             var action = _map.AddAction(name, InputActionType.Button, path);
             action.expectedControlType = "Button";
             return action;
+        }
+
+        private InputAction Vector2Value(string name, string path)
+        {
+            var action = _map.AddAction(name, InputActionType.Value, path);
+            action.expectedControlType = "Vector2";
+            return action;
+        }
+
+        private InputAction Move2D(string name, InputRuntimeOptions options)
+        {
+            var action = _map.AddAction(name, InputActionType.Value);
+            action.expectedControlType = "Vector2";
+
+            AddMoveComposite(
+                action,
+                options.MoveUpPath,
+                options.MoveDownPath,
+                options.MoveLeftPath,
+                options.MoveRightPath);
+
+            if (!string.IsNullOrWhiteSpace(options.MoveUpAltPath)
+                && !string.IsNullOrWhiteSpace(options.MoveDownAltPath)
+                && !string.IsNullOrWhiteSpace(options.MoveLeftAltPath)
+                && !string.IsNullOrWhiteSpace(options.MoveRightAltPath))
+            {
+                AddMoveComposite(
+                    action,
+                    options.MoveUpAltPath,
+                    options.MoveDownAltPath,
+                    options.MoveLeftAltPath,
+                    options.MoveRightAltPath);
+            }
+
+            return action;
+        }
+
+        private static void AddMoveComposite(
+            InputAction action,
+            string up,
+            string down,
+            string left,
+            string right)
+        {
+            var composite = action.AddCompositeBinding("2DVector");
+            composite.With("Up", up);
+            composite.With("Down", down);
+            composite.With("Left", left);
+            composite.With("Right", right);
         }
     }
 }

@@ -24,6 +24,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         public string BackgroundId { get; }
         public string[] SkillIds { get; }
         public string[] AttributeRolls { get; }
+        public uint WorldSeed { get; }
         public uint PortraitSeed { get; }
         public string[] AnswerChoiceIds { get; }
         public string PortraitJson { get; }
@@ -66,6 +67,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                 null,
                 null,
                 0u,
+                0u,
                 answerChoiceIds,
                 portraitJson)
         {
@@ -82,6 +84,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             string backgroundId,
             string[] skillIds,
             string[] attributeRolls,
+            uint worldSeed,
             uint portraitSeed,
             string[] answerChoiceIds,
             string portraitJson)
@@ -96,6 +99,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             BackgroundId = backgroundId ?? string.Empty;
             SkillIds = skillIds ?? new string[0];
             AttributeRolls = attributeRolls ?? new string[0];
+            WorldSeed = worldSeed;
             PortraitSeed = portraitSeed;
             AnswerChoiceIds = answerChoiceIds ?? new string[0];
             PortraitJson = portraitJson ?? string.Empty;
@@ -113,6 +117,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             && string.IsNullOrEmpty(PortraitJson)
             && SkillIds.Length == 0
             && AttributeRolls.Length == 0
+            && WorldSeed == 0u
             && PortraitSeed == 0u
             && AnswerChoiceIds.Length == 0;
 
@@ -129,6 +134,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                 BackgroundId,
                 SkillIds,
                 AttributeRolls,
+                WorldSeed,
                 PortraitSeed,
                 answerChoiceIds,
                 PortraitJson);
@@ -147,6 +153,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                 BackgroundId,
                 SkillIds,
                 AttributeRolls,
+                WorldSeed,
                 PortraitSeed,
                 AnswerChoiceIds,
                 portraitJson);

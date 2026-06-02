@@ -95,9 +95,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _currentDialogLine = $"You asked about <color=#f1c40f>{topicId}</color>. It is a complex matter indeed.";
         }
 
-        public void SeedWorld(string mood, string calling, string startLocation)
+        public void SeedWorld(string mood, string calling, string startLocation, uint? worldSeed = null)
         {
-            Debug.Log($"World Seeded: Mood={mood}, Calling={calling}, Start={startLocation}");
+            Debug.Log($"World Seeded: Mood={mood}, Calling={calling}, Start={startLocation}, Seed={(worldSeed.HasValue ? worldSeed.Value : 0u)}");
             // Placeholder can just log or change initial text
             _hudText = $"Starting {calling} in a {mood} world...";
         }

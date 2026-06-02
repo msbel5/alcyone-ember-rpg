@@ -62,6 +62,7 @@ namespace EmberCrpg.Tests.PlayMode.Playability
             Assert.That(intent.BackgroundId, Is.EqualTo("smuggler"));
             Assert.That(intent.SkillIds.OrderBy(v => v), Is.EquivalentTo(new[] { "arcana", "history", "insight", "investigation", "religion" }));
             Assert.That(intent.AttributeRolls.Length, Is.EqualTo(6));
+            Assert.That(intent.WorldSeed, Is.EqualTo(77u));
             Assert.That(intent.PortraitSeed, Is.EqualTo(77u));
             Assert.That(intent.Start, Is.EqualTo("SmithingOverworld"));
 

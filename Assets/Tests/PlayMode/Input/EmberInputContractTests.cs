@@ -1,4 +1,5 @@
 using EmberCrpg.Presentation.Ember.Inputs;
+using EmberCrpg.Domain.Configuration;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -26,6 +27,7 @@ namespace EmberCrpg.Tests.PlayMode.Input
         public override void TearDown()
         {
             EmberInput.ResetForTests();
+            EmberRuntimeOptionsProvider.ResetToDefaults();
             base.TearDown();
         }
 
@@ -113,6 +115,27 @@ namespace EmberCrpg.Tests.PlayMode.Input
             Press(_keyboard.cKey);
             Assert.That(EmberInput.KeyDown(KeyCode.C), Is.True);
             Assert.That(EmberInput.Key(KeyCode.C), Is.True);
+        }
+
+        [Test]
+        public void JumpBinding_CanBeRemappedViaRuntimeOptions()
+        {
+            var options = EmberRuntimeOptionsProvider.Current.Clone();
+            options.Input.JumpPath = "<Keyboard>/j";
+            EmberRuntimeOptionsProvider.Set(options);
+
+            EmberInput.ResetForTests();
+            EmberInput.EnableForTests();
+
+            Press(_keyboard.spaceKey);
+            Assert.That(EmberInput.JumpDown, Is.False);
+            Assert.That(EmberInput.JumpKeyDown, Is.False);
+            Release(_keyboard.spaceKey);
+
+            Press(_keyboard.jKey);
+            Assert.That(EmberInput.JumpDown, Is.True);
+            Assert.That(EmberInput.JumpKeyDown, Is.True);
+            Release(_keyboard.jKey);
         }
 
         private void AssertButton(ButtonControl control, System.Func<bool> read)

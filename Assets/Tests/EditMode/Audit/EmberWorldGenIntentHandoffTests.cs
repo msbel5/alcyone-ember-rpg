@@ -27,13 +27,15 @@ namespace EmberCrpg.Tests.EditMode.Audit
             public string LastMood { get; private set; }
             public string LastCalling { get; private set; }
             public string LastStart { get; private set; }
+            public uint? LastWorldSeed { get; private set; }
 
-            public void SeedWorld(string mood, string calling, string startLocation)
+            public void SeedWorld(string mood, string calling, string startLocation, uint? worldSeed = null)
             {
                 SeedCallCount++;
                 LastMood = mood;
                 LastCalling = calling;
                 LastStart = startLocation;
+                LastWorldSeed = worldSeed;
             }
         }
 
@@ -45,7 +47,11 @@ namespace EmberCrpg.Tests.EditMode.Audit
             var pending = EmberWorldGenIntent.Pending;
             if (pending != null && !pending.IsEmpty)
             {
-                commands?.SeedWorld(pending.Mood, pending.Calling, pending.Start);
+                commands?.SeedWorld(
+                    pending.Mood,
+                    pending.Calling,
+                    pending.Start,
+                    pending.WorldSeed == 0u ? null : pending.WorldSeed);
                 EmberWorldGenIntent.Pending = null;
             }
         }
@@ -172,6 +178,32 @@ namespace EmberCrpg.Tests.EditMode.Audit
             Assert.That(intent.BirthsignId, Is.EqualTo("the_beacon"));
             Assert.That(intent.AnswerChoiceIds, Is.EqualTo(new[] { "a", "c" }));
             Assert.That(intent.IsEmpty, Is.False);
+        }
+
+        [Test]
+        public void HandoffContract_WorldSeed_IsForwardedToSeedWorld()
+        {
+            EmberWorldGenIntent.Pending = new EmberWorldGenIntent(
+                mood: "stoic",
+                calling: "smith",
+                start: "Hearthhold",
+                playerName: "Cinder",
+                characterClassId: "warrior",
+                birthsignId: "the_beacon",
+                alignmentId: "true_neutral",
+                backgroundId: "smuggler",
+                skillIds: new[] { "lore" },
+                attributeRolls: new[] { "MIG=10" },
+                worldSeed: 77u,
+                portraitSeed: 99u,
+                answerChoiceIds: new[] { "a" },
+                portraitJson: "{}");
+
+            var sink = new RecordingSeedSink();
+            HostAwakeConsumePendingIntent(sink);
+
+            Assert.That(sink.SeedCallCount, Is.EqualTo(1));
+            Assert.That(sink.LastWorldSeed, Is.EqualTo(77u));
         }
     }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using EmberCrpg.Domain.Configuration;
 
 namespace EmberCrpg.Presentation.Ember.Inputs
 {
@@ -9,14 +10,23 @@ namespace EmberCrpg.Presentation.Ember.Inputs
     public static class EmberInput
     {
         private static EmberInputActions _actions;
+        private static Vector2 _smoothedLook;
 
-        public static Vector2 Move => EmberInputHardware.Move;
-        public static Vector2 Look => EmberInputHardware.Look;
-        public static Vector2 LookSmoothed => EmberInputHardware.LookSmoothed;
+        public static Vector2 Move => Actions.Move.ReadValue<Vector2>();
+        public static Vector2 Look => Actions.Look.ReadValue<Vector2>();
+        public static Vector2 LookSmoothed
+        {
+            get
+            {
+                var alpha = EmberRuntimeOptionsProvider.Current.Input.LookSmoothingAlpha;
+                _smoothedLook = Vector2.Lerp(_smoothedLook, Look, alpha);
+                return _smoothedLook;
+            }
+        }
 
         public static bool Sprint => Actions.Sprint.IsPressed();
         public static bool JumpDown => Actions.Jump.WasPressedThisFrame();
-        public static bool JumpKeyDown => EmberInputHardware.KeyDown(KeyCode.Space);
+        public static bool JumpKeyDown => JumpDown;
 
         public static bool Interact => Actions.Interact.WasPressedThisFrame();
         public static bool ToggleCursor => Actions.ToggleCursor.WasPressedThisFrame();
@@ -35,7 +45,8 @@ namespace EmberCrpg.Presentation.Ember.Inputs
 
         public static int NumberKeyDown()
         {
-            for (int i = 0; i < 9; i++)
+            var slots = EmberRuntimeOptionsProvider.Current.Input.NumberSlots;
+            for (int i = 0; i < slots; i++)
                 if (NumberKeyDown(i + 1)) return i + 1;
             return 0;
         }
@@ -45,7 +56,8 @@ namespace EmberCrpg.Presentation.Ember.Inputs
 
         public static int FunctionKeyDown()
         {
-            for (int i = 0; i < 12; i++)
+            var slots = EmberRuntimeOptionsProvider.Current.Input.FunctionSlots;
+            for (int i = 0; i < slots; i++)
                 if (EmberInputHardware.KeyDown(KeyCode.F1 + i)) return i + 1;
             return 0;
         }
@@ -53,14 +65,34 @@ namespace EmberCrpg.Presentation.Ember.Inputs
         public static bool KeyDown(KeyCode key) => EmberInputHardware.KeyDown(key);
         public static bool Key(KeyCode key) => EmberInputHardware.Key(key);
         public static bool MouseDown(int button) => EmberInputHardware.MouseDown(button);
-        public static float AxisRaw(string axisName) => EmberInputHardware.AxisRaw(axisName);
-        public static float Axis(string axisName) => EmberInputHardware.Axis(axisName);
+        public static float AxisRaw(string axisName)
+        {
+            return axisName switch
+            {
+                "Horizontal" => Move.x,
+                "Vertical" => Move.y,
+                "Mouse X" => Look.x,
+                "Mouse Y" => Look.y,
+                _ => EmberInputHardware.AxisRaw(axisName)
+            };
+        }
+
+        public static float Axis(string axisName)
+        {
+            return axisName switch
+            {
+                "Mouse X" => LookSmoothed.x,
+                "Mouse Y" => LookSmoothed.y,
+                _ => AxisRaw(axisName)
+            };
+        }
 
 #if UNITY_INCLUDE_TESTS
         public static void ResetForTests()
         {
             _actions?.Dispose();
             _actions = null;
+            _smoothedLook = Vector2.zero;
             EmberInputHardware.ResetForTests();
         }
 
