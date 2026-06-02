@@ -13,6 +13,7 @@ namespace EmberCrpg.Simulation.Overland
     public static partial class OverlandWorldgen
     {
         private const uint FallbackSeed = 42u;
+        private static readonly WorldGenerationManager ContinentalDirector = new WorldGenerationManager();
 
         public static OverlandMap Generate(uint seed, OverlandParameters parameters)
         {
@@ -24,12 +25,13 @@ namespace EmberCrpg.Simulation.Overland
             var rng = new XorShiftRng(normalizedSeed);
 
             var regionSeeds = BuildRegionSeeds(rng, world.Regions, parameters.Width, parameters.Height);
-            var biomeSeeds = BuildBiomeSeeds(rng, parameters.Width, parameters.Height, parameters.BiomeSeedCount);
             var regionIds = AssignRegions(parameters.Width, parameters.Height, regionSeeds);
-            var biomes = AssignBiomes(parameters.Width, parameters.Height, biomeSeeds);
-            SmoothSingleTileIslands(parameters.Width, parameters.Height, biomes);
+            var continent = ContinentalDirector.Generate(normalizedSeed, parameters.Width, parameters.Height);
+            var biomes = continent.CopyBiomes();
+            var land = continent.CopyLandMask();
+            SmoothSingleTileIslands(parameters.Width, parameters.Height, biomes, land);
 
-            var settlements = PlaceSettlements(normalizedSeed, parameters, world, regionIds, biomes);
+            var settlements = PlaceSettlements(normalizedSeed, parameters, world, regionIds, biomes, land);
             var tileSeeds = RollTileSeeds(normalizedSeed, parameters.Width * parameters.Height);
             var tiles = BuildTiles(parameters, regionIds, biomes, tileSeeds, settlements);
 

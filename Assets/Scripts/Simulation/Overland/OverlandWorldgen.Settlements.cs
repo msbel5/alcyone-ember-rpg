@@ -16,9 +16,10 @@ namespace EmberCrpg.Simulation.Overland
             OverlandParameters parameters,
             GeneratedWorld world,
             RegionId[] regionIds,
-            BiomeKind[] biomes)
+            BiomeKind[] biomes,
+            bool[] land)
         {
-            int targetCount = EstimateSettlementCapacity(parameters, biomes);
+            int targetCount = EstimateSettlementCapacity(parameters, biomes, land);
             if (targetCount > world.Settlements.Count)
                 targetCount = world.Settlements.Count;
 
@@ -31,7 +32,7 @@ namespace EmberCrpg.Simulation.Overland
             for (int i = 0; i < selected.Count; i++)
             {
                 var record = selected[i];
-                int tileIndex = ChooseSettlementTile(parameters, record, tileGroups, biomes, occupancy, placements);
+                int tileIndex = ChooseSettlementTile(parameters, record, tileGroups, biomes, land, occupancy, placements);
                 occupancy[tileIndex]++;
 
                 int x = tileIndex % parameters.Width;
@@ -44,11 +45,11 @@ namespace EmberCrpg.Simulation.Overland
             return placements;
         }
 
-        private static int EstimateSettlementCapacity(OverlandParameters parameters, BiomeKind[] biomes)
+        private static int EstimateSettlementCapacity(OverlandParameters parameters, BiomeKind[] biomes, bool[] land)
         {
             double capacity = 0d;
             for (int i = 0; i < biomes.Length; i++)
-                capacity += BiomeDensityWeight(biomes[i]) * parameters.SettlementDensity;
+                capacity += BiomeDensityWeight(biomes[i], land[i]) * parameters.SettlementDensity;
 
             int rounded = (int)System.Math.Round(capacity, System.MidpointRounding.AwayFromZero);
             return rounded < 12 ? 12 : rounded;
@@ -104,16 +105,19 @@ namespace EmberCrpg.Simulation.Overland
             SettlementRecord record,
             Dictionary<ulong, List<int>> tileGroups,
             BiomeKind[] biomes,
+            bool[] land,
             int[] occupancy,
             List<OverlandSettlement> placements)
         {
             var candidates = tileGroups[record.Region.Value];
-            int bestTile = candidates[0];
+            int bestTile = -1;
             int bestScore = int.MinValue;
 
             for (int i = 0; i < candidates.Count; i++)
             {
                 int tileIndex = candidates[i];
+                if (!land[tileIndex])
+                    continue;
                 int x = tileIndex % parameters.Width;
                 int y = tileIndex / parameters.Width;
                 int score = ScoreTile(parameters, record.Size, biomes[tileIndex], x, y, occupancy[tileIndex], placements);
@@ -124,7 +128,37 @@ namespace EmberCrpg.Simulation.Overland
                 }
             }
 
-            return bestTile;
+            return bestTile >= 0
+                ? bestTile
+                : ChooseGlobalLandTile(parameters, record.Size, biomes, land, occupancy, placements, candidates[0]);
+        }
+
+        private static int ChooseGlobalLandTile(
+            OverlandParameters parameters,
+            SettlementSize size,
+            BiomeKind[] biomes,
+            bool[] land,
+            int[] occupancy,
+            List<OverlandSettlement> placements,
+            int fallback)
+        {
+            int bestTile = -1;
+            int bestScore = int.MinValue;
+            for (int tileIndex = 0; tileIndex < land.Length; tileIndex++)
+            {
+                if (!land[tileIndex])
+                    continue;
+                int x = tileIndex % parameters.Width;
+                int y = tileIndex / parameters.Width;
+                int score = ScoreTile(parameters, size, biomes[tileIndex], x, y, occupancy[tileIndex], placements);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestTile = tileIndex;
+                }
+            }
+
+            return bestTile >= 0 ? bestTile : fallback;
         }
 
         private static int ScoreTile(
@@ -168,13 +202,16 @@ namespace EmberCrpg.Simulation.Overland
             return best;
         }
 
-        private static double BiomeDensityWeight(BiomeKind biome)
+        private static double BiomeDensityWeight(BiomeKind biome, bool isLand)
         {
+            if (!isLand)
+                return 0d;
+
             switch (biome)
             {
                 case BiomeKind.Plains: return 1.20d;
                 case BiomeKind.Forest: return 0.95d;
-                case BiomeKind.Coast: return 1.05d;
+                case BiomeKind.Coast: return 1.10d;
                 case BiomeKind.Mountain: return 0.55d;
                 case BiomeKind.Swamp: return 0.45d;
                 case BiomeKind.Desert: return 0.35d;
@@ -185,7 +222,7 @@ namespace EmberCrpg.Simulation.Overland
 
         private static double BiomeSettlementWeight(BiomeKind biome, SettlementSize size)
         {
-            double weight = BiomeDensityWeight(biome);
+            double weight = BiomeDensityWeight(biome, true);
             if (size == SettlementSize.Capital || size == SettlementSize.City)
             {
                 if (biome == BiomeKind.Plains || biome == BiomeKind.Coast || biome == BiomeKind.Forest) weight += 0.30d;
