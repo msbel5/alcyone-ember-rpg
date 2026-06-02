@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Configuration;
+using EmberCrpg.Domain.Worldgen; // WorldHistoryEvent / WorldHistoryKind for the real pre-dossier reveal
 using EmberCrpg.Presentation.Ember.UI; // EmberWorldGenIntent lives here (E7-014 fix: was wrongly .Worldgen)
 using EmberCrpg.Presentation.Ember.Worldgen;
 using UnityEngine;
@@ -151,7 +152,92 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             return full.Substring(0, count);
         }
 
+        // "The World Awakens" (pre-dossier): build the history reveal from the REAL deterministic world the
+        // player is about to inhabit, not a templated fake. Runs the SAME genesis-answers -> WorldgenService
+        // path the gameplay scene uses, with the SAME seed, so the centuries of geography + civilisation shown
+        // here ARE the world that loads after the dossier. Falls back to the templated reveal if generation
+        // fails for any reason (the reveal must never block creation).
         private void BuildHistoryTimeline()
+        {
+            _historyTimeline.Clear();
+            var world = TryGenerateWorldPreview();
+            if (world == null || world.History == null || world.History.Count == 0)
+            {
+                BuildTemplatedHistoryTimeline();
+                return;
+            }
+
+            var history = world.History;
+            int firstYear = history[0].Year;
+            int lastYear = history[history.Count - 1].Year;
+            _historyTimeline.Add(
+                "The world awakens - a continent of " + world.Settlements.Count + " settlements across "
+                + world.Regions.Count + " regions, shaped over " + Mathf.Max(1, lastYear - firstYear)
+                + " years of history.");
+
+            var notable = SelectNotableHistory(history, 24);
+            for (int i = 0; i < notable.Count; i++)
+            {
+                var e = notable[i];
+                string subject = string.IsNullOrWhiteSpace(e.Subject) ? string.Empty : e.Subject + " - ";
+                _historyTimeline.Add("Year " + e.Year + " - " + subject + e.Detail);
+            }
+        }
+
+        // Generate the player's actual world for the reveal. Pure + deterministic (no hydration / no sim side
+        // effects): mirrors DomainSimulationAdapter.SeedWorld's WorldGenesisMapper -> WorldgenParameters ->
+        // WorldgenService.Generate path with the SAME _seed, so reveal == played world.
+        private EmberCrpg.Simulation.Worldgen.GeneratedWorld TryGenerateWorldPreview()
+        {
+            try
+            {
+                var style = WorldGenesisMapper.ToStyle(_worldMood);
+                var genre = WorldGenesisMapper.ToGenre(_worldMood, _playerCalling, _fateStart);
+                var parameters = EmberCrpg.Simulation.Worldgen.WorldgenParameters.For(style, genre);
+                return EmberCrpg.Simulation.Worldgen.WorldgenService.Generate(_seed, parameters);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[charcreation] world preview generation failed; using templated reveal. " + ex.Message);
+                return null;
+            }
+        }
+
+        // Pick a readable, chronological arc from the (thousands of) generated events: prefer high-signal kinds
+        // (life, foundings, migrations, wars, alliances, crownings); if too few, sample all events. Even sampling
+        // across the list spans the genesis -> migration -> civilisation -> present arc the designer wants.
+        private static System.Collections.Generic.List<WorldHistoryEvent> SelectNotableHistory(
+            System.Collections.Generic.IReadOnlyList<WorldHistoryEvent> history, int max)
+        {
+            var notableKinds = new System.Collections.Generic.HashSet<WorldHistoryKind>
+            {
+                WorldHistoryKind.LifeEmerged, WorldHistoryKind.CivilizationFounded,
+                WorldHistoryKind.SettlementFounded, WorldHistoryKind.MigrationWave,
+                WorldHistoryKind.WarDeclared, WorldHistoryKind.BattleFought,
+                WorldHistoryKind.SiteSacked, WorldHistoryKind.CivilizationDestroyed,
+                WorldHistoryKind.FactionAlliance, WorldHistoryKind.LeaderCrowned,
+            };
+            var filtered = new System.Collections.Generic.List<WorldHistoryEvent>();
+            for (int i = 0; i < history.Count; i++)
+                if (notableKinds.Contains(history[i].Kind)) filtered.Add(history[i]);
+
+            var source = filtered.Count >= max
+                ? filtered
+                : new System.Collections.Generic.List<WorldHistoryEvent>(history);
+            if (source.Count <= max)
+                return source;
+
+            var result = new System.Collections.Generic.List<WorldHistoryEvent>(max);
+            for (int i = 0; i < max; i++)
+            {
+                int idx = (int)((long)i * (source.Count - 1) / (max - 1));
+                result.Add(source[idx]);
+            }
+            return result;
+        }
+
+        // Templated fallback reveal (used only if the real generation above fails). Original creation flow.
+        private void BuildTemplatedHistoryTimeline()
         {
             _historyTimeline.Clear();
             var score = _creationService.ScoreAnswers(_answerChoiceIds);
