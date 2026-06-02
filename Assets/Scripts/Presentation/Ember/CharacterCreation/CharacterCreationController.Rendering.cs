@@ -319,9 +319,13 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             // start-scene question is NOT wired to the actual start location (it loaded the same scene
             // regardless). f3f6ef28 re-added it via AI drift — this re-removes it. The authoritative world
             // is generated in the TARGET SCENE from EmberWorldGenIntent.Pending. Keep this straight-to-game.
-            LoadingScreen.SetProgress(1f, "Entering " + _firstSceneName);
+            LoadingScreen.SetProgress(1f, "Entering the generated world");
             yield return new WaitForSecondsRealtime(0.5f);
-            UnityEngine.SceneManagement.SceneManager.LoadScene(_firstSceneName);
+            // World pivot: ALWAYS enter the runtime-generated world. The _firstSceneName plumbing (and the
+            // CharacterCreationUI [SerializeField] baked as "SmithingOverworld", which calls SetStartScene and
+            // overrode the controller default) is bypassed here so New Game never lands in a baked
+            // vertical-slice scene again — the World Scene Director builds the starting settlement instead.
+            UnityEngine.SceneManagement.SceneManager.LoadScene(EmberScenes.GeneratedWorld);
         }
 
         // ----- World-genesis choice screens (stages 2-4) -----------------------------------
