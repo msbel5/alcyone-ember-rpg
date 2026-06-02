@@ -13,6 +13,7 @@ namespace EmberCrpg.Editor.Ember.Build
         {
             BuildSettingsSceneRegistrar.AddAllScenesToBuildSettings();
             ConfigureOnnxNativePlugins();
+            EnsureRuntimeShadersIncluded();
             var output = "Builds/Windows64/alcyone-ember-rpg.exe";
             Directory.CreateDirectory(Path.GetDirectoryName(output));
             var oldBackend = PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone);
@@ -95,6 +96,47 @@ namespace EmberCrpg.Editor.Ember.Build
             importer.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows64, windows64);
             importer.SetPlatformData(BuildTarget.StandaloneWindows64, "CPU", "x86_64");
             importer.SaveAndReimport();
+        }
+
+        // Some runtime materials resolve their shader via Shader.Find at play time — notably the streaming
+        // terrain ("Universal Render Pipeline/Terrain/Lit"). Unity STRIPS any shader that no built asset
+        // references, so deleting the old baked scenes removed the last reference and the terrain rendered
+        // MAGENTA in the player. Force-include the runtime-resolved shaders into GraphicsSettings so they
+        // always ship, independent of which scenes exist. Resolved here (Editor has every shader) by name.
+        private static void EnsureRuntimeShadersIncluded()
+        {
+            string[] names =
+            {
+                "Universal Render Pipeline/Terrain/Lit",
+                "Universal Render Pipeline/Lit",
+                "Skybox/Procedural",
+            };
+
+            var settings = UnityEngine.Rendering.GraphicsSettings.GetGraphicsSettings();
+            var so = new SerializedObject(settings);
+            var list = so.FindProperty("m_AlwaysIncludedShaders");
+            bool changed = false;
+            foreach (var name in names)
+            {
+                var shader = UnityEngine.Shader.Find(name);
+                if (shader == null) continue;
+                bool present = false;
+                for (int i = 0; i < list.arraySize; i++)
+                {
+                    if (list.GetArrayElementAtIndex(i).objectReferenceValue == shader) { present = true; break; }
+                }
+                if (present) continue;
+                list.InsertArrayElementAtIndex(list.arraySize);
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = shader;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                so.ApplyModifiedProperties();
+                AssetDatabase.SaveAssets();
+                UnityEngine.Debug.Log("[Windows64BuildMenu] Force-included runtime shaders (terrain/lit/skybox) so they are not stripped.");
+            }
         }
     }
 }

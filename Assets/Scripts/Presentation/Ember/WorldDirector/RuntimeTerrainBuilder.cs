@@ -81,8 +81,28 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var texture = RuntimeMaterialPalette.LoadGeneratedTexture(RuntimeMaterialPalette.GroundTextureId(biome))
                           ?? SolidTexture(RuntimeMaterialPalette.GroundColor(biome));
             var layer = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(14f, 14f) };
+
+            // The terrain shader is force-included at build time (Windows64BuildMenu.EnsureRuntimeShadersIncluded),
+            // but fall back robustly so the ground is NEVER the magenta "missing shader" colour: terrain shader ->
+            // URP/Lit (kept by the buildings) -> Standard. On a non-terrain fallback, paint the biome texture as
+            // the base map (tiled) so the ground still reads as textured ground rather than a flat colour.
             var shader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
-            var material = shader != null ? new Material(shader) : null;
+            Material material;
+            if (shader != null)
+            {
+                material = new Material(shader);
+            }
+            else
+            {
+                var lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                material = lit != null ? new Material(lit) : null;
+                if (material != null && texture != null)
+                {
+                    material.mainTexture = texture;
+                    if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", texture);
+                    if (material.HasProperty("_BaseMap_ST")) material.SetTextureScale("_BaseMap", new Vector2(18f, 18f));
+                }
+            }
 
             var assets = new BiomeAssets(layer, material);
             BiomeCache[biome] = assets;
