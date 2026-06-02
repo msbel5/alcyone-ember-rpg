@@ -8,6 +8,7 @@ namespace EmberCrpg.Simulation.Generation
     public sealed class StaticPromptCatalog
     {
         public const string EmberStyleHeader = "dark-fantasy ember-warm palette, painterly low-saturation, transparent background, single subject centered";
+        public const string EmberCharacterPortraitHeader = EmberStyleHeader + ", exactly one person, centered character bust, no second person, no crowd";
         // Floors/walls are tileable surfaces, NOT centered icons: this header replaces the icon
         // "transparent background, single subject centered" with a seamless-fill directive.
         public const string EmberFloorHeader = "dark-fantasy ember-warm palette, painterly low-saturation, seamless tileable texture, top-down orthographic surface filling the entire frame edge to edge, no central subject";
@@ -92,9 +93,14 @@ namespace EmberCrpg.Simulation.Generation
             AddGeometric(prompts, geometricCatalog, "spell_lightning", "lightning");
             Add(prompts, "logo_full", "the word Ember implied by a forged crest and coal-lit crown silhouette");
             Add(prompts, "logo_compact", "a compact ember crown mark cut from blackened brass");
-            // The AI Dungeon Master / Oracle — the unseen narrator's face beside the Ember logo. EmberStyleHeader
-            // already enforces a centered single subject on a transparent background, so this reads as a bust.
-            Add(prompts, "dm_portrait", "a hooded loremaster oracle, the unseen dungeon master, weathered ember-lit face half in shadow beneath a deep cowl, faintly glowing coal-orange eyes, ancient keeper of the world's fate, solemn painterly character portrait bust");
+            // The AI Dungeon Master / Oracle — explicit one-person wording prevents two-face portrait drift.
+            AddPortrait(prompts, "dm_portrait", "a hooded loremaster oracle, the unseen dungeon master, weathered ember-lit face half in shadow beneath a deep cowl, faintly glowing coal-orange eyes, ancient keeper of the world's fate, solemn painterly character portrait");
+            AddPortrait(prompts, "portrait_npc_blacksmith", "a soot-marked village blacksmith, leather apron, ember-lit face, steady artisan gaze, dark fantasy NPC portrait");
+            AddPortrait(prompts, "portrait_npc_merchant", "a shrewd travelling merchant, layered trade cloak, warm lantern light, observant expression, dark fantasy NPC portrait");
+            AddPortrait(prompts, "portrait_npc_innkeeper", "a weathered innkeeper, simple tavern clothes, hearth-warm face, welcoming but wary expression, dark fantasy NPC portrait");
+            AddPortrait(prompts, "portrait_npc_warrior", "a rugged outlaw warrior, worn cloak and leather armor, scarred ember-lit face, guarded expression, dark fantasy NPC portrait");
+            AddPortrait(prompts, "portrait_npc_knight", "a stern city guard knight, dark mail collar, ember glint on cheek and helm rim, disciplined expression, dark fantasy NPC portrait");
+            AddPortrait(prompts, "portrait_npc_sage", "a quiet scholar priest, ash-grey robe, old book clasp at the collar, thoughtful ember-lit face, dark fantasy NPC portrait");
 
             // Doors + windows: centered fixtures (EmberStyleHeader single subject), like item icons.
             Add(prompts, "door_oak", "a heavy oak plank door bound with iron studs, dark-fantasy fixture, straight-on front view");
@@ -114,6 +120,11 @@ namespace EmberCrpg.Simulation.Generation
         private static void Add(Dictionary<string, string> prompts, string key, string body)
         {
             prompts[key] = EmberStyleHeader + ", " + body + ", " + EmberNegativeFooter;
+        }
+
+        private static void AddPortrait(Dictionary<string, string> prompts, string key, string body)
+        {
+            prompts[key] = EmberCharacterPortraitHeader + ", " + body + ", no duplicate face, no twin, " + EmberNegativeFooter;
         }
 
         private static void AddGeometric(

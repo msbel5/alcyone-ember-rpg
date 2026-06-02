@@ -56,5 +56,31 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 Assert.That(entry.ModelHint, Is.EqualTo("sdxl-turbo"), entry.Id);
             }
         }
+
+        [Test]
+        public void GeneratedNpcPortraitPrompts_ForceExactlyOnePerson()
+        {
+            var catalog = StaticPromptCatalog.CreateDefault();
+            string[] ids =
+            {
+                "dm_portrait",
+                "portrait_npc_blacksmith",
+                "portrait_npc_merchant",
+                "portrait_npc_innkeeper",
+                "portrait_npc_warrior",
+                "portrait_npc_knight",
+                "portrait_npc_sage"
+            };
+
+            foreach (var id in ids)
+            {
+                Assert.That(catalog.TryGetPrompt(id, out var prompt), Is.True, id);
+                Assert.That(prompt, Does.Contain("exactly one person"), id);
+                Assert.That(prompt, Does.Contain("centered character bust"), id);
+                Assert.That(prompt, Does.Contain("no second person"), id);
+                Assert.That(prompt, Does.Contain("no crowd"), id);
+                Assert.That(prompt, Does.Contain("no duplicate face"), id);
+            }
+        }
     }
 }

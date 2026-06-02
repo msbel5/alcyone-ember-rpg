@@ -128,3 +128,7 @@ Assets/Generated/Core/*.png.meta
 Assets/Generated/Core/*.json
 Assets/Generated/Core/*.jpg
 Assets/Generated/Core/*.jpg.meta
+
+# Codex sandbox validation redirects
+.validation-appdata/
+.validation-dotnet-home/

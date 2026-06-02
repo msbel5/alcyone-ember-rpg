@@ -29,11 +29,17 @@ namespace EmberCrpg.Infrastructure.AiDm
         private readonly string _modelPath;
         private readonly LocalQwenClient _fallback;
         private readonly string _downloadUrl;
+        private readonly SemaphoreSlim _inferenceLock = new SemaphoreSlim(1, 1);
+        private readonly object _loadLock = new object();
+
+        private const uint NativeContextTokens = 2048;
+        private const uint NativeBatchTokens = 512;
+        private const int MaxNativePromptChars = 6000;
+        private const int MaxNativeGenerationTokens = 192;
 
 #if USE_LLAMASHARP
         private LLamaWeights _weights;
-        private LLamaContext _context;
-        private InteractiveExecutor _executor;
+        private StatelessExecutor _executor;
 #endif
 #pragma warning disable CS0649 // _isInitialised is only written under USE_LLAMASHARP — that's intentional.
         private bool _isInitialised;
@@ -138,7 +144,7 @@ namespace EmberCrpg.Infrastructure.AiDm
                 {
                     return _fallback != null
                         ? await _fallback.CompleteAsync(request, cancellationToken).ConfigureAwait(false)
-                        : new LlmResponse("Native model missing and no fallback.", null, 0);
+                        : EmptyResponse();
                 }
 
                 await Task.Run(() => LoadModelSync(), cancellationToken).ConfigureAwait(false);
@@ -147,13 +153,16 @@ namespace EmberCrpg.Infrastructure.AiDm
             try
             {
                 var prompt = BuildPrompt(request);
+                if (string.IsNullOrWhiteSpace(prompt)) return EmptyResponse();
                 // LLamaSharp 0.27 API: InferenceParams.Seed removed (now lives
                 // on the SamplingPipeline), and InteractiveExecutor.Infer()
                 // renamed to InferAsync() returning IAsyncEnumerable<string>.
                 var inferenceParams = new InferenceParams()
                 {
-                    MaxTokens = request.MaxTokens,
+                    MaxTokens = Math.Min(request.MaxTokens, MaxNativeGenerationTokens),
                     AntiPrompts = new[] { "User:", "Memory" },
+                    OverflowStrategy = ContextOverflowStrategy.TruncateAndReprefill,
+                    ContextTruncationPercentage = 0.5f,
                     SamplingPipeline = new LLama.Sampling.DefaultSamplingPipeline
                     {
                         Seed = (uint)request.Seed,
@@ -162,27 +171,32 @@ namespace EmberCrpg.Infrastructure.AiDm
                 };
 
                 string resultText = "";
-                // DET-04: bound native generation with a timeout so a stalled inference can't pin the
-                // calling (worker) thread forever — the HTTP client got this in EMB-018, native did not.
-                // On timeout the CancellationToken trips MoveNextAsync, which throws and is caught below,
-                // degrading to the fallback/empty response (mirrors LlmHttpClientCore).
-                using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                await _inferenceLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
                 {
-                    timeout.CancelAfter(TimeSpan.FromSeconds(60));
-                    // Drain the async stream synchronously to keep the existing sync Complete() signature.
-                    var enumerator = _executor.InferAsync(prompt, inferenceParams, timeout.Token)
-                        .GetAsyncEnumerator(timeout.Token);
-                    try
+                    // DET-04: bound native generation with a timeout so a stalled inference can't pin the
+                    // calling (worker) thread forever. The serial lock keeps llama.cpp context use single-file.
+                    using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                     {
-                        while (await enumerator.MoveNextAsync().AsTask().ConfigureAwait(false))
+                        timeout.CancelAfter(TimeSpan.FromSeconds(60));
+                        var enumerator = _executor.InferAsync(prompt, inferenceParams, timeout.Token)
+                            .GetAsyncEnumerator(timeout.Token);
+                        try
                         {
-                            resultText += enumerator.Current;
+                            while (await enumerator.MoveNextAsync().AsTask().ConfigureAwait(false))
+                            {
+                                resultText += enumerator.Current;
+                            }
+                        }
+                        finally
+                        {
+                            await enumerator.DisposeAsync().AsTask().ConfigureAwait(false);
                         }
                     }
-                    finally
-                    {
-                        await enumerator.DisposeAsync().AsTask().ConfigureAwait(false);
-                    }
+                }
+                finally
+                {
+                    _inferenceLock.Release();
                 }
 
                 return new LlmResponse(StripTrailingTurnMarkers(resultText), null, 0);
@@ -191,12 +205,12 @@ namespace EmberCrpg.Infrastructure.AiDm
             {
                 return _fallback != null
                     ? await _fallback.CompleteAsync(request, cancellationToken).ConfigureAwait(false)
-                    : new LlmResponse($"Native error: {ex.Message}", null, 0);
+                    : EmptyResponse();
             }
 #else
             return _fallback != null
                 ? await _fallback.CompleteAsync(request, cancellationToken).ConfigureAwait(false)
-                : new LlmResponse("Native LLM (LLamaSharp) not enabled or package missing. Falling back.", null, 0);
+                : EmptyResponse();
 #endif
         }
 
@@ -204,15 +218,17 @@ namespace EmberCrpg.Infrastructure.AiDm
         {
             var sb = new System.Text.StringBuilder();
             if (!string.IsNullOrEmpty(request.SystemPrompt))
-                sb.Append("<|im_start|>system\n").Append(request.SystemPrompt).Append("<|im_end|>\n");
-            
-            foreach (var turn in request.RecentTurns)
+                sb.Append("<|im_start|>system\n").Append(ClampSegment(request.SystemPrompt, 2400)).Append("<|im_end|>\n");
+
+            var turns = request.RecentTurns;
+            int start = turns == null ? 0 : Math.Max(0, turns.Count - 4);
+            for (int i = start; turns != null && i < turns.Count; i++)
             {
-                sb.Append("<|im_start|>user\n").Append(turn).Append("<|im_end|>\n");
+                sb.Append("<|im_start|>user\n").Append(ClampSegment(turns[i], 900)).Append("<|im_end|>\n");
             }
             
             sb.Append("<|im_start|>assistant\n");
-            return sb.ToString();
+            return ClampPrompt(sb.ToString());
         }
 
         // E7-016: on-demand model download is opt-in only. Returns true exclusively when the user has set
@@ -279,12 +295,20 @@ namespace EmberCrpg.Infrastructure.AiDm
         private void LoadModelSync()
         {
 #if USE_LLAMASHARP
-            if (_isInitialised) return;
-            var parameters = new ModelParams(_modelPath) { ContextSize = 2048, GpuLayerCount = -1 };
-            _weights = LLamaWeights.LoadFromFile(parameters);
-            _context = _weights.CreateContext(parameters);
-            _executor = new InteractiveExecutor(_context);
-            _isInitialised = true;
+            lock (_loadLock)
+            {
+                if (_isInitialised) return;
+                var parameters = new ModelParams(_modelPath)
+                {
+                    ContextSize = NativeContextTokens,
+                    BatchSize = NativeBatchTokens,
+                    UBatchSize = NativeBatchTokens,
+                    GpuLayerCount = -1
+                };
+                _weights = LLamaWeights.LoadFromFile(parameters);
+                _executor = new StatelessExecutor(_weights, parameters);
+                _isInitialised = true;
+            }
 #endif
         }
 
@@ -297,9 +321,29 @@ namespace EmberCrpg.Infrastructure.AiDm
         public void Dispose()
         {
 #if USE_LLAMASHARP
-            _context?.Dispose();
+            _executor?.Context?.Dispose();
             _weights?.Dispose();
 #endif
+            _inferenceLock.Dispose();
+        }
+
+        private static LlmResponse EmptyResponse()
+        {
+            return new LlmResponse(string.Empty, null, 0);
+        }
+
+        private static string ClampSegment(string value, int maxChars)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= maxChars) return value ?? string.Empty;
+            return value.Substring(value.Length - maxChars);
+        }
+
+        private static string ClampPrompt(string prompt)
+        {
+            if (string.IsNullOrEmpty(prompt) || prompt.Length <= MaxNativePromptChars) return prompt ?? string.Empty;
+            var suffix = prompt.Substring(prompt.Length - MaxNativePromptChars);
+            var turnStart = suffix.IndexOf("<|im_start|>", StringComparison.Ordinal);
+            return turnStart >= 0 ? suffix.Substring(turnStart) : suffix;
         }
     }
 }

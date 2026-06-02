@@ -27,5 +27,31 @@ namespace EmberCrpg.Tests.EditMode.Generation
                     Assert.That(entry.StaticPromptKey, Is.Not.Empty, entry.Id);
             }
         }
+
+        [Test]
+        public void DefaultManifest_IncludesGeneratedNpcArchetypePortraits()
+        {
+            var entries = CoreAssetManifest.CreateDefault().Entries;
+            string[] ids =
+            {
+                "dm_portrait",
+                "portrait_npc_blacksmith",
+                "portrait_npc_merchant",
+                "portrait_npc_innkeeper",
+                "portrait_npc_warrior",
+                "portrait_npc_knight",
+                "portrait_npc_sage"
+            };
+
+            foreach (var id in ids)
+            {
+                var entry = entries.Single(e => e.Id == id);
+                Assert.That(entry.Category, Is.EqualTo("portrait"), id);
+                Assert.That(entry.ExpectedPath, Is.EqualTo("Assets/Generated/Core/" + id + ".png"), id);
+                Assert.That(entry.RequiresGeneration, Is.True, id);
+                Assert.That(entry.Width, Is.EqualTo(512), id);
+                Assert.That(entry.Height, Is.EqualTo(512), id);
+            }
+        }
     }
 }

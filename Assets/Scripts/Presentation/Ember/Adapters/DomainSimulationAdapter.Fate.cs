@@ -80,7 +80,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // applied via the adapter's main-thread apply queue (drained in AdvanceTick), NOT via the
             // implicit SynchronizationContext — so the AUTHORITATIVE _world.ToolCallTrace write can
             // never land on a worker thread (the EMB-007 race) even in a headless run with no context.
-            var response = await Task.Run(() => router.Complete(request, out _));
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             _mainThreadApply.Enqueue(() =>
             {
                 // The OUTCOME (bucket/roll) stays deterministic; only the FLAVOUR text becomes the LLM line.

@@ -8,6 +8,7 @@ namespace EmberCrpg.Presentation.Ember.UI
     public static class DialogPortraitKey
     {
         public const string Default = "portrait_npc_placeholder";
+        public const string DungeonMaster = "dm_portrait";
 
         public static string FromSource(IDialogSource source)
         {
@@ -18,8 +19,10 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         public static bool IsPortraitKey(string key)
         {
-            return !string.IsNullOrWhiteSpace(key)
-                && key.Trim().StartsWith("portrait_", StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(key)) return false;
+            var trimmed = key.Trim();
+            return string.Equals(trimmed, DungeonMaster, StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith("portrait_", StringComparison.OrdinalIgnoreCase);
         }
 
         public static string Normalize(string raw)
@@ -34,6 +37,9 @@ namespace EmberCrpg.Presentation.Ember.UI
             key = key.Replace(' ', '_').Trim().ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(key))
                 return Default;
+
+            if (string.Equals(key, DungeonMaster, StringComparison.OrdinalIgnoreCase))
+                return DungeonMaster;
 
             if (string.Equals(key, Default, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(key, "portrait_player_placeholder", StringComparison.OrdinalIgnoreCase))

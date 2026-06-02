@@ -33,6 +33,7 @@ namespace EmberCrpg.Simulation.Generation
             // logo so the menu shows it early. Its own "portrait" category so the Options Generated-Assets panel
             // lists it as a distinct group, beside (not buried under) the logos.
             entries.Add(new ManifestEntry("dm_portrait", "portrait", "Assets/Generated/Core/dm_portrait.png", "dm_portrait", 512, 512, true, 300, "sd15-lcm"));
+            AddMany(entries, "portrait", 512, 512, true, "sd15-lcm", "npc_blacksmith", "npc_merchant", "npc_innkeeper", "npc_warrior", "npc_knight", "npc_sage");
             AddMany(entries, "ui", 512, 512, true, "sdxl-turbo", "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
             entries.Add(new ManifestEntry("font_body", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_heading", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));

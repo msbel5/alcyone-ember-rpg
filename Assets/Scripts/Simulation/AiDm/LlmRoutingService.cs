@@ -39,7 +39,7 @@ namespace EmberCrpg.Simulation.AiDm
 
             if (_local != null)
             {
-                var response = _local(request);
+                var response = DispatchSafely(_local, request);
                 // PR#175 bot review fix: a valid local response may carry no text and
                 // only ProposedToolCalls (the model decided to call a tool instead of
                 // narrating). Treat that as success — falling back to cloud would
@@ -53,7 +53,7 @@ namespace EmberCrpg.Simulation.AiDm
 
             if (_cloud != null)
             {
-                var response = _cloud(request);
+                var response = DispatchSafely(_cloud, request);
                 if (response != null)
                 {
                     chosen = _cloudKind;
@@ -74,8 +74,25 @@ namespace EmberCrpg.Simulation.AiDm
 
         private static bool HasUsefulPayload(LlmResponse response)
         {
-            if (!string.IsNullOrEmpty(response.Text)) return true;
+            if (!string.IsNullOrEmpty(response.Text) && !LooksLikeProviderFailure(response.Text)) return true;
             return response.ProposedToolCalls != null && response.ProposedToolCalls.Count > 0;
+        }
+
+        private static LlmResponse DispatchSafely(LlmDispatch dispatch, LlmRequest request)
+        {
+            try { return dispatch(request); }
+            catch { return null; }
+        }
+
+        private static bool LooksLikeProviderFailure(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            var lower = text.Trim().ToLowerInvariant();
+            return lower.StartsWith("native error:", StringComparison.Ordinal)
+                || lower.Contains("llama_decode failed")
+                || lower.Contains("invalidinputbatch")
+                || lower.Contains("native model missing")
+                || lower.Contains("llamasharp) not enabled");
         }
     }
 }

@@ -31,6 +31,28 @@ namespace EmberCrpg.Tests.EditMode.AiDm
         }
 
         [Test]
+        public void LocalThrows_FallsBackToCloud()
+        {
+            var service = new LlmRoutingService(
+                local: _ => throw new System.InvalidOperationException("llama_decode failed: InvalidInputBatch"),
+                cloud: _ => new LlmResponse("cloud", null, 1));
+            var response = service.Complete(Req(), out var chosen);
+            Assert.That(chosen, Is.EqualTo(LlmProviderKind.CloudAnthropic));
+            Assert.That(response.Text, Is.EqualTo("cloud"));
+        }
+
+        [Test]
+        public void LocalNativeFailureText_IsNotUsefulPayload()
+        {
+            var service = new LlmRoutingService(
+                local: _ => new LlmResponse("Native error: llama_decode failed: InvalidInputBatch", null, 0),
+                cloud: null);
+            var response = service.Complete(Req(), out var chosen);
+            Assert.That(chosen, Is.EqualTo(LlmProviderKind.Mock));
+            Assert.That(response.Text, Is.EqualTo(string.Empty));
+        }
+
+        [Test]
         public void BothNull_ReturnsEmptyAndMockKind()
         {
             var service = new LlmRoutingService(null, null);

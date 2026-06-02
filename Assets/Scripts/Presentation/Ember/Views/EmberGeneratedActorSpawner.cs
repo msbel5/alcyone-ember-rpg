@@ -283,11 +283,17 @@ namespace EmberCrpg.Presentation.Ember.Views
                 {
                     var key = _placeholderSpriteKeys[i];
                     if (string.IsNullOrEmpty(key)) continue;
+                    if (IsPortraitKey(key)) continue;
                     var s = _spriteRegistry.GetSprite(key);
                     if (s != null) return s;
                 }
             }
             return GetOrCreateFallbackSprite();
+        }
+
+        private static bool IsPortraitKey(string key)
+        {
+            return key.IndexOf("portrait", System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         // Last-resort sprite for the (rare) case where no registry sprite resolves, so a billboard is

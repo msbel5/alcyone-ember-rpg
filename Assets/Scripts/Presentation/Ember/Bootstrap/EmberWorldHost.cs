@@ -355,7 +355,11 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         IReadOnlyList<string> ISpellBarSource.GetSlots() => _worldView.SpellSlots;
         int ISpellBarSource.GetSelectedSlot() => _selectedSpellSlot;
         CombatHudState ICombatHudSource.Read() => _hud.CombatHud;
-        public Sprite GetSprite(string name) => _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;
+        public Sprite GetSprite(string name)
+        {
+            var registrySprite = _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;
+            return registrySprite != null ? registrySprite : GeneratedCoreSpriteLoader.TryLoadPortrait(name);
+        }
 
         /// <summary>
         /// Audit (eighth pass D-P2): static convenience for UI panels that
@@ -416,6 +420,9 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         public string GetPortraitName()
         {
+            if (!string.IsNullOrEmpty(_fateLine))
+                return DialogPortraitKey.DungeonMaster;
+
             // Forward to the adapter when it carries a per-NPC portrait id so the dialog panel
             // gets a real sprite name (e.g. "portrait_sage_nera") instead of the gray
             // placeholder. Falls back to the neutral placeholder when no adapter / no portrait.

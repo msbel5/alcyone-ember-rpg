@@ -230,6 +230,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private static string SanitizeNpcLine(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+            if (LooksLikeLlmProviderFailure(raw)) return string.Empty;
 
             string[] markers =
             {
@@ -246,6 +247,26 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             var head = cut >= 0 ? raw.Substring(0, cut) : raw;
             return head.Trim();
+        }
+
+        private static bool LooksLikeLlmProviderFailure(string raw)
+        {
+            var lower = raw.Trim().ToLowerInvariant();
+            return lower.StartsWith("native error:", System.StringComparison.Ordinal)
+                || lower.Contains("llama_decode failed")
+                || lower.Contains("invalidinputbatch")
+                || lower.Contains("native model missing")
+                || lower.Contains("llamasharp) not enabled");
+        }
+
+        private static LlmResponse CompleteLlmOrEmpty(EmberCrpg.Simulation.AiDm.ILlmRouter router, LlmRequest request)
+        {
+            try { return router.Complete(request, out _); }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogWarning("[DialogLLM] provider failed; keeping deterministic line. " + ex.GetType().Name + ": " + ex.Message);
+                return new LlmResponse(string.Empty, null, 0);
+            }
         }
 
         private async Task GenerateNpcGreetingAsync(NpcSeedRecord npc)
@@ -268,7 +289,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // mutations are applied AFTER the await, which resumes on Unity's main-thread
             // SynchronizationContext — previously _currentDialogLine / _isDialogThinking were
             // written from the worker thread, racing the main-thread dialog reader.
-            var response = await Task.Run(() => router.Complete(request, out _));
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             // DET-02: apply the result on the main-thread tick, not on the await's resumption thread.
             _mainThreadApply.Enqueue(() =>
             {
@@ -313,7 +334,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 new List<string>()
             );
 
-            var response = await Task.Run(() => router.Complete(request, out _));
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             _mainThreadApply.Enqueue(() =>
             {
                 UnityEngine.Debug.Log($"[NpcGreeting-adhoc] actor={actorName} llm-len={(response?.Text?.Length ?? -1)} " +
@@ -443,7 +464,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and
             // applied on the deterministic main-thread tick (not on the await's resumption thread).
-            var response = await Task.Run(() => router.Complete(request, out _));
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             _mainThreadApply.Enqueue(() =>
             {
                 // BUG-DIALOG-EMPTY: same whitespace guard as the greeting path — never overwrite the
@@ -480,7 +501,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
                 new List<string>());
 
-            var response = await Task.Run(() => router.Complete(request, out _));
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             _mainThreadApply.Enqueue(() =>
             {
                 UnityEngine.Debug.Log($"[NpcTopic-adhoc] actor={actorName} topic={topicId} " +
