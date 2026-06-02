@@ -119,9 +119,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 var day = 1 + _tick / 240;
                 var profile = _world.WorldProfile;
+                // Anchor the player in the real generated world: name the settlement they started in.
+                var town = ResolveStartingSettlementName();
+                var where = string.IsNullOrEmpty(town) ? string.Empty : $"   •   {town}";
                 if (profile == null)
-                    return $"Tick {_tick:0000}   Day {day:000}";
-                return $"Tick {_tick:0000}   Day {day:000}   {Spaced(profile.Style)} / {Spaced(profile.Genre)}   Pop {profile.TargetPopulation:N0}";
+                    return $"Tick {_tick:0000}   Day {day:000}{where}";
+                return $"Tick {_tick:0000}   Day {day:000}   {Spaced(profile.Style)} / {Spaced(profile.Genre)}   Pop {profile.TargetPopulation:N0}{where}";
             }
         }
 

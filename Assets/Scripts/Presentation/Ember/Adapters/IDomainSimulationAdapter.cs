@@ -52,6 +52,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         IReadOnlyList<FactionRow> FactionRows { get; }
         IReadOnlyList<InventorySlot> InventorySlots { get; }
         IReadOnlyList<string> SpellSlots { get; }
+
+        /// <summary>The generated overland map for the world-map panel (M key), or null if no world is seeded.</summary>
+        EmberCrpg.Domain.Overland.OverlandMap Overland { get; }
+
+        /// <summary>The player's current overland region tile (their starting settlement's tile, or map centre).</summary>
+        EmberCrpg.Domain.Actors.GridPosition PlayerOverlandTile { get; }
+
+        /// <summary>Display name of the settlement the player started in (for the HUD + map), or null if unknown.</summary>
+        string StartingSettlementName { get; }
         System.Collections.Generic.IReadOnlyList<EmberCrpg.Presentation.Visual.WorldEventRow> RecentWorldEvents(int maxRows);
 
         bool TryReadActor(string actorName, out ActorViewState state);

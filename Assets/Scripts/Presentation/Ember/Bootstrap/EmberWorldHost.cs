@@ -38,6 +38,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         private IPlayerCommandSink _commands;
         private IConsultFateOracle _oracle;
         private WorldViewProjector _worldViewProjector;
+        private OverlandMapPanel _overlandMapPanel; // M-key world map (PRD_overland_map_v1 made visible)
         private InventoryGrid[] _inventoryGrids;
         private int _selectedSpellSlot = 0;
         private string _selectedTopic = "rumors";
@@ -136,6 +137,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             EnsureEmberHud();
             EnsureSidePanels();
             var eventLogHud = EnsureEventLogHudPanel();
+            _overlandMapPanel = EnsureOverlandMapPanel(); // M-key: the generated overland made visible
             EnsureInventoryGrid(); // LIVE-2: single inventory in every scene (before the scan below finds it)
             // LIVE-1 (revised): pause menu LAST — top sibling of the overlay canvas, and creating it after
             // the HUD/dialog/panels means their FindFirstObjectByType<Canvas> can't grab a pause sub-canvas.
@@ -191,6 +193,16 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // default so action scenes aren't cluttered; the player opens it on demand.
             if (EmberInput.ToggleColonyPanels)
                 SetColonyPanelsVisible(!_colonyPanelsVisible);
+
+            // M: open/close the overland world map. The generated overland is otherwise invisible — this
+            // makes the 409,600 km² world (biomes + settlements + the player's home region) legible. Paint
+            // on open; the map is static within a session so it needs no per-frame refresh.
+            if (EmberInput.KeyDown(KeyCode.M))
+            {
+                _overlandMapPanel?.Toggle();
+                if (_overlandMapPanel != null && _overlandMapPanel.IsVisible)
+                    _overlandMapPanel.Render(_worldView.Overland, _worldView.PlayerOverlandTile, _worldView.StartingSettlementName);
+            }
 
             _fateTimer = WorldHostInputPolicy.StepFateTimer(_fateTimer, Time.deltaTime, () => _fateLine = string.Empty);
 

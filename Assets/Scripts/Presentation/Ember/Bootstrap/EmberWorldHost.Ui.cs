@@ -258,6 +258,23 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         }
 
         /// <summary>
+        /// Ensure exactly one full-screen overland map panel (toggled with M). The panel self-builds its
+        /// chrome and starts hidden; it is parented to the overlay canvas so it covers the scene when open.
+        /// Data is pushed by <see cref="Update"/> on toggle, so the generated overland is finally visible.
+        /// </summary>
+        private OverlandMapPanel EnsureOverlandMapPanel()
+        {
+            var existing = Object.FindFirstObjectByType<OverlandMapPanel>(FindObjectsInactive.Include);
+            if (existing != null)
+                return existing;
+
+            var canvas = ResolveOverlayCanvas();
+            var go = new GameObject("OverlandMapPanel", typeof(RectTransform), typeof(OverlandMapPanel));
+            go.transform.SetParent(canvas.transform, worldPositionStays: false);
+            return go.GetComponent<OverlandMapPanel>();
+        }
+
+        /// <summary>
         /// BUG-2: show/hide the standing colony overlay (JobQueue / Faction / ColonyNeeds) as a group via
         /// their CanvasGroups, so action scenes (combat, tavern, ritual, trade) are not cluttered by the
         /// living-world readout unless the player asks for it. Content still polls while hidden (cheap).

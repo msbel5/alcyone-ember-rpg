@@ -40,6 +40,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IReadOnlyList<FactionRow> FactionRows => _factionRows;
         public IReadOnlyList<InventorySlot> InventorySlots => _inventorySlots;
         public IReadOnlyList<string> SpellSlots => _spellSlots;
+        public EmberCrpg.Domain.Overland.OverlandMap Overland => null;            // smoke scenes have no generated world
+        public EmberCrpg.Domain.Actors.GridPosition PlayerOverlandTile => default;
+        public string StartingSettlementName => null;
         public CombatHudState CombatHud => _combatHud;
         public IReadOnlyList<WorldEventRow> RecentWorldEvents(int maxRows) => System.Array.Empty<WorldEventRow>();
 
