@@ -9,7 +9,7 @@ namespace EmberCrpg.Simulation.Overland
     /// <summary>Director for DF-style continent fields: elevation, temperature, moisture, then biome classification.</summary>
     public sealed class WorldGenerationManager
     {
-        private readonly IFieldStrategy _elevation = new ElevationFieldStrategy();
+        private readonly IFieldStrategy _elevation = new PlateElevationFieldStrategy();
         private readonly IFieldStrategy _temperature = new TemperatureFieldStrategy();
         private readonly IFieldStrategy _moisture = new MoistureFieldStrategy();
         private readonly BiomeClassifier _classifier = new BiomeClassifier();
@@ -28,27 +28,529 @@ namespace EmberCrpg.Simulation.Overland
             double[] Build(WorldFieldContext context, double[] elevation);
         }
 
-        private sealed class ElevationFieldStrategy : IFieldStrategy
+        private sealed class PlateElevationFieldStrategy : IFieldStrategy
         {
+            private const int MinPlateCount = 12;
+            private const int MaxPlateCount = 28;
+            private const int LloydRelaxationPasses = 1;
+            private const int DefaultDriftSteps = 2;
+            private const double ConvergentThreshold = 0.14d;
+            private const double TransformThreshold = 0.62d;
+
+            private readonly int _driftSteps;
+
+            public PlateElevationFieldStrategy()
+                : this(DefaultDriftSteps)
+            {
+            }
+
+            private PlateElevationFieldStrategy(int driftSteps)
+            {
+                if (driftSteps < 0)
+                    throw new ArgumentOutOfRangeException(nameof(driftSteps), driftSteps, "Drift steps cannot be negative.");
+                _driftSteps = driftSteps;
+            }
+
             public double[] Build(WorldFieldContext context, double[] elevation)
+            {
+                var rng = new XorShiftRng(context.ElevationSeed ^ 0x5F3759DFu);
+                int plateCount = ChoosePlateCount(context, rng);
+                var plates = BuildPlates(context, rng, plateCount);
+                RelaxPlateCenters(context, plates);
+
+                var finalAssignment = AssignPlates(context, plates, _driftSteps);
+                AssignContinentalCrust(context, rng, plates, finalAssignment);
+                var tectonic = new double[context.TileCount];
+                var ridges = new double[context.TileCount];
+
+                double stepWeight = 1d / (_driftSteps + 1d);
+                for (int step = 0; step <= _driftSteps; step++)
+                {
+                    var assignment = step == _driftSteps ? finalAssignment : AssignPlates(context, plates, step);
+                    AccumulateBoundaryEffects(context, plates, assignment, step, stepWeight, tectonic, ridges);
+                }
+
+                var raw = ComposeRawElevation(context, plates, finalAssignment, tectonic, ridges);
+                return CalibrateSeaLevel(raw, context);
+            }
+
+            private static int ChoosePlateCount(WorldFieldContext context, XorShiftRng rng)
+            {
+                int maximum = MaxPlateCount < context.TileCount ? MaxPlateCount : context.TileCount;
+                int scaledMaximum = MinPlateCount + ((context.Width + context.Height) / 8);
+                if (scaledMaximum < maximum)
+                    maximum = scaledMaximum;
+                int minimum = MinPlateCount < maximum ? MinPlateCount : maximum;
+                if (maximum <= minimum)
+                    return minimum;
+                return minimum + rng.NextInt((maximum - minimum) + 1);
+            }
+
+            private static Plate[] BuildPlates(WorldFieldContext context, XorShiftRng rng, int plateCount)
+            {
+                var plates = new Plate[plateCount];
+                double maxX = context.Width - 1d;
+                double maxY = context.Height - 1d;
+
+                for (int i = 0; i < plateCount; i++)
+                {
+                    double centerX = maxX <= 0d ? 0d : NextUnit(rng) * maxX;
+                    double centerY = maxY <= 0d ? 0d : NextUnit(rng) * maxY;
+                    double driftX = (rng.NextInt(2001) - 1000) / 1000d;
+                    double driftY = (rng.NextInt(2001) - 1000) / 1000d;
+                    double length = Math.Sqrt((driftX * driftX) + (driftY * driftY));
+                    if (length < 0.001d)
+                    {
+                        driftX = 1d;
+                        driftY = 0d;
+                        length = 1d;
+                    }
+
+                    plates[i] = new Plate(
+                        i,
+                        centerX,
+                        centerY,
+                        driftX / length,
+                        driftY / length,
+                        NextUnit(rng));
+                }
+
+                return plates;
+            }
+
+            private static void RelaxPlateCenters(WorldFieldContext context, Plate[] plates)
+            {
+                for (int pass = 0; pass < LloydRelaxationPasses; pass++)
+                {
+                    var assignment = AssignPlates(context, plates, 0);
+                    var sumX = new double[plates.Length];
+                    var sumY = new double[plates.Length];
+                    var counts = new int[plates.Length];
+
+                    for (int y = 0; y < context.Height; y++)
+                    {
+                        for (int x = 0; x < context.Width; x++)
+                        {
+                            int plateId = assignment[context.Index(x, y)];
+                            sumX[plateId] += x;
+                            sumY[plateId] += y;
+                            counts[plateId]++;
+                        }
+                    }
+
+                    for (int i = 0; i < plates.Length; i++)
+                    {
+                        if (counts[i] == 0)
+                            continue;
+                        plates[i].CenterX = (plates[i].CenterX + (sumX[i] / counts[i])) * 0.5d;
+                        plates[i].CenterY = (plates[i].CenterY + (sumY[i] / counts[i])) * 0.5d;
+                    }
+                }
+            }
+
+            private static void AssignContinentalCrust(WorldFieldContext context, XorShiftRng rng, Plate[] plates, int[] finalAssignment)
+            {
+                int cratonCount = 2 + rng.NextInt(2);
+                var cratons = new Craton[cratonCount];
+                double maxX = context.Width - 1d;
+                double maxY = context.Height - 1d;
+                double radius = Math.Max(context.Width, context.Height) * 0.62d;
+                var plateAreas = new int[plates.Length];
+
+                for (int i = 0; i < cratons.Length; i++)
+                {
+                    cratons[i] = new Craton(
+                        maxX <= 0d ? 0d : NextUnit(rng) * maxX,
+                        maxY <= 0d ? 0d : NextUnit(rng) * maxY,
+                        radius * (0.78d + (NextUnit(rng) * 0.34d)));
+                }
+
+                for (int i = 0; i < finalAssignment.Length; i++)
+                    plateAreas[finalAssignment[i]]++;
+
+                var scores = new PlateScore[plates.Length];
+                for (int i = 0; i < plates.Length; i++)
+                {
+                    double bestCluster = 0d;
+                    for (int c = 0; c < cratons.Length; c++)
+                    {
+                        double dx = plates[i].CenterX - cratons[c].X;
+                        double dy = plates[i].CenterY - cratons[c].Y;
+                        double distance = Math.Sqrt((dx * dx) + (dy * dy));
+                        double cluster = Clamp01(1d - (distance / cratons[c].Radius));
+                        if (cluster > bestCluster)
+                            bestCluster = cluster;
+                    }
+
+                    scores[i] = new PlateScore(i, (bestCluster * 2.1d) + (plates[i].ContinentalScore * 0.45d));
+                }
+
+                Array.Sort(scores, ComparePlateScores);
+                int targetContinentalCells = (int)Math.Round(context.TileCount * (0.52d + (NextUnit(rng) * 0.08d)), MidpointRounding.AwayFromZero);
+                int continentalCells = 0;
+
+                for (int rank = 0; rank < scores.Length; rank++)
+                {
+                    var plate = plates[scores[rank].PlateId];
+                    plate.IsContinental = rank == 0 || continentalCells < targetContinentalCells;
+                    if (plate.IsContinental)
+                        continentalCells += plateAreas[plate.Id];
+
+                    double jitter = plate.ContinentalScore - 0.5d;
+                    plate.BaseElevation = plate.IsContinental
+                        ? 0.58d + (jitter * 0.07d)
+                        : 0.20d + (jitter * 0.06d);
+                }
+            }
+
+            private static int ComparePlateScores(PlateScore left, PlateScore right)
+            {
+                int score = right.Score.CompareTo(left.Score);
+                return score != 0 ? score : left.PlateId.CompareTo(right.PlateId);
+            }
+
+            private static int[] AssignPlates(WorldFieldContext context, Plate[] plates, int driftStep)
+            {
+                var result = new int[context.TileCount];
+                double warpRange = Math.Max(0.35d, Math.Min(context.Width, context.Height) * 0.075d);
+
+                for (int y = 0; y < context.Height; y++)
+                {
+                    for (int x = 0; x < context.Width; x++)
+                    {
+                        double wx = x + ((FractalNoise(context.RidgeSeed, context.X01(x) + 101d, context.Y01(y) + 109d, 2, 2.7d) - 0.5d) * warpRange);
+                        double wy = y + ((FractalNoise(context.RidgeSeed, context.X01(x) + 149d, context.Y01(y) + 157d, 2, 2.9d) - 0.5d) * warpRange);
+                        int bestPlate = 0;
+                        double bestDistance = double.MaxValue;
+
+                        for (int i = 0; i < plates.Length; i++)
+                        {
+                            double dx = wx - DriftedX(context, plates[i], driftStep);
+                            double dy = wy - DriftedY(context, plates[i], driftStep);
+                            double distance = (dx * dx) + (dy * dy);
+                            if (distance < bestDistance)
+                            {
+                                bestDistance = distance;
+                                bestPlate = i;
+                            }
+                        }
+
+                        result[context.Index(x, y)] = bestPlate;
+                    }
+                }
+
+                return result;
+            }
+
+            private static void AccumulateBoundaryEffects(
+                WorldFieldContext context,
+                Plate[] plates,
+                int[] assignment,
+                int driftStep,
+                double stepWeight,
+                double[] tectonic,
+                double[] ridges)
+            {
+                for (int y = 0; y < context.Height; y++)
+                {
+                    for (int x = 0; x < context.Width; x++)
+                    {
+                        int index = context.Index(x, y);
+                        int plateId = assignment[index];
+
+                        if (x + 1 < context.Width)
+                            AccumulateBoundaryEdge(context, plates, assignment, x, y, plateId, x + 1, y, assignment[context.Index(x + 1, y)], driftStep, stepWeight, tectonic, ridges);
+                        if (y + 1 < context.Height)
+                            AccumulateBoundaryEdge(context, plates, assignment, x, y, plateId, x, y + 1, assignment[context.Index(x, y + 1)], driftStep, stepWeight, tectonic, ridges);
+                    }
+                }
+            }
+
+            private static void AccumulateBoundaryEdge(
+                WorldFieldContext context,
+                Plate[] plates,
+                int[] assignment,
+                int ax,
+                int ay,
+                int aId,
+                int bx,
+                int by,
+                int bId,
+                int driftStep,
+                double stepWeight,
+                double[] tectonic,
+                double[] ridges)
+            {
+                if (aId == bId)
+                    return;
+
+                var a = plates[aId];
+                var b = plates[bId];
+                double normalX = DriftedX(context, b, driftStep) - DriftedX(context, a, driftStep);
+                double normalY = DriftedY(context, b, driftStep) - DriftedY(context, a, driftStep);
+                double normalLength = Math.Sqrt((normalX * normalX) + (normalY * normalY));
+                if (normalLength < 0.001d)
+                {
+                    normalX = bx - ax;
+                    normalY = by - ay;
+                    normalLength = Math.Sqrt((normalX * normalX) + (normalY * normalY));
+                }
+
+                normalX /= normalLength;
+                normalY /= normalLength;
+
+                double relativeX = a.DriftX - b.DriftX;
+                double relativeY = a.DriftY - b.DriftY;
+                double pressure = (relativeX * normalX) + (relativeY * normalY);
+                double tangential = Math.Abs((relativeX * -normalY) + (relativeY * normalX));
+
+                if (pressure > ConvergentThreshold)
+                {
+                    if (a.IsContinental && b.IsContinental)
+                    {
+                        double uplift = (0.22d + (pressure * 0.14d)) * stepWeight;
+                        double ridge = (0.32d + (pressure * 0.16d)) * stepWeight;
+                        AddPlateInfluence(context, assignment, ax, ay, aId, uplift, ridge, tectonic, ridges);
+                        AddPlateInfluence(context, assignment, bx, by, bId, uplift, ridge, tectonic, ridges);
+                    }
+                    else if (a.IsContinental || b.IsContinental)
+                    {
+                        double uplift = (0.16d + (pressure * 0.12d)) * stepWeight;
+                        double ridge = (0.24d + (pressure * 0.14d)) * stepWeight;
+                        double trench = (-0.11d - (pressure * 0.04d)) * stepWeight;
+                        if (a.IsContinental)
+                        {
+                            AddPlateInfluence(context, assignment, ax, ay, aId, uplift, ridge, tectonic, ridges);
+                            AddPlateInfluence(context, assignment, bx, by, bId, trench, 0.08d * stepWeight, tectonic, ridges);
+                        }
+                        else
+                        {
+                            AddPlateInfluence(context, assignment, bx, by, bId, uplift, ridge, tectonic, ridges);
+                            AddPlateInfluence(context, assignment, ax, ay, aId, trench, 0.08d * stepWeight, tectonic, ridges);
+                        }
+                    }
+                    else
+                    {
+                        double islandArc = (0.10d + (pressure * 0.08d)) * stepWeight;
+                        double ridge = (0.18d + (pressure * 0.10d)) * stepWeight;
+                        AddPlateInfluence(context, assignment, ax, ay, aId, islandArc, ridge, tectonic, ridges);
+                        AddPlateInfluence(context, assignment, bx, by, bId, islandArc, ridge, tectonic, ridges);
+                    }
+                }
+                else if (pressure < -ConvergentThreshold)
+                {
+                    double rift = (-0.15d + (pressure * 0.04d)) * stepWeight;
+                    double ridge = 0.06d * stepWeight;
+                    AddPlateInfluence(context, assignment, ax, ay, aId, rift, ridge, tectonic, ridges);
+                    AddPlateInfluence(context, assignment, bx, by, bId, rift, ridge, tectonic, ridges);
+                }
+                else if (tangential > TransformThreshold)
+                {
+                    double faulting = (0.045d + ((tangential - TransformThreshold) * 0.035d)) * stepWeight;
+                    AddPlateInfluence(context, assignment, ax, ay, aId, faulting, 0.08d * stepWeight, tectonic, ridges);
+                    AddPlateInfluence(context, assignment, bx, by, bId, faulting, 0.08d * stepWeight, tectonic, ridges);
+                }
+            }
+
+            private static void AddPlateInfluence(
+                WorldFieldContext context,
+                int[] assignment,
+                int sourceX,
+                int sourceY,
+                int plateId,
+                double uplift,
+                double ridge,
+                double[] tectonic,
+                double[] ridges)
+            {
+                int radius = InfluenceRadius(context);
+                for (int y = sourceY - radius; y <= sourceY + radius; y++)
+                {
+                    if (y < 0 || y >= context.Height)
+                        continue;
+
+                    for (int x = sourceX - radius; x <= sourceX + radius; x++)
+                    {
+                        if (x < 0 || x >= context.Width)
+                            continue;
+
+                        int index = context.Index(x, y);
+                        if (assignment[index] != plateId)
+                            continue;
+
+                        double dx = x - sourceX;
+                        double dy = y - sourceY;
+                        double distance = Math.Sqrt((dx * dx) + (dy * dy));
+                        if (distance > radius)
+                            continue;
+
+                        double falloff = SmoothStep(1d - (distance / (radius + 0.001d)));
+                        tectonic[index] += uplift * falloff;
+                        ridges[index] += ridge * falloff;
+                    }
+                }
+            }
+
+            private static double[] ComposeRawElevation(
+                WorldFieldContext context,
+                Plate[] plates,
+                int[] assignment,
+                double[] tectonic,
+                double[] ridges)
             {
                 var result = new double[context.TileCount];
                 for (int y = 0; y < context.Height; y++)
                 {
                     for (int x = 0; x < context.Width; x++)
                     {
-                        double nx = (context.X01(x) * 2d) - 1d;
-                        double ny = ((context.Y01(y) * 2d) - 1d) * 0.92d;
-                        double mask = SmoothStep(Clamp01(1d - (Math.Sqrt((nx * nx) + (ny * ny)) / 1.36d)));
-                        double continent = FractalNoise(context.ElevationSeed, context.X01(x) + 11d, context.Y01(y) + 17d, 4, 2.15d);
-                        double ridge = Math.Abs((FractalNoise(context.RidgeSeed, context.X01(x) + 31d, context.Y01(y) + 43d, 3, 3.6d) * 2d) - 1d);
-                        // Lower, broader dome (0.30 + mask*0.56) so the landmass is mostly mid/low elevation
-                        // walkable ground, not a high volcanic core; the ridge term carves mountain RANGES.
-                        result[context.Index(x, y)] = Clamp01(0.30d + (mask * 0.56d) + ((continent - 0.5d) * 0.40d) + ((ridge - 0.5d) * 0.18d));
+                        int index = context.Index(x, y);
+                        var plate = plates[assignment[index]];
+                        double detail = FractalNoise(context.ElevationSeed, context.X01(x) + 11d, context.Y01(y) + 17d, 4, 2.15d) - 0.5d;
+                        double ridgeNoise = Math.Abs((FractalNoise(context.RidgeSeed, context.X01(x) + 31d, context.Y01(y) + 43d, 3, 3.6d) * 2d) - 1d);
+                        double ridgeIntensity = Clamp01(ridges[index]);
+                        double crustDetail = detail * (plate.IsContinental ? 0.14d : 0.08d);
+                        double ridgeLift = ridgeIntensity * (0.06d + (ridgeNoise * 0.18d));
+                        result[index] = plate.BaseElevation + tectonic[index] + crustDetail + ridgeLift;
                     }
                 }
 
                 return result;
+            }
+
+            private static double[] CalibrateSeaLevel(double[] raw, WorldFieldContext context)
+            {
+                var sorted = (double[])raw.Clone();
+                Array.Sort(sorted);
+
+                int desiredLand = (int)Math.Round(context.TileCount * 0.50d, MidpointRounding.AwayFromZero);
+                if (desiredLand < 1)
+                    desiredLand = 1;
+                if (desiredLand > context.TileCount - 1 && context.TileCount > 1)
+                    desiredLand = context.TileCount - 1;
+
+                int waterCutoff = context.TileCount - desiredLand;
+                if (waterCutoff < 0)
+                    waterCutoff = 0;
+                if (waterCutoff >= sorted.Length)
+                    waterCutoff = sorted.Length - 1;
+
+                double threshold = sorted[waterCutoff];
+                int highIndex = waterCutoff + ((desiredLand * 9) / 10);
+                if (highIndex >= sorted.Length)
+                    highIndex = sorted.Length - 1;
+                int lowIndex = waterCutoff / 5;
+                if (lowIndex < 0)
+                    lowIndex = 0;
+
+                double landSpan = sorted[highIndex] - threshold;
+                if (landSpan < 0.000001d)
+                    landSpan = 1d;
+                double waterSpan = threshold - sorted[lowIndex];
+                if (waterSpan < 0.000001d)
+                    waterSpan = 1d;
+
+                var result = new double[raw.Length];
+                for (int i = 0; i < raw.Length; i++)
+                {
+                    if (raw[i] >= threshold)
+                    {
+                        double normalized = (raw[i] - threshold) / landSpan;
+                        double lowland = Clamp01(normalized);
+                        double aboveHigh = normalized > 1d ? (normalized - 1d) * 0.10d : 0d;
+                        result[i] = Clamp01(WorldFieldContext.SeaLevel + (lowland * lowland * 0.42d) + aboveHigh);
+                    }
+                    else
+                    {
+                        double normalized = (threshold - raw[i]) / waterSpan;
+                        double basin = SmoothStep(Clamp01(normalized));
+                        double deepBasin = normalized > 1d ? (normalized - 1d) * 0.05d : 0d;
+                        result[i] = Clamp01(WorldFieldContext.SeaLevel - (basin * 0.34d) - deepBasin);
+                    }
+                }
+
+                return result;
+            }
+
+            private static double DriftedX(WorldFieldContext context, Plate plate, int driftStep)
+            {
+                return Clamp(plate.CenterX + (plate.DriftX * driftStep * DriftDistance(context)), 0d, context.Width - 1d);
+            }
+
+            private static double DriftedY(WorldFieldContext context, Plate plate, int driftStep)
+            {
+                return Clamp(plate.CenterY + (plate.DriftY * driftStep * DriftDistance(context)), 0d, context.Height - 1d);
+            }
+
+            private static double DriftDistance(WorldFieldContext context)
+            {
+                return Math.Max(context.Width, context.Height) * 0.075d;
+            }
+
+            private static int InfluenceRadius(WorldFieldContext context)
+            {
+                int radius = Math.Min(context.Width, context.Height) / 6;
+                if (radius < 2)
+                    return 2;
+                return radius > 4 ? 4 : radius;
+            }
+
+            private static double NextUnit(XorShiftRng rng)
+            {
+                return rng.NextInt(1_000_000) / 999_999d;
+            }
+
+            private static double Clamp(double value, double min, double max)
+            {
+                if (value < min) return min;
+                return value > max ? max : value;
+            }
+
+            private sealed class Plate
+            {
+                public Plate(int id, double centerX, double centerY, double driftX, double driftY, double continentalScore)
+                {
+                    Id = id;
+                    CenterX = centerX;
+                    CenterY = centerY;
+                    DriftX = driftX;
+                    DriftY = driftY;
+                    ContinentalScore = continentalScore;
+                }
+
+                public int Id { get; }
+                public double CenterX { get; set; }
+                public double CenterY { get; set; }
+                public double DriftX { get; }
+                public double DriftY { get; }
+                public double ContinentalScore { get; }
+                public bool IsContinental { get; set; }
+                public double BaseElevation { get; set; }
+            }
+
+            private readonly struct Craton
+            {
+                public Craton(double x, double y, double radius)
+                {
+                    X = x;
+                    Y = y;
+                    Radius = radius;
+                }
+
+                public double X { get; }
+                public double Y { get; }
+                public double Radius { get; }
+            }
+
+            private readonly struct PlateScore
+            {
+                public PlateScore(int plateId, double score)
+                {
+                    PlateId = plateId;
+                    Score = score;
+                }
+
+                public int PlateId { get; }
+                public double Score { get; }
             }
         }
 
@@ -429,7 +931,7 @@ namespace EmberCrpg.Simulation.Overland
                 }
             }
 
-            return dominant;
+            return bestCount < 0 ? BiomeKind.Coast : dominant;
         }
 
         private static int CountMatchingNeighbors(int width, int height, BiomeKind[] biomes, bool[] land, int x, int y, BiomeKind biome)

@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Overland;
@@ -9,6 +10,10 @@ namespace EmberCrpg.Tests.EditMode.Overland
     /// <summary>Determinism and topology checks for the engine-free overland world layer.</summary>
     public sealed class OverlandWorldgenTests
     {
+        private const ulong FnvOffset = 14695981039346656037UL;
+        private const ulong FnvPrime = 1099511628211UL;
+        private const ulong Seed42FieldGoldenHash = 0x347227CC282A15B2UL;
+
         [Test]
         public void Generate_SameSeed_ProducesIdenticalMap()
         {
@@ -41,13 +46,73 @@ namespace EmberCrpg.Tests.EditMode.Overland
         }
 
         [Test]
+        public void Generate_Seed42FieldHash_MatchesGoldenMaster()
+        {
+            var parameters = OverlandParameters.Default;
+            var fieldsA = new WorldGenerationManager().Generate(42u, parameters.Width, parameters.Height);
+            var fieldsB = new WorldGenerationManager().Generate(42u, parameters.Width, parameters.Height);
+            ulong hash = FieldHash(fieldsA);
+
+            TestContext.WriteLine($"seed=42 fieldHash=0x{hash:X16}");
+            Assert.That(hash, Is.EqualTo(FieldHash(fieldsB)));
+            Assert.That(hash, Is.EqualTo(Seed42FieldGoldenHash));
+        }
+
+        [Test]
         public void Generate_ContinentalFields_HaveSaneLandFraction()
         {
             var parameters = OverlandParameters.Default;
-            var continent = new WorldGenerationManager().Generate(42u, parameters.Width, parameters.Height);
-            double landFraction = CountLand(continent) / (double)(parameters.Width * parameters.Height);
+            uint[] seeds = { 42u, 43u, 44u, 45u, 46u, 47u };
+            for (int i = 0; i < seeds.Length; i++)
+            {
+                var continent = new WorldGenerationManager().Generate(seeds[i], parameters.Width, parameters.Height);
+                double landFraction = CountLand(continent) / (double)(parameters.Width * parameters.Height);
 
-            Assert.That(landFraction, Is.InRange(0.35d, 0.75d));
+                Assert.That(landFraction, Is.InRange(0.40d, 0.60d), $"seed={seeds[i]}");
+            }
+        }
+
+        [Test]
+        public void Generate_RepresentativeSeeds_CoverEveryBiome()
+        {
+            var parameters = OverlandParameters.Default;
+            uint[] seeds = { 42u, 43u, 44u, 45u, 46u, 47u, 4242u, 7777u };
+            var seen = new bool[16];
+
+            for (int seedIndex = 0; seedIndex < seeds.Length; seedIndex++)
+            {
+                var fields = new WorldGenerationManager().Generate(seeds[seedIndex], parameters.Width, parameters.Height);
+                for (int i = 0; i < fields.Biomes.Count; i++)
+                    seen[(int)fields.Biomes[i]] = true;
+            }
+
+            foreach (BiomeKind biome in Enum.GetValues(typeof(BiomeKind)))
+                Assert.That(seen[(int)biome], Is.True, $"{biome} did not appear across representative seeds.");
+        }
+
+        [Test]
+        public void Generate_PlateBoundariesProduceMountainRanges()
+        {
+            var parameters = OverlandParameters.Default;
+            var fields = new WorldGenerationManager().Generate(42u, parameters.Width, parameters.Height);
+            int mountainCount = CountBiome(fields, BiomeKind.Mountain);
+
+            Assert.That(mountainCount, Is.GreaterThanOrEqualTo(3));
+            Assert.That(HasAdjacentBiomePair(fields, BiomeKind.Mountain), Is.True, "Mountains should form ranges, not isolated peaks.");
+        }
+
+        [Test]
+        public void Generate_Seed42Sample_RemainsReadable()
+        {
+            var parameters = OverlandParameters.Default;
+            var fields = new WorldGenerationManager().Generate(42u, parameters.Width, parameters.Height);
+            var counts = CountBiomes(fields);
+            double landFraction = CountLand(fields) / (double)(parameters.Width * parameters.Height);
+
+            TestContext.WriteLine($"seed=42 landFraction={landFraction:0.000} biomeCounts={FormatBiomeCounts(counts)}");
+            Assert.That(landFraction, Is.InRange(0.40d, 0.60d));
+            Assert.That(counts[(int)BiomeKind.Plains] + counts[(int)BiomeKind.Forest], Is.GreaterThan(counts[(int)BiomeKind.Mountain]));
+            Assert.That(counts[(int)BiomeKind.Coast], Is.GreaterThan(0));
         }
 
         [Test]
@@ -154,6 +219,21 @@ namespace EmberCrpg.Tests.EditMode.Overland
             return builder.ToString();
         }
 
+        private static ulong FieldHash(OverlandWorldFields fields)
+        {
+            ulong hash = FnvOffset;
+            hash = Mix(hash, fields.Width);
+            hash = Mix(hash, fields.Height);
+            for (int i = 0; i < fields.Elevation.Count; i++)
+            {
+                hash = Mix(hash, unchecked((ulong)BitConverter.DoubleToInt64Bits(fields.Elevation[i])));
+                hash = Mix(hash, fields.LandMask[i] ? 1 : 0);
+                hash = Mix(hash, (int)fields.Biomes[i]);
+            }
+
+            return hash;
+        }
+
         private static int CountLand(OverlandWorldFields fields)
         {
             int count = 0;
@@ -164,6 +244,71 @@ namespace EmberCrpg.Tests.EditMode.Overland
             }
 
             return count;
+        }
+
+        private static int CountBiome(OverlandWorldFields fields, BiomeKind biome)
+        {
+            int count = 0;
+            for (int i = 0; i < fields.Biomes.Count; i++)
+            {
+                if (fields.Biomes[i] == biome)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static int[] CountBiomes(OverlandWorldFields fields)
+        {
+            var counts = new int[16];
+            for (int i = 0; i < fields.Biomes.Count; i++)
+                counts[(int)fields.Biomes[i]]++;
+            return counts;
+        }
+
+        private static bool HasAdjacentBiomePair(OverlandWorldFields fields, BiomeKind biome)
+        {
+            for (int y = 0; y < fields.Height; y++)
+            {
+                for (int x = 0; x < fields.Width; x++)
+                {
+                    if (fields.BiomeAt(x, y) != biome)
+                        continue;
+                    if (x + 1 < fields.Width && fields.BiomeAt(x + 1, y) == biome)
+                        return true;
+                    if (y + 1 < fields.Height && fields.BiomeAt(x, y + 1) == biome)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string FormatBiomeCounts(int[] counts)
+        {
+            var builder = new StringBuilder();
+            foreach (BiomeKind biome in Enum.GetValues(typeof(BiomeKind)))
+            {
+                if (builder.Length > 0)
+                    builder.Append(", ");
+                builder.Append(biome).Append('=').Append(counts[(int)biome]);
+            }
+
+            return builder.ToString();
+        }
+
+        private static ulong Mix(ulong hash, int value)
+        {
+            return Mix(hash, unchecked((uint)value));
+        }
+
+        private static ulong Mix(ulong hash, ulong value)
+        {
+            unchecked
+            {
+                hash ^= value;
+                return hash * FnvPrime;
+            }
         }
 
         private static int CountMatchingNeighbors(OverlandMap map, int x, int y, BiomeKind biome)

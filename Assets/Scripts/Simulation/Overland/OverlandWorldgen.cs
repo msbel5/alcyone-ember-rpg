@@ -34,8 +34,9 @@ namespace EmberCrpg.Simulation.Overland
             var settlements = PlaceSettlements(normalizedSeed, parameters, world, regionIds, biomes, land);
             var tileSeeds = RollTileSeeds(normalizedSeed, parameters.Width * parameters.Height);
             var tiles = BuildTiles(parameters, regionIds, biomes, tileSeeds, settlements);
-
-            return new OverlandMap(parameters.Width, parameters.Height, tiles, settlements);
+            var map = new OverlandMap(parameters.Width, parameters.Height, tiles, settlements);
+            OverlandMapLandMaskStore.Register(map, land);
+            return map;
         }
 
         private static RegionTile[] BuildTiles(

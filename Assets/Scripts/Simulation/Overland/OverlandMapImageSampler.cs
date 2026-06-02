@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using EmberCrpg.Domain.Overland;
 
 namespace EmberCrpg.Simulation.Overland
@@ -111,6 +112,8 @@ namespace EmberCrpg.Simulation.Overland
                 hash = Mix(hash, tile.X);
                 hash = Mix(hash, tile.Y);
                 hash = Mix(hash, (int)tile.Biome);
+                if (OverlandMapLandMaskStore.TryIsLandAt(map, tile.X, tile.Y, out bool isLand))
+                    hash = Mix(hash, isLand ? 1 : 0);
                 hash = Mix(hash, tile.PropVariationSeed);
                 hash = Mix(hash, tile.SettlementIds.Count);
             }
@@ -133,21 +136,25 @@ namespace EmberCrpg.Simulation.Overland
             for (int i = 0; i < map.Tiles.Count; i++)
             {
                 var tile = map.Tiles[i];
-                colors[ToIndex(tile.X, tile.Y, map.Width)] = BiomeColor(tile.Biome);
+                bool hasLandSignal = OverlandMapLandMaskStore.TryIsLandAt(map, tile.X, tile.Y, out bool isLand);
+                colors[ToIndex(tile.X, tile.Y, map.Width)] = BiomeColor(tile.Biome, hasLandSignal, isLand);
             }
 
             return colors;
         }
 
         // Byte equivalents of the former OverlandMapPanel Unity Color palette.
-        private static Rgb BiomeColor(BiomeKind biome)
+        private static Rgb BiomeColor(BiomeKind biome, bool hasLandSignal, bool isLand)
         {
             switch (biome)
             {
                 case BiomeKind.Plains: return new Rgb(107d, 133d, 71d);
                 case BiomeKind.Forest: return new Rgb(46d, 92d, 51d);
                 case BiomeKind.Mountain: return new Rgb(122d, 120d, 133d);
-                case BiomeKind.Coast: return new Rgb(66d, 117d, 158d);
+                case BiomeKind.Coast:
+                    if (!hasLandSignal)
+                        return new Rgb(66d, 117d, 158d);
+                    return isLand ? new Rgb(188d, 170d, 112d) : new Rgb(32d, 72d, 120d);
                 case BiomeKind.Swamp: return new Rgb(69d, 87d, 66d);
                 case BiomeKind.Desert: return new Rgb(189d, 168d, 107d);
                 case BiomeKind.Tundra: return new Rgb(173d, 184d, 191d);
@@ -272,6 +279,60 @@ namespace EmberCrpg.Simulation.Overland
             public double R { get; }
             public double G { get; }
             public double B { get; }
+        }
+    }
+
+    internal static class OverlandMapLandMaskStore
+    {
+        private static readonly ConditionalWeakTable<OverlandMap, LandMaskSnapshot> LandMasks = new ConditionalWeakTable<OverlandMap, LandMaskSnapshot>();
+
+        public static void Register(OverlandMap map, bool[] landMask)
+        {
+            if (map == null)
+                throw new ArgumentNullException(nameof(map));
+            if (landMask == null)
+                throw new ArgumentNullException(nameof(landMask));
+            if (landMask.Length != map.Width * map.Height)
+                throw new ArgumentException("Land mask length must equal map width * height.", nameof(landMask));
+
+            LandMasks.Remove(map);
+            LandMasks.Add(map, new LandMaskSnapshot(map.Width, map.Height, landMask));
+        }
+
+        public static bool TryIsLandAt(OverlandMap map, int x, int y, out bool isLand)
+        {
+            isLand = false;
+            if (map == null || !LandMasks.TryGetValue(map, out var snapshot))
+                return false;
+
+            return snapshot.TryIsLandAt(x, y, out isLand);
+        }
+
+        private sealed class LandMaskSnapshot
+        {
+            private readonly bool[] _landMask;
+
+            public LandMaskSnapshot(int width, int height, bool[] landMask)
+            {
+                Width = width;
+                Height = height;
+                _landMask = (bool[])landMask.Clone();
+            }
+
+            public int Width { get; }
+            public int Height { get; }
+
+            public bool TryIsLandAt(int x, int y, out bool isLand)
+            {
+                if (x < 0 || y < 0 || x >= Width || y >= Height)
+                {
+                    isLand = false;
+                    return false;
+                }
+
+                isLand = _landMask[(y * Width) + x];
+                return true;
+            }
         }
     }
 }
