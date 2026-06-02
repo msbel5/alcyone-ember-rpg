@@ -39,12 +39,18 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             Assert.That(worldA.FactionRelations.Count, Is.EqualTo(worldB.FactionRelations.Count));
             Assert.That(worldA.Npcs.Count, Is.EqualTo(worldB.Npcs.Count));
             Assert.That(worldA.History.Count, Is.EqualTo(worldB.History.Count));
+            Assert.That(worldA.NotableFigures.Count, Is.EqualTo(worldB.NotableFigures.Count));
+            Assert.That(worldA.NotableFigures.Count, Is.GreaterThan(0));
 
             Assert.That(worldA.Regions[0].Name, Is.EqualTo(worldB.Regions[0].Name));
             Assert.That(worldA.Settlements[0].Name, Is.EqualTo(worldB.Settlements[0].Name));
+            Assert.That(worldA.Settlements[0].Population, Is.EqualTo(worldB.Settlements[0].Population));
+            Assert.That(worldA.Settlements[0].Size, Is.EqualTo(worldB.Settlements[0].Size));
             Assert.That(worldA.Npcs[0].Name, Is.EqualTo(worldB.Npcs[0].Name));
             Assert.That(worldA.Npcs[0].BirthYear, Is.EqualTo(worldB.Npcs[0].BirthYear));
             Assert.That(worldA.Npcs[0].Role, Is.EqualTo(worldB.Npcs[0].Role));
+            Assert.That(worldA.NotableFigures[0].Name, Is.EqualTo(worldB.NotableFigures[0].Name));
+            Assert.That(worldA.NotableFigures[0].Title, Is.EqualTo(worldB.NotableFigures[0].Title));
         }
 
         /// <summary>Different seeds → at least the first region's name differs (collision odds are vanishingly small).</summary>
@@ -59,16 +65,77 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             Assert.That(worldA.Regions[0].Name, Is.Not.EqualTo(worldB.Regions[0].Name));
         }
 
-        /// <summary>Total realized population lands inside the design band [900K, 1.1M].</summary>
+        /// <summary>Total realized population comes from the history end-state, not the pre-history target roll.</summary>
         [Test]
-        public void WorldgenService_PopulationCount()
+        public void WorldgenService_TotalPopulationReflectsHistoryState()
+        {
+            var parameters = WorldgenParameters.Default;
+            var world = WorldgenService.Generate(42u, parameters);
+
+            Assert.That(world.TotalPopulation, Is.Not.EqualTo(parameters.TargetPopulation),
+                "Settlement generation normalizes to TargetPopulation before history; the final world should use simulated history population instead.");
+            Assert.That(world.TotalPopulation, Is.EqualTo(world.Settlements.Sum(s => s.Population)));
+            Assert.That(world.TotalPopulation, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void WorldgenService_HistoryProjectionDropsFinalAbandonedSettlementsAndSurfacesFigures()
+        {
+            var parameters = WorldgenParameters.Default;
+            var world = WorldgenService.Generate(42u, parameters);
+
+            Assert.That(world.Settlements.Count, Is.LessThan(parameters.SettlementCount),
+                "The authoritative world should contain only settlements founded and surviving at the end of history.");
+            Assert.That(world.NotableFigures.Count, Is.GreaterThan(0));
+
+            var settlementIds = new HashSet<SettlementId>();
+            foreach (var settlement in world.Settlements)
+            {
+                Assert.That(settlement.Population, Is.GreaterThan(0));
+                Assert.That(settlement.Size, Is.Not.EqualTo(SettlementSize.None));
+                settlementIds.Add(settlement.Id);
+            }
+
+            foreach (var figure in world.NotableFigures)
+            {
+                Assert.That(figure.Id, Is.GreaterThan(0));
+                Assert.That(figure.Name, Is.Not.Empty);
+                Assert.That(figure.Title, Is.Not.Empty);
+                Assert.That(settlementIds.Contains(figure.HomeSettlement), Is.True,
+                    $"Notable figure {figure.Name} should be attached to a surviving settlement.");
+            }
+        }
+
+        [Test]
+        public void WorldgenService_NpcRosterUsesSurvivingSettlementsAndVariedRoles()
         {
             var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
+            var settlementIds = new HashSet<SettlementId>();
+            foreach (var settlement in world.Settlements)
+                settlementIds.Add(settlement.Id);
 
-            Assert.That(world.TotalPopulation, Is.GreaterThan(900_000),
-                "Total population should exceed 900K to feel Daggerfall-scale.");
-            Assert.That(world.TotalPopulation, Is.LessThan(1_100_000),
-                "Total population should stay below 1.1M so single-region densities stay sane.");
+            var roles = new HashSet<NpcRole>();
+            var perSettlement = new Dictionary<SettlementId, int>();
+            foreach (var npc in world.Npcs)
+            {
+                Assert.That(settlementIds.Contains(npc.Home), Is.True,
+                    $"NPC {npc.Name} should live in a surviving settlement.");
+                Assert.That(npc.Role, Is.Not.EqualTo(NpcRole.None));
+                roles.Add(npc.Role);
+
+                if (!perSettlement.ContainsKey(npc.Home))
+                    perSettlement[npc.Home] = 0;
+                perSettlement[npc.Home]++;
+            }
+
+            Assert.That(roles.Count, Is.GreaterThanOrEqualTo(8));
+
+            var largest = world.Settlements.OrderByDescending(s => s.Population).First();
+            var smallest = world.Settlements.OrderBy(s => s.Population).First();
+            int largestNpcCount = perSettlement.ContainsKey(largest.Id) ? perSettlement[largest.Id] : 0;
+            int smallestNpcCount = perSettlement.ContainsKey(smallest.Id) ? perSettlement[smallest.Id] : 0;
+            Assert.That(largestNpcCount, Is.GreaterThan(smallestNpcCount),
+                "NPC allocation should visibly favor more populous history-projected settlements.");
         }
 
         /// <summary>No two settlements share a name (the world's gazetteer is unique).</summary>
@@ -149,8 +216,14 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
         {
             var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
 
+            TestContext.WriteLine("--- WorldgenService sample, seed=42 ---");
+            TestContext.WriteLine($"initialTargetPopulation={WorldgenParameters.Default.TargetPopulation} finalTotalPopulation={world.TotalPopulation}");
+            TestContext.WriteLine($"regions={world.Regions.Count} settlements={world.Settlements.Count} npcs={world.Npcs.Count} notableFigures={world.NotableFigures.Count} history={world.History.Count}");
+            TestContext.WriteLine("sampleNpcRoles=" + string.Join(", ", world.Npcs.Take(12).Select(n => n.Role.ToString())));
+
             Debug.WriteLine($"--- WorldgenService sample, seed=42 ---");
-            Debug.WriteLine($"regions={world.Regions.Count} settlements={world.Settlements.Count} npcs={world.Npcs.Count} totalPop={world.TotalPopulation} history={world.History.Count}");
+            Debug.WriteLine($"initialTargetPopulation={WorldgenParameters.Default.TargetPopulation} finalTotalPopulation={world.TotalPopulation}");
+            Debug.WriteLine($"regions={world.Regions.Count} settlements={world.Settlements.Count} npcs={world.Npcs.Count} notableFigures={world.NotableFigures.Count} history={world.History.Count}");
 
             Debug.WriteLine("first 5 regions:");
             for (int i = 0; i < 5 && i < world.Regions.Count; i++)

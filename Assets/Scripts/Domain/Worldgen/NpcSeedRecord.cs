@@ -17,6 +17,16 @@ namespace EmberCrpg.Domain.Worldgen
     /// <summary>Pure record describing a procedurally seeded NPC by id, home settlement, faction, name, birth year, and role.</summary>
     public sealed class NpcSeedRecord
     {
+        public NpcSeedRecord(NpcId id, SettlementId home, FactionId faction, string name, int birthYear)
+            : this(id, home, faction, name, birthYear, NpcRole.Farmer, string.Empty)
+        {
+        }
+
+        public NpcSeedRecord(NpcId id, SettlementId home, FactionId faction, string name, int birthYear, string portraitAssetPath)
+            : this(id, home, faction, name, birthYear, NpcRole.Farmer, portraitAssetPath)
+        {
+        }
+
         public NpcSeedRecord(NpcId id, SettlementId home, FactionId faction, string name, int birthYear, NpcRole role)
             : this(id, home, faction, name, birthYear, role, string.Empty)
         {

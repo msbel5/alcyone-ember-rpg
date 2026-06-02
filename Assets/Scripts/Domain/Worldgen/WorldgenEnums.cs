@@ -60,6 +60,16 @@ namespace EmberCrpg.Domain.Worldgen
         Scholar = 6,
         Artisan = 7,
         Outlaw = 8,
+        Blacksmith = 9,
+        Innkeeper = 10,
+        Healer = 11,
+        Mage = 12,
+        Knight = 13,
+        Bard = 14,
+        Sage = 15,
+        Rogue = 16,
+        Beggar = 17,
+        Bandit = 18,
     }
 
     /// <summary>

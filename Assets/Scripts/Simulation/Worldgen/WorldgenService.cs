@@ -17,8 +17,8 @@ using EmberCrpg.Simulation.Rng;
 // Determinism contract: the same (seed, parameters) pair produces a
 // byte-identical GeneratedWorld. The implementation uses ONE XorShiftRng
 // drawn through a strict call order (regions → settlements → factions →
-// relations → npcs → history) so the deterministic-replay test can pin
-// the first NPC's name and the history-event stream to a fixed expectation.
+// relations → history projection → npcs) so deterministic replay can pin
+// the world-state and history-event stream to a fixed expectation.
 // No Unity, no I/O, no LINQ in the hot path (HashSet membership only).
 //
 // Population math: 1 Capital (~150K avg) + 8 Cities (~75K avg × 8 = 600K)
@@ -72,13 +72,14 @@ namespace EmberCrpg.Simulation.Worldgen
             // -- 4. Faction relations ----------------------------------------
             var relations = GenerateFactionRelations(rng, factions);
 
-            // -- 5. NPCs -----------------------------------------------------
-            var npcs = GenerateNpcs(rng, parameters, settlements, factions);
+            // -- 5. History --------------------------------------------------
+            var historyResult = GenerateHistory(seed, parameters, regions, factions, settlements);
+            var projected = ProjectHistoryState(historyResult);
 
-            // -- 6. History --------------------------------------------------
-            var history = GenerateHistory(seed, parameters, regions, factions, settlements);
+            // -- 6. NPCs -----------------------------------------------------
+            var npcs = GenerateNpcs(rng, parameters, projected.Settlements, factions);
 
-            return new GeneratedWorld(seed, regions, settlements, factions, relations, npcs, history);
+            return new GeneratedWorld(seed, regions, projected.Settlements, factions, relations, npcs, historyResult.Events, projected.NotableFigures);
         }
 
     }

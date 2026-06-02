@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Overland;
 using EmberCrpg.Simulation.Overland;
+using EmberCrpg.Simulation.Worldgen;
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Overland
@@ -157,6 +159,25 @@ namespace EmberCrpg.Tests.EditMode.Overland
                     Assert.That(nearestOther, Is.LessThanOrEqualTo(10),
                         $"Settlement {settlement.Name} is too isolated at {settlement.TilePosition}.");
                 }
+            }
+        }
+
+        [Test]
+        public void Generate_FromGeneratedWorld_ProjectsPassedWorldSettlementIds()
+        {
+            var parameters = OverlandParameters.Default;
+            var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
+            var map = OverlandWorldgen.Generate(world, parameters);
+            var worldSettlementNames = new Dictionary<ulong, string>();
+            for (int i = 0; i < world.Settlements.Count; i++)
+                worldSettlementNames.Add(world.Settlements[i].Id.Value, world.Settlements[i].Name);
+
+            Assert.That(map.Settlements.Count, Is.GreaterThan(0));
+            for (int i = 0; i < map.Settlements.Count; i++)
+            {
+                var settlement = map.Settlements[i];
+                Assert.That(worldSettlementNames.ContainsKey(settlement.Id.Value), Is.True);
+                Assert.That(settlement.Name, Is.EqualTo(worldSettlementNames[settlement.Id.Value]));
             }
         }
 

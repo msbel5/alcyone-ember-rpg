@@ -8,7 +8,7 @@ namespace EmberCrpg.Simulation.Worldgen
 {
     public static partial class WorldgenService
     {
-        private static List<WorldHistoryEvent> GenerateHistory(
+        private static WorldHistorySimulationResult GenerateHistory(
             uint seed,
             WorldgenParameters parameters,
             IReadOnlyList<RegionRecord> regions,
@@ -16,8 +16,7 @@ namespace EmberCrpg.Simulation.Worldgen
             IReadOnlyList<SettlementRecord> settlements)
         {
             var simulator = new WorldHistorySimulator();
-            var result = simulator.Simulate(seed, parameters, regions, factions, settlements);
-            return new List<WorldHistoryEvent>(result.Events);
+            return simulator.Simulate(seed, parameters, regions, factions, settlements);
         }
     }
 }

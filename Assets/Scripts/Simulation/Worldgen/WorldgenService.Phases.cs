@@ -282,76 +282,27 @@ namespace EmberCrpg.Simulation.Worldgen
             IReadOnlyList<SettlementRecord> settlements,
             IReadOnlyList<FactionRecord> factions)
         {
-            var npcs = new List<NpcSeedRecord>(parameters.NpcCount);
+            if (settlements.Count == 0)
+                return new List<NpcSeedRecord>(0);
+
+            var assignment = AllocateNpcCounts(parameters, settlements);
+            int targetNpcCount = 0;
+            for (int i = 0; i < assignment.Length; i++)
+                targetNpcCount += assignment[i];
+
+            var npcs = new List<NpcSeedRecord>(targetNpcCount);
             ulong nextId = 1UL;
 
-            // Per-settlement weight: bigger settlements get more named NPCs.
-            // Weight = sqrt-ish via integer fold so cities do not absorb
-            // every named NPC — Daggerfall's biggest cities still have
-            // proportionally more named NPCs than villages, but villages
-            // are not name-starved either.
-            var weights = new int[settlements.Count];
-            long totalWeight = 0;
-            for (int i = 0; i < settlements.Count; i++)
-            {
-                int pop = settlements[i].Population;
-                // Integer log-ish: count how many times pop divides by 4,
-                // plus 1, so [100..400) → 1, [400..1600) → 2, ... [25600+) → 5+
-                int weight = 1;
-                int reduced = pop / 4;
-                while (reduced > 0)
-                {
-                    weight++;
-                    reduced /= 4;
-                }
-                weights[i] = weight;
-                totalWeight += weight;
-            }
-
-            // First pass: allocate floor counts proportional to weight.
-            var assigned = new int[settlements.Count];
-            int placed = 0;
-            for (int i = 0; i < settlements.Count; i++)
-            {
-                int share = (int)(((long)parameters.NpcCount * weights[i]) / totalWeight);
-                assigned[i] = share;
-                placed += share;
-            }
-
-            // Second pass: distribute the leftover (rounding losses) to the
-            // biggest settlements until we hit NpcCount exactly.
-            int remaining = parameters.NpcCount - placed;
-            int cursor = 0;
-            while (remaining > 0)
-            {
-                int idx = cursor % settlements.Count;
-                // Bias toward larger settlements first by stepping by
-                // settlement weight rather than 1.
-                if (weights[idx] >= 3)
-                {
-                    assigned[idx]++;
-                    remaining--;
-                }
-                cursor++;
-                if (cursor > settlements.Count * 8)
-                {
-                    // Defensive: every settlement got bumped — just dump
-                    // the rest into the first settlement so we never loop.
-                    assigned[0] += remaining;
-                    remaining = 0;
-                }
-            }
-
-            // Third pass: forge NPCs settlement-by-settlement with a
+            // Forge NPCs settlement-by-settlement with a
             // per-settlement name bag so no two NPCs in the same village
             // share a name.
             for (int s = 0; s < settlements.Count; s++)
             {
-                if (assigned[s] <= 0) continue;
+                if (assignment[s] <= 0) continue;
                 var localNames = new HashSet<string>(StringComparer.Ordinal);
                 var settlement = settlements[s];
 
-                for (int n = 0; n < assigned[s]; n++)
+                for (int n = 0; n < assignment[s]; n++)
                 {
                     var given = SyllableNameForge.ForgeUnique(rng, localNames, syllableCount: 2);
                     var family = SyllableNameForge.Forge(rng, syllableCount: 2);
@@ -362,8 +313,8 @@ namespace EmberCrpg.Simulation.Worldgen
                     // for display; collisions on full name are vanishingly
                     // rare and not asserted by the brief.
 
-                    var role = RollNpcRole(rng, settlement.Size);
                     var faction = factions[rng.NextInt(factions.Count)];
+                    var role = RollNpcRole(rng, settlement.Size, faction.Id);
                     int birthYear = parameters.WorldStartYear - 18 - rng.NextInt(48);
 
                     npcs.Add(new NpcSeedRecord(
@@ -379,42 +330,182 @@ namespace EmberCrpg.Simulation.Worldgen
             return npcs;
         }
 
-        private static NpcRole RollNpcRole(IDeterministicRng rng, SettlementSize size)
+        private static int[] AllocateNpcCounts(WorldgenParameters parameters, IReadOnlyList<SettlementRecord> settlements)
         {
-            // Role distribution tracks settlement size. Villages are
-            // farmer-heavy; cities/capitals get more merchants, nobles,
-            // priests, scholars. Outlaws are rare but seeded everywhere
-            // so the world has at least a few faces of trouble.
+            var assigned = new int[settlements.Count];
+            var caps = new int[settlements.Count];
+            var weights = new long[settlements.Count];
+            int totalCap = 0;
+
+            for (int i = 0; i < settlements.Count; i++)
+            {
+                caps[i] = NpcCapacity(settlements[i]);
+                weights[i] = NpcWeight(settlements[i]);
+                totalCap += caps[i];
+            }
+
+            int target = parameters.NpcCount < totalCap ? parameters.NpcCount : totalCap;
+            int remaining = target;
+
+            if (target >= settlements.Count)
+            {
+                for (int i = 0; i < settlements.Count; i++)
+                {
+                    assigned[i] = 1;
+                    remaining--;
+                }
+            }
+
+            while (remaining > 0)
+            {
+                int index = ChooseNpcAssignmentIndex(settlements, weights, caps, assigned);
+                if (index < 0)
+                    break;
+
+                assigned[index]++;
+                remaining--;
+            }
+
+            return assigned;
+        }
+
+        private static int ChooseNpcAssignmentIndex(
+            IReadOnlyList<SettlementRecord> settlements,
+            long[] weights,
+            int[] caps,
+            int[] assigned)
+        {
+            int best = -1;
+            long bestScore = long.MinValue;
+            for (int i = 0; i < settlements.Count; i++)
+            {
+                if (assigned[i] >= caps[i])
+                    continue;
+
+                long score = weights[i] / (assigned[i] + 1L);
+                if (score > bestScore)
+                {
+                    best = i;
+                    bestScore = score;
+                    continue;
+                }
+
+                if (score == bestScore && best >= 0)
+                {
+                    if (settlements[i].Population > settlements[best].Population)
+                        best = i;
+                    else if (settlements[i].Population == settlements[best].Population
+                        && settlements[i].Id.Value < settlements[best].Id.Value)
+                        best = i;
+                }
+            }
+
+            return best;
+        }
+
+        private static long NpcWeight(SettlementRecord settlement)
+        {
+            return Math.Max(1, settlement.Population) + (NpcTierWeight(settlement.Size) * 1000L);
+        }
+
+        private static int NpcTierWeight(SettlementSize size)
+        {
+            switch (size)
+            {
+                case SettlementSize.Capital: return 120;
+                case SettlementSize.City: return 70;
+                case SettlementSize.Town: return 18;
+                case SettlementSize.Village: return 5;
+                default: return 2;
+            }
+        }
+
+        private static int NpcCapacity(SettlementRecord settlement)
+        {
+            int byPopulation = Math.Max(1, settlement.Population / 900);
+            int baseline;
+            int cap;
+            switch (settlement.Size)
+            {
+                case SettlementSize.Capital:
+                    baseline = 24;
+                    cap = 90;
+                    break;
+                case SettlementSize.City:
+                    baseline = 16;
+                    cap = 64;
+                    break;
+                case SettlementSize.Town:
+                    baseline = 6;
+                    cap = 24;
+                    break;
+                case SettlementSize.Village:
+                    baseline = 2;
+                    cap = 8;
+                    break;
+                default:
+                    baseline = 1;
+                    cap = 4;
+                    break;
+            }
+
+            int capacity = baseline + byPopulation;
+            if (capacity < 1)
+                capacity = 1;
+            return capacity > cap ? cap : capacity;
+        }
+
+        private static NpcRole RollNpcRole(IDeterministicRng rng, SettlementSize size, FactionId faction)
+        {
+            // Role distribution tracks settlement size and a tiny faction
+            // bias. Villages are farmer-heavy; cities/capitals get courts,
+            // guilds, mages, clergy, artists, and visible poverty.
             int roll = rng.NextInt(100);
+            int factionBias = (int)(faction.Value % 5UL);
             switch (size)
             {
                 case SettlementSize.Capital:
                 case SettlementSize.City:
                     if (roll < 5) return NpcRole.Noble;
-                    if (roll < 15) return NpcRole.Guard;
-                    if (roll < 35) return NpcRole.Merchant;
-                    if (roll < 50) return NpcRole.Artisan;
-                    if (roll < 60) return NpcRole.Priest;
-                    if (roll < 70) return NpcRole.Scholar;
-                    if (roll < 95) return NpcRole.Farmer;
-                    return NpcRole.Outlaw;
+                    if (roll < 10) return factionBias == 0 ? NpcRole.Knight : NpcRole.Guard;
+                    if (roll < 25) return NpcRole.Merchant;
+                    if (roll < 34) return NpcRole.Blacksmith;
+                    if (roll < 42) return NpcRole.Innkeeper;
+                    if (roll < 50) return NpcRole.Priest;
+                    if (roll < 57) return factionBias == 1 ? NpcRole.Mage : NpcRole.Healer;
+                    if (roll < 65) return NpcRole.Sage;
+                    if (roll < 72) return NpcRole.Bard;
+                    if (roll < 80) return NpcRole.Rogue;
+                    if (roll < 88) return NpcRole.Beggar;
+                    if (roll < 96) return NpcRole.Farmer;
+                    return factionBias == 2 ? NpcRole.Bandit : NpcRole.Outlaw;
                 case SettlementSize.Town:
                     if (roll < 3) return NpcRole.Noble;
-                    if (roll < 12) return NpcRole.Guard;
-                    if (roll < 25) return NpcRole.Merchant;
-                    if (roll < 35) return NpcRole.Artisan;
-                    if (roll < 42) return NpcRole.Priest;
-                    if (roll < 47) return NpcRole.Scholar;
-                    if (roll < 95) return NpcRole.Farmer;
-                    return NpcRole.Outlaw;
+                    if (roll < 10) return NpcRole.Guard;
+                    if (roll < 22) return NpcRole.Merchant;
+                    if (roll < 32) return NpcRole.Blacksmith;
+                    if (roll < 42) return NpcRole.Innkeeper;
+                    if (roll < 49) return NpcRole.Priest;
+                    if (roll < 56) return NpcRole.Healer;
+                    if (roll < 61) return factionBias == 1 ? NpcRole.Mage : NpcRole.Sage;
+                    if (roll < 67) return NpcRole.Bard;
+                    if (roll < 73) return NpcRole.Rogue;
+                    if (roll < 82) return NpcRole.Beggar;
+                    if (roll < 96) return NpcRole.Farmer;
+                    return factionBias == 2 ? NpcRole.Bandit : NpcRole.Outlaw;
                 default:
                     // Village / Hamlet
-                    if (roll < 2) return NpcRole.Guard;
-                    if (roll < 6) return NpcRole.Merchant;
-                    if (roll < 10) return NpcRole.Artisan;
-                    if (roll < 13) return NpcRole.Priest;
-                    if (roll < 95) return NpcRole.Farmer;
-                    return NpcRole.Outlaw;
+                    if (roll < 3) return NpcRole.Guard;
+                    if (roll < 8) return NpcRole.Merchant;
+                    if (roll < 14) return NpcRole.Blacksmith;
+                    if (roll < 20) return NpcRole.Innkeeper;
+                    if (roll < 25) return NpcRole.Healer;
+                    if (roll < 29) return NpcRole.Priest;
+                    if (roll < 32) return NpcRole.Bard;
+                    if (roll < 36) return NpcRole.Beggar;
+                    if (roll < 94) return NpcRole.Farmer;
+                    if (roll < 98) return NpcRole.Rogue;
+                    return factionBias == 2 ? NpcRole.Bandit : NpcRole.Outlaw;
             }
         }
 

@@ -95,6 +95,19 @@ namespace EmberCrpg.Simulation.Worldgen
             IReadOnlyList<FactionRelationSeed> factionRelations,
             IReadOnlyList<NpcSeedRecord> npcs,
             IReadOnlyList<WorldHistoryEvent> history)
+            : this(seed, regions, settlements, factions, factionRelations, npcs, history, Array.Empty<NotableFigureRecord>())
+        {
+        }
+
+        public GeneratedWorld(
+            uint seed,
+            IReadOnlyList<RegionRecord> regions,
+            IReadOnlyList<SettlementRecord> settlements,
+            IReadOnlyList<FactionRecord> factions,
+            IReadOnlyList<FactionRelationSeed> factionRelations,
+            IReadOnlyList<NpcSeedRecord> npcs,
+            IReadOnlyList<WorldHistoryEvent> history,
+            IReadOnlyList<NotableFigureRecord> notableFigures)
         {
             if (regions == null) throw new ArgumentNullException(nameof(regions));
             if (settlements == null) throw new ArgumentNullException(nameof(settlements));
@@ -102,6 +115,7 @@ namespace EmberCrpg.Simulation.Worldgen
             if (factionRelations == null) throw new ArgumentNullException(nameof(factionRelations));
             if (npcs == null) throw new ArgumentNullException(nameof(npcs));
             if (history == null) throw new ArgumentNullException(nameof(history));
+            if (notableFigures == null) throw new ArgumentNullException(nameof(notableFigures));
 
             Seed = seed;
             Regions = Wrap(regions);
@@ -110,6 +124,7 @@ namespace EmberCrpg.Simulation.Worldgen
             FactionRelations = Wrap(factionRelations);
             Npcs = Wrap(npcs);
             History = Wrap(history);
+            NotableFigures = Wrap(notableFigures);
         }
 
         public uint Seed { get; }
@@ -119,6 +134,7 @@ namespace EmberCrpg.Simulation.Worldgen
         public IReadOnlyList<FactionRelationSeed> FactionRelations { get; }
         public IReadOnlyList<NpcSeedRecord> Npcs { get; }
         public IReadOnlyList<WorldHistoryEvent> History { get; }
+        public IReadOnlyList<NotableFigureRecord> NotableFigures { get; }
 
         public int TotalPopulation
         {

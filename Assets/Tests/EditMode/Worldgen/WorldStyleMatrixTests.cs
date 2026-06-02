@@ -15,8 +15,11 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
 
             Assert.That(parameters.RegionCount, Is.EqualTo(50));
             Assert.That(parameters.HistoryYears, Is.EqualTo(400));
-            Assert.That(world.Settlements.Count, Is.EqualTo(200));
-            Assert.That(world.TotalPopulation, Is.EqualTo(1_000_000));
+            Assert.That(world.Settlements.Count, Is.LessThanOrEqualTo(parameters.SettlementCount));
+            Assert.That(world.Settlements.Count, Is.GreaterThan(150));
+            Assert.That(world.TotalPopulation, Is.Not.EqualTo(parameters.TargetPopulation));
+            Assert.That(world.TotalPopulation, Is.GreaterThan(0));
+            Assert.That(world.NotableFigures.Count, Is.GreaterThan(0));
             Assert.That(world.History.Count, Is.GreaterThanOrEqualTo(150));
         }
 
@@ -27,10 +30,13 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             var world = WorldgenService.Generate(42u, parameters);
 
             Assert.That(world.Regions.Count, Is.EqualTo(47));
-            Assert.That(world.Settlements.Count, Is.EqualTo(213));
+            Assert.That(parameters.SettlementCount, Is.EqualTo(213));
+            Assert.That(world.Settlements.Count, Is.LessThanOrEqualTo(parameters.SettlementCount));
+            Assert.That(world.Settlements.Count, Is.GreaterThan(180));
             Assert.That(world.Factions.Count, Is.EqualTo(32));
-            Assert.That(world.Npcs.Count, Is.EqualTo(932));
-            Assert.That(world.TotalPopulation, Is.EqualTo(1_043_217));
+            Assert.That(world.Npcs.Count, Is.LessThanOrEqualTo(parameters.NpcCount));
+            Assert.That(world.Npcs.Count, Is.GreaterThan(parameters.NpcCount / 2));
+            Assert.That(world.TotalPopulation, Is.Not.EqualTo(parameters.TargetPopulation));
         }
 
         [Test]

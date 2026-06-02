@@ -22,6 +22,17 @@ namespace EmberCrpg.Simulation.Overland
 
             uint normalizedSeed = seed == 0u ? FallbackSeed : seed;
             var world = WorldgenService.Generate(normalizedSeed, WorldgenParameters.Default);
+            return Generate(world, parameters);
+        }
+
+        public static OverlandMap Generate(GeneratedWorld world, OverlandParameters parameters)
+        {
+            if (world == null)
+                throw new ArgumentNullException(nameof(world));
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
+
+            uint normalizedSeed = world.Seed == 0u ? FallbackSeed : world.Seed;
             var rng = new XorShiftRng(normalizedSeed);
 
             var regionSeeds = BuildRegionSeeds(rng, world.Regions, parameters.Width, parameters.Height);
