@@ -49,7 +49,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
         // Loads a generated PNG (persistent build path, then editor/streaming) into a Texture2D, or null.
         // Mirrors the path resolution the Options Generated-Assets panel uses.
-        private static Texture2D LoadGeneratedTexture(string assetId)
+        public static Texture2D LoadGeneratedTexture(string assetId)
         {
             if (string.IsNullOrEmpty(assetId)) return null;
             foreach (var path in GeneratedAssetPaths(assetId))
