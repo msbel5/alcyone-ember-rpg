@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.Time;
@@ -16,9 +17,9 @@ namespace EmberCrpg.Simulation.Composition
 {
     public static class DefaultTickSystems
     {
-        private const int LowStock = 4;
-        private const int HighStock = 64;
-        private const int PriceStep = 1;
+        private static int LowStock => EmberRuntimeOptionsProvider.Current.Tick.LowStockThreshold;
+        private static int HighStock => EmberRuntimeOptionsProvider.Current.Tick.HighStockThreshold;
+        private static int PriceStep => EmberRuntimeOptionsProvider.Current.Tick.PriceStep;
 
         public static WorldTickRegistry Create(
             GameTimeAdvanceSystem timeAdvance,

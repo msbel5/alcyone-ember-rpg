@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.Time;
@@ -48,14 +49,14 @@ namespace EmberCrpg.Simulation.Composition
         /// which computes day-rollover as <c>1 + _tick / 240</c> (240
         /// minutes-per-in-game-day).
         /// </summary>
-        public const long MinutesPerTick = 1L;
+        public static long MinutesPerTick => EmberRuntimeOptionsProvider.Current.Tick.MinutesPerTick;
 
         /// <summary>
         /// Game-day length in ember ticks. Matches <c>DomainSimulationAdapter.HudText</c>
         /// (which formats `Day = 1 + tick / 240`). Anything that wants to run
         /// "once per game day" should gate on this constant.
         /// </summary>
-        public const int TicksPerGameDay = 240;
+        public static int TicksPerGameDay => EmberRuntimeOptionsProvider.Current.Tick.TicksPerDay;
 
         /// <summary>
         /// Game-hour length in ember ticks. Used to gate <see cref="NeedsSystem"/>
@@ -63,7 +64,7 @@ namespace EmberCrpg.Simulation.Composition
         /// per logical tick, which the system author sized as "per game hour")
         /// rather than every minute.
         /// </summary>
-        public const int TicksPerGameHour = TicksPerGameDay / 24;
+        public static int TicksPerGameHour => EmberRuntimeOptionsProvider.Current.Tick.TicksPerHour;
 
         private readonly WorldTickRegistry _tickRegistry;
 

@@ -1,4 +1,5 @@
 using UnityEngine;
+using EmberCrpg.Domain.Configuration;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
@@ -24,7 +25,8 @@ namespace EmberCrpg.Presentation.Ember.Inputs
         {
             get
             {
-                _smoothedLook = Vector2.Lerp(_smoothedLook, Look, 0.5f);
+                var alpha = EmberRuntimeOptionsProvider.Current.Input.LookSmoothingAlpha;
+                _smoothedLook = Vector2.Lerp(_smoothedLook, Look, alpha);
                 return _smoothedLook;
             }
         }

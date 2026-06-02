@@ -1,4 +1,5 @@
 using UnityEngine;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Adapters;
 using UnityEngine.Rendering;
@@ -22,6 +23,8 @@ namespace EmberCrpg.Presentation.Ember.Interaction
 
         private void Awake()
         {
+            var options = EmberRuntimeOptionsProvider.Current.Interaction;
+            _interactDistance = options.InteractDistance;
             _eye = transform.Find("EyeCamera") ?? GetComponentInChildren<UnityEngine.Camera>()?.transform;
             _vcam = GetComponentInChildren<CinemachineCamera>(includeInactive: true);
             
@@ -81,7 +84,7 @@ namespace EmberCrpg.Presentation.Ember.Interaction
             if (_dof == null) return;
             _dof.active = true;
             // Simple focus on a fixed distance or raycast hit
-            _dof.focusDistance.Override(2.0f); 
+            _dof.focusDistance.Override(EmberRuntimeOptionsProvider.Current.Interaction.DofFocusDistance);
         }
 
         private void OpenDialog(EmberInteractable target, Vector3 hitPoint)

@@ -1,4 +1,5 @@
 using UnityEngine;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Presentation.Ember.Interaction;
 using EmberCrpg.Presentation.Ember.Views;
 using System.Collections;
@@ -44,8 +45,9 @@ namespace EmberCrpg.Presentation.Ember.Combat
             _eye.localRotation = originalRotation;
 
             // Hit detection
+            var combatOptions = EmberRuntimeOptionsProvider.Current.Combat;
             Ray ray = new Ray(_eye.position, _eye.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit, 2.0f))
+            if (Physics.Raycast(ray, out RaycastHit hit, combatOptions.MeleeRange))
             {
                 var sink = hit.collider.GetComponentInParent<IDamageSink>();
                 if (sink != null)
@@ -71,12 +73,12 @@ namespace EmberCrpg.Presentation.Ember.Combat
                         var targetName = actorView != null
                             ? actorView.DomainActorKey
                             : (hit.collider.gameObject != null ? hit.collider.gameObject.name : string.Empty);
-                        accepted = adapter.TryMeleeStrike(targetName, rawDamage: 10);
+                        accepted = adapter.TryMeleeStrike(targetName, rawDamage: combatOptions.MeleeRawDamage);
                     }
                     if (accepted)
                     {
-                        sink.Apply(10);
-                        if (adapter != null) adapter.TakePlayerDamage(2); // counter-hit
+                        sink.Apply(combatOptions.MeleeRawDamage);
+                        if (adapter != null) adapter.TakePlayerDamage(combatOptions.MeleeCounterDamage);
                     }
                 }
             }
