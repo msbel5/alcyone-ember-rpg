@@ -1,15 +1,13 @@
-using System.IO;
-using EmberCrpg.Data.Content;
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Content
 {
-    public sealed class ContentDatabaseTests
+    public sealed class ContentDatabaseLegacyCatalogTests
     {
         [Test]
-        public void LoadFromStreamingAssets_ExposesExpectedCatalogSizes()
+        public void LoadFromStreamingAssets_ExposesExpectedLegacyCatalogSizes()
         {
-            var db = LoadStreamingAssetsContent();
+            var db = ContentDatabaseTestContext.Load();
 
             Assert.That(db.Items.Count, Is.GreaterThan(800));
             Assert.That(db.Recipes.Count, Is.GreaterThan(80));
@@ -23,9 +21,9 @@ namespace EmberCrpg.Tests.EditMode.Content
         }
 
         [Test]
-        public void LoadFromStreamingAssets_DeserializesKnownSamples()
+        public void LoadFromStreamingAssets_DeserializesKnownLegacySamples()
         {
-            var db = LoadStreamingAssetsContent();
+            var db = ContentDatabaseTestContext.Load();
 
             Assert.That(db.Items["aberrant_flesh"].rarity, Is.EqualTo("RARE"));
             Assert.That(db.Recipes["iron_bar"].ingredients[0].item_id, Is.EqualTo("iron_ore"));
@@ -39,33 +37,14 @@ namespace EmberCrpg.Tests.EditMode.Content
         }
 
         [Test]
-        public void LoadFromSameRoot_IsDeterministic()
+        public void LoadFromSameRoot_RemainsDeterministic()
         {
-            var first = LoadStreamingAssetsContent();
-            var second = LoadStreamingAssetsContent();
+            var first = ContentDatabaseTestContext.Load();
+            var second = ContentDatabaseTestContext.Load();
 
             Assert.That(second.Items.Count, Is.EqualTo(first.Items.Count));
             Assert.That(second.Recipes["iron_bar"].products[0].item_id, Is.EqualTo(first.Recipes["iron_bar"].products[0].item_id));
             Assert.That(second.LocationCatalog.opening_scenes[0].location, Is.EqualTo(first.LocationCatalog.opening_scenes[0].location));
-        }
-
-        private static ContentDatabase LoadStreamingAssetsContent()
-        {
-            return ContentDatabase.Load(new FixedContentPathProvider(FindContentRoot()));
-        }
-
-        private static string FindContentRoot()
-        {
-            var directory = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);
-            while (directory != null)
-            {
-                var candidate = Path.Combine(directory.FullName, "Assets", "StreamingAssets", "Content");
-                if (Directory.Exists(candidate)) return candidate;
-                directory = directory.Parent;
-            }
-
-            Assert.Fail("Assets/StreamingAssets/Content was not found from the test directory.");
-            return string.Empty;
         }
     }
 }
