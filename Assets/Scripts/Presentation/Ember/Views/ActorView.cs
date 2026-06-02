@@ -90,6 +90,18 @@ namespace EmberCrpg.Presentation.Ember.Views
         private float _walkTimer;
         private Vector3 _lastPosition;
 
+        // Cosmetic idle wander (presentation-only; never written back to the sim — see the note at Update's
+        // shake block). Generated NPCs were all hydrated onto one settlement tile and the per-tick position
+        // sync re-stacked them into a static clump. When enabled, the view strolls within a small radius
+        // around its sim anchor so NPCs spread out and look alive; when the sim actually moves the actor
+        // (a job target), the anchor moves and the NPC follows, still milling. Cap-bounded by the spawner.
+        private bool _wander;
+        private float _wanderRadius;
+        private float _wanderSpeed = 0.6f;
+        private Vector3 _wanderCurrent;
+        private Vector3 _wanderGoal;
+        private float _wanderRepathTimer;
+
         private void Awake()
         {
             if (_billboard == null)
@@ -109,6 +121,28 @@ namespace EmberCrpg.Presentation.Ember.Views
             _hasTarget = true;
         }
 
+        /// <summary>
+        /// Turn on cosmetic idle wander for a generated NPC billboard (called by EmberGeneratedActorSpawner).
+        /// Uses UnityEngine.Random for the stroll only — purely visual, never feeds Domain/Simulation or the
+        /// save (docs/DETERMINISM.md), exactly like the billboard jitter below. Starts at a random in-radius
+        /// offset so a settlement's NPCs are spread the instant they spawn rather than overlapping.
+        /// </summary>
+        public void EnableWander(float radius)
+        {
+            _wander = true;
+            _wanderRadius = Mathf.Max(0.5f, radius);
+            Vector2 start = Random.insideUnitCircle * _wanderRadius;
+            _wanderCurrent = new Vector3(start.x, 0f, start.y);
+            PickWanderGoal();
+        }
+
+        private void PickWanderGoal()
+        {
+            Vector2 g = Random.insideUnitCircle * _wanderRadius;
+            _wanderGoal = new Vector3(g.x, 0f, g.y);
+            _wanderRepathTimer = 2f + (Random.value * 4f);
+        }
+
         public void Apply(int amount)
         {
             _tintRemaining = 0.2f;
@@ -124,9 +158,17 @@ namespace EmberCrpg.Presentation.Ember.Views
         {
             if (!_hasTarget) return;
 
-            // 1. Interpolation
+            // 1. Interpolation (toward the sim position, plus the cosmetic wander offset when enabled)
+            Vector3 targetPos = _target.WorldPosition;
+            if (_wander)
+            {
+                _wanderRepathTimer -= Time.deltaTime;
+                if (_wanderRepathTimer <= 0f) PickWanderGoal();
+                _wanderCurrent = Vector3.MoveTowards(_wanderCurrent, _wanderGoal, _wanderSpeed * Time.deltaTime);
+                targetPos += _wanderCurrent;
+            }
             var t = Mathf.Clamp01(_interpolationSpeed * Time.deltaTime);
-            transform.position = Vector3.Lerp(transform.position, _target.WorldPosition, t);
+            transform.position = Vector3.Lerp(transform.position, targetPos, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, _target.WorldRotation, t);
             
             if (_billboard == null) return;
