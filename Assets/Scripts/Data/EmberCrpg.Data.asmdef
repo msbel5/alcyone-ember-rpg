@@ -2,7 +2,8 @@
     "name": "EmberCrpg.Data",
     "rootNamespace": "EmberCrpg.Data",
     "references": [
-        "EmberCrpg.Domain"
+        "EmberCrpg.Domain",
+        "Unity.Newtonsoft.Json"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -12,5 +13,5 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
-    "noEngineReferences": true
+    "noEngineReferences": false
 }
