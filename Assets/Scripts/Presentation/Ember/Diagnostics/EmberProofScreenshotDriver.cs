@@ -402,7 +402,19 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 bool jobCompleted = HasSmeltCompletionEvent(events, EmberCrpg.Domain.World.WorldEventKind.JobCompleted);
                 int ironIngotCount = CountInventoryQuantity(world.PlayerInventory, "iron", "ingot");
                 bool ironIngotProduced = ironIngotCount > 0;
-                bool passed = jobCompleted && ironIngotProduced;
+
+                // A2: confirm the live quest engine completed the seeded "Forge an Iron Ingot" quest.
+                int questStartedCount = CountEvents(events, EmberCrpg.Domain.World.WorldEventKind.QuestStarted);
+                int questCompletedCount = CountEvents(events, EmberCrpg.Domain.World.WorldEventKind.QuestCompleted);
+                int questCount = world.Quests == null ? 0 : world.Quests.Count;
+                bool anyQuestComplete = false;
+                if (world.Quests != null)
+                {
+                    foreach (var kv in world.Quests.Active)
+                        if (kv.Value != null && kv.Value.IsComplete) { anyQuestComplete = true; break; }
+                }
+
+                bool passed = jobCompleted && ironIngotProduced && anyQuestComplete;
 
                 var report = new StringBuilder();
                 report.AppendLine(passed ? "PASS" : "FAIL");
@@ -414,6 +426,10 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 report.AppendLine("SmeltRecipeCompleted: " + recipeCompleted);
                 report.AppendLine("SmeltJobCompleted: " + jobCompleted);
                 report.AppendLine("IronIngotProduced: " + ironIngotProduced + " qty=" + ironIngotCount);
+                report.AppendLine("QuestCount: " + questCount);
+                report.AppendLine("QuestStartedCount: " + questStartedCount);
+                report.AppendLine("QuestCompletedCount: " + questCompletedCount);
+                report.AppendLine("AnyQuestComplete: " + anyQuestComplete);
                 report.AppendLine("RecentEvents:");
                 AppendRecentEventLines(report, events, 15);
 
@@ -425,7 +441,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                     " jobCompleted=" + jobCompletedCount +
                     " smeltRecipeCompleted=" + recipeCompleted +
                     " smeltJobCompleted=" + jobCompleted +
-                    " ironIngotQty=" + ironIngotCount);
+                    " ironIngotQty=" + ironIngotCount +
+                    " questCompleted=" + questCompletedCount +
+                    " anyQuestComplete=" + anyQuestComplete);
             }
             catch (Exception ex)
             {
