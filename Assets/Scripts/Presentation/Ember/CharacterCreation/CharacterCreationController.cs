@@ -83,7 +83,9 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private string _playerCalling = "survival";
         private string _fateStart = "crossroads";
         private string _suggestedClassId = "warrior";
-        private string _firstSceneName = "SmithingOverworld";
+        // World pivot: New Game now drops into the runtime-generated world (the World Scene Director builds
+        // the starting settlement from worldgen data), not the hardcoded baked forge scene.
+        private string _firstSceneName = EmberScenes.GeneratedWorld;
         private int _rerollsRemaining = 3;
         private bool _storyLaunched;
         private Func<uint, string, string> _portraitJsonProvider;
@@ -119,7 +121,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         public void SetStartScene(string sceneName)
         {
-            _firstSceneName = string.IsNullOrWhiteSpace(sceneName) ? "SmithingOverworld" : sceneName;
+            _firstSceneName = string.IsNullOrWhiteSpace(sceneName) ? EmberScenes.GeneratedWorld : sceneName;
         }
 
         public void Configure(uint seed, string llmJson)

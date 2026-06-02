@@ -15,6 +15,7 @@ namespace EmberCrpg.Editor.Ember.Build
             if (File.Exists(BootScenePath)) paths.Add(BootScenePath);
             AddIfExists(paths, "Assets/Scenes/Ember/MainMenu.unity");
             AddIfExists(paths, "Assets/Scenes/Ember/CharacterCreation.unity");
+            AddIfExists(paths, "Assets/Scenes/Ember/GeneratedWorld.unity"); // runtime-directed world (New Game default)
             AddIfExists(paths, "Assets/Scenes/Ember/SmithingOverworld.unity");
             AddIfExists(paths, "Assets/Scenes/Ember/ColonyNeeds.unity");
             AddIfExists(paths, "Assets/Scenes/Ember/SeasonFarm.unity");

@@ -26,6 +26,13 @@ namespace EmberCrpg.Presentation.Ember
         public const string ShowroomOverview = "ShowroomOverview";
         public const string TavernFlavour = "TavernFlavour";
 
+        /// <summary>
+        /// The near-empty scene the runtime World Scene Director fills from world data (the procedural
+        /// "you stand in the generated starting settlement" entry). Not part of <see cref="GameplayTour"/>:
+        /// the baked-scene proof is unchanged, and this scene's content is built at runtime, not authored.
+        /// </summary>
+        public const string GeneratedWorld = "GeneratedWorld";
+
         /// <summary>The default first gameplay scene a new game drops into.</summary>
         public const string FirstGameplayScene = SmithingOverworld;
 

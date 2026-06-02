@@ -17,6 +17,10 @@ namespace EmberCrpg.Editor.Ember.Menu
         [MenuItem(Root + "Character Creation")]
         public static void BuildCharacterCreation() => RunUiRecipe(new CharacterCreationSceneRecipe());
 
+        // World pivot: the near-empty host scene the runtime World Scene Director fills from world data.
+        [MenuItem(Root + "1. Generated World (runtime-directed host)")]
+        public static void BuildGeneratedWorld() => RunRecipe(new GeneratedWorldSceneRecipe());
+
         [MenuItem(Root + "3. Smithing Overworld")]
         public static void BuildScene3() => RunRecipe(new SmithingOverworldSceneRecipe());
 
@@ -53,6 +57,7 @@ namespace EmberCrpg.Editor.Ember.Menu
             SpriteRegistryAutoBuilder.Build();
             RunUiRecipe(new MainMenuSceneRecipe());
             RunUiRecipe(new CharacterCreationSceneRecipe());
+            RunRecipe(new GeneratedWorldSceneRecipe());
             RunRecipe(new SmithingOverworldSceneRecipe());
             RunRecipe(new ColonyNeedsSceneRecipe());
             RunRecipe(new SeasonFarmSceneRecipe());

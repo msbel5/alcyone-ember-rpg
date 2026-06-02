@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Ember/CharacterCreation.unity
     guid: bea151148587b664e93f3c57ee45598d
   - enabled: 1
+    path: Assets/Scenes/Ember/GeneratedWorld.unity
+    guid: 614a3f43852ac8e42acf469918ebaed1
+  - enabled: 1
     path: Assets/Scenes/Ember/SmithingOverworld.unity
     guid: ba941c4cc7e59564ab17d752e8bb9ea9
   - enabled: 1

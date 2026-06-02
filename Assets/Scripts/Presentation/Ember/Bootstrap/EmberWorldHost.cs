@@ -98,6 +98,14 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             _clock.AdvanceTick(0);
 
+            // World pivot (procedural Scene Director): in the runtime-generated world scene, REALIZE the
+            // player's starting settlement from world data — ground / building shells / lighting / player rig —
+            // now that SeedWorld has produced the overland. Runs BEFORE EnsureGeneratedActorSpawner() below,
+            // which anchors NPC spawning on the "PlayerRig" this creates. Guarded by scene name so the baked
+            // vertical-slice scenes keep their authored geometry and are completely untouched.
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == EmberScenes.GeneratedWorld)
+                EmberCrpg.Presentation.Ember.WorldDirector.WorldSceneDirector.Realize(_worldView);
+
             // The CharCreation -> worldgen flow shows a DontDestroyOnLoad LoadingScreen overlay
             // and loads this scene underneath it, but nothing dismissed the overlay once the
             // world was live -- so the player saw a permanent "loading" screen on top of a
