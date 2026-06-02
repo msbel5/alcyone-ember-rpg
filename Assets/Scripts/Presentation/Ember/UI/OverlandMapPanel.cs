@@ -1,5 +1,7 @@
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Overland;
+using EmberCrpg.Simulation.Overland;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,8 +10,8 @@ namespace EmberCrpg.Presentation.Ember.UI
 {
     /// <summary>
     /// Full-screen overland map overlay, toggled with M. Makes the generated open world VISIBLE: a
-    /// biome-coloured 16x16 region grid with settlement tiles lit gold and the player's region marked
-    /// white, plus a header (size / settlement count / km^2) and a "you are in &lt;town&gt;" footer.
+    /// fine deterministic biome/relief image with settlement dots and the player's region marked white,
+    /// plus a header (size / settlement count / km2) and a "you are in &lt;town&gt;" footer.
     ///
     /// Pattern: pure tick-driven view (same family as <see cref="EventLogHudPanel"/>). The host pushes
     /// the deterministic <see cref="OverlandMap"/> + the player's region tile via <see cref="Render"/>;
@@ -18,15 +20,21 @@ namespace EmberCrpg.Presentation.Ember.UI
     [DisallowMultipleComponent]
     public sealed class OverlandMapPanel : MonoBehaviour
     {
-        private const float MapPixels = 660f;   // square region-grid area
-        private const float CellSpacing = 2f;
+        private const float MapPixels = 660f;   // square map area
+        private const float SettlementMarkerPixels = 7f;
+        private const float PlayerMarkerPixels = 16f;
 
         private TMP_Text _title;
         private TMP_Text _footer;
-        private RectTransform _grid;
-        private GridLayoutGroup _layout;
-        private Image[] _cells;                  // one per region, indexed (y * width) + x
-        private int _builtWidth, _builtHeight;
+        private RectTransform _mapRect;
+        private RawImage _mapImage;
+        private Texture2D _mapTexture;
+        private readonly List<Image> _settlementMarkers = new List<Image>(64);
+        private Image _playerMarker;
+        private Sprite _dotSprite;
+        private Sprite _ringSprite;
+        private ulong _cachedMapKey;
+        private bool _hasCachedMap;
 
         public bool IsVisible => isActiveAndEnabled && gameObject.activeSelf;
 
@@ -56,37 +64,24 @@ namespace EmberCrpg.Presentation.Ember.UI
         /// <summary>Paint the generated overland. Safe to call every frame the panel is open.</summary>
         public void Render(OverlandMap map, GridPosition playerTile, string locationName)
         {
-            if (_grid == null) return;
+            if (_mapRect == null) return;
 
             if (map == null)
             {
                 if (_title != null) _title.text = "OVERLAND MAP — no world generated yet";
                 if (_footer != null) _footer.text = "[M] close";
+                if (_mapImage != null) _mapImage.enabled = false;
+                HideMarkers();
                 return;
             }
 
-            EnsureCells(map.Width, map.Height);
-
-            for (int y = 0; y < map.Height; y++)
-            {
-                for (int x = 0; x < map.Width; x++)
-                {
-                    var cell = _cells[(y * map.Width) + x];
-                    if (cell == null) continue;
-
-                    var tile = map.TileAt(x, y);
-                    Color color = BiomeColor(tile.Biome);
-                    if (tile.SettlementIds != null && tile.SettlementIds.Count > 0)
-                        color = SettlementGlow(color);
-                    if (x == playerTile.X && y == playerTile.Y)
-                        color = Color.white; // the player's home region stands out
-                    cell.color = color;
-                }
-            }
+            EnsureMapTexture(map);
+            EnsureSettlementMarkers(map);
+            PositionPlayerMarker(playerTile, map.Width, map.Height);
 
             int settlements = map.Settlements.Count;
             if (_title != null)
-                _title.text = $"OVERLAND MAP — {map.Width}x{map.Height} regions · {settlements} settlements · 409,600 km²";
+                _title.text = $"OVERLAND MAP - {map.Width}x{map.Height} regions - {settlements} settlements - 409,600 km2";
             if (_footer != null)
             {
                 string where = string.IsNullOrEmpty(locationName)
@@ -96,66 +91,153 @@ namespace EmberCrpg.Presentation.Ember.UI
             }
         }
 
-        // ---- region-grid construction -------------------------------------------------------------
-
-        // Build (or rebuild) one cell Image per region the first time we see a given map size.
-        private void EnsureCells(int width, int height)
+        private void OnDestroy()
         {
-            if (_cells != null && _builtWidth == width && _builtHeight == height)
+            if (_mapTexture != null) Destroy(_mapTexture);
+            DestroySprite(_dotSprite);
+            DestroySprite(_ringSprite);
+        }
+
+        // ---- map image / markers ------------------------------------------------------------------
+
+        private void EnsureMapTexture(OverlandMap map)
+        {
+            ulong mapKey = OverlandMapImageSampler.ComputeCacheKey(map);
+            if (_hasCachedMap && _cachedMapKey == mapKey)
+            {
+                if (_mapImage != null) _mapImage.enabled = true;
+                return;
+            }
+
+            var image = OverlandMapImageSampler.Sample(map);
+            if (_mapTexture == null || _mapTexture.width != image.Width || _mapTexture.height != image.Height)
+            {
+                if (_mapTexture != null) Destroy(_mapTexture);
+                _mapTexture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, mipChain: false)
+                {
+                    name = "OverlandMap_FineImage",
+                    filterMode = FilterMode.Bilinear,
+                    wrapMode = TextureWrapMode.Clamp
+                };
+            }
+
+            _mapTexture.LoadRawTextureData(image.RgbaBytes);
+            _mapTexture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+            _mapImage.texture = _mapTexture;
+            _mapImage.enabled = true;
+            _cachedMapKey = image.CacheKey;
+            _hasCachedMap = true;
+
+            Debug.Log(
+                $"[OverlandMap] built {image.Width}x{image.Height} fine map image " +
+                $"({map.Width}x{map.Height} regions, {map.Settlements.Count} settlements)");
+        }
+
+        private void EnsureSettlementMarkers(OverlandMap map)
+        {
+            while (_settlementMarkers.Count < map.Settlements.Count)
+                _settlementMarkers.Add(CreateMarker("Settlement", _dotSprite, new Color(1f, 0.78f, 0.34f), SettlementMarkerPixels));
+
+            for (int i = 0; i < _settlementMarkers.Count; i++)
+            {
+                bool active = i < map.Settlements.Count;
+                _settlementMarkers[i].gameObject.SetActive(active);
+                if (!active)
+                    continue;
+                PositionMarker((RectTransform)_settlementMarkers[i].transform, map.Settlements[i].TilePosition, map.Width, map.Height);
+            }
+
+            if (_playerMarker != null)
+                _playerMarker.transform.SetAsLastSibling();
+        }
+
+        private void PositionPlayerMarker(GridPosition playerTile, int mapWidth, int mapHeight)
+        {
+            if (_playerMarker == null)
                 return;
 
-            for (int i = _grid.childCount - 1; i >= 0; i--)
-                Destroy(_grid.GetChild(i).gameObject);
-
-            float usable = MapPixels - (CellSpacing * (Mathf.Max(width, height) - 1));
-            float cell = usable / Mathf.Max(width, height);
-            _layout.cellSize = new Vector2(cell, cell);
-            _layout.spacing = new Vector2(CellSpacing, CellSpacing);
-            _layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            _layout.constraintCount = width;
-
-            _cells = new Image[width * height];
-            for (int i = 0; i < _cells.Length; i++)
-            {
-                var go = new GameObject("Region", typeof(RectTransform), typeof(Image));
-                go.transform.SetParent(_grid, worldPositionStays: false);
-                var img = go.GetComponent<Image>();
-                img.raycastTarget = false;
-                _cells[i] = img;
-            }
-
-            _builtWidth = width;
-            _builtHeight = height;
-            Debug.Log($"[OverlandMap] built {width}x{height} region grid ({_cells.Length} cells)");
+            _playerMarker.gameObject.SetActive(true);
+            PositionMarker((RectTransform)_playerMarker.transform, playerTile, mapWidth, mapHeight);
         }
 
-        // ---- biome / settlement palette -----------------------------------------------------------
-
-        private static Color BiomeColor(BiomeKind biome)
+        private void HideMarkers()
         {
-            switch (biome)
-            {
-                case BiomeKind.Plains:   return new Color(0.42f, 0.52f, 0.28f);
-                case BiomeKind.Forest:   return new Color(0.18f, 0.36f, 0.20f);
-                case BiomeKind.Mountain: return new Color(0.48f, 0.47f, 0.52f);
-                case BiomeKind.Coast:    return new Color(0.26f, 0.46f, 0.62f);
-                case BiomeKind.Swamp:    return new Color(0.27f, 0.34f, 0.26f);
-                case BiomeKind.Desert:   return new Color(0.74f, 0.66f, 0.42f);
-                case BiomeKind.Tundra:   return new Color(0.68f, 0.72f, 0.75f);
-                case BiomeKind.Ash:      return new Color(0.34f, 0.24f, 0.24f);
-                default:                 return new Color(0.30f, 0.30f, 0.30f);
-            }
+            for (int i = 0; i < _settlementMarkers.Count; i++)
+                _settlementMarkers[i].gameObject.SetActive(false);
+            if (_playerMarker != null)
+                _playerMarker.gameObject.SetActive(false);
         }
 
-        // Pull a settlement tile toward ember-gold so towns read at a glance over the biome base.
-        private static Color SettlementGlow(Color biome)
+        private Image CreateMarker(string name, Sprite sprite, Color color, float size)
         {
-            return Color.Lerp(biome, new Color(1f, 0.78f, 0.34f), 0.72f);
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(_mapRect, worldPositionStays: false);
+
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(size, size);
+
+            var image = go.GetComponent<Image>();
+            image.sprite = sprite;
+            image.color = color;
+            image.raycastTarget = false;
+            return image;
+        }
+
+        private static void PositionMarker(RectTransform marker, GridPosition tile, int mapWidth, int mapHeight)
+        {
+            int x = Mathf.Clamp(tile.X, 0, mapWidth - 1);
+            int y = Mathf.Clamp(tile.Y, 0, mapHeight - 1);
+            float px = (((x + 0.5f) / mapWidth) - 0.5f) * MapPixels;
+            float py = (((y + 0.5f) / mapHeight) - 0.5f) * MapPixels;
+            marker.anchoredPosition = new Vector2(px, py);
+        }
+
+        private static Sprite BuildMarkerSprite(string name, int size, bool ring)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: false)
+            {
+                name = name + "_Texture",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            var pixels = new Color32[size * size];
+            float center = (size - 1) * 0.5f;
+            float outer = size * 0.45f;
+            float inner = ring ? size * 0.27f : -1f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - center;
+                    float dy = y - center;
+                    float distance = Mathf.Sqrt((dx * dx) + (dy * dy));
+                    bool visible = distance <= outer && (!ring || distance >= inner);
+                    pixels[(y * size) + x] = visible ? new Color32(255, 255, 255, 255) : new Color32(255, 255, 255, 0);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+        }
+
+        private static void DestroySprite(Sprite sprite)
+        {
+            if (sprite == null)
+                return;
+            var texture = sprite.texture;
+            Destroy(sprite);
+            if (texture != null)
+                Destroy(texture);
         }
 
         // ---- chrome -------------------------------------------------------------------------------
 
-        // Self-build the full-screen dimmer + centered title / grid / footer. Mirrors the prefab-free
+        // Self-build the full-screen dimmer + centered title / map / footer. Mirrors the prefab-free
         // construction EventLogHudPanel uses so the panel drops into any scene's HUD canvas.
         private void BuildChrome()
         {
@@ -170,6 +252,9 @@ namespace EmberCrpg.Presentation.Ember.UI
             dim.color = new Color(0.02f, 0.02f, 0.03f, 0.92f);
             dim.raycastTarget = true; // swallow clicks behind the map
 
+            _dotSprite = BuildMarkerSprite("OverlandMap_Dot", 16, ring: false);
+            _ringSprite = BuildMarkerSprite("OverlandMap_Ring", 24, ring: true);
+
             _title = NewText("Title", root, 22f, new Color(0.96f, 0.84f, 0.45f), TextAlignmentOptions.Center);
             var titleRect = (RectTransform)_title.transform;
             titleRect.anchorMin = new Vector2(0.5f, 1f);
@@ -179,18 +264,19 @@ namespace EmberCrpg.Presentation.Ember.UI
             titleRect.sizeDelta = new Vector2(MapPixels + 80f, 40f);
             _title.text = "OVERLAND MAP";
 
-            var gridGo = new GameObject("RegionGrid", typeof(RectTransform), typeof(GridLayoutGroup));
-            gridGo.transform.SetParent(root, worldPositionStays: false);
-            _grid = (RectTransform)gridGo.transform;
-            _grid.anchorMin = new Vector2(0.5f, 0.5f);
-            _grid.anchorMax = new Vector2(0.5f, 0.5f);
-            _grid.pivot = new Vector2(0.5f, 0.5f);
-            _grid.sizeDelta = new Vector2(MapPixels, MapPixels);
-            _grid.anchoredPosition = new Vector2(0f, 8f);
-            _layout = gridGo.GetComponent<GridLayoutGroup>();
-            _layout.startCorner = GridLayoutGroup.Corner.LowerLeft; // tile (0,0) bottom-left, like the world
-            _layout.startAxis = GridLayoutGroup.Axis.Horizontal;
-            _layout.childAlignment = TextAnchor.MiddleCenter;
+            var mapGo = new GameObject("FineMap", typeof(RectTransform), typeof(RawImage));
+            mapGo.transform.SetParent(root, worldPositionStays: false);
+            _mapRect = (RectTransform)mapGo.transform;
+            _mapRect.anchorMin = new Vector2(0.5f, 0.5f);
+            _mapRect.anchorMax = new Vector2(0.5f, 0.5f);
+            _mapRect.pivot = new Vector2(0.5f, 0.5f);
+            _mapRect.sizeDelta = new Vector2(MapPixels, MapPixels);
+            _mapRect.anchoredPosition = new Vector2(0f, 8f);
+            _mapImage = mapGo.GetComponent<RawImage>();
+            _mapImage.raycastTarget = false;
+
+            _playerMarker = CreateMarker("PlayerMarker", _ringSprite, Color.white, PlayerMarkerPixels);
+            _playerMarker.gameObject.SetActive(false);
 
             _footer = NewText("Footer", root, 16f, new Color(0.86f, 0.88f, 0.82f), TextAlignmentOptions.Center);
             var footRect = (RectTransform)_footer.transform;
