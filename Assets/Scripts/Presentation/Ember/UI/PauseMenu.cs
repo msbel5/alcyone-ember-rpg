@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using EmberCrpg.Data.Save;
 using EmberCrpg.Presentation.Ember.Inputs;
 using EmberCrpg.Presentation.Ember.Save;
+using EmberCrpg.Presentation.Ember.UI.Options;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
@@ -18,6 +19,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         private bool _isPaused;
         private SaveSlotBrowserState _slotState;
         private TextMeshProUGUI _slotText;
+        private OptionsScreen _optionsScreen;
         public bool IsPaused => _isPaused;
 
         private void Awake()
@@ -91,6 +93,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             group.childControlWidth = true;
 
             CreateButton(layoutGo.transform, "RESUME", Resume);
+            CreateButton(layoutGo.transform, "OPTIONS", OpenOptions);
             CreateButton(layoutGo.transform, "SAVE (F5)", InvokeSave);
             CreateButton(layoutGo.transform, "LOAD (F9)", InvokeLoad);
             _slotState = new SaveSlotBrowserState(10);
@@ -115,6 +118,31 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             var svc = Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.Save.EmberSaveService>(FindObjectsInactive.Include);
             if (svc != null) svc.Load();
+        }
+
+        // Why: the pause menu owns the single options host instance but does not know any concrete sections.
+        private void OpenOptions()
+        {
+            if (_optionsScreen == null)
+            {
+                _optionsScreen = GetComponentInParent<Canvas>()?.GetComponentInChildren<OptionsScreen>(true);
+                if (_optionsScreen == null)
+                {
+                    var go = new GameObject("OptionsScreen", typeof(RectTransform), typeof(Image), typeof(CanvasGroup), typeof(OptionsScreen));
+                    go.transform.SetParent(transform.parent, worldPositionStays: false);
+                    var rt = go.GetComponent<RectTransform>();
+                    rt.anchorMin = Vector2.zero;
+                    rt.anchorMax = Vector2.one;
+                    rt.offsetMin = Vector2.zero;
+                    rt.offsetMax = Vector2.zero;
+                    go.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.35f);
+                    _optionsScreen = go.GetComponent<OptionsScreen>();
+                }
+
+                _optionsScreen.Initialize(_font, _panelFrame);
+            }
+
+            _optionsScreen.Open(this);
         }
 
         private void PreviousSlot()

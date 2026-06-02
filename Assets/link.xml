@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="Assembly-CSharp">
+    <type fullname="EmberCrpg.Presentation.Ember.UI.Options.*" preserve="all"/>
+  </assembly>
+</linker>
