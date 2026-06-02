@@ -95,7 +95,7 @@ namespace EmberCrpg.Simulation.Worldgen
             IReadOnlyList<FactionRelationSeed> factionRelations,
             IReadOnlyList<NpcSeedRecord> npcs,
             IReadOnlyList<WorldHistoryEvent> history)
-            : this(seed, regions, settlements, factions, factionRelations, npcs, history, Array.Empty<NotableFigureRecord>())
+            : this(seed, regions, settlements, factions, factionRelations, npcs, history, Array.Empty<NotableFigureRecord>(), null)
         {
         }
 
@@ -108,6 +108,20 @@ namespace EmberCrpg.Simulation.Worldgen
             IReadOnlyList<NpcSeedRecord> npcs,
             IReadOnlyList<WorldHistoryEvent> history,
             IReadOnlyList<NotableFigureRecord> notableFigures)
+            : this(seed, regions, settlements, factions, factionRelations, npcs, history, notableFigures, null)
+        {
+        }
+
+        public GeneratedWorld(
+            uint seed,
+            IReadOnlyList<RegionRecord> regions,
+            IReadOnlyList<SettlementRecord> settlements,
+            IReadOnlyList<FactionRecord> factions,
+            IReadOnlyList<FactionRelationSeed> factionRelations,
+            IReadOnlyList<NpcSeedRecord> npcs,
+            IReadOnlyList<WorldHistoryEvent> history,
+            IReadOnlyList<NotableFigureRecord> notableFigures,
+            WorldGeography geography)
         {
             if (regions == null) throw new ArgumentNullException(nameof(regions));
             if (settlements == null) throw new ArgumentNullException(nameof(settlements));
@@ -125,6 +139,7 @@ namespace EmberCrpg.Simulation.Worldgen
             Npcs = Wrap(npcs);
             History = Wrap(history);
             NotableFigures = Wrap(notableFigures);
+            Geography = geography;
         }
 
         public uint Seed { get; }
@@ -135,6 +150,7 @@ namespace EmberCrpg.Simulation.Worldgen
         public IReadOnlyList<NpcSeedRecord> Npcs { get; }
         public IReadOnlyList<WorldHistoryEvent> History { get; }
         public IReadOnlyList<NotableFigureRecord> NotableFigures { get; }
+        public WorldGeography Geography { get; }
 
         public int TotalPopulation
         {

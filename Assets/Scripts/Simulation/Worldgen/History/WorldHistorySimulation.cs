@@ -57,11 +57,27 @@ namespace EmberCrpg.Simulation.Worldgen.History
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
             if (regions == null) throw new ArgumentNullException(nameof(regions));
+
+            var geography = WorldGeographyProvider.Generate(worldSeed, parameters, regions);
+            return Simulate(worldSeed, parameters, geography, regions, factions, settlements);
+        }
+
+        public WorldHistorySimulationResult Simulate(
+            uint worldSeed,
+            WorldgenParameters parameters,
+            WorldGeography geography,
+            IReadOnlyList<RegionRecord> regions,
+            IReadOnlyList<FactionRecord> factions,
+            IReadOnlyList<SettlementRecord> settlements)
+        {
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (geography == null) throw new ArgumentNullException(nameof(geography));
+            if (regions == null) throw new ArgumentNullException(nameof(regions));
             if (factions == null) throw new ArgumentNullException(nameof(factions));
             if (settlements == null) throw new ArgumentNullException(nameof(settlements));
 
             var tuning = HistorySimulationTuning.From(parameters);
-            var state = HistoryState.Create(worldSeed, parameters, regions, factions, settlements, tuning);
+            var state = HistoryState.Create(worldSeed, parameters, geography, regions, factions, settlements, tuning);
             var sink = new HistoryEventBuffer(parameters.HistoryYears * 4);
             var eras = CreateEras(tuning);
 
@@ -251,7 +267,9 @@ namespace EmberCrpg.Simulation.Worldgen.History
             uint worldSeed,
             int startYear,
             int historyYears,
-            int gridWidth,
+            int mapWidth,
+            int mapHeight,
+            WorldGeography geography,
             HistorySimulationTuning tuning,
             HistoryRegionState[] regions,
             HistoricalSettlementState[] settlements,
@@ -264,7 +282,10 @@ namespace EmberCrpg.Simulation.Worldgen.History
             WorldSeed = worldSeed;
             StartYear = startYear;
             HistoryYears = historyYears;
-            GridWidth = gridWidth;
+            GridWidth = mapWidth;
+            MapWidth = mapWidth;
+            MapHeight = mapHeight;
+            Geography = geography;
             Tuning = tuning;
             Regions = regions;
             Settlements = settlements;
@@ -293,6 +314,9 @@ namespace EmberCrpg.Simulation.Worldgen.History
         public int StartYear { get; }
         public int HistoryYears { get; }
         public int GridWidth { get; }
+        public int MapWidth { get; }
+        public int MapHeight { get; }
+        public WorldGeography Geography { get; }
         public HistorySimulationTuning Tuning { get; }
         public HistoryRegionState[] Regions { get; }
         public HistoricalSettlementState[] Settlements { get; }
@@ -330,6 +354,23 @@ namespace EmberCrpg.Simulation.Worldgen.History
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
             if (regions == null) throw new ArgumentNullException(nameof(regions));
+
+            var geography = WorldGeographyProvider.Generate(worldSeed, parameters, regions);
+            return Create(worldSeed, parameters, geography, regions, factions, settlements, tuning);
+        }
+
+        public static HistoryState Create(
+            uint worldSeed,
+            WorldgenParameters parameters,
+            WorldGeography geography,
+            IReadOnlyList<RegionRecord> regions,
+            IReadOnlyList<FactionRecord> factions,
+            IReadOnlyList<SettlementRecord> settlements,
+            HistorySimulationTuning tuning)
+        {
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (geography == null) throw new ArgumentNullException(nameof(geography));
+            if (regions == null) throw new ArgumentNullException(nameof(regions));
             if (factions == null) throw new ArgumentNullException(nameof(factions));
             if (settlements == null) throw new ArgumentNullException(nameof(settlements));
             if (tuning == null) throw new ArgumentNullException(nameof(tuning));
@@ -351,13 +392,14 @@ namespace EmberCrpg.Simulation.Worldgen.History
                 sortedSettlements.Add(settlements[i]);
             sortedSettlements.Sort(CompareSettlementRecord);
 
-            int gridWidth = CeilingSqrt(sortedRegions.Count);
             int startYear = parameters.WorldStartYear - parameters.HistoryYears;
             var regionIndexById = new Dictionary<RegionId, int>();
             var settlementPopulationByRegion = new long[sortedRegions.Count];
 
             for (int i = 0; i < sortedRegions.Count; i++)
                 regionIndexById[sortedRegions[i].Id] = i;
+
+            var regionTileGroups = BuildRegionTileGroups(geography, regionIndexById, sortedRegions.Count);
 
             for (int i = 0; i < sortedSettlements.Count; i++)
             {
@@ -371,8 +413,9 @@ namespace EmberCrpg.Simulation.Worldgen.History
             for (int i = 0; i < sortedRegions.Count; i++)
             {
                 var record = sortedRegions[i];
-                int x = i % gridWidth;
-                int y = i / gridWidth;
+                int centerTile = ChooseRegionCenterTile(geography, regionTileGroups[i], record);
+                int x = centerTile % geography.Width;
+                int y = centerTile / geography.Width;
                 double settlementSignal = Clamp01((double)settlementPopulationByRegion[i] / (averagePopulationTarget * 1.8));
                 double suitability = Clamp01(BiomeSuitability(record.Biome, parameters.Style, parameters.Genre) + (settlementSignal * 0.10));
                 double kMax = record.PopulationHigh + (averagePopulationTarget * 2.6);
@@ -387,6 +430,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
 
             var settlementIndexById = new Dictionary<SettlementId, int>();
             var settlementStates = new HistoricalSettlementState[sortedSettlements.Count];
+            var tileOccupancy = new int[geography.TileCount];
             for (int i = 0; i < sortedSettlements.Count; i++)
             {
                 var record = sortedSettlements[i];
@@ -395,7 +439,9 @@ namespace EmberCrpg.Simulation.Worldgen.History
                     throw new ArgumentException("Settlement " + record.Name + " points at missing region " + record.Region + ".", nameof(settlements));
 
                 int factionIndex = sortedFactions.Count == 0 ? 0 : (int)((record.Id.Value - 1UL) % (ulong)sortedFactions.Count);
-                settlementStates[i] = new HistoricalSettlementState(record, i, regionIndex, factionIndex);
+                int tileIndex = ChooseSettlementTile(geography, record, regionStates[regionIndex], regionTileGroups[regionIndex], tileOccupancy);
+                tileOccupancy[tileIndex]++;
+                settlementStates[i] = new HistoricalSettlementState(record, i, regionIndex, factionIndex, tileIndex % geography.Width, tileIndex / geography.Width);
                 settlementIndexById[record.Id] = i;
             }
 
@@ -425,7 +471,9 @@ namespace EmberCrpg.Simulation.Worldgen.History
                 worldSeed,
                 startYear,
                 parameters.HistoryYears,
-                gridWidth,
+                geography.Width,
+                geography.Height,
+                geography,
                 tuning,
                 regionStates,
                 settlementStates,
@@ -433,7 +481,169 @@ namespace EmberCrpg.Simulation.Worldgen.History
                 relations,
                 regionIndexById,
                 settlementIndexById,
-                BuildNeighbors(sortedRegions.Count, gridWidth));
+                BuildNeighbors(geography, regionIndexById, sortedRegions.Count));
+        }
+
+        private static List<int>[] BuildRegionTileGroups(WorldGeography geography, Dictionary<RegionId, int> regionIndexById, int regionCount)
+        {
+            var groups = new List<int>[regionCount];
+            for (int i = 0; i < groups.Length; i++)
+                groups[i] = new List<int>();
+
+            for (int tile = 0; tile < geography.TileCount; tile++)
+            {
+                int regionIndex;
+                if (!regionIndexById.TryGetValue(geography.RegionIds[tile], out regionIndex))
+                    throw new ArgumentException("Geography tile points at a region that is not part of this history state.", nameof(geography));
+
+                if (geography.LandMask[tile])
+                    groups[regionIndex].Add(tile);
+            }
+
+            return groups;
+        }
+
+        private static int ChooseRegionCenterTile(WorldGeography geography, IReadOnlyList<int> regionTiles, RegionRecord record)
+        {
+            if (regionTiles.Count == 0)
+            {
+                if (record.HasTilePosition && record.TileX < geography.Width && record.TileY < geography.Height)
+                    return (record.TileY * geography.Width) + record.TileX;
+
+                for (int tile = 0; tile < geography.TileCount; tile++)
+                {
+                    if (geography.LandMask[tile])
+                        return tile;
+                }
+
+                return 0;
+            }
+
+            double centerX = 0.0;
+            double centerY = 0.0;
+            for (int i = 0; i < regionTiles.Count; i++)
+            {
+                centerX += regionTiles[i] % geography.Width;
+                centerY += regionTiles[i] / geography.Width;
+            }
+
+            centerX /= regionTiles.Count;
+            centerY /= regionTiles.Count;
+
+            int best = regionTiles[0];
+            double bestDistance = double.MaxValue;
+            for (int i = 0; i < regionTiles.Count; i++)
+            {
+                int tile = regionTiles[i];
+                int x = tile % geography.Width;
+                int y = tile / geography.Width;
+                double dx = x - centerX;
+                double dy = y - centerY;
+                double distance = (dx * dx) + (dy * dy);
+                if (distance < bestDistance || (distance == bestDistance && tile < best))
+                {
+                    bestDistance = distance;
+                    best = tile;
+                }
+            }
+
+            return best;
+        }
+
+        private static int ChooseSettlementTile(
+            WorldGeography geography,
+            SettlementRecord record,
+            HistoryRegionState region,
+            IReadOnlyList<int> candidates,
+            int[] tileOccupancy)
+        {
+            int bestTile = -1;
+            int bestScore = int.MinValue;
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                int tile = candidates[i];
+                int score = ScoreSettlementTile(geography, record, region, tile, tileOccupancy[tile]);
+                if (score > bestScore || (score == bestScore && tile < bestTile))
+                {
+                    bestScore = score;
+                    bestTile = tile;
+                }
+            }
+
+            return bestTile >= 0 ? bestTile : ChooseGlobalSettlementTile(geography, record, region, tileOccupancy);
+        }
+
+        private static int ChooseGlobalSettlementTile(WorldGeography geography, SettlementRecord record, HistoryRegionState region, int[] tileOccupancy)
+        {
+            int bestTile = -1;
+            int bestScore = int.MinValue;
+            for (int tile = 0; tile < geography.TileCount; tile++)
+            {
+                if (!geography.LandMask[tile])
+                    continue;
+
+                int score = ScoreSettlementTile(geography, record, region, tile, tileOccupancy[tile]);
+                if (score > bestScore || (score == bestScore && tile < bestTile))
+                {
+                    bestScore = score;
+                    bestTile = tile;
+                }
+            }
+
+            return bestTile >= 0 ? bestTile : 0;
+        }
+
+        private static int ScoreSettlementTile(WorldGeography geography, SettlementRecord record, HistoryRegionState region, int tile, int occupancy)
+        {
+            int x = tile % geography.Width;
+            int y = tile / geography.Width;
+            int distance = Math.Abs(region.X - x) + Math.Abs(region.Y - y);
+            int score = (int)(SettlementBiomeWeight(geography.WorldBiomes[tile], record.Size) * 1000.0);
+            score += (int)(geography.Elevation[tile] * 90.0);
+            score -= occupancy * 90;
+            score -= distance * ((int)record.Size >= (int)SettlementSize.Town ? 18 : 9);
+            score += StableSettlementTie(record.Id, tile);
+            return score;
+        }
+
+        private static double SettlementBiomeWeight(BiomeKind biome, SettlementSize size)
+        {
+            double value;
+            switch (biome)
+            {
+                case BiomeKind.TemperatePlain: value = 1.18; break;
+                case BiomeKind.CoastalMarsh: value = 1.08; break;
+                case BiomeKind.BorealForest: value = 0.94; break;
+                case BiomeKind.AridSteppe: value = 0.64; break;
+                case BiomeKind.TropicalJungle: value = 0.62; break;
+                case BiomeKind.MountainHighland: value = 0.44; break;
+                case BiomeKind.DesertWaste: value = 0.34; break;
+                case BiomeKind.FrozenTundra: value = 0.32; break;
+                default: value = 0.50; break;
+            }
+
+            if (size == SettlementSize.Capital || size == SettlementSize.City)
+            {
+                if (biome == BiomeKind.TemperatePlain || biome == BiomeKind.CoastalMarsh || biome == BiomeKind.BorealForest)
+                    value += 0.24;
+                if (biome == BiomeKind.MountainHighland || biome == BiomeKind.DesertWaste || biome == BiomeKind.FrozenTundra)
+                    value -= 0.16;
+            }
+
+            return value;
+        }
+
+        private static int StableSettlementTie(SettlementId id, int tile)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                hash = (hash ^ (uint)id.Value) * 16777619u;
+                hash = (hash ^ (uint)(id.Value >> 32)) * 16777619u;
+                hash = (hash ^ (uint)tile) * 16777619u;
+                return (int)(hash % 37u);
+            }
         }
 
         public int YearOffset(int year)
@@ -858,41 +1068,130 @@ namespace EmberCrpg.Simulation.Worldgen.History
             return matrix;
         }
 
-        private static int CeilingSqrt(int value)
+        private static int[][] BuildNeighbors(WorldGeography geography, Dictionary<RegionId, int> regionIndexById, int count)
         {
-            int width = 1;
-            while (width * width < value)
-                width++;
-            return width;
-        }
+            var neighbors = new List<int>[count];
+            for (int i = 0; i < count; i++)
+                neighbors[i] = new List<int>(4);
 
-        private static int[][] BuildNeighbors(int count, int gridWidth)
-        {
+            for (int y = 0; y < geography.Height; y++)
+            {
+                for (int x = 0; x < geography.Width; x++)
+                {
+                    int index = (y * geography.Width) + x;
+                    if (!geography.LandMask[index])
+                        continue;
+
+                    int region = RegionIndexAtTile(geography, regionIndexById, index);
+                    if (x + 1 < geography.Width)
+                        TryAddGeographyNeighbor(geography, regionIndexById, neighbors, region, index + 1);
+                    if (y + 1 < geography.Height)
+                        TryAddGeographyNeighbor(geography, regionIndexById, neighbors, region, index + geography.Width);
+                }
+            }
+
+            AddNearestFallbackNeighbors(geography, regionIndexById, neighbors);
+
             var result = new int[count][];
             for (int i = 0; i < count; i++)
             {
-                var neighbors = new List<int>(4);
-                int x = i % gridWidth;
-                int y = i / gridWidth;
-
-                AddNeighbor(neighbors, x - 1, y, count, gridWidth);
-                AddNeighbor(neighbors, x + 1, y, count, gridWidth);
-                AddNeighbor(neighbors, x, y - 1, count, gridWidth);
-                AddNeighbor(neighbors, x, y + 1, count, gridWidth);
-                neighbors.Sort();
-                result[i] = neighbors.ToArray();
+                neighbors[i].Sort();
+                result[i] = neighbors[i].ToArray();
             }
+
             return result;
         }
 
-        private static void AddNeighbor(List<int> neighbors, int x, int y, int count, int gridWidth)
+        private static void TryAddGeographyNeighbor(
+            WorldGeography geography,
+            Dictionary<RegionId, int> regionIndexById,
+            List<int>[] neighbors,
+            int region,
+            int neighborTile)
         {
-            if (x < 0 || y < 0 || x >= gridWidth)
+            if (!geography.LandMask[neighborTile])
                 return;
 
-            int index = y * gridWidth + x;
-            if (index >= 0 && index < count)
-                neighbors.Add(index);
+            int other = RegionIndexAtTile(geography, regionIndexById, neighborTile);
+            if (region == other)
+                return;
+
+            AddNeighborPair(neighbors, region, other);
+        }
+
+        private static void AddNearestFallbackNeighbors(WorldGeography geography, Dictionary<RegionId, int> regionIndexById, List<int>[] neighbors)
+        {
+            if (neighbors.Length <= 1)
+                return;
+
+            var groups = BuildRegionTileGroups(geography, regionIndexById, neighbors.Length);
+            var centers = new int[neighbors.Length];
+            for (int i = 0; i < centers.Length; i++)
+                centers[i] = ChooseCenterTileFromGroup(geography, groups[i], i, regionIndexById);
+
+            for (int region = 0; region < neighbors.Length; region++)
+            {
+                if (neighbors[region].Count > 0)
+                    continue;
+
+                int nearest = 0;
+                int bestDistance = int.MaxValue;
+                for (int other = 0; other < centers.Length; other++)
+                {
+                    if (other == region)
+                        continue;
+
+                    int distance = TileDistanceSquared(geography.Width, centers[region], centers[other]);
+                    if (distance < bestDistance || (distance == bestDistance && other < nearest))
+                    {
+                        nearest = other;
+                        bestDistance = distance;
+                    }
+                }
+
+                AddNeighborPair(neighbors, region, nearest);
+            }
+        }
+
+        private static int ChooseCenterTileFromGroup(WorldGeography geography, IReadOnlyList<int> group, int regionIndex, Dictionary<RegionId, int> regionIndexById)
+        {
+            if (group.Count > 0)
+                return ChooseRegionCenterTile(geography, group, new RegionRecord(new RegionId((ulong)(regionIndex + 1)), "fallback", 0, 0, BiomeKind.TemperatePlain));
+
+            for (int tile = 0; tile < geography.TileCount; tile++)
+            {
+                if (RegionIndexAtTile(geography, regionIndexById, tile) == regionIndex)
+                    return tile;
+            }
+
+            return 0;
+        }
+
+        private static void AddNeighborPair(List<int>[] neighbors, int a, int b)
+        {
+            if (!neighbors[a].Contains(b))
+                neighbors[a].Add(b);
+            if (!neighbors[b].Contains(a))
+                neighbors[b].Add(a);
+        }
+
+        private static int RegionIndexAtTile(WorldGeography geography, Dictionary<RegionId, int> regionIndexById, int tile)
+        {
+            int region;
+            if (!regionIndexById.TryGetValue(geography.RegionIds[tile], out region))
+                throw new ArgumentException("Geography tile points at a region that is not part of this history state.", nameof(geography));
+            return region;
+        }
+
+        private static int TileDistanceSquared(int width, int a, int b)
+        {
+            int ax = a % width;
+            int ay = a / width;
+            int bx = b % width;
+            int by = b / width;
+            int dx = ax - bx;
+            int dy = ay - by;
+            return (dx * dx) + (dy * dy);
         }
 
         private static int CompareRegionRecord(RegionRecord a, RegionRecord b)
@@ -1044,11 +1343,18 @@ namespace EmberCrpg.Simulation.Worldgen.History
     public sealed class HistoricalSettlementState
     {
         public HistoricalSettlementState(SettlementRecord record, int index, int regionIndex, int factionIndex)
+            : this(record, index, regionIndex, factionIndex, record != null ? record.TileX : -1, record != null ? record.TileY : -1)
+        {
+        }
+
+        public HistoricalSettlementState(SettlementRecord record, int index, int regionIndex, int factionIndex, int tileX, int tileY)
         {
             Record = record ?? throw new ArgumentNullException(nameof(record));
             Index = index;
             RegionIndex = regionIndex;
             FactionIndex = factionIndex;
+            TileX = tileX;
+            TileY = tileY;
             CurrentTier = SettlementSize.None;
             FoundedYear = int.MinValue;
         }
@@ -1057,6 +1363,8 @@ namespace EmberCrpg.Simulation.Worldgen.History
         public int Index { get; }
         public int RegionIndex { get; }
         public int FactionIndex { get; set; }
+        public int TileX { get; }
+        public int TileY { get; }
         public bool Founded { get; set; }
         public bool Isolated { get; set; }
         public int FoundedYear { get; set; }

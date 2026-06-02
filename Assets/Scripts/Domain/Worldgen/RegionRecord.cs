@@ -13,6 +13,11 @@ namespace EmberCrpg.Domain.Worldgen
     public sealed class RegionRecord
     {
         public RegionRecord(RegionId id, string name, int populationLow, int populationHigh, BiomeKind biome)
+            : this(id, name, populationLow, populationHigh, biome, -1, -1)
+        {
+        }
+
+        public RegionRecord(RegionId id, string name, int populationLow, int populationHigh, BiomeKind biome, int tileX, int tileY)
         {
             if (id.IsEmpty)
                 throw new ArgumentException("RegionId.Empty cannot back a RegionRecord.", nameof(id));
@@ -24,12 +29,16 @@ namespace EmberCrpg.Domain.Worldgen
                 throw new ArgumentOutOfRangeException(nameof(populationLow), populationLow, "Region population bounds must be non-negative.");
             if (populationHigh < populationLow)
                 throw new ArgumentOutOfRangeException(nameof(populationHigh), populationHigh, "populationHigh must be greater than or equal to populationLow.");
+            if ((tileX < 0 || tileY < 0) && !(tileX == -1 && tileY == -1))
+                throw new ArgumentOutOfRangeException(nameof(tileX), "Region tile coordinates must both be non-negative, or both be -1 for legacy positionless records.");
 
             Id = id;
             Name = name;
             PopulationLow = populationLow;
             PopulationHigh = populationHigh;
             Biome = biome;
+            TileX = tileX;
+            TileY = tileY;
         }
 
         public RegionId Id { get; }
@@ -37,5 +46,10 @@ namespace EmberCrpg.Domain.Worldgen
         public int PopulationLow { get; }
         public int PopulationHigh { get; }
         public BiomeKind Biome { get; }
+        public int TileX { get; }
+        public int TileY { get; }
+        public int X => TileX;
+        public int Y => TileY;
+        public bool HasTilePosition => TileX >= 0 && TileY >= 0;
     }
 }

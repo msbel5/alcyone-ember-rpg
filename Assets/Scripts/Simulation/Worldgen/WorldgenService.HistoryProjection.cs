@@ -61,7 +61,9 @@ namespace EmberCrpg.Simulation.Worldgen
                     settlement.Record.Region,
                     settlement.Record.Name,
                     population,
-                    settlement.CurrentTier));
+                    settlement.CurrentTier,
+                    settlement.TileX,
+                    settlement.TileY));
             }
 
             return projected;

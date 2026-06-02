@@ -11,12 +11,13 @@ namespace EmberCrpg.Simulation.Worldgen
         private static WorldHistorySimulationResult GenerateHistory(
             uint seed,
             WorldgenParameters parameters,
+            WorldGeography geography,
             IReadOnlyList<RegionRecord> regions,
             IReadOnlyList<FactionRecord> factions,
             IReadOnlyList<SettlementRecord> settlements)
         {
             var simulator = new WorldHistorySimulator();
-            return simulator.Simulate(seed, parameters, regions, factions, settlements);
+            return simulator.Simulate(seed, parameters, geography, regions, factions, settlements);
         }
     }
 }

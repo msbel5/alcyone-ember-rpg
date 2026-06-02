@@ -51,13 +51,28 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
         }
 
         [Test]
-        public void AncientPilgrimage_BiomeWeightsFavorHarshSacredRoutes()
+        public void AncientPilgrimage_RegionsUseAuthoritativeGeographyTiles()
         {
             var world = WorldgenService.Generate(42u, WorldgenParameters.For(WorldStyle.AncientMythology, WorldGenre.Pilgrimage));
 
-            int harsh = world.Regions.Count(r => r.Biome == BiomeKind.DesertWaste || r.Biome == BiomeKind.MountainHighland || r.Biome == BiomeKind.AridSteppe);
-            int lush = world.Regions.Count(r => r.Biome == BiomeKind.TemperatePlain || r.Biome == BiomeKind.TropicalJungle);
-            Assert.That(harsh, Is.GreaterThan(lush));
+            Assert.That(world.Geography, Is.Not.Null);
+            foreach (var region in world.Regions)
+            {
+                Assert.That(region.HasTilePosition, Is.True);
+                Assert.That(world.Geography.RegionAt(region.TileX, region.TileY), Is.EqualTo(region.Id));
+
+                bool biomeAppearsInRegion = false;
+                for (int tile = 0; tile < world.Geography.TileCount; tile++)
+                {
+                    if (world.Geography.RegionIds[tile] == region.Id && world.Geography.WorldBiomes[tile] == region.Biome)
+                    {
+                        biomeAppearsInRegion = true;
+                        break;
+                    }
+                }
+
+                Assert.That(biomeAppearsInRegion, Is.True, $"{region.Name} should carry a biome present in its tile cluster.");
+            }
         }
 
         [Test]

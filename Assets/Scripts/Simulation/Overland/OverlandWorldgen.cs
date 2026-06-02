@@ -13,7 +13,6 @@ namespace EmberCrpg.Simulation.Overland
     public static partial class OverlandWorldgen
     {
         private const uint FallbackSeed = 42u;
-        private static readonly WorldGenerationManager ContinentalDirector = new WorldGenerationManager();
 
         public static OverlandMap Generate(uint seed, OverlandParameters parameters)
         {
@@ -33,47 +32,55 @@ namespace EmberCrpg.Simulation.Overland
                 throw new ArgumentNullException(nameof(parameters));
 
             uint normalizedSeed = world.Seed == 0u ? FallbackSeed : world.Seed;
-            var rng = new XorShiftRng(normalizedSeed);
+            var geography = world.Geography ?? WorldGeographyProvider.Generate(normalizedSeed, world.Regions.Count, world.Regions);
+            EnsureMatchingParameters(geography, parameters);
 
-            var regionSeeds = BuildRegionSeeds(rng, world.Regions, parameters.Width, parameters.Height);
-            var regionIds = AssignRegions(parameters.Width, parameters.Height, regionSeeds);
-            var continent = ContinentalDirector.Generate(normalizedSeed, parameters.Width, parameters.Height);
-            var biomes = continent.CopyBiomes();
-            var land = continent.CopyLandMask();
-            SmoothSingleTileIslands(parameters.Width, parameters.Height, biomes, land);
-
-            var settlements = PlaceSettlements(normalizedSeed, parameters, world, regionIds, biomes, land);
-            var tileSeeds = RollTileSeeds(normalizedSeed, parameters.Width * parameters.Height);
-            var tiles = BuildTiles(parameters, regionIds, biomes, tileSeeds, settlements);
-            var map = new OverlandMap(parameters.Width, parameters.Height, tiles, settlements);
+            var regionIds = geography.CopyRegionIds();
+            var biomes = geography.CopyOverlandBiomes();
+            var land = geography.CopyLandMask();
+            var settlements = ProjectSettlements(world.Settlements, geography);
+            var tileSeeds = RollTileSeeds(normalizedSeed, geography.TileCount);
+            var tiles = BuildTiles(geography.Width, geography.Height, regionIds, biomes, tileSeeds, settlements);
+            var map = new OverlandMap(geography.Width, geography.Height, tiles, settlements);
             OverlandMapLandMaskStore.Register(map, land);
             return map;
         }
 
+        private static void EnsureMatchingParameters(WorldGeography geography, OverlandParameters parameters)
+        {
+            if (parameters.Width != geography.Width || parameters.Height != geography.Height)
+            {
+                throw new ArgumentException(
+                    "Overland parameters must match the GeneratedWorld geography dimensions for direct world projection.",
+                    nameof(parameters));
+            }
+        }
+
         private static RegionTile[] BuildTiles(
-            OverlandParameters parameters,
+            int width,
+            int height,
             RegionId[] regionIds,
             BiomeKind[] biomes,
             uint[] tileSeeds,
             IReadOnlyList<OverlandSettlement> settlements)
         {
-            var settlementIdsByTile = new List<SettlementId>[parameters.Width * parameters.Height];
+            var settlementIdsByTile = new List<SettlementId>[width * height];
             for (int i = 0; i < settlementIdsByTile.Length; i++)
                 settlementIdsByTile[i] = new List<SettlementId>();
 
             for (int i = 0; i < settlements.Count; i++)
             {
                 var settlement = settlements[i];
-                int tileIndex = ToIndex(settlement.TilePosition.X, settlement.TilePosition.Y, parameters.Width);
+                int tileIndex = ToIndex(settlement.TilePosition.X, settlement.TilePosition.Y, width);
                 settlementIdsByTile[tileIndex].Add(settlement.Id);
             }
 
-            var tiles = new RegionTile[parameters.Width * parameters.Height];
-            for (int y = 0; y < parameters.Height; y++)
+            var tiles = new RegionTile[width * height];
+            for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < parameters.Width; x++)
+                for (int x = 0; x < width; x++)
                 {
-                    int index = ToIndex(x, y, parameters.Width);
+                    int index = ToIndex(x, y, width);
                     tiles[index] = new RegionTile(
                         x,
                         y,
@@ -114,22 +121,6 @@ namespace EmberCrpg.Simulation.Overland
         private static int ToIndex(int x, int y, int width)
         {
             return (y * width) + x;
-        }
-
-        private readonly struct SeedPoint<TValue>
-        {
-            public SeedPoint(int x, int y, TValue value, int order)
-            {
-                X = x;
-                Y = y;
-                Value = value;
-                Order = order;
-            }
-
-            public int X { get; }
-            public int Y { get; }
-            public TValue Value { get; }
-            public int Order { get; }
         }
     }
 }

@@ -60,8 +60,12 @@ namespace EmberCrpg.Simulation.Worldgen
 
             var rng = new XorShiftRng(seed);
 
+            // -- 0. Geography -------------------------------------------------
+            var geographyBuild = WorldGeographyProvider.Build(seed, parameters);
+
             // -- 1. Regions ---------------------------------------------------
-            var regions = GenerateRegions(rng, parameters);
+            var regions = GenerateRegions(rng, parameters, geographyBuild);
+            var geography = geographyBuild.Materialize(regions);
 
             // -- 2. Settlements ----------------------------------------------
             var settlements = GenerateSettlements(rng, parameters, regions);
@@ -73,13 +77,13 @@ namespace EmberCrpg.Simulation.Worldgen
             var relations = GenerateFactionRelations(rng, factions);
 
             // -- 5. History --------------------------------------------------
-            var historyResult = GenerateHistory(seed, parameters, regions, factions, settlements);
+            var historyResult = GenerateHistory(seed, parameters, geography, regions, factions, settlements);
             var projected = ProjectHistoryState(historyResult);
 
             // -- 6. NPCs -----------------------------------------------------
             var npcs = GenerateNpcs(rng, parameters, projected.Settlements, factions);
 
-            return new GeneratedWorld(seed, regions, projected.Settlements, factions, relations, npcs, historyResult.Events, projected.NotableFigures);
+            return new GeneratedWorld(seed, regions, projected.Settlements, factions, relations, npcs, historyResult.Events, projected.NotableFigures, geography);
         }
 
     }

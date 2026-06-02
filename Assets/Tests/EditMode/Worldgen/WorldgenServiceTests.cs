@@ -46,6 +46,8 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             Assert.That(worldA.Settlements[0].Name, Is.EqualTo(worldB.Settlements[0].Name));
             Assert.That(worldA.Settlements[0].Population, Is.EqualTo(worldB.Settlements[0].Population));
             Assert.That(worldA.Settlements[0].Size, Is.EqualTo(worldB.Settlements[0].Size));
+            Assert.That(worldA.Settlements[0].TileX, Is.EqualTo(worldB.Settlements[0].TileX));
+            Assert.That(worldA.Settlements[0].TileY, Is.EqualTo(worldB.Settlements[0].TileY));
             Assert.That(worldA.Npcs[0].Name, Is.EqualTo(worldB.Npcs[0].Name));
             Assert.That(worldA.Npcs[0].BirthYear, Is.EqualTo(worldB.Npcs[0].BirthYear));
             Assert.That(worldA.Npcs[0].Role, Is.EqualTo(worldB.Npcs[0].Role));
@@ -207,6 +209,31 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             {
                 Assert.That(regionIds.Contains(settlement.Region), Is.True,
                     $"Settlement {settlement.Name} attached to region {settlement.Region}, which is not in the world.");
+            }
+        }
+
+        [Test]
+        public void WorldgenService_SettlementsHaveAuthoritativeLandTiles()
+        {
+            var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
+
+            Assert.That(world.Geography, Is.Not.Null);
+            foreach (var region in world.Regions)
+            {
+                Assert.That(region.HasTilePosition, Is.True, $"{region.Name} should have a geography center.");
+                Assert.That(region.TileX, Is.InRange(0, world.Geography.Width - 1));
+                Assert.That(region.TileY, Is.InRange(0, world.Geography.Height - 1));
+            }
+
+            foreach (var settlement in world.Settlements)
+            {
+                Assert.That(settlement.HasTilePosition, Is.True, $"{settlement.Name} should have a founded tile.");
+                Assert.That(settlement.TileX, Is.InRange(0, world.Geography.Width - 1));
+                Assert.That(settlement.TileY, Is.InRange(0, world.Geography.Height - 1));
+                Assert.That(world.Geography.IsLandAt(settlement.TileX, settlement.TileY), Is.True,
+                    $"{settlement.Name} should be founded on land.");
+                Assert.That(world.Geography.RegionAt(settlement.TileX, settlement.TileY), Is.EqualTo(settlement.Region),
+                    $"{settlement.Name} should be founded inside its owning region tile cluster.");
             }
         }
 

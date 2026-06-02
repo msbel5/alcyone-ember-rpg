@@ -1,5 +1,6 @@
 using EmberCrpg.Domain.Overland;
 using EmberCrpg.Simulation.Overland;
+using EmberCrpg.Simulation.Worldgen;
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Overland
@@ -36,8 +37,9 @@ namespace EmberCrpg.Tests.EditMode.Overland
         public void Sample_CoastBiome_SeparatesOceanWaterFromCoastLand()
         {
             var parameters = OverlandParameters.Default;
-            var map = OverlandWorldgen.Generate(42u, parameters);
-            var fields = new WorldGenerationManager().Generate(42u, parameters.Width, parameters.Height);
+            var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
+            var map = OverlandWorldgen.Generate(world, parameters);
+            var geography = world.Geography;
             int oceanIndex = -1;
             int shoreIndex = -1;
 
@@ -46,9 +48,9 @@ namespace EmberCrpg.Tests.EditMode.Overland
                 if (map.Tiles[i].Biome != BiomeKind.Coast)
                     continue;
 
-                if (fields.LandMask[i] && shoreIndex < 0)
+                if (geography.LandMask[i] && shoreIndex < 0)
                     shoreIndex = i;
-                if (!fields.LandMask[i] && oceanIndex < 0)
+                if (!geography.LandMask[i] && oceanIndex < 0)
                     oceanIndex = i;
             }
 

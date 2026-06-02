@@ -12,18 +12,21 @@ namespace EmberCrpg.Simulation.Worldgen
     {
         // ---------------- regions ----------------
 
-        private static List<RegionRecord> GenerateRegions(IDeterministicRng rng, WorldgenParameters parameters)
+        private static List<RegionRecord> GenerateRegions(IDeterministicRng rng, WorldgenParameters parameters, WorldGeographyBuild geography)
         {
+            if (geography == null) throw new ArgumentNullException(nameof(geography));
+
             var nameBag = new HashSet<string>(StringComparer.Ordinal);
             var regions = new List<RegionRecord>(parameters.RegionCount);
 
             for (int i = 0; i < parameters.RegionCount; i++)
             {
+                var regionGeography = geography.Regions[i];
                 var word = SyllableNameForge.ForgeUnique(rng, nameBag);
                 var suffix = RegionSuffixes[rng.NextInt(RegionSuffixes.Length)];
                 var name = word + " " + suffix;
 
-                var biome = RollBiome(rng, parameters);
+                var biome = regionGeography.WorldBiome;
 
                 // Per-region population bounds are coarse — the realized
                 // total comes from summing settlements, not from sampling
@@ -32,7 +35,7 @@ namespace EmberCrpg.Simulation.Worldgen
                 int low = 5_000 + rng.NextInt(15_000);
                 int high = low + 5_000 + rng.NextInt(50_000);
 
-                regions.Add(new RegionRecord(new RegionId((ulong)(i + 1)), name, low, high, biome));
+                regions.Add(new RegionRecord(new RegionId((ulong)(i + 1)), name, low, high, biome, regionGeography.CenterX, regionGeography.CenterY));
             }
 
             return regions;

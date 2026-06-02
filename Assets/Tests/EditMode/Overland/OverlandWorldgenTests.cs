@@ -135,30 +135,30 @@ namespace EmberCrpg.Tests.EditMode.Overland
         }
 
         [Test]
-        public void Generate_PlacesSettlementsInBounds_WithinDensityBand_AndWithoutOrphans()
+        public void Generate_ProjectsEveryWorldSettlementOntoItsHistoryTile()
         {
             var parameters = OverlandParameters.Default;
-            var map = OverlandWorldgen.Generate(42u, parameters);
-            var continent = new WorldGenerationManager().Generate(42u, parameters.Width, parameters.Height);
-            int capacity = EstimateSettlementCapacity(map, parameters, continent);
-
-            Assert.That(map.Settlements.Count, Is.GreaterThanOrEqualTo(12));
-            Assert.That(map.Settlements.Count, Is.LessThanOrEqualTo(capacity));
-
+            var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
+            var map = OverlandWorldgen.Generate(world, parameters);
+            var mapSettlementsById = new Dictionary<ulong, OverlandSettlement>();
             for (int i = 0; i < map.Settlements.Count; i++)
-            {
-                var settlement = map.Settlements[i];
-                Assert.That(settlement.TilePosition.X, Is.InRange(0, map.Width - 1));
-                Assert.That(settlement.TilePosition.Y, Is.InRange(0, map.Height - 1));
-                Assert.That(continent.IsLandAt(settlement.TilePosition.X, settlement.TilePosition.Y), Is.True,
-                    $"Settlement {settlement.Name} spawned in ocean at {settlement.TilePosition}.");
+                mapSettlementsById.Add(map.Settlements[i].Id.Value, map.Settlements[i]);
 
-                if (map.Settlements.Count > 1)
-                {
-                    int nearestOther = NearestOtherDistance(map, i);
-                    Assert.That(nearestOther, Is.LessThanOrEqualTo(10),
-                        $"Settlement {settlement.Name} is too isolated at {settlement.TilePosition}.");
-                }
+            Assert.That(map.Settlements.Count, Is.EqualTo(world.Settlements.Count));
+
+            for (int i = 0; i < world.Settlements.Count; i++)
+            {
+                var worldSettlement = world.Settlements[i];
+                Assert.That(worldSettlement.HasTilePosition, Is.True, $"{worldSettlement.Name} should have a history tile.");
+                Assert.That(worldSettlement.TileX, Is.InRange(0, map.Width - 1));
+                Assert.That(worldSettlement.TileY, Is.InRange(0, map.Height - 1));
+                Assert.That(world.Geography.IsLandAt(worldSettlement.TileX, worldSettlement.TileY), Is.True,
+                    $"Settlement {worldSettlement.Name} should be on a land tile.");
+
+                Assert.That(mapSettlementsById.TryGetValue(worldSettlement.Id.Value, out var mapSettlement), Is.True);
+                Assert.That(mapSettlement.TilePosition.X, Is.EqualTo(worldSettlement.TileX));
+                Assert.That(mapSettlement.TilePosition.Y, Is.EqualTo(worldSettlement.TileY));
+                Assert.That(map.TileAt(worldSettlement.TileX, worldSettlement.TileY).SettlementIds, Does.Contain(worldSettlement.Id));
             }
         }
 
@@ -168,16 +168,18 @@ namespace EmberCrpg.Tests.EditMode.Overland
             var parameters = OverlandParameters.Default;
             var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
             var map = OverlandWorldgen.Generate(world, parameters);
-            var worldSettlementNames = new Dictionary<ulong, string>();
+            var worldSettlements = new Dictionary<ulong, EmberCrpg.Domain.Worldgen.SettlementRecord>();
             for (int i = 0; i < world.Settlements.Count; i++)
-                worldSettlementNames.Add(world.Settlements[i].Id.Value, world.Settlements[i].Name);
+                worldSettlements.Add(world.Settlements[i].Id.Value, world.Settlements[i]);
 
-            Assert.That(map.Settlements.Count, Is.GreaterThan(0));
+            Assert.That(map.Settlements.Count, Is.EqualTo(world.Settlements.Count));
             for (int i = 0; i < map.Settlements.Count; i++)
             {
                 var settlement = map.Settlements[i];
-                Assert.That(worldSettlementNames.ContainsKey(settlement.Id.Value), Is.True);
-                Assert.That(settlement.Name, Is.EqualTo(worldSettlementNames[settlement.Id.Value]));
+                Assert.That(worldSettlements.TryGetValue(settlement.Id.Value, out var worldSettlement), Is.True);
+                Assert.That(settlement.Name, Is.EqualTo(worldSettlement.Name));
+                Assert.That(settlement.TilePosition.X, Is.EqualTo(worldSettlement.TileX));
+                Assert.That(settlement.TilePosition.Y, Is.EqualTo(worldSettlement.TileY));
             }
         }
 
@@ -349,46 +351,5 @@ namespace EmberCrpg.Tests.EditMode.Overland
             return count;
         }
 
-        private static int EstimateSettlementCapacity(OverlandMap map, OverlandParameters parameters, OverlandWorldFields fields)
-        {
-            double capacity = 0d;
-            for (int i = 0; i < map.Tiles.Count; i++)
-                capacity += BiomeDensityWeight(map.Tiles[i].Biome, fields.LandMask[i]) * parameters.SettlementDensity;
-            return (int)System.Math.Round(capacity, System.MidpointRounding.AwayFromZero);
-        }
-
-        private static double BiomeDensityWeight(BiomeKind biome, bool isLand)
-        {
-            if (!isLand)
-                return 0d;
-
-            switch (biome)
-            {
-                case BiomeKind.Plains: return 1.20d;
-                case BiomeKind.Forest: return 0.95d;
-                case BiomeKind.Coast: return 1.10d;
-                case BiomeKind.Mountain: return 0.55d;
-                case BiomeKind.Swamp: return 0.45d;
-                case BiomeKind.Desert: return 0.35d;
-                case BiomeKind.Tundra: return 0.40d;
-                default: return 0.30d;
-            }
-        }
-
-        private static int NearestOtherDistance(OverlandMap map, int settlementIndex)
-        {
-            var source = map.Settlements[settlementIndex];
-            int best = int.MaxValue;
-            for (int i = 0; i < map.Settlements.Count; i++)
-            {
-                if (i == settlementIndex)
-                    continue;
-                int distance = map.DistanceBetween(source.Id, map.Settlements[i].Id);
-                if (distance < best)
-                    best = distance;
-            }
-
-            return best;
-        }
     }
 }
