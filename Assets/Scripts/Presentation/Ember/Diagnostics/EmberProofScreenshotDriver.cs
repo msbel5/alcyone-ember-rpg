@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using EmberCrpg.Presentation.Ember.CharacterCreation;
 using EmberCrpg.Presentation.Ember.Inputs;
 using EmberCrpg.Presentation.Ember.Loading;
@@ -54,6 +55,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             if (HasArg("--ember-forge-proof"))
             {
                 yield return RunForgeProof();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
+            if (HasArg("--ember-world-proof"))
+            {
+                yield return RunWorldProof();
                 if (HasArg("--ember-proof-quit")) Application.Quit();
                 yield break;
             }
@@ -367,6 +375,66 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 "PngPath: " + pngPath + "\n");
         }
 
+        private IEnumerator RunWorldProof()
+        {
+            var path = Path.Combine(_outputDir, "world-proof.txt");
+            try
+            {
+                var options = EmberCrpg.Domain.Configuration.EmberRuntimeOptionsProvider.Current;
+                var fallback = options.WorldHost;
+                var world = new EmberCrpg.Simulation.World.WorldFactory().Create(roomSeed: 1);
+                var adapter = new EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter(world);
+                adapter.SeedWorld(
+                    fallback.FallbackMood,
+                    fallback.FallbackCalling,
+                    fallback.FallbackStart,
+                    fallback.FallbackWorldSeed);
+
+                int ticksPerDay = EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay;
+                adapter.AdvanceTick(0);
+                for (int tick = 1; tick <= ticksPerDay; tick++)
+                    adapter.AdvanceTick(tick);
+
+                var events = world.Events?.Events;
+                int jobAssignedCount = CountEvents(events, EmberCrpg.Domain.World.WorldEventKind.JobAssigned);
+                int jobCompletedCount = CountEvents(events, EmberCrpg.Domain.World.WorldEventKind.JobCompleted);
+                bool recipeCompleted = HasSmeltCompletionEvent(events, EmberCrpg.Domain.World.WorldEventKind.RecipeCompleted);
+                bool jobCompleted = HasSmeltCompletionEvent(events, EmberCrpg.Domain.World.WorldEventKind.JobCompleted);
+                int ironIngotCount = CountInventoryQuantity(world.PlayerInventory, "iron", "ingot");
+                bool ironIngotProduced = ironIngotCount > 0;
+                bool passed = jobCompleted && ironIngotProduced;
+
+                var report = new StringBuilder();
+                report.AppendLine(passed ? "PASS" : "FAIL");
+                report.AppendLine("TicksRun: " + ticksPerDay);
+                report.AppendLine("SeedArgs: mood=" + fallback.FallbackMood + " calling=" + fallback.FallbackCalling + " start=" + fallback.FallbackStart + " seed=" + fallback.FallbackWorldSeed);
+                report.AppendLine("DetectionNote: completion scan checks reason text for smelt/iron, then falls back to ReasonTrace recipe:1001 because live completion reasons are id-based.");
+                report.AppendLine("JobAssignedCount: " + jobAssignedCount);
+                report.AppendLine("JobCompletedCount: " + jobCompletedCount);
+                report.AppendLine("SmeltRecipeCompleted: " + recipeCompleted);
+                report.AppendLine("SmeltJobCompleted: " + jobCompleted);
+                report.AppendLine("IronIngotProduced: " + ironIngotProduced + " qty=" + ironIngotCount);
+                report.AppendLine("RecentEvents:");
+                AppendRecentEventLines(report, events, 15);
+
+                File.WriteAllText(path, report.ToString());
+                Debug.Log(
+                    "[WorldProof] " + (passed ? "PASS" : "FAIL") +
+                    " ticks=" + ticksPerDay +
+                    " jobAssigned=" + jobAssignedCount +
+                    " jobCompleted=" + jobCompletedCount +
+                    " smeltRecipeCompleted=" + recipeCompleted +
+                    " smeltJobCompleted=" + jobCompleted +
+                    " ironIngotQty=" + ironIngotCount);
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText(path, "FAIL\nException:\n" + ex + "\n");
+                Debug.LogError("[WorldProof] FAIL exception while running world proof: " + ex);
+            }
+            yield break;
+        }
+
         // E7-020 Stage 0 baseline hook.
         // Compile-safe without com.unity.inputsystem: this path records facade outputs only.
         private IEnumerator RunInputProof()
@@ -450,6 +518,84 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 if (string.Equals(args[i], name, StringComparison.Ordinal))
                     return args[i + 1];
             return fallback;
+        }
+
+        private static int CountEvents(IReadOnlyList<EmberCrpg.Domain.World.WorldEvent> events, EmberCrpg.Domain.World.WorldEventKind kind)
+        {
+            if (events == null) return 0;
+            int count = 0;
+            for (int i = 0; i < events.Count; i++)
+            {
+                if (events[i] != null && events[i].Kind == kind)
+                    count++;
+            }
+            return count;
+        }
+
+        private static bool HasSmeltCompletionEvent(IReadOnlyList<EmberCrpg.Domain.World.WorldEvent> events, EmberCrpg.Domain.World.WorldEventKind kind)
+        {
+            if (events == null) return false;
+            string recipeCause = "recipe:" + EmberCrpg.Data.Recipes.ProductionRecipeRegistry.SmeltIronIngotId.Value;
+            for (int i = 0; i < events.Count; i++)
+            {
+                var worldEvent = events[i];
+                if (worldEvent == null || worldEvent.Kind != kind)
+                    continue;
+                if (ContainsIgnoreCase(worldEvent.Reason, "smelt") || ContainsIgnoreCase(worldEvent.Reason, "iron"))
+                    return true;
+                var trace = worldEvent.ReasonTrace;
+                if (trace == null) continue;
+                for (int causeIndex = 0; causeIndex < trace.Causes.Count; causeIndex++)
+                {
+                    var cause = trace.Causes[causeIndex];
+                    if (ContainsIgnoreCase(cause, "smelt") || ContainsIgnoreCase(cause, "iron") || string.Equals(cause, recipeCause, StringComparison.Ordinal))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private static int CountInventoryQuantity(EmberCrpg.Domain.Inventory.InventoryState inventory, string requiredFragmentA, string requiredFragmentB)
+        {
+            if (inventory == null || string.IsNullOrEmpty(requiredFragmentA) || string.IsNullOrEmpty(requiredFragmentB)) return 0;
+            int quantity = 0;
+            for (int i = 0; i < inventory.Items.Count; i++)
+            {
+                var item = inventory.Items[i];
+                if (item != null
+                    && ContainsIgnoreCase(item.TemplateId, requiredFragmentA)
+                    && ContainsIgnoreCase(item.TemplateId, requiredFragmentB))
+                    quantity += item.Quantity;
+            }
+            return quantity;
+        }
+
+        private static void AppendRecentEventLines(StringBuilder report, IReadOnlyList<EmberCrpg.Domain.World.WorldEvent> events, int maxLines)
+        {
+            if (events == null || events.Count == 0)
+            {
+                report.AppendLine("(none)");
+                return;
+            }
+
+            int start = events.Count - maxLines;
+            if (start < 0) start = 0;
+            for (int i = start; i < events.Count; i++)
+            {
+                var worldEvent = events[i];
+                if (worldEvent == null) continue;
+                report.AppendLine(
+                    "time=" + worldEvent.Tick.TotalMinutes +
+                    " kind=" + worldEvent.Kind +
+                    " reason=" + worldEvent.Reason);
+            }
+        }
+
+        private static bool ContainsIgnoreCase(string value, string fragment)
+        {
+            return !string.IsNullOrEmpty(value)
+                   && !string.IsNullOrEmpty(fragment)
+                   && value.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }
