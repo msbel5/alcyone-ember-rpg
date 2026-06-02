@@ -56,6 +56,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 startLocation);
             HydrateGeneratedWorld(generated, preferredSize);
 
+            // W1: generate the deterministic open-world overland map (PRD_overland_map_v1) from the same
+            // world seed, so New Game produces a traversable Daggerfall-shaped map alongside the colony world.
+            _world.Overland = EmberCrpg.Simulation.Overland.OverlandWorldgen.Generate(
+                seed, EmberCrpg.Domain.Overland.OverlandParameters.Default);
+
             UnityEngine.Debug.Log(
                 $"Domain Seeded: seed={seed} style={style} genre={genre} mood='{mood}' calling='{calling}' start='{startLocation}' " +
                 $"regions={generated.Regions.Count} settlements={generated.Settlements.Count} " +

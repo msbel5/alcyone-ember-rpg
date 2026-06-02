@@ -414,7 +414,11 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                         if (kv.Value != null && kv.Value.IsComplete) { anyQuestComplete = true; break; }
                 }
 
-                bool passed = jobCompleted && ironIngotProduced && anyQuestComplete;
+                // W1-live: confirm the deterministic overland map was generated during New Game seeding.
+                var overland = world.Overland;
+                bool overlandHasSettlements = overland != null && overland.Settlements.Count > 0;
+
+                bool passed = jobCompleted && ironIngotProduced && anyQuestComplete && overlandHasSettlements;
 
                 var report = new StringBuilder();
                 report.AppendLine(passed ? "PASS" : "FAIL");
@@ -430,6 +434,21 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 report.AppendLine("QuestStartedCount: " + questStartedCount);
                 report.AppendLine("QuestCompletedCount: " + questCompletedCount);
                 report.AppendLine("AnyQuestComplete: " + anyQuestComplete);
+                report.AppendLine("OverlandPresent: " + (overland != null));
+                if (overland != null)
+                {
+                    report.AppendLine("OverlandSize: " + overland.Width + "x" + overland.Height);
+                    report.AppendLine("OverlandSettlements: " + overland.Settlements.Count);
+                    var biomeCounts = new System.Collections.Generic.Dictionary<string, int>();
+                    for (int i = 0; i < overland.Tiles.Count; i++)
+                    {
+                        var b = overland.Tiles[i].Biome.ToString();
+                        biomeCounts[b] = (biomeCounts.TryGetValue(b, out var c) ? c : 0) + 1;
+                    }
+                    var biomeSb = new StringBuilder();
+                    foreach (var kv in biomeCounts) biomeSb.Append(kv.Key).Append('=').Append(kv.Value).Append(' ');
+                    report.AppendLine("OverlandBiomes: " + biomeSb.ToString().TrimEnd());
+                }
                 report.AppendLine("RecentEvents:");
                 AppendRecentEventLines(report, events, 15);
 

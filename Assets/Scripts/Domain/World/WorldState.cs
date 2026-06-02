@@ -39,6 +39,9 @@ namespace EmberCrpg.Domain.World
         public FactionStore Factions = new FactionStore();
         public WorldEventLog Events = new WorldEventLog();
         public QuestStore Quests = new QuestStore();
+        // The generated open-world overland map (PRD_overland_map_v1). Deterministic from the world seed,
+        // so it is regenerable on load — set during SeedWorld, reference-copied by CopyFrom.
+        public EmberCrpg.Domain.Overland.OverlandMap Overland;
         public PriceLedger Prices = new PriceLedger();
         public List<StockpileComponent> Stockpiles = new List<StockpileComponent>();
         public List<TradeRouteDef> TradeRoutes = new List<TradeRouteDef>();
@@ -171,6 +174,7 @@ namespace EmberCrpg.Domain.World
             Factions = other.Factions;
             Events = other.Events;
             Quests = other.Quests;
+            Overland = other.Overland;
             Prices = other.Prices;
             Stockpiles = other.Stockpiles;
             TradeRoutes = other.TradeRoutes;
