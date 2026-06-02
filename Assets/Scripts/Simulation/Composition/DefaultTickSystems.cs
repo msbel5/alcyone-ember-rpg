@@ -1,9 +1,11 @@
 // Why this file is intentionally long: each adapter mirrors one legacy WorldTickComposer statement so the registry refactor can be reviewed for zero behavior drift.
 using System;
 using System.Collections.Generic;
+using EmberCrpg.Data.Recipes;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.Time;
 using EmberCrpg.Domain.World;
@@ -145,6 +147,48 @@ namespace EmberCrpg.Simulation.Composition
                             $"worksite:{result.WorksitePosition.X},{result.WorksitePosition.Y}",
                         })));
                 }
+
+                if (world.PlayerInventory == null || world.Events == null)
+                    return;
+
+                foreach (var request in world.Jobs.Requests)
+                {
+                    if (!world.Jobs.IsClaimed(request.Id))
+                        continue;
+
+                    RecipeDef recipe;
+                    try
+                    {
+                        recipe = ProductionRecipeRegistry.Resolve(request.RecipeId);
+                    }
+                    catch (KeyNotFoundException)
+                    {
+                        continue;
+                    }
+
+                    _jobAssignment.StartRecipeForClaim(
+                        world.Actors,
+                        world.Jobs,
+                        world.Worksites,
+                        recipe,
+                        world.PlayerInventory,
+                        request.Id,
+                        out _);
+                }
+
+                var nextOutputItemId = NextInventoryItemId(world.PlayerInventory);
+                _jobAssignment.TickAssignedJobs(
+                    world.Actors,
+                    world.Jobs,
+                    world.Worksites,
+                    world.PlayerInventory,
+                    world.Events,
+                    context.Stamp,
+                    output => new InventoryItem(
+                        new ItemId(nextOutputItemId++),
+                        output.ItemTag,
+                        ToDisplayName(output.ItemTag),
+                        1));
             }
         }
 
@@ -306,6 +350,36 @@ namespace EmberCrpg.Simulation.Composition
                                   (WorldTickComposer.TicksPerGameDay * WorldTickComposer.MinutesPerTick);
                 return composerDay % _config.DaysPerDecayStep == 0;
             }
+        }
+
+        private static ulong NextInventoryItemId(InventoryState inventory)
+        {
+            ulong max = 0UL;
+            foreach (var item in inventory.Items)
+            {
+                if (item.Id.Value > max)
+                    max = item.Id.Value;
+            }
+
+            return max + 1UL;
+        }
+
+        private static string ToDisplayName(string itemTag)
+        {
+            if (string.IsNullOrWhiteSpace(itemTag))
+                return "Crafted Item";
+
+            var parts = itemTag.Split('_');
+            for (var i = 0; i < parts.Length; i++)
+            {
+                if (string.IsNullOrEmpty(parts[i]))
+                    continue;
+
+                var part = parts[i];
+                parts[i] = char.ToUpperInvariant(part[0]) + part.Substring(1);
+            }
+
+            return string.Join(" ", parts);
         }
     }
 }

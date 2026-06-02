@@ -7,6 +7,7 @@ using EmberCrpg.Domain.AiDm;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Combat;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
@@ -200,19 +201,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             if (_world.Sites == null) return;
 
-            // Deterministic anchor: the chosen starting settlement, else the first settlement site,
-            // else the first site of any kind. SiteId.Value seeds every derived id/position below.
-            SiteId anchor = StartingSettlement.IsEmpty ? default : SettlementSiteId(StartingSettlement);
-            if (anchor.IsEmpty || !_world.Sites.TryGet(anchor, out _))
-            {
-                foreach (var site in _world.Sites.Records)
-                {
-                    if (site.Kind == SiteKind.Settlement) { anchor = site.Id; break; }
-                }
-            }
-            if (anchor.IsEmpty || !_world.Sites.TryGet(anchor, out _))
-                anchor = FirstSiteId();
-            if (anchor.IsEmpty || !_world.Sites.TryGet(anchor, out var anchorSite))
+            if (!TryGetStartingProductionAnchor(out var anchor, out var anchorSite))
                 return;
 
             // Worksite cells: anchored to the site's min corner so they never collide with the
@@ -253,6 +242,21 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     quantity: 1,
                     requesterId: anchor.Value == 0UL ? new ActorId(1UL) : new ActorId(anchor.Value)));
             }
+
+            // The live production loop currently consumes from world.PlayerInventory. Seed the exact
+            // recipe inputs there so the claimed smelting job can actually start and produce output.
+            EnsureInventoryContains(
+                _world.PlayerInventory ?? (_world.PlayerInventory = new InventoryState(10)),
+                new ItemId(9_000_000UL + baseId * 10UL + 4UL),
+                "iron_ore",
+                "Iron Ore",
+                requiredQuantity: 2);
+            EnsureInventoryContains(
+                _world.PlayerInventory,
+                new ItemId(9_000_000UL + baseId * 10UL + 5UL),
+                "fuel",
+                "Fuel",
+                requiredQuantity: 1);
         }
 
         private void HydrateFactions(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
@@ -311,14 +315,78 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (_world.Actors == null) return;
 
             ActorRecord worker = null;
+            GridPosition preferredSmithPosition = default;
+            var hasPreferredPosition = false;
+            var preferredHomePosition = default(GridPosition);
+            if (TryGetStartingProductionAnchor(out var anchor, out var anchorSite))
+            {
+                preferredHomePosition = CenterOfSite(anchor);
+                preferredSmithPosition = anchorSite.MinBound.Translate(1, 1);
+                hasPreferredPosition = true;
+            }
+
             foreach (var actor in _world.Actors.Records)
             {
                 if (actor == null || !actor.IsAlive || actor.Id.Value < GeneratedNpcActorOffset)
                     continue;
-                worker ??= actor; // deterministic first generated NPC, by insertion order
+                if (worker == null)
+                    worker = actor; // deterministic fallback: first generated NPC, by insertion order
+                if (hasPreferredPosition && actor.Position.Equals(preferredHomePosition))
+                {
+                    worker = actor;
+                    break;
+                }
             }
 
-            worker?.ApplyJobPreferences(new[] { new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)) });
+            if (worker == null)
+                return;
+
+            worker.ApplyJobPreferences(new[] { new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)) });
+            if (hasPreferredPosition)
+                worker.MoveTo(preferredSmithPosition);
+        }
+
+        private bool TryGetStartingProductionAnchor(out SiteId anchor, out SiteRecord anchorSite)
+        {
+            anchorSite = default; // CS0177: assign on every path; the success branch overwrites via TryGet below.
+            anchor = StartingSettlement.IsEmpty ? default : SettlementSiteId(StartingSettlement);
+            if (anchor.IsEmpty || !_world.Sites.TryGet(anchor, out _))
+            {
+                foreach (var site in _world.Sites.Records)
+                {
+                    if (site.Kind == SiteKind.Settlement)
+                    {
+                        anchor = site.Id;
+                        break;
+                    }
+                }
+            }
+
+            if (anchor.IsEmpty || !_world.Sites.TryGet(anchor, out _))
+                anchor = FirstSiteId();
+
+            return !anchor.IsEmpty && _world.Sites.TryGet(anchor, out anchorSite);
+        }
+
+        private static void EnsureInventoryContains(
+            InventoryState inventory,
+            ItemId seedItemId,
+            string templateId,
+            string displayName,
+            int requiredQuantity)
+        {
+            var existingQuantity = 0;
+            foreach (var item in inventory.Items)
+            {
+                if (!item.IsEquipment && string.Equals(item.TemplateId, templateId, System.StringComparison.Ordinal))
+                    existingQuantity += item.Quantity;
+            }
+
+            if (existingQuantity >= requiredQuantity)
+                return;
+
+            if (!inventory.TryAdd(new InventoryItem(seedItemId, templateId, displayName, requiredQuantity - existingQuantity)))
+                throw new System.InvalidOperationException($"Starting inventory could not accept required smithing input {templateId}.");
         }
 
         private void HydrateHistory(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
