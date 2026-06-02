@@ -38,5 +38,8 @@ namespace EmberCrpg.Domain.World
         LlmProposalValidated = 24,
         DmConsultFate = 25,
         StorytellerCheckpoint = 26,
+        QuestStarted = 27,
+        QuestTaskTriggered = 28,
+        QuestCompleted = 29,
     }
 }
