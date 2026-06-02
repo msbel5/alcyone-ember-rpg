@@ -75,8 +75,7 @@ namespace EmberCrpg.Presentation.Ember.Views
         [SerializeField]
         private string[] _placeholderSpriteKeys =
         {
-            "blacksmith", "merchant", "innkeeper", "healer", "mage", "priest",
-            "knight", "bard", "sage", "rogue", "beggar", "bandit", "quest_giver"
+            "blacksmith", "merchant", "innkeeper", "warrior", "knight"
         };
 
         private SpriteRegistry _spriteRegistry;
@@ -164,7 +163,7 @@ namespace EmberCrpg.Presentation.Ember.Views
             billboard.transform.localPosition = new Vector3(0f, 0.9f, 0f);
 
             var renderer = billboard.AddComponent<SpriteRenderer>();
-            renderer.sprite = ResolveSpriteForActor(candidate);
+            renderer.sprite = ResolvePlaceholderSprite();
             renderer.sortingOrder = 10;
             FitBillboardToPlayableHeight(billboard.transform, renderer, _billboardTargetHeight);
             billboard.AddComponent<CameraFacingBillboard>();
@@ -280,18 +279,13 @@ namespace EmberCrpg.Presentation.Ember.Views
         // effectively guaranteed, so a spawned billboard almost always gets real character art. Only if
         // the registry is missing/empty do we fall back to a generated sprite — and that sprite is sized
         // to read at the SAME height as the others, so it can never balloon to fill the screen.
-        // Pick a VARIED character sprite per NPC so the co-located worldgen crowd is not all blacksmiths.
-        // The starting key is chosen deterministically from the actor's stable id (so the same NPC always
-        // looks the same across runs/saves), then we scan from there for the first key the registry resolves.
-        // (When the worldgen NPC's Role flows through to SpawnableActor, this can key on role instead of id.)
-        private Sprite ResolveSpriteForActor(SpawnableActor candidate)
+        private Sprite ResolvePlaceholderSprite()
         {
-            if (_spriteRegistry != null && _placeholderSpriteKeys != null && _placeholderSpriteKeys.Length > 0)
+            if (_spriteRegistry != null && _placeholderSpriteKeys != null)
             {
-                int start = (int)(candidate.Id % (ulong)_placeholderSpriteKeys.Length);
-                for (int n = 0; n < _placeholderSpriteKeys.Length; n++)
+                for (int i = 0; i < _placeholderSpriteKeys.Length; i++)
                 {
-                    var key = _placeholderSpriteKeys[(start + n) % _placeholderSpriteKeys.Length];
+                    var key = _placeholderSpriteKeys[i];
                     if (string.IsNullOrEmpty(key)) continue;
                     if (IsPortraitKey(key)) continue;
                     var s = _spriteRegistry.GetSprite(key);
