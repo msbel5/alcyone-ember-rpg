@@ -1,5 +1,6 @@
 // E7-014 (LEFT-020): step routing / gate logic + worldgen-launch transition + history-reveal timing split out of CharacterCreationController.cs (partial, zero behaviour change).
 using System;
+using System.Collections;
 using System.Linq;
 using EmberCrpg.Domain.CharacterCreation;
 using EmberCrpg.Domain.Configuration;
@@ -35,6 +36,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                     BuildHistoryTimeline();
                     _historyRevealStartTime = Time.realtimeSinceStartup;
                     _historySkipped = false;
+                    if (Application.isPlaying)
+                        StartCoroutine(StreamHistoryReveal());
                     break;
             }
         }
@@ -43,6 +46,22 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             _historySkipped = true;
             Render();
+        }
+
+        // The history reveal is a time-based typewriter, but Render() is otherwise only called on input — so
+        // without this per-frame pump it never visibly streams (the player just saw a stuck "[history
+        // streaming...]"). Redraw each frame until the reveal unlocks (HistoryUnlockSeconds) or the player
+        // skips/leaves the step; the per-frame redraw also re-asserts the continent image if the async portrait
+        // forge tries to borrow the slot mid-reveal.
+        private IEnumerator StreamHistoryReveal()
+        {
+            while (_step == CreationStep.WorldHistoryReveal && !_historySkipped && !IsHistoryAdvanceUnlocked())
+            {
+                Render();
+                yield return null;
+            }
+            if (_step == CreationStep.WorldHistoryReveal)
+                Render();
         }
 
         public void BeginYourStory()

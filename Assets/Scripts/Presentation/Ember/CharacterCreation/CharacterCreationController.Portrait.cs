@@ -145,7 +145,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             {
                 _panel.SetText("portraitJson", PortraitJson);
                 _characterPortraitTexture = CharacterCreationPortraitSwatch.Build(json);
-                _panel.SetThumbnail("portrait", _characterPortraitTexture);
+                if (_step != CreationStep.WorldHistoryReveal)
+                    _panel.SetThumbnail("portrait", _characterPortraitTexture);
                 _panel.SetVisible("portrait", true);
                 _panel.SetText("portraitCaption", caption);
                 _panel.SetVisible("portraitCaption", true);
@@ -271,7 +272,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.filterMode = FilterMode.Bilinear;
             _characterPortraitTexture = texture;
-            _panel?.SetThumbnail("portrait", texture);
+            // Don't clobber the continent map the reveal is showing in this shared slot; the dossier restores
+            // the portrait from _characterPortraitTexture.
+            if (_step != CreationStep.WorldHistoryReveal)
+                _panel?.SetThumbnail("portrait", texture);
         }
 
         private void StopPortraitForgeUpgrade()
