@@ -1,3 +1,5 @@
+using System;
+using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Simulation.Generation;
 using NUnit.Framework;
 
@@ -80,6 +82,27 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 Assert.That(prompt, Does.Contain("no second person"), id);
                 Assert.That(prompt, Does.Contain("no crowd"), id);
                 Assert.That(prompt, Does.Contain("no duplicate face"), id);
+            }
+        }
+
+        [Test]
+        public void GeneratedNpcRoleSpritePrompts_CoverEveryNpcRole()
+        {
+            var catalog = StaticPromptCatalog.CreateDefault();
+            foreach (NpcRole role in Enum.GetValues(typeof(NpcRole)))
+            {
+                if (role == NpcRole.None)
+                    continue;
+
+                var id = "npc_" + role.ToString().ToLowerInvariant();
+                Assert.That(catalog.TryGetPrompt(id, out var prompt), Is.True, id);
+                Assert.That(prompt, Does.StartWith(StaticPromptCatalog.EmberNpcSpriteHeader), id);
+                Assert.That(prompt, Does.Contain("exactly one person"), id);
+                Assert.That(prompt, Does.Contain("full-body character sprite"), id);
+                Assert.That(prompt, Does.Contain("consistent ember-lit palette"), id);
+                Assert.That(prompt, Does.Contain("no second person"), id);
+                Assert.That(prompt, Does.Contain("no crowd"), id);
+                Assert.That(prompt, Does.EndWith(StaticPromptCatalog.EmberNegativeFooter), id);
             }
         }
     }

@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using EmberCrpg.Domain.Generation;
+using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Simulation.Generation;
 using NUnit.Framework;
 
@@ -51,6 +53,27 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 Assert.That(entry.RequiresGeneration, Is.True, id);
                 Assert.That(entry.Width, Is.EqualTo(512), id);
                 Assert.That(entry.Height, Is.EqualTo(512), id);
+            }
+        }
+
+        [Test]
+        public void DefaultManifest_IncludesGeneratedNpcRoleSprites()
+        {
+            var entries = CoreAssetManifest.CreateDefault().Entries;
+            foreach (NpcRole role in Enum.GetValues(typeof(NpcRole)))
+            {
+                if (role == NpcRole.None)
+                    continue;
+
+                var id = "npc_" + role.ToString().ToLowerInvariant();
+                var entry = entries.Single(e => e.Id == id);
+                Assert.That(entry.Category, Is.EqualTo("npc"), id);
+                Assert.That(entry.ExpectedPath, Is.EqualTo("Assets/Generated/Core/" + id + ".png"), id);
+                Assert.That(entry.StaticPromptKey, Is.EqualTo(id), id);
+                Assert.That(entry.RequiresGeneration, Is.True, id);
+                Assert.That(entry.Width, Is.EqualTo(512), id);
+                Assert.That(entry.Height, Is.EqualTo(512), id);
+                Assert.That(entry.ModelHint, Is.EqualTo("sd15-lcm"), id);
             }
         }
     }

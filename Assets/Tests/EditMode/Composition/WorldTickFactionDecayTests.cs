@@ -16,10 +16,12 @@ namespace EmberCrpg.Tests.EditMode.Composition
         public void Advance_DailyTick_DecaysSeededFactionReputationsToNeutral()
         {
             var world = new WorldFactory().Create(roomSeed: 1);
+            var pairCount = world.Factions.ReputationRows.Count();
             RunTicks(world, new WorldTickComposer(), FifteenDays);
 
             Assert.That(world.Factions.ReputationRows.Select(r => r.Reputation.Value), Is.All.EqualTo(0));
-            Assert.That(DecayEvents(world).Count(), Is.GreaterThan(0));
+            Assert.That(DecayEvents(world).Count(), Is.LessThanOrEqualTo(pairCount));
+            Assert.That(DecayEvents(world).Count(), Is.LessThan(pairCount * 15));
         }
 
         [Test]

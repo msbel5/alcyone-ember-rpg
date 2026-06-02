@@ -35,8 +35,67 @@ namespace EmberCrpg.Tests.EditMode.World
 
             Assert.That(factions.GetReputation(A, B).Value, Is.EqualTo(11));
             Assert.That(factions.GetReputation(new FactionId(3UL), new FactionId(4UL)).Value, Is.EqualTo(-7));
-            Assert.That(events.Count, Is.EqualTo(2));
+            Assert.That(events.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Apply_EmitsOnlyForMeaningfulDecaySteps()
+        {
+            var factions = new FactionStore();
+            factions.WithReputation(A, B, new FactionReputation(25));
+            factions.WithReputation(new FactionId(3UL), new FactionId(4UL), new FactionReputation(-75));
+            factions.WithReputation(new FactionId(5UL), new FactionId(6UL), new FactionReputation(1));
+            factions.WithReputation(new FactionId(7UL), new FactionId(8UL), new FactionReputation(20));
+            var events = new WorldEventLog();
+            var system = new FactionReputationDecaySystem();
+
+            system.Apply(factions, FactionDecayConfig.Default, new GameTime(240), events);
+
+            Assert.That(factions.GetReputation(A, B).Value, Is.EqualTo(24));
+            Assert.That(factions.GetReputation(new FactionId(3UL), new FactionId(4UL)).Value, Is.EqualTo(-74));
+            Assert.That(factions.GetReputation(new FactionId(5UL), new FactionId(6UL)).Value, Is.EqualTo(0));
+            Assert.That(factions.GetReputation(new FactionId(7UL), new FactionId(8UL)).Value, Is.EqualTo(19));
+            Assert.That(events.Count, Is.EqualTo(3));
             Assert.That(events.Events.Select(e => e.Reason), Is.All.Contains("reason:decay"));
+            Assert.That(string.Join("|", events.Events.Select(e => e.Reason)), Does.Not.Contain("FactionId(7)"));
+        }
+
+        [Test]
+        public void Apply_LargeDecayStepEmitsEvenInsideSameRelationBand()
+        {
+            var factions = new FactionStore();
+            factions.WithReputation(A, B, new FactionReputation(20));
+            var events = new WorldEventLog();
+            var system = new FactionReputationDecaySystem();
+
+            system.Apply(factions, new FactionDecayConfig(ratePerStep: 10), new GameTime(240), events);
+
+            Assert.That(factions.GetReputation(A, B).Value, Is.EqualTo(10));
+            Assert.That(events.Count, Is.EqualTo(1));
+            Assert.That(events.Events[0].Reason, Does.Contain("from:20 to:10"));
+        }
+
+        [Test]
+        public void Apply_MultiDayStableNeutralBandDecaySuppressesSpamWithoutChangingValues()
+        {
+            const int pairCount = 6;
+            const int days = 10;
+            var factions = new FactionStore();
+            for (int i = 0; i < pairCount; i++)
+            {
+                var left = new FactionId((ulong)(1 + (i * 2)));
+                var right = new FactionId((ulong)(2 + (i * 2)));
+                factions.WithReputation(left, right, new FactionReputation(20));
+            }
+
+            var events = new WorldEventLog();
+            var system = new FactionReputationDecaySystem();
+            for (int day = 1; day <= days; day++)
+                system.Apply(factions, FactionDecayConfig.Default, new GameTime(day * 240), events);
+
+            Assert.That(events.Count, Is.EqualTo(0));
+            Assert.That(events.Count, Is.LessThan(pairCount * days));
+            Assert.That(factions.ReputationRows.Select(r => r.Reputation.Value), Is.All.EqualTo(10));
         }
 
         [Test]

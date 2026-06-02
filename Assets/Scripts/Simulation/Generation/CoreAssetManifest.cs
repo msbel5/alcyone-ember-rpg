@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using EmberCrpg.Domain.Generation;
+using EmberCrpg.Domain.Worldgen;
 
 namespace EmberCrpg.Simulation.Generation
 {
@@ -34,6 +35,7 @@ namespace EmberCrpg.Simulation.Generation
             // lists it as a distinct group, beside (not buried under) the logos.
             entries.Add(new ManifestEntry("dm_portrait", "portrait", "Assets/Generated/Core/dm_portrait.png", "dm_portrait", 512, 512, true, 300, "sd15-lcm"));
             AddMany(entries, "portrait", 512, 512, true, "sd15-lcm", "npc_blacksmith", "npc_merchant", "npc_innkeeper", "npc_warrior", "npc_knight", "npc_sage");
+            AddNpcRoleSprites(entries);
             AddMany(entries, "ui", 512, 512, true, "sdxl-turbo", "new_game", "settings", "dice", "skill", "attack", "defend", "equip", "drop", "inventory", "map", "journal", "magic", "rest", "continue", "error");
             entries.Add(new ManifestEntry("font_body", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_heading", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
@@ -82,6 +84,18 @@ namespace EmberCrpg.Simulation.Generation
                 var entryId = category == "ui" ? id : category + "_" + id;
                 var path = "Assets/Generated/Core/" + entryId + ".png";
                 entries.Add(new ManifestEntry(entryId, category, path, entryId, width, height, generated, 300, modelHint));
+            }
+        }
+
+        private static void AddNpcRoleSprites(List<ManifestEntry> entries)
+        {
+            foreach (NpcRole role in Enum.GetValues(typeof(NpcRole)))
+            {
+                if (role == NpcRole.None)
+                    continue;
+
+                var entryId = "npc_" + role.ToString().ToLowerInvariant();
+                entries.Add(new ManifestEntry(entryId, "npc", "Assets/Generated/Core/" + entryId + ".png", entryId, 512, 512, true, 300, "sd15-lcm"));
             }
         }
 

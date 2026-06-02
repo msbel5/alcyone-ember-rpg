@@ -7,6 +7,18 @@ namespace EmberCrpg.Simulation.World
 {
     public sealed class FactionReputationDecaySystem
     {
+        private readonly IFactionDecayEventPolicy _eventPolicy;
+
+        public FactionReputationDecaySystem()
+            : this(new MeaningfulFactionDecayEventPolicy())
+        {
+        }
+
+        public FactionReputationDecaySystem(IFactionDecayEventPolicy eventPolicy)
+        {
+            _eventPolicy = eventPolicy ?? throw new ArgumentNullException(nameof(eventPolicy));
+        }
+
         public void Apply(
             FactionStore factions,
             FactionDecayConfig config,
@@ -28,6 +40,9 @@ namespace EmberCrpg.Simulation.World
                     continue;
 
                 factions.WithReputation(row.A, row.B, next);
+                if (!_eventPolicy.ShouldEmit(row.Reputation, next, config))
+                    continue;
+
                 events.Append(new WorldEvent(
                     stamp,
                     WorldEventKind.FactionReputationChanged,

@@ -9,6 +9,7 @@ namespace EmberCrpg.Simulation.Generation
     {
         public const string EmberStyleHeader = "dark-fantasy ember-warm palette, painterly low-saturation, transparent background, single subject centered";
         public const string EmberCharacterPortraitHeader = EmberStyleHeader + ", exactly one person, centered character bust, no second person, no crowd";
+        public const string EmberNpcSpriteHeader = EmberStyleHeader + ", exactly one person, full-body character sprite, plain transparent or neutral background, consistent ember-lit palette, no second person, no crowd";
         // Floors/walls are tileable surfaces, NOT centered icons: this header replaces the icon
         // "transparent background, single subject centered" with a seamless-fill directive.
         public const string EmberFloorHeader = "dark-fantasy ember-warm palette, painterly low-saturation, seamless tileable texture, top-down orthographic surface filling the entire frame edge to edge, no central subject";
@@ -101,6 +102,7 @@ namespace EmberCrpg.Simulation.Generation
             AddPortrait(prompts, "portrait_npc_warrior", "a rugged outlaw warrior, worn cloak and leather armor, scarred ember-lit face, guarded expression, dark fantasy NPC portrait");
             AddPortrait(prompts, "portrait_npc_knight", "a stern city guard knight, dark mail collar, ember glint on cheek and helm rim, disciplined expression, dark fantasy NPC portrait");
             AddPortrait(prompts, "portrait_npc_sage", "a quiet scholar priest, ash-grey robe, old book clasp at the collar, thoughtful ember-lit face, dark fantasy NPC portrait");
+            AddNpcRolePrompts(prompts);
 
             // Doors + windows: centered fixtures (EmberStyleHeader single subject), like item icons.
             Add(prompts, "door_oak", "a heavy oak plank door bound with iron studs, dark-fantasy fixture, straight-on front view");
@@ -125,6 +127,33 @@ namespace EmberCrpg.Simulation.Generation
         private static void AddPortrait(Dictionary<string, string> prompts, string key, string body)
         {
             prompts[key] = EmberCharacterPortraitHeader + ", " + body + ", no duplicate face, no twin, " + EmberNegativeFooter;
+        }
+
+        private static void AddNpcRolePrompts(Dictionary<string, string> prompts)
+        {
+            AddNpcSprite(prompts, "farmer", "a weathered farmer with a seed satchel, rolled sleeves, mud-dark boots, sickle at the belt");
+            AddNpcSprite(prompts, "merchant", "a travelling merchant in layered trade cloak, coin pouch, small ledger, alert bargaining stance");
+            AddNpcSprite(prompts, "guard", "a town guard in practical mail shirt and kettle helm, spear upright, watchful stance");
+            AddNpcSprite(prompts, "noble", "a minor noble in dark velvet court coat, ember-gold trim, signet ring, reserved posture");
+            AddNpcSprite(prompts, "priest", "a shrine priest in ash-grey vestments, simple holy charm, hands folded around a coal-lit reliquary");
+            AddNpcSprite(prompts, "scholar", "a field scholar in worn robe and satchel, scroll case, ink-stained fingers, observant expression");
+            AddNpcSprite(prompts, "artisan", "a village artisan with tool belt, dyed work apron, careful hands, crafted trinkets at the waist");
+            AddNpcSprite(prompts, "outlaw", "a hard-eyed outlaw in patched leather armor, hooded cloak, hidden knife, wary stance");
+            AddNpcSprite(prompts, "blacksmith", "a soot-marked blacksmith in forge apron, heavy gloves, hammer resting at one side");
+            AddNpcSprite(prompts, "innkeeper", "a hearth-warm innkeeper in simple tavern clothes, towel over one shoulder, guarded welcome");
+            AddNpcSprite(prompts, "healer", "a village healer with herb satchel, linen wraps, small tonic bottles, calm focused posture");
+            AddNpcSprite(prompts, "mage", "a wandering mage in layered ember-trimmed robes, staff crystal glowing low, composed stance");
+            AddNpcSprite(prompts, "knight", "a stern knight in dark plate and mail, tabard scorched at the hem, sword held point-down");
+            AddNpcSprite(prompts, "bard", "a travelling bard with weathered lute, bright scarf, worn boots, half-smile under lantern light");
+            AddNpcSprite(prompts, "sage", "an elderly sage in ash-colored robe, book clasp, long sleeves, quiet knowing gaze");
+            AddNpcSprite(prompts, "rogue", "a nimble rogue in fitted dark leather, lockpicks at the belt, cloak pulled close");
+            AddNpcSprite(prompts, "beggar", "a hungry beggar in patched rags and frayed cloak, empty bowl, tired guarded posture");
+            AddNpcSprite(prompts, "bandit", "a rough bandit in mismatched leathers, scarf mask loose at the neck, notched axe at the hip");
+        }
+
+        private static void AddNpcSprite(Dictionary<string, string> prompts, string role, string body)
+        {
+            prompts["npc_" + role] = EmberNpcSpriteHeader + ", " + body + ", no duplicate face, no twin, " + EmberNegativeFooter;
         }
 
         private static void AddGeometric(
