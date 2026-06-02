@@ -144,7 +144,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             if (_panel != null)
             {
                 _panel.SetText("portraitJson", PortraitJson);
-                _panel.SetThumbnail("portrait", CharacterCreationPortraitSwatch.Build(json));
+                _characterPortraitTexture = CharacterCreationPortraitSwatch.Build(json);
+                _panel.SetThumbnail("portrait", _characterPortraitTexture);
                 _panel.SetVisible("portrait", true);
                 _panel.SetText("portraitCaption", caption);
                 _panel.SetVisible("portraitCaption", true);
@@ -269,6 +270,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.filterMode = FilterMode.Bilinear;
+            _characterPortraitTexture = texture;
             _panel?.SetThumbnail("portrait", texture);
         }
 

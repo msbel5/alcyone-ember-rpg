@@ -169,6 +169,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         // WorldgenParameters.HistoryYears so the reveal shows a STABLE span, not a per-seed event delta.
         private int _previewEraYears = 400;
 
+        // The rendered continent (the SAME overland map the M screen shows) for the "World Awakens" reveal so
+        // the player SEES the world they shaped; + the character portrait texture, retained so the dossier can
+        // restore the image slot after the reveal borrowed it for the map.
+        private Texture2D _revealMapTexture;
+        private Texture2D _characterPortraitTexture;
+
         private void BuildHistoryTimeline()
         {
             _historyTimeline.Clear();
@@ -180,6 +186,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             }
 
             var history = world.History;
+            _revealMapTexture = TryBuildRevealMapTexture(world);
             // Era span = the CONFIGURED history length (stable), not the per-seed first/last event delta
             // (which wandered and showed a different number of years for every world).
             _historyTimeline.Add(
@@ -212,6 +219,32 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             catch (Exception ex)
             {
                 Debug.LogWarning("[charcreation] world preview generation failed; using templated reveal. " + ex.Message);
+                return null;
+            }
+        }
+
+        // Render the generated continent (the SAME overland map the M screen shows) to a texture for the
+        // "World Awakens" reveal, so the player watches their world appear before the dossier. Pure read of
+        // the already-generated world; failures degrade to no image (the chronicle text still streams).
+        private Texture2D TryBuildRevealMapTexture(EmberCrpg.Simulation.Worldgen.GeneratedWorld world)
+        {
+            try
+            {
+                var map = EmberCrpg.Simulation.Overland.OverlandWorldgen.Generate(
+                    world, EmberCrpg.Domain.Overland.OverlandParameters.Default);
+                var image = EmberCrpg.Simulation.Overland.OverlandMapImageSampler.Sample(map);
+                var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, mipChain: false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Point,
+                };
+                texture.LoadRawTextureData(image.RgbaBytes);
+                texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+                return texture;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[charcreation] reveal map render failed; chronicle text only. " + ex.Message);
                 return null;
             }
         }

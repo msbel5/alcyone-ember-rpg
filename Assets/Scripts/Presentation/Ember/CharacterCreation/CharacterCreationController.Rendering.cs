@@ -33,11 +33,25 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             // Portrait image + caption are shown from the Portrait stage onward (Portrait, Dossier,
             // Complete) and hidden on every earlier stage. ApplyPortrait fills the actual swatch;
             // Render owns visibility so navigating Back hides the box again. (LEFT-007.)
-            bool showPortrait = _step == CreationStep.Portrait
-                || _step == CreationStep.DossierLaunch
-                || _step == CreationStep.Complete;
-            _panel.SetVisible("portrait", showPortrait);
-            _panel.SetVisible("portraitCaption", showPortrait);
+            // During "World Awakens" the image slot shows the GENERATED CONTINENT (the world the player just
+            // shaped); from the dossier onward it shows the character portrait again (the reveal borrowed it).
+            if (_step == CreationStep.WorldHistoryReveal && _revealMapTexture != null)
+            {
+                _panel.SetThumbnail("portrait", _revealMapTexture);
+                _panel.SetText("portraitCaption", "The world you have shaped");
+                _panel.SetVisible("portrait", true);
+                _panel.SetVisible("portraitCaption", true);
+            }
+            else
+            {
+                bool showPortrait = _step == CreationStep.Portrait
+                    || _step == CreationStep.DossierLaunch
+                    || _step == CreationStep.Complete;
+                if ((_step == CreationStep.DossierLaunch || _step == CreationStep.Complete) && _characterPortraitTexture != null)
+                    _panel.SetThumbnail("portrait", _characterPortraitTexture); // restore the portrait after the reveal showed the map
+                _panel.SetVisible("portrait", showPortrait);
+                _panel.SetVisible("portraitCaption", showPortrait);
+            }
 
             if (_step == CreationStep.PersonalityQuestions)
                 RenderQuestionButtons();
