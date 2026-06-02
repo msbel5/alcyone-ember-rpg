@@ -14,6 +14,7 @@ using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
+using WorldEventInterest = EmberCrpg.Presentation.Visual.WorldEventInterest;
 // Alias only the two Visual types F1 needs — a broad `using EmberCrpg.Presentation.Visual;` collides with
 // Presentation.Ember.UI.ColonyNeedsRow (same simple name in both namespaces).
 using WorldEventRow = EmberCrpg.Presentation.Visual.WorldEventRow;
@@ -265,7 +266,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // Why: reuse the shared snapshot projection so host/UI read the exact same deterministic tail rows.
         public IReadOnlyList<WorldEventRow> RecentWorldEvents(int maxRows)
         {
-            return WorldEventTailSnapshot.FromLog(_world?.Events, maxRows).Rows;
+            return WorldEventTailSnapshot.FromLog(_world?.Events, maxRows, WorldEventInterest.IsHudWorthy).Rows;
         }
 
         public bool TryReadActor(string actorName, out ActorViewState state)

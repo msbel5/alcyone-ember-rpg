@@ -224,13 +224,17 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         }
 
         /// <summary>
-        /// F1: ensure exactly one bottom-left runtime event log panel exists so deterministic world events
-        /// are visible without scene-by-scene authoring drift.
+        /// F1.1: ensure exactly one top-right runtime event log panel exists so deterministic world events
+        /// stay clear of the vitals while sitting below the top status strip.
         /// </summary>
         private EventLogHudPanel EnsureEventLogHudPanel()
         {
             var existing = Object.FindFirstObjectByType<EventLogHudPanel>(FindObjectsInactive.Include);
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                ApplyEventLogHudAnchors((RectTransform)existing.transform);
+                return existing;
+            }
 
             var canvas = ResolveOverlayCanvas();
             var go = new GameObject(
@@ -240,12 +244,17 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 typeof(UnityEngine.UI.Image),
                 typeof(EventLogHudPanel));
             go.transform.SetParent(canvas.transform, worldPositionStays: false);
-            var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.01f, 0.01f);
-            rt.anchorMax = new Vector2(0.45f, 0.22f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
+            ApplyEventLogHudAnchors(go.GetComponent<RectTransform>());
             return go.GetComponent<EventLogHudPanel>();
+        }
+
+        // Why: keep the event-log footprint canonical even when the host reuses an existing panel instance.
+        private static void ApplyEventLogHudAnchors(RectTransform rectTransform)
+        {
+            rectTransform.anchorMin = new Vector2(0.63f, 0.60f);
+            rectTransform.anchorMax = new Vector2(0.99f, 0.93f);
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
         }
 
         /// <summary>

@@ -25,6 +25,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             _label = GetComponentInChildren<TMP_Text>(includeInactive: true);
             if (_label == null)
                 _label = BuildLabel();
+            ApplyLabelStyle(_label);
         }
 
         // Why: refresh one deterministic text block per tick and mirror only unseen rows into Player.log.
@@ -99,13 +100,18 @@ namespace EmberCrpg.Presentation.Ember.UI
             rt.offsetMin = new Vector2(10f, 10f);
             rt.offsetMax = new Vector2(-10f, -10f);
 
-            var text = go.GetComponent<TextMeshProUGUI>();
-            text.alignment = TextAlignmentOptions.BottomLeft;
+            return go.GetComponent<TextMeshProUGUI>();
+        }
+
+        // Why: normalize both authored and generated labels to the same readable top-right HUD style.
+        private static void ApplyLabelStyle(TMP_Text text)
+        {
+            text.alignment = TextAlignmentOptions.TopLeft;
             text.fontSize = 13f;
             text.enableWordWrapping = false;
+            text.overflowMode = TextOverflowModes.Ellipsis;
             text.color = new Color(0.90f, 0.92f, 0.85f);
             text.raycastTarget = false;
-            return text;
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
@@ -20,6 +21,7 @@ namespace EmberCrpg.Presentation.Visual
 
         public IReadOnlyList<WorldEventRow> Rows => _rows;
 
+        // Why: preserve the shared tail projection path for callers that want the raw latest events.
         public static WorldEventTailSnapshot FromLog(WorldEventLog log, int maxRows)
         {
             if (log == null || maxRows <= 0)
@@ -29,16 +31,41 @@ namespace EmberCrpg.Presentation.Visual
             var start = source.Count > maxRows ? source.Count - maxRows : 0;
             var rows = new List<WorldEventRow>(source.Count - start);
             for (var i = start; i < source.Count; i++)
-            {
-                var e = source[i];
-                rows.Add(new WorldEventRow(
-                    e.Tick,
-                    e.Kind.ToString(),
-                    e.ActorId,
-                    e.SiteId,
-                    e.Reason ?? string.Empty));
-            }
+                rows.Add(ToRow(source[i]));
             return new WorldEventTailSnapshot(rows);
+        }
+
+        // Why: project the latest matching events without mutating the deterministic source log.
+        public static WorldEventTailSnapshot FromLog(WorldEventLog log, int maxRows, Func<string, bool> kindPredicate)
+        {
+            if (log == null || maxRows <= 0)
+                return new WorldEventTailSnapshot(new WorldEventRow[0]);
+
+            var includeKind = kindPredicate ?? (_ => true);
+            var rows = new List<WorldEventRow>(Math.Min(maxRows, log.Events.Count));
+            foreach (var worldEvent in log.Events)
+            {
+                if (!includeKind(worldEvent.Kind.ToString()))
+                    continue;
+
+                if (rows.Count == maxRows)
+                    rows.RemoveAt(0);
+
+                rows.Add(ToRow(worldEvent));
+            }
+
+            return new WorldEventTailSnapshot(rows);
+        }
+
+        // Why: keep every HUD-tail projection path on the same row-shaping code.
+        private static WorldEventRow ToRow(WorldEvent worldEvent)
+        {
+            return new WorldEventRow(
+                worldEvent.Tick,
+                worldEvent.Kind.ToString(),
+                worldEvent.ActorId,
+                worldEvent.SiteId,
+                worldEvent.Reason ?? string.Empty);
         }
     }
 
