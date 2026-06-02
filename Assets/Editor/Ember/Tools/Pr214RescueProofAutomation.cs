@@ -1,5 +1,6 @@
 using System.IO;
 using EmberCrpg.Editor.Ember.Menu;
+using EmberCrpg.Presentation.Ember;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -16,14 +17,11 @@ namespace EmberCrpg.Editor.Ember.Tools
             Directory.CreateDirectory(OutputDir);
 
             EmberSceneBuilderMenu.BuildCharacterCreation();
-            Capture("CharacterCreation", "character_creation.png");
+            Capture(EmberScenes.CharacterCreation, "character_creation.png");
 
-            EmberSceneBuilderMenu.BuildScene3();
-            Capture("SmithingOverworld", "smithing_game.png");
-            Capture("SmithingOverworld", "spawn_proof.png");
-
-            EmberSceneBuilderMenu.BuildScene9();
-            Capture("TavernDialog", "tavern_game.png");
+            EmberSceneBuilderMenu.BuildGeneratedWorld();
+            Capture(EmberScenes.GeneratedWorld, "generated_world_game.png");
+            Capture(EmberScenes.GeneratedWorld, "generated_world_spawn_proof.png");
         }
 
         private static void Capture(string sceneName, string fileName)

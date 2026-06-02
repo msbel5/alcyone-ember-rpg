@@ -21,53 +21,13 @@ namespace EmberCrpg.Editor.Ember.Menu
         [MenuItem(Root + "1. Generated World (runtime-directed host)")]
         public static void BuildGeneratedWorld() => RunRecipe(new GeneratedWorldSceneRecipe());
 
-        [MenuItem(Root + "3. Smithing Overworld")]
-        public static void BuildScene3() => RunRecipe(new SmithingOverworldSceneRecipe());
-
-        [MenuItem(Root + "4. Colony Needs")]
-        public static void BuildScene4() => RunRecipe(new ColonyNeedsSceneRecipe());
-
-        [MenuItem(Root + "5. Season Farm")]
-        public static void BuildScene5() => RunRecipe(new SeasonFarmSceneRecipe());
-
-        [MenuItem(Root + "6. Trade Market")]
-        public static void BuildScene6() => RunRecipe(new TradeMarketSceneRecipe());
-
-        [MenuItem(Root + "7. Combat Dungeon")]
-        public static void BuildScene7() => RunRecipe(new CombatDungeonSceneRecipe());
-
-        [MenuItem(Root + "8. Ritual Hall")]
-        public static void BuildScene8() => RunRecipe(new RitualHallSceneRecipe());
-
-        [MenuItem(Root + "9. Tavern Dialog")]
-        public static void BuildScene9() => RunRecipe(new TavernDialogSceneRecipe());
-
-        [MenuItem(Root + "10. Oracle Shrine")]
-        public static void BuildScene10() => RunRecipe(new OracleShrineSceneRecipe());
-
-        [MenuItem(Root + "11. Showroom Overview")]
-        public static void BuildScene11() => RunRecipe(new ShowroomOverviewSceneRecipe());
-
-        [MenuItem(Root + "12. Tavern Flavour")]
-        public static void BuildScene12() => RunRecipe(new TavernFlavourSceneRecipe());
-
-        [MenuItem(Root + "All — Rebuild every gameplay scene")]
+        [MenuItem(Root + "All - Rebuild surviving scenes")]
         public static void BuildAll()
         {
             SpriteRegistryAutoBuilder.Build();
             RunUiRecipe(new MainMenuSceneRecipe());
             RunUiRecipe(new CharacterCreationSceneRecipe());
             RunRecipe(new GeneratedWorldSceneRecipe());
-            RunRecipe(new SmithingOverworldSceneRecipe());
-            RunRecipe(new ColonyNeedsSceneRecipe());
-            RunRecipe(new SeasonFarmSceneRecipe());
-            RunRecipe(new TradeMarketSceneRecipe());
-            RunRecipe(new CombatDungeonSceneRecipe());
-            RunRecipe(new RitualHallSceneRecipe());
-            RunRecipe(new TavernDialogSceneRecipe());
-            RunRecipe(new OracleShrineSceneRecipe());
-            RunRecipe(new ShowroomOverviewSceneRecipe());
-            RunRecipe(new TavernFlavourSceneRecipe());
         }
 
         public static void RunRecipe(IEmberSceneRecipe recipe)

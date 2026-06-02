@@ -10,7 +10,7 @@ namespace EmberCrpg.Tests.EditMode.Presentation
         [Test]
         public void IsKnownBuildScene_UsesSharedSceneCatalog()
         {
-            Assert.That(EmberSceneCatalog.IsKnownBuildScene(EmberScenes.SmithingOverworld), Is.True);
+            Assert.That(EmberSceneCatalog.IsKnownBuildScene(EmberScenes.GeneratedWorld), Is.True);
             Assert.That(EmberSceneCatalog.IsKnownBuildScene("__missing_scene__"), Is.False);
         }
     }

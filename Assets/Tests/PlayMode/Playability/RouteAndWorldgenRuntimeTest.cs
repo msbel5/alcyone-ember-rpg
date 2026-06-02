@@ -14,7 +14,7 @@ namespace EmberCrpg.Tests.PlayMode.Playability
         [UnityTest]
         public IEnumerator WorldgenView_AutoAdvanceUpdate_ReachesStartSceneRequest()
         {
-            var view = WorldgenViewController.CreateForTests("SmithingOverworld");
+            var view = WorldgenViewController.CreateForTests("GeneratedWorld");
             view.AutoAdvance = true;
             view.Play(new[]
             {
@@ -27,7 +27,7 @@ namespace EmberCrpg.Tests.PlayMode.Playability
             view.TickAutoAdvance(1.7f);
             yield return null;
             Assert.That(view.QuestionOpen, Is.False);
-            Assert.That(view.RequestedScene, Is.EqualTo("SmithingOverworld"));
+            Assert.That(view.RequestedScene, Is.EqualTo("GeneratedWorld"));
 
             Object.DestroyImmediate(view.gameObject);
         }
@@ -64,7 +64,7 @@ namespace EmberCrpg.Tests.PlayMode.Playability
             Assert.That(intent.AttributeRolls.Length, Is.EqualTo(6));
             Assert.That(intent.WorldSeed, Is.EqualTo(77u));
             Assert.That(intent.PortraitSeed, Is.EqualTo(77u));
-            Assert.That(intent.Start, Is.EqualTo("SmithingOverworld"));
+            Assert.That(intent.Start, Is.EqualTo("GeneratedWorld"));
 
             Object.DestroyImmediate(controller.gameObject);
             EmberWorldGenIntent.Pending = null;

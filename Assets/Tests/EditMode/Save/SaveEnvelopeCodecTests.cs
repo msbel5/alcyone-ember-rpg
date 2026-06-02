@@ -11,7 +11,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         {
             var source = new SaveData
             {
-                sceneName = "SeasonFarm",
+                sceneName = "GeneratedWorld",
                 playerPosition = new Vector3(3f, 4f, 5f),
                 playerYaw = 78.5f,
                 tickIndex = 123,
@@ -35,7 +35,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         {
             var legacy = JsonUtility.ToJson(new SaveData
             {
-                sceneName = "SmithingOverworld",
+                sceneName = "GeneratedWorld",
                 playerPosition = new Vector3(1f, 2f, 3f),
                 playerYaw = 19f,
                 tickIndex = 44,
@@ -44,7 +44,7 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             Assert.That(SaveEnvelopeCodec.TryDecode(legacy, out var decoded, out var migratedFromLegacy), Is.True);
             Assert.That(migratedFromLegacy, Is.True);
-            Assert.That(decoded.sceneName, Is.EqualTo("SmithingOverworld"));
+            Assert.That(decoded.sceneName, Is.EqualTo("GeneratedWorld"));
             Assert.That(decoded.tickIndex, Is.EqualTo(44));
         }
 

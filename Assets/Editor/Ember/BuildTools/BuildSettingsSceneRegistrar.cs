@@ -16,16 +16,6 @@ namespace EmberCrpg.Editor.Ember.Build
             AddIfExists(paths, "Assets/Scenes/Ember/MainMenu.unity");
             AddIfExists(paths, "Assets/Scenes/Ember/CharacterCreation.unity");
             AddIfExists(paths, "Assets/Scenes/Ember/GeneratedWorld.unity"); // runtime-directed world (New Game default)
-            AddIfExists(paths, "Assets/Scenes/Ember/SmithingOverworld.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/ColonyNeeds.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/SeasonFarm.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/TradeMarket.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/CombatDungeon.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/RitualHall.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/TavernDialog.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/OracleShrine.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/ShowroomOverview.unity");
-            AddIfExists(paths, "Assets/Scenes/Ember/TavernFlavour.unity");
             EditorBuildSettings.scenes = paths.Select(path => new EditorBuildSettingsScene(path, true)).ToArray();
             UnityEngine.Debug.Log("[BuildSettingsSceneRegistrar] Registered " + paths.Count + " scenes; Boot index=" + paths.IndexOf(BootScenePath));
         }

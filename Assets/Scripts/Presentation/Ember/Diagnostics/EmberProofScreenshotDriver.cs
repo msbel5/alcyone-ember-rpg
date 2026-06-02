@@ -152,7 +152,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             var go = new GameObject("WorldgenProofView");
             var view = go.AddComponent<WorldgenViewController>();
             view.AutoLoadScene = false;
-            view.Configure(EmberScenes.SmithingOverworld);
+            view.Configure(EmberScenes.GeneratedWorld);
             var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
             view.PlayFromGeneratedWorld(world, new WorldgenProjectionOptions(
                 maxRegions: 2,
@@ -183,12 +183,12 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             yield return CaptureFixedAfter(0.75f, "worldgen_loading.png");
             LoadingScreen.Dismiss();
 
-            SceneManager.LoadScene(EmberScenes.SmithingOverworld);
-            yield return CaptureFixedAfter(1.2f, "smithing_game.png");
-            yield return CaptureFixedAfter(0.2f, "spawn_proof.png");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return CaptureFixedAfter(1.2f, "generated_world_game.png");
+            yield return CaptureFixedAfter(0.2f, "generated_world_spawn_proof.png");
 
-            SceneManager.LoadScene(EmberScenes.TavernDialog);
-            yield return CaptureFixedAfter(1.2f, "tavern_game.png");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return CaptureFixedAfter(1.2f, "generated_world_repeat.png");
         }
 
         // Loads every gameplay scene in turn and captures it twice — once with UI, once with all

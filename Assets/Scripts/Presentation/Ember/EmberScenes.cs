@@ -15,33 +15,16 @@ namespace EmberCrpg.Presentation.Ember
         public const string Boot = "Boot";
         public const string MainMenu = "MainMenu";
         public const string CharacterCreation = "CharacterCreation";
-        public const string SmithingOverworld = "SmithingOverworld";
-        public const string ColonyNeeds = "ColonyNeeds";
-        public const string SeasonFarm = "SeasonFarm";
-        public const string TradeMarket = "TradeMarket";
-        public const string CombatDungeon = "CombatDungeon";
-        public const string RitualHall = "RitualHall";
-        public const string TavernDialog = "TavernDialog";
-        public const string OracleShrine = "OracleShrine";
-        public const string ShowroomOverview = "ShowroomOverview";
-        public const string TavernFlavour = "TavernFlavour";
-
         /// <summary>
         /// The near-empty scene the runtime World Scene Director fills from world data (the procedural
-        /// "you stand in the generated starting settlement" entry). Not part of <see cref="GameplayTour"/>:
-        /// the baked-scene proof is unchanged, and this scene's content is built at runtime, not authored.
+        /// "you stand in the generated starting settlement" entry).
         /// </summary>
         public const string GeneratedWorld = "GeneratedWorld";
 
         /// <summary>The default first gameplay scene a new game drops into.</summary>
-        public const string FirstGameplayScene = SmithingOverworld;
+        public const string FirstGameplayScene = GeneratedWorld;
 
-        /// <summary>The 10 gameplay scenes the proof driver tours (build chain minus Boot/MainMenu/CharacterCreation).</summary>
-        public static readonly string[] GameplayTour =
-        {
-            SmithingOverworld, TavernDialog, ColonyNeeds, CombatDungeon,
-            OracleShrine, RitualHall, SeasonFarm, TradeMarket,
-            ShowroomOverview, TavernFlavour,
-        };
+        /// <summary>No baked gameplay scene tour remains; GeneratedWorld is runtime-populated.</summary>
+        public static readonly string[] GameplayTour = { };
     }
 }

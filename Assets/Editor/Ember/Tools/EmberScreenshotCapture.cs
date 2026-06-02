@@ -95,16 +95,7 @@ namespace EmberCrpg.Editor.Ember.Tools
 
         private static IEnumerable<IEmberSceneRecipe> AllRecipes()
         {
-            yield return new SmithingOverworldSceneRecipe();
-            yield return new ColonyNeedsSceneRecipe();
-            yield return new SeasonFarmSceneRecipe();
-            yield return new TradeMarketSceneRecipe();
-            yield return new CombatDungeonSceneRecipe();
-            yield return new RitualHallSceneRecipe();
-            yield return new TavernDialogSceneRecipe();
-            yield return new OracleShrineSceneRecipe();
-            yield return new ShowroomOverviewSceneRecipe();
-            yield return new TavernFlavourSceneRecipe();
+            yield return new GeneratedWorldSceneRecipe();
         }
     }
 }

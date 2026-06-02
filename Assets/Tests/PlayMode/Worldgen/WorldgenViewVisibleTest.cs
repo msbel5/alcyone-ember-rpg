@@ -23,7 +23,7 @@ namespace EmberCrpg.Tests.PlayMode.Worldgen
         [Test]
         public void ViewLogsEventsModalChoiceFailureAndCompletion()
         {
-            var view = WorldgenViewController.CreateForTests("SmithingOverworld");
+            var view = WorldgenViewController.CreateForTests("GeneratedWorld");
             view.Play(WorldgenEventProjector.CreateMockEvents(2, 3, 5, includeQuestion: true, includeFailure: true));
             Assert.That(view.LogLines.Count, Is.GreaterThanOrEqualTo(13));
             Assert.That(view.QuestionOpen, Is.True);
@@ -35,13 +35,13 @@ namespace EmberCrpg.Tests.PlayMode.Worldgen
             Assert.That(view.LogLines.Any(l => l.Contains("q2")), Is.True);
             Assert.That(view.FailureJsonLines.Count, Is.EqualTo(1));
             Assert.That(view.FailureJsonLines[0], Does.Contain("\"continue\":true"));
-            Assert.That(view.RequestedScene, Is.EqualTo("SmithingOverworld"));
+            Assert.That(view.RequestedScene, Is.EqualTo("GeneratedWorld"));
         }
 
         [Test]
         public void ViewProjectsGeneratedWorldAndAppendsFailureJsonLinesWhileContinuing()
         {
-            var view = WorldgenViewController.CreateForTests("SmithingOverworld");
+            var view = WorldgenViewController.CreateForTests("GeneratedWorld");
             view.AutoScroll = false;
 
             var world = WorldgenService.Generate(42u, WorldgenParameters.Default);
@@ -60,7 +60,7 @@ namespace EmberCrpg.Tests.PlayMode.Worldgen
             Assert.That(view.LogLines.Any(l => l.StartsWith("[failure-jsonl]")), Is.True);
             Assert.That(view.LogLines.Any(l => l.StartsWith("[done]")), Is.True);
             Assert.That(view.StartSceneRequested, Is.True);
-            Assert.That(view.RequestedScene, Is.EqualTo("SmithingOverworld"));
+            Assert.That(view.RequestedScene, Is.EqualTo("GeneratedWorld"));
         }
     }
 }

@@ -39,8 +39,8 @@ namespace EmberCrpg.Tests.EditMode.Save
             try
             {
                 var repo = new FileSaveRepository(root);
-                var fileJson = Json(EmberScenes.SmithingOverworld);
-                var legacyJson = Json(EmberScenes.TavernDialog);
+                var fileJson = Json(EmberScenes.GeneratedWorld);
+                var legacyJson = Json(EmberScenes.CharacterCreation);
                 repo.Save(EmberSaveService.AuditDefaultSlot, fileJson);
                 PlayerPrefs.SetInt(EmberSaveService.AuditLastSlotKey, EmberSaveService.AuditDefaultSlot);
                 PlayerPrefs.SetString(EmberSaveService.AuditSaveKey, legacyJson);
@@ -60,13 +60,13 @@ namespace EmberCrpg.Tests.EditMode.Save
             try
             {
                 var repo = new FileSaveRepository(root);
-                var legacyJson = Json(EmberScenes.SeasonFarm);
-                var quickJson = Json(EmberScenes.SmithingOverworld);
+                var legacyJson = Json(EmberScenes.MainMenu);
+                var quickJson = Json(EmberScenes.GeneratedWorld);
                 repo.Save(EmberSaveService.AuditDefaultSlot, legacyJson);
                 repo.Save(SaveSlotId.Quick, quickJson, new SaveSlotMetadata
                 {
                     label = "Quicksave",
-                    sceneName = EmberScenes.SmithingOverworld,
+                    sceneName = EmberScenes.GeneratedWorld,
                 });
                 PlayerPrefs.SetInt(EmberSaveService.AuditLastSlotKey, EmberSaveService.AuditDefaultSlot);
 
@@ -81,8 +81,8 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void AuditIsLoadableSaveJson_AcceptsTypedEnvelopeAndLegacyPayload()
         {
-            var envelope = SaveEnvelopeCodec.Encode(new SaveData { sceneName = EmberScenes.SmithingOverworld });
-            var legacy = Json(EmberScenes.SmithingOverworld);
+            var envelope = SaveEnvelopeCodec.Encode(new SaveData { sceneName = EmberScenes.GeneratedWorld });
+            var legacy = Json(EmberScenes.CharacterCreation);
 
             Assert.That(EmberSaveService.AuditIsLoadableSaveJson(envelope), Is.True);
             Assert.That(EmberSaveService.AuditIsLoadableSaveJson(legacy), Is.True);
@@ -95,8 +95,8 @@ namespace EmberCrpg.Tests.EditMode.Save
             try
             {
                 var repo = new FileSaveRepository(root);
-                var envelope = SaveEnvelopeCodec.Encode(new SaveData { sceneName = EmberScenes.SmithingOverworld });
-                var fallbackLegacy = Json(EmberScenes.SeasonFarm);
+                var envelope = SaveEnvelopeCodec.Encode(new SaveData { sceneName = EmberScenes.GeneratedWorld });
+                var fallbackLegacy = Json(EmberScenes.MainMenu);
 
                 repo.Save(SaveSlotId.Quick, envelope, new SaveSlotMetadata
                 {
@@ -105,7 +105,7 @@ namespace EmberCrpg.Tests.EditMode.Save
                     slotKind = SaveSlotKind.Quick.ToString(),
                     slotIndex = 0,
                     label = "Quick",
-                    sceneName = EmberScenes.SmithingOverworld,
+                    sceneName = EmberScenes.GeneratedWorld,
                 });
                 repo.Save(EmberSaveService.AuditDefaultSlot, fallbackLegacy);
                 PlayerPrefs.SetInt(EmberSaveService.AuditLastSlotKey, EmberSaveService.AuditDefaultSlot);
@@ -125,7 +125,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             try
             {
                 var repo = new FileSaveRepository(root);
-                var legacyJson = Json(EmberScenes.SeasonFarm);
+                var legacyJson = Json(EmberScenes.MainMenu);
                 repo.Save(EmberSaveService.AuditDefaultSlot, legacyJson);
                 Directory.CreateDirectory(Path.GetDirectoryName(repo.SlotPath(SaveSlotId.Quick)));
                 File.WriteAllText(repo.SlotPath(SaveSlotId.Quick), "{");
@@ -149,7 +149,7 @@ namespace EmberCrpg.Tests.EditMode.Save
                 var repo = new FileSaveRepository(root);
                 Directory.CreateDirectory(Path.GetDirectoryName(repo.SlotPath(EmberSaveService.AuditDefaultSlot)));
                 File.WriteAllText(repo.SlotPath(EmberSaveService.AuditDefaultSlot), "{");
-                var legacyJson = Json(EmberScenes.SmithingOverworld);
+                var legacyJson = Json(EmberScenes.GeneratedWorld);
                 PlayerPrefs.SetInt(EmberSaveService.AuditLastSlotKey, EmberSaveService.AuditDefaultSlot);
                 PlayerPrefs.SetString(EmberSaveService.AuditSaveKey, legacyJson);
 
@@ -166,10 +166,10 @@ namespace EmberCrpg.Tests.EditMode.Save
         public void TryResolveLatestSave_UsesPlayerPrefsFallbackWhenSelectedSlotMissing()
         {
             PlayerPrefs.SetInt(EmberSaveService.AuditLastSlotKey, 999);
-            PlayerPrefs.SetString(EmberSaveService.AuditSaveKey, Json(EmberScenes.SmithingOverworld));
+            PlayerPrefs.SetString(EmberSaveService.AuditSaveKey, Json(EmberScenes.GeneratedWorld));
 
             Assert.That(EmberSaveService.TryResolveLatestSave(out var data), Is.True);
-            Assert.That(data.sceneName, Is.EqualTo(EmberScenes.SmithingOverworld));
+            Assert.That(data.sceneName, Is.EqualTo(EmberScenes.GeneratedWorld));
         }
 
         [Test]
@@ -184,7 +184,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         [Test]
         public void AuditIsKnownBuildScene_RejectsInvalidSceneNames()
         {
-            Assert.That(EmberSaveService.AuditIsKnownBuildScene(EmberScenes.SmithingOverworld), Is.True);
+            Assert.That(EmberSaveService.AuditIsKnownBuildScene(EmberScenes.GeneratedWorld), Is.True);
             Assert.That(EmberSaveService.AuditIsKnownBuildScene("__missing_scene__"), Is.False);
         }
 

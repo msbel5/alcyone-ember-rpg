@@ -37,13 +37,13 @@ namespace EmberCrpg.Tests.EditMode.Save
             var description = state.DescribeCurrent(new SaveSlotMetadata
             {
                 label = "Before Gate",
-                sceneName = "SeasonFarm",
+                sceneName = "GeneratedWorld",
                 playtimeMinutes = 87
             });
 
             Assert.That(description, Does.Contain("Manual 1"));
             Assert.That(description, Does.Contain("Before Gate"));
-            Assert.That(description, Does.Contain("SeasonFarm"));
+            Assert.That(description, Does.Contain("GeneratedWorld"));
             Assert.That(description, Does.Contain("87m"));
         }
 
