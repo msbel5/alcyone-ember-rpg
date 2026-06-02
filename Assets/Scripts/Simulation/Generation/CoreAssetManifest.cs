@@ -60,6 +60,17 @@ namespace EmberCrpg.Simulation.Generation
             entries.Add(new ManifestEntry("env_showroomoverview", "environment", "Assets/Generated/Core/env_showroomoverview.png", "env_showroomoverview", 512, 512, true, 300, "sd15-lcm"));
             entries.Add(new ManifestEntry("env_tavernflavour", "environment", "Assets/Generated/Core/env_tavernflavour.png", "env_tavernflavour", 512, 512, true, 300, "sd15-lcm"));
 
+            // Architectural shell pieces so a scene is dressed with more than just its floor.
+            // Walls/roofs are tileable surfaces (sd15-lcm, same as the floors above); doors/windows are
+            // centered fixtures (sdxl-turbo at native 512, same as item icons). Each is its own category so
+            // the Options "Generated Assets" panel lists wall/roof/door/window as distinct, regenerable groups.
+            // AddMany prefixes non-"ui" categories ("wall" + "colonyneeds" => "wall_colonyneeds"), so pass
+            // BARE ids here; the StaticPromptCatalog keys (wall_colonyneeds, roof_thatch, ...) match the result.
+            AddMany(entries, "wall", 512, 512, true, "sd15-lcm", "colonyneeds", "combatdungeon", "oracleshrine", "ritualhall", "seasonfarm", "trademarket", "showroomoverview", "tavernflavour");
+            AddMany(entries, "roof", 512, 512, true, "sd15-lcm", "thatch", "clay_tile", "slate", "timber");
+            AddMany(entries, "door", 512, 512, true, "sdxl-turbo", "oak", "iron", "stone_arch", "temple", "cellar");
+            AddMany(entries, "window", 512, 512, true, "sdxl-turbo", "shutter", "leaded", "arched", "oculus", "barred");
+
             return new CoreAssetManifest(entries);
         }
 

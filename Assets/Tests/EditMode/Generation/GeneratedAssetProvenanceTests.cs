@@ -84,7 +84,10 @@ namespace EmberCrpg.Tests.EditMode.Generation
             Assert.That(StaticPromptCatalog.EmberGenerationNegative, Does.Contain("no scattered objects"));
             foreach (var entry in CoreAssetManifest.CreateDefault().Entries.Where(e => e.RequiresGeneration))
             {
-                if (entry.Category == "environment" || entry.Category == "splash") continue;
+                // Tileable surfaces (floors/walls/roofs) and the splash backdrop are NOT centered icons,
+                // so they are exempt from the "single subject centered" requirement.
+                if (entry.Category == "environment" || entry.Category == "splash"
+                    || entry.Category == "wall" || entry.Category == "roof") continue;
                 Assert.That(catalog.TryGetPrompt(entry.StaticPromptKey, out var prompt), Is.True, entry.Id);
                 Assert.That(prompt, Does.Contain("single subject centered"), entry.Id);
                 Assert.That(prompt.ToLowerInvariant(), Does.Not.Contain("four "), entry.Id);

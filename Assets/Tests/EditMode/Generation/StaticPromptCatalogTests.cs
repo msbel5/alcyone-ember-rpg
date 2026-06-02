@@ -14,14 +14,15 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 if (string.IsNullOrEmpty(entry.StaticPromptKey)) continue;
                 Assert.That(catalog.TryGetPrompt(entry.StaticPromptKey, out var prompt), Is.True, entry.StaticPromptKey);
                 // Every prompt must open with an Ember style envelope. Icon/portrait/UI prompts use
-                // EmberStyleHeader (single centered subject); environment floor textures (env_*) use
-                // EmberFloorHeader (seamless tileable surface) — a deliberate T1.4 distinction. Accept
-                // either header so the test asserts "Ember envelope present" without forcing icons-only.
+                // EmberStyleHeader (single centered subject); tileable surfaces use EmberFloorHeader
+                // (floors/roofs, top-down) or EmberWallHeader (walls, front-facing) — a deliberate T1.4
+                // distinction. Accept any of the three so the test asserts "Ember envelope present".
                 Assert.That(
                     prompt.StartsWith(StaticPromptCatalog.EmberStyleHeader)
-                        || prompt.StartsWith(StaticPromptCatalog.EmberFloorHeader),
+                        || prompt.StartsWith(StaticPromptCatalog.EmberFloorHeader)
+                        || prompt.StartsWith(StaticPromptCatalog.EmberWallHeader),
                     Is.True,
-                    entry.StaticPromptKey + " should open with EmberStyleHeader or EmberFloorHeader");
+                    entry.StaticPromptKey + " should open with EmberStyleHeader, EmberFloorHeader, or EmberWallHeader");
                 Assert.That(prompt, Does.EndWith(StaticPromptCatalog.EmberNegativeFooter), entry.StaticPromptKey);
             }
         }
