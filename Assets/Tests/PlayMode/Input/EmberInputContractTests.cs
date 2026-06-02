@@ -79,6 +79,7 @@ namespace EmberCrpg.Tests.PlayMode.Input
             AssertButton(_keyboard.f1Key, () => EmberInput.ToggleCursor);
             AssertButton(_keyboard.rKey, () => EmberInput.RegenWorld);
             AssertButton(_keyboard.tabKey, () => EmberInput.ToggleMap);
+            AssertButton(_keyboard.cKey, () => EmberInput.ToggleColonyPanels);
             AssertButton(_keyboard.f5Key, () => EmberInput.SaveQuick);
             AssertButton(_keyboard.f9Key, () => EmberInput.LoadQuick);
 
@@ -136,6 +137,25 @@ namespace EmberCrpg.Tests.PlayMode.Input
             Assert.That(EmberInput.JumpDown, Is.True);
             Assert.That(EmberInput.JumpKeyDown, Is.True);
             Release(_keyboard.jKey);
+        }
+
+        [Test]
+        public void ToggleColonyBinding_CanBeRemappedViaRuntimeOptions()
+        {
+            var options = EmberRuntimeOptionsProvider.Current.Clone();
+            options.Input.ToggleColonyPath = "<Keyboard>/v";
+            EmberRuntimeOptionsProvider.Set(options);
+
+            EmberInput.ResetForTests();
+            EmberInput.EnableForTests();
+
+            Press(_keyboard.cKey);
+            Assert.That(EmberInput.ToggleColonyPanels, Is.False);
+            Release(_keyboard.cKey);
+
+            Press(_keyboard.vKey);
+            Assert.That(EmberInput.ToggleColonyPanels, Is.True);
+            Release(_keyboard.vKey);
         }
 
         private void AssertButton(ButtonControl control, System.Func<bool> read)

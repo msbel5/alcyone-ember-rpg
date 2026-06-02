@@ -56,6 +56,7 @@ namespace EmberCrpg.Domain.Configuration
         public string ToggleCursorPath { get; set; } = "<Keyboard>/f1";
         public string RegenWorldPath { get; set; } = "<Keyboard>/r";
         public string ToggleMapPath { get; set; } = "<Keyboard>/tab";
+        public string ToggleColonyPath { get; set; } = "<Keyboard>/c";
         public string SaveQuickPath { get; set; } = "<Keyboard>/f5";
         public string LoadQuickPath { get; set; } = "<Keyboard>/f9";
         public string PausePath { get; set; } = "<Keyboard>/escape";
@@ -174,6 +175,7 @@ namespace EmberCrpg.Domain.Configuration
                     ToggleCursorPath = Input.ToggleCursorPath,
                     RegenWorldPath = Input.RegenWorldPath,
                     ToggleMapPath = Input.ToggleMapPath,
+                    ToggleColonyPath = Input.ToggleColonyPath,
                     SaveQuickPath = Input.SaveQuickPath,
                     LoadQuickPath = Input.LoadQuickPath,
                     PausePath = Input.PausePath,
@@ -257,6 +259,7 @@ namespace EmberCrpg.Domain.Configuration
             options.Input.MoveLeftPath = string.IsNullOrWhiteSpace(options.Input.MoveLeftPath) ? "<Keyboard>/a" : options.Input.MoveLeftPath;
             options.Input.MoveRightPath = string.IsNullOrWhiteSpace(options.Input.MoveRightPath) ? "<Keyboard>/d" : options.Input.MoveRightPath;
             options.Input.LookPath = string.IsNullOrWhiteSpace(options.Input.LookPath) ? "<Mouse>/delta" : options.Input.LookPath;
+            options.Input.ToggleColonyPath = string.IsNullOrWhiteSpace(options.Input.ToggleColonyPath) ? "<Keyboard>/c" : options.Input.ToggleColonyPath;
             options.Input.NumberSlots = Math.Max(1, options.Input.NumberSlots);
             options.Input.FunctionSlots = Math.Max(1, options.Input.FunctionSlots);
             options.Input.LookSmoothingAlpha = Clamp01(options.Input.LookSmoothingAlpha);

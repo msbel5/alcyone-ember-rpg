@@ -19,6 +19,7 @@ namespace EmberCrpg.Presentation.Ember.Inputs
             ToggleCursor = Button("ToggleCursor", options.ToggleCursorPath);
             RegenWorld = Button("RegenWorld", options.RegenWorldPath);
             ToggleMap = Button("ToggleMap", options.ToggleMapPath);
+            ToggleColonyPanels = Button("ToggleColonyPanels", options.ToggleColonyPath);
             SaveQuick = Button("SaveQuick", options.SaveQuickPath);
             LoadQuick = Button("LoadQuick", options.LoadQuickPath);
             Pause = Button("Pause", options.PausePath);
@@ -35,6 +36,7 @@ namespace EmberCrpg.Presentation.Ember.Inputs
         public InputAction ToggleCursor { get; }
         public InputAction RegenWorld { get; }
         public InputAction ToggleMap { get; }
+        public InputAction ToggleColonyPanels { get; }
         public InputAction SaveQuick { get; }
         public InputAction LoadQuick { get; }
         public InputAction Pause { get; }
@@ -102,7 +104,7 @@ namespace EmberCrpg.Presentation.Ember.Inputs
             string left,
             string right)
         {
-            var composite = action.AddCompositeBinding("2DVector");
+            var composite = action.AddCompositeBinding("2DVector(mode=1)");
             composite.With("Up", up);
             composite.With("Down", down);
             composite.With("Left", left);

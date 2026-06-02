@@ -5,6 +5,7 @@ using EmberCrpg.Presentation.Ember.Sprites;
 using EmberCrpg.Presentation.Ember.Tick;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
+using EmberCrpg.Presentation.Ember.Runtime;
 using UnityEngine;
 using EmberCrpg.Presentation.Ember.Inputs;
 
@@ -186,18 +187,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             // BUG-2: toggle the standing colony overlay (JobQueue / Faction / ColonyNeeds). Hidden by
             // default so action scenes aren't cluttered; the player opens it on demand.
-            if (EmberInput.KeyDown(KeyCode.C))
+            if (EmberInput.ToggleColonyPanels)
                 SetColonyPanelsVisible(!_colonyPanelsVisible);
 
-            if (_fateTimer > 0)
-            {
-                _fateTimer -= Time.deltaTime;
-                if (_fateTimer <= 0)
-                {
-                    _fateLine = string.Empty;
-                    // We don't necessarily close the box here, it will just show the normal topic/line
-                }
-            }
+            _fateTimer = WorldHostInputPolicy.StepFateTimer(_fateTimer, Time.deltaTime, () => _fateLine = string.Empty);
 
             if (EmberInput.ToggleMap)
             {
@@ -247,18 +240,11 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // the dialog topic chooser. Without this short-circuit, a single
             // "1" press fires SelectTopic(topics[0]) AND mutates
             // _selectedSpellSlot AND queues a spell cast on the next swing.
-            if (!IsModalOpen())
-            {
-                // Spell selection
-                var spellSlotCount = EmberRuntimeOptionsProvider.Current.WorldHost.SpellSlotCount;
-                for (int i = 0; i < spellSlotCount; i++)
-                {
-                    if (EmberInput.NumberKeyDown(i + 1))
-                    {
-                        _selectedSpellSlot = i;
-                    }
-                }
-            }
+            _selectedSpellSlot = WorldHostInputPolicy.ResolveSelectedSpellSlot(
+                IsModalOpen(),
+                _selectedSpellSlot,
+                EmberRuntimeOptionsProvider.Current.WorldHost.SpellSlotCount,
+                EmberInput.NumberKeyDown);
         }
 
         /// <summary>
@@ -269,63 +255,29 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         /// </summary>
         internal static bool IsModalOpen()
         {
-            var dialog = Object.FindFirstObjectByType<DialogBoxPanel>(FindObjectsInactive.Exclude);
-            return dialog != null;
+            return WorldHostInputPolicy.IsModalOpen();
         }
 
         private void HandleQuitInput()
         {
-            // Codex audit (sixth pass A-P2 #9): when a dialog panel is open
-            // the DialogBoxPanel owns Escape (Close). Yielding prevents the
-            // double-handler race where one frame both Close()s the panel AND
-            // toggles cursor lock AND starts the >1s quit hold.
-            if (IsModalOpen()) { _escHoldTimer = 0f; return; }
+            _escHoldTimer = WorldHostInputPolicy.StepEscapeHoldTimer(
+                _escHoldTimer,
+                IsModalOpen(),
+                Object.FindFirstObjectByType<PauseMenu>(FindObjectsInactive.Include) != null,
+                EmberInput.PauseDown,
+                EmberInput.PauseHeld,
+                Time.unscaledDeltaTime,
+                EmberRuntimeOptionsProvider.Current.WorldHost.EscapeHoldQuitSeconds,
+                QuitApplication);
+        }
 
-            // ESC-001: PauseMenu already owns Escape in gameplay scenes and handles
-            // pause state + cursor visibility itself. Letting host toggle cursor on
-            // the same PauseDown frame creates a race (first press can hide cursor,
-            // second press shows it). If a PauseMenu exists, host must not consume
-            // Escape for cursor toggling / hold-to-quit.
-            if (Object.FindFirstObjectByType<PauseMenu>(FindObjectsInactive.Include) != null)
-            {
-                _escHoldTimer = 0f;
-                return;
-            }
-
-            // Codex audit Batch 3 / Finding D-2: the previous structure
-            //   if (GetKey(Escape)) { hold }
-            //   else { if (GetKeyDown(Escape)) toggleCursor; reset; }
-            // wrapped the GetKeyDown check inside the !GetKey else-branch, but on
-            // the very frame Escape is first pressed BOTH GetKey and GetKeyDown
-            // are true — so the toggle branch was unreachable forever. Move the
-            // GetKeyDown check OUT of the else so a tap toggles the cursor lock,
-            // and a >1s hold still quits.
-            if (EmberInput.PauseDown)
-            {
-                Cursor.lockState = (Cursor.lockState == CursorLockMode.Locked) ? CursorLockMode.None : CursorLockMode.Locked;
-                Cursor.visible = (Cursor.lockState != CursorLockMode.Locked);
-                // Codex audit (sixth pass A-P2 #9): reset hold timer in the
-                // tap branch so a brief focus-loss after the toggle does not
-                // accumulate stale partial-hold time toward the >1s quit.
-                _escHoldTimer = 0f;
-            }
-
-            if (EmberInput.PauseHeld)
-            {
-                _escHoldTimer += Time.unscaledDeltaTime;
-                if (_escHoldTimer > EmberRuntimeOptionsProvider.Current.WorldHost.EscapeHoldQuitSeconds)
-                {
+        private static void QuitApplication()
+        {
 #if UNITY_EDITOR
-                    UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.isPlaying = false;
 #else
-                    Application.Quit();
+            Application.Quit();
 #endif
-                }
-            }
-            else
-            {
-                _escHoldTimer = 0f;
-            }
         }
 
         private void OnDestroy()
