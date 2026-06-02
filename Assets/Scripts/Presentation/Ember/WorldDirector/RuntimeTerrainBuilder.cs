@@ -4,69 +4,64 @@ using UnityEngine;
 namespace EmberCrpg.Presentation.Ember.WorldDirector
 {
     /// <summary>
-    /// Builds a real Unity Terrain for the settlement at runtime (research-backed: TerrainData.SetHeights +
-    /// SetAlphamaps splatmap, per the GameDev Academy / Unity terrain-API approach). A flat central plateau
-    /// (where the settlement + player sit at world y=0) blends into gentle, seed-deterministic Perlin hills
-    /// toward the edges, textured with the biome's generated floor. Replaces the flat box-plane: real ground
-    /// with biome texture, an automatic TerrainCollider, and a rim boundary so the player cannot fall off.
-    /// Same seed -> identical hills (roguelike-deterministic).
+    /// Builds ONE seamless terrain TILE for the streaming world (Phase C). Each tile's heightmap is sampled
+    /// from a single CONTINUOUS world-space height function, so adjacent tiles match exactly at their shared
+    /// edge (no seams). The function is flat within <see cref="FlatRadius"/> of the world origin (where the
+    /// settlement + player sit) and ramps into gentle, seed-deterministic Perlin hills outward. Textured with
+    /// the biome's generated floor via a URP terrain material; the tile carries an automatic TerrainCollider.
+    /// Same seed -> identical terrain everywhere (roguelike-deterministic). The TerrainStreamer manages the
+    /// bubble of live tiles around the player, so the world renders as you walk and has no hard edge.
     /// </summary>
     public static class RuntimeTerrainBuilder
     {
-        private const int HeightmapRes = 257;   // must be 2^n + 1
-        private const int AlphamapRes = 256;
-        private const float TerrainSize = 400f; // metres per side
+        private const int HeightmapRes = 129;   // must be 2^n + 1; 129 keeps per-tile gen cheap for streaming
+        private const int AlphamapRes = 64;
         private const float TerrainHeight = 26f;
-        private const float FlatRadius = 55f;   // flat central area (the settlement) in metres
+        private const float FlatRadius = 55f;   // flat central area (the settlement) in metres from world origin
+        private const float HillRampMetres = 220f;
 
-        public static Terrain Build(Transform parent, BiomeKind biome, uint seed)
+        public static GameObject BuildTile(Transform parent, int tileX, int tileZ, float tileSize, BiomeKind biome, uint seed)
         {
             var data = new TerrainData
             {
                 heightmapResolution = HeightmapRes,
                 alphamapResolution = AlphamapRes,
-                size = new Vector3(TerrainSize, TerrainHeight, TerrainSize),
+                size = new Vector3(tileSize, TerrainHeight, tileSize),
             };
 
-            data.SetHeights(0, 0, BuildHeights(seed));
+            data.SetHeights(0, 0, BuildHeights(tileX, tileZ, tileSize, seed));
             data.terrainLayers = new[] { BiomeLayer(biome) };
             data.SetAlphamaps(0, 0, FullCoverAlpha());
 
             var go = Terrain.CreateTerrainGameObject(data); // also adds a TerrainCollider
-            go.name = "GeneratedTerrain";
+            go.name = $"TerrainTile_{tileX}_{tileZ}";
             go.transform.SetParent(parent, worldPositionStays: false);
-            // Terrain origin is its corner; offset so the flat plateau centre sits on the world origin where
-            // the settlement (built at 0,0) + player spawn.
-            go.transform.localPosition = new Vector3(-TerrainSize / 2f, 0f, -TerrainSize / 2f);
+            go.transform.localPosition = new Vector3(tileX * tileSize, 0f, tileZ * tileSize);
 
             var terrain = go.GetComponent<Terrain>();
             var urpTerrainShader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
             if (urpTerrainShader != null) terrain.materialTemplate = new Material(urpTerrainShader);
-
-            BuildRimBoundary(parent);
-            Debug.Log($"[WorldDirector] terrain built ({TerrainSize:0}x{TerrainSize:0}m, biome {biome})");
-            return terrain;
+            return go;
         }
 
-        // Flat (height 0) within FlatRadius of centre; gentle Perlin hills beyond, deterministic from the seed.
-        private static float[,] BuildHeights(uint seed)
+        // One continuous world-space height function, sampled at this tile's world coords -> seamless edges.
+        private static float[,] BuildHeights(int tileX, int tileZ, float tileSize, uint seed)
         {
             var heights = new float[HeightmapRes, HeightmapRes];
-            float half = (HeightmapRes - 1) / 2f;
-            float metresPerSample = TerrainSize / (HeightmapRes - 1);
-            float ox = seed % 619, oz = seed % 397; // deterministic noise offset from the world seed
+            float metresPerSample = tileSize / (HeightmapRes - 1);
+            float ox = seed % 619, oz = seed % 397;
             for (int y = 0; y < HeightmapRes; y++)
             {
                 for (int x = 0; x < HeightmapRes; x++)
                 {
-                    float dx = (x - half) * metresPerSample;
-                    float dz = (y - half) * metresPerSample;
-                    float dist = Mathf.Sqrt((dx * dx) + (dz * dz));
+                    float wx = (tileX * tileSize) + (x * metresPerSample);
+                    float wz = (tileZ * tileSize) + (y * metresPerSample);
+                    float dist = Mathf.Sqrt((wx * wx) + (wz * wz)); // distance to world origin (settlement)
                     if (dist <= FlatRadius) { heights[y, x] = 0f; continue; }
 
-                    float ramp = Mathf.Clamp01((dist - FlatRadius) / ((TerrainSize * 0.5f) - FlatRadius));
-                    float n = Mathf.PerlinNoise((x * 0.05f) + ox, (y * 0.05f) + oz);
-                    heights[y, x] = ramp * ramp * (0.12f + (0.55f * n)); // rise toward the edges
+                    float ramp = Mathf.Clamp01((dist - FlatRadius) / HillRampMetres);
+                    float n = Mathf.PerlinNoise((wx * 0.012f) + ox, (wz * 0.012f) + oz);
+                    heights[y, x] = ramp * ramp * (0.10f + (0.55f * n));
                 }
             }
             return heights;
@@ -94,28 +89,6 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             t.SetPixels(new[] { color, color, color, color });
             t.Apply();
             return t;
-        }
-
-        // Low invisible collider ring just inside the terrain edge so the player cannot leave the world.
-        private static void BuildRimBoundary(Transform parent)
-        {
-            float r = (TerrainSize / 2f) - 3f;
-            const float h = 8f, t = 2f;
-            AddWall(parent, new Vector3(0f, h / 2f, r), new Vector3(TerrainSize, h, t));
-            AddWall(parent, new Vector3(0f, h / 2f, -r), new Vector3(TerrainSize, h, t));
-            AddWall(parent, new Vector3(r, h / 2f, 0f), new Vector3(t, h, TerrainSize));
-            AddWall(parent, new Vector3(-r, h / 2f, 0f), new Vector3(t, h, TerrainSize));
-        }
-
-        private static void AddWall(Transform parent, Vector3 localPosition, Vector3 size)
-        {
-            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            wall.name = "WorldBoundary";
-            wall.transform.SetParent(parent, worldPositionStays: false);
-            wall.transform.localPosition = localPosition;
-            wall.transform.localScale = size;
-            var r = wall.GetComponent<MeshRenderer>();
-            if (r != null) r.enabled = false;
         }
     }
 }

@@ -45,9 +45,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
             var root = new GameObject("GeneratedLocation");
 
-            // Real Unity Terrain (heightmap + biome splatmap) instead of the flat box-plane: textured ground,
-            // gentle hills toward the edges, a TerrainCollider, and a rim boundary so the player can't fall off.
-            RuntimeTerrainBuilder.Build(root.transform, homeTile.Biome, seed);
+            // Streaming terrain (Phase C): a bubble of seamless Unity-Terrain tiles loaded around the player as
+            // they walk (Daggerfall-style), instead of one fixed plane. Flat where the settlement sits, gentle
+            // hills outward, biome-textured, no hard edge — the ground "renders as you go".
+            var streamerGo = new GameObject("TerrainStreamer");
+            streamerGo.transform.SetParent(root.transform, worldPositionStays: false);
+            streamerGo.AddComponent<TerrainStreamer>().Initialize(seed, homeTile.Biome);
 
             for (int i = 0; i < layout.Buildings.Count; i++)
                 RuntimeBuildingBuilder.Build(root.transform, layout.Buildings[i]);
