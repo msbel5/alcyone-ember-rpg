@@ -1,3 +1,4 @@
+using System.IO;
 using EmberCrpg.Domain.Overland;
 using UnityEngine;
 
@@ -28,11 +29,90 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return mat;
         }
 
+        /// <summary>
+        /// A textured material from a generated asset (e.g. a biome floor / wall). Falls back to a flat
+        /// <paramref name="tint"/> material when the asset has not been generated yet, so the world always
+        /// renders. <paramref name="tiling"/> repeats the texture across large surfaces.
+        /// </summary>
+        public static Material Textured(string generatedAssetId, Color tint, float tiling = 1f)
+        {
+            var texture = LoadGeneratedTexture(generatedAssetId);
+            if (texture == null) return Opaque(tint);
+
+            var mat = Opaque(Color.white);
+            if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", texture);
+            if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", texture);
+            mat.mainTexture = texture;
+            mat.mainTextureScale = new Vector2(tiling, tiling);
+            return mat;
+        }
+
+        // Loads a generated PNG (persistent build path, then editor/streaming) into a Texture2D, or null.
+        // Mirrors the path resolution the Options Generated-Assets panel uses.
+        private static Texture2D LoadGeneratedTexture(string assetId)
+        {
+            if (string.IsNullOrEmpty(assetId)) return null;
+            foreach (var path in GeneratedAssetPaths(assetId))
+            {
+                try
+                {
+                    if (!File.Exists(path)) continue;
+                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, true);
+                    if (tex.LoadImage(File.ReadAllBytes(path))) { tex.wrapMode = TextureWrapMode.Repeat; return tex; }
+                }
+                catch { /* a missing/locked asset must never break world realization */ }
+            }
+            return null;
+        }
+
+        private static string[] GeneratedAssetPaths(string assetId)
+        {
+            string file = assetId + ".png";
+            string editorRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
+            return new[]
+            {
+                Path.Combine(Application.persistentDataPath, "Generated", "Core", file),
+                Path.Combine(editorRoot, "Assets", "Generated", "Core", file),
+                Path.Combine(Application.streamingAssetsPath, "Generated", "Core", file),
+            };
+        }
+
+        // Best-fit generated floor texture per biome (reuses the env_* floor assets until biome-specific
+        // ground textures are generated). Returns the asset id, or null to use a flat colour.
+        public static string GroundTextureId(BiomeKind biome)
+        {
+            switch (biome)
+            {
+                case BiomeKind.Plains:   return "env_seasonfarm";
+                case BiomeKind.Forest:   return "env_seasonfarm";
+                case BiomeKind.Coast:    return "env_trademarket";
+                case BiomeKind.Mountain: return "env_combatdungeon";
+                case BiomeKind.Swamp:    return "env_ritualhall";
+                case BiomeKind.Desert:   return "env_trademarket";
+                case BiomeKind.Tundra:   return "env_oracleshrine";
+                case BiomeKind.Ash:      return "env_combatdungeon";
+                default:                 return "env_colonyneeds";
+            }
+        }
+
+        private static readonly string[] WallTextureIds =
+        {
+            "wall_trademarket", "wall_tavernflavour", "wall_colonyneeds", "wall_showroomoverview",
+        };
+
         public static Color WallColor(int materialIndex)
         {
             int i = materialIndex % WallColors.Length;
             if (i < 0) i += WallColors.Length;
             return WallColors[i];
+        }
+
+        // Best-fit generated wall texture for an abstract palette slot (reuses the wall_* assets).
+        public static string WallTextureId(int materialIndex)
+        {
+            int i = materialIndex % WallTextureIds.Length;
+            if (i < 0) i += WallTextureIds.Length;
+            return WallTextureIds[i];
         }
 
         public static Color GroundColor(BiomeKind biome)

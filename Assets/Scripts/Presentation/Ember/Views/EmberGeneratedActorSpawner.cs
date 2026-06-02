@@ -180,6 +180,13 @@ namespace EmberCrpg.Presentation.Ember.Views
             var interactable = root.AddComponent<EmberInteractable>();
             interactable.Setup(actorName, "General", id);
 
+            // The interact raycaster needs a collider to hit. Authored ActorViews ship one, so the baked
+            // scenes worked; spawned worldgen NPCs had none — which is exactly why pressing E on an NPC in
+            // the generated world opened no dialogue. Add a person-sized box so interaction works.
+            var hitBox = root.AddComponent<BoxCollider>();
+            hitBox.center = new Vector3(0f, 0.9f, 0f);
+            hitBox.size = new Vector3(0.8f, 1.8f, 0.8f);
+
             _spawnedIds.Add(candidate.Id);
             return true;
         }

@@ -18,7 +18,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             root.transform.SetParent(parent, worldPositionStays: false);
             root.transform.localPosition = new Vector3(placement.OriginX, 0f, placement.OriginZ);
 
-            var material = RuntimeMaterialPalette.Opaque(RuntimeMaterialPalette.WallColor(placement.MaterialIndex));
+            // Use the generated wall texture when it exists; fall back to a flat wall colour otherwise.
+            var material = RuntimeMaterialPalette.Textured(
+                RuntimeMaterialPalette.WallTextureId(placement.MaterialIndex),
+                RuntimeMaterialPalette.WallColor(placement.MaterialIndex),
+                tiling: 2f);
             float halfX = placement.SizeX / 2f;
             float halfZ = placement.SizeZ / 2f;
             float wallY = placement.Height / 2f;
