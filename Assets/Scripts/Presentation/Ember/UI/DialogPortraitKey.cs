@@ -1,18 +1,25 @@
 using System;
 using System.IO;
+using System.Text;
 using EmberCrpg.Presentation.Ember.Adapters;
 
 namespace EmberCrpg.Presentation.Ember.UI
 {
     public static class DialogPortraitKey
     {
-        public const string Default = "blacksmith";
+        public const string Default = "portrait_npc_placeholder";
 
         public static string FromSource(IDialogSource source)
         {
             if (source is IDialogSourcePortrait portraitSource)
                 return Normalize(portraitSource.GetPortraitName());
             return Default;
+        }
+
+        public static bool IsPortraitKey(string key)
+        {
+            return !string.IsNullOrWhiteSpace(key)
+                && key.Trim().StartsWith("portrait_", StringComparison.OrdinalIgnoreCase);
         }
 
         public static string Normalize(string raw)
@@ -24,19 +31,18 @@ namespace EmberCrpg.Presentation.Ember.UI
             if (LooksLikePath(key))
                 key = Path.GetFileNameWithoutExtension(key);
 
-            if (string.Equals(key, "portrait_npc_placeholder", StringComparison.OrdinalIgnoreCase) ||
+            key = key.Replace(' ', '_').Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(key))
+                return Default;
+
+            if (string.Equals(key, Default, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(key, "portrait_player_placeholder", StringComparison.OrdinalIgnoreCase))
                 return Default;
 
-            if (key.StartsWith("portrait_", StringComparison.OrdinalIgnoreCase) &&
-                key.EndsWith("_placeholder", StringComparison.OrdinalIgnoreCase) &&
-                key.Length > "portrait__placeholder".Length)
-            {
-                key = key.Substring("portrait_".Length, key.Length - "portrait_".Length - "_placeholder".Length);
-            }
+            if (key.StartsWith("portrait_", StringComparison.OrdinalIgnoreCase))
+                return NormalizePortraitKey(key);
 
-            key = NormalizeAlias(key);
-            return string.IsNullOrWhiteSpace(key) ? Default : key;
+            return "portrait_npc_" + SanitizeFragment(key);
         }
 
         private static bool LooksLikePath(string key)
@@ -48,17 +54,47 @@ namespace EmberCrpg.Presentation.Ember.UI
                 || key.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string NormalizeAlias(string key)
+        private static string NormalizePortraitKey(string key)
         {
-            if (string.IsNullOrWhiteSpace(key)) return Default;
-            var lower = key.ToLowerInvariant();
-            if (lower.Contains("guard") || lower.Contains("warden") || lower.Contains("noble")) return "knight";
-            if (lower.Contains("priest") || lower.Contains("scholar") || lower.Contains("elder")) return "sage";
-            if (lower.Contains("artisan") || lower.Contains("smith")) return "blacksmith";
-            if (lower.Contains("innkeeper") || lower.Contains("farmer")) return "innkeeper";
-            if (lower.Contains("merchant")) return "merchant";
-            if (lower.Contains("warrior") || lower.Contains("outlaw")) return "warrior";
-            return lower;
+            if (string.Equals(key, Default, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(key, "portrait_player_placeholder", StringComparison.OrdinalIgnoreCase))
+                return Default;
+            if (key.StartsWith("portrait_player_", StringComparison.OrdinalIgnoreCase))
+                return Default;
+
+            var fragment = key.StartsWith("portrait_npc_", StringComparison.OrdinalIgnoreCase)
+                ? key.Substring("portrait_npc_".Length)
+                : key.Substring("portrait_".Length);
+            if (fragment.EndsWith("_placeholder", StringComparison.OrdinalIgnoreCase))
+                fragment = fragment.Substring(0, fragment.Length - "_placeholder".Length);
+
+            var slug = SanitizeFragment(fragment);
+            return string.IsNullOrWhiteSpace(slug) ? Default : "portrait_npc_" + slug;
+        }
+
+        private static string SanitizeFragment(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "placeholder";
+
+            var builder = new StringBuilder(value.Length);
+            bool lastWasUnderscore = false;
+            for (int i = 0; i < value.Length; i++)
+            {
+                char ch = char.ToLowerInvariant(value[i]);
+                if (char.IsLetterOrDigit(ch))
+                {
+                    builder.Append(ch);
+                    lastWasUnderscore = false;
+                }
+                else if (!lastWasUnderscore)
+                {
+                    builder.Append('_');
+                    lastWasUnderscore = true;
+                }
+            }
+
+            var slug = builder.ToString().Trim('_');
+            return string.IsNullOrWhiteSpace(slug) ? "placeholder" : slug;
         }
     }
 }

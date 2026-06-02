@@ -91,6 +91,7 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlHeight = true;
             layout.childControlWidth = true;
+            layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
         }
 
@@ -110,6 +111,7 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
                 _navFills.Add(fill);
             }
 
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_navMount);
             ShowSection(0);
         }
 

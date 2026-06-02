@@ -7,14 +7,15 @@ namespace EmberCrpg.Tests.EditMode.Ui
 {
     public sealed class DialogPortraitKeyTests
     {
-        [TestCase(null, "blacksmith")]
-        [TestCase("", "blacksmith")]
-        [TestCase("portrait_npc_placeholder", "blacksmith")]
-        [TestCase("portrait_player_placeholder", "blacksmith")]
-        [TestCase("portrait_guard_placeholder", "knight")]
-        [TestCase("portrait_priest_placeholder", "sage")]
-        [TestCase("Assets/Generated/NpcPortraits/merchant.png", "merchant")]
-        [TestCase("C:/tmp/portraits/blacksmith.png", "blacksmith")]
+        [TestCase(null, DialogPortraitKey.Default)]
+        [TestCase("", DialogPortraitKey.Default)]
+        [TestCase("portrait_npc_placeholder", DialogPortraitKey.Default)]
+        [TestCase("portrait_player_placeholder", DialogPortraitKey.Default)]
+        [TestCase("portrait_guard_placeholder", "portrait_npc_guard")]
+        [TestCase("portrait_priest_placeholder", "portrait_npc_priest")]
+        [TestCase("Assets/Generated/NpcPortraits/merchant.png", "portrait_npc_merchant")]
+        [TestCase("C:/tmp/portraits/blacksmith.png", "portrait_npc_blacksmith")]
+        [TestCase("Oracle", "portrait_npc_oracle")]
         public void Normalize_ReturnsCanonicalPortraitKeys(string raw, string expected)
         {
             Assert.That(DialogPortraitKey.Normalize(raw), Is.EqualTo(expected));
@@ -29,7 +30,7 @@ namespace EmberCrpg.Tests.EditMode.Ui
         [Test]
         public void FromSource_NormalizesPortraitName_WhenPortraitSourceProvided()
         {
-            Assert.That(DialogPortraitKey.FromSource(new PortraitSource("portrait_guard_placeholder")), Is.EqualTo("knight"));
+            Assert.That(DialogPortraitKey.FromSource(new PortraitSource("portrait_guard_placeholder")), Is.EqualTo("portrait_npc_guard"));
         }
 
         private sealed class PlainSource : IDialogSource

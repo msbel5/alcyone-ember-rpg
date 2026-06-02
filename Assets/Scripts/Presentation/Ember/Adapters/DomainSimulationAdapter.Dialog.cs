@@ -139,6 +139,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         private static string ResolveConversationPortraitKey(NpcSeedRecord npc, string actorName)
         {
+            // Why: dialog portraits must stay on portrait-specific keys so the panel never reuses a world billboard body sprite.
             if (npc != null && !string.IsNullOrWhiteSpace(npc.PortraitAssetPath))
                 return DialogPortraitKey.Normalize(npc.PortraitAssetPath);
 

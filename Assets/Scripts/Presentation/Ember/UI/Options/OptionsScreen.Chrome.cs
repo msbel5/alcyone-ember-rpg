@@ -41,13 +41,14 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             var borderImage = border.GetComponent<Image>();
             borderImage.color = GoldHairline;
             borderImage.raycastTarget = false;
+            border.AddComponent<LayoutElement>().ignoreLayout = true;
             return rect;
         }
 
         // Why: nav tabs and the back action share one button builder and one visual language.
         private Button Button(Transform parent, string text, UnityAction action, out Image fill)
         {
-            var go = new GameObject(text, typeof(RectTransform), typeof(Image), typeof(Button));
+            var go = new GameObject(text, typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
             go.transform.SetParent(parent, false);
             fill = go.GetComponent<Image>();
             fill.color = PanelBrown;
@@ -55,7 +56,11 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             var button = go.GetComponent<Button>();
             button.targetGraphic = fill;
             button.onClick.AddListener(action);
-            go.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, 42f);
+            var layout = go.GetComponent<LayoutElement>();
+            layout.minHeight = 46f;
+            layout.preferredHeight = 46f;
+            layout.flexibleWidth = 1f;
+            go.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, 46f);
             var label = Label(go.transform, text, 17, TextAlignmentOptions.Center, Parchment);
             Stretch(label.rectTransform);
             return button;

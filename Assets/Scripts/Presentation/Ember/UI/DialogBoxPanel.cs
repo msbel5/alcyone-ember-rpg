@@ -204,6 +204,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         private Sprite ResolvePortraitSprite(string portraitName)
         {
             if (string.IsNullOrWhiteSpace(portraitName)) return null;
+            if (!DialogPortraitKey.IsPortraitKey(portraitName)) return null;
 
             if (Source is EmberCrpg.Presentation.Ember.UI.ISpriteByName lookup)
             {

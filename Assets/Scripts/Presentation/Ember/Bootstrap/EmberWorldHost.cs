@@ -398,15 +398,13 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         {
             // Forward to the adapter when it carries a per-NPC portrait id so the dialog panel
             // gets a real sprite name (e.g. "portrait_sage_nera") instead of the gray
-            // placeholder. Falls back to the generic placeholder when no adapter / no portrait.
+            // placeholder. Falls back to the neutral placeholder when no adapter / no portrait.
             if (_adapter is IDialogSourcePortrait portraitSource)
             {
                 var name = portraitSource.GetPortraitName();
                 if (!string.IsNullOrEmpty(name)) return name;
             }
-            // DLG-PRT-001: canonical registry has no "portrait_npc_placeholder" key.
-            // Use a guaranteed in-registry actor sprite as the baseline fallback.
-            return "blacksmith";
+            return DialogPortraitKey.Default;
         }
 
         public void SelectTopic(string topicId)
