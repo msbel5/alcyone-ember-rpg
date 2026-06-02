@@ -124,7 +124,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var where = string.IsNullOrEmpty(town) ? string.Empty : $"   •   {town}";
                 if (profile == null)
                     return $"Tick {_tick:0000}   Day {day:000}{where}";
-                return $"Tick {_tick:0000}   Day {day:000}   {Spaced(profile.Style)} / {Spaced(profile.Genre)}   Pop {profile.TargetPopulation:N0}{where}";
+                // Population is the world the HISTORY simulated (sum of surviving settlement populations),
+                // not the static TargetPopulation knob, so the number reflects centuries of growth/decline.
+                var population = GeneratedWorld != null ? GeneratedWorld.TotalPopulation : profile.TargetPopulation;
+                return $"Tick {_tick:0000}   Day {day:000}   {Spaced(profile.Style)} / {Spaced(profile.Genre)}   Pop {population:N0}{where}";
             }
         }
 

@@ -56,10 +56,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 startLocation);
             HydrateGeneratedWorld(generated, preferredSize);
 
-            // W1: generate the deterministic open-world overland map (PRD_overland_map_v1) from the same
-            // world seed, so New Game produces a traversable Daggerfall-shaped map alongside the colony world.
+            // W1: project the deterministic open-world overland map (PRD_overland_map_v1) from the SAME
+            // generated world (not a separate Default regen), so the map's settlements ARE the ones the
+            // history simulated + NPCs are homed to (fixes the reveal/map settlement-count mismatch and the
+            // starting-settlement resolution miss). OverlandWorldgen.Generate(GeneratedWorld, ...) projects.
             _world.Overland = EmberCrpg.Simulation.Overland.OverlandWorldgen.Generate(
-                seed, EmberCrpg.Domain.Overland.OverlandParameters.Default);
+                generated, EmberCrpg.Domain.Overland.OverlandParameters.Default);
 
             UnityEngine.Debug.Log(
                 $"Domain Seeded: seed={seed} style={style} genre={genre} mood='{mood}' calling='{calling}' start='{startLocation}' " +
