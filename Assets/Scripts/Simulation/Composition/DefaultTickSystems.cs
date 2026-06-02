@@ -199,7 +199,10 @@ namespace EmberCrpg.Simulation.Composition
             private readonly ScheduleSystem _schedule;
 
             public ScheduleStep(ScheduleSystem schedule)
-                : base("living.schedule", TickCadence.Hourly, 20)
+                // PerTick (not Hourly): ScheduleSystem.Advance walks each NPC ONE tile per call, so it must run
+                // every tick to read as continuous walking (~1.2 m/s at the 0.83 s tick). Hourly crawled one
+                // tile per game-hour — NPCs never reached work/home. Job assignment + needs stay Hourly.
+                : base("living.schedule", TickCadence.PerTick, 20)
             {
                 _schedule = schedule ?? throw new ArgumentNullException(nameof(schedule));
             }

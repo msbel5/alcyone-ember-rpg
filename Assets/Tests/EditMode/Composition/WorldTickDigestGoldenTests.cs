@@ -9,7 +9,8 @@ namespace EmberCrpg.Tests.EditMode.Composition
 {
     public sealed class WorldTickDigestGoldenTests
     {
-        private const string BaselineHash = "5ee9f9bf71a6f05f67fd6585434a990a0de2e94ce5765434fd7dc2ebe669741a";
+        // Re-baselined on 2026-06-03 for coherent time: 60/1440 tick cadence and per-tick schedule movement.
+        private const string BaselineHash = "3c63d493c1ceda5d58e140ebbb199b616e788d54c943f16285dee33094bfa2b8";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 
@@ -25,10 +26,15 @@ namespace EmberCrpg.Tests.EditMode.Composition
         public void Advance_OverTwoGameDays_MatchesCommittedBaselineDigest()
         {
             var digest = DigestAfterTicks(TwoGameDaysTicks);
+            var secondDigest = DigestAfterTicks(TwoGameDaysTicks);
+            Assert.That(
+                secondDigest,
+                Is.EqualTo(digest),
+                "World digest baseline must be byte-identical across repeated same-seed advances.");
             Assert.That(
                 digest,
                 Is.EqualTo(BaselineHash),
-                "World digest baseline drifted. Captured digest: " + digest);
+                "World digest baseline drifted. Captured digest: " + digest + " second digest: " + secondDigest);
         }
 
         [Test]

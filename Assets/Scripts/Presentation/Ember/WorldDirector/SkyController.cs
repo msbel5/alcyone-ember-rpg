@@ -4,7 +4,7 @@ using UnityEngine;
 namespace EmberCrpg.Presentation.Ember.WorldDirector
 {
     /// <summary>
-    /// Day/night sky for the generated world, driven by the SIM's time of day (240 ticks = one game day).
+    /// Day/night sky for the generated world, driven by the SIM's time of day (a full day = WorldTickComposer.TicksPerGameDay ticks).
     ///
     /// The sky was BLACK because the eye camera clears to a near-black SolidColor (RuntimePlayerRig) and the
     /// procedural skybox shader is stripped out of player builds (Shader.Find returns null at runtime), so nothing
@@ -16,8 +16,6 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     [DisallowMultipleComponent]
     public sealed class SkyController : MonoBehaviour
     {
-        private const int TicksPerDay = 240;
-
         // Sky clear colour through the day. Dawn/dusk warm the horizon; night is a deep navy (never pure black).
         private static readonly Color DaySky = new Color(0.40f, 0.62f, 0.86f);
         private static readonly Color NightSky = new Color(0.03f, 0.05f, 0.12f);
@@ -69,9 +67,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
         private static float DayFraction()
         {
+            int ticksPerDay = EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay;
             var clock = EmberDomainAdapterLocator.Current;
             if (clock != null)
-                return (clock.TickIndex % TicksPerDay) / (float)TicksPerDay;
+                return (clock.TickIndex % ticksPerDay) / (float)ticksPerDay;
             return (Time.time % 120f) / 120f; // real-time fallback: a 2-minute day
         }
     }

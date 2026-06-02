@@ -236,7 +236,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         private void UpdateHud()
 {
-            var day = 1 + _tick / 240;
+            var day = 1 + _tick / EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay;
             var season = SeasonOf(day);
             var weather = WeatherOf(_tick);
             _hudText = $"Tick {_tick:0000}   Day {day:000}   {season}   {weather}";

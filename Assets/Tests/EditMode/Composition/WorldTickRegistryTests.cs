@@ -65,9 +65,9 @@ namespace EmberCrpg.Tests.EditMode.Composition
             {
                 "PerTick:10:core.time",
                 "PerTick:20:core.magic",
+                "PerTick:20:living.schedule",
                 "Hourly:10:econ.jobs",
                 "Hourly:15:quest.tick",
-                "Hourly:20:living.schedule",
                 "Hourly:30:living.needs",
                 "Daily:10:world.caravans",
                 "Daily:20:econ.plantgrowth",

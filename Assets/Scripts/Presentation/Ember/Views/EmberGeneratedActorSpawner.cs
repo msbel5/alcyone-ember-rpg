@@ -52,7 +52,7 @@ namespace EmberCrpg.Presentation.Ember.Views
         // Cap: nearest-N generated NPCs to the player get a billboard. A small cap keeps the starting
         // settlement populated (and visually readable) without instantiating a 750-strong crowd or a
         // pile of overlapping billboards.
-        [SerializeField] private int _maxSpawnCount = 10;
+        [SerializeField] private int _maxSpawnCount = 24;
 
         // On-screen billboard height in world units. Mirrors EmberWorldspaceBuilder.SpawnActor's
         // FitBillboardToPlayableHeight target (2.1) so spawned NPCs read at the SAME size as authored
@@ -173,10 +173,12 @@ namespace EmberCrpg.Presentation.Ember.Views
             // of the Editor builder's SerializedObject write.
             var actorView = root.AddComponent<ActorView>();
             actorView.BindDomainActorId(id);
-            // Cosmetic idle wander so the co-located worldgen crowd spreads out and looks alive instead of a
-            // static clump on the settlement tile. Purely visual (never written to the sim); the id-keyed
-            // sync still relocates the NPC when the sim actually moves it.
-            actorView.EnableWander(4f);
+            // Walk speed ~1.2 m/s, matched to the colony schedule's 1 tile / 0.83 s tick, so the billboard
+            // glides continuously with the sim instead of stride-then-pausing (combat keeps the snap chase).
+            actorView.SetGroundSpeed(1.3f);
+            // No cosmetic wander any more: the colony sim now drives real movement — ScheduleSystem walks each
+            // NPC to its worksite/day-anchor by day and home by night, and the id-keyed PushWorldViews sync
+            // relocates this billboard accordingly. The motion is purposeful, not random jitter.
 
             // Dialog: author the stable id on an EmberInteractable too (3-arg overload built for runtime
             // spawners) so the interact raycaster prefers the id-keyed GetDialogSource(ActorId) path and

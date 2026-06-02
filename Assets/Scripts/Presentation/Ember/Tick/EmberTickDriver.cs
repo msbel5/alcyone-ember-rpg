@@ -12,7 +12,10 @@ namespace EmberCrpg.Presentation.Ember.Tick
     {
         public interface ITickListener { void OnTick(int tickIndex); }
 
-        [SerializeField] private float _tickIntervalSeconds = 0.1f;
+        // 0.8333 s/tick: with the coherent 1440 ticks/game-day (EmberRuntimeOptions.Normalize) a full day/night
+        // lasts 1440 * 0.8333 ≈ 1200 s = 20 real minutes, and the per-tick schedule mover walks ~1.2 m/s
+        // (1 tile/tick). Determinism is unaffected — all sim gating is counted in ticks, not seconds.
+        [SerializeField] private float _tickIntervalSeconds = 0.8333f;
         [SerializeField] private int _maxCatchupTicksPerFrame = 8;
 
         public ITickListener Listener { get; set; }

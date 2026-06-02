@@ -117,7 +117,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             get
             {
-                var day = 1 + _tick / 240;
+                var day = 1 + _tick / EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay;
                 var profile = _world.WorldProfile;
                 // Anchor the player in the real generated world: name the settlement they started in.
                 var town = ResolveStartingSettlementName();

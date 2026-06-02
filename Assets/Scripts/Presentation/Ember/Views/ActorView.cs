@@ -102,6 +102,11 @@ namespace EmberCrpg.Presentation.Ember.Views
         private Vector3 _wanderGoal;
         private float _wanderRepathTimer;
 
+        // Overworld walkers (set by EmberGeneratedActorSpawner): when >0 the billboard GLIDES toward its sim
+        // position at this real m/s instead of the exponential chase, so the per-tick 1-tile colony schedule
+        // reads as continuous walking. Combat billboards leave it 0 and keep the snappy chase.
+        private float _groundSpeed;
+
         private void Awake()
         {
             if (_billboard == null)
@@ -143,6 +148,13 @@ namespace EmberCrpg.Presentation.Ember.Views
             _wanderRepathTimer = 2f + (Random.value * 4f);
         }
 
+        /// <summary>Make this billboard walk toward its sim position at a steady ground speed (m/s) — used for
+        /// generated NPCs so the per-tick colony schedule reads as smooth walking, not a stride-then-pause.</summary>
+        public void SetGroundSpeed(float metersPerSecond)
+        {
+            _groundSpeed = Mathf.Max(0f, metersPerSecond);
+        }
+
         public void Apply(int amount)
         {
             _tintRemaining = 0.2f;
@@ -168,7 +180,12 @@ namespace EmberCrpg.Presentation.Ember.Views
                 targetPos += _wanderCurrent;
             }
             var t = Mathf.Clamp01(_interpolationSpeed * Time.deltaTime);
-            transform.position = Vector3.Lerp(transform.position, targetPos, t);
+            if (_groundSpeed > 0f && (transform.position - targetPos).sqrMagnitude <= 25f)
+                // Mid-walk: glide at a constant ground speed so the per-tick 1-tile sim steps look continuous
+                // instead of stride-then-pause. Beyond 5 m (spawn/teleport) fall through to the snap below.
+                transform.position = Vector3.MoveTowards(transform.position, targetPos, _groundSpeed * Time.deltaTime);
+            else
+                transform.position = Vector3.Lerp(transform.position, targetPos, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, _target.WorldRotation, t);
             
             if (_billboard == null) return;

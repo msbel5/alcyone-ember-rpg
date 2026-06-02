@@ -20,6 +20,37 @@ namespace EmberCrpg.Tests.EditMode.Actors
         }
 
         [Test]
+        public void Constructor_DefaultsHomeAndDayAnchorToSpawnPosition()
+        {
+            var actor = CreateActor();
+
+            Assert.That(actor.Home, Is.EqualTo(new GridPosition(1, 1)));
+            Assert.That(actor.DayAnchor, Is.EqualTo(new GridPosition(1, 1)));
+        }
+
+        [Test]
+        public void WithHomeAndAnchor_CopiesStateWithUpdatedDailyTargets()
+        {
+            var actor = CreateActor();
+            var preference = new ActorJobPreference(JobKind.Smith, JobPriority.Active(1));
+            var schedule = ActorScheduleState.Assigned(new JobId(5UL), new SiteId(3UL), new GridPosition(9, 2));
+            actor.ApplyJobPreferences(new[] { preference });
+            actor.ApplyScheduleState(schedule);
+            actor.RecordTopic("work");
+
+            var copy = actor.WithHomeAndAnchor(new GridPosition(2, 3), new GridPosition(4, 5));
+
+            Assert.That(copy, Is.Not.SameAs(actor));
+            Assert.That(copy.Id, Is.EqualTo(actor.Id));
+            Assert.That(copy.Position, Is.EqualTo(actor.Position));
+            Assert.That(copy.Home, Is.EqualTo(new GridPosition(2, 3)));
+            Assert.That(copy.DayAnchor, Is.EqualTo(new GridPosition(4, 5)));
+            Assert.That(copy.JobPreferences, Is.EqualTo(new[] { preference }));
+            Assert.That(copy.ScheduleState, Is.EqualTo(schedule));
+            Assert.That(copy.AskedTopicIds, Is.EqualTo(new[] { "work" }));
+        }
+
+        [Test]
         public void ApplyVitals_ReplacesHealthSnapshot()
         {
             var actor = CreateActor();

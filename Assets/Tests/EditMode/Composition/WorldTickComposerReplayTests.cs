@@ -13,12 +13,12 @@ namespace EmberCrpg.Tests.EditMode.Composition
     /// <c>RebuildAccumulatorsFrom(world.Time)</c>, which re-derives the cadence phase from the restored
     /// time. These tests prove the fix reproduces a continuous run AND that the old path did not —
     /// and they double as a regression guard on the absolute-time alignment the rebuild assumes
-    /// (the playable world starts at 8:00 = 480 min, a multiple of both the hour and day periods).
+    /// (the playable world starts at 8:00 = 480 min, an hour-aligned timestamp).
     /// </summary>
     public sealed class WorldTickComposerReplayTests
     {
-        private const int SaveTick = 13;  // mid-hour: 13 % 10 = 3 ticks in-flight toward the next hour
-        private const int FinalTick = 25; // far enough to cross the next hourly boundary post-reload
+        private static int SaveTick => WorldTickComposer.TicksPerGameHour + 13;
+        private static int FinalTick => 2 * WorldTickComposer.TicksPerGameHour + 5;
 
         private static WorldState World() => new WorldFactory().Create(roomSeed: 1);
 

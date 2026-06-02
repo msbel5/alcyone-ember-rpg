@@ -71,8 +71,12 @@ namespace EmberCrpg.Domain.Configuration
     public sealed class TickRuntimeOptions
     {
         public long MinutesPerTick { get; set; } = 1L;
-        public int TicksPerDay { get; set; } = 240;
-        public int TicksPerHour { get; set; } = 10;
+        // TicksPerHour/Day are DERIVED from MinutesPerTick in Normalize() (single source of truth) so the
+        // schedule clock (GameTime.Hour — 60-min hours, 1440-min days) can never desync from the daily/HUD
+        // counters. These defaults match MinutesPerTick=1: a real 24h day = 1440 ticks, an hour = 60 ticks.
+        // They were historically 240/10, which made a "day" only 4 game-hours while the clock used 24.
+        public int TicksPerDay { get; set; } = 1440;
+        public int TicksPerHour { get; set; } = 60;
         public int LowStockThreshold { get; set; } = 4;
         public int HighStockThreshold { get; set; } = 64;
         public int PriceStep { get; set; } = 1;
@@ -235,8 +239,12 @@ namespace EmberCrpg.Domain.Configuration
         private static EmberRuntimeOptions Normalize(EmberRuntimeOptions options)
         {
             options.Tick.MinutesPerTick = Math.Max(1, options.Tick.MinutesPerTick);
-            options.Tick.TicksPerDay = Math.Max(1, options.Tick.TicksPerDay);
-            options.Tick.TicksPerHour = Math.Max(1, options.Tick.TicksPerHour);
+            // Single source of truth: ticks-per-hour/day FOLLOW MinutesPerTick + GameTime's fixed calendar
+            // (60-min hours, 1440-min days) so the schedule clock (GameTime.Hour) and the daily/HUD counters
+            // can never drift apart — the historic 240/10 desync that made a "day" 4 game-hours and broke NPC
+            // day/night routing. Change MinutesPerTick (or the tick interval) to retune the day length.
+            options.Tick.TicksPerHour = (int)Math.Max(1L, EmberCrpg.Domain.Core.GameTime.MinutesPerHour / options.Tick.MinutesPerTick);
+            options.Tick.TicksPerDay = (int)Math.Max(1L, EmberCrpg.Domain.Core.GameTime.MinutesPerDay / options.Tick.MinutesPerTick);
             options.Tick.LowStockThreshold = Math.Max(1, options.Tick.LowStockThreshold);
             options.Tick.HighStockThreshold = Math.Max(2, options.Tick.HighStockThreshold);
             options.Tick.PriceStep = Math.Max(1, options.Tick.PriceStep);

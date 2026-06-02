@@ -296,22 +296,60 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 var actorId = new ActorId(GeneratedNpcActorOffset + npc.Id.Value);
                 if (_world.Actors.Contains(actorId)) continue;
-                var position = CenterOfSite(SettlementSiteId(npc.Home));
-                _world.Actors.Add(new ActorRecord(
+
+                // LIVING WORLD: every NPC gets a HOME cell (spread across its settlement) + a daytime ANCHOR
+                // (near the settlement centre) so ScheduleSystem walks it to work/anchor by day and home by
+                // night, plus a JOB PREFERENCE from its worldgen role so blacksmiths smith and farmers farm
+                // where a matching worksite exists. Spawns at home rather than all stacked on the centre tile.
+                var siteId = SettlementSiteId(npc.Home);
+                var home = HomeCellFor(siteId, npc.Id.Value);
+                var dayAnchor = DayAnchorFor(siteId, npc.Id.Value);
+
+                var actor = new ActorRecord(
                     actorId,
                     npc.Name,
                     ToActorRole(npc.Role),
                     StatsFor(npc.Role),
                     VitalsFor(npc.Role),
-                    position,
+                    home,
                     accuracy: npc.Role == NpcRole.Guard || npc.Role == NpcRole.Outlaw ? 55 : 35,
                     dodge: npc.Role == NpcRole.Outlaw ? 55 : 30,
                     armor: npc.Role == NpcRole.Guard ? 12 : 4,
                     baseDamage: npc.Role == NpcRole.Outlaw ? 10 : 4,
-                    topicIds: new[] { "rumors", "work", "trade" }));
+                    topicIds: new[] { "rumors", "work", "trade" },
+                    home: home,
+                    dayAnchor: dayAnchor);
+
+                var jobKind = NpcRoleJobMapper.ToJobKind(npc.Role);
+                if (jobKind.HasValue)
+                    actor.ApplyJobPreferences(new[] { new ActorJobPreference(jobKind.Value, JobPriority.Active(1)) });
+
+                _world.Actors.Add(actor);
             }
 
             GrantStartingJobPreference();
+        }
+
+        // A deterministic HOME cell spread across the NPC's home-settlement site, so the crowd doesn't stack on
+        // one tile and each NPC has its own place to return to at night.
+        private GridPosition HomeCellFor(SiteId siteId, ulong npcId)
+        {
+            if (_world.Sites != null && _world.Sites.TryGet(siteId, out var site))
+            {
+                int w = System.Math.Max(1, (site.MaxBound.X - site.MinBound.X) + 1);
+                int h = System.Math.Max(1, (site.MaxBound.Y - site.MinBound.Y) + 1);
+                ulong k = (npcId * 2654435761UL) + 1013904223UL;
+                return new GridPosition(site.MinBound.X + (int)(k % (ulong)w), site.MinBound.Y + (int)((k / (ulong)w) % (ulong)h));
+            }
+            return CenterOfSite(siteId);
+        }
+
+        // A daytime gathering anchor near the settlement centre (small per-NPC spread) for NPCs without a
+        // claimed production job — so they walk to the "square" by day and home by night.
+        private GridPosition DayAnchorFor(SiteId siteId, ulong npcId)
+        {
+            var c = CenterOfSite(siteId);
+            return new GridPosition(c.X + (int)(npcId % 2UL), c.Y + (int)((npcId / 2UL) % 2UL));
         }
 
         /// <summary>

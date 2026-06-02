@@ -375,6 +375,36 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 "PngPath: " + pngPath + "\n");
         }
 
+        // Snapshot the first `max` generated NPCs' projected world positions, keyed by stable id, so a later
+        // snapshot can be diffed to count who actually walked.
+        private static System.Collections.Generic.Dictionary<ulong, UnityEngine.Vector2> SampleNpcPositions(
+            EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter adapter, int max)
+        {
+            var map = new System.Collections.Generic.Dictionary<ulong, UnityEngine.Vector2>();
+            var actors = adapter.GetSpawnableActors();
+            if (actors == null) return map;
+            int n = 0;
+            foreach (var a in actors)
+            {
+                if (a.Id == 0UL) continue;
+                map[a.Id] = new UnityEngine.Vector2(a.WorldX, a.WorldZ);
+                if (++n >= max) break;
+            }
+            return map;
+        }
+
+        // How many sampled NPCs changed position by more than half a tile between two snapshots.
+        private static int CountNpcMoved(
+            System.Collections.Generic.Dictionary<ulong, UnityEngine.Vector2> a,
+            System.Collections.Generic.Dictionary<ulong, UnityEngine.Vector2> b)
+        {
+            if (a == null || b == null) return 0;
+            int moved = 0;
+            foreach (var kv in a)
+                if (b.TryGetValue(kv.Key, out var p) && UnityEngine.Vector2.Distance(kv.Value, p) > 0.5f) moved++;
+            return moved;
+        }
+
         private IEnumerator RunWorldProof()
         {
             var path = Path.Combine(_outputDir, "world-proof.txt");
@@ -392,8 +422,42 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
                 int ticksPerDay = EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay;
                 adapter.AdvanceTick(0);
+                // LIVING-WORLD PROOF: sample a dozen NPCs across the day. If many move from home (early/off
+                // hours) to their worksite/anchor (midday) and back home (night), the colony schedule is
+                // driving them — the world is alive, not a crowd of standing NPCs.
+                System.Collections.Generic.Dictionary<ulong, UnityEngine.Vector2> npcMorning = null;
+                System.Collections.Generic.Dictionary<ulong, UnityEngine.Vector2> npcMidday = null;
+                System.Collections.Generic.Dictionary<ulong, UnityEngine.Vector2> npcNight = null;
                 for (int tick = 1; tick <= ticksPerDay; tick++)
+                {
                     adapter.AdvanceTick(tick);
+                    if (tick == 12) npcMorning = SampleNpcPositions(adapter, 12);
+                    if (tick == ticksPerDay / 2) npcMidday = SampleNpcPositions(adapter, 12);
+                    if (tick == ticksPerDay - 2) npcNight = SampleNpcPositions(adapter, 12);
+                }
+                int npcSampled = npcMorning?.Count ?? 0;
+                int npcWalkedToWork = CountNpcMoved(npcMorning, npcMidday);
+                int npcWalkedHome = CountNpcMoved(npcMidday, npcNight);
+
+                // Diagnostic: raw home/anchor + midday/night positions for a few sampled NPCs, so the daily
+                // route is visible as concrete numbers (and any mismatch is debuggable).
+                var npcDiag = new StringBuilder();
+                int diagShown = 0;
+                if (world.Actors != null && npcMidday != null && npcNight != null)
+                {
+                    foreach (var a in world.Actors.Records)
+                    {
+                        if (a == null) continue;
+                        if (!npcMidday.TryGetValue(a.Id.Value, out var mp) || !npcNight.TryGetValue(a.Id.Value, out var np)) continue;
+                        npcDiag.Append(" [id=").Append(a.Id.Value)
+                               .Append(" home=(").Append(a.Home.X).Append(',').Append(a.Home.Y)
+                               .Append(") anchor=(").Append(a.DayAnchor.X).Append(',').Append(a.DayAnchor.Y)
+                               .Append(") midday=(").Append((int)mp.x).Append(',').Append((int)mp.y)
+                               .Append(") night=(").Append((int)np.x).Append(',').Append((int)np.y)
+                               .Append(") idle=").Append(a.ScheduleState.IsIdle).Append(']');
+                        if (++diagShown >= 4) break;
+                    }
+                }
 
                 var events = world.Events?.Events;
                 int jobAssignedCount = CountEvents(events, EmberCrpg.Domain.World.WorldEventKind.JobAssigned);
@@ -423,6 +487,10 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 var report = new StringBuilder();
                 report.AppendLine(passed ? "PASS" : "FAIL");
                 report.AppendLine("TicksRun: " + ticksPerDay);
+                report.AppendLine("NpcSampled: " + npcSampled);
+                report.AppendLine("NpcWalkedToWorkByMidday: " + npcWalkedToWork + " / " + npcSampled);
+                report.AppendLine("NpcWalkedHomeByNight: " + npcWalkedHome + " / " + npcSampled);
+                report.AppendLine("NpcDiag:" + npcDiag.ToString());
                 report.AppendLine("SeedArgs: mood=" + fallback.FallbackMood + " calling=" + fallback.FallbackCalling + " start=" + fallback.FallbackStart + " seed=" + fallback.FallbackWorldSeed);
                 report.AppendLine("DetectionNote: completion scan checks reason text for smelt/iron, then falls back to ReasonTrace recipe:1001 because live completion reasons are id-based.");
                 report.AppendLine("JobAssignedCount: " + jobAssignedCount);

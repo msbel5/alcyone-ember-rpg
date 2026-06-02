@@ -35,7 +35,9 @@ namespace EmberCrpg.Domain.Actors
             ActorScheduleState scheduleState = default,
             ActorNeeds needs = default,
             ActorMood mood = default,
-            MemoryComponent memory = null)
+            MemoryComponent memory = null,
+            GridPosition? home = null,
+            GridPosition? dayAnchor = null)
         {
             Id = id;
             Name = name;
@@ -43,6 +45,8 @@ namespace EmberCrpg.Domain.Actors
             Stats = stats;
             Vitals = vitals;
             Position = position;
+            Home = home ?? position;
+            DayAnchor = dayAnchor ?? position;
             Accuracy = accuracy;
             Dodge = dodge;
             Armor = armor;
@@ -64,6 +68,8 @@ namespace EmberCrpg.Domain.Actors
         public ActorRole Role { get; }
         public EmberStatBlock Stats { get; }
         public GridPosition Position { get; private set; }
+        public GridPosition Home { get; private set; }
+        public GridPosition DayAnchor { get; private set; }
         public ActorVitals Vitals { get; private set; }
         public int Accuracy { get; }
         public int Dodge { get; }
@@ -81,6 +87,31 @@ namespace EmberCrpg.Domain.Actors
         public void MoveTo(GridPosition position)
         {
             Position = position;
+        }
+
+        public ActorRecord WithHomeAndAnchor(GridPosition home, GridPosition dayAnchor)
+        {
+            var copy = new ActorRecord(
+                Id,
+                Name,
+                Role,
+                Stats,
+                Vitals,
+                Position,
+                Accuracy,
+                Dodge,
+                Armor,
+                BaseDamage,
+                _topicIds,
+                _jobPreferences,
+                ScheduleState,
+                Needs,
+                Mood,
+                Memory,
+                home,
+                dayAnchor);
+            copy.ReplaceAskedTopics(_askedTopicIds);
+            return copy;
         }
 
         public void ApplyVitals(ActorVitals vitals)

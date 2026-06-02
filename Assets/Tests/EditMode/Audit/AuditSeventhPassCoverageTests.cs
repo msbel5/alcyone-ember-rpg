@@ -246,9 +246,9 @@ namespace EmberCrpg.Tests.EditMode.Audit
         }
 
         // ---- G #15 (ninth pass): RebuildAccumulatorsFrom restores the
-        //       hourly remainder from a restored world time. After a clean
-        //       advance of 30 ticks the natural hourly remainder is
-        //       30 % TicksPerGameHour == 0; ResetAnchor preserves that and
+        //       hourly remainder from a restored world time. With a 60-minute
+        //       hour, a clean advance of 30 ticks restores a 30-minute in-flight
+        //       remainder; ResetAnchor preserves that and
         //       RebuildAccumulatorsFrom(world.Time) must agree.
         [Test]
         public void SliceTickComposer_ResetAnchorThenRebuildAccumulators_RestoresHourlyRemainder()
@@ -258,7 +258,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
             world.Time = new GameTime(0);
 
             composer.Advance(world, tickIndex: 0);  // anchor
-            composer.Advance(world, tickIndex: 30); // +30 minutes, crosses 3 hourly boundaries
+            composer.Advance(world, tickIndex: 30); // +30 minutes, halfway to the first hourly boundary
 
             Assert.That(world.Time.TotalMinutes, Is.EqualTo(30L));
 
@@ -271,16 +271,16 @@ namespace EmberCrpg.Tests.EditMode.Audit
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.That(field, Is.Not.Null, "_ticksSinceHourly field must exist for accumulator restore");
             int hourlyAccum = (int)field.GetValue(composer);
-            int expected = (int)(30L % WorldTickComposer.TicksPerGameHour); // 30 % 10 == 0
+            int expected = (int)(30L % WorldTickComposer.TicksPerGameHour); // 30 % 60 == 30
             Assert.That(hourlyAccum, Is.EqualTo(expected),
                 "RebuildAccumulatorsFrom must restore _ticksSinceHourly to TotalMinutes % TicksPerGameHour.");
         }
 
         // ---- G #15 (ninth pass): catch-up event timestamps must land on the
-        //       cadence boundary, not the post-advance Time. With a delta of 25
-        //       (crossing two hourly boundaries at minute 10 and 20) the
+        //       cadence boundary, not the post-advance Time. With a delta of 125
+        //       (crossing two hourly boundaries at minute 60 and 120) the
         //       resulting NeedChanged events on a registered actor must carry
-        //       Tick.TotalMinutes == 10 and Tick.TotalMinutes == 20 — NOT 25.
+        //       Tick.TotalMinutes == 60 and Tick.TotalMinutes == 120 — NOT 125.
         [Test]
         public void SliceTickComposer_HourlyCatchupStampsEventsAtBoundaryNotPostAdvanceTime()
         {
@@ -300,9 +300,9 @@ namespace EmberCrpg.Tests.EditMode.Audit
                 accuracy: 100, dodge: 0, armor: 0, baseDamage: 1));
 
             composer.Advance(world, tickIndex: 0);   // anchor
-            composer.Advance(world, tickIndex: 25);  // delta 25 — crosses 2 hourly boundaries
+            composer.Advance(world, tickIndex: 125); // delta 125 - crosses 2 hourly boundaries
 
-            Assert.That(world.Time.TotalMinutes, Is.EqualTo(25L));
+            Assert.That(world.Time.TotalMinutes, Is.EqualTo(125L));
 
             var needEvents = new System.Collections.Generic.List<WorldEvent>();
             foreach (var ev in world.Events.Events)
@@ -311,15 +311,15 @@ namespace EmberCrpg.Tests.EditMode.Audit
                     needEvents.Add(ev);
             }
             Assert.That(needEvents.Count, Is.EqualTo(2),
-                "Delta of 25 ticks must produce exactly two hourly catch-up NeedChanged events.");
+                "Delta of 125 ticks must produce exactly two hourly catch-up NeedChanged events.");
 
-            // Stamps must be the cadence boundaries (10, 20) — NOT 25.
-            Assert.That(needEvents[0].Tick.TotalMinutes, Is.EqualTo(10L),
-                "First catch-up NeedChanged must be stamped at minute 10 (first hourly boundary).");
-            Assert.That(needEvents[1].Tick.TotalMinutes, Is.EqualTo(20L),
-                "Second catch-up NeedChanged must be stamped at minute 20 (second hourly boundary).");
-            Assert.That(needEvents[0].Tick.TotalMinutes, Is.Not.EqualTo(25L));
-            Assert.That(needEvents[1].Tick.TotalMinutes, Is.Not.EqualTo(25L));
+            // Stamps must be the cadence boundaries (60, 120) - NOT 125.
+            Assert.That(needEvents[0].Tick.TotalMinutes, Is.EqualTo(60L),
+                "First catch-up NeedChanged must be stamped at minute 60 (first hourly boundary).");
+            Assert.That(needEvents[1].Tick.TotalMinutes, Is.EqualTo(120L),
+                "Second catch-up NeedChanged must be stamped at minute 120 (second hourly boundary).");
+            Assert.That(needEvents[0].Tick.TotalMinutes, Is.Not.EqualTo(125L));
+            Assert.That(needEvents[1].Tick.TotalMinutes, Is.Not.EqualTo(125L));
         }
     }
 }

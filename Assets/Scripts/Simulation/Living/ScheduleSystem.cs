@@ -4,14 +4,14 @@ using EmberCrpg.Domain.World;
 
 // Design note:
 // ScheduleSystem (SOUL-03) is the first LIVING mover that reads ActorScheduleState.
-// Pure Domain/Simulation: no Unity, no I/O, fully deterministic. For each actor whose
-// schedule is Assigned, it steps the actor one grid tile toward its target worksite
-// during work hours. It does not pathfind around obstacles, claim/complete jobs, tick
-// recipes, mutate needs, or emit EventLog rows — those belong to JobAssignmentSystem
-// and the per-tick composer. One Advance call == one game-hour of travel progress.
+// Pure Domain/Simulation: no Unity, no I/O, fully deterministic. It picks one
+// per-hour destination for each living actor: assigned worksites during work hours,
+// day anchors for idle daytime actors, and home outside work hours. It does not
+// pathfind around obstacles, claim/complete jobs, tick recipes, mutate needs, or emit
+// EventLog rows — those belong to JobAssignmentSystem and the per-tick composer.
 namespace EmberCrpg.Simulation.Living
 {
-    /// <summary>Steps job-assigned actors one tile toward their worksite per game-hour.</summary>
+    /// <summary>Steps living actors one tile toward their current daily-rhythm target.</summary>
     public sealed class ScheduleSystem
     {
         /// <summary>First game-hour (inclusive) of the working day.</summary>
@@ -21,18 +21,13 @@ namespace EmberCrpg.Simulation.Living
         public const int WorkEndHour = 20;
 
         /// <summary>
-        /// Advances one game-hour of schedule movement. During work hours every Assigned actor moves
-        /// one Chebyshev step toward its <see cref="ActorScheduleState.TargetWorksitePosition"/>;
-        /// actors already on the cell, idle actors, and dead actors are left untouched. Outside work
-        /// hours actors hold position (a home coordinate is not modelled on ActorRecord, so night-home
-        /// routing is intentionally a no-op here rather than fabricating a destination).
+        /// Advances one game-hour of schedule movement. Assigned actors route to their worksite
+        /// during work hours, idle daytime actors route to their day anchor, and all living actors
+        /// route home outside work hours.
         /// </summary>
         public void Advance(ActorStore actors, GameTime time)
         {
             if (actors == null)
-                return;
-
-            if (!IsWorkHour(time))
                 return;
 
             foreach (var actor in actors.Records)
@@ -40,11 +35,7 @@ namespace EmberCrpg.Simulation.Living
                 if (actor == null || !actor.IsAlive)
                     continue;
 
-                var schedule = actor.ScheduleState;
-                if (schedule.IsIdle)
-                    continue;
-
-                var next = StepToward(actor.Position, schedule.TargetWorksitePosition);
+                var next = StepToward(actor.Position, ResolveTarget(actor, time));
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
             }
@@ -55,6 +46,15 @@ namespace EmberCrpg.Simulation.Living
         {
             var hour = time.Hour;
             return hour >= WorkStartHour && hour < WorkEndHour;
+        }
+
+        private static GridPosition ResolveTarget(ActorRecord actor, GameTime time)
+        {
+            if (!IsWorkHour(time))
+                return actor.Home;
+
+            var schedule = actor.ScheduleState;
+            return schedule.IsIdle ? actor.DayAnchor : schedule.TargetWorksitePosition;
         }
 
         // Deterministic one-tile move toward the target on the integer grid. Each axis advances by at

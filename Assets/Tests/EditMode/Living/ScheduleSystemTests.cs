@@ -9,8 +9,8 @@ namespace EmberCrpg.Tests.EditMode.Living
 {
     /// <summary>
     /// SOUL-03: ScheduleSystem must step a job-assigned actor one tile per game-hour toward its
-    /// worksite during work hours, converge without overshoot, and hold position outside work hours
-    /// and for idle actors. Pure Domain/Simulation: deterministic, no Unity.
+    /// worksite during work hours, route idle actors to day anchors, and route all actors home
+    /// outside work hours. Pure Domain/Simulation: deterministic, no Unity.
     /// </summary>
     public sealed class ScheduleSystemTests
     {
@@ -64,7 +64,7 @@ namespace EmberCrpg.Tests.EditMode.Living
         }
 
         [Test]
-        public void Advance_IdleActor_DoesNotMove()
+        public void Advance_IdleActorWithoutAnchor_DoesNotMove()
         {
             var actors = new ActorStore();
             actors.Add(IdleActor(new GridPosition(0, 0)));
@@ -73,6 +73,32 @@ namespace EmberCrpg.Tests.EditMode.Living
             system.Advance(actors, WorkHour);
 
             Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(0, 0)));
+        }
+
+        [Test]
+        public void Advance_DuringWorkHours_StepsIdleActorTowardDayAnchor()
+        {
+            var actors = new ActorStore();
+            actors.Add(Record(new GridPosition(0, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(3, 2)));
+            var system = new ScheduleSystem();
+
+            system.Advance(actors, WorkHour);
+
+            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 1)));
+        }
+
+        [Test]
+        public void Advance_OutsideWorkHours_StepsAssignedActorTowardHome()
+        {
+            var actors = new ActorStore();
+            var actor = Record(new GridPosition(5, 3)).WithHomeAndAnchor(new GridPosition(2, 1), new GridPosition(9, 9));
+            actor.ApplyScheduleState(ActorScheduleState.Assigned(Job, Site, Worksite));
+            actors.Add(actor);
+            var system = new ScheduleSystem();
+
+            system.Advance(actors, NightHour);
+
+            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(4, 2)));
         }
 
         private static ActorRecord AssignedActor(GridPosition position)

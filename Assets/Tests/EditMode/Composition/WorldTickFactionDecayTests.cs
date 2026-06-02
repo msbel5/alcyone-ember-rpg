@@ -66,10 +66,10 @@ namespace EmberCrpg.Tests.EditMode.Composition
             int saveTick = WorldTickComposer.TicksPerGameDay + 13;
             int finalTick = 5 * WorldTickComposer.TicksPerGameDay;
 
-            var continuous = new WorldFactory().Create(roomSeed: 1);
+            var continuous = CadenceAlignedWorld();
             RunTicks(continuous, new WorldTickComposer(), finalTick);
 
-            var cold = new WorldFactory().Create(roomSeed: 1);
+            var cold = CadenceAlignedWorld();
             var pre = new WorldTickComposer();
             RunTicks(cold, pre, saveTick);
             var service = new JsonSliceSaveService();
@@ -83,6 +83,13 @@ namespace EmberCrpg.Tests.EditMode.Composition
 
             Assert.That(ReputationSnapshot(cold), Is.EqualTo(ReputationSnapshot(continuous)));
             Assert.That(DecayStampSnapshot(cold), Is.EqualTo(DecayStampSnapshot(continuous)));
+        }
+
+        private static WorldState CadenceAlignedWorld()
+        {
+            var world = new WorldFactory().Create(roomSeed: 1);
+            world.Time = new GameTime(0);
+            return world;
         }
 
         private static void RunTicks(WorldState world, WorldTickComposer composer, int finalTick)
