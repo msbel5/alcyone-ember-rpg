@@ -35,7 +35,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var preferredSize = ParsePreferredSettlementSize(startLocation);
             var parameters = EmberCrpg.Simulation.Worldgen.WorldgenParameters.For(style, genre);
 
-            var generated = EmberCrpg.Simulation.Worldgen.WorldgenService.Generate(
+            // Spherical-planet worldgen (PRD_planetary_worldgen): the deterministic planet pipeline + the
+            // PlanetToWorldMapper produce the SAME GeneratedWorld shape the rest of SeedWorld consumes. Cached
+            // per seed in PlanetWorldContext so the char-creation reveal builds it once (streamed) and this
+            // reuses it; falls through to a synchronous build (behind the loading screen) when not pre-cached.
+            var generated = EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldService.GetOrGenerate(
                 seed,
                 parameters);
             GeneratedWorld = generated;
@@ -60,8 +64,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // generated world (not a separate Default regen), so the map's settlements ARE the ones the
             // history simulated + NPCs are homed to (fixes the reveal/map settlement-count mismatch and the
             // starting-settlement resolution miss). OverlandWorldgen.Generate(GeneratedWorld, ...) projects.
+            // Project the overland map at the GeneratedWorld's OWN geography dimensions. The planet mapper
+            // builds a 128x64 grid (vs the flat worldgen's Default), and OverlandWorldgen requires the params to
+            // match the geography it carries. Deriving from generated.Geography works for either worldgen source.
+            var overlandGeo = generated.Geography;
             _world.Overland = EmberCrpg.Simulation.Overland.OverlandWorldgen.Generate(
-                generated, EmberCrpg.Domain.Overland.OverlandParameters.Default);
+                generated,
+                new EmberCrpg.Domain.Overland.OverlandParameters(overlandGeo.Width, overlandGeo.Height));
 
             UnityEngine.Debug.Log(
                 $"Domain Seeded: seed={seed} style={style} genre={genre} mood='{mood}' calling='{calling}' start='{startLocation}' " +
