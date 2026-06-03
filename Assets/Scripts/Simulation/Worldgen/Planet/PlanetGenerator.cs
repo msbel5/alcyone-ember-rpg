@@ -11,6 +11,8 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
         private const uint ClimateStageSeed = 0x434C494Du;
         private const uint HydrologyStageSeed = 0x48594452u;
         private const uint ErosionStageSeed = 0x45524F53u;
+        private const uint ResourceStageSeed = 0x5245534Fu;
+        private const uint SettlementStageSeed = 0x5345544Cu;
 
         public static PlanetField Generate(uint seed, PlanetParameters parameters)
         {
@@ -30,7 +32,9 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             field = new ElevationNoise().Apply(field, PlanetRng.Fork(rootRng, ElevationNoiseStage));
             field = new ClimateStage().Apply(field, PlanetRng.Fork(rootRng, ClimateStageSeed));
             field = new HydrologyStage().Apply(field, PlanetRng.Fork(rootRng, HydrologyStageSeed));
-            return new ErosionStage().Apply(field, PlanetRng.Fork(rootRng, ErosionStageSeed));
+            field = new ErosionStage().Apply(field, PlanetRng.Fork(rootRng, ErosionStageSeed));
+            field = new ResourceStage().Apply(field, PlanetRng.Fork(rootRng, ResourceStageSeed));
+            return new SettlementStage().Apply(field, PlanetRng.Fork(rootRng, SettlementStageSeed));
         }
     }
 }

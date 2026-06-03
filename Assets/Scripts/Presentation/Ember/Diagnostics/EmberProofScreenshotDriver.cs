@@ -454,6 +454,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                     + " Taiga:" + biomes[3] + " TempForest:" + biomes[4] + " Grass:" + biomes[5] + " Desert:"
                     + biomes[6] + " Savanna:" + biomes[7] + " Rainforest:" + biomes[8] + " Mtn:" + biomes[9]);
 
+                long totalPop = 0; var stypes = new int[8];
+                var setl = field.Settlements;
+                for (int si = 0; si < setl.Count; si++) { totalPop += setl[si].Population; stypes[(int)setl[si].Type & 7]++; }
+                var typeStr = new StringBuilder();
+                for (int k = 0; k < 8; k++) if (stypes[k] > 0) typeStr.Append((EmberCrpg.Simulation.Worldgen.Planet.PlanetSettlementType)k).Append(':').Append(stypes[k]).Append(' ');
+                report.AppendLine("  settlements=" + setl.Count + " population=" + totalPop + " types " + typeStr);
+
                 if (seed == 42u)
                 {
                     var regen = EmberCrpg.Simulation.Worldgen.Planet.PlanetGenerator.Generate(42u, p);

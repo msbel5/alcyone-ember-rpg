@@ -81,7 +81,54 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
                 }
             }
 
+            // Overlay emergent settlements as type-coloured markers so the colony seed is visible on the map.
+            var settlements = field.Settlements;
+            if (settlements != null)
+            {
+                for (int i = 0; i < settlements.Count; i++)
+                {
+                    var s = settlements[i];
+                    var pos = grid.TileAt(s.TileId).Position;
+                    double lat = Math.Asin(Clamp(pos.Y, -1d, 1d));
+                    double lon = Math.Atan2(pos.Z, pos.X);
+                    int sx = (int)(((lon + Math.PI) / (2d * Math.PI)) * width);
+                    int sy = (int)(((Math.PI / 2d - lat) / Math.PI) * height);
+                    SettlementColor(s.Type, out byte mr, out byte mg, out byte mb);
+                    PlotMarker(rgba, width, height, sx, sy, mr, mg, mb);
+                }
+            }
+
             return new PlanetImage(width, height, rgba);
+        }
+
+        private static void SettlementColor(PlanetSettlementType type, out byte r, out byte g, out byte b)
+        {
+            switch (type)
+            {
+                case PlanetSettlementType.Capital: r = 236; g = 40; b = 40; return;
+                case PlanetSettlementType.MiningTown: r = 70; g = 70; b = 76; return;
+                case PlanetSettlementType.Port: r = 40; g = 184; b = 224; return;
+                case PlanetSettlementType.ForestHamlet: r = 24; g = 132; b = 32; return;
+                case PlanetSettlementType.MarketTown: r = 240; g = 146; b = 30; return;
+                default: r = 244; g = 214; b = 64; return; // FarmVillage
+            }
+        }
+
+        // A filled marker (center + plus) in the type colour, ringed by near-black so it reads on any biome.
+        private static void PlotMarker(byte[] rgba, int width, int height, int cx, int cy, byte r, byte g, byte b)
+        {
+            for (int dy = -2; dy <= 2; dy++)
+            {
+                for (int dx = -2; dx <= 2; dx++)
+                {
+                    int x = cx + dx, y = cy + dy;
+                    if (x < 0 || x >= width || y < 0 || y >= height) continue;
+                    int manhattan = Math.Abs(dx) + Math.Abs(dy);
+                    int idx = ((y * width) + x) * 4;
+                    if (manhattan <= 1) { rgba[idx] = r; rgba[idx + 1] = g; rgba[idx + 2] = b; }
+                    else if (manhattan == 2) { rgba[idx] = 12; rgba[idx + 1] = 12; rgba[idx + 2] = 14; }
+                }
+            }
         }
 
         private static int LatitudeBand(double lat, double bandSize, int bandCount)

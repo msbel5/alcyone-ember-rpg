@@ -203,6 +203,123 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             Assert.That(rainShadow.Samples, Is.GreaterThan(0));
         }
 
+        [Test]
+        public void ResourceStage_GeophysicalProxies_ConcentrateExpectedResources()
+        {
+            PlanetField field = PlanetGenerator.Generate(42u, new PlanetParameters(4, 12, 0.62d, 0d, 0.035d));
+            bool[] impactMask = MarkImpactTiles(field);
+            bool[] convergentMask = MarkConvergentTiles(field, 2);
+            bool[] metalSourceMask = Or(impactMask, convergentMask);
+            double backgroundIron = MeanResource(field, PlanetResourceKind.IronOre, tileId => !metalSourceMask[tileId], out int backgroundCount);
+            double impactIron = MeanResource(field, PlanetResourceKind.IronOre, tileId => impactMask[tileId], out int impactCount);
+            double boundaryIron = MeanResource(field, PlanetResourceKind.IronOre, tileId => convergentMask[tileId], out int boundaryCount);
+
+            Assert.That(field.ResourceImpacts.Count, Is.GreaterThan(0));
+            Assert.That(backgroundCount, Is.GreaterThan(0));
+            Assert.That(impactCount, Is.GreaterThan(0));
+            Assert.That(boundaryCount, Is.GreaterThan(0));
+            Assert.That(impactIron, Is.GreaterThan(backgroundIron + 0.10d));
+            Assert.That(boundaryIron, Is.GreaterThan(backgroundIron + 0.05d));
+
+            double coalSource = MeanResource(field, PlanetResourceKind.Coal, IsCoalSourceTile(field), out int coalSourceCount);
+            double coalBackground = MeanResource(field, PlanetResourceKind.Coal, tileId => field.TileAt(tileId).IsLand && !IsCoalSourceTile(field)(tileId), out int coalBackgroundCount);
+            Assert.That(coalSourceCount, Is.GreaterThan(0));
+            Assert.That(coalBackgroundCount, Is.GreaterThan(0));
+            Assert.That(coalSource, Is.GreaterThan(coalBackground + 0.03d));
+
+            double oilCoastal = MeanResource(field, PlanetResourceKind.OilGas, IsLowCoastalLand(field), out int oilCoastalCount);
+            double oilBackground = MeanResource(field, PlanetResourceKind.OilGas, tileId => field.TileAt(tileId).IsLand && !IsLowCoastalLand(field)(tileId), out int oilBackgroundCount);
+            Assert.That(oilCoastalCount, Is.GreaterThan(0));
+            Assert.That(oilBackgroundCount, Is.GreaterThan(0));
+            Assert.That(oilCoastal, Is.GreaterThan(oilBackground + 0.08d));
+
+            int forestWoodTiles = 0;
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                PlanetTileField tile = field.TileAt(tileId);
+                if (ResourceStage.IsForestBiome(tile.Biome) && tile.Wood > 0d)
+                    forestWoodTiles++;
+                if (!ResourceStage.IsForestBiome(tile.Biome))
+                    Assert.That(tile.Wood, Is.EqualTo(0d).Within(0.000000001d), $"tile={tileId}");
+            }
+
+            Assert.That(forestWoodTiles, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void SettlementStage_LocalMaxima_CreateSpacedHabitableEconomies()
+        {
+            PlanetField field = PlanetGenerator.Generate(42u, new PlanetParameters(4, 12, 0.62d, 0d, 0.035d));
+
+            Assert.That(field.Settlements.Count, Is.GreaterThan(0));
+            int spacing = SettlementStage.MinimumSpacingFor(field);
+            for (int i = 0; i < field.Settlements.Count; i++)
+            {
+                PlanetSettlement settlement = field.Settlements[i];
+                PlanetTileField tile = field.TileAt(settlement.TileId);
+                Assert.That(tile.IsLand, Is.True, $"settlement tile={settlement.TileId}");
+                Assert.That(tile.Biome, Is.Not.EqualTo(PlanetBiome.Ice), $"settlement tile={settlement.TileId}");
+                Assert.That(tile.FreshWater, Is.GreaterThanOrEqualTo(SettlementStage.MinimumFreshWater), $"settlement tile={settlement.TileId}");
+
+                for (int j = i + 1; j < field.Settlements.Count; j++)
+                {
+                    int distance = GraphDistance(field, settlement.TileId, field.Settlements[j].TileId, spacing);
+                    Assert.That(distance, Is.GreaterThanOrEqualTo(spacing), $"settlements {settlement.TileId} and {field.Settlements[j].TileId}");
+                }
+            }
+
+            PlanetSettlement fertile = ExtremalSettlementByAgrarianScore(field, highest: true);
+            PlanetSettlement barren = ExtremalSettlementByAgrarianScore(field, highest: false);
+            Assert.That(AgrarianScore(field, fertile.TileId), Is.GreaterThan(AgrarianScore(field, barren.TileId) + 0.08d));
+            Assert.That(fertile.Population, Is.GreaterThan(barren.Population));
+
+            int miningTowns = 0;
+            for (int i = 0; i < field.Settlements.Count; i++)
+            {
+                PlanetSettlement settlement = field.Settlements[i];
+                if (settlement.Type != PlanetSettlementType.MiningTown)
+                    continue;
+
+                miningTowns++;
+                Assert.That(MaxNearbyOre(field, settlement.TileId), Is.GreaterThan(0.30d), $"mining tile={settlement.TileId}");
+            }
+
+            Assert.That(miningTowns, Is.GreaterThan(0));
+            Assert.That(CountSettlementTypes(field), Is.GreaterThanOrEqualTo(3));
+            TestContext.WriteLine("seed=42 phase3 types={0}", SettlementTypeHistogram(field));
+        }
+
+        [Test]
+        public void PlanetGenerator_Seed42Phase3Level5Sample_RemainsReadable()
+        {
+            var sampleParameters = new PlanetParameters(
+                subdivisionLevel: 5,
+                plateCount: 16,
+                oceanicFraction: 0.62d,
+                seaLevelThreshold: 0d,
+                driftScale: 0.035d);
+            PlanetField field = PlanetGenerator.Generate(42u, sampleParameters);
+            bool[] impactMask = MarkImpactTiles(field);
+            bool[] boundaryMask = MarkConvergentTiles(field, 2);
+            int oreNearImpacts = CountOreTiles(field, impactMask);
+            int oreNearBoundaries = CountOreTiles(field, boundaryMask);
+
+            TestContext.WriteLine(
+                "seed=42 phase3 level=5 settlements={0} types={1} totalPopulation={2} top3={3} oreNearImpacts={4} oreNearBoundaries={5}",
+                field.Settlements.Count,
+                SettlementTypeHistogram(field),
+                TotalPopulation(field),
+                TopSettlements(field, 3),
+                oreNearImpacts,
+                oreNearBoundaries);
+
+            Assert.That(field.TileCount, Is.EqualTo(IcosphereGrid.ExpectedTileCount(sampleParameters.SubdivisionLevel)));
+            Assert.That(field.Settlements.Count, Is.GreaterThan(0));
+            Assert.That(TotalPopulation(field), Is.GreaterThan(0));
+            Assert.That(oreNearImpacts, Is.GreaterThan(0));
+            Assert.That(oreNearBoundaries, Is.GreaterThan(0));
+        }
+
         private static bool Contains(IcosphereTile tile, int neighborId)
         {
             for (int i = 0; i < tile.Neighbors.Count; i++)
@@ -226,6 +343,37 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
                 hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.Moisture));
                 hash = AddInt(hash, (int)tile.Biome);
                 hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.Flow));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.IronOre));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.PreciousMetal));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.Coal));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.OilGas));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.Stone));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.Clay));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.Wood));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.SoilFertility));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(tile.FreshWater));
+            }
+
+            hash = AddInt(hash, field.ResourceImpacts.Count);
+            for (int i = 0; i < field.ResourceImpacts.Count; i++)
+            {
+                PlanetImpactSite impact = field.ResourceImpacts[i];
+                hash = AddInt(hash, impact.TileId);
+                hash = AddInt(hash, impact.Radius);
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(impact.IronAbundance));
+                hash = AddLong(hash, BitConverter.DoubleToInt64Bits(impact.PreciousMetalAbundance));
+            }
+
+            hash = AddInt(hash, field.Settlements.Count);
+            for (int i = 0; i < field.Settlements.Count; i++)
+            {
+                PlanetSettlement settlement = field.Settlements[i];
+                hash = AddInt(hash, settlement.TileId);
+                hash = AddInt(hash, (int)settlement.Type);
+                hash = AddInt(hash, settlement.Population);
+                hash = AddInt(hash, settlement.DominantResources.Count);
+                for (int resourceIndex = 0; resourceIndex < settlement.DominantResources.Count; resourceIndex++)
+                    hash = AddInt(hash, (int)settlement.DominantResources[resourceIndex]);
             }
 
             return hash;
@@ -263,6 +411,302 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             }
 
             return land / (double)field.TileCount;
+        }
+
+        private static bool[] MarkImpactTiles(PlanetField field)
+        {
+            var mask = new bool[field.TileCount];
+            var brush = new MaskBrush(field.Grid);
+            for (int i = 0; i < field.ResourceImpacts.Count; i++)
+            {
+                PlanetImpactSite impact = field.ResourceImpacts[i];
+                brush.Mark(mask, impact.TileId, impact.Radius);
+            }
+
+            return mask;
+        }
+
+        private static bool[] MarkConvergentTiles(PlanetField field, int radius)
+        {
+            var mask = new bool[field.TileCount];
+            var brush = new MaskBrush(field.Grid);
+            for (int i = 0; i < field.Boundaries.Edges.Count; i++)
+            {
+                PlateBoundaryEdge edge = field.Boundaries.Edges[i];
+                if (edge.Kind != PlateBoundaryKind.Convergent)
+                    continue;
+
+                brush.Mark(mask, edge.TileA, radius);
+                brush.Mark(mask, edge.TileB, radius);
+            }
+
+            return mask;
+        }
+
+        private static bool[] Or(bool[] left, bool[] right)
+        {
+            var result = new bool[left.Length];
+            for (int i = 0; i < result.Length; i++)
+                result[i] = left[i] || right[i];
+            return result;
+        }
+
+        private static Func<int, bool> IsCoalSourceTile(PlanetField field)
+        {
+            return tileId =>
+            {
+                PlanetTileField tile = field.TileAt(tileId);
+                double height = tile.Elevation - field.Parameters.SeaLevelThreshold;
+                return tile.IsLand &&
+                    height <= 0.88d &&
+                    (ResourceStage.IsForestBiome(tile.Biome) || tile.Moisture >= 0.60d);
+            };
+        }
+
+        private static Func<int, bool> IsLowCoastalLand(PlanetField field)
+        {
+            return tileId =>
+            {
+                PlanetTileField tile = field.TileAt(tileId);
+                return tile.IsLand &&
+                    tile.Elevation <= field.Parameters.SeaLevelThreshold + 0.38d &&
+                    HasOceanNeighbor(field, tileId);
+            };
+        }
+
+        private static double MeanResource(PlanetField field, PlanetResourceKind kind, Func<int, bool> predicate, out int count)
+        {
+            double sum = 0d;
+            count = 0;
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (!predicate(tileId))
+                    continue;
+
+                sum += ResourceValue(field.TileAt(tileId), kind);
+                count++;
+            }
+
+            return count == 0 ? 0d : sum / count;
+        }
+
+        private static double ResourceValue(PlanetTileField tile, PlanetResourceKind kind)
+        {
+            switch (kind)
+            {
+                case PlanetResourceKind.IronOre:
+                    return tile.IronOre;
+                case PlanetResourceKind.PreciousMetal:
+                    return tile.PreciousMetal;
+                case PlanetResourceKind.Coal:
+                    return tile.Coal;
+                case PlanetResourceKind.OilGas:
+                    return tile.OilGas;
+                case PlanetResourceKind.Stone:
+                    return tile.Stone;
+                case PlanetResourceKind.Clay:
+                    return tile.Clay;
+                case PlanetResourceKind.Wood:
+                    return tile.Wood;
+                case PlanetResourceKind.SoilFertility:
+                    return tile.SoilFertility;
+                case PlanetResourceKind.FreshWater:
+                    return tile.FreshWater;
+                default:
+                    return 0d;
+            }
+        }
+
+        private static int GraphDistance(PlanetField field, int start, int target, int stopAt)
+        {
+            if (start == target)
+                return 0;
+
+            var seen = new bool[field.TileCount];
+            var distance = new int[field.TileCount];
+            var queue = new int[field.TileCount];
+            int head = 0;
+            int tail = 0;
+            queue[tail++] = start;
+            seen[start] = true;
+
+            while (head < tail)
+            {
+                int tileId = queue[head++];
+                int currentDistance = distance[tileId];
+                if (currentDistance >= stopAt)
+                    continue;
+
+                var neighbors = field.Grid.TileAt(tileId).Neighbors;
+                for (int i = 0; i < neighbors.Count; i++)
+                {
+                    int neighbor = neighbors[i];
+                    if (seen[neighbor])
+                        continue;
+
+                    int nextDistance = currentDistance + 1;
+                    if (neighbor == target)
+                        return nextDistance;
+
+                    seen[neighbor] = true;
+                    distance[neighbor] = nextDistance;
+                    queue[tail++] = neighbor;
+                }
+            }
+
+            return stopAt;
+        }
+
+        private static PlanetSettlement ExtremalSettlementByAgrarianScore(PlanetField field, bool highest)
+        {
+            PlanetSettlement best = field.Settlements[0];
+            double bestScore = AgrarianScore(field, best.TileId);
+            for (int i = 1; i < field.Settlements.Count; i++)
+            {
+                PlanetSettlement candidate = field.Settlements[i];
+                double score = AgrarianScore(field, candidate.TileId);
+                bool better = highest
+                    ? score > bestScore + 0.000000001d || (Math.Abs(score - bestScore) <= 0.000000001d && candidate.TileId < best.TileId)
+                    : score < bestScore - 0.000000001d || (Math.Abs(score - bestScore) <= 0.000000001d && candidate.TileId < best.TileId);
+                if (!better)
+                    continue;
+
+                best = candidate;
+                bestScore = score;
+            }
+
+            return best;
+        }
+
+        private static double AgrarianScore(PlanetField field, int tileId)
+        {
+            PlanetTileField tile = field.TileAt(tileId);
+            double sum = tile.SoilFertility + tile.FreshWater;
+            int count = 2;
+            var neighbors = field.Grid.TileAt(tileId).Neighbors;
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                PlanetTileField neighbor = field.TileAt(neighbors[i]);
+                sum += neighbor.SoilFertility + neighbor.FreshWater;
+                count += 2;
+            }
+
+            return sum / count;
+        }
+
+        private static double MaxNearbyOre(PlanetField field, int tileId)
+        {
+            double best = Math.Max(field.TileAt(tileId).IronOre, field.TileAt(tileId).PreciousMetal);
+            var neighbors = field.Grid.TileAt(tileId).Neighbors;
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                int neighbor = neighbors[i];
+                PlanetTileField neighborTile = field.TileAt(neighbor);
+                best = Math.Max(best, Math.Max(neighborTile.IronOre, neighborTile.PreciousMetal));
+
+                var secondRing = field.Grid.TileAt(neighbor).Neighbors;
+                for (int j = 0; j < secondRing.Count; j++)
+                {
+                    PlanetTileField secondTile = field.TileAt(secondRing[j]);
+                    best = Math.Max(best, Math.Max(secondTile.IronOre, secondTile.PreciousMetal));
+                }
+            }
+
+            return best;
+        }
+
+        private static int CountSettlementTypes(PlanetField field)
+        {
+            var counts = new int[(int)PlanetSettlementType.Capital + 1];
+            for (int i = 0; i < field.Settlements.Count; i++)
+                counts[(int)field.Settlements[i].Type]++;
+
+            int types = 0;
+            for (int i = 0; i < counts.Length; i++)
+            {
+                if (counts[i] > 0)
+                    types++;
+            }
+
+            return types;
+        }
+
+        private static string SettlementTypeHistogram(PlanetField field)
+        {
+            var counts = new int[(int)PlanetSettlementType.Capital + 1];
+            for (int i = 0; i < field.Settlements.Count; i++)
+                counts[(int)field.Settlements[i].Type]++;
+
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "FarmVillage:{0},MiningTown:{1},Port:{2},ForestHamlet:{3},MarketTown:{4},Capital:{5}",
+                counts[(int)PlanetSettlementType.FarmVillage],
+                counts[(int)PlanetSettlementType.MiningTown],
+                counts[(int)PlanetSettlementType.Port],
+                counts[(int)PlanetSettlementType.ForestHamlet],
+                counts[(int)PlanetSettlementType.MarketTown],
+                counts[(int)PlanetSettlementType.Capital]);
+        }
+
+        private static int TotalPopulation(PlanetField field)
+        {
+            int total = 0;
+            for (int i = 0; i < field.Settlements.Count; i++)
+                total += field.Settlements[i].Population;
+            return total;
+        }
+
+        private static string TopSettlements(PlanetField field, int count)
+        {
+            var settlements = new PlanetSettlement[field.Settlements.Count];
+            for (int i = 0; i < settlements.Length; i++)
+                settlements[i] = field.Settlements[i];
+
+            Array.Sort(settlements, CompareSettlementsByPopulation);
+            int take = Math.Min(count, settlements.Length);
+            var parts = new string[take];
+            for (int i = 0; i < take; i++)
+            {
+                PlanetSettlement settlement = settlements[i];
+                parts[i] = string.Format(
+                    CultureInfo.InvariantCulture,
+                    "tile={0}:{1}:pop={2}:why={3}",
+                    settlement.TileId,
+                    settlement.Type,
+                    settlement.Population,
+                    SettlementWhy(field, settlement));
+            }
+
+            return string.Join(" | ", parts);
+        }
+
+        private static string SettlementWhy(PlanetField field, PlanetSettlement settlement)
+        {
+            PlanetTileField tile = field.TileAt(settlement.TileId);
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}/{1}/{2}",
+                settlement.DominantResources[0],
+                Format(tile.SoilFertility),
+                Format(tile.FreshWater));
+        }
+
+        private static int CompareSettlementsByPopulation(PlanetSettlement left, PlanetSettlement right)
+        {
+            int population = right.Population.CompareTo(left.Population);
+            return population != 0 ? population : left.TileId.CompareTo(right.TileId);
+        }
+
+        private static int CountOreTiles(PlanetField field, bool[] mask)
+        {
+            int count = 0;
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (mask[tileId] && Math.Max(field.TileAt(tileId).IronOre, field.TileAt(tileId).PreciousMetal) >= 0.42d)
+                    count++;
+            }
+
+            return count;
         }
 
         private static bool[] MarkConvergentAdjacentTiles(PlanetField field)
@@ -541,6 +985,60 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             for (int tileId = 0; tileId < field.TileCount; tileId++)
                 maximum = Math.Max(maximum, field.TileAt(tileId).Temperature);
             return maximum;
+        }
+
+        private sealed class MaskBrush
+        {
+            private readonly IcosphereGrid _grid;
+            private readonly int[] _distance;
+            private readonly int[] _queue;
+            private readonly int[] _seen;
+            private int _stamp;
+
+            public MaskBrush(IcosphereGrid grid)
+            {
+                _grid = grid;
+                _distance = new int[grid.Count];
+                _queue = new int[grid.Count];
+                _seen = new int[grid.Count];
+            }
+
+            public void Mark(bool[] mask, int center, int radius)
+            {
+                _stamp++;
+                if (_stamp == int.MaxValue)
+                {
+                    Array.Clear(_seen, 0, _seen.Length);
+                    _stamp = 1;
+                }
+
+                int head = 0;
+                int tail = 0;
+                _queue[tail++] = center;
+                _distance[center] = 0;
+                _seen[center] = _stamp;
+
+                while (head < tail)
+                {
+                    int tileId = _queue[head++];
+                    int distance = _distance[tileId];
+                    mask[tileId] = true;
+                    if (distance >= radius)
+                        continue;
+
+                    var neighbors = _grid.TileAt(tileId).Neighbors;
+                    for (int i = 0; i < neighbors.Count; i++)
+                    {
+                        int neighbor = neighbors[i];
+                        if (_seen[neighbor] == _stamp)
+                            continue;
+
+                        _seen[neighbor] = _stamp;
+                        _distance[neighbor] = distance + 1;
+                        _queue[tail++] = neighbor;
+                    }
+                }
+            }
         }
 
         private struct RainShadowFigure
