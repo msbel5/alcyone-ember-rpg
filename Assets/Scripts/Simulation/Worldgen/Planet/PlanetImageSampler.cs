@@ -75,7 +75,7 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
                     }
 
                     var tile = field.TileAt(best);
-                    Color(tile.IsLand, tile.Elevation, seaLevel, out byte r, out byte g, out byte bl);
+                    Color(tile, seaLevel, out byte r, out byte g, out byte bl);
                     int idx = ((py * width) + px) * 4;
                     rgba[idx] = r; rgba[idx + 1] = g; rgba[idx + 2] = bl; rgba[idx + 3] = 255;
                 }
@@ -92,27 +92,47 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             return band;
         }
 
-        // Ocean: navy (deep) -> light blue (shallow). Land: green (lowland) -> brown (hill) -> white (peak).
-        private static void Color(bool isLand, double elevation, double seaLevel, out byte r, out byte g, out byte b)
+        // Ocean by depth; rivers as bright water; land tinted by biome with a little elevation relief shading.
+        private static void Color(PlanetTileField tile, double seaLevel, out byte r, out byte g, out byte b)
         {
-            if (!isLand)
+            if (!tile.IsLand)
             {
-                double t = Clamp((elevation - (seaLevel - 0.5d)) / 0.5d, 0d, 1d);
+                double t = Clamp((tile.Elevation - (seaLevel - 0.5d)) / 0.5d, 0d, 1d);
                 r = Lerp(8, 70, t); g = Lerp(22, 130, t); b = Lerp(60, 200, t);
                 return;
             }
 
-            double h = Clamp((elevation - seaLevel) / 0.9d, 0d, 1d);
-            if (h < 0.5d)
+            if (tile.IsRiver) { r = 70; g = 120; b = 205; return; }
+            if (tile.IsLake) { r = 40; g = 90; b = 165; return; }
+
+            BiomeColor(tile.Biome, out int br, out int bg, out int bb);
+            double relief = Clamp(0.80d + ((tile.Elevation - seaLevel) * 0.34d), 0.62d, 1.18d);
+            r = Mul(br, relief); g = Mul(bg, relief); b = Mul(bb, relief);
+        }
+
+        private static void BiomeColor(PlanetBiome biome, out int r, out int g, out int b)
+        {
+            switch (biome)
             {
-                double u = h / 0.5d;
-                r = Lerp(58, 140, u); g = Lerp(132, 110, u); b = Lerp(58, 70, u);
+                case PlanetBiome.Ice: r = 236; g = 240; b = 246; return;
+                case PlanetBiome.Tundra: r = 158; g = 156; b = 138; return;
+                case PlanetBiome.Taiga: r = 52; g = 92; b = 64; return;
+                case PlanetBiome.TemperateForest: r = 64; g = 122; b = 58; return;
+                case PlanetBiome.Grassland: r = 138; g = 168; b = 84; return;
+                case PlanetBiome.Desert: r = 212; g = 192; b = 132; return;
+                case PlanetBiome.Savanna: r = 178; g = 162; b = 86; return;
+                case PlanetBiome.TropicalRainforest: r = 30; g = 104; b = 44; return;
+                case PlanetBiome.Mountain: r = 142; g = 138; b = 132; return;
+                default: r = 92; g = 122; b = 72; return;
             }
-            else
-            {
-                double u = (h - 0.5d) / 0.5d;
-                r = Lerp(140, 236, u); g = Lerp(110, 236, u); b = Lerp(70, 240, u);
-            }
+        }
+
+        private static byte Mul(int c, double f)
+        {
+            int v = (int)Math.Round(c * f);
+            if (v < 0) return 0;
+            if (v > 255) return 255;
+            return (byte)v;
         }
 
         private static byte Lerp(int from, int to, double t)

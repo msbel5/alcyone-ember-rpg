@@ -431,11 +431,14 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 var p = new EmberCrpg.Simulation.Worldgen.Planet.PlanetParameters(level, 24, 0.62d, 0d, 0.04d);
                 var field = EmberCrpg.Simulation.Worldgen.Planet.PlanetGenerator.Generate(seed, p);
 
-                int land = 0; double minE = double.MaxValue, maxE = double.MinValue; long digest = 17;
+                int land = 0, rivers = 0; double minE = double.MaxValue, maxE = double.MinValue; long digest = 17;
+                var biomes = new int[16];
                 for (int i = 0; i < field.TileCount; i++)
                 {
                     var t = field.TileAt(i);
                     if (t.IsLand) land++;
+                    if (t.IsRiver) rivers++;
+                    biomes[(int)t.Biome & 15]++;
                     if (t.Elevation < minE) minE = t.Elevation;
                     if (t.Elevation > maxE) maxE = t.Elevation;
                     digest = (digest * 31) + (long)(t.Elevation * 1000d) + t.PlateId;
@@ -445,8 +448,11 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 var file = Path.Combine(_outputDir, "planet-seed-" + seed + ".png");
                 WritePlanetPng(image, file);
                 report.AppendLine("seed=" + seed + " tiles=" + field.TileCount + " land="
-                    + (100d * land / field.TileCount).ToString("0.0") + "% elev=[" + minE.ToString("0.00") + ".."
-                    + maxE.ToString("0.00") + "] -> " + Path.GetFileName(file));
+                    + (100d * land / field.TileCount).ToString("0.0") + "% rivers=" + rivers + " elev=["
+                    + minE.ToString("0.00") + ".." + maxE.ToString("0.00") + "] -> " + Path.GetFileName(file));
+                report.AppendLine("  biomes Ocean:" + biomes[0] + " Ice:" + biomes[1] + " Tundra:" + biomes[2]
+                    + " Taiga:" + biomes[3] + " TempForest:" + biomes[4] + " Grass:" + biomes[5] + " Desert:"
+                    + biomes[6] + " Savanna:" + biomes[7] + " Rainforest:" + biomes[8] + " Mtn:" + biomes[9]);
 
                 if (seed == 42u)
                 {

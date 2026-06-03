@@ -7,6 +7,10 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
     public static class PlanetGenerator
     {
         private const uint PlateStage = 0x70514E45u;
+        private const uint ElevationNoiseStage = 0x454E4F49u;
+        private const uint ClimateStageSeed = 0x434C494Du;
+        private const uint HydrologyStageSeed = 0x48594452u;
+        private const uint ErosionStageSeed = 0x45524F53u;
 
         public static PlanetField Generate(uint seed, PlanetParameters parameters)
         {
@@ -22,7 +26,11 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
                 parameters.DriftScale,
                 PlanetRng.Fork(rootRng, PlateStage));
             PlateBoundarySet boundaries = new PlateBoundaries().Build(grid, plates);
-            return new TectonicElevation().Build(seed, parameters, grid, plates, boundaries);
+            PlanetField field = new TectonicElevation().Build(seed, parameters, grid, plates, boundaries);
+            field = new ElevationNoise().Apply(field, PlanetRng.Fork(rootRng, ElevationNoiseStage));
+            field = new ClimateStage().Apply(field, PlanetRng.Fork(rootRng, ClimateStageSeed));
+            field = new HydrologyStage().Apply(field, PlanetRng.Fork(rootRng, HydrologyStageSeed));
+            return new ErosionStage().Apply(field, PlanetRng.Fork(rootRng, ErosionStageSeed));
         }
     }
 }
