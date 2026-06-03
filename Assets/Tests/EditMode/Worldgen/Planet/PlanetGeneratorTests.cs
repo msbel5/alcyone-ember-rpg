@@ -16,7 +16,10 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             oceanicFraction: 0.65d,
             seaLevelThreshold: 0d,
             driftScale: 0.035d);
-        private const ulong Seed42Digest = 9695659715118570262UL;
+        private const ulong Seed42Digest = 91494514383486361UL;
+        private const double MeaningfulOreThreshold = 0.05d;
+        private const double DepositCoreOreThreshold = 0.50d;
+        private const double RichMiningOreThreshold = 0.68d;
 
         [Test]
         public void IcosphereGrid_SubdivisionCountAndAdjacency_AreSane()
@@ -251,19 +254,18 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
         public void ResourceStage_GeophysicalProxies_ConcentrateExpectedResources()
         {
             PlanetField field = PlanetGenerator.Generate(42u, new PlanetParameters(4, 12, 0.62d, 0d, 0.035d));
-            bool[] impactMask = MarkImpactTiles(field);
-            bool[] convergentMask = MarkConvergentTiles(field, 2);
-            bool[] metalSourceMask = Or(impactMask, convergentMask);
-            double backgroundIron = MeanResource(field, PlanetResourceKind.IronOre, tileId => !metalSourceMask[tileId], out int backgroundCount);
-            double impactIron = MeanResource(field, PlanetResourceKind.IronOre, tileId => impactMask[tileId], out int impactCount);
-            double boundaryIron = MeanResource(field, PlanetResourceKind.IronOre, tileId => convergentMask[tileId], out int boundaryCount);
+            double smearedBaseline = SmearedConvergentLandFraction(field, 2);
+            double oreLandFraction = OreLandFraction(field, MeaningfulOreThreshold);
+            bool[] oreClusterMask = MarkOreClusters(field, DepositCoreOreThreshold, 2, out int oreCoreCount);
+            int oreTiles = CountLandOreTiles(field, MeaningfulOreThreshold);
+            int clusteredOreTiles = CountLandOreTiles(field, MeaningfulOreThreshold, oreClusterMask);
 
             Assert.That(field.ResourceImpacts.Count, Is.GreaterThan(0));
-            Assert.That(backgroundCount, Is.GreaterThan(0));
-            Assert.That(impactCount, Is.GreaterThan(0));
-            Assert.That(boundaryCount, Is.GreaterThan(0));
-            Assert.That(impactIron, Is.GreaterThan(backgroundIron + 0.10d));
-            Assert.That(boundaryIron, Is.GreaterThan(backgroundIron + 0.05d));
+            Assert.That(smearedBaseline, Is.GreaterThan(0.20d));
+            Assert.That(oreCoreCount, Is.GreaterThan(0));
+            Assert.That(oreLandFraction, Is.LessThan(smearedBaseline * 0.35d));
+            Assert.That(oreLandFraction, Is.LessThan(0.10d));
+            Assert.That(clusteredOreTiles, Is.GreaterThanOrEqualTo((int)Math.Ceiling(oreTiles * 0.85d)));
 
             double coalSource = MeanResource(field, PlanetResourceKind.Coal, IsCoalSourceTile(field), out int coalSourceCount);
             double coalBackground = MeanResource(field, PlanetResourceKind.Coal, tileId => field.TileAt(tileId).IsLand && !IsCoalSourceTile(field)(tileId), out int coalBackgroundCount);
@@ -288,6 +290,13 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             }
 
             Assert.That(forestWoodTiles, Is.GreaterThan(0));
+            TestContext.WriteLine(
+                "seed=42 phase3 ore level=4 smearedBaseline={0}% meaningfulOre={1}% oreCores={2} clusteredOreTiles={3}/{4}",
+                Format(smearedBaseline * 100d),
+                Format(oreLandFraction * 100d),
+                oreCoreCount,
+                clusteredOreTiles,
+                oreTiles);
         }
 
         [Test]
@@ -317,19 +326,19 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             Assert.That(AgrarianScore(field, fertile.TileId), Is.GreaterThan(AgrarianScore(field, barren.TileId) + 0.08d));
             Assert.That(fertile.Population, Is.GreaterThan(barren.Population));
 
-            int miningTowns = 0;
+            int[] typeCounts = SettlementTypeCounts(field);
+            int miningTowns = typeCounts[(int)PlanetSettlementType.MiningTown];
             for (int i = 0; i < field.Settlements.Count; i++)
             {
                 PlanetSettlement settlement = field.Settlements[i];
                 if (settlement.Type != PlanetSettlementType.MiningTown)
                     continue;
 
-                miningTowns++;
-                Assert.That(MaxNearbyOre(field, settlement.TileId), Is.GreaterThan(0.30d), $"mining tile={settlement.TileId}");
+                Assert.That(MaxAdjacentOre(field, settlement.TileId), Is.GreaterThanOrEqualTo(RichMiningOreThreshold), $"mining tile={settlement.TileId}");
             }
 
-            Assert.That(miningTowns, Is.GreaterThan(0));
-            Assert.That(CountSettlementTypes(field), Is.GreaterThanOrEqualTo(3));
+            Assert.That(miningTowns, Is.LessThan(field.Settlements.Count / 2));
+            Assert.That(CountSettlementTypes(field), Is.GreaterThanOrEqualTo(2));
             TestContext.WriteLine("seed=42 phase3 types={0}", SettlementTypeHistogram(field));
         }
 
@@ -342,26 +351,70 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
                 oceanicFraction: 0.62d,
                 seaLevelThreshold: 0d,
                 driftScale: 0.035d);
+            var level6Parameters = new PlanetParameters(
+                subdivisionLevel: 6,
+                plateCount: 20,
+                oceanicFraction: 0.62d,
+                seaLevelThreshold: 0d,
+                driftScale: 0.035d);
             PlanetField field = PlanetGenerator.Generate(42u, sampleParameters);
-            bool[] impactMask = MarkImpactTiles(field);
-            bool[] boundaryMask = MarkConvergentTiles(field, 2);
-            int oreNearImpacts = CountOreTiles(field, impactMask);
-            int oreNearBoundaries = CountOreTiles(field, boundaryMask);
+            double smearedBaseline = SmearedConvergentLandFraction(field, 2);
+            double oreLandFraction = OreLandFraction(field, MeaningfulOreThreshold);
+            bool[] oreClusterMask = MarkOreClusters(field, DepositCoreOreThreshold, 2, out int oreCoreCount);
+            int oreTiles = CountLandOreTiles(field, MeaningfulOreThreshold);
+            int clusteredOreTiles = CountLandOreTiles(field, MeaningfulOreThreshold, oreClusterMask);
+            int[] typeCounts = SettlementTypeCounts(field);
+            int nonCapitalSettlements = field.Settlements.Count - typeCounts[(int)PlanetSettlementType.Capital];
+            PlanetField level6Field = PlanetGenerator.Generate(42u, level6Parameters);
+            double level6SmearedBaseline = SmearedConvergentLandFraction(level6Field, 2);
+            double level6OreLandFraction = OreLandFraction(level6Field, MeaningfulOreThreshold);
+            bool[] level6OreClusterMask = MarkOreClusters(level6Field, DepositCoreOreThreshold, 2, out int level6OreCoreCount);
+            int level6OreTiles = CountLandOreTiles(level6Field, MeaningfulOreThreshold);
+            int level6ClusteredOreTiles = CountLandOreTiles(level6Field, MeaningfulOreThreshold, level6OreClusterMask);
 
             TestContext.WriteLine(
-                "seed=42 phase3 level=5 settlements={0} types={1} totalPopulation={2} top3={3} oreNearImpacts={4} oreNearBoundaries={5}",
+                "seed=42 phase3 level=5 settlements={0} types={1} totalPopulation={2} top3={3} smearedBaseline={4}% meaningfulOre={5}% oreCores={6} clusteredOreTiles={7}/{8}",
                 field.Settlements.Count,
                 SettlementTypeHistogram(field),
                 TotalPopulation(field),
                 TopSettlements(field, 3),
-                oreNearImpacts,
-                oreNearBoundaries);
+                Format(smearedBaseline * 100d),
+                Format(oreLandFraction * 100d),
+                oreCoreCount,
+                clusteredOreTiles,
+                oreTiles);
+            TestContext.WriteLine(
+                "seed=42 phase3 level=6 smearedBaseline={0}% meaningfulOre={1}% oreCores={2} clusteredOreTiles={3}/{4}",
+                Format(level6SmearedBaseline * 100d),
+                Format(level6OreLandFraction * 100d),
+                level6OreCoreCount,
+                level6ClusteredOreTiles,
+                level6OreTiles);
 
             Assert.That(field.TileCount, Is.EqualTo(IcosphereGrid.ExpectedTileCount(sampleParameters.SubdivisionLevel)));
             Assert.That(field.Settlements.Count, Is.GreaterThan(0));
             Assert.That(TotalPopulation(field), Is.GreaterThan(0));
-            Assert.That(oreNearImpacts, Is.GreaterThan(0));
-            Assert.That(oreNearBoundaries, Is.GreaterThan(0));
+            Assert.That(oreLandFraction, Is.LessThan(smearedBaseline * 0.35d));
+            Assert.That(oreLandFraction, Is.LessThan(0.08d));
+            Assert.That(clusteredOreTiles, Is.GreaterThanOrEqualTo((int)Math.Ceiling(oreTiles * 0.85d)));
+            Assert.That(typeCounts[(int)PlanetSettlementType.FarmVillage], Is.GreaterThan(typeCounts[(int)PlanetSettlementType.MiningTown]));
+            Assert.That(typeCounts[(int)PlanetSettlementType.FarmVillage], Is.GreaterThan(typeCounts[(int)PlanetSettlementType.Port]));
+            Assert.That(typeCounts[(int)PlanetSettlementType.FarmVillage], Is.GreaterThan(typeCounts[(int)PlanetSettlementType.ForestHamlet]));
+            Assert.That(typeCounts[(int)PlanetSettlementType.FarmVillage], Is.GreaterThan(typeCounts[(int)PlanetSettlementType.MarketTown]));
+            Assert.That(typeCounts[(int)PlanetSettlementType.MiningTown], Is.GreaterThan(0));
+            Assert.That(typeCounts[(int)PlanetSettlementType.MiningTown], Is.LessThan(Math.Max(2, nonCapitalSettlements / 3)));
+            for (int i = 0; i < field.Settlements.Count; i++)
+            {
+                PlanetSettlement settlement = field.Settlements[i];
+                if (settlement.Type == PlanetSettlementType.MiningTown)
+                    Assert.That(MaxAdjacentOre(field, settlement.TileId), Is.GreaterThanOrEqualTo(RichMiningOreThreshold), $"mining tile={settlement.TileId}");
+            }
+
+            Assert.That(level6Field.TileCount, Is.EqualTo(IcosphereGrid.ExpectedTileCount(level6Parameters.SubdivisionLevel)));
+            Assert.That(level6OreLandFraction, Is.LessThan(level6SmearedBaseline * 0.35d));
+            Assert.That(level6OreLandFraction, Is.LessThan(0.06d));
+            Assert.That(level6ClusteredOreTiles, Is.GreaterThanOrEqualTo((int)Math.Ceiling(level6OreTiles * 0.85d)));
+            Assert.That(level6OreCoreCount, Is.InRange(24, 60));
         }
 
         private static bool Contains(IcosphereTile tile, int neighborId)
@@ -457,19 +510,6 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             return land / (double)field.TileCount;
         }
 
-        private static bool[] MarkImpactTiles(PlanetField field)
-        {
-            var mask = new bool[field.TileCount];
-            var brush = new MaskBrush(field.Grid);
-            for (int i = 0; i < field.ResourceImpacts.Count; i++)
-            {
-                PlanetImpactSite impact = field.ResourceImpacts[i];
-                brush.Mark(mask, impact.TileId, impact.Radius);
-            }
-
-            return mask;
-        }
-
         private static bool[] MarkConvergentTiles(PlanetField field, int radius)
         {
             var mask = new bool[field.TileCount];
@@ -487,12 +527,102 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             return mask;
         }
 
-        private static bool[] Or(bool[] left, bool[] right)
+        private static double SmearedConvergentLandFraction(PlanetField field, int radius)
         {
-            var result = new bool[left.Length];
-            for (int i = 0; i < result.Length; i++)
-                result[i] = left[i] || right[i];
-            return result;
+            bool[] mask = MarkConvergentTiles(field, radius);
+            int landTiles = 0;
+            int smearedTiles = 0;
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (!field.TileAt(tileId).IsLand)
+                    continue;
+
+                landTiles++;
+                if (mask[tileId])
+                    smearedTiles++;
+            }
+
+            return landTiles == 0 ? 0d : smearedTiles / (double)landTiles;
+        }
+
+        private static double OreLandFraction(PlanetField field, double threshold)
+        {
+            int landTiles = CountLandTiles(field);
+            return landTiles == 0 ? 0d : CountLandOreTiles(field, threshold) / (double)landTiles;
+        }
+
+        private static int CountLandTiles(PlanetField field)
+        {
+            int count = 0;
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (field.TileAt(tileId).IsLand)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static int CountLandOreTiles(PlanetField field, double threshold)
+        {
+            return CountLandOreTiles(field, threshold, null);
+        }
+
+        private static int CountLandOreTiles(PlanetField field, double threshold, bool[] mask)
+        {
+            int count = 0;
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (!field.TileAt(tileId).IsLand || (mask != null && !mask[tileId]))
+                    continue;
+                if (MaxOre(field.TileAt(tileId)) >= threshold)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static bool[] MarkOreClusters(PlanetField field, double coreThreshold, int radius, out int coreCount)
+        {
+            var mask = new bool[field.TileCount];
+            var brush = new MaskBrush(field.Grid);
+            coreCount = 0;
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (!field.TileAt(tileId).IsLand ||
+                    MaxOre(field.TileAt(tileId)) < coreThreshold ||
+                    !IsOreLocalMaximum(field, tileId))
+                {
+                    continue;
+                }
+
+                coreCount++;
+                brush.Mark(mask, tileId, radius);
+            }
+
+            return mask;
+        }
+
+        private static bool IsOreLocalMaximum(PlanetField field, int tileId)
+        {
+            double ore = MaxOre(field.TileAt(tileId));
+            var neighbors = field.Grid.TileAt(tileId).Neighbors;
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                int neighbor = neighbors[i];
+                double neighborOre = MaxOre(field.TileAt(neighbor));
+                if (neighborOre > ore + 0.000000001d)
+                    return false;
+                if (Math.Abs(neighborOre - ore) <= 0.000000001d && neighbor < tileId)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static double MaxOre(PlanetTileField tile)
+        {
+            return Math.Max(tile.IronOre, tile.PreciousMetal);
         }
 
         private static Func<int, bool> IsCoalSourceTile(PlanetField field)
@@ -638,22 +768,14 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             return sum / count;
         }
 
-        private static double MaxNearbyOre(PlanetField field, int tileId)
+        private static double MaxAdjacentOre(PlanetField field, int tileId)
         {
-            double best = Math.Max(field.TileAt(tileId).IronOre, field.TileAt(tileId).PreciousMetal);
+            double best = MaxOre(field.TileAt(tileId));
             var neighbors = field.Grid.TileAt(tileId).Neighbors;
             for (int i = 0; i < neighbors.Count; i++)
             {
                 int neighbor = neighbors[i];
-                PlanetTileField neighborTile = field.TileAt(neighbor);
-                best = Math.Max(best, Math.Max(neighborTile.IronOre, neighborTile.PreciousMetal));
-
-                var secondRing = field.Grid.TileAt(neighbor).Neighbors;
-                for (int j = 0; j < secondRing.Count; j++)
-                {
-                    PlanetTileField secondTile = field.TileAt(secondRing[j]);
-                    best = Math.Max(best, Math.Max(secondTile.IronOre, secondTile.PreciousMetal));
-                }
+                best = Math.Max(best, MaxOre(field.TileAt(neighbor)));
             }
 
             return best;
@@ -661,9 +783,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
 
         private static int CountSettlementTypes(PlanetField field)
         {
-            var counts = new int[(int)PlanetSettlementType.Capital + 1];
-            for (int i = 0; i < field.Settlements.Count; i++)
-                counts[(int)field.Settlements[i].Type]++;
+            int[] counts = SettlementTypeCounts(field);
 
             int types = 0;
             for (int i = 0; i < counts.Length; i++)
@@ -677,9 +797,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
 
         private static string SettlementTypeHistogram(PlanetField field)
         {
-            var counts = new int[(int)PlanetSettlementType.Capital + 1];
-            for (int i = 0; i < field.Settlements.Count; i++)
-                counts[(int)field.Settlements[i].Type]++;
+            int[] counts = SettlementTypeCounts(field);
 
             return string.Format(
                 CultureInfo.InvariantCulture,
@@ -690,6 +808,14 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
                 counts[(int)PlanetSettlementType.ForestHamlet],
                 counts[(int)PlanetSettlementType.MarketTown],
                 counts[(int)PlanetSettlementType.Capital]);
+        }
+
+        private static int[] SettlementTypeCounts(PlanetField field)
+        {
+            var counts = new int[(int)PlanetSettlementType.Capital + 1];
+            for (int i = 0; i < field.Settlements.Count; i++)
+                counts[(int)field.Settlements[i].Type]++;
+            return counts;
         }
 
         private static int TotalPopulation(PlanetField field)
@@ -739,18 +865,6 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
         {
             int population = right.Population.CompareTo(left.Population);
             return population != 0 ? population : left.TileId.CompareTo(right.TileId);
-        }
-
-        private static int CountOreTiles(PlanetField field, bool[] mask)
-        {
-            int count = 0;
-            for (int tileId = 0; tileId < field.TileCount; tileId++)
-            {
-                if (mask[tileId] && Math.Max(field.TileAt(tileId).IronOre, field.TileAt(tileId).PreciousMetal) >= 0.42d)
-                    count++;
-            }
-
-            return count;
         }
 
         private static bool[] MarkConvergentAdjacentTiles(PlanetField field)

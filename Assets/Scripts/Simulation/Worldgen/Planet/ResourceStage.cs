@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using EmberCrpg.Simulation.Rng;
 
 namespace EmberCrpg.Simulation.Worldgen.Planet
@@ -6,8 +7,9 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
     /// <summary>Derives raw-material ledgers from tectonics, hydrology, climate, and seeded impact events.</summary>
     public sealed class ResourceStage : IPlanetStage
     {
-        private const int BoundaryRadius = 2;
-        private const double BoundaryDecay = 0.58d;
+        private const int OreClusterRadius = 1;
+        private const double OreClusterDecay = 0.32d;
+        private const double PreciousClusterDecay = 0.28d;
 
         public string Name => "Resources";
 
@@ -30,29 +32,16 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             var precious = new double[field.TileCount];
             var brush = new RadialBrush(field.Grid);
             PlanetImpactSite[] impacts = ChooseImpactSites(field, rng);
+            OreDeposit[] deposits = ChooseOreDeposits(field, impacts, PlanetRng.Fork(rng, 0x4F524544u));
 
-            // Late-veneer bombardment is modeled as seeded impact sites: iron/nickel-rich meteorites are common,
-            // while gold/platinum-group delivery is rarer, so precious metal abundance is drawn from a steep curve.
-            for (int i = 0; i < impacts.Length; i++)
+            // Ore forms as localized districts: impacts add late-veneer metals, while hydrothermal, volcanic,
+            // and ancient-marine chemistry precipitate metals into clustered deposits instead of smearing whole
+            // mountain belts. Radius-1 brushes keep most land ore-free and make rich cores easy to recognize.
+            for (int i = 0; i < deposits.Length; i++)
             {
-                PlanetImpactSite impact = impacts[i];
-                brush.Add(iron, impact.TileId, impact.Radius, impact.IronAbundance, 0.56d);
-                brush.Add(precious, impact.TileId, Math.Max(1, impact.Radius - 1), impact.PreciousMetalAbundance, 0.50d);
-            }
-
-            // Convergent margins drive arc volcanism and hydrothermal circulation; porphyry and volcanogenic
-            // systems concentrate ore along those plate boundaries rather than uniformly across continents.
-            for (int i = 0; i < field.Boundaries.Edges.Count; i++)
-            {
-                PlateBoundaryEdge edge = field.Boundaries.Edges[i];
-                if (edge.Kind != PlateBoundaryKind.Convergent)
-                    continue;
-
-                double activity = 0.24d + (Math.Min(1d, edge.Magnitude / field.Parameters.DriftScale) * 0.28d);
-                brush.Add(iron, edge.TileA, BoundaryRadius, activity, BoundaryDecay);
-                brush.Add(iron, edge.TileB, BoundaryRadius, activity, BoundaryDecay);
-                brush.Add(precious, edge.TileA, BoundaryRadius, activity * 0.34d, BoundaryDecay);
-                brush.Add(precious, edge.TileB, BoundaryRadius, activity * 0.34d, BoundaryDecay);
+                OreDeposit deposit = deposits[i];
+                brush.Add(iron, deposit.TileId, deposit.Radius, deposit.IronAbundance, OreClusterDecay);
+                brush.Add(precious, deposit.TileId, deposit.Radius, deposit.PreciousMetalAbundance, PreciousClusterDecay);
             }
 
             var tiles = new PlanetTileField[field.TileCount];
@@ -69,8 +58,8 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
                 double soilFertility = SoilFertilityFor(source, flatness, freshWater);
 
                 tiles[tileId] = source.CopyWith(
-                    ironOre: iron[tileId],
-                    preciousMetal: precious[tileId],
+                    ironOre: source.IsLand ? iron[tileId] : 0d,
+                    preciousMetal: source.IsLand ? precious[tileId] : 0d,
                     coal: coal,
                     oilGas: oilGas,
                     stone: stone,
@@ -141,6 +130,185 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             }
 
             throw new InvalidOperationException("Unable to select an unused impact tile.");
+        }
+
+        private static OreDeposit[] ChooseOreDeposits(PlanetField field, PlanetImpactSite[] impacts, XorShiftRng rng)
+        {
+            int targetCount = OreDepositTargetCount(field);
+            if (targetCount == 0)
+                return Array.Empty<OreDeposit>();
+
+            var candidates = new List<OreCandidate>();
+            AddImpactCandidates(field, impacts, rng, candidates);
+            AddConvergentCandidates(field, rng, candidates);
+            AddVolcanicCandidates(field, rng, candidates);
+            AddAncientSeabedCandidates(field, rng, candidates);
+            candidates.Sort(CompareOreCandidates);
+
+            var selected = new List<OreDeposit>(targetCount);
+            var selectedCenters = new bool[field.TileCount];
+            SelectOreDeposits(field, rng, candidates, targetCount, DepositSpacingFor(field), selected, selectedCenters);
+            if (selected.Count < targetCount)
+                SelectOreDeposits(field, rng, candidates, targetCount, 1, selected, selectedCenters);
+
+            return selected.ToArray();
+        }
+
+        private static int OreDepositTargetCount(PlanetField field)
+        {
+            int landTiles = 0;
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (field.TileAt(tileId).IsLand)
+                    landTiles++;
+            }
+
+            if (landTiles == 0)
+                return 0;
+            return Math.Min(landTiles, Math.Max(3, (int)Math.Round(Math.Sqrt(landTiles) * 0.30d, MidpointRounding.AwayFromZero)));
+        }
+
+        private static int DepositSpacingFor(PlanetField field)
+        {
+            return Math.Max(2, Math.Min(5, field.Grid.SubdivisionLevel));
+        }
+
+        private static void AddImpactCandidates(PlanetField field, PlanetImpactSite[] impacts, XorShiftRng rng, List<OreCandidate> candidates)
+        {
+            var iron = new double[field.TileCount];
+            var precious = new double[field.TileCount];
+            for (int i = 0; i < impacts.Length; i++)
+            {
+                PlanetImpactSite impact = impacts[i];
+                iron[impact.TileId] = Math.Max(iron[impact.TileId], impact.IronAbundance);
+                precious[impact.TileId] = Math.Max(precious[impact.TileId], impact.PreciousMetalAbundance);
+            }
+
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (iron[tileId] <= 0d || !field.TileAt(tileId).IsLand)
+                    continue;
+
+                double score = 2.20d + (iron[tileId] * 0.46d) + (precious[tileId] * 0.32d);
+                AddCandidate(candidates, rng, tileId, score, 0.72d + (iron[tileId] * 0.24d), 0.18d + (precious[tileId] * 0.60d), 0);
+            }
+        }
+
+        private static void AddConvergentCandidates(PlanetField field, XorShiftRng rng, List<OreCandidate> candidates)
+        {
+            var convergence = new double[field.TileCount];
+            for (int i = 0; i < field.Boundaries.Edges.Count; i++)
+            {
+                PlateBoundaryEdge edge = field.Boundaries.Edges[i];
+                if (edge.Kind != PlateBoundaryKind.Convergent)
+                    continue;
+
+                double signal = Math.Min(1d, edge.Magnitude / field.Parameters.DriftScale);
+                convergence[edge.TileA] = Math.Max(convergence[edge.TileA], signal);
+                convergence[edge.TileB] = Math.Max(convergence[edge.TileB], signal);
+            }
+
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                double signal = convergence[tileId];
+                if (signal <= 0d || !field.TileAt(tileId).IsLand)
+                    continue;
+
+                double height = LandHeightFor(field, tileId);
+                double score = 1.58d + (signal * 0.72d) + (height * 0.10d);
+                AddCandidate(candidates, rng, tileId, score, 0.62d + (signal * 0.23d), 0.16d + (signal * 0.30d), 1);
+            }
+        }
+
+        private static void AddVolcanicCandidates(PlanetField field, XorShiftRng rng, List<OreCandidate> candidates)
+        {
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                PlanetTileField tile = field.TileAt(tileId);
+                if (!tile.IsLand)
+                    continue;
+
+                bool oceanicIsland = field.Plates.Plates[tile.PlateId].Kind == PlateKind.Oceanic;
+                if (!oceanicIsland && tile.Biome != PlanetBiome.Mountain)
+                    continue;
+
+                double height = LandHeightFor(field, tileId);
+                double islandBonus = oceanicIsland ? 0.18d : 0d;
+                double score = 1.08d + (height * 0.42d) + islandBonus;
+                AddCandidate(candidates, rng, tileId, score, 0.54d + (height * 0.16d), 0.10d + (height * 0.20d) + islandBonus, 2);
+            }
+        }
+
+        private static void AddAncientSeabedCandidates(PlanetField field, XorShiftRng rng, List<OreCandidate> candidates)
+        {
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                PlanetTileField tile = field.TileAt(tileId);
+                if (!tile.IsLand)
+                    continue;
+
+                double low = 1d - Clamp01((tile.Elevation - field.Parameters.SeaLevelThreshold) / 0.34d);
+                double marine = HasOceanNeighbor(field, tileId) ? 1d : field.Plates.Plates[tile.PlateId].Kind == PlateKind.Oceanic ? 0.64d : 0d;
+                double basin = low * marine * FlatnessFor(field, tileId);
+                if (basin <= 0d)
+                    continue;
+
+                double score = 0.96d + (basin * 0.36d);
+                AddCandidate(candidates, rng, tileId, score, 0.58d + (basin * 0.16d), 0.03d + (basin * 0.05d), 3);
+            }
+        }
+
+        private static void AddCandidate(List<OreCandidate> candidates, XorShiftRng rng, int tileId, double score, double iron, double precious, int sourceRank)
+        {
+            candidates.Add(new OreCandidate(
+                tileId,
+                score,
+                PlanetRng.NextUnit(rng),
+                Clamp01(iron),
+                Clamp01(precious),
+                sourceRank));
+        }
+
+        private static void SelectOreDeposits(
+            PlanetField field,
+            XorShiftRng rng,
+            List<OreCandidate> candidates,
+            int targetCount,
+            int spacing,
+            List<OreDeposit> selected,
+            bool[] selectedCenters)
+        {
+            var spacingSearch = new DepositSpacingSearch(field.Grid);
+            for (int i = 0; i < candidates.Count && selected.Count < targetCount; i++)
+            {
+                OreCandidate candidate = candidates[i];
+                if (selectedCenters[candidate.TileId])
+                    continue;
+                if (spacingSearch.HasMarkedWithin(selectedCenters, candidate.TileId, spacing))
+                    continue;
+
+                double iron = Clamp01(candidate.IronAbundance * (0.94d + (PlanetRng.NextUnit(rng) * 0.06d)));
+                double precious = Clamp01(candidate.PreciousMetalAbundance * (0.90d + (PlanetRng.NextUnit(rng) * 0.10d)));
+                selectedCenters[candidate.TileId] = true;
+                selected.Add(new OreDeposit(candidate.TileId, OreClusterRadius, iron, precious));
+            }
+        }
+
+        private static int CompareOreCandidates(OreCandidate left, OreCandidate right)
+        {
+            int score = right.Score.CompareTo(left.Score);
+            if (score != 0)
+                return score;
+            int tie = right.TieBreak.CompareTo(left.TieBreak);
+            if (tie != 0)
+                return tie;
+            int source = left.SourceRank.CompareTo(right.SourceRank);
+            return source != 0 ? source : left.TileId.CompareTo(right.TileId);
+        }
+
+        private static double LandHeightFor(PlanetField field, int tileId)
+        {
+            return Clamp01((field.TileAt(tileId).Elevation - field.Parameters.SeaLevelThreshold) / 0.92d);
         }
 
         private static double StoneFor(PlanetField field, int tileId, double flatness)
@@ -376,6 +544,99 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
                     }
                 }
             }
+        }
+
+        private sealed class DepositSpacingSearch
+        {
+            private readonly IcosphereGrid _grid;
+            private readonly int[] _distance;
+            private readonly int[] _queue;
+            private readonly int[] _seen;
+            private int _stamp;
+
+            public DepositSpacingSearch(IcosphereGrid grid)
+            {
+                _grid = grid;
+                _distance = new int[grid.Count];
+                _queue = new int[grid.Count];
+                _seen = new int[grid.Count];
+            }
+
+            public bool HasMarkedWithin(bool[] marked, int start, int maxDistance)
+            {
+                _stamp++;
+                if (_stamp == int.MaxValue)
+                {
+                    Array.Clear(_seen, 0, _seen.Length);
+                    _stamp = 1;
+                }
+
+                int head = 0;
+                int tail = 0;
+                _queue[tail++] = start;
+                _distance[start] = 0;
+                _seen[start] = _stamp;
+
+                while (head < tail)
+                {
+                    int tileId = _queue[head++];
+                    int distance = _distance[tileId];
+                    if (marked[tileId])
+                        return true;
+                    if (distance >= maxDistance)
+                        continue;
+
+                    var neighbors = _grid.TileAt(tileId).Neighbors;
+                    for (int i = 0; i < neighbors.Count; i++)
+                    {
+                        int neighbor = neighbors[i];
+                        if (_seen[neighbor] == _stamp)
+                            continue;
+
+                        _seen[neighbor] = _stamp;
+                        _distance[neighbor] = distance + 1;
+                        _queue[tail++] = neighbor;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        private struct OreCandidate
+        {
+            public OreCandidate(int tileId, double score, double tieBreak, double ironAbundance, double preciousMetalAbundance, int sourceRank)
+            {
+                TileId = tileId;
+                Score = score;
+                TieBreak = tieBreak;
+                IronAbundance = ironAbundance;
+                PreciousMetalAbundance = preciousMetalAbundance;
+                SourceRank = sourceRank;
+            }
+
+            public int TileId { get; }
+            public double Score { get; }
+            public double TieBreak { get; }
+            public double IronAbundance { get; }
+            public double PreciousMetalAbundance { get; }
+            public int SourceRank { get; }
+        }
+
+        private struct OreDeposit
+        {
+            public OreDeposit(int tileId, int radius, double ironAbundance, double preciousMetalAbundance)
+            {
+                TileId = tileId;
+                Radius = radius;
+                IronAbundance = ironAbundance;
+                PreciousMetalAbundance = preciousMetalAbundance;
+            }
+
+            public int TileId { get; }
+            public int Radius { get; }
+            public double IronAbundance { get; }
+            public double PreciousMetalAbundance { get; }
         }
     }
 }

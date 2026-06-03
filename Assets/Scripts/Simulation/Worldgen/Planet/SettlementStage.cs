@@ -9,6 +9,7 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
     {
         public const double MinimumFreshWater = 0.22d;
         private const double MinimumSuitability = 0.38d;
+        private const double RichOreDepositThreshold = 0.68d;
 
         public string Name => "Settlements";
 
@@ -118,14 +119,14 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             double comfort = 1d - Clamp01(Math.Abs(tile.Temperature - 0.55d) / 0.55d);
 
             return Clamp01(
-                (tile.FreshWater * 0.25d) +
-                (tile.SoilFertility * 0.24d) +
-                (resource * 0.18d) +
+                (tile.FreshWater * 0.27d) +
+                (tile.SoilFertility * 0.29d) +
+                (resource * 0.12d) +
                 (flatness * 0.13d) +
                 (river * 0.10d) +
                 (coast * 0.06d) +
-                (crossroads * 0.06d) +
-                (comfort * 0.05d));
+                (crossroads * 0.05d) +
+                (comfort * 0.04d));
         }
 
         public static double CarryingCapacityScoreFor(PlanetField field, int tileId)
@@ -140,10 +141,10 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             double resourceIndustry = ResourceAccessFor(field, tileId);
 
             return Clamp01(
-                (localSoil * 0.42d) +
-                (localWater * 0.36d) +
-                (tradeAccess * 0.14d) +
-                (resourceIndustry * 0.12d));
+                (localSoil * 0.44d) +
+                (localWater * 0.37d) +
+                (tradeAccess * 0.12d) +
+                (resourceIndustry * 0.08d));
         }
 
         public static double CrossroadsScoreFor(PlanetField field, int tileId)
@@ -191,30 +192,34 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
         private static PlanetSettlementType TypeFor(PlanetField field, int tileId, double capacity)
         {
             PlanetTileField tile = field.TileAt(tileId);
-            double ore = Math.Max(MaxNearbyResource(field, tileId, PlanetResourceKind.IronOre), MaxNearbyResource(field, tileId, PlanetResourceKind.PreciousMetal));
+            double ore = MaxAdjacentOre(field, tileId);
             double wood = MaxNearbyResource(field, tileId, PlanetResourceKind.Wood);
             double crossroads = CrossroadsScoreFor(field, tileId);
+            bool coast = HasOceanNeighbor(field, tileId);
+            bool fertileWatered = tile.SoilFertility >= 0.44d && tile.FreshWater >= 0.30d;
+            bool richOre = ore >= RichOreDepositThreshold;
 
-            // Fertile ground settles as FARM VILLAGES first (the common case) unless ore clearly dominates the
-            // soil. Settlement sites are chosen partly for ore access, so without this most sites read as mining
-            // towns even on good farmland. Mining is then reserved for genuinely ore-rich, poorer-soil tiles.
-            if (tile.SoilFertility >= 0.50d && tile.SoilFertility >= ore)
-                return PlanetSettlementType.FarmVillage;
-            if (ore >= 0.55d && ore > tile.SoilFertility)
+            // Genesis settlements are farming-first: agriculture predates Iron-Age mining, so ore can found a
+            // mining town only when a directly present rich deposit clearly dominates ordinary farm value.
+            if (richOre && (!fertileWatered || ore >= tile.SoilFertility + 0.18d))
                 return PlanetSettlementType.MiningTown;
-            if (HasOceanNeighbor(field, tileId) && capacity >= 0.42d)
+            if (coast && capacity >= 0.55d && tile.FreshWater >= 0.38d)
                 return PlanetSettlementType.Port;
-            if (wood >= 0.52d && wood >= tile.SoilFertility * 0.75d)
-                return PlanetSettlementType.ForestHamlet;
-            if (crossroads >= 0.84d && capacity >= 0.45d)
+            if (crossroads >= 0.88d && capacity >= 0.50d && tile.SoilFertility < 0.72d)
                 return PlanetSettlementType.MarketTown;
-            if (tile.SoilFertility >= 0.42d)
+            if (wood >= 0.62d && wood >= tile.SoilFertility * 0.80d)
+                return PlanetSettlementType.ForestHamlet;
+            if (fertileWatered)
                 return PlanetSettlementType.FarmVillage;
-            if (ore >= 0.50d)
-                return PlanetSettlementType.MiningTown;
-            if (HasOceanNeighbor(field, tileId))
+            if (tile.SoilFertility >= 0.36d || tile.FreshWater >= 0.50d)
+                return PlanetSettlementType.FarmVillage;
+            if (coast)
                 return PlanetSettlementType.Port;
-            return crossroads >= 0.78d ? PlanetSettlementType.MarketTown : PlanetSettlementType.FarmVillage;
+            if (crossroads >= 0.78d)
+                return PlanetSettlementType.MarketTown;
+            if (wood >= 0.44d)
+                return PlanetSettlementType.ForestHamlet;
+            return PlanetSettlementType.FarmVillage;
         }
 
         private static PlanetResourceKind[] DominantResourcesFor(PlanetField field, int tileId)
@@ -260,7 +265,21 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             double wood = MaxNearbyResource(field, tileId, PlanetResourceKind.Wood);
             double stone = MaxNearbyResource(field, tileId, PlanetResourceKind.Stone);
             double clay = MaxNearbyResource(field, tileId, PlanetResourceKind.Clay);
-            return Clamp01((industrial * 0.42d) + (wood * 0.22d) + (stone * 0.18d) + (clay * 0.08d));
+            return Clamp01((industrial * 0.32d) + (wood * 0.22d) + (stone * 0.16d) + (clay * 0.08d));
+        }
+
+        private static double MaxAdjacentOre(PlanetField field, int tileId)
+        {
+            PlanetTileField tile = field.TileAt(tileId);
+            double best = Math.Max(tile.IronOre, tile.PreciousMetal);
+            var neighbors = field.Grid.TileAt(tileId).Neighbors;
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                PlanetTileField neighbor = field.TileAt(neighbors[i]);
+                best = Math.Max(best, Math.Max(neighbor.IronOre, neighbor.PreciousMetal));
+            }
+
+            return best;
         }
 
         private static double MaxNearbyResource(PlanetField field, int tileId, PlanetResourceKind kind)
