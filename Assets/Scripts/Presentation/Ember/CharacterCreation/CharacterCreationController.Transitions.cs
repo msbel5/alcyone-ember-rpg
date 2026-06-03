@@ -33,7 +33,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                     // World GENERATION happens HERE now — after the portrait, before the dossier — so the
                     // world is awakened with the full character in hand (the genesis answers that seed it
                     // were chosen back at steps 2-5). Builds the real-world reveal + starts its streaming.
-                    BuildHistoryTimeline();
+                    StartPlanetReveal();
                     _historyRevealStartTime = Time.realtimeSinceStartup;
                     _historySkipped = false;
                     if (Application.isPlaying)
@@ -57,11 +57,15 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             while (_step == CreationStep.WorldHistoryReveal && !_historySkipped && !IsHistoryAdvanceUnlocked())
             {
+                DrainPlanetReveal();
                 Render();
                 yield return null;
             }
             if (_step == CreationStep.WorldHistoryReveal)
+            {
+                DrainPlanetReveal();
                 Render();
+            }
         }
 
         public void BeginYourStory()
@@ -134,6 +138,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private bool IsHistoryAdvanceUnlocked()
         {
             if (_historySkipped) return true;
+            if (!_planetRevealBuilt) return false; // don't let the player advance until the world has finished forming
             if (_historyTimeline.Count == 0) return true;
             float elapsed = Mathf.Max(0f, Time.realtimeSinceStartup - _historyRevealStartTime);
             var options = EmberRuntimeOptionsProvider.Current.CharacterCreation;
@@ -194,31 +199,93 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private Texture2D _revealMapTexture;
         private Texture2D _characterPortraitTexture;
 
-        private void BuildHistoryTimeline()
+        // Start building the player's actual PLANET off the main thread, streaming each geological stage into
+        // the reveal as it forms (the "World Awakens" live feed). The SAME planet is cached in
+        // PlanetWorldContext, so SeedWorld reuses it (no second generation) and reveal == the world you play.
+        private void StartPlanetReveal()
         {
             _historyTimeline.Clear();
-            var world = TryGenerateWorldPreview();
+            _planetRevealBuilt = false;
+            _revealMapTexture = null;
+            _historyTimeline.Add("From the planet's ember, a world begins to take shape...");
+            try
+            {
+                var style = WorldGenesisMapper.ToStyle(_worldMood);
+                var genre = WorldGenesisMapper.ToGenre(_worldMood, _playerCalling, _fateStart);
+                var parameters = EmberCrpg.Simulation.Worldgen.WorldgenParameters.For(style, genre);
+                _previewEraYears = parameters.HistoryYears;
+                _planetObserver = new EmberCrpg.Presentation.Ember.Worldgen.StreamingPlanetObserver();
+                uint seed = _seed;
+                _planetGenTask = System.Threading.Tasks.Task.Run(() =>
+                    EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldService.GetOrGenerate(seed, parameters, _planetObserver));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[charcreation] planet reveal start failed; templated reveal. " + ex.Message);
+                BuildTemplatedHistoryTimeline();
+                _planetRevealBuilt = true;
+            }
+        }
+
+        // Each frame: drain the streamed stage lines into the timeline; once the off-thread generation finishes,
+        // append the history chronicle + render the actual planet. Degrades to the templated reveal on failure.
+        private void DrainPlanetReveal()
+        {
+            if (_planetObserver != null)
+            {
+                while (_planetObserver.TryDequeue(out var line))
+                    _historyTimeline.Add(line);
+            }
+
+            if (_planetRevealBuilt || _planetGenTask == null || !_planetGenTask.IsCompleted)
+                return;
+
+            _planetRevealBuilt = true;
+            EmberCrpg.Simulation.Worldgen.GeneratedWorld world =
+                _planetGenTask.Status == System.Threading.Tasks.TaskStatus.RanToCompletion ? _planetGenTask.Result : null;
             if (world == null || world.History == null || world.History.Count == 0)
             {
                 BuildTemplatedHistoryTimeline();
                 return;
             }
 
-            var history = world.History;
-            _revealMapTexture = TryBuildRevealMapTexture(world);
-            // Era span = the CONFIGURED history length (stable), not the per-seed first/last event delta
-            // (which wandered and showed a different number of years for every world).
-            _historyTimeline.Add(
-                "The world awakens - a continent of " + world.Settlements.Count + " settlements across "
-                + world.Regions.Count + " regions, shaped over " + _previewEraYears
-                + " years of history.");
-
-            var notable = SelectNotableHistory(history, 24);
+            _historyTimeline.Add("The world awakens - " + world.Settlements.Count + " settlements across "
+                + world.Regions.Count + " regions, across " + world.History.Count + " recorded years of history.");
+            var notable = SelectNotableHistory(world.History, 24);
             for (int i = 0; i < notable.Count; i++)
             {
                 var e = notable[i];
                 string subject = string.IsNullOrWhiteSpace(e.Subject) ? string.Empty : e.Subject + " - ";
                 _historyTimeline.Add("Year " + e.Year + " - " + subject + e.Detail);
+            }
+            _revealMapTexture = TryBuildPlanetRevealTexture();
+        }
+
+        // Render the generated planet (the actual sphere, equirectangular) for the reveal image slot.
+        private Texture2D TryBuildPlanetRevealTexture()
+        {
+            try
+            {
+                var field = EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldContext.Instance.Field;
+                if (field == null) return null;
+                var image = EmberCrpg.Simulation.Worldgen.Planet.PlanetImageSampler.Sample(field, 512, 256);
+                var tex = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Point,
+                };
+                int stride = image.Width * 4;
+                var flipped = new byte[image.Rgba.Length];
+                for (int row = 0; row < image.Height; row++)
+                    System.Array.Copy(image.Rgba, row * stride, flipped, (image.Height - 1 - row) * stride, stride);
+                tex.LoadRawTextureData(flipped);
+                tex.Apply(false, false);
+                return tex;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[charcreation] planet reveal texture failed. " + ex.Message);
+                return null;
             }
         }
 

@@ -71,6 +71,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private int _questionIndex;
         private float _historyRevealStartTime;
         private bool _historySkipped;
+        // Streaming planet reveal: the planet is generated off the main thread; the observer queues each stage
+        // line for the reveal coroutine to drain, and _planetRevealBuilt flips once the world + chronicle exist.
+        private System.Threading.Tasks.Task<EmberCrpg.Simulation.Worldgen.GeneratedWorld> _planetGenTask;
+        private EmberCrpg.Presentation.Ember.Worldgen.StreamingPlanetObserver _planetObserver;
+        private bool _planetRevealBuilt;
         private bool _rollKept;
         private int _rollSerial;
         private string _selectedClassId = string.Empty;
