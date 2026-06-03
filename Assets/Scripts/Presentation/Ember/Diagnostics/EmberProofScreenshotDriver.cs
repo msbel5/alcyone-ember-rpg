@@ -11,6 +11,7 @@ using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Simulation.Worldgen;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CCStep = EmberCrpg.Presentation.Ember.CharacterCreation.CharacterCreationController.CreationStep;
 
 namespace EmberCrpg.Presentation.Ember.Diagnostics
 {
@@ -41,6 +42,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             if (HasArg("--ember-gameplay-shot"))
             {
                 yield return RunGameplayShot();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
+            if (HasArg("--ember-playthrough"))
+            {
+                yield return RunPlaythrough();
                 if (HasArg("--ember-proof-quit")) Application.Quit();
                 yield break;
             }
@@ -195,6 +203,68 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             yield return new WaitForSeconds(4.0f); // a few game-ticks at 0.8333 s/tick: NPCs walk toward day anchors
             yield return CaptureFixedAfter(0.1f, "gameplay_fpv_later.png");
             yield return CaptureOverheadAfter(0.3f, "gameplay_overhead_later.png", 34f);
+        }
+
+        // Full playthrough FROM THE MAIN MENU: drive the REAL New Game flow by calling the same controller methods
+        // the buttons call (menu.NewGame -> char-creation step machine -> BeginYourStory -> worldgen reveal ->
+        // GeneratedWorld), capturing each step. Going through the real transitions means the gameplay scene ends
+        // up with a working camera (unlike the direct-LoadScene shortcut). Run NON-batchmode (real swapchain) so
+        // ScreenCapture grabs the actual screen. Defaults are chosen so the wizard advances without UI input.
+        private IEnumerator RunPlaythrough()
+        {
+            yield return CaptureFixedAfter(2.5f, "00_main_menu.png");
+
+            var menu = UnityEngine.Object.FindFirstObjectByType<EmberMainMenuUI>();
+            Debug.Log("[Playthrough] main menu found=" + (menu != null));
+            if (menu != null) menu.NewGame();
+            yield return CaptureFixedAfter(3.0f, "01_char_creation.png");
+
+            var cc = UnityEngine.Object.FindFirstObjectByType<CharacterCreationController>();
+            Debug.Log("[Playthrough] char-creation controller found=" + (cc != null));
+            if (cc != null)
+            {
+                cc.AutoLaunchWorldgen = true;
+                int guard = 0;
+                int lastStep = -1;
+                while (guard++ < 60)
+                {
+                    var step = cc.CurrentStep;
+                    if (step == CCStep.DossierLaunch || step == CCStep.Complete) break;
+                    switch (step)
+                    {
+                        case CCStep.CommanderIdentity:    cc.SetCommanderIdentity("Wayfarer"); break;
+                        case CCStep.WorldMood:            cc.SetWorldMood("grim"); break;
+                        case CCStep.PlayerCalling:        cc.SetPlayerCalling("wanderer"); break;
+                        case CCStep.FateBegins:           cc.SetFateBegins("crossroads"); break;
+                        case CCStep.PersonalityQuestions: cc.SelectAnswerByIndex(0); break;   // one answer per page; loops 10x
+                        case CCStep.Birthsign:            cc.SelectBirthsign("the_anvil"); break;
+                        case CCStep.StatRolling:          cc.KeepThisRoll(); break;            // auto-rolled on enter; accept it (CanAdvance gates on _rollKept)
+                        case CCStep.BuildSelection:       cc.SelectClass("warrior"); cc.SelectAlignment("true_neutral"); break; // class auto-adds skills
+                        case CCStep.Portrait:             break;                              // async LLM; just wait + advance
+                        case CCStep.WorldHistoryReveal:   cc.SkipHistoryReveal(); break;
+                    }
+                    yield return new WaitForSeconds(0.4f);
+                    if (cc.CanAdvance) cc.Continue();
+                    yield return new WaitForSeconds(0.3f);
+                    if ((int)cc.CurrentStep != lastStep)
+                    {
+                        lastStep = (int)cc.CurrentStep;
+                        Debug.Log("[Playthrough] now at step " + cc.CurrentStep);
+                        yield return CaptureFixedAfter(0.0f, "cc_" + lastStep.ToString("00") + "_" + cc.CurrentStep + ".png");
+                    }
+                }
+                Debug.Log("[Playthrough] drive ended at step " + cc.CurrentStep + " (guard=" + guard + ")");
+                if (cc.CurrentStep == CCStep.DossierLaunch || cc.CurrentStep == CCStep.Complete)
+                    cc.BeginYourStory();
+            }
+
+            // Worldgen reveal + the transition into GeneratedWorld (real flow => real camera).
+            yield return CaptureFixedAfter(3.5f, "10_worldgen_reveal.png");
+            yield return new WaitForSeconds(6.0f);
+            yield return CaptureFixedAfter(0.1f, "11_worldgen_reveal_late.png");
+            yield return CaptureFixedAfter(4.0f, "20_gameplay.png");
+            yield return new WaitForSeconds(4.0f);
+            yield return CaptureFixedAfter(0.1f, "21_gameplay_late.png");
         }
 
         private IEnumerator RunRescueProof()
