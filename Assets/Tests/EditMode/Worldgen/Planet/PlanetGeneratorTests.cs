@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using EmberCrpg.Simulation.Rng;
 using EmberCrpg.Simulation.Worldgen.Planet;
@@ -15,6 +16,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             oceanicFraction: 0.65d,
             seaLevelThreshold: 0d,
             driftScale: 0.035d);
+        private const ulong Seed42Digest = 9695659715118570262UL;
 
         [Test]
         public void IcosphereGrid_SubdivisionCountAndAdjacency_AreSane()
@@ -46,9 +48,51 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             PlanetField first = PlanetGenerator.Generate(42u, TestParameters);
             PlanetField second = PlanetGenerator.Generate(42u, TestParameters);
             PlanetField different = PlanetGenerator.Generate(43u, TestParameters);
+            ulong firstDigest = Digest(first);
 
-            Assert.That(Digest(first), Is.EqualTo(Digest(second)));
-            Assert.That(Digest(first), Is.Not.EqualTo(Digest(different)));
+            TestContext.WriteLine("seed=42 digest={0}", firstDigest);
+            Assert.That(firstDigest, Is.EqualTo(Seed42Digest));
+            Assert.That(firstDigest, Is.EqualTo(Digest(second)));
+            Assert.That(firstDigest, Is.Not.EqualTo(Digest(different)));
+        }
+
+        [Test]
+        public void PlanetGenerationManager_ObserverReportsStagesInCanonicalOrder()
+        {
+            IReadOnlyList<IPlanetStage> stages = PlanetStageFactory.CreateStages(TestParameters);
+            var observer = new RecordingPlanetObserver();
+            PlanetField field = new PlanetGenerationManager(stages).Generate(
+                new PlanetGenerationContext(42u, TestParameters),
+                observer);
+            var stageNames = new string[stages.Count];
+
+            Assert.That(field, Is.Not.Null);
+            Assert.That(observer.Reports.Count, Is.EqualTo(stages.Count));
+            for (int i = 0; i < observer.Reports.Count; i++)
+            {
+                PlanetStageReport report = observer.Reports[i];
+                Assert.That(report.StageIndex, Is.EqualTo(i));
+                Assert.That(report.StageCount, Is.EqualTo(stages.Count));
+                Assert.That(report.StageName, Is.EqualTo(stages[i].Name));
+                Assert.That(report.StageName, Is.Not.Empty);
+                Assert.That(report.Summary, Is.Not.Empty);
+                stageNames[i] = report.StageName;
+            }
+
+            TestContext.WriteLine("observer stage order={0}", string.Join(" -> ", stageNames));
+            Assert.That(stageNames, Is.EqualTo(new[]
+            {
+                "Icosphere",
+                "Plates",
+                "Boundaries",
+                "TectonicElevation",
+                "ElevationNoise",
+                "Climate",
+                "Hydrology",
+                "Erosion",
+                "Resources",
+                "Settlements",
+            }));
         }
 
         [Test]
@@ -985,6 +1029,16 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             for (int tileId = 0; tileId < field.TileCount; tileId++)
                 maximum = Math.Max(maximum, field.TileAt(tileId).Temperature);
             return maximum;
+        }
+
+        private sealed class RecordingPlanetObserver : IPlanetGenerationObserver
+        {
+            public List<PlanetStageReport> Reports { get; } = new List<PlanetStageReport>();
+
+            public void OnStageCompleted(PlanetStageReport report)
+            {
+                Reports.Add(report);
+            }
         }
 
         private sealed class MaskBrush

@@ -4,10 +4,20 @@ using EmberCrpg.Simulation.Rng;
 namespace EmberCrpg.Simulation.Worldgen.Planet
 {
     /// <summary>Derives raw-material ledgers from tectonics, hydrology, climate, and seeded impact events.</summary>
-    public sealed class ResourceStage
+    public sealed class ResourceStage : IPlanetStage
     {
         private const int BoundaryRadius = 2;
         private const double BoundaryDecay = 0.58d;
+
+        public string Name => "Resources";
+
+        public void Run(PlanetGenerationContext context)
+        {
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+
+            context.Field = Apply(context.RequireField(), context.Fork(PlanetGenerationContext.ResourceStageSeed));
+        }
 
         public PlanetField Apply(PlanetField field, XorShiftRng rng)
         {

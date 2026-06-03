@@ -4,9 +4,19 @@ using EmberCrpg.Simulation.Rng;
 namespace EmberCrpg.Simulation.Worldgen.Planet
 {
     /// <summary>Routes precipitation over a priority-flooded terrain graph and marks rivers/lakes.</summary>
-    public sealed class HydrologyStage
+    public sealed class HydrologyStage : IPlanetStage
     {
         private const double LakeEpsilon = 0.018d;
+
+        public string Name => "Hydrology";
+
+        public void Run(PlanetGenerationContext context)
+        {
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+
+            context.Field = Apply(context.RequireField(), context.Fork(PlanetGenerationContext.HydrologyStageSeed));
+        }
 
         public PlanetField Apply(PlanetField field, XorShiftRng rng)
         {

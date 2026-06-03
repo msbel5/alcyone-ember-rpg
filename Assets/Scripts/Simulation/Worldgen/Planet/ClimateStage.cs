@@ -4,9 +4,19 @@ using EmberCrpg.Simulation.Rng;
 namespace EmberCrpg.Simulation.Worldgen.Planet
 {
     /// <summary>Computes latitude temperature, wind-borne moisture, and Whittaker-style biomes.</summary>
-    public sealed class ClimateStage
+    public sealed class ClimateStage : IPlanetStage
     {
         private const double SeaMoisture = 1d;
+
+        public string Name => "Climate";
+
+        public void Run(PlanetGenerationContext context)
+        {
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+
+            context.Field = Apply(context.RequireField(), context.Fork(PlanetGenerationContext.ClimateStageSeed));
+        }
 
         public PlanetField Apply(PlanetField field, XorShiftRng rng)
         {

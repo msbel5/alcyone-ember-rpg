@@ -5,10 +5,20 @@ using EmberCrpg.Simulation.Rng;
 namespace EmberCrpg.Simulation.Worldgen.Planet
 {
     /// <summary>Places population centers from local resource, water, terrain, and trade affordances.</summary>
-    public sealed class SettlementStage
+    public sealed class SettlementStage : IPlanetStage
     {
         public const double MinimumFreshWater = 0.22d;
         private const double MinimumSuitability = 0.38d;
+
+        public string Name => "Settlements";
+
+        public void Run(PlanetGenerationContext context)
+        {
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+
+            context.Field = Apply(context.RequireField(), context.Fork(PlanetGenerationContext.SettlementStageSeed));
+        }
 
         public PlanetField Apply(PlanetField field, XorShiftRng rng)
         {

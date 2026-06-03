@@ -4,13 +4,23 @@ using EmberCrpg.Simulation.Rng;
 namespace EmberCrpg.Simulation.Worldgen.Planet
 {
     /// <summary>Applies bounded stream-power and talus smoothing passes.</summary>
-    public sealed class ErosionStage
+    public sealed class ErosionStage : IPlanetStage
     {
         private const int StreamPasses = 3;
         private const int ThermalPasses = 3;
         private const int FinalStreamPasses = 2;
         private const double TalusLimit = 0.16d;
         private const double TalusTransferRate = 0.025d;
+
+        public string Name => "Erosion";
+
+        public void Run(PlanetGenerationContext context)
+        {
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+
+            context.Field = Apply(context.RequireField(), context.Fork(PlanetGenerationContext.ErosionStageSeed));
+        }
 
         public PlanetField Apply(PlanetField field, XorShiftRng rng)
         {
