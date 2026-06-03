@@ -67,10 +67,17 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
         private static float DayFraction()
         {
-            int ticksPerDay = EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay;
             var clock = EmberDomainAdapterLocator.Current;
             if (clock != null)
-                return (clock.TickIndex % ticksPerDay) / (float)ticksPerDay;
+            {
+                // The world starts at 08:00 (WorldFactory) and the colony schedule reads that game-time, so the
+                // sky must too - otherwise it renders midnight (dark) over a morning world while NPCs work at 8am.
+                // Convert the tick to game-minutes-of-day with the same 08:00 start so dawn/day/dusk/night align.
+                long minutesPerDay = EmberCrpg.Domain.Core.GameTime.MinutesPerDay;
+                long startMinutes = 8L * EmberCrpg.Domain.Core.GameTime.MinutesPerHour;
+                long minutes = (((long)clock.TickIndex * EmberCrpg.Simulation.Composition.WorldTickComposer.MinutesPerTick) + startMinutes) % minutesPerDay;
+                return minutes / (float)minutesPerDay;
+            }
             return (Time.time % 120f) / 120f; // real-time fallback: a 2-minute day
         }
     }

@@ -46,6 +46,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             StartingRegion = SelectStartingRegion(generated, startLocation);
             StartingSettlement = SelectStartingSettlement(generated, preferredSize, startLocation);
             StartingFaction = SelectStartingFaction(generated, calling);
+            _billboardOriginResolved = false; // re-resolve the billboard grid->world origin for this world's starting settlement (lazily, once its site is hydrated)
 
             _world.WorldProfile = new WorldProfile(
                 style,

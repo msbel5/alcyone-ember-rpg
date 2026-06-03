@@ -528,6 +528,11 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 // route is visible as concrete numbers (and any mismatch is debuggable).
                 var npcDiag = new StringBuilder();
                 int diagShown = 0;
+                // Re-base the diag's home/anchor onto the EXACT SAME origin the billboard projection subtracts
+                // (the starting-settlement centre, via BillboardOriginCell), so all four columns read in one
+                // player-centric frame; an idle NPC then shows home==midday instead of a phantom offset jump.
+                var diagOrigin = adapter.BillboardOriginCell();
+                int originX = diagOrigin.X, originY = diagOrigin.Y;
                 if (world.Actors != null && npcMidday != null && npcNight != null)
                 {
                     foreach (var a in world.Actors.Records)
@@ -535,8 +540,8 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                         if (a == null) continue;
                         if (!npcMidday.TryGetValue(a.Id.Value, out var mp) || !npcNight.TryGetValue(a.Id.Value, out var np)) continue;
                         npcDiag.Append(" [id=").Append(a.Id.Value)
-                               .Append(" home=(").Append(a.Home.X).Append(',').Append(a.Home.Y)
-                               .Append(") anchor=(").Append(a.DayAnchor.X).Append(',').Append(a.DayAnchor.Y)
+                               .Append(" home=(").Append(a.Home.X - originX).Append(',').Append(a.Home.Y - originY)
+                               .Append(") anchor=(").Append(a.DayAnchor.X - originX).Append(',').Append(a.DayAnchor.Y - originY)
                                .Append(") midday=(").Append((int)mp.x).Append(',').Append((int)mp.y)
                                .Append(") night=(").Append((int)np.x).Append(',').Append((int)np.y)
                                .Append(") idle=").Append(a.ScheduleState.IsIdle).Append(']');
@@ -567,6 +572,27 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 var overland = world.Overland;
                 bool overlandHasSettlements = overland != null && overland.Settlements.Count > 0;
 
+                // COORD-FIX proof (NPC clustering bug): billboards are now re-based on the player's
+                // starting-settlement centre so the town's crowd surrounds the plaza (world origin, where
+                // the rig spawns) instead of clumping at raw grid coords ((i%32)*12 ...) tens of metres away.
+                // Count how many spawnable NPCs fall within ~40 m of the player and the box they span:
+                // near-origin + a real spread IS the fix; ~0 within 40 m was the bug (frozen distant clump).
+                var spawnablesProof = adapter.GetSpawnableActors();
+                int npcWithin40m = 0;
+                float npcMinX = float.MaxValue, npcMaxX = float.MinValue, npcMinZ = float.MaxValue, npcMaxZ = float.MinValue;
+                if (spawnablesProof != null)
+                {
+                    foreach (var s in spawnablesProof)
+                    {
+                        if (UnityEngine.Mathf.Sqrt((s.WorldX * s.WorldX) + (s.WorldZ * s.WorldZ)) > 40f) continue;
+                        npcWithin40m++;
+                        if (s.WorldX < npcMinX) npcMinX = s.WorldX;
+                        if (s.WorldX > npcMaxX) npcMaxX = s.WorldX;
+                        if (s.WorldZ < npcMinZ) npcMinZ = s.WorldZ;
+                        if (s.WorldZ > npcMaxZ) npcMaxZ = s.WorldZ;
+                    }
+                }
+
                 bool passed = jobCompleted && ironIngotProduced && anyQuestComplete && overlandHasSettlements;
 
                 var report = new StringBuilder();
@@ -576,6 +602,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 report.AppendLine("NpcWalkedToWorkByMidday: " + npcWalkedToWork + " / " + npcSampled);
                 report.AppendLine("NpcWalkedHomeByNight: " + npcWalkedHome + " / " + npcSampled);
                 report.AppendLine("NpcDiag:" + npcDiag.ToString());
+                report.AppendLine("NpcBillboardsWithin40mOfPlayer: " + npcWithin40m + " / " + (spawnablesProof?.Count ?? 0));
+                if (npcWithin40m > 0)
+                    report.AppendLine("NpcBillboardBox: x[" + npcMinX.ToString("0.0") + ".." + npcMaxX.ToString("0.0") + "] z[" + npcMinZ.ToString("0.0") + ".." + npcMaxZ.ToString("0.0") + "] (re-based on starting-settlement centre = world origin where the player rig spawns)");
                 report.AppendLine("SeedArgs: mood=" + fallback.FallbackMood + " calling=" + fallback.FallbackCalling + " start=" + fallback.FallbackStart + " seed=" + fallback.FallbackWorldSeed);
                 report.AppendLine("DetectionNote: completion scan checks reason text for smelt/iron, then falls back to ReasonTrace recipe:1001 because live completion reasons are id-based.");
                 report.AppendLine("JobAssignedCount: " + jobAssignedCount);

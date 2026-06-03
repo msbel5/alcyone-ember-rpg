@@ -301,12 +301,44 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return true;
         }
 
-        // Single projection so the name and id read paths can never drift: domain grid (X,Y) maps to
-        // the world-space XZ plane (Y up stays 0); actors are always visible while alive in the store.
-        private static ActorViewState ProjectActor(ActorRecord actor)
+        // Billboard grid->world origin: FIXED at the player's STARTING-settlement centre. WorldSceneDirector
+        // realises that one settlement with the player rig + building ring sitting at world (0,0,0), but NPC
+        // grid positions live at their raw site coords ((i%32)*12, (i/32)*12) — tens of metres away. Without
+        // this offset every NPC projected into a distant clump that the player saw "cluster and do nothing";
+        // subtracting the starting-site centre maps it to world origin so the crowd surrounds the plaza. The
+        // origin is fixed (NOT player-relative), so NPCs hold their world position as the player walks. Resolved
+        // lazily once the site exists (sites are hydrated during SeedWorld); identity (0,0) until then.
+        private EmberCrpg.Domain.Actors.GridPosition _billboardOrigin;
+        private bool _billboardOriginResolved;
+
+        private EmberCrpg.Domain.Actors.GridPosition BillboardOrigin()
         {
+            if (_billboardOriginResolved) return _billboardOrigin;
+            if (!StartingSettlement.IsEmpty && _world?.Sites != null)
+            {
+                var siteId = SettlementSiteId(StartingSettlement);
+                if (_world.Sites.TryGet(siteId, out _))
+                {
+                    _billboardOrigin = CenterOfSite(siteId);
+                    _billboardOriginResolved = true;
+                }
+            }
+            return _billboardOrigin;
+        }
+
+        // Diagnostic hook: the FIXED billboard grid->world origin (starting-settlement centre) that
+        // ProjectActor/GetSpawnableActors subtract, so proofs can render every position in the same
+        // player-centric frame (an idle NPC then reads home==midday, not a phantom offset jump).
+        public EmberCrpg.Domain.Actors.GridPosition BillboardOriginCell() => BillboardOrigin();
+
+        // Single projection so the name and id read paths can never drift: domain grid (X,Y) maps to the
+        // world-space XZ plane (Y up stays 0), re-based on the starting-settlement centre (see BillboardOrigin);
+        // actors are always visible while alive in the store.
+        private ActorViewState ProjectActor(ActorRecord actor)
+        {
+            var origin = BillboardOrigin();
             return new ActorViewState(
-                new UnityEngine.Vector3(actor.Position.X, 0f, actor.Position.Y),
+                new UnityEngine.Vector3(actor.Position.X - origin.X, 0f, actor.Position.Y - origin.Y),
                 UnityEngine.Quaternion.identity,
                 visible: true);
         }
@@ -319,6 +351,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IReadOnlyList<SpawnableActor> GetSpawnableActors()
         {
             if (_world.Actors == null) return System.Array.Empty<SpawnableActor>();
+            var origin = BillboardOrigin(); // SAME re-basing as ProjectActor, so a spawned billboard lands exactly where the per-tick sync will push it
             var list = new List<SpawnableActor>();
             foreach (var actor in _world.Actors.Records)
             {
@@ -326,8 +359,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 list.Add(new SpawnableActor(
                     actor.Id.Value,
                     actor.Name ?? string.Empty,
-                    actor.Position.X,
-                    actor.Position.Y));
+                    actor.Position.X - origin.X,
+                    actor.Position.Y - origin.Y));
             }
             return list;
         }
