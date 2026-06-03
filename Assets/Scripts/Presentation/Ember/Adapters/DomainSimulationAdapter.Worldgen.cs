@@ -202,7 +202,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 if (_world.Sites.Contains(id)) continue;
                 int x = (i % 32) * 12;
                 int y = (i / 32) * 12;
-                int radius = settlement.Size == SettlementSize.Capital ? 6 : settlement.Size == SettlementSize.City ? 5 : settlement.Size == SettlementSize.Town ? 3 : 2;
+                // Site spans the whole town (~1 cell ≈ 1 m) so NPC homes/day-spots spread across the settlement
+                // and align with the building ring (8-24 m), instead of clumping inside a 2-6 m dot at the centre.
+                int radius = settlement.Size == SettlementSize.Capital ? 28 : settlement.Size == SettlementSize.City ? 24 : settlement.Size == SettlementSize.Town ? 18 : 14;
                 _world.Sites.Add(new SiteRecord(id, SiteKind.Settlement, settlement.Name, new GridPosition(x, y), new GridPosition(x + radius, y + radius)));
             }
 
@@ -357,8 +359,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // claimed production job — so they walk to the "square" by day and home by night.
         private GridPosition DayAnchorFor(SiteId siteId, ulong npcId)
         {
-            var c = CenterOfSite(siteId);
-            return new GridPosition(c.X + (int)(npcId % 2UL), c.Y + (int)((npcId / 2UL) % 2UL));
+            // A DISTINCT daytime spot per NPC, spread across the WHOLE settlement (a different hash from the home
+            // cell), so by day the townsfolk disperse to their own places and walk there - instead of every NPC
+            // converging on the centre into one frozen clump.
+            if (_world.Sites != null && _world.Sites.TryGet(siteId, out var site))
+            {
+                int w = System.Math.Max(1, (site.MaxBound.X - site.MinBound.X) + 1);
+                int h = System.Math.Max(1, (site.MaxBound.Y - site.MinBound.Y) + 1);
+                ulong k = (npcId * 40503UL) + 2246822519UL;
+                return new GridPosition(site.MinBound.X + (int)(k % (ulong)w), site.MinBound.Y + (int)((k / (ulong)w) % (ulong)h));
+            }
+            return CenterOfSite(siteId);
         }
 
         /// <summary>

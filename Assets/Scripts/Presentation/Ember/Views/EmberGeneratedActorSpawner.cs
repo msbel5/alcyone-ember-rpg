@@ -176,9 +176,11 @@ namespace EmberCrpg.Presentation.Ember.Views
             // Walk speed ~1.2 m/s, matched to the colony schedule's 1 tile / 0.83 s tick, so the billboard
             // glides continuously with the sim instead of stride-then-pausing (combat keeps the snap chase).
             actorView.SetGroundSpeed(1.3f);
-            // No cosmetic wander any more: the colony sim now drives real movement — ScheduleSystem walks each
-            // NPC to its worksite/day-anchor by day and home by night, and the id-keyed PushWorldViews sync
-            // relocates this billboard accordingly. The motion is purposeful, not random jitter.
+            // The colony schedule now disperses NPCs across the (enlarged) settlement and walks each between its
+            // home and a DISTINCT day-spot. On top of that purposeful motion, a small idle mill keeps them
+            // subtly moving at their current spot so the town reads as alive instead of frozen statues. Visual
+            // only — never written back to the sim.
+            actorView.EnableWander(2.2f);
 
             // Dialog: author the stable id on an EmberInteractable too (3-arg overload built for runtime
             // spawners) so the interact raycaster prefers the id-keyed GetDialogSource(ActorId) path and
