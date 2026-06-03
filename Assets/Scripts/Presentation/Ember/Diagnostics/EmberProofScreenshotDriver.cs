@@ -38,6 +38,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-gameplay-shot"))
+            {
+                yield return RunGameplayShot();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             if (HasArg("--ember-scene-tour"))
             {
                 yield return RunSceneTour();
@@ -171,6 +178,25 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             return view;
         }
 
+        // "Let me see the real New Game": seed EXACTLY like char-creation (EmberWorldGenIntent.Pending) so the
+        // GeneratedWorld scene runs the full SeedWorld + WorldSceneDirector.Realize (biome ground + building ring +
+        // player rig) and the spawner materialises the nearest NPCs - the REAL playable scene, not a bare fallback.
+        // Capture the player's first-person view AND an angled overhead, at spawn and again a few ticks later so
+        // NPC walking shows. Headless + small res => cheap, real screenshots of the actual scene.
+        private IEnumerator RunGameplayShot()
+        {
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            // Awake() runs SeedWorld synchronously (planet gen + history) before returning, so by the time these
+            // waits tick the world is already realised; the waits just let it render + a few schedule ticks pass.
+            yield return CaptureFixedAfter(3.0f, "gameplay_fpv_spawn.png");
+            yield return CaptureOverheadAfter(0.3f, "gameplay_overhead_spawn.png", 34f);
+            yield return new WaitForSeconds(4.0f); // a few game-ticks at 0.8333 s/tick: NPCs walk toward day anchors
+            yield return CaptureFixedAfter(0.1f, "gameplay_fpv_later.png");
+            yield return CaptureOverheadAfter(0.3f, "gameplay_overhead_later.png", 34f);
+        }
+
         private IEnumerator RunRescueProof()
         {
             SceneManager.LoadScene(EmberScenes.CharacterCreation);
@@ -193,6 +219,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             SceneManager.LoadScene(EmberScenes.GeneratedWorld);
             yield return CaptureFixedAfter(1.2f, "generated_world_game.png");
             yield return CaptureFixedAfter(0.2f, "generated_world_spawn_proof.png");
+            yield return CaptureOverheadAfter(0.4f, "generated_world_overhead.png", 32f);
 
             SceneManager.LoadScene(EmberScenes.GeneratedWorld);
             yield return CaptureFixedAfter(1.2f, "generated_world_repeat.png");
@@ -285,8 +312,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         {
             yield return new WaitForSeconds(seconds);
             var path = Path.Combine(_outputDir, fileName);
-            ScreenCapture.CaptureScreenshot(path);
-            Debug.Log("[EmberProofScreenshotDriver] wrote " + path);
+            CaptureToPng(path);
             yield return new WaitForSeconds(0.35f);
         }
 
@@ -294,9 +320,112 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         {
             yield return new WaitForSeconds(seconds);
             var path = Path.Combine(_outputDir, name + "_" + DateTimeOffset.UtcNow.ToUnixTimeSeconds() + ".png");
-            ScreenCapture.CaptureScreenshot(path);
-            Debug.Log("[EmberProofScreenshotDriver] wrote " + path);
+            CaptureToPng(path);
             yield return new WaitForSeconds(0.25f);
+        }
+
+        // Headless-safe capture. -batchmode has NO swapchain, so ScreenCapture.CaptureScreenshot grabs an empty
+        // backbuffer (pure black). Instead we render the main camera EXPLICITLY to an offscreen RenderTexture and
+        // read it back, which works with no window/display. This captures the WORLD (screen-space-overlay UI is
+        // not seen by a camera render) - exactly what we want to verify the realised scene (NPCs, buildings,
+        // daylight). Small screen res in => small PNG out, cheap to inspect.
+        // Camera.main is null in the generated scene (the runtime player rig camera is not tagged "MainCamera"),
+        // so fall back to the first ACTIVE camera (the rig's first-person camera). It is a proper URP camera that
+        // actually renders geometry - a hand-made Camera lacks URP data and would render clear-colour only.
+        private UnityEngine.Camera FindSceneCamera()
+        {
+            var cam = UnityEngine.Camera.main;
+            if (cam != null) return cam;
+            // Include INACTIVE/disabled cameras: the rig's EyeCamera can be gated off in headless mode, which
+            // makes both Camera.main and an active-only search return null. Log what exists, then force-enable
+            // the rig camera so we can still render the player's view.
+            var cams = UnityEngine.Object.FindObjectsByType<UnityEngine.Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            Debug.Log("[EmberProofScreenshotDriver] camera search found " + cams.Length + " camera(s)");
+            UnityEngine.Camera fallback = null;
+            foreach (var c in cams)
+            {
+                if (c == null) continue;
+                Debug.Log("[EmberProofScreenshotDriver]   cam '" + c.name + "' activeInHierarchy=" + c.gameObject.activeInHierarchy + " enabled=" + c.enabled);
+                if (fallback == null) fallback = c;
+                if (c.isActiveAndEnabled) return c;
+            }
+            if (fallback != null)
+            {
+                if (!fallback.gameObject.activeSelf) fallback.gameObject.SetActive(true);
+                fallback.enabled = true;
+                return fallback;
+            }
+            return null;
+        }
+
+        private void CaptureToPng(string path)
+        {
+            var cam = FindSceneCamera();
+            if (cam == null)
+            {
+                ScreenCapture.CaptureScreenshot(path); // no camera at all: best-effort (may be blank in batchmode)
+                Debug.Log("[EmberProofScreenshotDriver] (no camera) screen-grab " + path);
+                return;
+            }
+            CaptureCameraToPng(cam, path);
+        }
+
+        private void CaptureCameraToPng(UnityEngine.Camera cam, string path)
+        {
+            int w = Mathf.Clamp(Screen.width <= 1 ? 640 : Screen.width, 64, 1280);
+            int h = Mathf.Clamp(Screen.height <= 1 ? 360 : Screen.height, 64, 720);
+            var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);
+            var prevTarget = cam.targetTexture;
+            var prevActive = RenderTexture.active;
+            Texture2D tex = null;
+            try
+            {
+                cam.targetTexture = rt;
+                cam.Render();
+                RenderTexture.active = rt;
+                tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+                tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+                tex.Apply();
+                File.WriteAllBytes(path, tex.EncodeToPNG());
+                Debug.Log("[EmberProofScreenshotDriver] wrote " + path);
+            }
+            finally
+            {
+                cam.targetTexture = prevTarget;
+                RenderTexture.active = prevActive;
+                if (tex != null) UnityEngine.Object.Destroy(tex);
+                rt.Release();
+                UnityEngine.Object.Destroy(rt);
+            }
+        }
+
+        // A high, angled proof camera over the plaza (world origin = where the player rig + crowd sit after the
+        // billboard-origin fix). One shot shows the whole settlement: the building ring on biome ground, and
+        // whether the world reads as a real place. Angled (not straight-down) so upright billboards stay visible.
+        // Borrow the rig's URP-configured camera (a hand-made Camera renders clear-only under URP): fly it up for
+        // one angled top-down render of the whole settlement, then restore so the player view is left untouched.
+        private IEnumerator CaptureOverheadAfter(float seconds, string fileName, float dist)
+        {
+            yield return new WaitForSeconds(seconds);
+            var cam = FindSceneCamera();
+            if (cam != null)
+            {
+                var tr = cam.transform;
+                var sPos = tr.position; var sRot = tr.rotation; var sFov = cam.fieldOfView; var sFar = cam.farClipPlane;
+                try
+                {
+                    tr.position = new Vector3(0f, dist, -dist);
+                    tr.rotation = Quaternion.Euler(45f, 0f, 0f);
+                    cam.fieldOfView = 70f;
+                    cam.farClipPlane = (dist * 2f) + 200f;
+                    CaptureCameraToPng(cam, Path.Combine(_outputDir, fileName));
+                }
+                finally
+                {
+                    tr.position = sPos; tr.rotation = sRot; cam.fieldOfView = sFov; cam.farClipPlane = sFar;
+                }
+            }
+            yield return new WaitForSeconds(0.2f);
         }
 
         // SDXL D1 verification: generate a fixed "carved bone die" through the LIVE IAssetForge
