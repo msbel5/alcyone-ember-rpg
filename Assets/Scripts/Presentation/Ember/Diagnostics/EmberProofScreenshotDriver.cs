@@ -73,6 +73,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-planet-proof"))
+            {
+                yield return RunPlanetProof();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             yield return CaptureAfter(1.5f, "boot");
             yield return CaptureAfter(0.5f, "assetgen");
             LoadingScreen.Dismiss();
@@ -403,6 +410,71 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             foreach (var kv in a)
                 if (b.TryGetValue(kv.Key, out var p) && UnityEngine.Vector2.Distance(kv.Value, p) > 0.5f) moved++;
             return moved;
+        }
+
+        // Renders the generated SPHERICAL planet (PRD_planetary_worldgen_ember_v1, phase-1a substrate) to
+        // equirectangular PNGs so the world can be SEEN, plus a determinism re-gen check. Generation + sampler
+        // are engine-free; this driver only encodes the RGBA bytes to PNG.
+        private IEnumerator RunPlanetProof()
+        {
+            const int level = 6;
+            const int width = 1024;
+            const int height = 512;
+            uint[] seeds = { 1u, 42u, 1234u };
+            var report = new StringBuilder();
+            report.AppendLine("PLANET PROOF (phase-1a spherical substrate)");
+            report.AppendLine("Params: subdivision=" + level + " plates=24 oceanic=0.62 image=" + width + "x" + height);
+
+            string determinism = null;
+            foreach (uint seed in seeds)
+            {
+                var p = new EmberCrpg.Simulation.Worldgen.Planet.PlanetParameters(level, 24, 0.62d, 0d, 0.04d);
+                var field = EmberCrpg.Simulation.Worldgen.Planet.PlanetGenerator.Generate(seed, p);
+
+                int land = 0; double minE = double.MaxValue, maxE = double.MinValue; long digest = 17;
+                for (int i = 0; i < field.TileCount; i++)
+                {
+                    var t = field.TileAt(i);
+                    if (t.IsLand) land++;
+                    if (t.Elevation < minE) minE = t.Elevation;
+                    if (t.Elevation > maxE) maxE = t.Elevation;
+                    digest = (digest * 31) + (long)(t.Elevation * 1000d) + t.PlateId;
+                }
+
+                var image = EmberCrpg.Simulation.Worldgen.Planet.PlanetImageSampler.Sample(field, width, height);
+                var file = Path.Combine(_outputDir, "planet-seed-" + seed + ".png");
+                WritePlanetPng(image, file);
+                report.AppendLine("seed=" + seed + " tiles=" + field.TileCount + " land="
+                    + (100d * land / field.TileCount).ToString("0.0") + "% elev=[" + minE.ToString("0.00") + ".."
+                    + maxE.ToString("0.00") + "] -> " + Path.GetFileName(file));
+
+                if (seed == 42u)
+                {
+                    var regen = EmberCrpg.Simulation.Worldgen.Planet.PlanetGenerator.Generate(42u, p);
+                    long d2 = 17;
+                    for (int i = 0; i < regen.TileCount; i++) { var t = regen.TileAt(i); d2 = (d2 * 31) + (long)(t.Elevation * 1000d) + t.PlateId; }
+                    determinism = "seed42 digest=" + digest + " regen=" + d2 + (digest == d2 ? " DETERMINISTIC" : " MISMATCH");
+                }
+                yield return null;
+            }
+
+            report.AppendLine("Determinism: " + determinism);
+            File.WriteAllText(Path.Combine(_outputDir, "planet-proof.txt"), report.ToString());
+            yield break;
+        }
+
+        // Vertically flip (Unity texture rows are bottom-up) so north is up, then encode RGBA32 -> PNG.
+        private void WritePlanetPng(EmberCrpg.Simulation.Worldgen.Planet.PlanetImage image, string path)
+        {
+            var tex = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false);
+            int stride = image.Width * 4;
+            var flipped = new byte[image.Rgba.Length];
+            for (int row = 0; row < image.Height; row++)
+                Array.Copy(image.Rgba, row * stride, flipped, (image.Height - 1 - row) * stride, stride);
+            tex.LoadRawTextureData(flipped);
+            tex.Apply(false, false);
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            UnityEngine.Object.Destroy(tex);
         }
 
         private IEnumerator RunWorldProof()
