@@ -620,14 +620,18 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             var body = BeginScreen(step, "The World Awakens", nextLabel ?? "Enter the World", true, canContinue);
             var host = Host(20, 10, Align.Center, Justify.FlexStart);
-            var col = Column(640); col.style.alignItems = Align.Center;
+            var col = Column(640);
+            col.style.alignItems = Align.Center;
+            col.style.flexGrow = 1; col.style.minHeight = 0;   // fill the height so the narrative can scroll inside it
 
+            // FIXED 16:9 map box. flexShrink 0 so the growing narrative NEVER squeezes it — the map keeps its
+            // full 640×360 (design: "never auto-size"). This was the bug: default flexShrink let it shrink.
             var box = new VisualElement();
-            box.style.width = 640; box.style.height = 360; Radius(box, 14);
+            box.style.width = 640; box.style.height = 360; box.style.flexShrink = 0; Radius(box, 14);
             box.style.backgroundColor = Input; box.style.overflow = Overflow.Hidden;
             Border(box, ready ? Amber : PA(0.18f), 2);
             box.style.alignItems = Align.Center; box.style.justifyContent = Justify.Center;
-            box.style.marginBottom = 16;
+            box.style.marginBottom = 14;
             if (ready && map != null)
             {
                 var img = new Image { image = map, scaleMode = ScaleMode.ScaleAndCrop };
@@ -643,22 +647,28 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             col.Add(box);
 
             var caption = Flavor(ready ? "The world you have shaped." : "Tectonic plates forming. Oceans filling…",
-                                 ready ? ParchDim : PA(0.32f), 16);
+                                 ready ? ParchDim : PA(0.32f), 12);
             caption.style.fontSize = 14; caption.style.unityFontStyleAndWeight = FontStyle.Italic;
-            caption.style.unityTextAlign = TextAnchor.MiddleCenter;
+            caption.style.unityTextAlign = TextAnchor.MiddleCenter; caption.style.flexShrink = 0;
             col.Add(caption);
 
             if (!string.IsNullOrEmpty(narrative))
             {
+                // The narrative SCROLLS in the remaining space (credits-roll) so long streaming history never
+                // pushes the page or clips off the bottom — it auto-follows the latest line as it streams in.
+                var scroll = new ScrollView(ScrollViewMode.Vertical);
+                scroll.style.flexGrow = 1; scroll.style.minHeight = 0;
+                scroll.style.width = Length.Percent(100); scroll.style.maxWidth = 640; scroll.style.alignSelf = Align.Center;
                 var card = new VisualElement();
-                card.style.width = Length.Percent(100);
                 card.style.backgroundColor = CardBg; Border(card, PA(0.14f), 1); Radius(card, 12);
                 card.style.paddingTop = 20; card.style.paddingBottom = 20;
                 card.style.paddingLeft = 24; card.style.paddingRight = 24;
                 var p = Text(narrative, Serif, 16, ParchDim);
                 p.style.whiteSpace = WhiteSpace.Normal;
                 card.Add(p);
-                col.Add(card);
+                scroll.Add(card);
+                col.Add(scroll);
+                scroll.schedule.Execute(() => scroll.scrollOffset = new Vector2(0f, float.MaxValue)).StartingIn(0);
             }
 
             host.Add(col); body.Add(host);

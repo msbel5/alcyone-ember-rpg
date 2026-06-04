@@ -141,10 +141,11 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private void ApplyPortrait(NpcPromptJson json, string caption, uint portraitSeed, int generation)
         {
             PortraitJson = json.ToCanonicalJson();
+            // Build the texture unconditionally (not gated on _panel) so the redesigned view always has it.
+            _characterPortraitTexture = CharacterCreationPortraitSwatch.Build(json);
             if (_panel != null)
             {
                 _panel.SetText("portraitJson", PortraitJson);
-                _characterPortraitTexture = CharacterCreationPortraitSwatch.Build(json);
                 if (_step != CreationStep.WorldHistoryReveal)
                     _panel.SetThumbnail("portrait", _characterPortraitTexture);
                 _panel.SetVisible("portrait", true);
@@ -152,7 +153,17 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 _panel.SetVisible("portraitCaption", true);
             }
 
+            RefreshPortraitView();
             StartPortraitForgeUpgrade(json, portraitSeed, generation);
+        }
+
+        // The redesigned view renders the portrait from _characterPortraitTexture, so a reroll or a late async
+        // upgrade must re-render or the Image keeps the stale texture ("portrait didn't refresh"). The legacy
+        // _panel updates its thumbnail in place and needs no re-render.
+        private void RefreshPortraitView()
+        {
+            if (_redesignView != null && (_step == CreationStep.Portrait || _step == CreationStep.DossierLaunch))
+                Render();
         }
 
         private void StartPortraitForgeUpgrade(NpcPromptJson json, uint portraitSeed, int generation)
@@ -276,6 +287,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             // the portrait from _characterPortraitTexture.
             if (_step != CreationStep.WorldHistoryReveal)
                 _panel?.SetThumbnail("portrait", texture);
+            RefreshPortraitView();   // re-render the redesigned view so the real forge image actually appears
         }
 
         private void StopPortraitForgeUpgrade()
