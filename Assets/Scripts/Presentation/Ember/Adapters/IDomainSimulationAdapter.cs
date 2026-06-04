@@ -42,6 +42,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     {
         string HudText { get; }
         CombatHudState CombatHud { get; }
+        PlayerSheetState PlayerSheet { get; }
     }
 
     /// <summary>Per-view DTO rows: jobs, needs, factions, inventory, spells, actor/worksite spot lookups.</summary>

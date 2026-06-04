@@ -160,4 +160,26 @@ return text;
     {
         CombatHudState Read();
     }
+
+    /// <summary>
+    /// Read-model snapshot of the player's character sheet — the REAL created character's name + six attributes —
+    /// so the redesigned in-game CharacterView can show live data instead of mock. Vitals already flow through
+    /// <see cref="CombatHudState"/>; this carries only what that DTO lacks. <see cref="HasData"/> is false when
+    /// there is no player actor (standalone/proof scene), so the view keeps its mock defaults.
+    /// </summary>
+    public readonly struct PlayerSheetState
+    {
+        public readonly string Name;
+        public readonly int Mig, Agi, End, Mnd, Ins, Pre;
+        public readonly bool HasData;
+        public PlayerSheetState(string name, int mig, int agi, int end, int mnd, int ins, int pre)
+        {
+            Name = name; Mig = mig; Agi = agi; End = end; Mnd = mnd; Ins = ins; Pre = pre; HasData = true;
+        }
+    }
+
+    public interface IPlayerSheetSource
+    {
+        PlayerSheetState ReadPlayerSheet();
+    }
 }

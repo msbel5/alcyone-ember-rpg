@@ -19,7 +19,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
     /// </summary>
     [DisallowMultipleComponent]
     public sealed partial class EmberWorldHost : MonoBehaviour, EmberTickDriver.ITickListener,
-        IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait,
+        IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait, IPlayerSheetSource,
         IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ISpellBarSource
     {
         [SerializeField] private SpriteRegistry _spriteRegistry;
@@ -372,6 +372,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         IReadOnlyList<string> ISpellBarSource.GetSlots() => _worldView.SpellSlots;
         int ISpellBarSource.GetSelectedSlot() => _selectedSpellSlot;
         CombatHudState ICombatHudSource.Read() => _hud.CombatHud;
+        PlayerSheetState IPlayerSheetSource.ReadPlayerSheet() => _hud.PlayerSheet;
         public Sprite GetSprite(string name)
         {
             var registrySprite = _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;

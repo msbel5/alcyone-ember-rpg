@@ -5,7 +5,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 {
     public static class IgMockData
     {
-        public static readonly PlayerData Player = new(
+        public static readonly PlayerData DefaultPlayer = new(
             "Cinder Vey",
             "Scholar",
             4,
@@ -30,6 +30,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 new StatData("PRE", 13),
             },
             new[] { "investigation", "arcana", "perception", "insight", "history" });
+
+        // Live character: InGameUiController.RefreshLivePlayer overwrites this with the real created character's
+        // name / six attributes / vitals when a screen opens; falls back to DefaultPlayer when there is no bound
+        // world (proof + EditMode contexts). Level/XP/class/birthsign/skills/gold stay mock until the domain
+        // tracks them.
+        public static PlayerData Player = DefaultPlayer;
 
         public static readonly EquipmentSlotData[] EquipSlots =
         {

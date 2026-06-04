@@ -154,6 +154,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
         }
 
+        public PlayerSheetState PlayerSheet
+        {
+            get
+            {
+                var player = _world.Actors?.FirstByRole(ActorRole.Player);
+                if (player == null) return default;   // HasData = false → CharacterView keeps its mock defaults
+                var s = player.Stats;
+                return new PlayerSheetState(player.Name, s.Mig, s.Agi, s.End, s.Mnd, s.Ins, s.Pre);
+            }
+        }
+
         // ----- IWorldViewReadModel -----
         public IReadOnlyList<JobQueueRow> JobQueueRows
         {

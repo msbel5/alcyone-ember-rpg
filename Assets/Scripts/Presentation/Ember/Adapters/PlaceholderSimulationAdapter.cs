@@ -44,6 +44,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public EmberCrpg.Domain.Actors.GridPosition PlayerOverlandTile => default;
         public string StartingSettlementName => null;
         public CombatHudState CombatHud => _combatHud;
+        public PlayerSheetState PlayerSheet => default;   // stub adapter: no real character → views keep mock
         public IReadOnlyList<WorldEventRow> RecentWorldEvents(int maxRows) => System.Array.Empty<WorldEventRow>();
 
         public void AdvanceTick(int tickIndex)

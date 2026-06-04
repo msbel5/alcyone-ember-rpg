@@ -129,6 +129,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         {
             CloseScreen();
             CloseBrowser();
+            RefreshLivePlayer();   // feed the screens the REAL created character (name / stats / vitals)
             var c = _stage.Canvas;
             switch (screenId)
             {
@@ -158,6 +159,40 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         }
 
         private void ConsulDm() => OpenScreen("consul");
+
+        // Feed the redesigned screens the REAL created character (name + six attributes + vitals) by overwriting
+        // the shared IgMockData.Player snapshot before a screen reads it. Fields the domain does not yet track
+        // (level/XP/class/birthsign/skills/gold) keep their mock values. No-op (mock kept) when there is no host
+        // or no player actor — proof + EditMode contexts — so the views still render.
+        private void RefreshLivePlayer()
+        {
+            if (!(_host is IPlayerSheetSource sheetSrc)) return;
+            var sheet = sheetSrc.ReadPlayerSheet();
+            if (!sheet.HasData) return;
+
+            var mock = IgMockData.DefaultPlayer;
+            int hp = mock.Hp, hpMax = mock.HpMax, ft = mock.Fatigue, ftMax = mock.FatigueMax, mp = mock.Mana, mpMax = mock.ManaMax;
+            if (_host is ICombatHudSource hudSrc)
+            {
+                var v = hudSrc.Read();
+                hp = v.Health; hpMax = v.HealthMax; ft = v.Stamina; ftMax = v.StaminaMax; mp = v.Mana; mpMax = v.ManaMax;
+            }
+
+            IgMockData.Player = mock with
+            {
+                Name = string.IsNullOrWhiteSpace(sheet.Name) ? mock.Name : sheet.Name,
+                Hp = hp, HpMax = hpMax, Fatigue = ft, FatigueMax = ftMax, Mana = mp, ManaMax = mpMax,
+                Stats = new[]
+                {
+                    new StatData("MIG", sheet.Mig),
+                    new StatData("AGI", sheet.Agi),
+                    new StatData("END", sheet.End),
+                    new StatData("MND", sheet.Mnd),
+                    new StatData("INS", sheet.Ins),
+                    new StatData("PRE", sheet.Pre),
+                },
+            };
+        }
 
         // ── input: Tab toggles the ☰ browser; the letter keys open a screen; Esc closes. The legacy host
         // handlers yield (OwnsInput), so these REPLACE the old uGUI panels. The cursor is locked in FPS play, so
