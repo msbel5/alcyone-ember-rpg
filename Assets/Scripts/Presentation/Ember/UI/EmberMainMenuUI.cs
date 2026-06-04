@@ -190,6 +190,11 @@ namespace EmberCrpg.Presentation.Ember.UI
                     typeof(CanvasScaler),
                     typeof(GraphicRaycaster));
                 canvas = canvasGo.GetComponent<Canvas>();
+                var scaler = canvasGo.GetComponent<UnityEngine.UI.CanvasScaler>();
+                scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new UnityEngine.Vector2(1920f, 1080f);
+                scaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                scaler.matchWidthOrHeight = 0.5f;
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                 canvas.sortingOrder = 2000;
             }
