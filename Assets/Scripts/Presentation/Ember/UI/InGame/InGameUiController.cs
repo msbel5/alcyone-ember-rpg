@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
+using EmberCrpg.Presentation.Ember.Inputs;
 using EmberCrpg.Presentation.Ember.UI.InGame.Screens;
 // ICombatHudSource / ISpellBarSource / IEmberHudSource live in the enclosing EmberCrpg.Presentation.Ember.UI
 // namespace, so they resolve here without an explicit using.
@@ -24,6 +25,23 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private WorldHudView _hud;
         private InGameStage _stage;
         private object _host;
+        private VisualElement _dropdown;
+        private bool _wasOpen;
+
+        /// <summary>True while this controller is active — the legacy EmberWorldHost key handlers (M / Tab / K /
+        /// R) yield to it so the redesigned screens own input instead of opening the old uGUI panels.</summary>
+        public static bool OwnsInput { get; private set; }
+
+        /// <summary>True while a redesigned screen (a modal or the ☰ browser) is open — folded into
+        /// EmberWorldHost.IsModalOpen() so FPS look/move stop, and the controller frees the cursor + pauses.</summary>
+        public static bool AnyScreenOpen { get; private set; }
+
+        private void OnEnable() => OwnsInput = true;
+        private void OnDisable()
+        {
+            OwnsInput = false; AnyScreenOpen = false;
+            if (Mathf.Approximately(Time.timeScale, 0f)) Time.timeScale = 1f;   // never leave the world paused
+        }
 
         private void Awake()
         {
@@ -51,7 +69,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             // commands are re-bound onto the new spell bar / buttons in later phases.
             foreach (var legacy in FindObjectsByType<EmberHud>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 legacy.gameObject.SetActive(false);
-            Debug.Log("[InGameUI] World HUD mounted; legacy EmberHud retired.");
+            // The always-on top-right event log and the legacy uGUI pause menu are part of the old HUD stack the
+            // redesigned UI replaces: retire them too so (a) the old log stops showing over the new HUD and
+            // (b) Esc no longer pops the old menu — the controller routes Esc to the redesigned PauseView instead.
+            // (EnsureInGameUi is mounted LAST in EmberWorldHost.Awake so both already exist when this runs.)
+            foreach (var log in FindObjectsByType<EventLogHudPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                log.gameObject.SetActive(false);
+            foreach (var pause in FindObjectsByType<PauseMenu>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                pause.gameObject.SetActive(false);
+            Debug.Log("[InGameUI] World HUD mounted; legacy EmberHud + event log + pause menu retired.");
         }
 
         /// <summary>Wire the data + button host (the EmberWorldHost). Called by EmberWorldHost.EnsureInGameUi.</summary>
@@ -64,6 +90,22 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         {
             if (_hud == null) return;
             _stage?.Fit();
+            HandleScreenInput();
+
+            // Free the cursor + pause the world whenever a screen is open; restore FPS capture + the clock when
+            // everything closes. (Set on transition so we don't fight the first-person controller every frame.)
+            bool open = IsAnyOpen();
+            AnyScreenOpen = open;
+            if (open != _wasOpen)
+            {
+                _wasOpen = open;
+                // Fully-qualified: this file has both `using UnityEngine` and `using UnityEngine.UIElements`,
+                // and UIElements also defines a `Cursor` type (CS0104 ambiguity otherwise).
+                UnityEngine.Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
+                UnityEngine.Cursor.visible = open;
+                Time.timeScale = open ? 0f : 1f;
+            }
+
             var d = new WorldHudData();
 
             if (_host is ICombatHudSource combat)
@@ -86,6 +128,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private void OpenScreen(string screenId)
         {
             CloseScreen();
+            CloseBrowser();
             var c = _stage.Canvas;
             switch (screenId)
             {
@@ -116,6 +159,36 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private void ConsulDm() => OpenScreen("consul");
 
+        // ── input: Tab toggles the ☰ browser; the letter keys open a screen; Esc closes. The legacy host
+        // handlers yield (OwnsInput), so these REPLACE the old uGUI panels. The cursor is locked in FPS play, so
+        // the ☰ pill can't be clicked until a key opens a screen — that is why Tab is the entry point.
+        private void HandleScreenInput()
+        {
+            if (EmberInput.KeyDown(KeyCode.Tab))    { ToggleBrowser(); return; }
+            if (EmberInput.KeyDown(KeyCode.Escape)) { if (IsAnyOpen()) CloseAll(); else OpenScreen("pause"); return; }
+            if (EmberInput.KeyDown(KeyCode.C))      OpenScreen("character");
+            else if (EmberInput.KeyDown(KeyCode.I)) OpenScreen("inventory");
+            else if (EmberInput.KeyDown(KeyCode.M)) OpenScreen("worldmap");
+            else if (EmberInput.KeyDown(KeyCode.J)) OpenScreen("journal");
+            else if (EmberInput.KeyDown(KeyCode.K)) OpenScreen("colony");
+            else if (EmberInput.KeyDown(KeyCode.R)) OpenScreen("consul");
+        }
+
+        private bool IsAnyOpen() =>
+            (_dropdown != null && _dropdown.style.display == DisplayStyle.Flex) ||
+            (_stage != null && _stage.Canvas.Q("IgModalOverlay") != null);
+
+        private void ToggleBrowser()
+        {
+            if (_dropdown == null) return;
+            bool show = _dropdown.style.display != DisplayStyle.Flex;
+            CloseScreen();   // a modal and the browser are mutually exclusive
+            _dropdown.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void CloseBrowser() { if (_dropdown != null) _dropdown.style.display = DisplayStyle.None; }
+        private void CloseAll() { CloseScreen(); CloseBrowser(); }
+
         /// <summary>Proof/diagnostic hook: open a screen by id from the screenshot driver (verification tours).</summary>
         public void ProofOpenScreen(string id) => OpenScreen(id);
 
@@ -133,11 +206,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private void BuildScreenBrowser(VisualElement canvas)
         {
             var wrap = new VisualElement();
-            wrap.style.position = Position.Absolute; wrap.style.top = 8; wrap.style.left = Length.Percent(50);
-            wrap.style.translate = new Translate(Length.Percent(-50), 0);
+            // Full-width row, children centred — robustly keeps the pill + dropdown centred under the ☰ (the old
+            // left:50% + translate slid the opened dropdown off to the right).
+            wrap.style.position = Position.Absolute; wrap.style.top = 8; wrap.style.left = 0; wrap.style.right = 0;
             wrap.style.alignItems = Align.Center;
 
-            var dropdown = new VisualElement();
+            _dropdown = new VisualElement();
+            var dropdown = _dropdown;
             dropdown.style.display = DisplayStyle.None;
             dropdown.style.flexDirection = FlexDirection.Row; dropdown.style.flexWrap = Wrap.Wrap;
             dropdown.style.maxWidth = 720; dropdown.style.marginTop = 6;

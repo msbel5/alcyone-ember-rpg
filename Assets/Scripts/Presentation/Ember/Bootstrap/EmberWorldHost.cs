@@ -4,6 +4,7 @@ using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.Sprites;
 using EmberCrpg.Presentation.Ember.Tick;
 using EmberCrpg.Presentation.Ember.UI;
+using EmberCrpg.Presentation.Ember.UI.InGame;
 using EmberCrpg.Presentation.Ember.Views;
 using EmberCrpg.Presentation.Ember.Runtime;
 using UnityEngine;
@@ -143,7 +144,6 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // BindUiPanels so the bind loops below find and wire them (Source = this), exactly as they
             // would an authored panel.
             EnsureEmberHud();
-            EnsureInGameUi();   // Phase 1: UI-Toolkit World HUD overlay (additive over the uGUI HUD for now)
             EnsureSidePanels();
             var eventLogHud = EnsureEventLogHudPanel();
             _overlandMapPanel = EnsureOverlandMapPanel(); // M-key: the generated overland made visible
@@ -151,6 +151,11 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // LIVE-1 (revised): pause menu LAST — top sibling of the overlay canvas, and creating it after
             // the HUD/dialog/panels means their FindFirstObjectByType<Canvas> can't grab a pause sub-canvas.
             EnsurePauseMenu();
+
+            // Mount the redesigned UI-Toolkit overlay LAST: its Awake() retires the full legacy uGUI HUD stack
+            // (EmberHud + top-right event log + pause menu), so all three must already exist by this point. It
+            // then owns input (InGameUiController.OwnsInput) — the legacy key handlers above yield to it.
+            EnsureInGameUi();
 
             var actorViews = Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             var worksiteViews = Object.FindObjectsByType<WorksiteView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -176,9 +181,11 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         private void Update()
         {
-            HandleQuitInput();
+            // The redesigned PauseView owns Esc now (InGameUiController routes Esc → PauseView / close); the
+            // legacy Esc-hold-to-quit must yield so the two don't both react. OwnsInput is true once mounted.
+            if (!InGameUiController.OwnsInput) HandleQuitInput();
 
-            if (EmberInput.RegenWorld)
+            if (EmberInput.RegenWorld && !InGameUiController.OwnsInput)
             {
                 // The Oracle takes over the dialog: END any NPC conversation first so its topics + replies
                 // can't bleed into the Oracle's. This was the reported bug — open the Oracle after an NPC chat,
@@ -206,13 +213,13 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             // BUG-2: toggle the standing colony overlay (JobQueue / Faction / ColonyNeeds). Hidden by
             // default so action scenes aren't cluttered; the player opens it on demand.
-            if (EmberInput.ToggleColonyPanels)
+            if (EmberInput.ToggleColonyPanels && !InGameUiController.OwnsInput)
                 SetColonyPanelsVisible(!_colonyPanelsVisible);
 
             // M: open/close the overland world map. The generated overland is otherwise invisible — this
             // makes the 409,600 km² world (biomes + settlements + the player's home region) legible. Paint
             // on open; the map is static within a session so it needs no per-frame refresh.
-            if (EmberInput.KeyDown(KeyCode.M))
+            if (EmberInput.KeyDown(KeyCode.M) && !InGameUiController.OwnsInput)
             {
                 _overlandMapPanel?.Toggle();
                 if (_overlandMapPanel != null && _overlandMapPanel.IsVisible)
@@ -221,7 +228,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             _fateTimer = WorldHostInputPolicy.StepFateTimer(_fateTimer, Time.deltaTime, () => _fateLine = string.Empty);
 
-            if (EmberInput.ToggleInventory)
+            if (EmberInput.ToggleInventory && !InGameUiController.OwnsInput)
             {
                 // Codex audit (sixth pass D-P3 #D1): if the scene wires an
                 // EmberPlayerInventoryToggle (every Phase* scene does, plus the
@@ -284,7 +291,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         /// </summary>
         internal static bool IsModalOpen()
         {
-            return WorldHostInputPolicy.IsModalOpen();
+            // The new in-game UI (InGameUiController) is the canonical modal owner now: when any of its
+            // 16 screens or the ☰ browser is open it pauses the world + frees the cursor, so FPS look/move
+            // and the interact raycaster must yield to it exactly as they do for the legacy panels.
+            return WorldHostInputPolicy.IsModalOpen() || InGameUiController.AnyScreenOpen;
         }
 
         private void HandleQuitInput()
