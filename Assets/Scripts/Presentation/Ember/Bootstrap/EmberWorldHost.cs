@@ -179,6 +179,12 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             if (EmberInput.RegenWorld)
             {
+                // The Oracle takes over the dialog: END any NPC conversation first so its topics + replies
+                // can't bleed into the Oracle's. This was the reported bug — open the Oracle after an NPC chat,
+                // pick a topic, and the previous NPC answered too (the host proxy still forwarded to it, and its
+                // in-flight async reply landed in the Oracle box). EndConversation also bumps the conversation
+                // serial, so that pending reply is discarded.
+                (_adapter as IDialogSource)?.EndConversation();
                 // Immediate placeholder line ("The oracle consults the fates…"); the real LLM prophecy
                 // resolves async and is swapped in below via TryConsumeResolvedFate (BUG-4).
                 _fateLine = _oracle.ConsultFate();

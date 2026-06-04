@@ -87,6 +87,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// </summary>
         private void BeginConversation(ActorId actorId, NpcId npcId, string actorName, NpcSeedRecord npc)
         {
+            _conversationSerial++;   // a new conversation invalidates any in-flight reply from the previous one
             _suppressGlobalTopicFallback = false;
             _activeDialogActorId = actorId;
             _activeDialogNpcId = npcId;
@@ -135,6 +136,29 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // deterministic line only if the local model returns real text (else the line stays).
                 _ = GenerateAdHocGreetingAsync(_activeDialogActor);
             }
+        }
+
+        // Bumped whenever the active conversation changes (begins or ends). Async greeting / topic-answer
+        // replies capture this BEFORE their off-thread LLM call and discard their result if it changed — so a
+        // late reply from a conversation the player already left can't overwrite the current line. This is the
+        // other half of the Oracle bleed: even after EndConversation, an in-flight NPC answer would otherwise
+        // still land in the Oracle's dialog ("then the previous NPC suddenly answers too").
+        private int _conversationSerial;
+
+        /// <summary>
+        /// Ends the active conversation so a later dialog context (e.g. the Oracle) cannot inherit this NPC's
+        /// speaker, line, or topics — and bumps the serial so any in-flight async reply is dropped.
+        /// </summary>
+        public void EndConversation()
+        {
+            _conversationSerial++;
+            _conversation = ConversationState.None;
+            _activeDialogActor = string.Empty;
+            _activeDialogActorId = default;
+            _activeDialogNpcId = default;
+            _currentDialogLine = string.Empty;
+            _isDialogThinking = false;
+            _suppressGlobalTopicFallback = false;
         }
 
         private static string ResolveConversationPortraitKey(NpcSeedRecord npc, string actorName)
@@ -275,6 +299,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (router == null) return;
 
             _isDialogThinking = true;
+            int gen = _conversationSerial;
             var request = new LlmRequest(
                 "npc_greeting",
                 "npc:" + npc.Id.Value,
@@ -293,6 +318,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // DET-02: apply the result on the main-thread tick, not on the await's resumption thread.
             _mainThreadApply.Enqueue(() =>
             {
+                if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
                 // DIAG (LLM-not-firing): surface exactly what the native model returned so a runtime
                 // log reveals whether inference is empty (len<=0 -> llama.cpp produced no tokens) or
                 // working. Remove once the local LLM is confirmed generating in-game.
@@ -320,6 +346,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (router == null || string.IsNullOrEmpty(actorName)) return;
 
             _isDialogThinking = true;
+            int gen = _conversationSerial;
             // Stable per-name seed (string.GetHashCode is process-randomised, so fold the chars via FNV).
             ulong seed = 1469598103934665603UL;
             foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
@@ -337,6 +364,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             _mainThreadApply.Enqueue(() =>
             {
+                if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
                 UnityEngine.Debug.Log($"[NpcGreeting-adhoc] actor={actorName} llm-len={(response?.Text?.Length ?? -1)} " +
                     $"used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
                 // BUG-DIALOG-TURNLEAK: strip echoed chat-turn scaffolding; only a non-empty cleaned line
@@ -451,6 +479,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (router == null) return;
 
             _isDialogThinking = true;
+            int gen = _conversationSerial;
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
 
             var request = new LlmRequest(
@@ -467,6 +496,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             _mainThreadApply.Enqueue(() =>
             {
+                if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
                 // BUG-DIALOG-EMPTY: same whitespace guard as the greeting path — never overwrite the
                 // deterministic topic answer with an empty/whitespace inference result.
                 // BUG-DIALOG-TURNLEAK: also strip echoed chat-turn scaffolding; only a non-empty cleaned
@@ -487,6 +517,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (router == null || string.IsNullOrEmpty(actorName)) return;
 
             _isDialogThinking = true;
+            int gen = _conversationSerial;
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
             ulong seed = 1469598103934665603UL;
             foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
@@ -504,6 +535,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             _mainThreadApply.Enqueue(() =>
             {
+                if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
                 UnityEngine.Debug.Log($"[NpcTopic-adhoc] actor={actorName} topic={topicId} " +
                     $"llm-len={(response?.Text?.Length ?? -1)} used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
                 // BUG-DIALOG-TURNLEAK: strip echoed chat-turn scaffolding; only a non-empty cleaned line

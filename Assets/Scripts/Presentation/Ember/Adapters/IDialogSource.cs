@@ -16,6 +16,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         void SelectTopic(string topicId);
 
         /// <summary>
+        /// Ends the current conversation — clears the active speaker, line, and per-NPC topic set. Called when
+        /// the player switches dialog context (e.g. opens the Oracle) so a stale NPC conversation cannot bleed
+        /// its topics or replies into the new one. Default no-op for stateless / single-context sources.
+        /// </summary>
+        void EndConversation() { }
+
+        /// <summary>
         /// True while the dialog source is waiting on an async LLM (NPC line
         /// generation, DM ConsultFate response, etc.). Panels poll this to
         /// render a "thinking…" indicator instead of an empty / stale line.

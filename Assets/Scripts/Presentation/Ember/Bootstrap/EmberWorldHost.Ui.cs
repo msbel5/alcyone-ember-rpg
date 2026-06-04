@@ -314,12 +314,12 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             {
                 if (d.name.Contains("Narration") || d.name.Contains("Dialog"))
                 {
-                    if (d.Source == null || ReferenceEquals(d.Source, this))
-                    {
-                        d.Source = this;
-                        d.gameObject.SetActive(true);
-                        routedToPanel = true;
-                    }
+                    // The Oracle is an intentional takeover (player pressed R): own the panel even if an NPC
+                    // source currently holds it, so the Oracle line shows and a topic pick routes to the host —
+                    // not the previous NPC. The NPC conversation was already ended in the R handler.
+                    d.Source = this;
+                    d.gameObject.SetActive(true);
+                    routedToPanel = true;
                 }
             }
             if (!routedToPanel)
