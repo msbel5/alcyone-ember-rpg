@@ -78,7 +78,7 @@ namespace EmberCrpg.Tests.PlayMode.Input
             AssertButton(_keyboard.eKey, () => EmberInput.Interact);
             AssertButton(_keyboard.f1Key, () => EmberInput.ToggleCursor);
             AssertButton(_keyboard.rKey, () => EmberInput.RegenWorld);
-            AssertButton(_keyboard.tabKey, () => EmberInput.ToggleMap);
+            AssertButton(_keyboard.tabKey, () => EmberInput.ToggleInventory);
             AssertButton(_keyboard.cKey, () => EmberInput.ToggleColonyPanels);
             AssertButton(_keyboard.f5Key, () => EmberInput.SaveQuick);
             AssertButton(_keyboard.f9Key, () => EmberInput.LoadQuick);

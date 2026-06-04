@@ -900,7 +900,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             lines.Add("Interact=" + EmberInput.Interact);
             lines.Add("ToggleCursor=" + EmberInput.ToggleCursor);
             lines.Add("RegenWorld=" + EmberInput.RegenWorld);
-            lines.Add("ToggleMap=" + EmberInput.ToggleMap);
+            lines.Add("ToggleInventory=" + EmberInput.ToggleInventory);
             lines.Add("SaveQuick=" + EmberInput.SaveQuick);
             lines.Add("LoadQuick=" + EmberInput.LoadQuick);
             lines.Add("PauseDown=" + EmberInput.PauseDown);

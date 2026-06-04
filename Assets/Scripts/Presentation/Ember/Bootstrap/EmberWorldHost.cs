@@ -214,7 +214,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
             _fateTimer = WorldHostInputPolicy.StepFateTimer(_fateTimer, Time.deltaTime, () => _fateLine = string.Empty);
 
-            if (EmberInput.ToggleMap)
+            if (EmberInput.ToggleInventory)
             {
                 // Codex audit (sixth pass D-P3 #D1): if the scene wires an
                 // EmberPlayerInventoryToggle (every Phase* scene does, plus the

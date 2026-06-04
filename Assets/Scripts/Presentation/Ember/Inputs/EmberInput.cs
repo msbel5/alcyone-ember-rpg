@@ -31,7 +31,7 @@ namespace EmberCrpg.Presentation.Ember.Inputs
         public static bool Interact => Actions.Interact.WasPressedThisFrame();
         public static bool ToggleCursor => Actions.ToggleCursor.WasPressedThisFrame();
         public static bool RegenWorld => Actions.RegenWorld.WasPressedThisFrame();
-        public static bool ToggleMap => Actions.ToggleMap.WasPressedThisFrame();
+        public static bool ToggleInventory => Actions.ToggleInventory.WasPressedThisFrame();
         public static bool ToggleColonyPanels => Actions.ToggleColonyPanels.WasPressedThisFrame();
 
         public static bool SaveQuick => Actions.SaveQuick.WasPressedThisFrame();

@@ -98,6 +98,26 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return true;
         }
 
+        // "Attack nearest" resolver: closest non-player actor to the player within maxRange tiles (Chebyshev
+        // distance), deterministic tie-break by ascending actor id so the choice is reproducible. Null if none.
+        private ActorRecord NearestStrikeTarget(int maxRange)
+        {
+            var player = _world.Actors?.FirstByRole(ActorRole.Player);
+            if (player == null) return null;
+            ActorRecord best = null;
+            int bestDist = int.MaxValue;
+            ulong bestId = ulong.MaxValue;
+            foreach (var a in _world.Actors.Records)
+            {
+                if (a == null || a.Role == ActorRole.Player) continue;
+                int d = System.Math.Max(System.Math.Abs(a.Position.X - player.Position.X),
+                                        System.Math.Abs(a.Position.Y - player.Position.Y));
+                if (d > maxRange) continue;
+                if (d < bestDist || (d == bestDist && a.Id.Value < bestId)) { best = a; bestDist = d; bestId = a.Id.Value; }
+            }
+            return best;
+        }
+
         public bool TryMeleeStrike(string targetActorName, int rawDamage)
         {
             // Codex audit (fourth pass A-P1): concrete melee command. Resolves
@@ -105,11 +125,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // damage; emits a CombatResolved event so the deterministic log
             // captures the strike.
             if (rawDamage <= 0) { LogCombat("Strike whiffs."); return false; }
-            var target = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, targetActorName, System.StringComparison.Ordinal));
-            if (target == null)
+            // HUD "Attack nearest" sends an empty target -> resolve the closest actor in reach so the action is
+            // real instead of a guaranteed refusal. A named target still resolves by exact stable name as before.
+            ActorRecord target;
+            if (string.IsNullOrEmpty(targetActorName))
             {
-                LogCombat($"No target: {targetActorName ?? string.Empty}");
-                return false;
+                target = NearestStrikeTarget(maxRange: 6);
+                if (target == null) { LogCombat("No enemy within reach."); return false; }
+            }
+            else
+            {
+                target = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, targetActorName, System.StringComparison.Ordinal));
+                if (target == null) { LogCombat($"No target: {targetActorName}"); return false; }
             }
             // Codex audit (sixth pass A-P0 #4): previously bypassed the
             // CombatActionResolver chain entirely (auto-hit, no armor / dodge /

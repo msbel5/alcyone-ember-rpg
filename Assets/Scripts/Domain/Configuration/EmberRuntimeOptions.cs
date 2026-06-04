@@ -55,7 +55,7 @@ namespace EmberCrpg.Domain.Configuration
         public string InteractPath { get; set; } = "<Keyboard>/e";
         public string ToggleCursorPath { get; set; } = "<Keyboard>/f1";
         public string RegenWorldPath { get; set; } = "<Keyboard>/r";
-        public string ToggleMapPath { get; set; } = "<Keyboard>/tab";
+        public string ToggleInventoryPath { get; set; } = "<Keyboard>/tab";
         public string ToggleColonyPath { get; set; } = "<Keyboard>/c";
         public string SaveQuickPath { get; set; } = "<Keyboard>/f5";
         public string LoadQuickPath { get; set; } = "<Keyboard>/f9";
@@ -178,7 +178,7 @@ namespace EmberCrpg.Domain.Configuration
                     InteractPath = Input.InteractPath,
                     ToggleCursorPath = Input.ToggleCursorPath,
                     RegenWorldPath = Input.RegenWorldPath,
-                    ToggleMapPath = Input.ToggleMapPath,
+                    ToggleInventoryPath = Input.ToggleInventoryPath,
                     ToggleColonyPath = Input.ToggleColonyPath,
                     SaveQuickPath = Input.SaveQuickPath,
                     LoadQuickPath = Input.LoadQuickPath,

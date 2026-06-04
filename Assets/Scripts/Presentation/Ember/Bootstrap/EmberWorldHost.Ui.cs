@@ -176,7 +176,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             var inv = go.GetComponent<InventoryGrid>();
             inv.Source = this;
             inv.SpriteLookup = this;
-            // Hidden until Tab; the Awake hide-loop + ToggleMap handler manage visibility (same as
+            // Hidden until Tab; the Awake hide-loop + ToggleInventory handler manage visibility (same as
             // an authored grid). BindUiPanels also re-wires Source/SpriteLookup harmlessly.
             go.SetActive(false);
         }

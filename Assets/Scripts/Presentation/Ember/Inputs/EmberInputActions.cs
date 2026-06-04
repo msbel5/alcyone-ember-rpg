@@ -18,7 +18,7 @@ namespace EmberCrpg.Presentation.Ember.Inputs
             Interact = Button("Interact", options.InteractPath);
             ToggleCursor = Button("ToggleCursor", options.ToggleCursorPath);
             RegenWorld = Button("RegenWorld", options.RegenWorldPath);
-            ToggleMap = Button("ToggleMap", options.ToggleMapPath);
+            ToggleInventory = Button("ToggleInventory", options.ToggleInventoryPath);
             ToggleColonyPanels = Button("ToggleColonyPanels", options.ToggleColonyPath);
             SaveQuick = Button("SaveQuick", options.SaveQuickPath);
             LoadQuick = Button("LoadQuick", options.LoadQuickPath);
@@ -35,7 +35,7 @@ namespace EmberCrpg.Presentation.Ember.Inputs
         public InputAction Interact { get; }
         public InputAction ToggleCursor { get; }
         public InputAction RegenWorld { get; }
-        public InputAction ToggleMap { get; }
+        public InputAction ToggleInventory { get; }
         public InputAction ToggleColonyPanels { get; }
         public InputAction SaveQuick { get; }
         public InputAction LoadQuick { get; }

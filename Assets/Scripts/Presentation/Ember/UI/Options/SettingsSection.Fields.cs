@@ -39,7 +39,7 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             Editable(input, "Look", Options.Input.LookPath, "live", text => CommitBinding(text, (o, v) => o.Input.LookPath = v, () => Options.Input.LookPath));
             Editable(input, "Interact", Options.Input.InteractPath, "live", text => CommitBinding(text, (o, v) => o.Input.InteractPath = v, () => Options.Input.InteractPath));
             Editable(input, "Regen World", Options.Input.RegenWorldPath, "live", text => CommitBinding(text, (o, v) => o.Input.RegenWorldPath = v, () => Options.Input.RegenWorldPath));
-            Editable(input, "Toggle Map", Options.Input.ToggleMapPath, "live", text => CommitBinding(text, (o, v) => o.Input.ToggleMapPath = v, () => Options.Input.ToggleMapPath));
+            Editable(input, "Toggle Inventory", Options.Input.ToggleInventoryPath, "live", text => CommitBinding(text, (o, v) => o.Input.ToggleInventoryPath = v, () => Options.Input.ToggleInventoryPath));
             Editable(input, "Toggle Colony", Options.Input.ToggleColonyPath, "live", text => CommitBinding(text, (o, v) => o.Input.ToggleColonyPath = v, () => Options.Input.ToggleColonyPath));
             Editable(input, "Pause", Options.Input.PausePath, "live", text => CommitBinding(text, (o, v) => o.Input.PausePath = v, () => Options.Input.PausePath));
             Editable(input, "Look Smooth", Read(() => Options.Input.LookSmoothingAlpha), "live", text => CommitFloat(text, (o, v) => o.Input.LookSmoothingAlpha = Mathf.Clamp01(v), () => Options.Input.LookSmoothingAlpha));
