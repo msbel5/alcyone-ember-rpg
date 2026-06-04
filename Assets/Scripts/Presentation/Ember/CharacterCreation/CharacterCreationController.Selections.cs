@@ -95,6 +95,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             _rollSerial++;
             _rollKept = false;
+            _lastRolls = rolls;
             _step = CreationStep.StatRolling;
             Render();
             return rolls;

@@ -18,6 +18,14 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
     {
         private void Render()
         {
+            // When the surface is UI Toolkit (the only backend today), EVERY step renders through the redesigned
+            // view (CharCreationToolkitView) — the full Claude Design realization, routed in .Redesign.cs. The
+            // legacy string-slot path below is the fallback for any non-Toolkit surface.
+            if (_redesignView != null)
+            {
+                RenderRedesign();
+                return;
+            }
             if (_panel == null) return;
 
             _panel.SetText("header", "IMMERSIVE CHARACTER CREATION");

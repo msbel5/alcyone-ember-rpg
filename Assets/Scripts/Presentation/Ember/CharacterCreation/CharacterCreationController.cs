@@ -60,6 +60,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private readonly List<string> _logLines = new List<string>();
 
         private IUiPanel _panel;
+        private CharCreationToolkitView _redesignView; // per-step UI-Toolkit redesign (Name today; the rest fall through to _panel)
         private uint _seed;
         private string _llmJson = string.Empty;
         private CreationStep _step = CreationStep.CommanderIdentity;
@@ -78,6 +79,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private bool _planetRevealBuilt;
         private bool _rollKept;
         private int _rollSerial;
+        private List<EmberCrpg.Simulation.CharacterCreation.AttributeRoll> _lastRolls = new List<EmberCrpg.Simulation.CharacterCreation.AttributeRoll>();
         private string _selectedClassId = string.Empty;
         private string _selectedAlignmentId = string.Empty;
         private string _selectedBirthsignId = string.Empty;
@@ -164,6 +166,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             PortraitJson = string.Empty;
 
             _panel = UiSurfaceLocator.Current?.Mount("CharacterCreation");
+            // REDESIGN (incremental): when the surface is UI Toolkit, build the new per-step view and route the
+            // steps that have a rich builder (Name today) through it; the rest still render via _panel until migrated.
+            var surface = UiSurfaceLocator.Current;
+            var toolkitRoot = (surface as EmberCrpg.Ui.Backends.UiToolkit.UiToolkitSurface)?.Root;
+            if (toolkitRoot != null)
+                _redesignView = new CharCreationToolkitView(toolkitRoot, surface.Tokens) { OnBack = Back, OnNext = Continue };
             if (_panel != null)
             {
                 _panel.SetButtonHandler("next", Continue);

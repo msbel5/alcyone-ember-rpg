@@ -14,6 +14,10 @@ namespace EmberCrpg.Ui.Backends.UiToolkit
 
         public UiTokens Tokens => _tokens;
 
+        // Exposed so a rich UI-Toolkit view (e.g. the redesigned character creation) can attach a custom
+        // VisualElement subtree to the same document root the string-slot panels mount into.
+        public VisualElement Root => _root;
+
         private void Awake()
         {
             if (_tokens == null) _tokens = ScriptableObject.CreateInstance<UiTokens>();

@@ -224,38 +224,44 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             if (cc != null)
             {
                 cc.AutoLaunchWorldgen = true;
+                // Capture EVERY one of the 11 steps: shoot the current screen FIRST, then drive past it. The
+                // selection methods that auto-advance (Mood/Calling/Fate/Questions call Continue() internally)
+                // must NOT be followed by another Continue — the old loop did, which silently double-skipped
+                // Calling + Birthsign (only 9 of 11 were ever captured).
                 int guard = 0;
-                int lastStep = -1;
-                while (guard++ < 60)
+                var last = (CCStep)(-1);
+                while (guard++ < 90)
                 {
                     var step = cc.CurrentStep;
-                    if (step == CCStep.DossierLaunch || step == CCStep.Complete) break;
+                    if (step == CCStep.Complete) break;
+                    if (step != last)
+                    {
+                        last = step;
+                        Debug.Log("[Playthrough] step " + step);
+                        // The reveal generates its planet off-thread; give it a beat so the map/narrative show.
+                        float settle = step == CCStep.WorldHistoryReveal ? 3.0f : 0.5f;
+                        yield return CaptureFixedAfter(settle, "cc_" + ((int)step).ToString("00") + "_" + step + ".png");
+                    }
+                    bool autoAdvanced = false;
                     switch (step)
                     {
                         case CCStep.CommanderIdentity:    cc.SetCommanderIdentity("Wayfarer"); break;
-                        case CCStep.WorldMood:            cc.SetWorldMood("grim"); break;
-                        case CCStep.PlayerCalling:        cc.SetPlayerCalling("wanderer"); break;
-                        case CCStep.FateBegins:           cc.SetFateBegins("crossroads"); break;
-                        case CCStep.PersonalityQuestions: cc.SelectAnswerByIndex(0); break;   // one answer per page; loops 10x
+                        case CCStep.WorldMood:            cc.SetWorldMood("grim"); autoAdvanced = true; break;
+                        case CCStep.PlayerCalling:        cc.SetPlayerCalling("survival"); autoAdvanced = true; break; // valid CallingChoices id
+                        case CCStep.FateBegins:           cc.SetFateBegins("crossroads"); autoAdvanced = true; break;
+                        case CCStep.PersonalityQuestions: cc.SelectAnswerByIndex(0); autoAdvanced = true; break; // one per page; loops
                         case CCStep.Birthsign:            cc.SelectBirthsign("the_anvil"); break;
-                        case CCStep.StatRolling:          cc.KeepThisRoll(); break;            // auto-rolled on enter; accept it (CanAdvance gates on _rollKept)
-                        case CCStep.BuildSelection:       cc.SelectClass("warrior"); cc.SelectAlignment("true_neutral"); break; // class auto-adds skills
+                        case CCStep.StatRolling:          cc.KeepThisRoll(); break;            // auto-rolled on enter; accept it
+                        case CCStep.BuildSelection:       cc.SelectClass("warrior"); cc.SelectAlignment("true_neutral"); break;
                         case CCStep.Portrait:             break;                              // async LLM; just wait + advance
                         case CCStep.WorldHistoryReveal:   cc.SkipHistoryReveal(); break;
+                        case CCStep.DossierLaunch:        cc.BeginYourStory(); break;          // captured above; now launch
                     }
                     yield return new WaitForSeconds(0.4f);
-                    if (cc.CanAdvance) cc.Continue();
+                    if (!autoAdvanced && cc.CurrentStep == step && cc.CanAdvance) cc.Continue();
                     yield return new WaitForSeconds(0.3f);
-                    if ((int)cc.CurrentStep != lastStep)
-                    {
-                        lastStep = (int)cc.CurrentStep;
-                        Debug.Log("[Playthrough] now at step " + cc.CurrentStep);
-                        yield return CaptureFixedAfter(0.0f, "cc_" + lastStep.ToString("00") + "_" + cc.CurrentStep + ".png");
-                    }
                 }
                 Debug.Log("[Playthrough] drive ended at step " + cc.CurrentStep + " (guard=" + guard + ")");
-                if (cc.CurrentStep == CCStep.DossierLaunch || cc.CurrentStep == CCStep.Complete)
-                    cc.BeginYourStory();
             }
 
             // Worldgen reveal + the transition into GeneratedWorld (real flow => real camera).
@@ -430,6 +436,16 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
         private void CaptureToPng(string path)
         {
+            // Window mode (real swapchain): a full SCREEN grab captures EVERYTHING on screen - UI Toolkit
+            // overlays (char-creation, main menu), uGUI overlays (HUD), AND the 3D scene. The camera-render
+            // path below renders only the 3D camera and MISSES all overlay UI, so reserve it for headless
+            // -batchmode (where there is no swapchain and ScreenCapture comes back blank).
+            if (!Application.isBatchMode)
+            {
+                ScreenCapture.CaptureScreenshot(path);
+                Debug.Log("[EmberProofScreenshotDriver] screen-grab " + path);
+                return;
+            }
             var cam = FindSceneCamera();
             if (cam == null)
             {
