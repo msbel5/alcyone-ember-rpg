@@ -56,7 +56,6 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         private readonly Dictionary<string, int> _savedStats = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _assignedStats = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedSkills = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly List<string> _dynamicSlots = new List<string>();
         private readonly List<string> _logLines = new List<string>();
 
         private IUiPanel _panel;
