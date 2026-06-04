@@ -133,7 +133,7 @@ namespace EmberCrpg.Presentation.Ember.UI
         {
             VisibleUiSurface.Ensure();
             _titlePanel = UiSurfaceLocator.Current?.Mount("TitleMenu");
-            _titlePanel?.SetText("version", "PR #214 visible generation cutover");
+            _titlePanel?.SetText("version", "Alcyone Ember — early build");
             _titlePanel?.SetText("status", "Backend ready. Missing assets are generated visibly on New Game.");
             _titlePanel?.SetButtonHandler("new_game", NewGame);
             _titlePanel?.SetButtonHandler("continue", Continue);
