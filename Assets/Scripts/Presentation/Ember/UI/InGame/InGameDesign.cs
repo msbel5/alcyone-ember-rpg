@@ -16,31 +16,56 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         public static Color C(int r, int g, int b, float a = 1f) => new Color(r / 255f, g / 255f, b / 255f, a);
         public static readonly Color VoidWarm = C(10, 9, 8);     // #0A0908
         public static readonly Color Panel    = C(46, 36, 23);   // #2E2417
-        public static readonly Color Input    = C(31, 26, 20);   // #1F1A14
+        public static readonly Color InputBg    = C(31, 26, 20);   // #1F1A14
         public static readonly Color Gold      = C(255, 217, 76); // #FFD94C
         public static readonly Color Amber     = C(241, 196, 15); // #F1C40F
         public static readonly Color Parch     = C(242, 219, 158);// #F2DB9E
         public static readonly Color ParchDim  = C(230, 217, 179);// #E6D9B3
         public static readonly Color Ink       = C(38, 26, 13);   // #261A0D
         public static readonly Color Bone      = C(255, 255, 255);
+        public static readonly Color BoneDim   = C(255, 255, 255, 0.36f);
         public static readonly Color Health    = C(217, 51, 31);  // #D9331F
         public static readonly Color Fatigue   = C(217, 179, 26); // #D9B31A
         public static readonly Color Mana      = C(51, 115, 242); // #3373F2
+        public static readonly Color Success   = C(61, 158, 88);  // #3D9E58
+        public static readonly Color Orange    = C(240, 168, 32); // #F0A820
+        public static readonly Color Violet    = C(139, 92, 246); // #8B5CF6
+        public static readonly Color EmberGlow     = C(255, 107, 53); // #FF6B35
+        public static readonly Color WorldSea  = C(14, 42, 61);   // #0E2A3D
+        public static readonly Color WorldLandA = C(35, 110, 60);
+        public static readonly Color WorldLandB = C(38, 95, 50);
+        public static readonly Color WorldLandC = C(42, 105, 55);
+        public static readonly Color WorldLandD = C(40, 95, 52);
         public static Color PA(float a) => C(242, 219, 158, a);   // parchment α
         public static Color WA(float a) => C(255, 255, 255, a);   // white α
         public static Color GA(float a) => C(255, 217, 76, a);    // gold α
         public static Color Dark(float a) => C(20, 16, 10, a);    // tile base
+        public static Color Alpha(Color color, float a) => new Color(color.r, color.g, color.b, a);
 
         public static Color Stat(string abbr)
         {
             switch (abbr)
             {
                 case "MIG": return C(217, 51, 31);
-                case "AGI": return C(240, 168, 32);
-                case "END": return C(61, 158, 88);
+                case "AGI": return Orange;
+                case "END": return Success;
                 case "MND": return C(51, 115, 242);
-                case "INS": return C(139, 92, 246);
+                case "INS": return Violet;
                 case "PRE": return C(255, 217, 76);
+                default: return Gold;
+            }
+        }
+
+        public static Color School(string school)
+        {
+            switch (school)
+            {
+                case "Destruction": return Health;
+                case "Restoration": return Success;
+                case "Illusion": return Violet;
+                case "Conjuration": return Orange;
+                case "Mysticism": return Mana;
+                case "Alteration": return Gold;
                 default: return Gold;
             }
         }

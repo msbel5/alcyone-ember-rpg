@@ -271,6 +271,25 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             yield return CaptureFixedAfter(4.0f, "20_gameplay.png");
             yield return new WaitForSeconds(4.0f);
             yield return CaptureFixedAfter(0.1f, "21_gameplay_late.png");
+
+            // In-game UI screen tour: open each redesigned modal over the live world + capture, to verify the
+            // (Codex-built) screens render against the design — the same way the char-creation playthrough
+            // proved all 11 creation steps.
+            var igui = UnityEngine.Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
+            Debug.Log("[Playthrough] in-game UI controller found=" + (igui != null));
+            if (igui != null)
+            {
+                string[] igScreens =
+                {
+                    "inventory", "character", "spellbook", "journal", "worldmap", "colony", "consul",
+                    "dialog", "combat", "loot", "trade", "crafting", "pause", "levelup", "death", "savegame",
+                };
+                foreach (var s in igScreens)
+                {
+                    igui.ProofOpenScreen(s);
+                    yield return CaptureFixedAfter(0.45f, "ig_" + s + ".png");
+                }
+            }
         }
 
         private IEnumerator RunRescueProof()

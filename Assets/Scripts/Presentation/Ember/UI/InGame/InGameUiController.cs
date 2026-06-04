@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
+using EmberCrpg.Presentation.Ember.UI.InGame.Screens;
 // ICombatHudSource / ISpellBarSource / IEmberHudSource live in the enclosing EmberCrpg.Presentation.Ember.UI
 // namespace, so they resolve here without an explicit using.
 
@@ -43,6 +44,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 OnOpenScreen = OpenScreen,
                 OnConsulDm = ConsulDm,
             };
+            BuildScreenBrowser(_stage.Canvas);   // ☰ pill: every screen reachable for use + inspection
 
             // uGUI ScreenSpace-Overlay HUD renders OVER UI-Toolkit panels, so the redesigned HUD cannot sit on
             // top of the legacy EmberHud — Phase 1 retires it and the new HUD owns the screen. The action-bar
@@ -79,16 +81,94 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             _hud.Refresh(in d);
         }
 
+        // Every in-game screen, opened by id. One modal at a time: CloseScreen() drops any open IgModal overlay
+        // first. The HUD buttons (I/C/M/J/K/DM) + the ☰ screen browser route here.
         private void OpenScreen(string screenId)
         {
-            // Phase 1: the modal screens are not built yet. Surface an honest log instead of a dead button or a
-            // fake panel; later phases route these to the real InGame modal views.
-            Debug.Log("[InGameUI] open screen requested: " + screenId + " (modal not built yet — Phase 3+).");
+            CloseScreen();
+            var c = _stage.Canvas;
+            switch (screenId)
+            {
+                case "inventory": new InventoryView(c, CloseScreen); break;
+                case "character": new CharacterView(c, CloseScreen); break;
+                case "spellbook": new SpellbookView(c, CloseScreen); break;
+                case "journal":   new JournalView(c, CloseScreen); break;
+                case "worldmap":  new WorldMapView(c, CloseScreen); break;
+                case "colony":    new ColonyView(c, CloseScreen); break;
+                case "consul":    new ConsulFateView(c, CloseScreen); break;
+                case "dialog":    new DialogView(c, CloseScreen); break;
+                case "combat":    new CombatView(c, CloseScreen); break;
+                case "loot":      new LootView(c, CloseScreen); break;
+                case "trade":     new TradeView(c, CloseScreen); break;
+                case "crafting":  new CraftingView(c, CloseScreen); break;
+                case "pause":     new PauseView(c, CloseScreen); break;
+                case "levelup":   new LevelUpView(c, CloseScreen); break;
+                case "death":     new DeathView(c, CloseScreen); break;
+                case "savegame":  new SaveLoadView(c, CloseScreen); break;
+            }
         }
 
-        private void ConsulDm()
+        private void CloseScreen()
         {
-            Debug.Log("[InGameUI] Consul/DM requested (redesign pending — use R for the existing Oracle for now).");
+            for (var open = _stage.Canvas.Q("IgModalOverlay"); open != null; open = _stage.Canvas.Q("IgModalOverlay"))
+                open.RemoveFromHierarchy();
+        }
+
+        private void ConsulDm() => OpenScreen("consul");
+
+        /// <summary>Proof/diagnostic hook: open a screen by id from the screenshot driver (verification tours).</summary>
+        public void ProofOpenScreen(string id) => OpenScreen(id);
+
+        private static readonly (string id, string label)[] AllScreens =
+        {
+            ("inventory", "Inventory"), ("character", "Character"), ("spellbook", "Spellbook"),
+            ("journal", "Journal"), ("worldmap", "World Map"), ("colony", "Colony"), ("consul", "Consul · DM"),
+            ("dialog", "NPC Dialog"), ("combat", "Combat"), ("loot", "Loot"), ("trade", "Trade"),
+            ("crafting", "Crafting"), ("pause", "Pause"), ("levelup", "Level Up"), ("death", "Death"),
+            ("savegame", "Save / Load"),
+        };
+
+        // A ☰ pill at top-centre (like the design's ScreenBrowser) that drops down every screen — so all 16 are
+        // reachable + inspectable while the per-key/per-trigger wiring is migrated off the legacy panels.
+        private void BuildScreenBrowser(VisualElement canvas)
+        {
+            var wrap = new VisualElement();
+            wrap.style.position = Position.Absolute; wrap.style.top = 8; wrap.style.left = Length.Percent(50);
+            wrap.style.translate = new Translate(Length.Percent(-50), 0);
+            wrap.style.alignItems = Align.Center;
+
+            var dropdown = new VisualElement();
+            dropdown.style.display = DisplayStyle.None;
+            dropdown.style.flexDirection = FlexDirection.Row; dropdown.style.flexWrap = Wrap.Wrap;
+            dropdown.style.maxWidth = 720; dropdown.style.marginTop = 6;
+            dropdown.style.backgroundColor = IgDesign.C(8, 6, 4, 0.96f);
+            IgDesign.Border(dropdown, IgDesign.PA(0.18f), 1); IgDesign.Radius(dropdown, 12);
+            dropdown.style.paddingTop = 12; dropdown.style.paddingBottom = 12;
+            dropdown.style.paddingLeft = 14; dropdown.style.paddingRight = 14;
+            foreach (var (id, label) in AllScreens)
+            {
+                var sid = id;
+                var b = new Button(() => { OpenScreen(sid); dropdown.style.display = DisplayStyle.None; }) { text = label };
+                IgDesign.ResetButton(b);
+                b.style.fontSize = 11; b.style.color = IgDesign.ParchDim; IgDesign.ApplyFont(b, IgDesign.Sans);
+                b.style.backgroundColor = IgDesign.C(22, 17, 10, 0.65f); IgDesign.Border(b, IgDesign.PA(0.14f), 1);
+                IgDesign.Radius(b, 7); b.style.marginRight = 6; b.style.marginTop = 6;
+                b.style.paddingLeft = 12; b.style.paddingRight = 12; b.style.paddingTop = 7; b.style.paddingBottom = 7;
+                dropdown.Add(b);
+            }
+
+            var pill = new Button(() =>
+                dropdown.style.display = dropdown.style.display == DisplayStyle.None ? DisplayStyle.Flex : DisplayStyle.None)
+            { text = "☰ SCREENS" };
+            IgDesign.ResetButton(pill);
+            pill.style.fontSize = 11; pill.style.letterSpacing = 1.3f; pill.style.color = IgDesign.Gold;
+            IgDesign.ApplyFont(pill, IgDesign.Sans); pill.style.unityFontStyleAndWeight = FontStyle.Bold;
+            pill.style.backgroundColor = IgDesign.C(6, 5, 3, 0.88f); IgDesign.Border(pill, IgDesign.PA(0.30f), 1);
+            IgDesign.Radius(pill, 999); pill.style.paddingLeft = 20; pill.style.paddingRight = 20;
+            pill.style.paddingTop = 7; pill.style.paddingBottom = 7;
+
+            wrap.Add(pill); wrap.Add(dropdown);
+            canvas.Add(wrap);
         }
     }
 }
