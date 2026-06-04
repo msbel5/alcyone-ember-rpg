@@ -143,6 +143,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // BindUiPanels so the bind loops below find and wire them (Source = this), exactly as they
             // would an authored panel.
             EnsureEmberHud();
+            EnsureInGameUi();   // Phase 1: UI-Toolkit World HUD overlay (additive over the uGUI HUD for now)
             EnsureSidePanels();
             var eventLogHud = EnsureEventLogHudPanel();
             _overlandMapPanel = EnsureOverlandMapPanel(); // M-key: the generated overland made visible

@@ -170,6 +170,21 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         /// host (IInventorySource + ISpriteByName), and hidden by default — so Tab opens the SAME
         /// inventory everywhere. Idempotent: a scene that authored its own grid is left untouched.
         /// </summary>
+        // Phase 1 of the in-game UI redesign: a UI-Toolkit World HUD overlay (top bar + vitals + spell bar +
+        // I/C/M/J/K/DM buttons) from the Claude Design handoff. Mounted ADDITIVELY over the existing uGUI EmberHud
+        // so the playable game never breaks mid-migration; the old HUD is retired once the full in-game UI lands.
+        // The controller owns its own UIDocument and reads live data via the host's HUD interfaces.
+        private void EnsureInGameUi()
+        {
+            var existing = Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>(FindObjectsInactive.Include);
+            if (existing == null)
+            {
+                var go = new GameObject("InGameUi");
+                existing = go.AddComponent<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
+            }
+            existing.Bind(this);
+        }
+
         private void EnsureInventoryGrid()
         {
             if (Object.FindFirstObjectByType<InventoryGrid>(FindObjectsInactive.Include) != null) return;
