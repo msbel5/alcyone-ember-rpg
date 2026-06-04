@@ -142,7 +142,6 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             _savedStats.Clear();
             _assignedStats.Clear();
             _selectedSkills.Clear();
-            _dynamicSlots.Clear();
             _logLines.Clear();
             _step = CreationStep.CommanderIdentity;
             _commanderName = string.Empty;
