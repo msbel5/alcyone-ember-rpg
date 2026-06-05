@@ -7,12 +7,49 @@ using static EmberCrpg.Presentation.Ember.UI.InGame.IgDesign;
 
 namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 {
+    public readonly struct DialogTopicOption
+    {
+        public DialogTopicOption(string id, string label)
+        {
+            Id = id ?? string.Empty;
+            Label = label ?? string.Empty;
+        }
+
+        public string Id { get; }
+        public string Label { get; }
+    }
+
     public sealed class DialogView
     {
         private readonly VisualElement _overlay;
+        private readonly Label _responseLabel;
+        private readonly Dictionary<string, string> _mockResponses;
 
         public DialogView(VisualElement stageCanvas, Action onClose)
+            : this(
+                stageCanvas,
+                onClose,
+                IgMockData.DialogNpc.Name,
+                IgMockData.DialogNpc.PortraitPath,
+                IgMockData.DialogNpc.Greeting,
+                BuildMockTopics(),
+                _ => { },
+                onClose,
+                BuildMockResponses())
         {
+        }
+
+        public DialogView(VisualElement stageCanvas, Action onClose, string npcName, string portraitPath, string greeting,
+            IReadOnlyList<DialogTopicOption> topics, Action<string> onTopic, Action onFarewell)
+            : this(stageCanvas, onClose, npcName, portraitPath, greeting, topics, onTopic, onFarewell, null)
+        {
+        }
+
+        private DialogView(VisualElement stageCanvas, Action onClose, string npcName, string portraitPath, string greeting,
+            IReadOnlyList<DialogTopicOption> topics, Action<string> onTopic, Action onFarewell,
+            Dictionary<string, string> mockResponses)
+        {
+            _mockResponses = mockResponses;
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
             _overlay.style.left = 0;
@@ -25,87 +62,6 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             _overlay.style.paddingBottom = Length.Percent(5);
             _overlay.pickingMode = PickingMode.Position;
 
-            _overlay.Add(BuildThreadCard());
-            _overlay.Add(BuildMainPanel(onClose));
-
-            stageCanvas.Add(_overlay);
-        }
-
-        public void Close() { _overlay?.RemoveFromHierarchy(); }
-
-        private static VisualElement BuildThreadCard()
-        {
-            var card = new VisualElement();
-            card.style.width = Length.Percent(64);
-            card.style.maxWidth = 860;
-            card.style.maxHeight = 200;
-            card.style.backgroundColor = C(10, 8, 5, 0.90f);
-            Border(card, PA(0.14f), 1);
-            Radius(card, 14);
-            card.style.paddingTop = 10;
-            card.style.paddingBottom = 10;
-            card.style.paddingLeft = 14;
-            card.style.paddingRight = 14;
-
-            string[] qs = { "What did the caravan carry?", "Who else knows about the road?" };
-            string[] answers =
-            {
-                "Mostly iron, if the tally was honest. A little cloth. Nothing worth dying for, unless someone knew more than I did.",
-                "The captain. The raven-feeders at the gate. And maybe the smith himself, if you press him harder than the rest have.",
-            };
-
-            for (int i = 0; i < qs.Length; i++)
-            {
-                var pair = new VisualElement();
-                pair.style.paddingTop = 8;
-                pair.style.paddingBottom = 8;
-                if (i > 0)
-                {
-                    pair.style.borderTopWidth = 1;
-                    pair.style.borderTopColor = PA(0.07f);
-                }
-
-                var q = new VisualElement();
-                q.style.marginLeft = StyleKeyword.Auto;
-                q.style.maxWidth = Length.Percent(70);
-                q.style.backgroundColor = C(60, 40, 10, 0.80f);
-                Border(q, C(154, 122, 18, 0.30f), 1);
-                q.style.paddingTop = 5;
-                q.style.paddingBottom = 5;
-                q.style.paddingLeft = 12;
-                q.style.paddingRight = 12;
-                q.style.borderTopLeftRadius = 10;
-                q.style.borderTopRightRadius = 10;
-                q.style.borderBottomLeftRadius = 3;
-                q.style.borderBottomRightRadius = 10;
-                q.Add(Text(qs[i], Sans, 12, ParchDim));
-                pair.Add(q);
-
-                var a = new VisualElement();
-                a.style.marginTop = 4;
-                a.style.maxWidth = Length.Percent(78);
-                a.style.backgroundColor = C(22, 16, 8, 0.70f);
-                Border(a, PA(0.10f), 1);
-                a.style.paddingTop = 5;
-                a.style.paddingBottom = 5;
-                a.style.paddingLeft = 12;
-                a.style.paddingRight = 12;
-                a.style.borderTopLeftRadius = 3;
-                a.style.borderTopRightRadius = 10;
-                a.style.borderBottomLeftRadius = 10;
-                a.style.borderBottomRightRadius = 10;
-                var copy = Text(answers[i], Serif, 13, PA(0.75f), FontStyle.Italic);
-                copy.style.whiteSpace = WhiteSpace.Normal;
-                a.Add(copy);
-                pair.Add(a);
-                card.Add(pair);
-            }
-
-            return card;
-        }
-
-        private static VisualElement BuildMainPanel(Action onClose)
-        {
             var panel = new VisualElement();
             panel.style.width = Length.Percent(72);
             panel.style.maxWidth = 980;
@@ -116,94 +72,41 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             panel.style.paddingBottom = 26;
             panel.style.paddingLeft = 26;
             panel.style.paddingRight = 26;
+            _overlay.Add(panel);
 
             var top = Row();
             top.style.marginBottom = 14;
             panel.Add(top);
 
-            var left = new VisualElement();
-            left.style.width = 120;
-            left.style.flexShrink = 0;
-            var portrait = new VisualElement();
-            portrait.style.width = 120;
-            portrait.style.height = 150;
-            portrait.style.backgroundColor = InputBg;
-            Border(portrait, Alpha(Ink, 0.35f), 1);
-            Radius(portrait, 12);
-            portrait.style.alignItems = Align.Center;
-            portrait.style.justifyContent = Justify.FlexEnd;
-            portrait.Add(Text("G", Serif, 78, Alpha(Ink, 0.22f)));
-            left.Add(portrait);
-            var name = Text(IgMockData.DialogNpc.Name.ToUpperInvariant(), Sans, 11, Ink, FontStyle.Bold);
-            name.style.letterSpacing = 0.6f;
-            name.style.unityTextAlign = TextAnchor.MiddleCenter;
-            name.style.marginTop = 8;
-            left.Add(name);
-            top.Add(left);
+            top.Add(BuildPortraitPane(npcName, portraitPath));
 
             var right = new VisualElement();
             right.style.flexGrow = 1;
-            var line = Text(IgMockData.DialogNpc.Greeting, Serif, 17, Ink);
+            var line = Text(greeting ?? string.Empty, Serif, 17, Ink);
             line.style.whiteSpace = WhiteSpace.Normal;
             line.style.unityFontStyleAndWeight = FontStyle.Italic;
             line.style.minHeight = 60;
             right.Add(line);
+            _responseLabel = Text("Choose a topic.", Serif, 14, Alpha(Ink, 0.50f), FontStyle.Italic);
+            _responseLabel.style.whiteSpace = WhiteSpace.Normal;
+            _responseLabel.style.marginTop = 14;
+            right.Add(_responseLabel);
             top.Add(right);
 
-            var topics = new VisualElement();
-            topics.style.borderTopWidth = 1;
-            topics.style.borderTopColor = Alpha(Ink, 0.12f);
-            topics.style.paddingTop = 10;
-            panel.Add(topics);
-            for (int i = 0; i < IgMockData.DialogNpc.Topics.Length; i++)
+            var topicsPane = new VisualElement();
+            topicsPane.style.borderTopWidth = 1;
+            topicsPane.style.borderTopColor = Alpha(Ink, 0.12f);
+            topicsPane.style.paddingTop = 10;
+            panel.Add(topicsPane);
+
+            if (topics != null)
             {
-                var row = Text($"{i + 1}. Ask about {IgMockData.DialogNpc.Topics[i].Topic}", Sans, 15, Ink);
-                row.style.paddingTop = 5;
-                row.style.paddingBottom = 5;
-                row.style.paddingLeft = 8;
-                row.style.paddingRight = 8;
-                topics.Add(row);
+                for (int i = 0; i < topics.Count; i++)
+                {
+                    var topic = topics[i];
+                    topicsPane.Add(BuildTopicButton(i + 1, topic, onTopic));
+                }
             }
-
-            var divider = new VisualElement();
-            divider.style.height = 1;
-            divider.style.backgroundColor = Alpha(Ink, 0.14f);
-            divider.style.marginTop = 8;
-            divider.style.marginBottom = 8;
-            panel.Add(divider);
-
-            var ask = Row();
-            var field = new TextField();
-            field.value = $"Ask {IgMockData.DialogNpc.Name.Split(' ')[0]} anything…";
-            field.style.flexGrow = 1;
-            field.style.height = 40;
-            field.style.color = Ink;
-            Border(field, Alpha(Ink, 0.22f), 1);
-            Radius(field, 8);
-            var inner = field.Q("unity-text-input");
-            if (inner != null)
-            {
-                inner.style.backgroundColor = Alpha(Ink, 0.09f);
-                inner.style.color = Ink;
-                inner.style.fontSize = 14;
-                ApplyFont(inner, Serif);
-            }
-            ask.Add(field);
-
-            var askBtn = new Button { text = "ASK" };
-            ResetButton(askBtn);
-            askBtn.style.width = 84;
-            askBtn.style.height = 40;
-            askBtn.style.backgroundColor = Gold;
-            askBtn.style.color = Ink;
-            askBtn.style.fontSize = 11;
-            askBtn.style.letterSpacing = 1f;
-            askBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
-            ApplyFont(askBtn, Sans);
-            Border(askBtn, Amber, 1);
-            Radius(askBtn, 8);
-            ask.Add(askBtn);
-            panel.Add(ask);
 
             var bottom = Row();
             bottom.style.justifyContent = Justify.SpaceBetween;
@@ -212,9 +115,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             bottom.style.borderTopWidth = 1;
             bottom.style.borderTopColor = Alpha(Ink, 0.10f);
             bottom.style.paddingTop = 10;
-            bottom.Add(Text("ESC · 1–4 topics · or type freely", Sans, 11, Alpha(Ink, 0.38f)));
+            bottom.Add(Text("ESC · Farewell when finished", Sans, 11, Alpha(Ink, 0.38f)));
 
-            var close = new Button(() => onClose?.Invoke()) { text = "FAREWELL" };
+            var close = new Button(() => (onFarewell ?? onClose)?.Invoke()) { text = "FAREWELL" };
             ResetButton(close);
             close.style.height = 32;
             close.style.paddingLeft = 16;
@@ -228,7 +131,92 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             bottom.Add(close);
             panel.Add(bottom);
 
-            return panel;
+            stageCanvas.Add(_overlay);
+        }
+
+        public void Close() { _overlay?.RemoveFromHierarchy(); }
+
+        private VisualElement BuildPortraitPane(string npcName, string portraitPath)
+        {
+            var left = new VisualElement();
+            left.style.width = 120;
+            left.style.flexShrink = 0;
+
+            var portrait = new VisualElement();
+            portrait.style.width = 120;
+            portrait.style.height = 150;
+            portrait.style.backgroundColor = InputBg;
+            Border(portrait, Alpha(Ink, 0.35f), 1);
+            Radius(portrait, 12);
+            portrait.style.alignItems = Align.Center;
+            portrait.style.justifyContent = Justify.FlexEnd;
+            portrait.Add(Text(string.IsNullOrWhiteSpace(npcName) ? "?" : npcName.Substring(0, 1).ToUpperInvariant(), Serif, 78, Alpha(Ink, 0.22f)));
+            left.Add(portrait);
+
+            var name = Text((npcName ?? "Unknown").ToUpperInvariant(), Sans, 11, Ink, FontStyle.Bold);
+            name.style.letterSpacing = 0.6f;
+            name.style.unityTextAlign = TextAnchor.MiddleCenter;
+            name.style.marginTop = 8;
+            left.Add(name);
+
+            if (!string.IsNullOrWhiteSpace(portraitPath))
+            {
+                var path = Text("PORTRAIT LINKED", Sans, 9, Alpha(Ink, 0.28f));
+                path.style.letterSpacing = 0.8f;
+                path.style.unityTextAlign = TextAnchor.MiddleCenter;
+                path.style.marginTop = 4;
+                left.Add(path);
+            }
+
+            return left;
+        }
+
+        private Button BuildTopicButton(int index, DialogTopicOption topic, Action<string> onTopic)
+        {
+            var button = new Button(() =>
+            {
+                onTopic?.Invoke(topic.Id);
+                if (_mockResponses != null && _mockResponses.TryGetValue(topic.Id, out var response))
+                    _responseLabel.text = response;
+                else
+                    _responseLabel.text = "You ask about " + topic.Label + ".";
+            })
+            { text = index + ". Ask about " + topic.Label };
+            ResetButton(button);
+            button.style.width = Length.Percent(100);
+            button.style.height = 38;
+            button.style.marginBottom = 6;
+            button.style.paddingLeft = 12;
+            button.style.paddingRight = 12;
+            button.style.backgroundColor = Alpha(Ink, 0.06f);
+            button.style.color = Ink;
+            button.style.fontSize = 14;
+            ApplyFont(button, Sans);
+            Border(button, Alpha(Ink, 0.14f), 1);
+            Radius(button, 8);
+            return button;
+        }
+
+        private static IReadOnlyList<DialogTopicOption> BuildMockTopics()
+        {
+            var topics = new DialogTopicOption[IgMockData.DialogNpc.Topics.Length];
+            for (int i = 0; i < IgMockData.DialogNpc.Topics.Length; i++)
+            {
+                var topic = IgMockData.DialogNpc.Topics[i];
+                topics[i] = new DialogTopicOption(topic.Topic, topic.Topic);
+            }
+            return topics;
+        }
+
+        private static Dictionary<string, string> BuildMockResponses()
+        {
+            var responses = new Dictionary<string, string>(StringComparer.Ordinal);
+            for (int i = 0; i < IgMockData.DialogNpc.Topics.Length; i++)
+            {
+                var topic = IgMockData.DialogNpc.Topics[i];
+                responses[topic.Topic] = topic.Response;
+            }
+            return responses;
         }
     }
 }

@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public ConsulFateView(VisualElement stageCanvas, Action onClose)
+        public ConsulFateView(VisualElement stageCanvas, Action onClose, Action<string> onAsk = null)
         {
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
@@ -40,8 +40,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             shell.style.maxWidth = 960;
             _overlay.Add(shell);
 
+            // TODO(real-data): no host source yet.
             shell.Add(BuildOraclePane());
-            shell.Add(BuildConversationPane());
+            shell.Add(BuildConversationPane(onAsk));
 
             stageCanvas.Add(_overlay);
         }
@@ -78,7 +79,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static VisualElement BuildConversationPane()
+        private static VisualElement BuildConversationPane(Action<string> onAsk)
         {
             var pane = new VisualElement();
             pane.style.flexGrow = 1;
@@ -149,7 +150,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             }
             askRow.Add(field);
 
-            var ask = new Button { text = "ASK" };
+            var ask = new Button(() => onAsk?.Invoke(field.value)) { text = "ASK" };
             ResetButton(ask);
             ask.style.width = 104;
             ask.style.height = 48;

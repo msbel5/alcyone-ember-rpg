@@ -11,14 +11,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public WorldMapView(VisualElement stageCanvas, Action onClose)
+        public WorldMapView(VisualElement stageCanvas, Action onClose, Action<string> onFastTravel = null)
         {
             _overlay = IgModal.Build("World Map", true, () => { Close(); onClose?.Invoke(); }, out var content);
             content.style.flexDirection = FlexDirection.Row;
 
+            // TODO(real-data): no host source yet.
             var selected = IgMockData.WorldLocations[0];
             content.Add(BuildMapArea(selected));
-            content.Add(BuildDetailPane(selected));
+            content.Add(BuildDetailPane(selected, onFastTravel));
 
             stageCanvas.Add(_overlay);
         }
@@ -100,7 +101,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return area;
         }
 
-        private static VisualElement BuildDetailPane(WorldLocationData selected)
+        private static VisualElement BuildDetailPane(WorldLocationData selected, Action<string> onFastTravel)
         {
             var pane = new ScrollView();
             pane.style.width = 260;
@@ -123,7 +124,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             pane.Add(copy);
 
             if (selected.Visited)
-                pane.Add(BuildButton("FAST TRAVEL", true));
+                pane.Add(BuildButton("FAST TRAVEL", true, () => onFastTravel?.Invoke(selected.Id)));
             else
                 pane.Add(Text("Explore to unlock fast travel", Sans, 11, PA(0.28f)));
 
@@ -167,9 +168,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             root.Add(land);
         }
 
-        private static Button BuildButton(string text, bool active)
+        private static Button BuildButton(string text, bool active, Action onClick)
         {
-            var button = new Button { text = text };
+            var button = new Button(() => onClick?.Invoke()) { text = text };
             ResetButton(button);
             button.style.height = 36;
             button.style.backgroundColor = active ? Gold : Alpha(Panel, 0.62f);

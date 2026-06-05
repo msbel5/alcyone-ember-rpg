@@ -37,7 +37,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         // tracks them.
         public static PlayerData Player = DefaultPlayer;
 
-        public static readonly EquipmentSlotData[] EquipSlots =
+        public static readonly EquipmentSlotData[] DefaultEquipSlots =
         {
             new("head", "Head", "⬡", false, null),
             new("chest", "Chest", "▣", true, "Leather Jerkin"),
@@ -48,8 +48,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             new("ring", "Ring", "◯", false, null),
             new("neck", "Neck", "◇", false, null),
         };
+        public static EquipmentSlotData[] EquipSlots = DefaultEquipSlots;
 
-        public static readonly InventoryItemData[] Inventory =
+        public static readonly InventoryItemData[] DefaultInventory =
         {
             new(1, "Iron Shortsword", "Weapon", 2.0f, 40, 1, true),
             new(2, "Leather Jerkin", "Armor", 3.5f, 25, 1, true),
@@ -64,8 +65,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             new(11, "Antidote", "Potion", 0.3f, 18, 1, false),
             new(12, "Old Map Fragment", "Quest", 0.1f, 0, 1, false),
         };
+        public static InventoryItemData[] Inventory = DefaultInventory;
 
-        public static readonly SpellSchoolData[] SpellSchools =
+        public static readonly SpellSchoolData[] DefaultSpellSchools =
         {
             new("Destruction", new[]
             {
@@ -101,15 +103,17 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 new SpellData("Feather", 12, "-50% carry wt", "Self", "30s"),
             }),
         };
+        public static SpellSchoolData[] SpellSchools = DefaultSpellSchools;
 
-        public static readonly SpellBarSlotData[] SpellBar =
+        public static readonly SpellBarSlotData[] DefaultSpellBar =
         {
-            new(1, "Flame Bolt"),
+            new(1, "Flame Bolt", true),
             new(2, "Minor Heal"),
             new(3, null),
             new(4, null),
             new(5, null),
         };
+        public static SpellBarSlotData[] SpellBar = DefaultSpellBar;
 
         public static readonly QuestData[] Quests =
         {
@@ -134,7 +138,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 new[] { new QuestTaskData("Deliver the coin", true) }),
         };
 
-        public static readonly ColonyNpcData[] ColonyNpcs =
+        public static readonly ColonyNpcData[] DefaultColonyNpcs =
         {
             new("Gareth the Smith", "Blacksmith", 80, 80,
                 new[] { new NeedData("Hunger", 62), new NeedData("Fatigue", 45), new NeedData("Thirst", 70) },
@@ -149,6 +153,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 new[] { new NeedData("Hunger", 50), new NeedData("Fatigue", 35), new NeedData("Thirst", 60) },
                 "Restless", "Idle"),
         };
+        public static ColonyNpcData[] ColonyNpcs = DefaultColonyNpcs;
 
         public static readonly OracleData Oracle = new("The Oracle", "Keeper of the World's Memory", null, "⌖");
 
@@ -300,7 +305,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     public sealed record InventoryItemData(int Id, string Name, string Type, float Weight, int Value, int Quantity, bool Equipped);
     public sealed record SpellSchoolData(string Name, SpellData[] Spells);
     public sealed record SpellData(string Name, int ManaCost, string Effect, string Range, string Duration);
-    public sealed record SpellBarSlotData(int Slot, string Spell);
+    public sealed record SpellBarSlotData(int Slot, string Spell, bool Selected = false);
     public sealed record QuestData(int Id, string Title, string Status, string Description, QuestTaskData[] Tasks);
     public sealed record QuestTaskData(string Text, bool Done);
     public sealed record ColonyNpcData(string Name, string Role, int Hp, int HpMax, NeedData[] Needs, string Mood, string Task);

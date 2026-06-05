@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using EmberCrpg.Domain.Magic;
 using EmberCrpg.Presentation.Ember.Inputs;
 using EmberCrpg.Presentation.Ember.UI.InGame.Screens;
+using EmberCrpg.Simulation.Magic;
 // ICombatHudSource / ISpellBarSource / IEmberHudSource live in the enclosing EmberCrpg.Presentation.Ember.UI
 // namespace, so they resolve here without an explicit using.
 
@@ -137,22 +140,57 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             int before = c.childCount;
             switch (screenId)
             {
-                case "inventory": new InventoryView(c, CloseScreen); break;
-                case "character": new CharacterView(c, CloseScreen); break;
-                case "spellbook": new SpellbookView(c, CloseScreen); break;
+                case "inventory":
+                    RefreshLiveInventory();
+                    new InventoryView(c, CloseScreen, TodoInventoryAction);
+                    break;
+                case "character":
+                    new CharacterView(c, CloseScreen, OpenScreen);
+                    break;
+                case "spellbook":
+                    RefreshLiveSpells();
+                    new SpellbookView(c, CloseScreen, TodoSpellbookAction);
+                    break;
                 case "journal":   new JournalView(c, CloseScreen); break;
-                case "worldmap":  new WorldMapView(c, CloseScreen); break;
-                case "colony":    new ColonyView(c, CloseScreen); break;
-                case "consul":    new ConsulFateView(c, CloseScreen); break;
+                case "worldmap":
+                    new WorldMapView(c, CloseScreen, TodoFastTravelAction);
+                    break;
+                case "colony":
+                    RefreshLiveColony();
+                    new ColonyView(c, CloseScreen, TodoColonyTaskAction);
+                    break;
+                case "consul":
+                    new ConsulFateView(c, CloseScreen, TodoConsulAskAction);
+                    break;
                 case "dialog":    new DialogView(c, CloseScreen); break;
-                case "combat":    new CombatView(c, CloseScreen); break;
-                case "loot":      new LootView(c, CloseScreen); break;
-                case "trade":     new TradeView(c, CloseScreen); break;
-                case "crafting":  new CraftingView(c, CloseScreen); break;
-                case "pause":     new PauseView(c, CloseScreen); break;
-                case "levelup":   new LevelUpView(c, CloseScreen); break;
-                case "death":     new DeathView(c, CloseScreen); break;
-                case "savegame":  new SaveLoadView(c, CloseScreen); break;
+                case "combat":
+                    RefreshLiveSpells();
+                    new CombatView(c, CloseScreen, TodoCombatAction, TodoCombatFleeAction);
+                    break;
+                case "loot":
+                    RefreshLiveInventory();
+                    new LootView(c, CloseScreen, TodoTakeAllLootAction);
+                    break;
+                case "trade":
+                    RefreshLiveInventory();
+                    new TradeView(c, CloseScreen, TodoTradeAction);
+                    break;
+                case "crafting":
+                    new CraftingView(c, CloseScreen, TodoCraftAction);
+                    break;
+                case "pause":
+                    new PauseView(c, CloseScreen, OpenScreen, TodoSettingsAction, TodoMainMenuAction);
+                    break;
+                case "levelup":
+                    RefreshLiveSpells();
+                    new LevelUpView(c, CloseScreen, TodoConfirmLevelUpAction);
+                    break;
+                case "death":
+                    new DeathView(c, CloseScreen, TodoLoadLastSaveAction, TodoMainMenuAction);
+                    break;
+                case "savegame":
+                    new SaveLoadView(c, CloseScreen, TodoSaveSlotAction, TodoLoadSlotAction);
+                    break;
             }
             // Every view calls stageCanvas.Add(_overlay) exactly once, so the newly-added last child IS this
             // screen's overlay — whether IgModal-based ("IgModalOverlay") or a bare VisualElement (Pause/Combat/
@@ -203,6 +241,317 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new StatData("PRE", sheet.Pre),
                 },
             };
+        }
+
+        private void RefreshLiveInventory()
+        {
+            IgMockData.Inventory = IgMockData.DefaultInventory;
+            IgMockData.EquipSlots = IgMockData.DefaultEquipSlots;
+            if (!(_host is IInventorySource inventorySrc)) return;
+
+            var slots = inventorySrc.GetSlots();
+            if (slots == null) return;
+
+            var live = new InventoryItemData[slots.Count];
+            for (int i = 0; i < slots.Count; i++)
+                live[i] = MapInventorySlot(slots[i], i);
+            IgMockData.Inventory = live;
+
+            // TODO(real-data): IInventorySource exposes only flat slots; no live equipment read-model yet.
+        }
+
+        private void RefreshLiveSpells()
+        {
+            IgMockData.SpellBar = IgMockData.DefaultSpellBar;
+            IgMockData.SpellSchools = IgMockData.DefaultSpellSchools;
+            if (!(_host is ISpellBarSource spellSrc)) return;
+
+            var slots = spellSrc.GetSlots();
+            if (slots == null) return;
+
+            int slotCount = Mathf.Max(IgMockData.DefaultSpellBar.Length, slots.Count);
+            int selected = spellSrc.GetSelectedSlot();
+            var liveBar = new SpellBarSlotData[slotCount];
+            var resolved = new List<SpellDefinition>();
+            for (int i = 0; i < slotCount; i++)
+            {
+                string templateId = i < slots.Count ? slots[i] : null;
+                var spell = TryResolveSpell(templateId);
+                if (spell != null && !resolved.Contains(spell))
+                    resolved.Add(spell);
+                liveBar[i] = new SpellBarSlotData(
+                    i + 1,
+                    spell != null ? spell.DisplayName : HumanizeToken(templateId),
+                    i == selected);
+            }
+
+            IgMockData.SpellBar = liveBar;
+            if (resolved.Count > 0)
+                IgMockData.SpellSchools = BuildSpellSchools(resolved);
+            // TODO(real-data): no dedicated spellbook host source yet; render only what maps from live spell ids.
+        }
+
+        private void RefreshLiveColony()
+        {
+            IgMockData.ColonyNpcs = IgMockData.DefaultColonyNpcs;
+
+            var builders = new Dictionary<string, ColonyNpcProjection>(StringComparer.Ordinal);
+            if (_host is IColonyNeedsSource needsSrc)
+            {
+                var rows = needsSrc.GetRows();
+                if (rows != null)
+                {
+                    for (int i = 0; i < rows.Count; i++)
+                    {
+                        var row = rows[i];
+                        if (string.IsNullOrWhiteSpace(row.ActorName)) continue;
+                        var npc = GetOrCreateColonyNpc(builders, row.ActorName);
+                        npc.Needs = new[]
+                        {
+                            new NeedData("Hunger", row.Hunger),
+                            new NeedData("Fatigue", row.Fatigue),
+                            new NeedData("Thirst", row.Thirst),
+                        };
+                        npc.Mood = MoodLabel(row.Mood);
+                    }
+                }
+            }
+
+            if (_host is IJobQueueSource jobsSrc)
+            {
+                var rows = jobsSrc.GetRows();
+                if (rows != null)
+                {
+                    for (int i = 0; i < rows.Count; i++)
+                    {
+                        var row = rows[i];
+                        if (string.IsNullOrWhiteSpace(row.ActorName)) continue;
+                        var npc = GetOrCreateColonyNpc(builders, row.ActorName);
+                        if (!string.IsNullOrWhiteSpace(row.JobTag))
+                            npc.Role = HumanizeToken(row.JobTag);
+                        npc.Task = string.IsNullOrWhiteSpace(row.StatusCode)
+                            ? npc.Role
+                            : HumanizeToken(row.StatusCode);
+                    }
+                }
+            }
+
+            // TODO(real-data): FactionRow is world-level, not actor-keyed, so it does not project cleanly onto NPC cards.
+            if (_host is IFactionSource)
+            {
+            }
+
+            if (builders.Count == 0) return;
+
+            var live = new List<ColonyNpcData>(builders.Count);
+            foreach (var pair in builders)
+            {
+                var npc = pair.Value;
+                var fallback = FindDefaultNpc(npc.Name);
+                live.Add(new ColonyNpcData(
+                    npc.Name,
+                    string.IsNullOrWhiteSpace(npc.Role) ? fallback != null ? fallback.Role : "Colonist" : npc.Role,
+                    fallback != null ? fallback.Hp : 0,
+                    fallback != null ? fallback.HpMax : 0,
+                    npc.Needs ?? (fallback != null ? fallback.Needs : Array.Empty<NeedData>()),
+                    string.IsNullOrWhiteSpace(npc.Mood) ? fallback != null ? fallback.Mood : "Unknown" : npc.Mood,
+                    string.IsNullOrWhiteSpace(npc.Task) ? fallback != null ? fallback.Task : "Idle" : npc.Task));
+            }
+
+            live.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+            IgMockData.ColonyNpcs = live.ToArray();
+        }
+
+        private static InventoryItemData MapInventorySlot(InventorySlot slot, int index)
+        {
+            var fallback = FindDefaultInventoryItem(slot.IconName);
+            string name = fallback != null ? fallback.Name : HumanizeToken(slot.IconName);
+            string type = fallback != null ? fallback.Type : InferItemType(slot.IconName);
+            float weight = fallback != null ? fallback.Weight : 0f;
+            int value = fallback != null ? fallback.Value : 0;
+            bool equipped = fallback != null && fallback.Equipped;
+            int quantity = Mathf.Max(1, slot.Count);
+            return new InventoryItemData(index + 1, name, type, weight, value, quantity, equipped);
+        }
+
+        private static InventoryItemData FindDefaultInventoryItem(string templateId)
+        {
+            string key = NormalizeToken(templateId);
+            if (string.IsNullOrEmpty(key)) return null;
+            for (int i = 0; i < IgMockData.DefaultInventory.Length; i++)
+            {
+                var item = IgMockData.DefaultInventory[i];
+                if (NormalizeToken(item.Name) == key)
+                    return item;
+            }
+            return null;
+        }
+
+        private static SpellDefinition TryResolveSpell(string templateId)
+        {
+            if (string.IsNullOrWhiteSpace(templateId)) return null;
+            return WorldSpellCatalog.Find(templateId);
+        }
+
+        private static SpellSchoolData[] BuildSpellSchools(List<SpellDefinition> spells)
+        {
+            var bySchool = new Dictionary<string, List<SpellData>>(StringComparer.Ordinal);
+            for (int i = 0; i < spells.Count; i++)
+            {
+                var spell = spells[i];
+                string school = spell.School.ToString();
+                if (!bySchool.TryGetValue(school, out var list))
+                {
+                    list = new List<SpellData>();
+                    bySchool.Add(school, list);
+                }
+
+                list.Add(new SpellData(
+                    spell.DisplayName,
+                    spell.ManaCost,
+                    DescribeSpellEffect(spell),
+                    DescribeSpellRange(spell),
+                    DescribeSpellDuration(spell)));
+            }
+
+            var live = new List<SpellSchoolData>(bySchool.Count);
+            foreach (var pair in bySchool)
+                live.Add(new SpellSchoolData(pair.Key, pair.Value.ToArray()));
+            live.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+            return live.ToArray();
+        }
+
+        private static string DescribeSpellEffect(SpellDefinition spell)
+        {
+            if (spell.Effects == null || spell.Effects.Count == 0) return "Unknown effect";
+            var effect = spell.Effects[0];
+            if (effect.Kind == SpellEffectCode.DirectDamage) return effect.Magnitude + " damage";
+            if (effect.Kind == SpellEffectCode.RestoreHealth) return "Restore " + effect.Magnitude + " HP";
+            if (effect.Kind == SpellEffectCode.RestoreFatigue) return "Restore " + effect.Magnitude + " FAT";
+            if (effect.Kind == SpellEffectCode.RestoreMana) return "Restore " + effect.Magnitude + " MP";
+            if (effect.Kind == SpellEffectCode.ShieldBuff) return "Ward +" + effect.Magnitude;
+            if (effect.Kind == SpellEffectCode.DirectMana) return effect.Magnitude + " mana drain";
+            if (effect.Kind == SpellEffectCode.DirectFatigue) return effect.Magnitude + " fatigue drain";
+            return HumanizeToken(effect.Kind.Code);
+        }
+
+        private static string DescribeSpellRange(SpellDefinition spell)
+        {
+            if (spell.TargetKind == SpellTargetKind.CasterSelf) return "Self";
+            if (spell.TargetKind == SpellTargetKind.Touch) return "Touch";
+            if (spell.RangeInTiles > 0) return spell.RangeInTiles + " tiles";
+            return "Single Target";
+        }
+
+        private static string DescribeSpellDuration(SpellDefinition spell)
+        {
+            if (spell.Effects == null || spell.Effects.Count == 0) return "Instant";
+            int duration = spell.Effects[0].DurationTicks;
+            return duration > 0 ? duration + " ticks" : "Instant";
+        }
+
+        private static ColonyNpcProjection GetOrCreateColonyNpc(Dictionary<string, ColonyNpcProjection> builders, string actorName)
+        {
+            if (!builders.TryGetValue(actorName, out var npc))
+            {
+                npc = new ColonyNpcProjection { Name = actorName };
+                builders.Add(actorName, npc);
+            }
+            return npc;
+        }
+
+        private static ColonyNpcData FindDefaultNpc(string actorName)
+        {
+            for (int i = 0; i < IgMockData.DefaultColonyNpcs.Length; i++)
+            {
+                var npc = IgMockData.DefaultColonyNpcs[i];
+                if (string.Equals(npc.Name, actorName, StringComparison.Ordinal))
+                    return npc;
+            }
+            return null;
+        }
+
+        private static string MoodLabel(int mood)
+        {
+            if (mood >= 75) return "Content";
+            if (mood >= 55) return "Steady";
+            if (mood >= 35) return "Anxious";
+            return "Tired";
+        }
+
+        private static string InferItemType(string templateId)
+        {
+            string key = NormalizeToken(templateId);
+            if (key.Contains("sword") || key.Contains("dagger") || key.Contains("blade") || key.Contains("staff"))
+                return "Weapon";
+            if (key.Contains("armor") || key.Contains("shield") || key.Contains("mail") || key.Contains("jerkin"))
+                return "Armor";
+            if (key.Contains("potion") || key.Contains("tonic"))
+                return "Potion";
+            if (key.Contains("scroll"))
+                return "Scroll";
+            if (key.Contains("bread") || key.Contains("ration") || key.Contains("meat") || key.Contains("water"))
+                return "Food";
+            if (key.Contains("coin") || key.Contains("gold") || key.Contains("silver"))
+                return "Currency";
+            return "Tool";
+        }
+
+        private static string NormalizeToken(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+            return value.Trim().Replace(" ", "_").Replace("-", "_").ToLowerInvariant();
+        }
+
+        private static string HumanizeToken(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            var parts = value.Trim().Replace("-", "_").Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0) return value;
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var part = parts[i];
+                parts[i] = part.Length == 1
+                    ? part.ToUpperInvariant()
+                    : char.ToUpperInvariant(part[0]) + part.Substring(1).ToLowerInvariant();
+            }
+
+            return string.Join(" ", parts);
+        }
+
+        // TODO(host-action): human wires real save/load/quit/combat.
+        private void TodoSettingsAction() => LogTodoAndClose("open settings");
+        private void TodoMainMenuAction() => LogTodoAndClose("return to main menu");
+        private void TodoLoadLastSaveAction() => LogTodoAndClose("load last save");
+        private void TodoCombatFleeAction() => LogTodoAndClose("combat flee");
+        private void TodoTakeAllLootAction() => LogTodoAndClose("take all loot");
+        private void TodoConfirmLevelUpAction() => LogTodoAndClose("confirm level up");
+        private void TodoInventoryAction(string actionId) => LogTodoAndClose("inventory action: " + actionId);
+        private void TodoSpellbookAction(string spellName) => LogTodoAndClose("spell action: " + spellName);
+        private void TodoTradeAction(string actionId) => LogTodoAndClose("trade action: " + actionId);
+        private void TodoCraftAction(string recipeId) => LogTodoAndClose("craft recipe: " + recipeId);
+        private void TodoFastTravelAction(string locationId) => LogTodoAndClose("fast travel: " + locationId);
+        private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);
+        private void TodoCombatAction(string actionId) => LogTodoAndClose("combat action: " + actionId);
+        private void TodoSaveSlotAction(int slotNumber) => LogTodoAndClose("save slot " + slotNumber);
+        private void TodoLoadSlotAction(int slotNumber) => LogTodoAndClose("load slot " + slotNumber);
+        private void TodoColonyTaskAction(string actorName, string taskId) =>
+            LogTodoAndClose("colony task: " + actorName + " -> " + taskId);
+
+        private void LogTodoAndClose(string action)
+        {
+            Debug.Log("[InGameUI] TODO action: " + action);
+            CloseScreen();
+        }
+
+        private sealed class ColonyNpcProjection
+        {
+            public string Name;
+            public string Role;
+            public string Task;
+            public string Mood;
+            public NeedData[] Needs;
         }
 
         // ── input: Tab toggles the ☰ browser; the letter keys open a screen; Esc closes. The legacy host

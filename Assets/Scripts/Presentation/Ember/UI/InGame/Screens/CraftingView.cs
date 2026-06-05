@@ -11,14 +11,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public CraftingView(VisualElement stageCanvas, Action onClose)
+        public CraftingView(VisualElement stageCanvas, Action onClose, Action<string> onCraft = null)
         {
             _overlay = IgModal.Build("Crafting", false, () => { Close(); onClose?.Invoke(); }, out var content);
             content.style.flexDirection = FlexDirection.Row;
 
+            // TODO(real-data): no host source yet.
             var selected = IgMockData.CraftingRecipes[0];
             content.Add(BuildRecipeList(selected.Id));
-            content.Add(BuildRecipeDetail(selected));
+            content.Add(BuildRecipeDetail(selected, onCraft));
 
             stageCanvas.Add(_overlay);
         }
@@ -70,7 +71,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static ScrollView BuildRecipeDetail(CraftingRecipeData recipe)
+        private static ScrollView BuildRecipeDetail(CraftingRecipeData recipe, Action<string> onCraft)
         {
             var pane = new ScrollView();
             pane.style.flexGrow = 1;
@@ -112,7 +113,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             for (int i = 0; i < recipe.Ingredients.Length; i++)
                 pane.Add(BuildIngredient(recipe.Ingredients[i]));
 
-            var craft = new Button { text = "CRAFT" };
+            var craft = new Button(() => onCraft?.Invoke(recipe.Id)) { text = "CRAFT" };
             ResetButton(craft);
             craft.style.marginTop = 22;
             craft.style.height = 42;

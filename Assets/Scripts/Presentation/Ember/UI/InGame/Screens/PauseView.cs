@@ -11,7 +11,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public PauseView(VisualElement stageCanvas, Action onClose)
+        public PauseView(VisualElement stageCanvas, Action onClose, Action<string> onOpenScreen = null,
+            Action onSettings = null, Action onMainMenu = null)
         {
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
@@ -43,16 +44,26 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
             string[] items = { "Resume", "Inventory", "Character", "Save Game", "Load Game", "Settings", "Main Menu" };
             for (int i = 0; i < items.Length; i++)
-                panel.Add(BuildMenuButton(items[i], i == 0, i == items.Length - 1, onClose));
+                panel.Add(BuildMenuButton(items[i], i == 0, i == items.Length - 1, onClose, onOpenScreen, onSettings, onMainMenu));
 
             stageCanvas.Add(_overlay);
         }
 
         public void Close() { _overlay?.RemoveFromHierarchy(); }
 
-        private static Button BuildMenuButton(string text, bool primary, bool dim, Action onClose)
+        private static Button BuildMenuButton(string text, bool primary, bool dim, Action onClose,
+            Action<string> onOpenScreen, Action onSettings, Action onMainMenu)
         {
-            var button = new Button(() => { if (text == "Resume") onClose?.Invoke(); }) { text = text };
+            var button = new Button(() =>
+            {
+                if (text == "Resume") onClose?.Invoke();
+                else if (text == "Inventory") onOpenScreen?.Invoke("inventory");
+                else if (text == "Character") onOpenScreen?.Invoke("character");
+                else if (text == "Save Game") onOpenScreen?.Invoke("savegame");
+                else if (text == "Load Game") onOpenScreen?.Invoke("savegame");
+                else if (text == "Settings") onSettings?.Invoke();
+                else if (text == "Main Menu") onMainMenu?.Invoke();
+            }) { text = text };
             ResetButton(button);
             button.style.width = Length.Percent(100);
             button.style.height = 48;

@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public TradeView(VisualElement stageCanvas, Action onClose)
+        public TradeView(VisualElement stageCanvas, Action onClose, Action<string> onTrade = null)
         {
             _overlay = IgModal.Build("Trade", false, () => { Close(); onClose?.Invoke(); }, out var content);
             content.style.flexDirection = FlexDirection.Column;
@@ -20,9 +20,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var body = Row();
             body.style.flexGrow = 1;
             content.Add(body);
+            // TODO(real-data): no host source yet.
             body.Add(BuildMerchantPane(IgMockData.MerchantItems[0].Id));
-            body.Add(BuildInventoryPane(IgMockData.Inventory[0].Id));
-            content.Add(BuildTransactionBar(onClose));
+            body.Add(BuildInventoryPane(IgMockData.Inventory != null && IgMockData.Inventory.Length > 0 ? IgMockData.Inventory[0].Id : -1));
+            content.Add(BuildTransactionBar(onClose, onTrade));
 
             stageCanvas.Add(_overlay);
         }
@@ -103,7 +104,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static VisualElement BuildTransactionBar(Action onClose)
+        private static VisualElement BuildTransactionBar(Action onClose, Action<string> onTrade)
         {
             var bar = Row();
             bar.style.alignItems = Align.Center;
@@ -120,8 +121,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             bar.Add(sell);
             var actions = Row();
             actions.style.marginLeft = StyleKeyword.Auto;
-            actions.Add(BuildButton("BUY", true));
-            actions.Add(BuildButton("SELL", true));
+            actions.Add(BuildButton("BUY", true, () => onTrade?.Invoke("buy")));
+            actions.Add(BuildButton("SELL", true, () => onTrade?.Invoke("sell")));
             var done = new Button(() => onClose?.Invoke()) { text = "DONE" };
             ResetButton(done);
             done.style.height = 36;
@@ -166,9 +167,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return row;
         }
 
-        private static Button BuildButton(string text, bool active)
+        private static Button BuildButton(string text, bool active, Action onClick)
         {
-            var button = new Button { text = text };
+            var button = new Button(() => onClick?.Invoke()) { text = text };
             ResetButton(button);
             button.style.height = 36;
             button.style.paddingLeft = 18;

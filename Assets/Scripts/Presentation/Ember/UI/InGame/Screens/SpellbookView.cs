@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public SpellbookView(VisualElement stageCanvas, Action onClose)
+        public SpellbookView(VisualElement stageCanvas, Action onClose, Action<string> onCastNow = null)
         {
             _overlay = IgModal.Build("Spellbook", false, () => { Close(); onClose?.Invoke(); }, out var content);
             content.style.flexDirection = FlexDirection.Row;
@@ -22,7 +22,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
             content.Add(BuildSchoolPane(school.Name));
             content.Add(BuildSpellListPane(school, selected));
-            content.Add(BuildSpellDetailPane(school.Name, selected));
+            content.Add(BuildSpellDetailPane(school.Name, selected, onCastNow));
 
             stageCanvas.Add(_overlay);
         }
@@ -138,7 +138,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static VisualElement BuildSpellDetailPane(string school, SpellData spell)
+        private static VisualElement BuildSpellDetailPane(string school, SpellData spell, Action<string> onCastNow)
         {
             var pane = new VisualElement();
             pane.style.width = 250;
@@ -172,7 +172,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             for (int i = 0; i < IgMockData.SpellBar.Length; i++)
             {
                 var sl = IgMockData.SpellBar[i];
-                bool active = sl.Spell == spell.Name;
+                bool active = sl.Selected || sl.Spell == spell.Name;
                 var box = new VisualElement();
                 box.style.width = 40;
                 box.style.height = 40;
@@ -194,7 +194,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             }
             pane.Add(slots);
 
-            var cast = new Button { text = "CAST NOW" };
+            var cast = new Button(() => onCastNow?.Invoke(spell.Name)) { text = "CAST NOW" };
             ResetButton(cast);
             cast.style.marginTop = 14;
             cast.style.height = 36;

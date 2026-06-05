@@ -17,6 +17,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             content.style.flexDirection = FlexDirection.Row;
             content.style.backgroundColor = VoidWarm;
 
+            // TODO(real-data): no host source yet.
             var selected = IgMockData.Quests[0];
             content.Add(BuildQuestList(selected.Id));
             content.Add(BuildQuestDetail(selected));

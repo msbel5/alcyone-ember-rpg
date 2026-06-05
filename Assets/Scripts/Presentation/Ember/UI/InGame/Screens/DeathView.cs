@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public DeathView(VisualElement stageCanvas, Action onClose)
+        public DeathView(VisualElement stageCanvas, Action onClose, Action onLoadLastSave = null, Action onMainMenu = null)
         {
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
@@ -50,7 +50,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             wrap.Add(p2);
 
             var actions = Row();
-            var load = new Button(() => onClose?.Invoke()) { text = "LOAD LAST SAVE" };
+            var load = new Button(() => onLoadLastSave?.Invoke()) { text = "LOAD LAST SAVE" };
             ResetButton(load);
             load.style.height = 46;
             load.style.paddingLeft = 32;
@@ -64,7 +64,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             Radius(load, 10);
             actions.Add(load);
 
-            var menu = new Button { text = "MAIN MENU" };
+            var menu = new Button(() => onMainMenu?.Invoke()) { text = "MAIN MENU" };
             ResetButton(menu);
             menu.style.height = 46;
             menu.style.paddingLeft = 32;

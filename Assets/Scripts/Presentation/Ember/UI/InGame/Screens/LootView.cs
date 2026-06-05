@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public LootView(VisualElement stageCanvas, Action onClose)
+        public LootView(VisualElement stageCanvas, Action onClose, Action onTakeAll = null)
         {
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
@@ -46,7 +46,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             top.Add(Text("Bandit's Pack", Serif, 16, Parch));
             var actions = Row();
             actions.style.marginLeft = StyleKeyword.Auto;
-            actions.Add(BuildButton("TAKE ALL", true));
+            actions.Add(BuildButton("TAKE ALL", true, () => onTakeAll?.Invoke()));
             var close = new Button(() => { Close(); onClose?.Invoke(); }) { text = "✕" };
             ResetButton(close);
             close.style.fontSize = 16;
@@ -63,6 +63,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             divider.style.width = 1;
             divider.style.backgroundColor = PA(0.08f);
             body.Add(divider);
+            // TODO(real-data): no host source yet.
             body.Add(BuildPlayerColumn());
 
             stageCanvas.Add(_overlay);
@@ -153,9 +154,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return tile;
         }
 
-        private static Button BuildButton(string text, bool active)
+        private static Button BuildButton(string text, bool active, Action onClick)
         {
-            var button = new Button { text = text };
+            var button = new Button(() => onClick?.Invoke()) { text = text };
             ResetButton(button);
             button.style.height = 34;
             button.style.paddingLeft = 16;

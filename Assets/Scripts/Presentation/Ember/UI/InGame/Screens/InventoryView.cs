@@ -11,19 +11,20 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public InventoryView(VisualElement stageCanvas, Action onClose)
+        public InventoryView(VisualElement stageCanvas, Action onClose, Action<string> onItemAction = null, string activeTab = "Items")
         {
-            _overlay = IgModal.BuildTabbed("Inventory", false, new[] { "Items", "Equipment" }, "Items",
-                _ => { }, () => { Close(); onClose?.Invoke(); }, out var body);
+            _overlay = IgModal.BuildTabbed("Inventory", false, new[] { "Items", "Equipment" }, activeTab,
+                tab => { Close(); new InventoryView(stageCanvas, onClose, onItemAction, tab); },
+                () => { Close(); onClose?.Invoke(); }, out var body);
 
             body.style.flexDirection = FlexDirection.Row;
             body.style.backgroundColor = VoidWarm;
 
-            var selected = IgMockData.Inventory[0];
+            var selected = GetSelectedItem();
 
             body.Add(BuildEquipmentPane());
             body.Add(BuildInventoryGrid(selected));
-            body.Add(BuildDetailPane(selected));
+            body.Add(BuildDetailPane(selected, onItemAction));
 
             stageCanvas.Add(_overlay);
         }
@@ -177,7 +178,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static VisualElement BuildDetailPane(InventoryItemData item)
+        private static VisualElement BuildDetailPane(InventoryItemData item, Action<string> onItemAction)
         {
             var pane = new VisualElement();
             pane.style.width = 256;
@@ -206,11 +207,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             actions.style.marginTop = 16;
             actions.style.flexDirection = FlexDirection.Column;
             if (item.Type == "Weapon" || item.Type == "Armor")
-                actions.Add(BuildSecondaryButton("Equip", true));
+                actions.Add(BuildSecondaryButton("Equip", true, () => onItemAction?.Invoke("equip:" + item.Name)));
             if (item.Type == "Potion" || item.Type == "Food")
-                actions.Add(BuildSecondaryButton("Use", true));
-            actions.Add(BuildSecondaryButton("Drop", false));
-            actions.Add(BuildSecondaryButton("Inspect", false));
+                actions.Add(BuildSecondaryButton("Use", true, () => onItemAction?.Invoke("use:" + item.Name)));
+            actions.Add(BuildSecondaryButton("Drop", false, () => onItemAction?.Invoke("drop:" + item.Name)));
+            actions.Add(BuildSecondaryButton("Inspect", false, () => onItemAction?.Invoke("inspect:" + item.Name)));
             pane.Add(actions);
 
             return pane;
@@ -262,9 +263,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return row;
         }
 
-        private static Button BuildSecondaryButton(string text, bool active)
+        private static Button BuildSecondaryButton(string text, bool active, Action onClick)
         {
-            var button = new Button { text = text.ToUpperInvariant() };
+            var button = new Button(() => onClick?.Invoke()) { text = text.ToUpperInvariant() };
             ResetButton(button);
             button.style.height = 36;
             button.style.fontSize = 12;
@@ -276,6 +277,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             Border(button, active ? Amber : PA(0.18f), 1);
             Radius(button, 7);
             return button;
+        }
+
+        private static InventoryItemData GetSelectedItem()
+        {
+            if (IgMockData.Inventory != null && IgMockData.Inventory.Length > 0)
+                return IgMockData.Inventory[0];
+            return new InventoryItemData(0, "No Items", "Pack", 0f, 0, 0, false);
         }
 
         private static Color ItemTypeColor(string type)

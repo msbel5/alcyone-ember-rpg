@@ -11,14 +11,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public ColonyView(VisualElement stageCanvas, Action onClose)
+        public ColonyView(VisualElement stageCanvas, Action onClose, Action<string, string> onAssignTask = null)
         {
             _overlay = IgModal.Build("Colony", true, () => { Close(); onClose?.Invoke(); }, out var content);
             content.style.flexDirection = FlexDirection.Row;
 
             var selected = IgMockData.ColonyNpcs[0];
             content.Add(BuildNpcGrid(selected.Name));
-            content.Add(BuildTaskPane(selected));
+            content.Add(BuildTaskPane(selected, onAssignTask));
 
             stageCanvas.Add(_overlay);
         }
@@ -111,7 +111,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static VisualElement BuildTaskPane(ColonyNpcData npc)
+        private static VisualElement BuildTaskPane(ColonyNpcData npc, Action<string, string> onAssignTask)
         {
             var pane = new VisualElement();
             pane.style.width = 240;
@@ -136,7 +136,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             for (int i = 0; i < tasks.Length; i++)
             {
                 bool active = npc.Task == tasks[i];
-                var row = new VisualElement();
+                var row = new Button(() => onAssignTask?.Invoke(npc.Name, tasks[i]));
+                ResetButton(row);
+                row.style.flexDirection = FlexDirection.Row;
                 row.style.height = 38;
                 row.style.marginBottom = 6;
                 row.style.paddingLeft = 12;

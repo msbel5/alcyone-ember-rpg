@@ -11,10 +11,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public SaveLoadView(VisualElement stageCanvas, Action onClose)
+        public SaveLoadView(VisualElement stageCanvas, Action onClose, Action<int> onSaveSlot = null,
+            Action<int> onLoadSlot = null, string activeTab = "Save")
         {
-            _overlay = IgModal.BuildTabbed("Save / Load", false, new[] { "Save", "Load" }, "Save",
-                _ => { }, () => { Close(); onClose?.Invoke(); }, out var body);
+            _overlay = IgModal.BuildTabbed("Save / Load", false, new[] { "Save", "Load" }, activeTab,
+                tab => { Close(); new SaveLoadView(stageCanvas, onClose, onSaveSlot, onLoadSlot, tab); },
+                () => { Close(); onClose?.Invoke(); }, out var body);
 
             var scroll = new ScrollView();
             scroll.style.height = Length.Percent(100);
@@ -24,18 +26,29 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             scroll.style.paddingRight = 24;
             body.Add(scroll);
 
+            // TODO(real-data): no host source yet.
+            bool saveMode = string.Equals(activeTab, "Save", StringComparison.Ordinal);
             for (int i = 0; i < IgMockData.SaveSlots.Length; i++)
-                scroll.Add(BuildSlot(IgMockData.SaveSlots[i], true));
+            {
+                var slot = IgMockData.SaveSlots[i];
+                scroll.Add(BuildSlot(slot, saveMode, () =>
+                {
+                    if (saveMode) onSaveSlot?.Invoke(slot.Number);
+                    else onLoadSlot?.Invoke(slot.Number);
+                }));
+            }
 
             stageCanvas.Add(_overlay);
         }
 
         public void Close() { _overlay?.RemoveFromHierarchy(); }
 
-        private static VisualElement BuildSlot(SaveSlotData slot, bool saveMode)
+        private static VisualElement BuildSlot(SaveSlotData slot, bool saveMode, Action onClick)
         {
             bool empty = slot.Location == "Empty";
-            var row = Row();
+            var row = new Button(() => onClick?.Invoke());
+            ResetButton(row);
+            row.style.flexDirection = FlexDirection.Row;
             row.style.alignItems = Align.Center;
             row.style.marginBottom = 8;
             row.style.paddingTop = 14;

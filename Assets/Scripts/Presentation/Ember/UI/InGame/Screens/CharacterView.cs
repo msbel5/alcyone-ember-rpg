@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public CharacterView(VisualElement stageCanvas, Action onClose)
+        public CharacterView(VisualElement stageCanvas, Action onClose, Action<string> onOpenScreen = null)
         {
             _overlay = IgModal.Build("Character", false, () => { Close(); onClose?.Invoke(); }, out var content);
             content.style.flexDirection = FlexDirection.Row;
@@ -19,7 +19,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
             content.Add(BuildIdentityPane());
             content.Add(BuildStatsPane());
-            content.Add(BuildSkillsPane());
+            content.Add(BuildSkillsPane(onOpenScreen));
 
             stageCanvas.Add(_overlay);
         }
@@ -135,7 +135,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static VisualElement BuildSkillsPane()
+        private static VisualElement BuildSkillsPane(Action<string> onOpenScreen)
         {
             var pane = new ScrollView();
             pane.style.width = 240;
@@ -187,7 +187,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 pane.Add(row);
             }
 
-            var btn = new Button { text = "LEVEL UP!" };
+            var btn = new Button(() => onOpenScreen?.Invoke("levelup")) { text = "LEVEL UP!" };
             ResetButton(btn);
             btn.style.marginTop = 14;
             btn.style.height = 36;

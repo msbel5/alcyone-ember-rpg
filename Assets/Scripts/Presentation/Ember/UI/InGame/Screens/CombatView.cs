@@ -11,7 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public CombatView(VisualElement stageCanvas, Action onClose)
+        public CombatView(VisualElement stageCanvas, Action onClose, Action<string> onAction = null, Action onFlee = null)
         {
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
@@ -22,10 +22,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             _overlay.pickingMode = PickingMode.Position;
 
             _overlay.Add(BuildEnemyPanel());
-            _overlay.Add(BuildAttackPrompt());
+            _overlay.Add(BuildAttackPrompt(onAction));
             _overlay.Add(BuildLogAndVitals());
-            _overlay.Add(BuildActionBar());
-            _overlay.Add(BuildTopNav(onClose));
+            _overlay.Add(BuildActionBar(onAction));
+            _overlay.Add(BuildTopNav(onFlee ?? onClose));
 
             stageCanvas.Add(_overlay);
         }
@@ -80,7 +80,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return panel;
         }
 
-        private static VisualElement BuildAttackPrompt()
+        private static VisualElement BuildAttackPrompt(Action<string> onAction)
         {
             var wrap = new VisualElement();
             wrap.style.position = Position.Absolute;
@@ -88,7 +88,20 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             wrap.style.top = Length.Percent(38);
             wrap.style.translate = new Translate(new Length(-50, LengthUnit.Percent), new Length(-50, LengthUnit.Percent));
             wrap.style.alignItems = Align.Center;
-            wrap.Add(Text("CLICK TO ATTACK", Sans, 13, Gold, FontStyle.Bold));
+            var attack = new Button(() => onAction?.Invoke("attack")) { text = "ATTACK" };
+            ResetButton(attack);
+            attack.style.height = 40;
+            attack.style.paddingLeft = 18;
+            attack.style.paddingRight = 18;
+            attack.style.backgroundColor = Gold;
+            attack.style.color = Ink;
+            attack.style.fontSize = 13;
+            attack.style.letterSpacing = 1.2f;
+            attack.style.unityFontStyleAndWeight = FontStyle.Bold;
+            ApplyFont(attack, Sans);
+            Border(attack, Amber, 1);
+            Radius(attack, 8);
+            wrap.Add(attack);
             var swing = Text("SWING!", Serif, 18, EmberGlow);
             swing.style.marginTop = 6;
             wrap.Add(swing);
@@ -120,7 +133,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static VisualElement BuildActionBar()
+        private static VisualElement BuildActionBar(Action<string> onAction)
         {
             var bar = Row();
             bar.style.position = Position.Absolute;
@@ -130,10 +143,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             bar.style.alignItems = Align.FlexEnd;
 
             for (int i = 0; i < IgMockData.SpellBar.Length; i++)
-                bar.Add(BuildSpellBox(IgMockData.SpellBar[i], i == 0));
+                bar.Add(BuildSpellBox(IgMockData.SpellBar[i], onAction));
 
-            bar.Add(BuildAction("B", "Block", Success));
-            bar.Add(BuildAction("D", "Dodge", ParchDim));
+            bar.Add(BuildAction("B", "Block", Success, () => onAction?.Invoke("block")));
+            bar.Add(BuildAction("D", "Dodge", ParchDim, () => onAction?.Invoke("dodge")));
             return bar;
         }
 
@@ -191,13 +204,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return root;
         }
 
-        private static VisualElement BuildSpellBox(SpellBarSlotData slot, bool highlighted)
+        private static VisualElement BuildSpellBox(SpellBarSlotData slot, Action<string> onAction)
         {
-            var box = new VisualElement();
+            var box = new Button(() => onAction?.Invoke(string.IsNullOrEmpty(slot.Spell) ? "empty-slot-" + slot.Slot : slot.Spell));
+            ResetButton(box);
             box.style.width = 50;
             box.style.height = 50;
             box.style.backgroundColor = slot.Spell != null ? Alpha(C(51, 51, 51), 0.82f) : Dark(0.55f);
-            Border(box, highlighted ? Gold : PA(0.18f), highlighted ? 2 : 1);
+            Border(box, slot.Selected ? Gold : PA(0.18f), slot.Selected ? 2 : 1);
             Radius(box, 9);
             box.style.alignItems = Align.Center;
             box.style.justifyContent = Justify.Center;
@@ -216,9 +230,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return box;
         }
 
-        private static VisualElement BuildAction(string key, string label, Color color)
+        private static VisualElement BuildAction(string key, string label, Color color, Action onClick)
         {
-            var button = new VisualElement();
+            var button = new Button(() => onClick?.Invoke());
+            ResetButton(button);
             button.style.width = 68;
             button.style.height = 50;
             button.style.backgroundColor = Alpha(Panel, 0.72f);
