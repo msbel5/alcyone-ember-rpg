@@ -136,6 +136,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         public void Close() { _overlay?.RemoveFromHierarchy(); }
 
+        /// <summary>Stream the response line from outside — the controller polls the real IDialogSource's current
+        /// line so the async LLM reply appears after a topic is selected (the mock path sets it synchronously).</summary>
+        public void SetResponseLine(string text)
+        {
+            if (_responseLabel != null && !string.IsNullOrEmpty(text)) _responseLabel.text = text;
+        }
+
         private VisualElement BuildPortraitPane(string npcName, string portraitPath)
         {
             var left = new VisualElement();

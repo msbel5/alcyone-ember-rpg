@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using EmberCrpg.Domain.Magic;
 using EmberCrpg.Presentation.Ember.Inputs;
+using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.UI.InGame.Screens;
 using EmberCrpg.Simulation.Magic;
 // ICombatHudSource / ISpellBarSource / IEmberHudSource live in the enclosing EmberCrpg.Presentation.Ember.UI
@@ -32,6 +33,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private VisualElement _activeScreen;   // the overlay the open view added — tracked directly so ANY screen
                                                // (IgModal-named OR a bare Pause/Combat/LevelUp/Death/Dialog/DM/Loot
                                                // VisualElement) can be detected + closed, not just "IgModalOverlay"
+        private IDialogSource _activeDialogSource;   // live NPC conversation behind the redesigned DialogView
+        private DialogView _activeDialog;
+        private bool _dialogAsked;                   // poll the async reply only once a topic has been picked
         private bool _wasOpen;
 
         /// <summary>True while this controller is active — the legacy EmberWorldHost key handlers (M / Tab / K /
@@ -111,6 +115,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 UnityEngine.Cursor.visible = open;
                 Time.timeScale = open ? 0f : 1f;
             }
+
+            // Stream the NPC's async reply into the open DialogView (the off-thread LLM resolves even at
+            // timeScale 0; Update still runs). Only after a topic is picked, so the greeting isn't overwritten.
+            if (_activeDialog != null && _activeDialogSource != null && _dialogAsked)
+                _activeDialog.SetResponseLine(_activeDialogSource.GetCurrentLine());
 
             var d = new WorldHudData();
 
@@ -201,10 +210,46 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private void CloseScreen()
         {
+            // End any live NPC conversation FIRST so a late async reply can't bleed into the next one (bumps the
+            // conversation serial) — covers every close path: Farewell, Esc, the X, or opening another screen.
+            if (_activeDialogSource != null)
+            {
+                _activeDialogSource.EndConversation();
+                _activeDialogSource = null; _activeDialog = null; _dialogAsked = false;
+            }
             if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
             // Safety net for IgModal-based views in case the tracked element ever desyncs.
             for (var open = _stage.Canvas.Q("IgModalOverlay"); open != null; open = _stage.Canvas.Q("IgModalOverlay"))
                 open.RemoveFromHierarchy();
+        }
+
+        /// <summary>Open the redesigned NPC dialogue, driven by the REAL <see cref="IDialogSource"/> (greeting +
+        /// topics + async LLM replies). The interact raycaster calls this instead of the legacy DialogBoxPanel.</summary>
+        public void OpenNpcDialog(IDialogSource src, string npcName, string portrait)
+        {
+            if (src == null || _stage == null) return;
+            CloseScreen();   // ends any prior conversation + drops any open screen
+            CloseBrowser();
+            var c = _stage.Canvas;
+            int before = c.childCount;
+
+            var topics = new List<DialogTopicOption>();
+            var ids = src.GetTopics();
+            if (ids != null)
+                foreach (var id in ids)
+                    topics.Add(new DialogTopicOption(id, HumanizeToken(id) ?? id));
+
+            _activeDialogSource = src;
+            _dialogAsked = false;
+            _activeDialog = new DialogView(
+                c, CloseScreen,
+                string.IsNullOrEmpty(npcName) ? "Stranger" : npcName,
+                portrait,
+                src.GetCurrentLine(),
+                topics,
+                id => { _dialogAsked = true; src.SelectTopic(id); },
+                CloseScreen);
+            _activeScreen = c.childCount > before ? c.ElementAt(c.childCount - 1) : null;
         }
 
         private void ConsulDm() => OpenScreen("consul");

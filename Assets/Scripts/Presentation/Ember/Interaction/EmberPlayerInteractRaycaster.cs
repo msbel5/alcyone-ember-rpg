@@ -6,6 +6,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using Unity.Cinemachine;
 using EmberCrpg.Presentation.Ember.Inputs;
+using EmberCrpg.Presentation.Ember.UI.InGame;
 
 namespace EmberCrpg.Presentation.Ember.Interaction
 {
@@ -97,6 +98,31 @@ namespace EmberCrpg.Presentation.Ember.Interaction
                 var commands = EmberDomainAdapterLocator.PlayerCommandSink;
                 if (commands != null)
                 {
+                    // Route NPC dialogue to the redesigned in-game DialogView when the new UI controller is
+                    // present (it owns the UI-Toolkit stage, frees the cursor + pauses, and polls the source for
+                    // the async reply); fall through to the legacy DialogBoxPanel only if it is absent.
+                    var inGameUi = FindFirstObjectByType<InGameUiController>(FindObjectsInactive.Include);
+                    if (inGameUi != null)
+                    {
+                        if (target.HasActorId) commands.TryInteract(target.ActorId);
+                        else commands.TryInteract(target.DisplayName);
+                        var routedSource = target.HasActorId
+                            ? commands.GetDialogSource(target.ActorId)
+                            : commands.GetDialogSource(target.DisplayName);
+                        if (routedSource != null)
+                        {
+                            if (_dof != null)
+                            {
+                                float dist = Vector3.Distance(_eye.position, hitPoint);
+                                _dof.focusDistance.Override(dist);
+                                _dof.active = true;
+                            }
+                            inGameUi.OpenNpcDialog(routedSource, target.DisplayName,
+                                (routedSource as IDialogSourcePortrait)?.GetPortraitName());
+                            return;
+                        }
+                    }
+
                     // DLG-01: prefer the STABLE-id resolution path when the interactable carries an
                     // actor id (set per-actor in the scene or by a runtime spawner). Only fall back to
                     // the brittle display-name lookup for legacy interactables with no id authored.
