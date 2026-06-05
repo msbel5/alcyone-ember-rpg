@@ -23,6 +23,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
         private readonly Label _responseLabel;
+        private Label _lineLabel;                    // the NPC's current spoken line (polled live by the controller)
+        private VisualElement _portraitBox;          // portrait frame; background image is set once the sprite loads
+        private Label _portraitGlyph;                // placeholder initial, hidden once a real portrait resolves
+        public bool HasPortrait { get; private set; }
         private readonly Dictionary<string, string> _mockResponses;
 
         public DialogView(VisualElement stageCanvas, Action onClose)
@@ -82,11 +86,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
             var right = new VisualElement();
             right.style.flexGrow = 1;
-            var line = Text(greeting ?? string.Empty, Serif, 17, Ink);
-            line.style.whiteSpace = WhiteSpace.Normal;
-            line.style.unityFontStyleAndWeight = FontStyle.Italic;
-            line.style.minHeight = 60;
-            right.Add(line);
+            _lineLabel = Text(greeting ?? string.Empty, Serif, 17, Ink);
+            _lineLabel.style.whiteSpace = WhiteSpace.Normal;
+            _lineLabel.style.unityFontStyleAndWeight = FontStyle.Italic;
+            _lineLabel.style.minHeight = 60;
+            right.Add(_lineLabel);
             _responseLabel = Text("Choose a topic.", Serif, 14, Alpha(Ink, 0.50f), FontStyle.Italic);
             _responseLabel.style.whiteSpace = WhiteSpace.Normal;
             _responseLabel.style.marginTop = 14;
@@ -143,22 +147,40 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             if (_responseLabel != null && !string.IsNullOrEmpty(text)) _responseLabel.text = text;
         }
 
+        /// <summary>The NPC's current spoken line — the controller polls IDialogSource.GetCurrentLine() each frame
+        /// so the greeting/answer streams in (the LLM resolves from "{name} thinks…" to the real line).</summary>
+        public void SetCurrentLine(string text)
+        {
+            if (_lineLabel != null && !string.IsNullOrEmpty(text)) _lineLabel.text = text;
+        }
+
+        /// <summary>Show the resolved portrait sprite (the controller resolves it from the host sprite registry,
+        /// retrying each frame because forge portraits generate asynchronously).</summary>
+        public void SetPortrait(Sprite sprite)
+        {
+            if (sprite == null || _portraitBox == null) return;
+            _portraitBox.style.backgroundImage = new StyleBackground(sprite);
+            if (_portraitGlyph != null) _portraitGlyph.style.display = DisplayStyle.None;
+            HasPortrait = true;
+        }
+
         private VisualElement BuildPortraitPane(string npcName, string portraitPath)
         {
             var left = new VisualElement();
             left.style.width = 120;
             left.style.flexShrink = 0;
 
-            var portrait = new VisualElement();
-            portrait.style.width = 120;
-            portrait.style.height = 150;
-            portrait.style.backgroundColor = InputBg;
-            Border(portrait, Alpha(Ink, 0.35f), 1);
-            Radius(portrait, 12);
-            portrait.style.alignItems = Align.Center;
-            portrait.style.justifyContent = Justify.FlexEnd;
-            portrait.Add(Text(string.IsNullOrWhiteSpace(npcName) ? "?" : npcName.Substring(0, 1).ToUpperInvariant(), Serif, 78, Alpha(Ink, 0.22f)));
-            left.Add(portrait);
+            _portraitBox = new VisualElement();
+            _portraitBox.style.width = 120;
+            _portraitBox.style.height = 150;
+            _portraitBox.style.backgroundColor = InputBg;
+            Border(_portraitBox, Alpha(Ink, 0.35f), 1);
+            Radius(_portraitBox, 12);
+            _portraitBox.style.alignItems = Align.Center;
+            _portraitBox.style.justifyContent = Justify.FlexEnd;
+            _portraitGlyph = Text(string.IsNullOrWhiteSpace(npcName) ? "?" : npcName.Substring(0, 1).ToUpperInvariant(), Serif, 78, Alpha(Ink, 0.22f));
+            _portraitBox.Add(_portraitGlyph);
+            left.Add(_portraitBox);
 
             var name = Text((npcName ?? "Unknown").ToUpperInvariant(), Sans, 11, Ink, FontStyle.Bold);
             name.style.letterSpacing = 0.6f;

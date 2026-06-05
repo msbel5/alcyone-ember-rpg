@@ -35,7 +35,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                                                // VisualElement) can be detected + closed, not just "IgModalOverlay"
         private IDialogSource _activeDialogSource;   // live NPC conversation behind the redesigned DialogView
         private DialogView _activeDialog;
-        private bool _dialogAsked;                   // poll the async reply only once a topic has been picked
+        private string _activeDialogPortrait;        // portrait key, re-resolved each frame until the sprite loads
         private bool _wasOpen;
 
         /// <summary>True while this controller is active — the legacy EmberWorldHost key handlers (M / Tab / K /
@@ -116,10 +116,18 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 Time.timeScale = open ? 0f : 1f;
             }
 
-            // Stream the NPC's async reply into the open DialogView (the off-thread LLM resolves even at
-            // timeScale 0; Update still runs). Only after a topic is picked, so the greeting isn't overwritten.
-            if (_activeDialog != null && _activeDialogSource != null && _dialogAsked)
-                _activeDialog.SetResponseLine(_activeDialogSource.GetCurrentLine());
+            // Stream the NPC's live line into the open DialogView each frame (the off-thread LLM resolves even at
+            // timeScale 0; Update still runs), so "{name} thinks…" becomes the real greeting/answer. Also keep
+            // re-resolving the portrait until it loads — forge portraits generate asynchronously.
+            if (_activeDialog != null && _activeDialogSource != null)
+            {
+                _activeDialog.SetCurrentLine(_activeDialogSource.GetCurrentLine());
+                if (!_activeDialog.HasPortrait && !string.IsNullOrEmpty(_activeDialogPortrait) && _host is ISpriteByName sprites)
+                {
+                    var sp = sprites.GetSprite(_activeDialogPortrait);
+                    if (sp != null) _activeDialog.SetPortrait(sp);
+                }
+            }
 
             var d = new WorldHudData();
 
@@ -215,7 +223,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             if (_activeDialogSource != null)
             {
                 _activeDialogSource.EndConversation();
-                _activeDialogSource = null; _activeDialog = null; _dialogAsked = false;
+                _activeDialogSource = null; _activeDialog = null; _activeDialogPortrait = null;
             }
             if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
             // Safety net for IgModal-based views in case the tracked element ever desyncs.
@@ -240,16 +248,21 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     topics.Add(new DialogTopicOption(id, HumanizeToken(id) ?? id));
 
             _activeDialogSource = src;
-            _dialogAsked = false;
+            _activeDialogPortrait = portrait;
             _activeDialog = new DialogView(
                 c, CloseScreen,
                 string.IsNullOrEmpty(npcName) ? "Stranger" : npcName,
                 portrait,
                 src.GetCurrentLine(),
                 topics,
-                id => { _dialogAsked = true; src.SelectTopic(id); },
+                id => src.SelectTopic(id),
                 CloseScreen);
             _activeScreen = c.childCount > before ? c.ElementAt(c.childCount - 1) : null;
+            if (!string.IsNullOrEmpty(portrait) && _host is ISpriteByName spriteLookup)
+            {
+                var sp = spriteLookup.GetSprite(portrait);
+                if (sp != null) _activeDialog.SetPortrait(sp);
+            }
         }
 
         private void ConsulDm() => OpenScreen("consul");
@@ -567,7 +580,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         // TODO(host-action): human wires real save/load/quit/combat.
         private void TodoSettingsAction() => LogTodoAndClose("open settings");
-        private void TodoMainMenuAction() => LogTodoAndClose("return to main menu");
+        // Real action (Pause + Death "Main Menu"): unpause and load the menu scene.
+        private void TodoMainMenuAction()
+        {
+            Time.timeScale = 1f;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(EmberScenes.MainMenu);
+        }
         private void TodoLoadLastSaveAction() => LogTodoAndClose("load last save");
         private void TodoCombatFleeAction() => LogTodoAndClose("combat flee");
         private void TodoTakeAllLootAction() => LogTodoAndClose("take all loot");

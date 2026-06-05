@@ -157,11 +157,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             {
                 _label = label;
                 Root = new VisualElement();
-                Root.style.flexGrow = 1; Root.style.height = 24; Radius(Root, 999);
+                Root.style.flexGrow = 1; Root.style.height = 24; Radius(Root, 6);
                 Root.style.backgroundColor = C(0, 0, 0, 0.45f);
                 _fill = new VisualElement();
                 _fill.style.position = Position.Absolute; _fill.style.left = 2; _fill.style.top = 2; _fill.style.bottom = 2;
-                _fill.style.backgroundColor = color; Radius(_fill, 999);
+                _fill.style.backgroundColor = color; Radius(_fill, 6);
                 Root.Add(_fill);
                 _text = Text(label, Sans, 10, Bone, FontStyle.Bold);
                 _text.style.letterSpacing = 0.8f;

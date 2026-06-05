@@ -168,12 +168,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             track.style.flexGrow = 1;
             track.style.height = 5;
             track.style.backgroundColor = C(0, 0, 0, 0.35f);
-            Radius(track, 999);
+            Radius(track, 3);
             var fill = new VisualElement();
             fill.style.width = Length.Percent(need.Value);
             fill.style.height = 5;
             fill.style.backgroundColor = need.Value > 75 ? NeedColor(need.Name) : need.Value > 40 ? Amber : Health;
-            Radius(fill, 999);
+            Radius(fill, 3);
             track.Add(fill);
             row.Add(track);
 
