@@ -56,6 +56,13 @@ namespace EmberCrpg.Data.GeneratedAssets
             return prefix + "-" + Hash(material, 12);
         }
 
+        public static string BuildDeterministicToken(string prefix, string material)
+        {
+            var safePrefix = NormalizeSegment(prefix);
+            if (string.IsNullOrEmpty(safePrefix)) safePrefix = "token";
+            return safePrefix + "-" + Hash(material ?? string.Empty, 12);
+        }
+
         public static int DeterministicIndex(string material, int candidateCount)
         {
             if (candidateCount <= 0) return -1;

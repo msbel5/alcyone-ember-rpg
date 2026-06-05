@@ -25,6 +25,8 @@ namespace EmberCrpg.Data.GeneratedAssets
         public string spritePath = string.Empty;
         public string materialPath = string.Empty;
         public string prefabPath = string.Empty;
+        public GeneratedAssetGenerationJob spriteJob = new GeneratedAssetGenerationJob();
+        public List<string> validationWarnings = new List<string>();
         public GeneratedAssetLicenseStatus licenseStatus = GeneratedAssetLicenseStatus.Unknown;
         public bool humanApproved;
         public string notes = string.Empty;

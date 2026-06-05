@@ -11,6 +11,15 @@ namespace EmberCrpg.Data.GeneratedAssets
     public sealed class GeneratedAssetPromptPreset
 #endif
     {
+        public static GeneratedAssetPromptPreset CreateRuntimeInstance()
+        {
+#if UNITY_5_3_OR_NEWER
+            return CreateInstance<GeneratedAssetPromptPreset>();
+#else
+            return new GeneratedAssetPromptPreset();
+#endif
+        }
+
         public string presetName = string.Empty;
         public GeneratedAssetKind kind = GeneratedAssetKind.ItemBillboard;
         public string styleVersion = "v1";

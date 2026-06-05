@@ -9,9 +9,11 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
     public sealed partial class GeneratedAssetLibraryWindow : EditorWindow
     {
         private const string DefaultDatabasePath = "Assets/Manifests/GeneratedAssets/GeneratedAssetDatabase.asset";
+        private const string DefaultSettingsPath = "Assets/Settings/GeneratedAssetPipelineSettings.asset";
 
         private GeneratedAssetDatabase _database;
         private GeneratedAssetPromptPreset _previewPreset;
+        private GeneratedAssetPipelineSettings _pipelineSettings;
         private Vector2 _listScroll;
         private Vector2 _detailScroll;
         private int _selectedIndex = -1;
@@ -48,8 +50,10 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
             {
                 _database = (GeneratedAssetDatabase)EditorGUILayout.ObjectField(_database, typeof(GeneratedAssetDatabase), false, GUILayout.Width(320f));
                 _previewPreset = (GeneratedAssetPromptPreset)EditorGUILayout.ObjectField(_previewPreset, typeof(GeneratedAssetPromptPreset), false, GUILayout.Width(240f));
+                _pipelineSettings = (GeneratedAssetPipelineSettings)EditorGUILayout.ObjectField(_pipelineSettings, typeof(GeneratedAssetPipelineSettings), false, GUILayout.Width(240f));
 
                 if (GUILayout.Button("Create Database", EditorStyles.toolbarButton, GUILayout.Width(110f))) CreateDatabase();
+                if (GUILayout.Button("Create Settings", EditorStyles.toolbarButton, GUILayout.Width(110f))) CreateSettings();
                 if (GUILayout.Button("Add Record", EditorStyles.toolbarButton, GUILayout.Width(80f))) AddRecord();
                 if (GUILayout.Button("Validate", EditorStyles.toolbarButton, GUILayout.Width(70f))) Validate();
                 if (GUILayout.Button("Export JSON", EditorStyles.toolbarButton, GUILayout.Width(90f))) ExportJson();
@@ -72,6 +76,21 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
             _database = database;
             _selectedIndex = _database.Records.Count > 0 ? 0 : -1;
             Selection.activeObject = _database;
+        }
+
+        private void CreateSettings()
+        {
+            EmberSceneSavePolicy.EnsureFolderExists("Assets/Settings");
+            var settings = AssetDatabase.LoadAssetAtPath<GeneratedAssetPipelineSettings>(DefaultSettingsPath);
+            if (settings == null)
+            {
+                settings = CreateInstance<GeneratedAssetPipelineSettings>();
+                AssetDatabase.CreateAsset(settings, DefaultSettingsPath);
+                AssetDatabase.SaveAssets();
+            }
+
+            _pipelineSettings = settings;
+            Selection.activeObject = _pipelineSettings;
         }
 
         private void AddRecord()

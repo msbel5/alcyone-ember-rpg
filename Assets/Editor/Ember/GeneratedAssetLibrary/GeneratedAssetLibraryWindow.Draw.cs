@@ -81,6 +81,7 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
                 if (record.licenseStatus != GeneratedAssetLicenseStatus.Clean || string.IsNullOrWhiteSpace(record.modelLicense))
                     EditorGUILayout.HelpBox("Commercial licensing must be reviewed before runtime use.", MessageType.Warning);
 
+                DrawPipelineActions(record);
                 EditorGUILayout.EndScrollView();
                 EditorUtility.SetDirty(_database);
             }
