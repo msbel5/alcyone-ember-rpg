@@ -15,7 +15,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// <see cref="EmberDomainAdapterLocator.Register"/> once Captain's domain stores
     /// expose an integration adapter.
     /// </summary>
-    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait, IJournalSource, ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ILevelUpSource, ILevelUpCommandSink
+    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait, IJournalSource, ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ILevelUpSource, ILevelUpCommandSink, ICombatScreenSource
     {
         private readonly List<JobQueueRow> _jobRows = new List<JobQueueRow>();
         private readonly List<ColonyNeedsRow> _needsRows = new List<ColonyNeedsRow>();
@@ -49,6 +49,21 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public EmberCrpg.Domain.Actors.GridPosition PlayerOverlandTile => default;
         public string StartingSettlementName => null;
         public CombatHudState CombatHud => _combatHud;
+        public CombatScreenState ReadCombatScreenState() =>
+            new CombatScreenState(
+                false,
+                "Cinder Vey",
+                _combatHud.Health,
+                _combatHud.HealthMax,
+                _combatHud.Stamina,
+                _combatHud.StaminaMax,
+                _combatHud.Mana,
+                _combatHud.ManaMax,
+                string.Empty,
+                0,
+                0,
+                _combatHud.LastEventLine,
+                System.Array.Empty<CombatSpellActionRow>());
         public PlayerSheetState PlayerSheet => new PlayerSheetState("Cinder Vey", _playerStats[0], _playerStats[1], _playerStats[2], _playerStats[3], _playerStats[4], _playerStats[5]);
         public IReadOnlyList<WorldEventRow> RecentWorldEvents(int maxRows) => System.Array.Empty<WorldEventRow>();
         public IReadOnlyList<JournalChapterRow> GetChapters()

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Domain.Magic;
 using EmberCrpg.Presentation.Ember.Inputs;
 using EmberCrpg.Presentation.Ember.Adapters;
@@ -40,6 +41,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private TradeView _activeTrade;
         private CraftingView _activeCrafting;
         private SaveLoadView _activeSaveLoad;
+        private CombatView _activeCombat;
         private bool _oraclePending;
         private bool _wasOpen;
 
@@ -143,6 +145,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 if (!string.IsNullOrEmpty(resolved)) { _activeOracle.SetOracleLine(resolved); _oraclePending = false; }
             }
 
+            if (_activeCombat != null && _host is ICombatScreenSource combatScreen)
+                _activeCombat.Refresh(combatScreen.ReadCombatScreenState());
+
             var d = new WorldHudData();
 
             if (_host is ICombatHudSource combat)
@@ -199,7 +204,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 case "dialog":    new DialogView(c, CloseScreen); break;
                 case "combat":
                     RefreshLiveSpells();
-                    new CombatView(c, CloseScreen, TodoCombatAction, TodoCombatFleeAction);
+                    _activeCombat = new CombatView(c, CloseScreen, ReadCombatScreenState(), TodoCombatAction, TodoCombatFleeAction);
                     break;
                 case "loot":
                     RefreshLiveInventory();
@@ -253,7 +258,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 _activeDialogSource.EndConversation();
                 _activeDialogSource = null; _activeDialog = null; _activeDialogPortrait = null;
             }
-            _activeOracle = null; _oraclePending = false; _activeTrade = null; _activeCrafting = null; _activeSaveLoad = null;
+            _activeOracle = null; _oraclePending = false; _activeTrade = null; _activeCrafting = null; _activeSaveLoad = null; _activeCombat = null;
             if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
             // Safety net for IgModal-based views in case the tracked element ever desyncs.
             for (var open = _stage.Canvas.Q("IgModalOverlay"); open != null; open = _stage.Canvas.Q("IgModalOverlay"))
@@ -603,6 +608,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             return new LevelUpScreenState(player.Name, player.Level, 5, stats, choices);
         }
 
+        private CombatScreenState ReadCombatScreenState()
+        {
+            return _host is ICombatScreenSource combatSource
+                ? combatSource.ReadCombatScreenState()
+                : new CombatScreenState(false, "Unknown", 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, string.Empty, System.Array.Empty<CombatSpellActionRow>());
+        }
+
         private static InventoryItemData MapInventorySlot(InventorySlot slot, int index)
         {
             var fallback = FindDefaultInventoryItem(slot.IconName);
@@ -880,7 +892,32 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         }
         private void TodoFastTravelAction(string locationId) => LogTodoAndClose("fast travel: " + locationId);
         private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);
-        private void TodoCombatAction(string actionId) => LogTodoAndClose("combat action: " + actionId);
+        private void TodoCombatAction(string actionId)
+        {
+            var commands = EmberDomainAdapterLocator.PlayerCommandSink;
+            if (commands == null)
+            {
+                Debug.Log("[InGameUI] combat commands unavailable.");
+                return;
+            }
+
+            bool handled = false;
+            if (string.Equals(actionId, "attack", StringComparison.Ordinal))
+            {
+                handled = commands.TryMeleeStrike(string.Empty, EmberRuntimeOptionsProvider.Current.Combat.MeleeRawDamage);
+            }
+            else if (!string.IsNullOrEmpty(actionId) && actionId.StartsWith("cast:", StringComparison.Ordinal))
+            {
+                var indexText = actionId.Substring("cast:".Length);
+                if (int.TryParse(indexText, out var slotIndex))
+                    handled = commands.TryCastSpell(slotIndex);
+            }
+
+            if (!handled && !string.IsNullOrEmpty(actionId))
+                commands.LogCombat("Combat action refused: " + actionId);
+
+            _activeCombat?.Refresh(ReadCombatScreenState());
+        }
         private void TodoSaveSlotAction(EmberCrpg.Data.Save.SaveSlotId slot)
         {
             if (!(_host is ISaveLoadCommandSink saveSink))

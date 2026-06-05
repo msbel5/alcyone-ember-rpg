@@ -20,7 +20,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
     [DisallowMultipleComponent]
     public sealed partial class EmberWorldHost : MonoBehaviour, EmberTickDriver.ITickListener,
         IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait, IPlayerSheetSource,
-        IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ISpellBarSource, IJournalSource,
+        IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ICombatScreenSource, ISpellBarSource, IJournalSource,
         ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ISaveLoadSource, ISaveLoadCommandSink,
         ILevelUpSource, ILevelUpCommandSink
     {
@@ -377,6 +377,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         IReadOnlyList<string> ISpellBarSource.GetSlots() => _worldView.SpellSlots;
         int ISpellBarSource.GetSelectedSlot() => _selectedSpellSlot;
         CombatHudState ICombatHudSource.Read() => _hud.CombatHud;
+        CombatScreenState ICombatScreenSource.ReadCombatScreenState() => (_adapter as ICombatScreenSource)?.ReadCombatScreenState()
+            ?? new CombatScreenState(false, "Unknown", 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, string.Empty, System.Array.Empty<CombatSpellActionRow>());
         PlayerSheetState IPlayerSheetSource.ReadPlayerSheet() => _hud.PlayerSheet;
         IReadOnlyList<JournalChapterRow> IJournalSource.GetChapters() => (_adapter as IJournalSource)?.GetChapters() ?? System.Array.Empty<JournalChapterRow>();
         int IJournalSource.GetCurrentChapter() => (_adapter as IJournalSource)?.GetCurrentChapter() ?? 0;
