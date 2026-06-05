@@ -21,7 +21,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
     public sealed partial class EmberWorldHost : MonoBehaviour, EmberTickDriver.ITickListener,
         IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait, IPlayerSheetSource,
         IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ISpellBarSource, IJournalSource,
-        ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink
+        ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ISaveLoadSource, ISaveLoadCommandSink
     {
         [SerializeField] private SpriteRegistry _spriteRegistry;
 
@@ -383,6 +383,28 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         TradeActionResult ITradeCommandSink.ExecuteTrade(TradeActionRequest request) => (_adapter as ITradeCommandSink)?.ExecuteTrade(request) ?? new TradeActionResult(false, "Trade commands are unavailable.");
         CraftingLedgerState ICraftingSource.ReadCraftingState() => (_adapter as ICraftingSource)?.ReadCraftingState() ?? new CraftingLedgerState("No Workstation", System.Array.Empty<CraftingRecipeRow>());
         CraftingActionResult ICraftingCommandSink.ExecuteCraft(string recipeId) => (_adapter as ICraftingCommandSink)?.ExecuteCraft(recipeId) ?? new CraftingActionResult(false, "Craft commands are unavailable.");
+        SaveLoadScreenState ISaveLoadSource.ReadSaveLoadState()
+        {
+            var service = GetComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
+            return service != null
+                ? new SaveLoadScreenState(service.ManualSlotCap, service.ListSlots())
+                : new SaveLoadScreenState(10, System.Array.Empty<EmberCrpg.Data.Save.SaveSlotMetadata>());
+        }
+        SaveLoadActionResult ISaveLoadCommandSink.SaveToSlot(EmberCrpg.Data.Save.SaveSlotId slot)
+        {
+            var service = GetComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
+            return service != null ? service.SaveFromUi(slot) : new SaveLoadActionResult(false, "Save service is unavailable.");
+        }
+        SaveLoadActionResult ISaveLoadCommandSink.LoadFromSlot(EmberCrpg.Data.Save.SaveSlotId slot)
+        {
+            var service = GetComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
+            return service != null ? service.LoadFromUi(slot) : new SaveLoadActionResult(false, "Load service is unavailable.");
+        }
+        SaveLoadActionResult ISaveLoadCommandSink.LoadLatestSave()
+        {
+            var service = GetComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
+            return service != null ? service.LoadLatestFromUi() : new SaveLoadActionResult(false, "Load service is unavailable.");
+        }
         public Sprite GetSprite(string name)
         {
             var registrySprite = _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;

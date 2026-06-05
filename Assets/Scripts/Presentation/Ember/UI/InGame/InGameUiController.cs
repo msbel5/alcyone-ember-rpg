@@ -39,6 +39,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private ConsulFateView _activeOracle;        // the open Oracle screen, polled for its async prophecy
         private TradeView _activeTrade;
         private CraftingView _activeCrafting;
+        private SaveLoadView _activeSaveLoad;
         private bool _oraclePending;
         private bool _wasOpen;
 
@@ -223,7 +224,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new DeathView(c, CloseScreen, TodoLoadLastSaveAction, TodoMainMenuAction);
                     break;
                 case "savegame":
-                    new SaveLoadView(c, CloseScreen, TodoSaveSlotAction, TodoLoadSlotAction);
+                    RefreshLiveSaveLoad();
+                    _activeSaveLoad = new SaveLoadView(c, CloseScreen, TodoSaveSlotAction, TodoLoadSlotAction);
                     break;
             }
             // Every view calls stageCanvas.Add(_overlay) exactly once, so the newly-added last child IS this
@@ -250,7 +252,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 _activeDialogSource.EndConversation();
                 _activeDialogSource = null; _activeDialog = null; _activeDialogPortrait = null;
             }
-            _activeOracle = null; _oraclePending = false; _activeTrade = null; _activeCrafting = null;
+            _activeOracle = null; _oraclePending = false; _activeTrade = null; _activeCrafting = null; _activeSaveLoad = null;
             if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
             // Safety net for IgModal-based views in case the tracked element ever desyncs.
             for (var open = _stage.Canvas.Q("IgModalOverlay"); open != null; open = _stage.Canvas.Q("IgModalOverlay"))
@@ -553,6 +555,31 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             IgCraftingData.Current = new CraftingScreenData(state.StationName, line, recipes);
         }
 
+        private void RefreshLiveSaveLoad(string statusLine = null)
+        {
+            IgSaveLoadData.Current = IgSaveLoadData.Default;
+            if (!(_host is ISaveLoadSource saveSrc)) return;
+
+            var state = saveSrc.ReadSaveLoadState();
+            var lookup = new Dictionary<string, EmberCrpg.Data.Save.SaveSlotMetadata>(StringComparer.Ordinal);
+            for (int i = 0; i < state.Slots.Count; i++)
+            {
+                var meta = state.Slots[i];
+                if (meta == null) continue;
+                lookup[ToSlotId(meta).FileStem()] = meta;
+            }
+
+            var rows = new List<SaveSlotViewData>(state.ManualSlotCap + 2);
+            AddSaveSlotRow(rows, lookup, EmberCrpg.Data.Save.SaveSlotId.Quick);
+            AddSaveSlotRow(rows, lookup, EmberCrpg.Data.Save.SaveSlotId.Auto);
+            for (int i = 0; i < state.ManualSlotCap; i++)
+                AddSaveSlotRow(rows, lookup, EmberCrpg.Data.Save.SaveSlotId.Manual(i));
+
+            IgSaveLoadData.Current = new SaveLoadScreenData(
+                statusLine ?? "Choose a slot to save or load.",
+                rows.ToArray());
+        }
+
         private static InventoryItemData MapInventorySlot(InventorySlot slot, int index)
         {
             var fallback = FindDefaultInventoryItem(slot.IconName);
@@ -721,6 +748,39 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             }
         }
 
+        private static void AddSaveSlotRow(List<SaveSlotViewData> rows, Dictionary<string, EmberCrpg.Data.Save.SaveSlotMetadata> lookup, EmberCrpg.Data.Save.SaveSlotId slot)
+        {
+            lookup.TryGetValue(slot.FileStem(), out var meta);
+            rows.Add(new SaveSlotViewData(
+                slot,
+                EmberCrpg.Presentation.Ember.Save.SaveSlotLabelFormatter.Title(slot),
+                DescribeSaveSlot(slot, meta),
+                meta != null));
+        }
+
+        private static string DescribeSaveSlot(EmberCrpg.Data.Save.SaveSlotId slot, EmberCrpg.Data.Save.SaveSlotMetadata meta)
+        {
+            if (meta == null)
+                return EmberCrpg.Presentation.Ember.Save.SaveSlotLabelFormatter.Title(slot) + " · Empty slot";
+
+            var scene = string.IsNullOrWhiteSpace(meta.sceneName) ? "Unknown Scene" : HumanizeToken(meta.sceneName);
+            var minutes = meta.playtimeMinutes < 0 ? 0 : meta.playtimeMinutes;
+            var stamp = string.IsNullOrWhiteSpace(meta.savedAtUtcIso) ? "Unknown time" : meta.savedAtUtcIso;
+            return scene + " · " + minutes + "m · " + stamp;
+        }
+
+        private static EmberCrpg.Data.Save.SaveSlotId ToSlotId(EmberCrpg.Data.Save.SaveSlotMetadata meta)
+        {
+            if (meta == null || string.IsNullOrWhiteSpace(meta.slotKind))
+                return EmberCrpg.Data.Save.SaveSlotId.Manual(0);
+
+            if (string.Equals(meta.slotKind, EmberCrpg.Data.Save.SaveSlotKind.Quick.ToString(), StringComparison.OrdinalIgnoreCase))
+                return EmberCrpg.Data.Save.SaveSlotId.Quick;
+            if (string.Equals(meta.slotKind, EmberCrpg.Data.Save.SaveSlotKind.Auto.ToString(), StringComparison.OrdinalIgnoreCase))
+                return EmberCrpg.Data.Save.SaveSlotId.Auto;
+            return EmberCrpg.Data.Save.SaveSlotId.Manual(meta.slotIndex < 0 ? 0 : meta.slotIndex);
+        }
+
         // TODO(host-action): human wires real save/load/quit/combat.
         private void TodoSettingsAction() => LogTodoAndClose("open settings");
         // Real action (Pause + Death "Main Menu"): unpause and load the menu scene.
@@ -729,7 +789,25 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             Time.timeScale = 1f;
             UnityEngine.SceneManagement.SceneManager.LoadScene(EmberScenes.MainMenu);
         }
-        private void TodoLoadLastSaveAction() => LogTodoAndClose("load last save");
+        private void TodoLoadLastSaveAction()
+        {
+            if (!(_host is ISaveLoadCommandSink saveSink))
+            {
+                Debug.Log("[InGameUI] last-save load unavailable.");
+                CloseScreen();
+                return;
+            }
+
+            var result = saveSink.LoadLatestSave();
+            if (result.Success)
+            {
+                CloseScreen();
+                return;
+            }
+
+            RefreshLiveSaveLoad(result.Message);
+            _activeSaveLoad?.Refresh();
+        }
         private void TodoCombatFleeAction() => LogTodoAndClose("combat flee");
         private void TodoTakeAllLootAction() => LogTodoAndClose("take all loot");
         private void TodoConfirmLevelUpAction() => LogTodoAndClose("confirm level up");
@@ -766,8 +844,39 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private void TodoFastTravelAction(string locationId) => LogTodoAndClose("fast travel: " + locationId);
         private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);
         private void TodoCombatAction(string actionId) => LogTodoAndClose("combat action: " + actionId);
-        private void TodoSaveSlotAction(int slotNumber) => LogTodoAndClose("save slot " + slotNumber);
-        private void TodoLoadSlotAction(int slotNumber) => LogTodoAndClose("load slot " + slotNumber);
+        private void TodoSaveSlotAction(EmberCrpg.Data.Save.SaveSlotId slot)
+        {
+            if (!(_host is ISaveLoadCommandSink saveSink))
+            {
+                RefreshLiveSaveLoad("Save service is unavailable.");
+                _activeSaveLoad?.Refresh();
+                return;
+            }
+
+            var result = saveSink.SaveToSlot(slot);
+            RefreshLiveSaveLoad(result.Message);
+            _activeSaveLoad?.Refresh();
+        }
+
+        private void TodoLoadSlotAction(EmberCrpg.Data.Save.SaveSlotId slot)
+        {
+            if (!(_host is ISaveLoadCommandSink saveSink))
+            {
+                RefreshLiveSaveLoad("Load service is unavailable.");
+                _activeSaveLoad?.Refresh();
+                return;
+            }
+
+            var result = saveSink.LoadFromSlot(slot);
+            if (result.Success)
+            {
+                CloseScreen();
+                return;
+            }
+
+            RefreshLiveSaveLoad(result.Message);
+            _activeSaveLoad?.Refresh();
+        }
         private void TodoColonyTaskAction(string actorName, string taskId) =>
             LogTodoAndClose("colony task: " + actorName + " -> " + taskId);
 
