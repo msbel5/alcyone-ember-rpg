@@ -71,8 +71,11 @@ namespace EmberCrpg.Simulation.World
             world.PlayerInventory = new InventoryState(10);
             world.PlayerEquipment = new EquipmentState();
             world.PlayerInventory.TryAdd(WorldItemCatalog.CreateAshTrainingBlade());
-            world.MerchantInventory = new InventoryState(4);
+            world.MerchantInventory = new InventoryState(32);
             world.MerchantInventory.TryAdd(WorldItemCatalog.CreateGateWrit());
+            world.PlayerGold = 240;
+            world.MerchantGold = 1200;
+            world.MerchantStoreSeeded = false;
             world.Pickups = new List<RoomPickup>
             {
                 new RoomPickup(WorldItemCatalog.CreateEmberShard(), pickupSpawn.Position),

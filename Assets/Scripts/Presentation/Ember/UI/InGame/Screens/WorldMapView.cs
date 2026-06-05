@@ -56,6 +56,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             area.style.overflow = Overflow.Hidden;
             area.style.backgroundColor = WorldSea;
 
+            var mapFrame = new VisualElement();
+            mapFrame.style.position = Position.Absolute;
+            mapFrame.style.overflow = Overflow.Hidden;
+            mapFrame.style.backgroundColor = WorldSea;
+            Radius(mapFrame, 12);
+            area.Add(mapFrame);
+
             var texture = CreateMapTexture(map);
             if (texture != null)
             {
@@ -67,10 +74,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 image.style.right = 0;
                 image.style.top = 0;
                 image.style.bottom = 0;
-                area.Add(image);
+                mapFrame.Add(image);
             }
 
-            AddGrid(area);
+            AddGrid(mapFrame);
 
             for (int i = 0; i < locations.Count; i++)
             {
@@ -101,7 +108,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                     pin.Add(label);
                 }
 
-                area.Add(pin);
+                mapFrame.Add(pin);
             }
 
             var player = new VisualElement();
@@ -114,7 +121,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             Border(player, WA(0.92f), 2);
             Radius(player, 999);
             player.style.backgroundColor = Color.clear;
-            area.Add(player);
+            mapFrame.Add(player);
+
+            area.RegisterCallback<GeometryChangedEvent>(_ => FitMapFrame(area, mapFrame, map.Width, map.Height));
+            area.schedule.Execute(() => FitMapFrame(area, mapFrame, map.Width, map.Height)).StartingIn(0);
 
             var summary = new VisualElement();
             summary.style.position = Position.Absolute;
@@ -385,6 +395,29 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         {
             if (size <= 0) return 50f;
             return ((coordinate + 0.5f) / size) * 100f;
+        }
+
+        private static void FitMapFrame(VisualElement area, VisualElement frame, int mapWidth, int mapHeight)
+        {
+            if (area == null || frame == null || mapWidth <= 0 || mapHeight <= 0) return;
+
+            var bounds = area.contentRect;
+            if (bounds.width <= 1f || bounds.height <= 1f) return;
+
+            float aspect = mapWidth / (float)mapHeight;
+            float fittedWidth = bounds.width;
+            float fittedHeight = fittedWidth / aspect;
+
+            if (fittedHeight > bounds.height)
+            {
+                fittedHeight = bounds.height;
+                fittedWidth = fittedHeight * aspect;
+            }
+
+            frame.style.width = fittedWidth;
+            frame.style.height = fittedHeight;
+            frame.style.left = (bounds.width - fittedWidth) * 0.5f;
+            frame.style.top = (bounds.height - fittedHeight) * 0.5f;
         }
 
         private static int CompareLocations(MapLocationData a, MapLocationData b)

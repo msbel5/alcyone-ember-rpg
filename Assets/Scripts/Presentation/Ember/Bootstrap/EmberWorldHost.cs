@@ -20,7 +20,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
     [DisallowMultipleComponent]
     public sealed partial class EmberWorldHost : MonoBehaviour, EmberTickDriver.ITickListener,
         IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait, IPlayerSheetSource,
-        IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ISpellBarSource
+        IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ISpellBarSource, IJournalSource,
+        ITradeSource, ITradeCommandSink
     {
         [SerializeField] private SpriteRegistry _spriteRegistry;
 
@@ -203,12 +204,15 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // BUG-4: poll for the resolved oracle prophecy (LLM-flavoured, or the deterministic fate
             // bucket as a floor). When it lands a frame+ later, replace the placeholder in the dialog
             // and extend the dwell so the player can actually read it — previously this only hit the log.
-            var resolvedFate = _oracle.TryConsumeResolvedFate();
-            if (!string.IsNullOrEmpty(resolvedFate))
+            if (!InGameUiController.OwnsInput)
             {
-                _fateLine = resolvedFate;
-                _fateTimer = EmberRuntimeOptionsProvider.Current.WorldHost.FateResolvedSeconds;
-                RouteFateToDialog(_fateLine);
+                var resolvedFate = _oracle.TryConsumeResolvedFate();
+                if (!string.IsNullOrEmpty(resolvedFate))
+                {
+                    _fateLine = resolvedFate;
+                    _fateTimer = EmberRuntimeOptionsProvider.Current.WorldHost.FateResolvedSeconds;
+                    RouteFateToDialog(_fateLine);
+                }
             }
 
             // BUG-2: toggle the standing colony overlay (JobQueue / Faction / ColonyNeeds). Hidden by
@@ -373,6 +377,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         int ISpellBarSource.GetSelectedSlot() => _selectedSpellSlot;
         CombatHudState ICombatHudSource.Read() => _hud.CombatHud;
         PlayerSheetState IPlayerSheetSource.ReadPlayerSheet() => _hud.PlayerSheet;
+        IReadOnlyList<JournalChapterRow> IJournalSource.GetChapters() => (_adapter as IJournalSource)?.GetChapters() ?? System.Array.Empty<JournalChapterRow>();
+        int IJournalSource.GetCurrentChapter() => (_adapter as IJournalSource)?.GetCurrentChapter() ?? 0;
+        TradeLedgerState ITradeSource.ReadTradeState() => (_adapter as ITradeSource)?.ReadTradeState() ?? new TradeLedgerState("Quartermaster", "Current Holding", 0, 0, System.Array.Empty<TradeItemRow>(), System.Array.Empty<TradeItemRow>());
+        TradeActionResult ITradeCommandSink.ExecuteTrade(TradeActionRequest request) => (_adapter as ITradeCommandSink)?.ExecuteTrade(request) ?? new TradeActionResult(false, "Trade commands are unavailable.");
         public Sprite GetSprite(string name)
         {
             var registrySprite = _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;

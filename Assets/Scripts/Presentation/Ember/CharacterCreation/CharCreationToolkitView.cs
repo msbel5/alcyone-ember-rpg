@@ -668,6 +668,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 card.Add(p);
                 scroll.Add(card);
                 col.Add(scroll);
+                scroll.schedule.Execute(() => EmberCrpg.Presentation.Ember.UI.InGame.IgDesign.StyleScroll(scroll)).StartingIn(0);
                 scroll.schedule.Execute(() => scroll.scrollOffset = new Vector2(0f, float.MaxValue)).StartingIn(0);
             }
 
@@ -789,6 +790,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             var sv = new ScrollView(ScrollViewMode.Vertical);
             sv.style.flexGrow = 1;
             sv.mode = ScrollViewMode.Vertical;
+            sv.schedule.Execute(() => EmberCrpg.Presentation.Ember.UI.InGame.IgDesign.StyleScroll(sv)).StartingIn(0);
             return sv;
         }
 

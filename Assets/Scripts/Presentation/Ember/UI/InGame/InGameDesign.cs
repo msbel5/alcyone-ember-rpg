@@ -132,6 +132,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         public static void StyleScroll(ScrollView sv)
         {
             if (sv == null) return;
+            if (sv.contentViewport != null)
+                sv.contentViewport.style.paddingRight = 12;
             StyleScroller(sv.verticalScroller, true);
             StyleScroller(sv.horizontalScroller, false);
         }
@@ -191,56 +193,110 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
             scroller.lowButton.style.display = DisplayStyle.None;
             scroller.highButton.style.display = DisplayStyle.None;
-            scroller.style.backgroundColor = Alpha(InputBg, 0.82f);
-            Radius(scroller, 999);
+            scroller.style.backgroundColor = Color.clear;
+            scroller.style.borderLeftWidth = 0;
+            scroller.style.borderRightWidth = 0;
+            scroller.style.borderTopWidth = 0;
+            scroller.style.borderBottomWidth = 0;
+            scroller.style.position = Position.Absolute;
+            scroller.style.paddingLeft = 0;
+            scroller.style.paddingRight = 0;
+            scroller.style.paddingTop = 0;
+            scroller.style.paddingBottom = 0;
 
             if (vertical)
             {
-                scroller.style.width = 8;
-                scroller.style.minWidth = 8;
-                scroller.style.maxWidth = 8;
+                scroller.style.width = 6;
+                scroller.style.minWidth = 6;
+                scroller.style.maxWidth = 6;
+                scroller.style.top = 4;
+                scroller.style.bottom = 4;
+                scroller.style.right = 4;
+                scroller.style.left = StyleKeyword.Auto;
             }
             else
             {
-                scroller.style.height = 8;
-                scroller.style.minHeight = 8;
-                scroller.style.maxHeight = 8;
+                scroller.style.height = 6;
+                scroller.style.minHeight = 6;
+                scroller.style.maxHeight = 6;
+                scroller.style.left = 4;
+                scroller.style.right = 4;
+                scroller.style.bottom = 4;
+                scroller.style.top = StyleKeyword.Auto;
             }
 
             var slider = scroller.slider;
             if (slider != null)
             {
-                slider.style.backgroundColor = Alpha(Ink, 0.25f);
+                slider.style.backgroundColor = Alpha(Ink, 0.12f);
+                slider.style.borderLeftWidth = 0;
+                slider.style.borderRightWidth = 0;
+                slider.style.borderTopWidth = 0;
+                slider.style.borderBottomWidth = 0;
                 Radius(slider, 999);
 
                 if (vertical)
                 {
-                    slider.style.minWidth = 8;
-                    slider.style.maxWidth = 8;
+                    slider.style.minWidth = 6;
+                    slider.style.maxWidth = 6;
                 }
                 else
                 {
-                    slider.style.minHeight = 8;
-                    slider.style.maxHeight = 8;
+                    slider.style.minHeight = 6;
+                    slider.style.maxHeight = 6;
                 }
+            }
+
+            var tracker = scroller.Q("unity-tracker");
+            if (tracker != null)
+            {
+                tracker.style.backgroundColor = Color.clear;
+                tracker.style.borderLeftWidth = 0;
+                tracker.style.borderRightWidth = 0;
+                tracker.style.borderTopWidth = 0;
+                tracker.style.borderBottomWidth = 0;
+                Radius(tracker, 999);
             }
 
             var dragger = scroller.Q("unity-dragger");
             if (dragger == null) return;
 
-            dragger.style.backgroundColor = Alpha(Gold, 0.50f);
-            Border(dragger, GA(0.72f), 1);
+            dragger.style.backgroundColor = Alpha(Gold, 0.45f);
+            dragger.style.borderLeftWidth = 0;
+            dragger.style.borderRightWidth = 0;
+            dragger.style.borderTopWidth = 0;
+            dragger.style.borderBottomWidth = 0;
             Radius(dragger, 999);
 
             if (vertical)
             {
-                dragger.style.minWidth = 8;
-                dragger.style.maxWidth = 8;
+                dragger.style.minWidth = 6;
+                dragger.style.maxWidth = 6;
             }
             else
             {
-                dragger.style.minHeight = 8;
-                dragger.style.maxHeight = 8;
+                dragger.style.minHeight = 6;
+                dragger.style.maxHeight = 6;
+            }
+
+            var draggerBorder = scroller.Q("unity-dragger-border");
+            if (draggerBorder != null)
+            {
+                draggerBorder.style.backgroundColor = Color.clear;
+                draggerBorder.style.borderLeftWidth = 0;
+                draggerBorder.style.borderRightWidth = 0;
+                draggerBorder.style.borderTopWidth = 0;
+                draggerBorder.style.borderBottomWidth = 0;
+            }
+
+            var draggerAnchor = scroller.Q("unity-dragger-anchor");
+            if (draggerAnchor != null)
+            {
+                draggerAnchor.style.backgroundColor = Color.clear;
+                draggerAnchor.style.borderLeftWidth = 0;
+                draggerAnchor.style.borderRightWidth = 0;
+                draggerAnchor.style.borderTopWidth = 0;
+                draggerAnchor.style.borderBottomWidth = 0;
             }
         }
     }

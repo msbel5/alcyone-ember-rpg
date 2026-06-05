@@ -15,7 +15,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// <see cref="EmberDomainAdapterLocator.Register"/> once Captain's domain stores
     /// expose an integration adapter.
     /// </summary>
-    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait
+    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait, IJournalSource, ITradeSource, ITradeCommandSink
     {
         private readonly List<JobQueueRow> _jobRows = new List<JobQueueRow>();
         private readonly List<ColonyNeedsRow> _needsRows = new List<ColonyNeedsRow>();
@@ -32,6 +32,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _currentDialogLine = "Greetings traveler.";
         private string _currentPortrait = "portrait_npc_placeholder";
         private List<string> _currentTopics = new List<string> { "Jobs", "Factions", "Rumors" };
+        private int _playerGold = 240;
+        private int _merchantGold = 900;
+        private readonly List<TradeItemRow> _merchantRows = new List<TradeItemRow>();
 
         public int TickIndex => _tick;
         public string HudText => _hudText;
@@ -46,6 +49,79 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public CombatHudState CombatHud => _combatHud;
         public PlayerSheetState PlayerSheet => default;   // stub adapter: no real character → views keep mock
         public IReadOnlyList<WorldEventRow> RecentWorldEvents(int maxRows) => System.Array.Empty<WorldEventRow>();
+        public IReadOnlyList<JournalChapterRow> GetChapters()
+        {
+            return new[]
+            {
+                new JournalChapterRow(
+                    0,
+                    "Chapter 1 · Smoke Test",
+                    new[]
+                    {
+                        new JournalEntryRow(
+                            "placeholder-forge",
+                            "Forge an Iron Ingot",
+                            "Year 1 · Day 1 · 00:00",
+                            "A placeholder settlement smith wants proof that you can shape iron into something useful.",
+                            "Main",
+                            JournalEntryStatus.Active)
+                    })
+            };
+        }
+
+        public int GetCurrentChapter() => 0;
+
+        public TradeLedgerState ReadTradeState()
+        {
+            if (_merchantRows.Count == 0)
+            {
+                _merchantRows.Add(new TradeItemRow("torch", "Torch", "trade_good", 5, 1, true, false));
+                _merchantRows.Add(new TradeItemRow("rope", "Rope", "trade_good", 3, 4, true, false));
+                _merchantRows.Add(new TradeItemRow("gate_writ", "Gate Writ", "paper", 1, 18, _playerGold >= 18, false));
+            }
+
+            var playerRows = new List<TradeItemRow>(_inventorySlots.Count);
+            for (int i = 0; i < _inventorySlots.Count; i++)
+            {
+                var slot = _inventorySlots[i];
+                playerRows.Add(new TradeItemRow(slot.IconName, Humanize(slot.IconName), "pack", slot.Count, 4, true, false));
+            }
+
+            return new TradeLedgerState("Quartermaster Ivo", "Smoke Test Holding", _playerGold, _merchantGold, _merchantRows.ToArray(), playerRows.ToArray());
+        }
+
+        public TradeActionResult ExecuteTrade(TradeActionRequest request)
+        {
+            if (request.Kind == TradeActionKind.Buy)
+            {
+                for (int i = 0; i < _merchantRows.Count; i++)
+                {
+                    var row = _merchantRows[i];
+                    if (!string.Equals(row.TemplateId, request.TemplateId, System.StringComparison.Ordinal) || row.Quantity <= 0)
+                        continue;
+                    if (_playerGold < row.UnitPrice)
+                        return new TradeActionResult(false, "Not enough gold.");
+                    _playerGold -= row.UnitPrice;
+                    _merchantGold += row.UnitPrice;
+                    _merchantRows[i] = new TradeItemRow(row.TemplateId, row.Name, row.Category, row.Quantity - 1, row.UnitPrice, _playerGold >= row.UnitPrice, row.Equipped);
+                    _inventorySlots.Add(new InventorySlot(row.TemplateId, 1));
+                    return new TradeActionResult(true, "Bought " + row.Name + ".");
+                }
+            }
+
+            for (int i = 0; i < _inventorySlots.Count; i++)
+            {
+                var slot = _inventorySlots[i];
+                if (!string.Equals(slot.IconName, request.TemplateId, System.StringComparison.Ordinal))
+                    continue;
+                _playerGold += 4;
+                _merchantGold -= 4;
+                _inventorySlots.RemoveAt(i);
+                return new TradeActionResult(true, "Sold " + Humanize(slot.IconName) + ".");
+            }
+
+            return new TradeActionResult(false, "Trade action unavailable.");
+        }
 
         public void AdvanceTick(int tickIndex)
         {
@@ -326,5 +402,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         private static int Bias(int tick, int baseValue, int slope, float multiplier) =>
             Mathf.Clamp(baseValue + (int)(slope * multiplier * tick), 0, 100);
+
+        private static string Humanize(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token)) return string.Empty;
+            var parts = token.Split('_');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (string.IsNullOrEmpty(parts[i])) continue;
+                var part = parts[i];
+                parts[i] = char.ToUpperInvariant(part[0]) + part.Substring(1);
+            }
+            return string.Join(" ", parts);
+        }
     }
 }

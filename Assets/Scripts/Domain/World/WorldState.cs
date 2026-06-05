@@ -146,6 +146,9 @@ namespace EmberCrpg.Domain.World
         public int GuardWarningCount;
         public bool EncounterActive;
         public string LastNarrative;
+        public int PlayerGold;
+        public int MerchantGold;
+        public bool MerchantStoreSeeded;
 
         /// <summary>
         /// ARCH-12: explicit, reflection-free state replace used by save/load restore. Mirrors every
@@ -202,6 +205,9 @@ namespace EmberCrpg.Domain.World
             GuardWarningCount = other.GuardWarningCount;
             EncounterActive = other.EncounterActive;
             LastNarrative = other.LastNarrative;
+            PlayerGold = other.PlayerGold;
+            MerchantGold = other.MerchantGold;
+            MerchantStoreSeeded = other.MerchantStoreSeeded;
         }
 
         /// <summary>

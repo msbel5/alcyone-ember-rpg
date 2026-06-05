@@ -85,6 +85,9 @@ dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
 inventory = ToInventoryData(world.PlayerInventory),
                 playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
+                playerGold = world.PlayerGold,
+                merchantGold = world.MerchantGold,
+                merchantStoreSeeded = world.MerchantStoreSeeded,
                 pickups = world.Pickups.Select(ItemSaveMapper.ToData).ToArray(),
                 topics = world.Topics.Select(topic => new TopicSaveData { id = topic.Id, label = topic.Label, answer = topic.Answer }).ToArray(),
                 npcMemories = ToNpcMemoryData(world.NpcMemory),
@@ -159,6 +162,9 @@ world.Items = ToItemStore(data.itemRecords);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
+            world.PlayerGold = data.playerGold;
+            world.MerchantGold = data.merchantGold;
+            world.MerchantStoreSeeded = data.merchantStoreSeeded;
             world.Pickups = (data.pickups ?? Array.Empty<PickupSaveData>()).Select(ItemSaveMapper.ToPickup).ToList();
             world.Topics = (data.topics ?? Array.Empty<TopicSaveData>()).Select(topic => new AskAboutTopic(topic.id, topic.label, topic.answer)).ToList();
             world.NpcMemory = ToNpcMemoryStore(data.npcMemories);

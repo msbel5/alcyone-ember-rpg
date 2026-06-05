@@ -37,6 +37,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private DialogView _activeDialog;
         private string _activeDialogPortrait;        // portrait key, re-resolved each frame until the sprite loads
         private ConsulFateView _activeOracle;        // the open Oracle screen, polled for its async prophecy
+        private TradeView _activeTrade;
         private bool _oraclePending;
         private bool _wasOpen;
 
@@ -104,9 +105,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             _stage?.Fit();
             HandleScreenInput();
 
-            // Free the cursor + pause the world whenever a screen is open; restore FPS capture + the clock when
-            // everything closes. (Set on transition so we don't fight the first-person controller every frame.)
+            // Free the cursor whenever any redesign-owned screen is open, but only PAUSE for menu-like screens.
+            // Live conversation/oracle screens must keep the tick running so the adapter drains its async LLM
+            // completions onto the main thread just like the old non-pausing dialog/oracle panels did.
             bool open = IsAnyOpen();
+            bool conversationOpen = _activeDialog != null || _activeOracle != null;
             AnyScreenOpen = open;
             if (open != _wasOpen)
             {
@@ -115,8 +118,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 // and UIElements also defines a `Cursor` type (CS0104 ambiguity otherwise).
                 UnityEngine.Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
                 UnityEngine.Cursor.visible = open;
-                Time.timeScale = open ? 0f : 1f;
             }
+            Time.timeScale = open && !conversationOpen ? 0f : 1f;
 
             // Stream the NPC's live line into the open DialogView each frame (the off-thread LLM resolves even at
             // timeScale 0; Update still runs), so "{name} thinks…" becomes the real greeting/answer. Also keep
@@ -177,7 +180,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     RefreshLiveSpells();
                     new SpellbookView(c, CloseScreen, TodoSpellbookAction);
                     break;
-                case "journal":   new JournalView(c, CloseScreen); break;
+                case "journal":
+                    RefreshLiveJournal();
+                    new JournalView(c, CloseScreen);
+                    break;
                 case "worldmap":
                     new WorldMapView(c, CloseScreen, TodoFastTravelAction);
                     break;
@@ -198,8 +204,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new LootView(c, CloseScreen, TodoTakeAllLootAction);
                     break;
                 case "trade":
-                    RefreshLiveInventory();
-                    new TradeView(c, CloseScreen, TodoTradeAction);
+                    RefreshLiveTrade();
+                    _activeTrade = new TradeView(c, CloseScreen, TodoTradeAction);
                     break;
                 case "crafting":
                     new CraftingView(c, CloseScreen, TodoCraftAction);
@@ -242,7 +248,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 _activeDialogSource.EndConversation();
                 _activeDialogSource = null; _activeDialog = null; _activeDialogPortrait = null;
             }
-            _activeOracle = null; _oraclePending = false;
+            _activeOracle = null; _oraclePending = false; _activeTrade = null;
             if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
             // Safety net for IgModal-based views in case the tracked element ever desyncs.
             for (var open = _stage.Canvas.Q("IgModalOverlay"); open != null; open = _stage.Canvas.Q("IgModalOverlay"))
@@ -334,6 +340,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         {
             IgMockData.Inventory = IgMockData.DefaultInventory;
             IgMockData.EquipSlots = IgMockData.DefaultEquipSlots;
+            if (_host is ITradeSource tradeSrc)
+            {
+                var trade = tradeSrc.ReadTradeState();
+                IgMockData.Player = IgMockData.Player with { Gold = trade.PlayerGold };
+            }
             if (!(_host is IInventorySource inventorySrc)) return;
 
             var slots = inventorySrc.GetSlots();
@@ -447,6 +458,73 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
             live.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
             IgMockData.ColonyNpcs = live.ToArray();
+        }
+
+        private void RefreshLiveJournal()
+        {
+            IgJournalData.Chapters = IgJournalData.DefaultChapters;
+            IgJournalData.CurrentChapter = 0;
+            if (!(_host is IJournalSource journalSrc)) return;
+
+            var chapters = journalSrc.GetChapters();
+            if (chapters == null || chapters.Count == 0) return;
+
+            var live = new JournalChapterData[chapters.Count];
+            for (int i = 0; i < chapters.Count; i++)
+            {
+                var chapter = chapters[i];
+                var entries = chapter.Entries ?? Array.Empty<JournalEntryRow>();
+                var rows = new JournalEntryData[entries.Count];
+                for (int e = 0; e < entries.Count; e++)
+                {
+                    var entry = entries[e];
+                    rows[e] = new JournalEntryData(
+                        entry.EntryId,
+                        entry.Title,
+                        entry.DateLabel,
+                        entry.Body,
+                        entry.CategoryLabel,
+                        JournalStatusLabel(entry.Status),
+                        entry.Status);
+                }
+
+                live[i] = new JournalChapterData(chapter.ChapterIndex, chapter.Title, rows);
+            }
+
+            IgJournalData.Chapters = live;
+            IgJournalData.CurrentChapter = Mathf.Clamp(journalSrc.GetCurrentChapter(), 0, live.Length - 1);
+        }
+
+        private void RefreshLiveTrade(string statusLine = null)
+        {
+            IgTradeData.Current = IgTradeData.Default;
+            if (!(_host is ITradeSource tradeSrc)) return;
+
+            var state = tradeSrc.ReadTradeState();
+            var merchant = new TradeOfferData[state.MerchantItems.Count];
+            for (int i = 0; i < state.MerchantItems.Count; i++)
+            {
+                var row = state.MerchantItems[i];
+                merchant[i] = new TradeOfferData(row.TemplateId, row.Name, row.Category, row.Quantity, row.UnitPrice, row.CanAfford, row.Equipped, TradeActionKind.Buy);
+            }
+
+            var player = new TradeOfferData[state.PlayerItems.Count];
+            for (int i = 0; i < state.PlayerItems.Count; i++)
+            {
+                var row = state.PlayerItems[i];
+                player[i] = new TradeOfferData(row.TemplateId, row.Name, row.Category, row.Quantity, row.UnitPrice, row.CanAfford, row.Equipped, TradeActionKind.Sell);
+            }
+
+            var line = statusLine ?? (merchant.Length == 0 ? "No merchant stock is available here yet." : "Choose an item to buy or sell.");
+            IgMockData.Player = IgMockData.Player with { Gold = state.PlayerGold };
+            IgTradeData.Current = new TradeScreenData(
+                state.MerchantName,
+                state.SettlementName,
+                state.PlayerGold,
+                state.MerchantGold,
+                line,
+                merchant,
+                player);
         }
 
         private static InventoryItemData MapInventorySlot(InventorySlot slot, int index)
@@ -607,6 +685,16 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             return string.Join(" ", parts);
         }
 
+        private static string JournalStatusLabel(JournalEntryStatus status)
+        {
+            switch (status)
+            {
+                case JournalEntryStatus.Completed: return "Completed";
+                case JournalEntryStatus.Failed: return "Failed";
+                default: return "Active";
+            }
+        }
+
         // TODO(host-action): human wires real save/load/quit/combat.
         private void TodoSettingsAction() => LogTodoAndClose("open settings");
         // Real action (Pause + Death "Main Menu"): unpause and load the menu scene.
@@ -621,7 +709,20 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private void TodoConfirmLevelUpAction() => LogTodoAndClose("confirm level up");
         private void TodoInventoryAction(string actionId) => LogTodoAndClose("inventory action: " + actionId);
         private void TodoSpellbookAction(string spellName) => LogTodoAndClose("spell action: " + spellName);
-        private void TodoTradeAction(string actionId) => LogTodoAndClose("trade action: " + actionId);
+        private void TodoTradeAction(TradeActionRequest request)
+        {
+            if (!(_host is ITradeCommandSink tradeSink))
+            {
+                RefreshLiveTrade("Trade commands are unavailable in this scene.");
+                _activeTrade?.Refresh();
+                return;
+            }
+
+            var result = tradeSink.ExecuteTrade(request);
+            RefreshLiveInventory();
+            RefreshLiveTrade(result.Message);
+            _activeTrade?.Refresh();
+        }
         private void TodoCraftAction(string recipeId) => LogTodoAndClose("craft recipe: " + recipeId);
         private void TodoFastTravelAction(string locationId) => LogTodoAndClose("fast travel: " + locationId);
         private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);
