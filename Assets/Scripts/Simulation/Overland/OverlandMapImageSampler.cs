@@ -1,3 +1,4 @@
+// Why this file is intentionally long: the deterministic overland image sampler co-locates cache-key, land-mask, and pixel sampling helpers so map rendering stays engine-free and reproducible in one unit.
 using System;
 using System.Runtime.CompilerServices;
 using EmberCrpg.Domain.Overland;
@@ -30,7 +31,7 @@ namespace EmberCrpg.Simulation.Overland
         public ulong CacheKey { get; }
     }
 
-    /// <summary>Deterministically upsamples the 16x16 biome grid into a fine relief-style RGBA map.</summary>
+    /// <summary>Deterministically rasterizes the overland map into per-tile RGBA pixels with no smoothing.</summary>
     public static class OverlandMapImageSampler
     {
         public const int DefaultImageSize = 512;
@@ -51,39 +52,22 @@ namespace EmberCrpg.Simulation.Overland
                 throw new ArgumentOutOfRangeException(nameof(height), height, "Image height must be positive.");
 
             ulong cacheKey = ComputeCacheKey(map, width, height);
-            uint noiseSeed = unchecked((uint)cacheKey ^ (uint)(cacheKey >> 32));
             var tileColors = BuildTileColors(map);
             var rgba = new byte[checked(width * height * 4)];
 
             for (int y = 0; y < height; y++)
             {
-                double fy = (((double)y + 0.5d) * map.Height / height) - 0.5d;
-                int yBase = FloorToInt(fy);
-                int y0 = Clamp(yBase, 0, map.Height - 1);
-                int y1 = Clamp(yBase + 1, 0, map.Height - 1);
-                double ty = Smooth(fy - yBase);
+                int tileY = SampleTileIndex(y, height, map.Height);
 
                 for (int x = 0; x < width; x++)
                 {
-                    double fx = (((double)x + 0.5d) * map.Width / width) - 0.5d;
-                    int xBase = FloorToInt(fx);
-                    int x0 = Clamp(xBase, 0, map.Width - 1);
-                    int x1 = Clamp(xBase + 1, 0, map.Width - 1);
-                    double tx = Smooth(fx - xBase);
-
-                    var bottom = Lerp(tileColors[ToIndex(x0, y0, map.Width)], tileColors[ToIndex(x1, y0, map.Width)], tx);
-                    var top = Lerp(tileColors[ToIndex(x0, y1, map.Width)], tileColors[ToIndex(x1, y1, map.Width)], tx);
-                    var color = Lerp(bottom, top, ty);
-
-                    double terrainX = fx + 0.5d;
-                    double terrainY = fy + 0.5d;
-                    double relief = FractalValueNoise(terrainX, terrainY, noiseSeed);
-                    double shade = 0.93d + (relief * 0.18d);
+                    int tileX = SampleTileIndex(x, width, map.Width);
+                    var color = tileColors[ToIndex(tileX, tileY, map.Width)];
 
                     int offset = ((y * width) + x) * 4;
-                    rgba[offset] = ToByte(color.R * shade);
-                    rgba[offset + 1] = ToByte(color.G * shade);
-                    rgba[offset + 2] = ToByte(color.B * shade);
+                    rgba[offset] = ToByte(color.R);
+                    rgba[offset + 1] = ToByte(color.G);
+                    rgba[offset + 2] = ToByte(color.B);
                     rgba[offset + 3] = 255;
                 }
             }
@@ -163,51 +147,6 @@ namespace EmberCrpg.Simulation.Overland
             }
         }
 
-        private static double FractalValueNoise(double x, double y, uint seed)
-        {
-            double low = ValueNoise(x * 1.35d, y * 1.35d, seed);
-            double mid = ValueNoise((x * 3.25d) + 17.0d, (y * 3.25d) - 29.0d, seed ^ 0x9E3779B9u);
-            double high = ValueNoise((x * 8.0d) - 41.0d, (y * 8.0d) + 11.0d, seed ^ 0xA511E9B3u);
-            return (low * 0.58d) + (mid * 0.28d) + (high * 0.14d);
-        }
-
-        private static double ValueNoise(double x, double y, uint seed)
-        {
-            int x0 = FloorToInt(x);
-            int y0 = FloorToInt(y);
-            int x1 = x0 + 1;
-            int y1 = y0 + 1;
-            double tx = Smooth(x - x0);
-            double ty = Smooth(y - y0);
-
-            double bottom = Lerp(Hash01(x0, y0, seed), Hash01(x1, y0, seed), tx);
-            double top = Lerp(Hash01(x0, y1, seed), Hash01(x1, y1, seed), tx);
-            return (Lerp(bottom, top, ty) * 2.0d) - 1.0d;
-        }
-
-        private static double Hash01(int x, int y, uint seed)
-        {
-            uint hash = Hash2(x, y, seed);
-            return (hash & 0x00FFFFFFu) / 16777215.0d;
-        }
-
-        private static uint Hash2(int x, int y, uint seed)
-        {
-            unchecked
-            {
-                uint hash = seed ^ 0x9E3779B9u;
-                hash ^= (uint)x * 0x85EBCA6Bu;
-                hash = (hash << 13) | (hash >> 19);
-                hash ^= (uint)y * 0xC2B2AE35u;
-                hash ^= hash >> 16;
-                hash *= 0x7FEB352Du;
-                hash ^= hash >> 15;
-                hash *= 0x846CA68Bu;
-                hash ^= hash >> 16;
-                return hash;
-            }
-        }
-
         private static ulong Mix(ulong hash, int value)
         {
             return Mix(hash, unchecked((uint)value));
@@ -237,6 +176,12 @@ namespace EmberCrpg.Simulation.Overland
             return (int)Math.Floor(value);
         }
 
+        private static int SampleTileIndex(int pixel, int pixelCount, int tileCount)
+        {
+            double sample = ((pixel + 0.5d) * tileCount) / pixelCount;
+            return Clamp(FloorToInt(sample), 0, tileCount - 1);
+        }
+
         private static int Clamp(int value, int min, int max)
         {
             if (value < min)
@@ -250,21 +195,6 @@ namespace EmberCrpg.Simulation.Overland
             if (rounded < 0)
                 return 0;
             return rounded > 255 ? (byte)255 : (byte)rounded;
-        }
-
-        private static double Smooth(double value)
-        {
-            return value * value * (3.0d - (2.0d * value));
-        }
-
-        private static double Lerp(double a, double b, double t)
-        {
-            return a + ((b - a) * t);
-        }
-
-        private static Rgb Lerp(Rgb a, Rgb b, double t)
-        {
-            return new Rgb(Lerp(a.R, b.R, t), Lerp(a.G, b.G, t), Lerp(a.B, b.B, t));
         }
 
         private readonly struct Rgb

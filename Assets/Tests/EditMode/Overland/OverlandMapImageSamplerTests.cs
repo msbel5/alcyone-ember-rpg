@@ -66,13 +66,33 @@ namespace EmberCrpg.Tests.EditMode.Overland
             Assert.That(ocean.B, Is.GreaterThan(ocean.R + 45));
         }
 
+        [Test]
+        public void Sample_UpscaledImage_RepeatsExactTileColors()
+        {
+            var map = OverlandWorldgen.Generate(42u, OverlandParameters.Default);
+            var native = OverlandMapImageSampler.Sample(map, map.Width, map.Height);
+            var upscaled = OverlandMapImageSampler.Sample(map, map.Width * 2, map.Height * 2);
+
+            for (int y = 0; y < map.Height; y++)
+            {
+                for (int x = 0; x < map.Width; x++)
+                {
+                    var expected = ReadPixel(native, x, y);
+                    Assert.That(ReadPixel(upscaled, (x * 2) + 0, (y * 2) + 0), Is.EqualTo(expected));
+                    Assert.That(ReadPixel(upscaled, (x * 2) + 1, (y * 2) + 0), Is.EqualTo(expected));
+                    Assert.That(ReadPixel(upscaled, (x * 2) + 0, (y * 2) + 1), Is.EqualTo(expected));
+                    Assert.That(ReadPixel(upscaled, (x * 2) + 1, (y * 2) + 1), Is.EqualTo(expected));
+                }
+            }
+        }
+
         private static Pixel ReadPixel(OverlandMapImage image, int x, int y)
         {
             int offset = ((y * image.Width) + x) * 4;
             return new Pixel(image.RgbaBytes[offset], image.RgbaBytes[offset + 1], image.RgbaBytes[offset + 2]);
         }
 
-        private readonly struct Pixel
+        private readonly struct Pixel : System.IEquatable<Pixel>
         {
             public Pixel(byte r, byte g, byte b)
             {
@@ -84,6 +104,21 @@ namespace EmberCrpg.Tests.EditMode.Overland
             public byte R { get; }
             public byte G { get; }
             public byte B { get; }
+
+            public bool Equals(Pixel other)
+            {
+                return R == other.R && G == other.G && B == other.B;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is Pixel other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return (R << 16) | (G << 8) | B;
+            }
         }
     }
 }
