@@ -13,6 +13,7 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
         public GeneratedExternalToolCommand alphaMatteCommand = new GeneratedExternalToolCommand();
         public GeneratedExternalToolCommand deLightCommand = new GeneratedExternalToolCommand();
         public GeneratedExternalToolCommand pbrMapCommand = new GeneratedExternalToolCommand();
+        public GeneratedExternalToolCommand meshGenerationCommand = new GeneratedExternalToolCommand();
         public string defaultOutputRoot = "Assets/GeneratedLibrary/SpriteJobs";
         public bool dryRun = true;
         public int timeoutSeconds = 120;
@@ -39,5 +40,8 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
         public string defaultSampler = "euler";
         public string defaultScheduler = "normal";
         public bool autoCreateBillboardPrefab = true;
+        public int smallPropTriangleWarning = 5000;
+        public int largeStructureTriangleWarning = 50000;
+        public int terrainTriangleWarning = 120000;
     }
 }

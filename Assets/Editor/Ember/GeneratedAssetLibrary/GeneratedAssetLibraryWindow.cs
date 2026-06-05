@@ -14,6 +14,7 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
         private GeneratedAssetDatabase _database;
         private GeneratedAssetPromptPreset _previewPreset;
         private GeneratedAssetPipelineSettings _pipelineSettings;
+        private GameObject _meshSource;
         private Vector2 _listScroll;
         private Vector2 _detailScroll;
         private int _selectedIndex = -1;

@@ -57,6 +57,26 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
                     if (GUILayout.Button("Import AO")) ImportMaterialMap(record, GeneratedTexturePathPolicy.ResolveAoPath(record), "PNG", sRgb: false);
                 }
             }
+
+            if (IsMeshKind(record.kind))
+            {
+                EditorGUILayout.Space(8f);
+                EditorGUILayout.LabelField("Mesh Pipeline", EditorStyles.boldLabel);
+                _meshSource = (GameObject)EditorGUILayout.ObjectField("Mesh Source", _meshSource, typeof(GameObject), false);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Build Mesh Job")) BuildMeshJob(record);
+                    if (GUILayout.Button("Dry Run Mesh Tool")) RunMeshTool(record, dryRun: true);
+                    if (GUILayout.Button("Run Mesh Tool")) RunMeshTool(record, dryRun: false);
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Analyze Source")) AnalyzeMeshSource(record);
+                    if (GUILayout.Button("Create Prefab")) CreateMeshPrefab(record);
+                    if (GUILayout.Button("Validate Mesh")) ValidateMesh(record);
+                }
+            }
         }
 
         private void BuildJob(GeneratedAssetRecord record)
@@ -184,6 +204,60 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
                 || kind == GeneratedAssetKind.TileableFloor
                 || kind == GeneratedAssetKind.TileableCeiling
                 || kind == GeneratedAssetKind.MaterialSet;
+        }
+
+        private void BuildMeshJob(GeneratedAssetRecord record)
+        {
+            if (_pipelineSettings == null) return;
+            record.meshJob = GeneratedMeshJobBuilder.Build(record, "external-mesh-tool");
+            GeneratedMeshPathPolicy.ConfigureJobPaths(record, record.meshJob, _pipelineSettings);
+            EditorUtility.SetDirty(_database);
+            _validationSummary = "Built mesh job: " + record.meshJob.jobId;
+        }
+
+        private void RunMeshTool(GeneratedAssetRecord record, bool dryRun)
+        {
+            if (_pipelineSettings == null) return;
+            var result = GeneratedMeshToolAdapter.ExportOrRun(record.meshJob, _pipelineSettings, dryRun);
+            EditorUtility.SetDirty(_database);
+            _validationSummary = result.success ? "Mesh command prepared." : result.stderr;
+        }
+
+        private void AnalyzeMeshSource(GeneratedAssetRecord record)
+        {
+            if (_meshSource == null) return;
+            GeneratedMeshImportUtility.Analyze(_meshSource, record);
+            EditorUtility.SetDirty(_database);
+            _validationSummary = "Mesh analyzed: " + record.triangleCount + " tris.";
+        }
+
+        private void CreateMeshPrefab(GeneratedAssetRecord record)
+        {
+            if (_meshSource == null) return;
+            record.prefabPath = GeneratedMeshPrefabBuilder.CreateOrUpdate(_meshSource, record);
+            EditorUtility.SetDirty(_database);
+            _validationSummary = "Mesh prefab updated: " + record.prefabPath;
+        }
+
+        private void ValidateMesh(GeneratedAssetRecord record)
+        {
+            if (_pipelineSettings == null) return;
+            var report = GeneratedMeshValidator.Validate(record, new GeneratedMeshValidationPolicy
+            {
+                smallPropTriangleWarning = _pipelineSettings.smallPropTriangleWarning,
+                largeStructureTriangleWarning = _pipelineSettings.largeStructureTriangleWarning,
+                terrainTriangleWarning = _pipelineSettings.terrainTriangleWarning,
+            });
+            record.validationWarnings = new List<string>(report.warnings);
+            EditorUtility.SetDirty(_database);
+            _validationSummary = "Mesh warnings: " + report.warnings.Count;
+        }
+
+        private static bool IsMeshKind(GeneratedAssetKind kind)
+        {
+            return kind == GeneratedAssetKind.SmallPropMesh
+                || kind == GeneratedAssetKind.LargeStructureMesh
+                || kind == GeneratedAssetKind.TerrainMesh;
         }
     }
 }

@@ -41,6 +41,10 @@ namespace EmberCrpg.Data.GeneratedAssets
                 ValidatePath(record.stableId, "maskMapPath", record.maskMapPath, issues);
                 ValidatePath(record.stableId, "materialPath", record.materialPath, issues);
                 ValidatePath(record.stableId, "prefabPath", record.prefabPath, issues);
+                ValidatePath(record.stableId, "sourceImagePath", record.sourceImagePath, issues);
+                ValidatePath(record.stableId, "generatedMeshPath", record.generatedMeshPath, issues);
+                ValidatePaths(record.stableId, "materialPaths", record.materialPaths, issues);
+                ValidatePaths(record.stableId, "texturePaths", record.texturePaths, issues);
             }
 
             foreach (var pair in counts.Where(p => !string.IsNullOrWhiteSpace(p.Key) && p.Value > 1))
@@ -56,6 +60,13 @@ namespace EmberCrpg.Data.GeneratedAssets
             {
                 issues.Add(new GeneratedAssetValidationIssue(stableId, GeneratedAssetValidationSeverity.Warning, fieldName + " should be asset-relative."));
             }
+        }
+
+        private static void ValidatePaths(string stableId, string fieldName, IEnumerable<string> values, ICollection<GeneratedAssetValidationIssue> issues)
+        {
+            if (values == null) return;
+            foreach (var value in values)
+                ValidatePath(stableId, fieldName, value, issues);
         }
     }
 }
