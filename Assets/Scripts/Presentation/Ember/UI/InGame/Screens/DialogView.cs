@@ -55,6 +55,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 Array.Empty<DialogTopicOption>(),
                 _ => { },
                 _ => { },
+                null,
                 onClose)
         {
         }
@@ -68,6 +69,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             IReadOnlyList<DialogTopicOption> topics,
             Action<string> onTopic,
             Action<string> onFreeAsk,
+            Action onTrade,
             Action onFarewell)
         {
             _overlay = new VisualElement();
@@ -148,6 +150,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             bottom.style.paddingTop = 10;
             bottom.Add(Text(hasTopics ? "ESC · 1–4 topics · or type freely" : "ESC · Close", Sans, 11, Alpha(Ink, 0.38f)));
 
+            var actions = Row();
+            actions.style.alignItems = Align.Center;
+            if (hasTopics && onTrade != null)
+            {
+                var trade = BuildActionButton("TRADE", Alpha(Gold, 0.18f), Amber, onTrade);
+                trade.style.marginRight = 8;
+                actions.Add(trade);
+            }
+
             var close = new Button(() => (onFarewell ?? onClose)?.Invoke()) { text = hasTopics ? "FAREWELL" : "CLOSE" };
             ResetButton(close);
             close.style.height = 32;
@@ -159,7 +170,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             ApplyFont(close, Sans);
             Border(close, Alpha(Ink, 0.22f), 1);
             Radius(close, 7);
-            bottom.Add(close);
+            actions.Add(close);
+            bottom.Add(actions);
             panel.Add(bottom);
 
             stageCanvas.Add(_overlay);
@@ -379,6 +391,24 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             field.value = string.Empty;
             BeginQuestion(question);
             onFreeAsk(question);
+        }
+
+        private static Button BuildActionButton(string text, Color background, Color border, Action onClick)
+        {
+            var button = new Button(() => onClick?.Invoke()) { text = text };
+            ResetButton(button);
+            button.style.height = 32;
+            button.style.paddingLeft = 16;
+            button.style.paddingRight = 16;
+            button.style.backgroundColor = background;
+            button.style.color = Ink;
+            button.style.fontSize = 12;
+            button.style.letterSpacing = 0.7f;
+            button.style.unityFontStyleAndWeight = FontStyle.Bold;
+            ApplyFont(button, Sans);
+            Border(button, border, 1);
+            Radius(button, 7);
+            return button;
         }
 
         private void ScrollThreadTo(VisualElement target)

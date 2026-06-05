@@ -41,6 +41,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private IDialogSource _activeDialogSource;   // live NPC conversation behind the redesigned DialogView
         private DialogView _activeDialog;
         private string _activeDialogPortrait;        // portrait key, re-resolved each frame until the sprite loads
+        private string _tradeMerchantOverrideName;   // dialogue-driven trade reuses settlement stock but labels it with the NPC honestly
         private ConsulFateView _activeOracle;        // the open Oracle screen, polled for its async prophecy
         private TradeView _activeTrade;
         private CraftingView _activeCrafting;
@@ -250,6 +251,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new LootView(c, CloseScreen, TodoTakeAllLootAction);
                     break;
                 case "trade":
+                    _tradeMerchantOverrideName = null;
                     RefreshLiveTrade();
                     _activeTrade = new TradeView(c, CloseScreen, TodoTradeAction);
                     break;
@@ -331,6 +333,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 topics,
                 id => src.SelectTopic(id),
                 question => src.AskFreeText(question),
+                () => OpenTradeFromDialog(npcName),
                 CloseScreen);
             _activeScreen = c.childCount > before ? c.ElementAt(c.childCount - 1) : null;
             if (!string.IsNullOrEmpty(portrait) && _host is ISpriteByName spriteLookup)
@@ -573,13 +576,30 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             var line = statusLine ?? (merchant.Length == 0 ? "No merchant stock is available here yet." : "Choose an item to buy or sell.");
             IgMockData.Player = IgMockData.Player with { Gold = state.PlayerGold };
             IgTradeData.Current = new TradeScreenData(
-                state.MerchantName,
+                string.IsNullOrWhiteSpace(_tradeMerchantOverrideName) ? state.MerchantName : _tradeMerchantOverrideName,
                 state.SettlementName,
                 state.PlayerGold,
                 state.MerchantGold,
                 line,
                 merchant,
                 player);
+        }
+
+        private void OpenTradeFromDialog(string npcName)
+        {
+            if (_stage == null)
+                return;
+
+            CloseScreen();
+            CloseBrowser();
+
+            _tradeMerchantOverrideName = string.IsNullOrWhiteSpace(npcName) ? null : npcName;
+            RefreshLiveTrade();
+
+            var canvas = _stage.Canvas;
+            int before = canvas.childCount;
+            _activeTrade = new TradeView(canvas, CloseScreen, TodoTradeAction);
+            _activeScreen = canvas.childCount > before ? canvas.ElementAt(canvas.childCount - 1) : null;
         }
 
         private void RefreshLiveCrafting(string statusLine = null)
