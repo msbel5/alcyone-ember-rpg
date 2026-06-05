@@ -55,7 +55,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             StopPortraitUpgrade();
 
             var manifest = GenericNpcBaseManifest.CreateDefault();
-            uint portraitSeed = _seed + (uint)(3 - _rerollsRemaining);
+            uint portraitSeed = _seed + (uint)_portraitRerolls;
 
             // 1. Deterministic placeholder — visible immediately, no blocking.
             var placeholder = NpcPromptJsonDefaults.FromSeed(portraitSeed, manifest);

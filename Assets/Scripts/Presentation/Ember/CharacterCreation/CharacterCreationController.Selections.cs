@@ -266,14 +266,14 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         public void RerollPortrait()
         {
-            if (_rerollsRemaining <= 0) return;
-            _rerollsRemaining--;
+            // Unlimited rerolls: just advance the count so each reroll varies the portrait seed.
+            _portraitRerolls++;
             GeneratePortrait();
         }
 
         public void LockPortrait()
         {
-            _rerollsRemaining = 0;
+            _portraitRerolls = 0;
             // Freeze whatever portrait is currently shown: bump the serial so any in-flight
             // off-thread LLM upgrade is discarded when it lands, and stop polling for it.
             _portraitGenSerial++;

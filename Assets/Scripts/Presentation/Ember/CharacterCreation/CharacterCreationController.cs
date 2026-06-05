@@ -92,7 +92,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         // World pivot: New Game now drops into the runtime-generated world (the World Scene Director builds
         // the starting settlement from worldgen data), not the hardcoded baked forge scene.
         private string _firstSceneName = EmberScenes.GeneratedWorld;
-        private int _rerollsRemaining = 3;
+        private int _portraitRerolls;   // count-up; rerolls are unlimited — this only varies the portrait seed
         private bool _storyLaunched;
         private Func<uint, string, string> _portraitJsonProvider;
         // LEFT-007: handle to the in-flight off-thread portrait-upgrade coroutine, and a serial
@@ -107,7 +107,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         public string CommanderName => _commanderName;
         public string AdapterId => _adapterId;
         public string PortraitJson { get; private set; } = string.Empty;
-        public bool CanRerollPortrait => _rerollsRemaining > 0;
+        public bool CanRerollPortrait => true;   // unlimited rerolls
         public bool CanAdvance => ComputeCanAdvance();
         public bool AutoLaunchWorldgen { get; set; } = true;
 
@@ -159,7 +159,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             _selectedBirthsignId = ResolveBirthsignId(_seed);
             _selectedBackgroundId = "smuggler";
             _suggestedClassId = "warrior";
-            _rerollsRemaining = 3;
+            _portraitRerolls = 0;
             _storyLaunched = false;
             PortraitJson = string.Empty;
 

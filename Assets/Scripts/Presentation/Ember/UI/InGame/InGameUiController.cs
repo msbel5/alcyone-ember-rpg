@@ -26,6 +26,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private InGameStage _stage;
         private object _host;
         private VisualElement _dropdown;
+        private VisualElement _activeScreen;   // the overlay the open view added — tracked directly so ANY screen
+                                               // (IgModal-named OR a bare Pause/Combat/LevelUp/Death/Dialog/DM/Loot
+                                               // VisualElement) can be detected + closed, not just "IgModalOverlay"
         private bool _wasOpen;
 
         /// <summary>True while this controller is active — the legacy EmberWorldHost key handlers (M / Tab / K /
@@ -131,6 +134,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             CloseBrowser();
             RefreshLivePlayer();   // feed the screens the REAL created character (name / stats / vitals)
             var c = _stage.Canvas;
+            int before = c.childCount;
             switch (screenId)
             {
                 case "inventory": new InventoryView(c, CloseScreen); break;
@@ -150,10 +154,17 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 case "death":     new DeathView(c, CloseScreen); break;
                 case "savegame":  new SaveLoadView(c, CloseScreen); break;
             }
+            // Every view calls stageCanvas.Add(_overlay) exactly once, so the newly-added last child IS this
+            // screen's overlay — whether IgModal-based ("IgModalOverlay") or a bare VisualElement (Pause/Combat/
+            // LevelUp/Death/Dialog/DM/Loot). Tracking the element itself is what lets CloseScreen + IsAnyOpen
+            // handle ALL screens, so Esc closes them and the cursor/pause toggle fires correctly.
+            _activeScreen = c.childCount > before ? c.ElementAt(c.childCount - 1) : null;
         }
 
         private void CloseScreen()
         {
+            if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
+            // Safety net for IgModal-based views in case the tracked element ever desyncs.
             for (var open = _stage.Canvas.Q("IgModalOverlay"); open != null; open = _stage.Canvas.Q("IgModalOverlay"))
                 open.RemoveFromHierarchy();
         }
@@ -210,6 +221,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         }
 
         private bool IsAnyOpen() =>
+            _activeScreen != null ||
             (_dropdown != null && _dropdown.style.display == DisplayStyle.Flex) ||
             (_stage != null && _stage.Canvas.Q("IgModalOverlay") != null);
 

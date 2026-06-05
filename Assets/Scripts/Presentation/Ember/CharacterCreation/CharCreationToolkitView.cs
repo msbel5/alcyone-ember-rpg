@@ -597,15 +597,15 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             if (ready)
             {
-                var reroll = new Button(() => { if (rerollsLeft > 0) onReroll?.Invoke(); })
-                { text = rerollsLeft > 0 ? $"Reroll — {rerollsLeft} left" : "No rerolls remaining" };
+                var reroll = new Button(() => onReroll?.Invoke())
+                { text = "Reroll Portrait" };   // unlimited rerolls
                 ResetButton(reroll);
                 reroll.style.marginTop = 14;
-                reroll.style.fontSize = 12; reroll.style.color = rerollsLeft > 0 ? ParchDim : PA(0.22f);
+                reroll.style.fontSize = 12; reroll.style.color = ParchDim;
                 ApplyFont(reroll, Sans); reroll.style.unityFontStyleAndWeight = FontStyle.Bold;
                 reroll.style.letterSpacing = 1.4f;
                 reroll.style.backgroundColor = C(46, 36, 23, 0.6f);
-                Border(reroll, rerollsLeft > 0 ? PA(0.28f) : PA(0.09f), 1); Radius(reroll, 8);
+                Border(reroll, PA(0.28f), 1); Radius(reroll, 8);
                 reroll.style.paddingLeft = 24; reroll.style.paddingRight = 24;
                 reroll.style.paddingTop = 10; reroll.style.paddingBottom = 10;
                 col.Add(reroll);
@@ -657,7 +657,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 // The narrative SCROLLS in the remaining space (credits-roll) so long streaming history never
                 // pushes the page or clips off the bottom — it auto-follows the latest line as it streams in.
                 var scroll = new ScrollView(ScrollViewMode.Vertical);
-                scroll.style.flexGrow = 1; scroll.style.minHeight = 0;
+                scroll.style.flexGrow = 1; scroll.style.minHeight = 0; scroll.style.maxHeight = 400;
                 scroll.style.width = Length.Percent(100); scroll.style.maxWidth = 640; scroll.style.alignSelf = Align.Center;
                 var card = new VisualElement();
                 card.style.backgroundColor = CardBg; Border(card, PA(0.14f), 1); Radius(card, 12);

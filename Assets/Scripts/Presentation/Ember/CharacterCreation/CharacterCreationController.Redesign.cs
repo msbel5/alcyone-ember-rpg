@@ -64,7 +64,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
                 case CreationStep.Portrait:
                     _redesignView.RenderPortrait(step, _characterPortraitTexture != null,
-                        _characterPortraitTexture, _rerollsRemaining, RerollPortrait);
+                        _characterPortraitTexture, _portraitRerolls, RerollPortrait);
                     break;
 
                 case CreationStep.WorldHistoryReveal:
