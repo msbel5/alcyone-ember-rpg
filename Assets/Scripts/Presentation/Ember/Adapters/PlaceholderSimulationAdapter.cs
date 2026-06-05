@@ -270,6 +270,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _currentDialogLine = $"You asked about <color=#f1c40f>{topicId}</color>. It is a complex matter indeed.";
         }
 
+        public void AskFreeText(string question)
+        {
+            if (string.IsNullOrWhiteSpace(question))
+                return;
+
+            _currentDialogLine = $"You ask \"{question.Trim()}\". The reply comes slowly, but it comes.";
+        }
+
         public void SeedWorld(string mood, string calling, string startLocation, uint? worldSeed = null)
         {
             Debug.Log($"World Seeded: Mood={mood}, Calling={calling}, Start={startLocation}, Seed={(worldSeed.HasValue ? worldSeed.Value : 0u)}");

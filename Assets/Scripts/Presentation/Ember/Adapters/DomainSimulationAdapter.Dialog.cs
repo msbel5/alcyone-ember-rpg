@@ -473,6 +473,31 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 _ = GenerateAdHocTopicAnswerAsync(_activeDialogActor, topicId, topic);
         }
 
+        public void AskFreeText(string question)
+        {
+            var trimmed = question == null ? string.Empty : question.Trim();
+            if (string.IsNullOrEmpty(trimmed))
+                return;
+
+            var topicId = "free_text:" + trimmed;
+            var floor = string.IsNullOrWhiteSpace(_activeDialogActor)
+                ? $"Someone considers your question: \"{trimmed}\"."
+                : $"{_activeDialogActor} considers your question: \"{trimmed}\".";
+            var syntheticTopic = new AskAboutTopic(topicId, trimmed, floor);
+            _currentDialogLine = floor;
+
+            NpcSeedRecord npc = null;
+            if (_conversation != null && !_conversation.NpcId.IsEmpty)
+                npc = _world.NpcSeeds.FirstOrDefault(n => n.Id.Equals(_conversation.NpcId));
+            npc ??= _world.NpcSeeds.FirstOrDefault(
+                n => string.Equals(n.Name, _activeDialogActor, System.StringComparison.Ordinal));
+
+            if (npc != null)
+                _ = GenerateNpcTopicAnswerAsync(npc, topicId, syntheticTopic);
+            else
+                _ = GenerateAdHocTopicAnswerAsync(_activeDialogActor, topicId, syntheticTopic);
+        }
+
         private async Task GenerateNpcTopicAnswerAsync(NpcSeedRecord npc, string topicId, AskAboutTopic topic)
         {
             var router = ForgeLocator.LlmRouter;

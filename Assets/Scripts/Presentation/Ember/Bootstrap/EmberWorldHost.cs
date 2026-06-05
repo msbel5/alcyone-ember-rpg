@@ -520,6 +520,18 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             _selectedTopic = topicId;
         }
 
+        public void AskFreeText(string question)
+        {
+            if (string.IsNullOrWhiteSpace(question))
+                return;
+
+            if (_adapter is IDialogSource adapterSource)
+            {
+                adapterSource.AskFreeText(question);
+                return;
+            }
+        }
+
 
         private static IDomainSimulationAdapter CreateFallbackAdapter()
         {

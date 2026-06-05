@@ -14,6 +14,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         string GetCurrentLine();
         IReadOnlyList<string> GetTopics();
         void SelectTopic(string topicId);
+        void AskFreeText(string question) { }
 
         /// <summary>
         /// Ends the current conversation — clears the active speaker, line, and per-NPC topic set. Called when

@@ -134,7 +134,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             // re-resolving the portrait until it loads — forge portraits generate asynchronously.
             if (_activeDialog != null && _activeDialogSource != null)
             {
-                _activeDialog.SetCurrentLine(_activeDialogSource.GetCurrentLine());
+                var line = _activeDialogSource.GetCurrentLine();
+                _activeDialog.SetCurrentLine(line);
+                if (_activeDialog.HasPendingResponse && !_activeDialogSource.IsThinking)
+                    _activeDialog.ResolveLatestResponse(line);
                 if (!_activeDialog.HasPortrait && !string.IsNullOrEmpty(_activeDialogPortrait) && _host is ISpriteByName sprites)
                 {
                     var sp = sprites.GetSprite(_activeDialogPortrait);
@@ -327,6 +330,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 src.GetCurrentLine(),
                 topics,
                 id => src.SelectTopic(id),
+                question => src.AskFreeText(question),
                 CloseScreen);
             _activeScreen = c.childCount > before ? c.ElementAt(c.childCount - 1) : null;
             if (!string.IsNullOrEmpty(portrait) && _host is ISpriteByName spriteLookup)
