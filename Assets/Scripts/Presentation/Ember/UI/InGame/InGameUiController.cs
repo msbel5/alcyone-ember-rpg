@@ -217,8 +217,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new PauseView(c, CloseScreen, OpenScreen, TodoSettingsAction, TodoMainMenuAction);
                     break;
                 case "levelup":
+                    RefreshLivePlayer();
                     RefreshLiveSpells();
-                    new LevelUpView(c, CloseScreen, TodoConfirmLevelUpAction);
+                    new LevelUpView(c, CloseScreen, ReadLevelUpState(), TodoConfirmLevelUpAction);
                     break;
                 case "death":
                     new DeathView(c, CloseScreen, TodoLoadLastSaveAction, TodoMainMenuAction);
@@ -580,6 +581,28 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 rows.ToArray());
         }
 
+        private LevelUpScreenState ReadLevelUpState()
+        {
+            if (_host is ILevelUpSource levelSrc)
+                return levelSrc.ReadLevelUpState();
+
+            var player = IgMockData.Player;
+            var stats = new[]
+            {
+                new LevelUpStatRow("MIG", "MIG", player.Stats[0].Value),
+                new LevelUpStatRow("AGI", "AGI", player.Stats[1].Value),
+                new LevelUpStatRow("END", "END", player.Stats[2].Value),
+                new LevelUpStatRow("MND", "MND", player.Stats[3].Value),
+                new LevelUpStatRow("INS", "INS", player.Stats[4].Value),
+                new LevelUpStatRow("PRE", "PRE", player.Stats[5].Value),
+            };
+
+            var choices = new List<LevelUpSpellRow>();
+            foreach (var spell in WorldSpellCatalog.All)
+                choices.Add(new LevelUpSpellRow(spell.TemplateId, spell.DisplayName, spell.School.ToString(), spell.ManaCost, DescribeSpellEffect(spell)));
+            return new LevelUpScreenState(player.Name, player.Level, 5, stats, choices);
+        }
+
         private static InventoryItemData MapInventorySlot(InventorySlot slot, int index)
         {
             var fallback = FindDefaultInventoryItem(slot.IconName);
@@ -810,7 +833,21 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         }
         private void TodoCombatFleeAction() => LogTodoAndClose("combat flee");
         private void TodoTakeAllLootAction() => LogTodoAndClose("take all loot");
-        private void TodoConfirmLevelUpAction() => LogTodoAndClose("confirm level up");
+        private LevelUpActionResult TodoConfirmLevelUpAction(LevelUpSelection selection)
+        {
+            if (!(_host is ILevelUpCommandSink levelSink))
+                return new LevelUpActionResult(false, "Level-up commands are unavailable.");
+
+            var result = levelSink.ApplyLevelUp(selection);
+            if (result.Success)
+            {
+                RefreshLivePlayer();
+                RefreshLiveSpells();
+            }
+
+            Debug.Log("[InGameUI] level-up: " + result.Message);
+            return result;
+        }
         private void TodoInventoryAction(string actionId) => LogTodoAndClose("inventory action: " + actionId);
         private void TodoSpellbookAction(string spellName) => LogTodoAndClose("spell action: " + spellName);
         private void TodoTradeAction(TradeActionRequest request)

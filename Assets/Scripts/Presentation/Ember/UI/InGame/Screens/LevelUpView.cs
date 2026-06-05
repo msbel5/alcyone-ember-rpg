@@ -1,8 +1,7 @@
 using System;
-using System.Collections.Generic;
+using EmberCrpg.Presentation.Ember.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
-using EmberCrpg.Presentation.Ember.UI.InGame;
 using static EmberCrpg.Presentation.Ember.UI.InGame.IgDesign;
 
 namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
@@ -10,30 +9,30 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     public sealed class LevelUpView
     {
         private readonly VisualElement _overlay;
+        private readonly LevelUpScreenState _state;
+        private readonly Func<LevelUpSelection, LevelUpActionResult> _onConfirm;
         private readonly Label _remainingLabel;
+        private readonly Label _statusLabel;
         private readonly Label[] _statValueLabels;
         private readonly Button[] _minusButtons;
         private readonly Button[] _plusButtons;
         private readonly VisualElement[] _spellCards;
-        private readonly StatData[] _baseStats;
         private readonly int[] _adjustments;
-        private readonly List<SpellData> _spellOptions;
-        private readonly Action _onConfirm;
+        private readonly Button _confirmButton;
         private int _remainingPoints;
-        private string _selectedSpellName;
+        private string _selectedSpellId;
 
-        public LevelUpView(VisualElement stageCanvas, Action onClose, Action onConfirm = null)
+        public LevelUpView(VisualElement stageCanvas, Action onClose, LevelUpScreenState state, Func<LevelUpSelection, LevelUpActionResult> onConfirm)
         {
-            _baseStats = IgMockData.Player.Stats;
-            _adjustments = new int[_baseStats.Length];
-            _statValueLabels = new Label[_baseStats.Length];
-            _minusButtons = new Button[_baseStats.Length];
-            _plusButtons = new Button[_baseStats.Length];
-            _spellOptions = IgMockData.GetAllSpells();
-            _spellCards = new VisualElement[Mathf.Min(6, _spellOptions.Count)];
-            _selectedSpellName = _spellOptions.Count > 0 ? _spellOptions[0].Name : string.Empty;
-            _remainingPoints = 5;
+            _state = state ?? new LevelUpScreenState("Unknown", 1, 5, Array.Empty<LevelUpStatRow>(), Array.Empty<LevelUpSpellRow>());
             _onConfirm = onConfirm;
+            _remainingPoints = _state.PointsAvailable;
+            _selectedSpellId = _state.SpellChoices.Count > 0 ? _state.SpellChoices[0].TemplateId : string.Empty;
+            _adjustments = new int[_state.Stats.Count];
+            _statValueLabels = new Label[_state.Stats.Count];
+            _minusButtons = new Button[_state.Stats.Count];
+            _plusButtons = new Button[_state.Stats.Count];
+            _spellCards = new VisualElement[_state.SpellChoices.Count];
 
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
@@ -58,26 +57,24 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             panel.style.paddingRight = 36;
             _overlay.Add(panel);
 
-            var fanfare = new VisualElement();
-            fanfare.style.alignItems = Align.Center;
-            fanfare.style.marginBottom = 28;
-            fanfare.Add(BuildCenter("LEVEL UP!", Serif, 14, Gold, FontStyle.Bold, 6f));
-            fanfare.Add(BuildCenter($"Level {IgMockData.Player.Level + 1}", Sans, 48, Parch, FontStyle.Bold));
-            fanfare.Add(BuildCenter("Distribute 5 attribute points.", Serif, 15, PA(0.55f), FontStyle.Italic));
-            panel.Add(fanfare);
+            var actorName = string.IsNullOrWhiteSpace(_state.ActorName) ? "Warden" : _state.ActorName;
+            panel.Add(BuildCenter("LEVEL UP!", Serif, 14, Gold, FontStyle.Bold, 6f));
+            panel.Add(BuildCenter(actorName, Sans, 42, Parch, FontStyle.Bold));
+            panel.Add(BuildCenter("Level " + _state.CurrentLevel + " → " + (_state.CurrentLevel + 1), Serif, 15, PA(0.55f), FontStyle.Italic));
 
             var remain = new VisualElement();
             remain.style.height = 36;
-            remain.style.width = 220;
+            remain.style.width = 260;
             remain.style.marginLeft = StyleKeyword.Auto;
             remain.style.marginRight = StyleKeyword.Auto;
+            remain.style.marginTop = 16;
             remain.style.marginBottom = 20;
             remain.style.backgroundColor = Alpha(Panel, 0.55f);
             Border(remain, PA(0.18f), 1);
             Radius(remain, 20);
             remain.style.alignItems = Align.Center;
             remain.style.justifyContent = Justify.Center;
-            _remainingLabel = Text("5 POINTS REMAINING", Sans, 14, Amber, FontStyle.Bold);
+            _remainingLabel = Text(string.Empty, Sans, 14, Amber, FontStyle.Bold);
             remain.Add(_remainingLabel);
             panel.Add(remain);
 
@@ -86,48 +83,71 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             grid.style.flexWrap = Wrap.Wrap;
             grid.style.marginBottom = 24;
             panel.Add(grid);
-            for (int i = 0; i < IgMockData.Player.Stats.Length; i++)
+            for (int i = 0; i < _state.Stats.Count; i++)
                 grid.Add(BuildStatRow(i));
 
-            var spellSection = Text("SPELLS", Sans, 10, Gold, FontStyle.Bold);
+            var spellSection = Text("NEW SPELL", Sans, 10, Gold, FontStyle.Bold);
             spellSection.style.letterSpacing = 1.8f;
             spellSection.style.marginBottom = 10;
             panel.Add(spellSection);
-            var spells = new VisualElement();
-            spells.style.flexDirection = FlexDirection.Row;
-            spells.style.flexWrap = Wrap.Wrap;
-            spells.style.marginBottom = 24;
-            panel.Add(spells);
-            for (int i = 0; i < _spellCards.Length; i++)
+
+            if (_state.SpellChoices.Count == 0)
             {
-                var card = BuildSpellChoice(i);
-                _spellCards[i] = card;
-                spells.Add(card);
+                var note = Text("No new spell is available at this level.", Serif, 13, ParchDim, FontStyle.Italic);
+                note.style.marginBottom = 20;
+                panel.Add(note);
+            }
+            else
+            {
+                var spells = new VisualElement();
+                spells.style.flexDirection = FlexDirection.Row;
+                spells.style.flexWrap = Wrap.Wrap;
+                spells.style.marginBottom = 24;
+                panel.Add(spells);
+                for (int i = 0; i < _spellCards.Length; i++)
+                {
+                    var card = BuildSpellChoice(i);
+                    _spellCards[i] = card;
+                    spells.Add(card);
+                }
             }
 
-            var confirm = new Button(() =>
+            _statusLabel = Text("Spend all points before confirming.", Serif, 13, ParchDim, FontStyle.Italic);
+            _statusLabel.style.marginBottom = 12;
+            _statusLabel.style.whiteSpace = WhiteSpace.Normal;
+            panel.Add(_statusLabel);
+
+            _confirmButton = new Button(() =>
             {
-                _onConfirm?.Invoke();
-                onClose?.Invoke();
-            }) { text = "CONFIRM" };
-            ResetButton(confirm);
-            confirm.style.height = 46;
-            confirm.style.width = 180;
-            confirm.style.marginLeft = StyleKeyword.Auto;
-            confirm.style.marginRight = StyleKeyword.Auto;
-            confirm.style.backgroundColor = Gold;
-            confirm.style.color = Ink;
-            confirm.style.fontSize = 15;
-            confirm.style.letterSpacing = 2f;
-            confirm.style.unityFontStyleAndWeight = FontStyle.Bold;
-            ApplyFont(confirm, Serif);
-            Border(confirm, Amber, 1);
-            Radius(confirm, 10);
-            panel.Add(confirm);
+                var result = _onConfirm != null ? _onConfirm(BuildSelection()) : new LevelUpActionResult(false, "Level-up commands are unavailable.");
+                _statusLabel.text = result.Message;
+                _statusLabel.style.color = result.Success ? Success : Amber;
+                if (result.Success)
+                {
+                    Close();
+                    onClose?.Invoke();
+                }
+            })
+            { text = "CONFIRM" };
+            ResetButton(_confirmButton);
+            _confirmButton.style.height = 46;
+            _confirmButton.style.width = 180;
+            _confirmButton.style.marginLeft = StyleKeyword.Auto;
+            _confirmButton.style.marginRight = StyleKeyword.Auto;
+            _confirmButton.style.backgroundColor = Gold;
+            _confirmButton.style.color = Ink;
+            _confirmButton.style.fontSize = 15;
+            _confirmButton.style.letterSpacing = 2f;
+            _confirmButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+            ApplyFont(_confirmButton, Serif);
+            Border(_confirmButton, Amber, 1);
+            Radius(_confirmButton, 10);
+            panel.Add(_confirmButton);
 
             stageCanvas.Add(_overlay);
             RefreshStats();
             RefreshSpellSelection();
+            RefreshConfirmState();
         }
 
         public void Close() { _overlay?.RemoveFromHierarchy(); }
@@ -142,10 +162,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         private VisualElement BuildStatRow(int index)
         {
-            var stat = _baseStats[index];
+            var stat = _state.Stats[index];
             var row = Row();
             row.style.width = Length.Percent(48.5f);
-            row.style.marginRight = (stat.Abbr == "AGI" || stat.Abbr == "MND" || stat.Abbr == "PRE") ? 0 : Length.Percent(3f);
+            row.style.marginRight = index % 2 == 1 ? 0 : Length.Percent(3f);
             row.style.marginBottom = 10;
             row.style.paddingTop = 12;
             row.style.paddingBottom = 12;
@@ -158,7 +178,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
             var left = new VisualElement();
             left.style.minWidth = 80;
-            var abbr = Text(stat.Abbr, Sans, 10, Stat(stat.Abbr), FontStyle.Bold);
+            var abbr = Text(stat.Label, Sans, 10, Stat(stat.Id), FontStyle.Bold);
             abbr.style.letterSpacing = 1.2f;
             left.Add(abbr);
             var num = Text(stat.Value.ToString(), Sans, 28, Parch, FontStyle.Bold);
@@ -169,7 +189,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var controls = Row();
             controls.style.marginLeft = StyleKeyword.Auto;
             var minus = BuildAdjust("−", false, ParchDim, () => AdjustStat(index, -1));
-            var plus = BuildAdjust("+", true, Stat(stat.Abbr), () => AdjustStat(index, +1));
+            var plus = BuildAdjust("+", true, Stat(stat.Id), () => AdjustStat(index, +1));
             _minusButtons[index] = minus;
             _plusButtons[index] = plus;
             controls.Add(minus);
@@ -180,28 +200,23 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         private VisualElement BuildSpellChoice(int index)
         {
-            var spell = _spellOptions[index];
-            bool selected = spell.Name == _selectedSpellName;
-            string school = FindSchool(spell.Name);
-            var card = new Button(() => SelectSpell(spell.Name));
+            var spell = _state.SpellChoices[index];
+            var card = new Button(() => SelectSpell(spell.TemplateId));
             ResetButton(card);
             card.style.width = Length.Percent(48.5f);
-            card.style.marginRight = selected || spell.Name == "Shock Burst" || spell.Name == "Cure Poison" || spell.Name == "Charm" ? 0 : Length.Percent(3f);
+            card.style.marginRight = index % 2 == 1 ? 0 : Length.Percent(3f);
             card.style.marginBottom = 10;
             card.style.paddingTop = 12;
             card.style.paddingBottom = 12;
             card.style.paddingLeft = 14;
             card.style.paddingRight = 14;
-            card.style.backgroundColor = selected ? GA(0.10f) : Dark(0.62f);
-            Border(card, selected ? Gold : PA(0.10f), selected ? 2 : 1);
-            Radius(card, 10);
             card.style.flexDirection = FlexDirection.Column;
-            card.Add(Text(spell.Name, Sans, 13, selected ? Parch : ParchDim, FontStyle.Bold));
-            var head = Text(school.ToUpperInvariant(), Sans, 10, School(school));
+            card.Add(Text(spell.Name, Sans, 13, Parch, FontStyle.Bold));
+            var head = Text(spell.School.ToUpperInvariant(), Sans, 10, School(spell.School));
             head.style.letterSpacing = 0.8f;
             head.style.marginTop = 4;
             card.Add(head);
-            var fx = Text($"{spell.Effect} · {spell.ManaCost} MP", Serif, 12, PA(0.50f), FontStyle.Italic);
+            var fx = Text(spell.Summary + " · " + spell.ManaCost + " MP", Serif, 12, PA(0.50f), FontStyle.Italic);
             fx.style.marginTop = 6;
             fx.style.whiteSpace = WhiteSpace.Normal;
             card.Add(fx);
@@ -228,33 +243,38 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         {
             if (delta > 0)
             {
-                if (_remainingPoints <= 0) return;
-                _adjustments[index] += 1;
-                _remainingPoints -= 1;
+                if (_remainingPoints <= 0)
+                    return;
+                _adjustments[index]++;
+                _remainingPoints--;
             }
             else
             {
-                if (_adjustments[index] <= 0) return;
-                _adjustments[index] -= 1;
-                _remainingPoints += 1;
+                if (_adjustments[index] <= 0)
+                    return;
+                _adjustments[index]--;
+                _remainingPoints++;
             }
 
             RefreshStats();
+            RefreshConfirmState();
         }
 
-        private void SelectSpell(string spellName)
+        private void SelectSpell(string spellId)
         {
-            _selectedSpellName = spellName ?? string.Empty;
+            _selectedSpellId = spellId ?? string.Empty;
             RefreshSpellSelection();
+            RefreshConfirmState();
         }
 
         private void RefreshStats()
         {
             _remainingLabel.text = _remainingPoints + " POINTS REMAINING";
-            for (int i = 0; i < _baseStats.Length; i++)
+            for (int i = 0; i < _state.Stats.Count; i++)
             {
-                int current = _baseStats[i].Value + _adjustments[i];
-                string suffix = _adjustments[i] > 0 ? " +" + _adjustments[i] : string.Empty;
+                var stat = _state.Stats[i];
+                var current = stat.Value + _adjustments[i];
+                var suffix = _adjustments[i] > 0 ? " +" + _adjustments[i] : string.Empty;
                 _statValueLabels[i].text = current + suffix;
                 _minusButtons[i].SetEnabled(_adjustments[i] > 0);
                 _plusButtons[i].SetEnabled(_remainingPoints > 0);
@@ -265,24 +285,49 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         {
             for (int i = 0; i < _spellCards.Length; i++)
             {
-                var spell = _spellOptions[i];
-                bool selected = spell.Name == _selectedSpellName;
+                var selected = string.Equals(_state.SpellChoices[i].TemplateId, _selectedSpellId, StringComparison.Ordinal);
                 _spellCards[i].style.backgroundColor = selected ? GA(0.10f) : Dark(0.62f);
                 Border(_spellCards[i], selected ? Gold : PA(0.10f), selected ? 2 : 1);
             }
         }
 
-        private static string FindSchool(string spellName)
+        private void RefreshConfirmState()
         {
-            for (int i = 0; i < IgMockData.SpellSchools.Length; i++)
+            var spellReady = _state.SpellChoices.Count == 0 || !string.IsNullOrWhiteSpace(_selectedSpellId);
+            _confirmButton.SetEnabled(_remainingPoints == 0 && spellReady);
+            if (_remainingPoints > 0)
             {
-                for (int s = 0; s < IgMockData.SpellSchools[i].Spells.Length; s++)
-                {
-                    if (IgMockData.SpellSchools[i].Spells[s].Name == spellName)
-                        return IgMockData.SpellSchools[i].Name;
-                }
+                _statusLabel.text = "Spend all points before confirming.";
+                _statusLabel.style.color = ParchDim;
+                return;
             }
-            return "Destruction";
+
+            _statusLabel.text = _state.SpellChoices.Count == 0
+                ? "Confirm to apply the attribute gains."
+                : "Confirm to apply the attribute gains and learn the selected spell.";
+            _statusLabel.style.color = ParchDim;
+        }
+
+        private LevelUpSelection BuildSelection()
+        {
+            return new LevelUpSelection(
+                StatDelta("MIG"),
+                StatDelta("AGI"),
+                StatDelta("END"),
+                StatDelta("MND"),
+                StatDelta("INS"),
+                StatDelta("PRE"),
+                _selectedSpellId);
+        }
+
+        private int StatDelta(string statId)
+        {
+            for (int i = 0; i < _state.Stats.Count; i++)
+            {
+                if (string.Equals(_state.Stats[i].Id, statId, StringComparison.Ordinal))
+                    return _adjustments[i];
+            }
+            return 0;
         }
     }
 }

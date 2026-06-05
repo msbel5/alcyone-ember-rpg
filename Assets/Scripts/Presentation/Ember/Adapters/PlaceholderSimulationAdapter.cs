@@ -15,13 +15,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// <see cref="EmberDomainAdapterLocator.Register"/> once Captain's domain stores
     /// expose an integration adapter.
     /// </summary>
-    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait, IJournalSource, ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink
+    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait, IJournalSource, ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ILevelUpSource, ILevelUpCommandSink
     {
         private readonly List<JobQueueRow> _jobRows = new List<JobQueueRow>();
         private readonly List<ColonyNeedsRow> _needsRows = new List<ColonyNeedsRow>();
         private readonly List<FactionRow> _factionRows = new List<FactionRow>();
         private readonly List<InventorySlot> _inventorySlots = new List<InventorySlot>();
         private readonly List<string> _spellSlots = new List<string> { "fireball", "heal", "shield", "teleport", "drain" };
+        private readonly int[] _playerStats = { 10, 14, 11, 18, 16, 13 };
         private readonly Dictionary<string, ActorViewState> _actorStates = new Dictionary<string, ActorViewState>();
         private readonly Dictionary<string, WorksiteViewState> _worksiteStates = new Dictionary<string, WorksiteViewState>();
 
@@ -34,6 +35,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private List<string> _currentTopics = new List<string> { "Jobs", "Factions", "Rumors" };
         private int _playerGold = 240;
         private int _merchantGold = 900;
+        private int _playerLevel = 4;
         private readonly List<TradeItemRow> _merchantRows = new List<TradeItemRow>();
 
         public int TickIndex => _tick;
@@ -47,7 +49,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public EmberCrpg.Domain.Actors.GridPosition PlayerOverlandTile => default;
         public string StartingSettlementName => null;
         public CombatHudState CombatHud => _combatHud;
-        public PlayerSheetState PlayerSheet => default;   // stub adapter: no real character → views keep mock
+        public PlayerSheetState PlayerSheet => new PlayerSheetState("Cinder Vey", _playerStats[0], _playerStats[1], _playerStats[2], _playerStats[3], _playerStats[4], _playerStats[5]);
         public IReadOnlyList<WorldEventRow> RecentWorldEvents(int maxRows) => System.Array.Empty<WorldEventRow>();
         public IReadOnlyList<JournalChapterRow> GetChapters()
         {
@@ -157,6 +159,45 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
 
             return new CraftingActionResult(false, "Unknown recipe.");
+        }
+
+        public LevelUpScreenState ReadLevelUpState()
+        {
+            var stats = new[]
+            {
+                new LevelUpStatRow("MIG", "MIG", _playerStats[0]),
+                new LevelUpStatRow("AGI", "AGI", _playerStats[1]),
+                new LevelUpStatRow("END", "END", _playerStats[2]),
+                new LevelUpStatRow("MND", "MND", _playerStats[3]),
+                new LevelUpStatRow("INS", "INS", _playerStats[4]),
+                new LevelUpStatRow("PRE", "PRE", _playerStats[5]),
+            };
+
+            var spells = new[]
+            {
+                new LevelUpSpellRow("fireball", "Fireball", "Destruction", 18, "Detonate a volatile ember."),
+                new LevelUpSpellRow("heal", "Minor Heal", "Restoration", 8, "Restore a small wound."),
+                new LevelUpSpellRow("shield", "Ash Ward", "Alteration", 12, "Raise a brittle ward."),
+            };
+
+            return new LevelUpScreenState("Cinder Vey", _playerLevel, 5, stats, spells);
+        }
+
+        public LevelUpActionResult ApplyLevelUp(LevelUpSelection selection)
+        {
+            if (selection.TotalPoints != 5)
+                return new LevelUpActionResult(false, "Spend all 5 points before confirming.");
+
+            _playerStats[0] += selection.MigDelta;
+            _playerStats[1] += selection.AgiDelta;
+            _playerStats[2] += selection.EndDelta;
+            _playerStats[3] += selection.MndDelta;
+            _playerStats[4] += selection.InsDelta;
+            _playerStats[5] += selection.PreDelta;
+            _playerLevel++;
+            if (!string.IsNullOrWhiteSpace(selection.SelectedSpellId) && !_spellSlots.Contains(selection.SelectedSpellId))
+                _spellSlots.Add(selection.SelectedSpellId);
+            return new LevelUpActionResult(true, "Placeholder level-up applied.");
         }
 
         public void AdvanceTick(int tickIndex)

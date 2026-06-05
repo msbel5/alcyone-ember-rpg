@@ -85,6 +85,8 @@ dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
 inventory = ToInventoryData(world.PlayerInventory),
                 playerEquipment = ToEquipmentData(world.PlayerEquipment),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
+                playerLevel = world.PlayerLevel,
+                playerKnownSpellIds = (world.PlayerKnownSpellIds ?? new List<string>()).ToArray(),
                 playerGold = world.PlayerGold,
                 merchantGold = world.MerchantGold,
                 merchantStoreSeeded = world.MerchantStoreSeeded,
@@ -162,6 +164,10 @@ world.Items = ToItemStore(data.itemRecords);
             world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
+            world.PlayerLevel = data.playerLevel > 0 ? data.playerLevel : Math.Max(1, world.PlayerLevel);
+            world.PlayerKnownSpellIds = data.playerKnownSpellIds != null && data.playerKnownSpellIds.Length > 0
+                ? new List<string>(data.playerKnownSpellIds)
+                : world.PlayerKnownSpellIds ?? new List<string>();
             world.PlayerGold = data.playerGold;
             world.MerchantGold = data.merchantGold;
             world.MerchantStoreSeeded = data.merchantStoreSeeded;

@@ -39,16 +39,22 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         public bool TryCastSpell(int spellSlotIndex)
         {
-            // Codex audit (fourth pass A-P1): concrete spell command via
-            // WorldSpellCatalog + the EffectDefinition resolver path. Failure
-            // surfaces a deterministic refusal reason in LogCombat.
-            var spells = EmberCrpg.Simulation.Magic.WorldSpellCatalog.All;
-            if (spellSlotIndex < 0 || spellSlotIndex >= spells.Count)
+            var knownIds = _world.PlayerKnownSpellIds != null && _world.PlayerKnownSpellIds.Count > 0
+                ? new List<string>(_world.PlayerKnownSpellIds)
+                : new List<string>(EmberCrpg.Simulation.Magic.WorldSpellCatalog.All.Select(s => s.TemplateId));
+            if (spellSlotIndex < 0 || spellSlotIndex >= knownIds.Count)
             {
                 LogCombat("No such spell slot.");
                 return false;
             }
-            var spell = spells[spellSlotIndex];
+
+            var spell = EmberCrpg.Simulation.Magic.WorldSpellCatalog.Find(knownIds[spellSlotIndex]);
+            if (spell == null)
+            {
+                LogCombat("Unknown spell slot.");
+                return false;
+            }
+
             var player = _world.Actors.FirstByRole(ActorRole.Player);
             if (player == null)
             {
@@ -70,9 +76,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // the closest hostile actor (or the caster for self-buffs); if
             // no hostile target exists, fall back to the caster so single-
             // target effects still resolve.
-            var knownIds = new List<string>(spells.Count);
-            foreach (var s in spells) knownIds.Add(s.TemplateId);
-
             var requestedTarget = SelectSpellTarget(spell, player);
 
             var executionService = new EmberCrpg.Simulation.Magic.SpellExecutionService(

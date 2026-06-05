@@ -65,6 +65,8 @@ public DungeonRoomSaveData[] dungeonRooms;
         public InventorySaveData inventory;
         public EquipmentSaveData playerEquipment;
         public InventorySaveData merchantInventory;
+        public int playerLevel;
+        public string[] playerKnownSpellIds;
         public int playerGold;
         public int merchantGold;
         public bool merchantStoreSeeded;

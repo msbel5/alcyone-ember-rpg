@@ -5,6 +5,7 @@ using EmberCrpg.Domain.Magic;
 using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
+using EmberCrpg.Simulation.Magic;
 using EmberCrpg.Simulation.Narrative;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
@@ -107,6 +108,20 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             Assert.That(loaded.PlayerShieldBuffs, Is.Not.Null);
             Assert.That(loaded.PlayerShieldBuffs.GetTrackedSpellTemplateIds().Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void SaveAndLoad_RoundTripsPlayerLevelAndKnownSpells()
+        {
+            var world = new WorldFactory().Create(2028);
+            world.PlayerLevel = 3;
+            world.PlayerKnownSpellIds.Add(WorldSpellCatalog.EmberWardTemplateId);
+
+            var service = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService();
+            var loaded = service.LoadFromJson(service.SaveToJson(world));
+
+            Assert.That(loaded.PlayerLevel, Is.EqualTo(3));
+            Assert.That(loaded.PlayerKnownSpellIds, Is.EqualTo(world.PlayerKnownSpellIds));
         }
     }
 }

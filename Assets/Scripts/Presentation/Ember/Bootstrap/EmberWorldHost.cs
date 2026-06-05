@@ -21,7 +21,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
     public sealed partial class EmberWorldHost : MonoBehaviour, EmberTickDriver.ITickListener,
         IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait, IPlayerSheetSource,
         IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ISpellBarSource, IJournalSource,
-        ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ISaveLoadSource, ISaveLoadCommandSink
+        ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ISaveLoadSource, ISaveLoadCommandSink,
+        ILevelUpSource, ILevelUpCommandSink
     {
         [SerializeField] private SpriteRegistry _spriteRegistry;
 
@@ -404,6 +405,16 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         {
             var service = GetComponent<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
             return service != null ? service.LoadLatestFromUi() : new SaveLoadActionResult(false, "Load service is unavailable.");
+        }
+        LevelUpScreenState ILevelUpSource.ReadLevelUpState()
+        {
+            return (_adapter as ILevelUpSource)?.ReadLevelUpState()
+                ?? new LevelUpScreenState("Unknown", 1, 5, System.Array.Empty<LevelUpStatRow>(), System.Array.Empty<LevelUpSpellRow>());
+        }
+        LevelUpActionResult ILevelUpCommandSink.ApplyLevelUp(LevelUpSelection selection)
+        {
+            return (_adapter as ILevelUpCommandSink)?.ApplyLevelUp(selection)
+                ?? new LevelUpActionResult(false, "Level-up commands are unavailable.");
         }
         public Sprite GetSprite(string name)
         {

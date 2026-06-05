@@ -88,6 +88,7 @@ namespace EmberCrpg.Domain.World
             Soils ??= new ComponentStore<SoilComponent>();
             Jobs ??= new JobBoard();
             Worksites ??= new WorksiteStore();
+            PlayerKnownSpellIds ??= new List<string>();
         }
 
         // Codex audit (sixth pass D-P3 #D2): the five named role views below
@@ -134,6 +135,8 @@ namespace EmberCrpg.Domain.World
         public InventoryState PlayerInventory;
         public EquipmentState PlayerEquipment = new EquipmentState();
         public InventoryState MerchantInventory;
+        public int PlayerLevel = 1;
+        public List<string> PlayerKnownSpellIds = new List<string>();
         public List<RoomPickup> Pickups = new List<RoomPickup>();
         public List<DungeonRoomState> DungeonRoomStates = new List<DungeonRoomState>();
         public List<DungeonDoorState> DungeonDoorStates = new List<DungeonDoorState>();
@@ -193,6 +196,8 @@ namespace EmberCrpg.Domain.World
             PlayerInventory = other.PlayerInventory;
             PlayerEquipment = other.PlayerEquipment;
             MerchantInventory = other.MerchantInventory;
+            PlayerLevel = other.PlayerLevel;
+            PlayerKnownSpellIds = other.PlayerKnownSpellIds;
             Pickups = other.Pickups;
             DungeonRoomStates = other.DungeonRoomStates;
             DungeonDoorStates = other.DungeonDoorStates;

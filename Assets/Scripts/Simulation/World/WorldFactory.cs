@@ -12,6 +12,7 @@ using EmberCrpg.Domain.Narrative;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Inventory;
+using EmberCrpg.Simulation.Magic;
 
 namespace EmberCrpg.Simulation.World
 {
@@ -70,6 +71,12 @@ namespace EmberCrpg.Simulation.World
             world.ReplaceActorView(ActorRole.Enemy, _actors.Create(new ActorId(5), "Ash Rat", ActorRole.Enemy, enemySpawn.Position));
             world.PlayerInventory = new InventoryState(10);
             world.PlayerEquipment = new EquipmentState();
+            world.PlayerLevel = 1;
+            world.PlayerKnownSpellIds = new List<string>
+            {
+                WorldSpellCatalog.FlameBoltTemplateId,
+                WorldSpellCatalog.MendingTouchTemplateId,
+            };
             world.PlayerInventory.TryAdd(WorldItemCatalog.CreateAshTrainingBlade());
             world.MerchantInventory = new InventoryState(32);
             world.MerchantInventory.TryAdd(WorldItemCatalog.CreateGateWrit());
