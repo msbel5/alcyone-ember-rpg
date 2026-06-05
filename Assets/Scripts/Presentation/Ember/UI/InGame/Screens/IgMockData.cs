@@ -115,29 +115,6 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         };
         public static SpellBarSlotData[] SpellBar = DefaultSpellBar;
 
-        public static readonly QuestData[] Quests =
-        {
-            new(1, "The Missing Caravan", "active",
-                "Three wagons went east past the dead oak and never came back.",
-                new[]
-                {
-                    new QuestTaskData("Investigate the road east of Ashton", true),
-                    new QuestTaskData("Find evidence at the ambush site", true),
-                    new QuestTaskData("Identify the raider camp", false),
-                    new QuestTaskData("Rescue or confirm fate of survivors", false),
-                }),
-            new(2, "The Sealed Shrine", "active",
-                "A forbidden shrine lies beneath old stone. The carvings warn.",
-                new[]
-                {
-                    new QuestTaskData("Locate the shrine entrance", false),
-                    new QuestTaskData("Decipher the carvings", false),
-                }),
-            new(3, "A Beggar's Debt", "completed",
-                "You gave the coin. The beggar remembered.",
-                new[] { new QuestTaskData("Deliver the coin", true) }),
-        };
-
         public static readonly ColonyNpcData[] DefaultColonyNpcs =
         {
             new("Gareth the Smith", "Blacksmith", 80, 80,
@@ -157,106 +134,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         public static readonly OracleData Oracle = new("The Oracle", "Keeper of the World's Memory", null, "⌖");
 
-        public static readonly string[] DmNarrations =
-        {
-            "The road narrows. A raven follows you at a fixed distance — it has been following you since the oak.",
-            "The forge-fire spits ash. Something in the iron remembers older shapes.",
-            "Three guards at the gate. They are watching the horizon, not the door. They are expecting someone.",
-            "A cold wind blows from the North. The stars align in silence.",
-        };
-
-        public static readonly WorldLocationData[] WorldLocations =
-        {
-            new("ashton", "Ashton", 38, 58, "Town", true),
-            new("oakroad", "Dead Oak Road", 52, 52, "Road", true),
-            new("shrine", "Sealed Shrine", 64, 44, "Dungeon", false),
-            new("camp", "Raider Camp", 74, 50, "Camp", false),
-            new("city", "Crestfall", 22, 34, "City", true),
-            new("ruin", "Old Watchtower", 48, 28, "Ruin", false),
-        };
-
-        public static readonly DialogNpcData DialogNpc = new(
-            "Gareth the Smith",
-            "../assets/characters/beggar.png",
-            "Aye, I heard the noise on the east road. Three nights running now. If the caravan doesn't come through soon, we'll be short iron before winter sets in.",
-            new[]
-            {
-                new TopicData("the missing caravan", "Three wagons. Two guards. The merchant’s boy was with them — young Edric. I told the captain before they left: the east road’s not safe after the moon changes."),
-                new TopicData("iron supplies", "I can smelt what the colony brings in, but I can't smelt rumor. Get me ore, or get me that caravan."),
-                new TopicData("work", "You want work? Find out what happened on that road. Coin's in it for you — more than the captain will offer."),
-                new TopicData("the east road", "There's an old waystone two hours east. Something's been moving near it. I've seen the smoke."),
-            });
-
         public static readonly string[] OraclePrompts =
         {
             "What stirs in the dark…",
             "What fate lies ahead…",
             "What does the world hide from me…",
             "Who moves against me…",
-        };
-
-        public static readonly TradeItemData[] LootItems =
-        {
-            new("l1", "Iron Dagger", "Weapon", 18, 1),
-            new("l2", "Dried Meat", "Food", 4, 1),
-            new("l3", "Silver Ring", "Misc", 60, 1),
-            new("l4", "Lockpick", "Tool", 5, 1),
-            new("l5", "Pouch (32 gp)", "Currency", 32, 1),
-        };
-
-        public static readonly TradeItemData[] MerchantItems =
-        {
-            new("m1", "Iron Sword", "Weapon", 65, 2),
-            new("m2", "Chain Shirt", "Armor", 120, 1),
-            new("m3", "Healing Potion", "Potion", 30, 5),
-            new("m4", "Torch ×5", "Tool", 8, 10),
-            new("m5", "Rations", "Food", 4, 20),
-            new("m6", "Rope (10m)", "Tool", 12, 4),
-        };
-
-        public static readonly SaveSlotData[] SaveSlots =
-        {
-            new(1, "Autosave", "Ashton Crossroads", "3d 2h", "4", "2026-06-04 18:42"),
-            new(2, "Slot 2", "Ashton Crossroads", "3d 1h", "4", "2026-06-04 17:10"),
-            new(3, "Before Shrine", "Dead Oak Road", "2d 6h", "3", "2026-06-03 14:22"),
-            new(4, "Slot 4", "Empty", "—", "—", "—"),
-            new(5, "Slot 5", "Empty", "—", "—", "—"),
-        };
-
-        public static readonly CraftingRecipeData[] CraftingRecipes =
-        {
-            new("campfire_tonic", "Campfire Tonic", "Alchemy", 18,
-                "A bitter restorative brewed from field herbs and clean water.",
-                new[]
-                {
-                    new IngredientData("Fireweed", 2, true),
-                    new IngredientData("Spring Water", 1, true),
-                    new IngredientData("Ash Salt", 1, false),
-                }),
-            new("iron_bolts", "Iron Bolts", "Smithing", 12,
-                "Simple ammunition bundled for field repairs and light ranged use.",
-                new[]
-                {
-                    new IngredientData("Iron Ingot", 1, true),
-                    new IngredientData("Feather Fletching", 2, true),
-                    new IngredientData("Binding Wire", 1, true),
-                }),
-            new("ember_charm", "Ember Charm", "Trinket", 45,
-                "A rune-tied charm that glows faintly near old wards.",
-                new[]
-                {
-                    new IngredientData("Bronze Wire", 2, true),
-                    new IngredientData("Old Sigil Fragment", 1, false),
-                    new IngredientData("Resin", 1, true),
-                }),
-            new("traveler_rations", "Traveler Rations", "Cooking", 9,
-                "A dry-packed meal meant to last one hard day on the road.",
-                new[]
-                {
-                    new IngredientData("Dried Meat", 1, true),
-                    new IngredientData("Hard Bread", 2, true),
-                    new IngredientData("Salt Pouch", 1, true),
-                }),
         };
 
         public static SpellSchoolData GetSpellSchool(string name)
@@ -306,16 +189,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     public sealed record SpellSchoolData(string Name, SpellData[] Spells);
     public sealed record SpellData(string Name, int ManaCost, string Effect, string Range, string Duration);
     public sealed record SpellBarSlotData(int Slot, string Spell, bool Selected = false);
-    public sealed record QuestData(int Id, string Title, string Status, string Description, QuestTaskData[] Tasks);
-    public sealed record QuestTaskData(string Text, bool Done);
     public sealed record ColonyNpcData(string Name, string Role, int Hp, int HpMax, NeedData[] Needs, string Mood, string Task);
     public sealed record NeedData(string Name, int Value);
     public sealed record OracleData(string Name, string Subtitle, string PortraitPath, string Sigil);
-    public sealed record WorldLocationData(string Id, string Name, float XPercent, float YPercent, string Type, bool Visited);
-    public sealed record DialogNpcData(string Name, string PortraitPath, string Greeting, TopicData[] Topics);
-    public sealed record TopicData(string Topic, string Response);
-    public sealed record TradeItemData(string Id, string Name, string Type, int Value, int Quantity);
-    public sealed record SaveSlotData(int Number, string Name, string Location, string PlayedTime, string Level, string Date);
-    public sealed record CraftingRecipeData(string Id, string Name, string Category, int OutputValue, string Description, IngredientData[] Ingredients);
-    public sealed record IngredientData(string Name, int Quantity, bool Available);
 }

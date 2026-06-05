@@ -37,12 +37,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             top.style.marginBottom = 28;
             wrap.Add(top);
 
-            var p1 = Text($"{IgMockData.Player.Name} lay still on the east road, three days out of Ashton. The raven that had followed since the oak finally landed.", Serif, 24, PA(0.62f), FontStyle.Italic);
+            var p1 = Text(IgMockData.Player.Name + " lies still. The path from here belongs to memory alone.", Serif, 24, PA(0.62f), FontStyle.Italic);
             p1.style.whiteSpace = WhiteSpace.Normal;
             p1.style.unityTextAlign = TextAnchor.MiddleCenter;
             wrap.Add(p1);
 
-            var p2 = Text("The forge fire never truly dies. What remains of your choices waits in the embers.", Serif, 16, PA(0.38f));
+            var p2 = Text("What remains of your choices waits in the embers.", Serif, 16, PA(0.38f));
             p2.style.whiteSpace = WhiteSpace.Normal;
             p2.style.unityTextAlign = TextAnchor.MiddleCenter;
             p2.style.marginTop = 14;

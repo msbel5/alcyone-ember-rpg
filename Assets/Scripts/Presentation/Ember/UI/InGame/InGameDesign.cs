@@ -128,6 +128,121 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             if (font == null) return;
             e.style.unityFontDefinition = new StyleFontDefinition(FontDefinition.FromFont(font));
         }
+
+        public static void StyleScroll(ScrollView sv)
+        {
+            if (sv == null) return;
+            StyleScroller(sv.verticalScroller, true);
+            StyleScroller(sv.horizontalScroller, false);
+        }
+
+        public static VisualElement EmptyState(string eyebrow, string message, string detail = null)
+        {
+            var wrap = new VisualElement();
+            wrap.style.flexGrow = 1;
+            wrap.style.alignItems = Align.Center;
+            wrap.style.justifyContent = Justify.Center;
+            wrap.style.paddingLeft = 32;
+            wrap.style.paddingRight = 32;
+            wrap.style.paddingTop = 32;
+            wrap.style.paddingBottom = 32;
+
+            var card = new VisualElement();
+            card.style.maxWidth = 620;
+            card.style.paddingLeft = 28;
+            card.style.paddingRight = 28;
+            card.style.paddingTop = 24;
+            card.style.paddingBottom = 24;
+            card.style.backgroundColor = Alpha(InputBg, 0.88f);
+            Border(card, PA(0.12f), 1);
+            Radius(card, 14);
+            card.style.alignItems = Align.Center;
+            wrap.Add(card);
+
+            if (!string.IsNullOrWhiteSpace(eyebrow))
+            {
+                var top = Text(eyebrow.ToUpperInvariant(), Sans, 10, Gold, FontStyle.Bold);
+                top.style.letterSpacing = 2f;
+                top.style.unityTextAlign = TextAnchor.MiddleCenter;
+                top.style.marginBottom = 10;
+                card.Add(top);
+            }
+
+            var body = Text(message ?? string.Empty, Serif, 20, Parch, FontStyle.Italic);
+            body.style.whiteSpace = WhiteSpace.Normal;
+            body.style.unityTextAlign = TextAnchor.MiddleCenter;
+            card.Add(body);
+
+            if (!string.IsNullOrWhiteSpace(detail))
+            {
+                var note = Text(detail, Sans, 12, PA(0.42f));
+                note.style.whiteSpace = WhiteSpace.Normal;
+                note.style.unityTextAlign = TextAnchor.MiddleCenter;
+                note.style.marginTop = 12;
+                card.Add(note);
+            }
+
+            return wrap;
+        }
+
+        private static void StyleScroller(Scroller scroller, bool vertical)
+        {
+            if (scroller == null) return;
+
+            scroller.lowButton.style.display = DisplayStyle.None;
+            scroller.highButton.style.display = DisplayStyle.None;
+            scroller.style.backgroundColor = Alpha(InputBg, 0.82f);
+            Radius(scroller, 999);
+
+            if (vertical)
+            {
+                scroller.style.width = 8;
+                scroller.style.minWidth = 8;
+                scroller.style.maxWidth = 8;
+            }
+            else
+            {
+                scroller.style.height = 8;
+                scroller.style.minHeight = 8;
+                scroller.style.maxHeight = 8;
+            }
+
+            var slider = scroller.slider;
+            if (slider != null)
+            {
+                slider.style.backgroundColor = Alpha(Ink, 0.25f);
+                Radius(slider, 999);
+
+                if (vertical)
+                {
+                    slider.style.minWidth = 8;
+                    slider.style.maxWidth = 8;
+                }
+                else
+                {
+                    slider.style.minHeight = 8;
+                    slider.style.maxHeight = 8;
+                }
+            }
+
+            var dragger = scroller.Q("unity-dragger");
+            if (dragger == null) return;
+
+            dragger.style.backgroundColor = Alpha(Gold, 0.50f);
+            Border(dragger, GA(0.72f), 1);
+            Radius(dragger, 999);
+
+            if (vertical)
+            {
+                dragger.style.minWidth = 8;
+                dragger.style.maxWidth = 8;
+            }
+            else
+            {
+                dragger.style.minHeight = 8;
+                dragger.style.maxHeight = 8;
+            }
+        }
     }
 
     /// <summary>

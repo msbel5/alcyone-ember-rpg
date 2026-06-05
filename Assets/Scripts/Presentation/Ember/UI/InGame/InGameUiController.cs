@@ -223,6 +223,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             // LevelUp/Death/Dialog/DM/Loot). Tracking the element itself is what lets CloseScreen + IsAnyOpen
             // handle ALL screens, so Esc closes them and the cursor/pause toggle fires correctly.
             _activeScreen = c.childCount > before ? c.ElementAt(c.childCount - 1) : null;
+            if (_activeScreen != null)
+            {
+                _activeScreen.schedule.Execute(() =>
+                {
+                    if (_activeScreen == null) return;
+                    _activeScreen.Query<ScrollView>().ForEach(IgDesign.StyleScroll);
+                }).StartingIn(0);
+            }
         }
 
         private void CloseScreen()

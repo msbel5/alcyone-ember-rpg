@@ -27,33 +27,29 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         private VisualElement _portraitBox;          // portrait frame; background image is set once the sprite loads
         private Label _portraitGlyph;                // placeholder initial, hidden once a real portrait resolves
         public bool HasPortrait { get; private set; }
-        private readonly Dictionary<string, string> _mockResponses;
 
         public DialogView(VisualElement stageCanvas, Action onClose)
             : this(
                 stageCanvas,
                 onClose,
-                IgMockData.DialogNpc.Name,
-                IgMockData.DialogNpc.PortraitPath,
-                IgMockData.DialogNpc.Greeting,
-                BuildMockTopics(),
+                "No Conversation",
+                null,
+                "No one is speaking with you right now.",
+                Array.Empty<DialogTopicOption>(),
                 _ => { },
-                onClose,
-                BuildMockResponses())
+                onClose)
         {
         }
 
         public DialogView(VisualElement stageCanvas, Action onClose, string npcName, string portraitPath, string greeting,
             IReadOnlyList<DialogTopicOption> topics, Action<string> onTopic, Action onFarewell)
-            : this(stageCanvas, onClose, npcName, portraitPath, greeting, topics, onTopic, onFarewell, null)
+            : this(stageCanvas, onClose, npcName, portraitPath, greeting, topics, onTopic, onFarewell, true)
         {
         }
 
         private DialogView(VisualElement stageCanvas, Action onClose, string npcName, string portraitPath, string greeting,
-            IReadOnlyList<DialogTopicOption> topics, Action<string> onTopic, Action onFarewell,
-            Dictionary<string, string> mockResponses)
+            IReadOnlyList<DialogTopicOption> topics, Action<string> onTopic, Action onFarewell, bool _)
         {
-            _mockResponses = mockResponses;
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
             _overlay.style.left = 0;
@@ -91,7 +87,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             _lineLabel.style.unityFontStyleAndWeight = FontStyle.Italic;
             _lineLabel.style.minHeight = 60;
             right.Add(_lineLabel);
-            _responseLabel = Text("Choose a topic.", Serif, 14, Alpha(Ink, 0.50f), FontStyle.Italic);
+            bool hasTopics = topics != null && topics.Count > 0;
+            _responseLabel = Text(hasTopics ? "Choose a topic." : "There is no active conversation to continue.", Serif, 14, Alpha(Ink, 0.50f), FontStyle.Italic);
             _responseLabel.style.whiteSpace = WhiteSpace.Normal;
             _responseLabel.style.marginTop = 14;
             right.Add(_responseLabel);
@@ -103,13 +100,20 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             topicsPane.style.paddingTop = 10;
             panel.Add(topicsPane);
 
-            if (topics != null)
+            if (hasTopics)
             {
                 for (int i = 0; i < topics.Count; i++)
                 {
                     var topic = topics[i];
                     topicsPane.Add(BuildTopicButton(i + 1, topic, onTopic));
                 }
+            }
+            else
+            {
+                topicsPane.Add(EmptyState(
+                    "Dialogue Idle",
+                    "Open this screen from a real NPC interaction to see live topics and replies.",
+                    "The standalone browser entry does not have a conversation source behind it."));
             }
 
             var bottom = Row();
@@ -119,9 +123,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             bottom.style.borderTopWidth = 1;
             bottom.style.borderTopColor = Alpha(Ink, 0.10f);
             bottom.style.paddingTop = 10;
-            bottom.Add(Text("ESC · Farewell when finished", Sans, 11, Alpha(Ink, 0.38f)));
+            bottom.Add(Text(hasTopics ? "ESC · Farewell when finished" : "ESC · Close", Sans, 11, Alpha(Ink, 0.38f)));
 
-            var close = new Button(() => (onFarewell ?? onClose)?.Invoke()) { text = "FAREWELL" };
+            var close = new Button(() => (onFarewell ?? onClose)?.Invoke()) { text = hasTopics ? "FAREWELL" : "CLOSE" };
             ResetButton(close);
             close.style.height = 32;
             close.style.paddingLeft = 16;
@@ -205,10 +209,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var button = new Button(() =>
             {
                 onTopic?.Invoke(topic.Id);
-                if (_mockResponses != null && _mockResponses.TryGetValue(topic.Id, out var response))
-                    _responseLabel.text = response;
-                else
-                    _responseLabel.text = "You ask about " + topic.Label + ".";
+                _responseLabel.text = "You ask about " + topic.Label + ".";
             })
             { text = index + ". Ask about " + topic.Label };
             ResetButton(button);
@@ -224,28 +225,6 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             Border(button, Alpha(Ink, 0.14f), 1);
             Radius(button, 8);
             return button;
-        }
-
-        private static IReadOnlyList<DialogTopicOption> BuildMockTopics()
-        {
-            var topics = new DialogTopicOption[IgMockData.DialogNpc.Topics.Length];
-            for (int i = 0; i < IgMockData.DialogNpc.Topics.Length; i++)
-            {
-                var topic = IgMockData.DialogNpc.Topics[i];
-                topics[i] = new DialogTopicOption(topic.Topic, topic.Topic);
-            }
-            return topics;
-        }
-
-        private static Dictionary<string, string> BuildMockResponses()
-        {
-            var responses = new Dictionary<string, string>(StringComparer.Ordinal);
-            for (int i = 0; i < IgMockData.DialogNpc.Topics.Length; i++)
-            {
-                var topic = IgMockData.DialogNpc.Topics[i];
-                responses[topic.Topic] = topic.Response;
-            }
-            return responses;
         }
     }
 }
