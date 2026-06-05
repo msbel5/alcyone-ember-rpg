@@ -314,7 +314,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var image = OverlandMapImageSampler.Sample(map);
             var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
             {
-                filterMode = FilterMode.Bilinear,
+                filterMode = FilterMode.Point,   // crisp tiles so coastal land reads clearly under the markers
                 wrapMode = TextureWrapMode.Clamp,
                 name = "InGameWorldMap"
             };
