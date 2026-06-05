@@ -214,6 +214,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return false;
         }
 
+        public string ConsultFate(string question) => ConsultFate();
         public string ConsultFate()
         {
             // Codex audit (sixth pass A-P2 #3, #5): unify the consult-fate

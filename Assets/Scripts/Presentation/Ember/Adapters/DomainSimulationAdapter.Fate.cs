@@ -25,13 +25,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // LLM line into the dialog instead of leaving the "consulting…" placeholder / only logging it.
         private bool _fateReady;
 
-        public string ConsultFate()
+        public string ConsultFate() => ConsultFate(null);
+
+        public string ConsultFate(string question)
         {
             if (_isFateThinking) return "The oracle is gazing into the void...";
 
             _fateReady = false;
-            // Fire async consult
-            _ = ConsultFateAsync();
+            // Fire async consult — the player's free-text question (if any) colours the prophecy's flavour text.
+            _ = ConsultFateAsync(question);
 
             return "The oracle consults the fates...";
         }
@@ -43,7 +45,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return _pendingFate;
         }
 
-        private async Task ConsultFateAsync()
+        private async Task ConsultFateAsync(string question)
         {
             var router = ForgeLocator.LlmRouter;
             if (router == null) return;
@@ -72,7 +74,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 tools,
                 150,
                 (ulong)_tick,
-                $"You are the Oracle of Ember. The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy reflecting this result for the player. The world is {StyleDescriptor()}.",
+                string.IsNullOrWhiteSpace(question)
+                    ? $"You are the Oracle of Ember. The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy reflecting this result for the player. The world is {StyleDescriptor()}."
+                    : $"You are the Oracle of Ember. The seeker asks: \"{question.Trim()}\". The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy that answers their question in light of this result. The world is {StyleDescriptor()}.",
                 new List<string>()
             );
 

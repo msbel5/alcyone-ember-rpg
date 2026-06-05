@@ -207,6 +207,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // LLM path, or the resolved line for a synchronous adapter).
         string ConsultFate();
 
+        // Overload: threads the player's free-text question into the LLM prophecy prompt. The deterministic
+        // outcome bucket is unchanged — only the flavour text answers the question.
+        string ConsultFate(string question);
+
         // BUG-4: the async LLM prophecy resolves a frame or more after ConsultFate() returns. The host
         // polls this each frame; it returns the resolved line (LLM-flavoured, or the deterministic fate
         // bucket as a floor) exactly once when ready, then null until the next consult — so the real

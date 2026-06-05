@@ -10,6 +10,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     public sealed class ConsulFateView
     {
         private readonly VisualElement _overlay;
+        private Label _line;   // the Oracle's current spoken line (controller streams the real prophecy in)
 
         public ConsulFateView(VisualElement stageCanvas, Action onClose, Action<string> onAsk = null)
         {
@@ -49,6 +50,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         public void Close() { _overlay?.RemoveFromHierarchy(); }
 
+        /// <summary>Show the Oracle's line — the controller calls IConsultFateOracle.ConsultFate(question) on Ask
+        /// and polls TryConsumeResolvedFate() each frame, streaming the real LLM prophecy in here.</summary>
+        public void SetOracleLine(string text)
+        {
+            if (_line != null && !string.IsNullOrEmpty(text)) _line.text = text;
+        }
+
         private static VisualElement BuildOraclePane()
         {
             var pane = new VisualElement();
@@ -79,7 +87,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return pane;
         }
 
-        private static VisualElement BuildConversationPane(Action<string> onAsk)
+        private VisualElement BuildConversationPane(Action<string> onAsk)
         {
             var pane = new VisualElement();
             pane.style.flexGrow = 1;
@@ -89,9 +97,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             head.style.letterSpacing = 2.8f;
             pane.Add(head);
 
-            var line = Text(IgMockData.DmNarrations[0], Serif, 20, ParchDim, FontStyle.Italic);
-            line.style.whiteSpace = WhiteSpace.Normal;
-            pane.Add(line);
+            _line = Text("The Oracle awaits. Ask, and the fates will answer.", Serif, 20, ParchDim, FontStyle.Italic);
+            _line.style.whiteSpace = WhiteSpace.Normal;
+            pane.Add(_line);
 
             var prompts = Row();
             prompts.style.flexWrap = Wrap.Wrap;
@@ -107,7 +115,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 chip.style.backgroundColor = Alpha(Panel, 0.55f);
                 Border(chip, GA(0.20f), 1);
                 Radius(chip, 20);
-                chip.Add(Text(IgMockData.OraclePrompts[i], Serif, 13, GA(0.60f), FontStyle.Italic));
+                var promptText = IgMockData.OraclePrompts[i];
+                chip.Add(Text(promptText, Serif, 13, GA(0.60f), FontStyle.Italic));
+                chip.AddManipulator(new Clickable(() => onAsk?.Invoke(promptText)));   // suggested question → real Oracle
                 prompts.Add(chip);
             }
             pane.Add(prompts);
@@ -117,11 +127,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             thread.style.minHeight = 0;
             pane.Add(thread);
 
-            for (int i = 0; i < 2; i++)
-            {
-                thread.Add(BuildThreadPair(IgMockData.OraclePrompts[i], IgMockData.DmNarrations[i + 1], false));
-            }
-            thread.Add(BuildThreadPair("What waits beyond the dead oak?", "The Oracle contemplates…", true));
+            // No mock thread: the real prophecy streams into the oracle line above (SetOracleLine) as the player asks.
 
             var askRow = Row();
             askRow.style.height = 48;

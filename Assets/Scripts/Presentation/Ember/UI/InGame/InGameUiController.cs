@@ -36,6 +36,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private IDialogSource _activeDialogSource;   // live NPC conversation behind the redesigned DialogView
         private DialogView _activeDialog;
         private string _activeDialogPortrait;        // portrait key, re-resolved each frame until the sprite loads
+        private ConsulFateView _activeOracle;        // the open Oracle screen, polled for its async prophecy
+        private bool _oraclePending;
         private bool _wasOpen;
 
         /// <summary>True while this controller is active — the legacy EmberWorldHost key handlers (M / Tab / K /
@@ -129,6 +131,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 }
             }
 
+            // Stream the Oracle's async prophecy into the open Consul-Fate screen (same poll pattern as dialog).
+            if (_activeOracle != null && _oraclePending)
+            {
+                var resolved = EmberDomainAdapterLocator.ConsultFateOracle?.TryConsumeResolvedFate();
+                if (!string.IsNullOrEmpty(resolved)) { _activeOracle.SetOracleLine(resolved); _oraclePending = false; }
+            }
+
             var d = new WorldHudData();
 
             if (_host is ICombatHudSource combat)
@@ -177,7 +186,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new ColonyView(c, CloseScreen, TodoColonyTaskAction);
                     break;
                 case "consul":
-                    new ConsulFateView(c, CloseScreen, TodoConsulAskAction);
+                    _activeOracle = new ConsulFateView(c, CloseScreen, AskOracle);
                     break;
                 case "dialog":    new DialogView(c, CloseScreen); break;
                 case "combat":
@@ -225,6 +234,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 _activeDialogSource.EndConversation();
                 _activeDialogSource = null; _activeDialog = null; _activeDialogPortrait = null;
             }
+            _activeOracle = null; _oraclePending = false;
             if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
             // Safety net for IgModal-based views in case the tracked element ever desyncs.
             for (var open = _stage.Canvas.Q("IgModalOverlay"); open != null; open = _stage.Canvas.Q("IgModalOverlay"))
@@ -266,6 +276,17 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         }
 
         private void ConsulDm() => OpenScreen("consul");
+
+        // The Oracle (Consul Fate): each Ask (typed or a suggested chip) fires a REAL fate consult through the
+        // adapter — the player's free-text question colours the LLM prophecy — and the immediate "consults…"
+        // placeholder shows at once; Update() polls TryConsumeResolvedFate() and streams the prophecy in.
+        private void AskOracle(string question)
+        {
+            var oracle = EmberDomainAdapterLocator.ConsultFateOracle;
+            if (oracle == null) return;
+            _activeOracle?.SetOracleLine(oracle.ConsultFate(question));
+            _oraclePending = true;
+        }
 
         // Feed the redesigned screens the REAL created character (name + six attributes + vitals) by overwriting
         // the shared IgMockData.Player snapshot before a screen reads it. Fields the domain does not yet track
