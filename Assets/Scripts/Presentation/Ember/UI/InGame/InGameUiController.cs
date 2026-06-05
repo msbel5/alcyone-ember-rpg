@@ -1095,7 +1095,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 return _playerPortraitSprite;
             _playerPortraitResolved = true;
 
-            var png = EmberWorldGenIntent.Pending?.PortraitPng;
+            var png = EmberWorldGenIntent.PlayerPortraitPng;
             if (png == null || png.Length == 0)
                 return null;
 

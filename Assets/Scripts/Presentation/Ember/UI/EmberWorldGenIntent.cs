@@ -14,6 +14,11 @@ namespace EmberCrpg.Presentation.Ember.UI
     {
         public static EmberWorldGenIntent Pending { get; set; }
 
+        // Session-durable copy of the player's approved portrait PNG. Stamped at the worldgen-launch
+        // handoff and intentionally NOT cleared when Pending is consumed/nulled by the host after
+        // seeding, so the in-game Character screen can still resolve the portrait long afterwards.
+        public static byte[] PlayerPortraitPng { get; set; }
+
         public string Mood { get; }
         public string Calling { get; }
         public string Start { get; }
