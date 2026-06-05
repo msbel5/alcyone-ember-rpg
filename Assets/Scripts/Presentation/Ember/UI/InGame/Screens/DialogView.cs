@@ -173,6 +173,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var left = new VisualElement();
             left.style.width = 120;
             left.style.flexShrink = 0;
+            left.style.marginRight = 22;   // breathing room between the portrait and the dialogue text
 
             _portraitBox = new VisualElement();
             _portraitBox.style.width = 120;

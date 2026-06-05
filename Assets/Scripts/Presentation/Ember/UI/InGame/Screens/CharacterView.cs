@@ -216,12 +216,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var track = new VisualElement();
             track.style.height = 6;
             track.style.backgroundColor = C(0, 0, 0, 0.4f);
-            Radius(track, 999);
+            Radius(track, 3);
             var fill = new VisualElement();
             fill.style.height = 6;
             fill.style.width = Length.Percent((float)IgMockData.Player.Xp / IgMockData.Player.XpNext * 100f);
             fill.style.backgroundColor = Gold;
-            Radius(fill, 999);
+            Radius(fill, 3);
             track.Add(fill);
             wrap.Add(track);
             return wrap;
@@ -232,7 +232,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var root = new VisualElement();
             root.style.height = 20;
             root.style.backgroundColor = C(0, 0, 0, 0.4f);
-            Radius(root, 999);
+            Radius(root, 6);
             var fill = new VisualElement();
             fill.style.position = Position.Absolute;
             fill.style.left = 2;
@@ -240,7 +240,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             fill.style.bottom = 2;
             fill.style.width = Length.Percent((float)value / max * 100f);
             fill.style.backgroundColor = color;
-            Radius(fill, 999);
+            Radius(fill, 4);
             root.Add(fill);
             var text = Text($"{label} {value}/{max}", Sans, 9, Bone, FontStyle.Bold);
             text.style.letterSpacing = 0.6f;

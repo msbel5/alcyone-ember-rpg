@@ -974,14 +974,26 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         // the ☰ pill can't be clicked until a key opens a screen — that is why Tab is the entry point.
         private void HandleScreenInput()
         {
-            if (EmberInput.KeyDown(KeyCode.Tab))    { ToggleBrowser(); return; }
+            // While the user is typing in a text field (the Oracle's Ask box, NPC free-text, etc.) the letter
+            // hotkeys (R/C/M/…) and Tab must NOT fire — otherwise typing "r" reopens the screen. Esc still closes.
+            bool typing = IsTextInputFocused();
             if (EmberInput.KeyDown(KeyCode.Escape)) { if (IsAnyOpen()) CloseAll(); else OpenScreen("pause"); return; }
+            if (typing) return;
+            if (EmberInput.KeyDown(KeyCode.Tab))    { ToggleBrowser(); return; }
             if (EmberInput.KeyDown(KeyCode.C))      OpenScreen("character");
             else if (EmberInput.KeyDown(KeyCode.I)) OpenScreen("inventory");
             else if (EmberInput.KeyDown(KeyCode.M)) OpenScreen("worldmap");
             else if (EmberInput.KeyDown(KeyCode.J)) OpenScreen("journal");
             else if (EmberInput.KeyDown(KeyCode.K)) OpenScreen("colony");
             else if (EmberInput.KeyDown(KeyCode.R)) OpenScreen("consul");
+        }
+
+        // True when a TextField (or its inner text input) holds focus — suppresses screen hotkeys while typing.
+        private bool IsTextInputFocused()
+        {
+            var focused = _stage?.Canvas?.panel?.focusController?.focusedElement as VisualElement;
+            if (focused == null) return false;
+            return focused is TextField || focused.GetFirstAncestorOfType<TextField>() != null;
         }
 
         private bool IsAnyOpen() =>
