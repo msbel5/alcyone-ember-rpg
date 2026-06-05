@@ -8,6 +8,9 @@ namespace EmberCrpg.Simulation.Generation
 {
     public sealed class CoreAssetManifest
     {
+        private const int NpcSpriteWidth = 896;
+        private const int NpcSpriteHeight = 1344;
+
         public CoreAssetManifest(IEnumerable<ManifestEntry> entries)
         {
             Entries = new ReadOnlyCollection<ManifestEntry>(new List<ManifestEntry>(entries ?? throw new ArgumentNullException(nameof(entries))));
@@ -95,7 +98,7 @@ namespace EmberCrpg.Simulation.Generation
                     continue;
 
                 var entryId = "npc_" + role.ToString().ToLowerInvariant();
-                entries.Add(new ManifestEntry(entryId, "npc", "Assets/Generated/Core/" + entryId + ".png", entryId, 512, 512, true, 300, "sd15-lcm"));
+                entries.Add(new ManifestEntry(entryId, "npc", "Assets/Generated/Core/" + entryId + ".png", entryId, NpcSpriteWidth, NpcSpriteHeight, true, 300, "sd15-lcm"));
             }
         }
 

@@ -160,9 +160,13 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
 
         private static AssetSubjectKind ToSubject(string category)
         {
+            if (string.Equals(category, "item", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Item;
+            if (string.Equals(category, "ui", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Item;
+            if (string.Equals(category, "spell", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Item;
+            if (string.Equals(category, "logo", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Item;
             if (string.Equals(category, "environment", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Region;
             if (string.Equals(category, "splash", StringComparison.OrdinalIgnoreCase)) return AssetSubjectKind.Splash;
-            return AssetSubjectKind.Item;
+            return AssetSubjectKind.Npc;
         }
 
         private static uint StableSeed(string value)

@@ -9,14 +9,13 @@ namespace EmberCrpg.Simulation.Generation
     {
         public const string EmberStyleHeader = "dark-fantasy ember-warm palette, painterly low-saturation, transparent background, single subject centered";
         public const string EmberCharacterPortraitHeader = EmberStyleHeader + ", exactly one person, centered character bust, no second person, no crowd";
-        public const string EmberNpcSpriteHeader = EmberStyleHeader + ", exactly one person, full-body character sprite, plain transparent or neutral background, consistent ember-lit palette, no second person, no crowd";
-        // Floors/walls are tileable surfaces, NOT centered icons: this header replaces the icon
-        // "transparent background, single subject centered" with a seamless-fill directive.
-        public const string EmberFloorHeader = "dark-fantasy ember-warm palette, painterly low-saturation, seamless tileable texture, top-down orthographic surface filling the entire frame edge to edge, no central subject";
-        // Walls are tileable too, but seen straight-on (vertical) rather than top-down.
-        public const string EmberWallHeader = "dark-fantasy ember-warm palette, painterly low-saturation, seamless tileable texture, front-facing orthographic wall surface filling the entire frame edge to edge, no central subject";
+        public const string EmberNpcSpriteHeader = EmberStyleHeader + ", retro fantasy CRPG style, one solitary character, exactly one person, full-body character sprite, centered full body, standing, camera-facing game sprite, neutral pose, clean silhouette, hands visible, boots visible, plain studio backdrop, even lighting, no cast shadow, consistent ember-lit palette, no second person, no crowd";
+        public const string EmberFloorHeader = "dark-fantasy retro fantasy material sample, seamless tileable floor material swatch, albedo only, flat diffuse color, top-down orthographic, evenly lit, no cast shadows, no baked lighting, no central subject";
+        public const string EmberWallHeader = "dark-fantasy retro fantasy material sample, seamless tileable wall material swatch, albedo only, flat diffuse color, fronto-parallel orthographic, evenly lit, no cast shadows, no baked lighting, no central subject";
         public const string EmberNegativeFooter = "no text, no watermark, no border, no UI elements, no signature, no logo";
-        public const string EmberGenerationNegative = EmberNegativeFooter + ", no multiple objects, no group, no duplicate subject, no scattered objects, no collage";
+        public const string EmberGenerationNegative = EmberNegativeFooter + ", no multiple objects, no group, no duplicate subject, no scattered objects, no collage, no character sheet, no turnaround, no model sheet, no design sheet, no reference sheet, no multiple views, no triptych, no diptych, no lineup, no duplicate person, no second character, no mirrored character, no twin, no extra body, no extra limbs, no extra head, no border, no frame, no caption";
+        private const string EmberNpcSpritePromptTail = "no character sheet, no turnaround, no model sheet, no design sheet, no reference sheet, no multiple views, no triptych, no diptych, no lineup, no duplicate person, no second character, no mirrored character, no twin, no extra body, no extra limbs, no extra head, no floating prop, no flames, no aura, no magic trail, no environment scene";
+        private const string EmberTexturePromptTail = "no room, no fireplace, no hearth, no torch, no candle, no window, no door, no furniture, no shadow, no glow, no reflection, no highlight, no specular, no perspective, no horizon, no scene, no corner, no debris pile, no object, no prop, no character";
 
         private readonly IReadOnlyDictionary<string, string> _prompts;
 
@@ -52,30 +51,30 @@ namespace EmberCrpg.Simulation.Generation
             Add(prompts, "error", "a cracked warning seal glowing dull red");
 
             // Environment floor textures: tileable surfaces (EmberFloorHeader), NOT centered icons.
-            prompts["env_colonyneeds"] = EmberFloorHeader + ", worn flagstone colony floor, soot-darkened warm stone, ash and cinders in the cracks, torchlit, " + EmberNegativeFooter;
-            prompts["env_combatdungeon"] = EmberFloorHeader + ", cold damp dungeon floor, cracked dark flagstones, faint ember glow in the gaps, grim, " + EmberNegativeFooter;
-            prompts["env_oracleshrine"] = EmberFloorHeader + ", sacred shrine floor, polished dark marble veined with ember-gold inlay, mystical sheen, " + EmberNegativeFooter;
-            prompts["env_ritualhall"] = EmberFloorHeader + ", ritual hall floor, black obsidian slabs etched with faintly glowing ember runes, " + EmberNegativeFooter;
-            prompts["env_seasonfarm"] = EmberFloorHeader + ", tilled farm soil and dry stubble grass, warm dusk earth, scattered ash, " + EmberNegativeFooter;
-            prompts["env_trademarket"] = EmberFloorHeader + ", market square cobblestone, worn warm-grey pavers, dust and straw, lantern-lit, " + EmberNegativeFooter;
-            prompts["env_showroomoverview"] = EmberFloorHeader + ", showroom floor, smooth dark stone with ember-gold seam trim, polished sheen, " + EmberNegativeFooter;
-            prompts["env_tavernflavour"] = EmberFloorHeader + ", tavern wooden plank floor, warm aged oak timber, hearth-glow, knot details, " + EmberNegativeFooter;
+            prompts["env_colonyneeds"] = EmberFloorHeader + ", worn flagstone colony floor material, soot-darkened warm stone, ash and cinders in the cracks, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["env_combatdungeon"] = EmberFloorHeader + ", rough cracked dungeon flagstone floor material, cold dark stone joints, damp mineral staining, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["env_oracleshrine"] = EmberFloorHeader + ", sacred shrine floor material, dark marble slabs with ember-gold inlay veins, restrained albedo contrast, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["env_ritualhall"] = EmberFloorHeader + ", ritual hall floor material, black obsidian slabs with ember-rune carvings painted into the albedo, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["env_seasonfarm"] = EmberFloorHeader + ", farmyard ground material, packed soil with dry stubble and scattered ash, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["env_trademarket"] = EmberFloorHeader + ", market square cobblestone floor material, worn warm-grey pavers with dust in the joints, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["env_showroomoverview"] = EmberFloorHeader + ", showroom stone floor material, smooth dark slabs with ember-gold seam inlay, restrained albedo-only finish, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["env_tavernflavour"] = EmberFloorHeader + ", rough wooden plank floor material, warm aged oak boards, knot grain, subtle wear, no hearth glow, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
 
             // Wall surfaces, one per scene so a scene's wall matches its floor (EmberWallHeader, vertical tileable).
-            prompts["wall_colonyneeds"] = EmberWallHeader + ", soot-stained colony stone wall, rough mortared blocks, torch-scorch marks, " + EmberNegativeFooter;
-            prompts["wall_combatdungeon"] = EmberWallHeader + ", cold damp dungeon wall, cracked dark stone blocks, moss and faint ember glow in the seams, " + EmberNegativeFooter;
-            prompts["wall_oracleshrine"] = EmberWallHeader + ", sacred shrine wall, dark marble panels with ember-gold inlay tracery, " + EmberNegativeFooter;
-            prompts["wall_ritualhall"] = EmberWallHeader + ", ritual hall wall, black obsidian panels etched with faintly glowing ember runes, " + EmberNegativeFooter;
-            prompts["wall_seasonfarm"] = EmberWallHeader + ", rustic farm wall, weathered timber boards and wattle, dried straw, warm dusk tone, " + EmberNegativeFooter;
-            prompts["wall_trademarket"] = EmberWallHeader + ", market plaster wall over stone, warm ochre render, lantern soot, " + EmberNegativeFooter;
-            prompts["wall_showroomoverview"] = EmberWallHeader + ", showroom wall, smooth dark stone with ember-gold seam trim, polished sheen, " + EmberNegativeFooter;
-            prompts["wall_tavernflavour"] = EmberWallHeader + ", tavern wall, warm aged oak panelling and plaster, hearth-glow, " + EmberNegativeFooter;
+            prompts["wall_colonyneeds"] = EmberWallHeader + ", soot-stained colony stone wall material, rough mortared blocks, darkened scorch residue painted into the plaster, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["wall_combatdungeon"] = EmberWallHeader + ", cracked dark dungeon wall material, cold damp stone blocks with moss staining, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["wall_oracleshrine"] = EmberWallHeader + ", sacred shrine wall material, dark marble panels with ember-gold inlay tracery, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["wall_ritualhall"] = EmberWallHeader + ", ritual hall wall material, black obsidian panels etched with ember-rune tracery in the albedo, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["wall_seasonfarm"] = EmberWallHeader + ", rustic farm wall material, weathered timber boards with wattle and dried straw weave, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["wall_trademarket"] = EmberWallHeader + ", market wall material, warm ochre plaster over stone with soot-dark mortar wear, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["wall_showroomoverview"] = EmberWallHeader + ", showroom wall material, smooth dark stone blocks with ember-gold seam trim, restrained albedo-only finish, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["wall_tavernflavour"] = EmberWallHeader + ", old plaster tavern wall material with aged oak panel trim, flat diffuse albedo, no hearth glow, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
 
             // Roof material swatches (EmberFloorHeader tileable surface, read as an overhead material tile).
-            prompts["roof_thatch"] = EmberFloorHeader + ", thatched straw roof bundles, warm dry golden-brown, weathered, " + EmberNegativeFooter;
-            prompts["roof_clay_tile"] = EmberFloorHeader + ", overlapping terracotta clay roof tiles, warm rust-red, " + EmberNegativeFooter;
-            prompts["roof_slate"] = EmberFloorHeader + ", layered dark slate roof shingles, cool grey with ember-warm edge light, " + EmberNegativeFooter;
-            prompts["roof_timber"] = EmberFloorHeader + ", split timber shake roof, aged grey-brown wood, " + EmberNegativeFooter;
+            prompts["roof_thatch"] = EmberFloorHeader + ", thatched straw roof material, warm dry golden-brown bundles, weathered fibre texture, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["roof_clay_tile"] = EmberFloorHeader + ", terracotta roof tile material, overlapping clay courses, warm rust-red albedo, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["roof_slate"] = EmberFloorHeader + ", dark slate roof material, layered cool grey shingles, restrained albedo variation, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
+            prompts["roof_timber"] = EmberFloorHeader + ", timber shake roof material, split aged grey-brown wood shingles, " + EmberTexturePromptTail + ", " + EmberNegativeFooter;
             AddGeometric(prompts, geometricCatalog, "item_sword", "sword");
             AddGeometric(prompts, geometricCatalog, "item_bow", "bow");
             AddGeometric(prompts, geometricCatalog, "item_staff", "staff");
@@ -153,7 +152,7 @@ namespace EmberCrpg.Simulation.Generation
 
         private static void AddNpcSprite(Dictionary<string, string> prompts, string role, string body)
         {
-            prompts["npc_" + role] = EmberNpcSpriteHeader + ", " + body + ", no duplicate face, no twin, " + EmberNegativeFooter;
+            prompts["npc_" + role] = EmberNpcSpriteHeader + ", " + body + ", " + EmberNpcSpritePromptTail + ", " + EmberNegativeFooter;
         }
 
         private static void AddGeometric(

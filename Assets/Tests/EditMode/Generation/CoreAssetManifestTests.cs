@@ -71,8 +71,8 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 Assert.That(entry.ExpectedPath, Is.EqualTo("Assets/Generated/Core/" + id + ".png"), id);
                 Assert.That(entry.StaticPromptKey, Is.EqualTo(id), id);
                 Assert.That(entry.RequiresGeneration, Is.True, id);
-                Assert.That(entry.Width, Is.EqualTo(512), id);
-                Assert.That(entry.Height, Is.EqualTo(512), id);
+                Assert.That(entry.Width, Is.EqualTo(896), id);
+                Assert.That(entry.Height, Is.EqualTo(1344), id);
                 Assert.That(entry.ModelHint, Is.EqualTo("sd15-lcm"), id);
             }
         }
