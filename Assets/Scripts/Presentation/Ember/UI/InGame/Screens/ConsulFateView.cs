@@ -1,3 +1,4 @@
+// Why this file is intentionally long: the complete Oracle surface keeps portrait state, question thread, and async answer presentation together so the in-game design stays in one readable UI Toolkit view.
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +11,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     public sealed class ConsulFateView
     {
         private readonly VisualElement _overlay;
+        private readonly List<ThreadEntryView> _threadEntries = new List<ThreadEntryView>();
         private Label _line;   // the Oracle's current spoken line (controller streams the real prophecy in)
+        private VisualElement _portraitBox;
+        private Image _portraitImage;
+        private VisualElement _portraitRing;
+        private Label _portraitWait;
+        private ScrollView _thread;
+
+        public bool HasPortrait { get; private set; }
 
         public ConsulFateView(VisualElement stageCanvas, Action onClose, Action<string> onAsk = null)
         {
@@ -57,28 +66,83 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             if (_line != null && !string.IsNullOrEmpty(text)) _line.text = text;
         }
 
-        private static VisualElement BuildOraclePane()
+        public void SetPortrait(Sprite sprite)
+        {
+            if (sprite == null || _portraitImage == null)
+                return;
+
+            _portraitImage.sprite = sprite;
+            _portraitImage.style.display = DisplayStyle.Flex;
+            if (_portraitRing != null)
+                _portraitRing.style.display = DisplayStyle.None;
+            if (_portraitWait != null)
+                _portraitWait.style.display = DisplayStyle.None;
+            HasPortrait = true;
+        }
+
+        public void BeginQuestion(string question)
+        {
+            if (string.IsNullOrWhiteSpace(question) || _thread == null)
+                return;
+
+            var entry = BuildThreadPair(question.Trim(), "The Oracle contemplates…", true);
+            _threadEntries.Add(entry);
+            _thread.Add(entry.Root);
+            ScrollThreadTo(entry.Root);
+        }
+
+        public void ResolveLatestAnswer(string answer)
+        {
+            if (string.IsNullOrWhiteSpace(answer))
+                return;
+
+            for (int i = _threadEntries.Count - 1; i >= 0; i--)
+            {
+                if (_threadEntries[i].Loading)
+                {
+                    _threadEntries[i].SetAnswer(answer, false);
+                    ScrollThreadTo(_threadEntries[i].Root);
+                    return;
+                }
+            }
+        }
+
+        private VisualElement BuildOraclePane()
         {
             var pane = new VisualElement();
             pane.style.width = 220;
             pane.style.flexShrink = 0;
+            pane.style.marginRight = 22;
             pane.style.alignItems = Align.Center;
 
-            var portrait = new VisualElement();
-            portrait.style.width = 220;
-            portrait.style.height = 280;
-            portrait.style.backgroundColor = Alpha(Panel, 0.65f);
-            Border(portrait, Amber, 2);
-            Radius(portrait, 14);
-            portrait.style.alignItems = Align.Center;
-            portrait.style.justifyContent = Justify.Center;
-            portrait.style.flexDirection = FlexDirection.Column;
-            portrait.Add(BuildRing());
-            var wait = Text("Awaiting\nForge Portrait", Serif, 11, GA(0.38f), FontStyle.Italic);
-            wait.style.unityTextAlign = TextAnchor.MiddleCenter;
-            wait.style.marginTop = 14;
-            portrait.Add(wait);
-            pane.Add(portrait);
+            _portraitBox = new VisualElement();
+            _portraitBox.style.width = 220;
+            _portraitBox.style.height = 280;
+            _portraitBox.style.backgroundColor = Alpha(Panel, 0.65f);
+            Border(_portraitBox, Amber, 2);
+            Radius(_portraitBox, 14);
+            _portraitBox.style.overflow = Overflow.Hidden;
+            _portraitBox.style.alignItems = Align.Center;
+            _portraitBox.style.justifyContent = Justify.Center;
+            _portraitBox.style.flexDirection = FlexDirection.Column;
+
+            _portraitImage = new Image();
+            _portraitImage.scaleMode = ScaleMode.ScaleToFit;
+            _portraitImage.style.position = Position.Absolute;
+            _portraitImage.style.left = 0;
+            _portraitImage.style.right = 0;
+            _portraitImage.style.top = 0;
+            _portraitImage.style.bottom = 0;
+            _portraitImage.style.display = DisplayStyle.None;
+            _portraitBox.Add(_portraitImage);
+
+            _portraitRing = BuildRing();
+            _portraitBox.Add(_portraitRing);
+            _portraitWait = Text("Awaiting\nForge Portrait", Serif, 11, GA(0.38f), FontStyle.Italic);
+            _portraitWait.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _portraitWait.style.marginTop = 14;
+            _portraitBox.Add(_portraitWait);
+            pane.Add(_portraitBox);
 
             var title = Text(IgMockData.Oracle.Name, Serif, 15, Gold, FontStyle.Bold);
             title.style.marginTop = 12;
@@ -122,17 +186,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             }
             pane.Add(prompts);
 
-            var thread = new ScrollView();
-            thread.style.flexGrow = 1;
-            thread.style.minHeight = 0;
-            pane.Add(thread);
-
-            // No mock thread: the real prophecy streams into the oracle line above (SetOracleLine) as the player asks.
+            _thread = new ScrollView();
+            _thread.style.flexGrow = 1;
+            _thread.style.minHeight = 0;
+            pane.Add(_thread);
 
             var askRow = Row();
             askRow.style.height = 48;
             var field = new TextField();
-            field.value = "Ask the Oracle something…";
+            field.value = string.Empty;
             field.style.flexGrow = 1;
             field.style.height = 48;
             field.style.color = Bone;
@@ -156,7 +218,16 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             }
             askRow.Add(field);
 
-            var ask = new Button(() => onAsk?.Invoke(field.value)) { text = "ASK" };
+            field.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+                    return;
+
+                SubmitAsk(field, onAsk);
+                evt.StopPropagation();
+            });
+
+            var ask = new Button(() => SubmitAsk(field, onAsk)) { text = "ASK" };
             ResetButton(ask);
             ask.style.width = 104;
             ask.style.height = 48;
@@ -186,7 +257,28 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return ring;
         }
 
-        private static VisualElement BuildThreadPair(string question, string answer, bool loading)
+        private void SubmitAsk(TextField field, Action<string> onAsk)
+        {
+            if (field == null || onAsk == null)
+                return;
+
+            var question = field.value == null ? string.Empty : field.value.Trim();
+            if (string.IsNullOrEmpty(question))
+                return;
+
+            field.value = string.Empty;
+            onAsk(question);
+        }
+
+        private void ScrollThreadTo(VisualElement target)
+        {
+            if (_thread == null || target == null)
+                return;
+
+            _thread.schedule.Execute(() => _thread.ScrollTo(target)).StartingIn(0);
+        }
+
+        private static ThreadEntryView BuildThreadPair(string question, string answer, bool loading)
         {
             var wrap = new VisualElement();
             wrap.style.paddingTop = 10;
@@ -218,9 +310,39 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             aBubble.style.backgroundColor = Alpha(VoidWarm, 0.85f);
             Border(aBubble, loading ? GA(0.10f) : Alpha(Amber, 0.27f), 1);
             Radius(aBubble, 12);
-            aBubble.Add(Text(answer, Serif, loading ? 13 : 15, loading ? GA(0.45f) : ParchDim, FontStyle.Italic));
+            var answerLabel = Text(answer, Serif, loading ? 13 : 15, loading ? GA(0.45f) : ParchDim, FontStyle.Italic);
+            aBubble.Add(answerLabel);
             wrap.Add(aBubble);
-            return wrap;
+            return new ThreadEntryView(wrap, aBubble, answerLabel, loading);
+        }
+
+        private sealed class ThreadEntryView
+        {
+            private readonly VisualElement _answerBubble;
+            private readonly Label _answerLabel;
+
+            public ThreadEntryView(VisualElement root, VisualElement answerBubble, Label answerLabel, bool loading)
+            {
+                Root = root;
+                _answerBubble = answerBubble;
+                _answerLabel = answerLabel;
+                Loading = loading;
+            }
+
+            public VisualElement Root { get; }
+            public bool Loading { get; private set; }
+
+            public void SetAnswer(string answer, bool loading)
+            {
+                Loading = loading;
+                _answerLabel.text = answer;
+                _answerLabel.style.fontSize = loading ? 13 : 15;
+                _answerLabel.style.color = loading ? GA(0.45f) : ParchDim;
+                _answerBubble.style.borderTopColor = loading ? GA(0.10f) : Alpha(Amber, 0.27f);
+                _answerBubble.style.borderBottomColor = loading ? GA(0.10f) : Alpha(Amber, 0.27f);
+                _answerBubble.style.borderLeftColor = loading ? GA(0.10f) : Alpha(Amber, 0.27f);
+                _answerBubble.style.borderRightColor = loading ? GA(0.10f) : Alpha(Amber, 0.27f);
+            }
         }
     }
 }

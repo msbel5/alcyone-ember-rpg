@@ -7,6 +7,7 @@ using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Domain.Magic;
 using EmberCrpg.Presentation.Ember.Inputs;
 using EmberCrpg.Presentation.Ember.Adapters;
+using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.UI.InGame.Screens;
 using EmberCrpg.Simulation.Magic;
 // ICombatHudSource / ISpellBarSource / IEmberHudSource live in the enclosing EmberCrpg.Presentation.Ember.UI
@@ -148,11 +149,23 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     _activeCharacter.SetPortrait(sp);
             }
 
+            if (_activeOracle != null && !_activeOracle.HasPortrait && _host is ISpriteByName oracleSprites)
+            {
+                var sp = oracleSprites.GetSprite(DialogPortraitKey.DungeonMaster);
+                if (sp != null)
+                    _activeOracle.SetPortrait(sp);
+            }
+
             // Stream the Oracle's async prophecy into the open Consul-Fate screen (same poll pattern as dialog).
             if (_activeOracle != null && _oraclePending)
             {
                 var resolved = EmberDomainAdapterLocator.ConsultFateOracle?.TryConsumeResolvedFate();
-                if (!string.IsNullOrEmpty(resolved)) { _activeOracle.SetOracleLine(resolved); _oraclePending = false; }
+                if (!string.IsNullOrEmpty(resolved))
+                {
+                    _activeOracle.SetOracleLine(resolved);
+                    _activeOracle.ResolveLatestAnswer(resolved);
+                    _oraclePending = false;
+                }
             }
 
             if (_activeCombat != null && _host is ICombatScreenSource combatScreen)
@@ -217,6 +230,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     break;
                 case "consul":
                     _activeOracle = new ConsulFateView(c, CloseScreen, AskOracle);
+                    if (_host is ISpriteByName oracleSprites)
+                    {
+                        var sp = oracleSprites.GetSprite(DialogPortraitKey.DungeonMaster);
+                        if (sp != null)
+                            _activeOracle.SetPortrait(sp);
+                    }
                     break;
                 case "dialog":    new DialogView(c, CloseScreen); break;
                 case "combat":
@@ -326,7 +345,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         {
             var oracle = EmberDomainAdapterLocator.ConsultFateOracle;
             if (oracle == null) return;
-            _activeOracle?.SetOracleLine(oracle.ConsultFate(question));
+            var trimmed = question == null ? string.Empty : question.Trim();
+            if (string.IsNullOrEmpty(trimmed) || _oraclePending) return;
+
+            _activeOracle?.BeginQuestion(trimmed);
+            _activeOracle?.SetOracleLine(oracle.ConsultFate(trimmed));
             _oraclePending = true;
         }
 
