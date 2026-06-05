@@ -32,6 +32,13 @@ namespace EmberCrpg.Data.GeneratedAssets
                 ValidatePath(record.stableId, "relativeAssetPath", record.relativeAssetPath, issues);
                 ValidatePath(record.stableId, "previewPath", record.previewPath, issues);
                 ValidatePath(record.stableId, "spritePath", record.spritePath, issues);
+                ValidatePath(record.stableId, "albedoPath", record.albedoPath, issues);
+                ValidatePath(record.stableId, "deLitAlbedoPath", record.deLitAlbedoPath, issues);
+                ValidatePath(record.stableId, "normalPath", record.normalPath, issues);
+                ValidatePath(record.stableId, "roughnessPath", record.roughnessPath, issues);
+                ValidatePath(record.stableId, "ambientOcclusionPath", record.ambientOcclusionPath, issues);
+                ValidatePath(record.stableId, "heightPath", record.heightPath, issues);
+                ValidatePath(record.stableId, "maskMapPath", record.maskMapPath, issues);
                 ValidatePath(record.stableId, "materialPath", record.materialPath, issues);
                 ValidatePath(record.stableId, "prefabPath", record.prefabPath, issues);
             }

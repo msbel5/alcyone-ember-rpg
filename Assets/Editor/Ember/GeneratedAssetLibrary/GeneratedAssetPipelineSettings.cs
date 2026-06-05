@@ -11,6 +11,8 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
         public GeneratedExternalToolCommand forgeCommand = new GeneratedExternalToolCommand();
         public string pythonExecutablePath = string.Empty;
         public GeneratedExternalToolCommand alphaMatteCommand = new GeneratedExternalToolCommand();
+        public GeneratedExternalToolCommand deLightCommand = new GeneratedExternalToolCommand();
+        public GeneratedExternalToolCommand pbrMapCommand = new GeneratedExternalToolCommand();
         public string defaultOutputRoot = "Assets/GeneratedLibrary/SpriteJobs";
         public bool dryRun = true;
         public int timeoutSeconds = 120;
@@ -26,6 +28,11 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
         public int minimumLargeComponentPixels = 1024;
         public float largeComponentWarningRatio = 0.7f;
         public float billboardTargetHeight = 2.1f;
+        public int materialMaxTextureSize = 2048;
+        public FilterMode materialFilterMode = FilterMode.Trilinear;
+        public TextureImporterCompression materialCompression = TextureImporterCompression.CompressedHQ;
+        public float tileabilityEdgeThreshold = 0.1f;
+        public float gradientThreshold = 35f;
         public string defaultModelName = "sdxl-turbo";
         public int defaultSteps = 1;
         public float defaultCfgScale;

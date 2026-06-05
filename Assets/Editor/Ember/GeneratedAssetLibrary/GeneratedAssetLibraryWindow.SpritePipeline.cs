@@ -29,6 +29,34 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
             {
                 if (GUILayout.Button("Create Billboard Prefab")) CreateBillboardPrefab(record);
             }
+
+            if (IsMaterialKind(record.kind))
+            {
+                EditorGUILayout.Space(8f);
+                EditorGUILayout.LabelField("Material Pipeline", EditorStyles.boldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Import Albedo")) ImportMaterialMap(record, GeneratedTexturePathPolicy.ResolveAlbedoPath(record), "PNG");
+                    if (GUILayout.Button("Validate Albedo")) ValidateAlbedo(record);
+                    if (GUILayout.Button("Generate Material")) GenerateMaterial(record);
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Dry Run DeLight")) RunDeLight(record, dryRun: true);
+                    if (GUILayout.Button("Run DeLight")) RunDeLight(record, dryRun: false);
+                    if (GUILayout.Button("Import DeLit")) ImportMaterialMap(record, GeneratedTexturePathPolicy.ResolveDeLitAlbedoPath(record), "PNG");
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Dry Run PBR")) RunPbr(record, dryRun: true);
+                    if (GUILayout.Button("Run PBR")) RunPbr(record, dryRun: false);
+                    if (GUILayout.Button("Import Normal")) ImportMaterialMap(record, GeneratedTexturePathPolicy.ResolveNormalPath(record), "PNG", normalMap: true);
+                    if (GUILayout.Button("Import Roughness")) ImportMaterialMap(record, GeneratedTexturePathPolicy.ResolveRoughnessPath(record), "PNG", sRgb: false);
+                    if (GUILayout.Button("Import AO")) ImportMaterialMap(record, GeneratedTexturePathPolicy.ResolveAoPath(record), "PNG", sRgb: false);
+                }
+            }
         }
 
         private void BuildJob(GeneratedAssetRecord record)
@@ -89,6 +117,73 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
             record.prefabPath = GeneratedBillboardPrefabBuilder.CreateOrUpdate(record, _pipelineSettings);
             EditorUtility.SetDirty(_database);
             _validationSummary = "Prefab updated: " + record.prefabPath;
+        }
+
+        private void ImportMaterialMap(GeneratedAssetRecord record, string targetAssetPath, string extension, bool normalMap = false, bool sRgb = true)
+        {
+            if (_pipelineSettings == null) return;
+            var sourcePath = EditorUtility.OpenFilePanel("Import Texture Map", null, extension);
+            if (string.IsNullOrWhiteSpace(sourcePath)) return;
+
+            if (targetAssetPath == GeneratedTexturePathPolicy.ResolveAlbedoPath(record))
+            {
+                var report = GeneratedTextureImportUtility.ImportAlbedo(record, sourcePath, _pipelineSettings);
+                record.validationWarnings = new List<string>(report.warnings);
+                _validationSummary = "Imported albedo with " + report.warnings.Count + " warning(s).";
+            }
+            else
+            {
+                GeneratedTextureImportUtility.ImportMap(sourcePath, targetAssetPath, _pipelineSettings, normalMap, sRgb);
+                if (targetAssetPath == GeneratedTexturePathPolicy.ResolveDeLitAlbedoPath(record)) record.deLitAlbedoPath = targetAssetPath;
+                if (targetAssetPath == GeneratedTexturePathPolicy.ResolveNormalPath(record)) record.normalPath = targetAssetPath;
+                if (targetAssetPath == GeneratedTexturePathPolicy.ResolveRoughnessPath(record)) record.roughnessPath = targetAssetPath;
+                if (targetAssetPath == GeneratedTexturePathPolicy.ResolveAoPath(record)) record.ambientOcclusionPath = targetAssetPath;
+                _validationSummary = "Imported texture map: " + targetAssetPath;
+            }
+
+            EditorUtility.SetDirty(_database);
+        }
+
+        private void ValidateAlbedo(GeneratedAssetRecord record)
+        {
+            if (_pipelineSettings == null || string.IsNullOrWhiteSpace(record.albedoPath)) return;
+            var report = GeneratedTextureImportUtility.ValidateAlbedo(record.albedoPath, _pipelineSettings);
+            record.validationWarnings = new List<string>(report.warnings);
+            EditorUtility.SetDirty(_database);
+            _validationSummary = "Tileability warnings: " + report.warnings.Count;
+        }
+
+        private void GenerateMaterial(GeneratedAssetRecord record)
+        {
+            record.materialPath = GeneratedUrpMaterialBuilder.CreateOrUpdate(record);
+            EditorUtility.SetDirty(_database);
+            _validationSummary = "URP material updated: " + record.materialPath;
+        }
+
+        private void RunDeLight(GeneratedAssetRecord record, bool dryRun)
+        {
+            if (_pipelineSettings == null) return;
+            var result = GeneratedTextureDeLightAdapter.ExportOrRun(record, _pipelineSettings, dryRun);
+            if (dryRun) record.validationWarnings.Add("delight_command_exported");
+            EditorUtility.SetDirty(_database);
+            _validationSummary = result.success ? "De-light command prepared." : result.stderr;
+        }
+
+        private void RunPbr(GeneratedAssetRecord record, bool dryRun)
+        {
+            if (_pipelineSettings == null) return;
+            var result = GeneratedTexturePbrAdapter.ExportOrRun(record, _pipelineSettings, dryRun);
+            if (dryRun) record.validationWarnings.Add("pbr_command_exported");
+            EditorUtility.SetDirty(_database);
+            _validationSummary = result.success ? "PBR command prepared." : result.stderr;
+        }
+
+        private static bool IsMaterialKind(GeneratedAssetKind kind)
+        {
+            return kind == GeneratedAssetKind.TileableWall
+                || kind == GeneratedAssetKind.TileableFloor
+                || kind == GeneratedAssetKind.TileableCeiling
+                || kind == GeneratedAssetKind.MaterialSet;
         }
     }
 }
