@@ -38,6 +38,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private string _activeDialogPortrait;        // portrait key, re-resolved each frame until the sprite loads
         private ConsulFateView _activeOracle;        // the open Oracle screen, polled for its async prophecy
         private TradeView _activeTrade;
+        private CraftingView _activeCrafting;
         private bool _oraclePending;
         private bool _wasOpen;
 
@@ -208,7 +209,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     _activeTrade = new TradeView(c, CloseScreen, TodoTradeAction);
                     break;
                 case "crafting":
-                    new CraftingView(c, CloseScreen, TodoCraftAction);
+                    RefreshLiveCrafting();
+                    _activeCrafting = new CraftingView(c, CloseScreen, TodoCraftAction);
                     break;
                 case "pause":
                     new PauseView(c, CloseScreen, OpenScreen, TodoSettingsAction, TodoMainMenuAction);
@@ -248,7 +250,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 _activeDialogSource.EndConversation();
                 _activeDialogSource = null; _activeDialog = null; _activeDialogPortrait = null;
             }
-            _activeOracle = null; _oraclePending = false; _activeTrade = null;
+            _activeOracle = null; _oraclePending = false; _activeTrade = null; _activeCrafting = null;
             if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
             // Safety net for IgModal-based views in case the tracked element ever desyncs.
             for (var open = _stage.Canvas.Q("IgModalOverlay"); open != null; open = _stage.Canvas.Q("IgModalOverlay"))
@@ -527,6 +529,30 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 player);
         }
 
+        private void RefreshLiveCrafting(string statusLine = null)
+        {
+            IgCraftingData.Current = IgCraftingData.Default;
+            if (!(_host is ICraftingSource craftSrc)) return;
+
+            var state = craftSrc.ReadCraftingState();
+            var recipes = new CraftingRecipeData[state.Recipes.Count];
+            for (int i = 0; i < state.Recipes.Count; i++)
+            {
+                var row = state.Recipes[i];
+                recipes[i] = new CraftingRecipeData(
+                    row.RecipeId,
+                    row.Name,
+                    row.Station,
+                    row.IngredientSummary,
+                    row.OutputSummary,
+                    row.AvailabilityLabel,
+                    row.CanCraft);
+            }
+
+            var line = statusLine ?? (recipes.Length == 0 ? "No recipes are available here yet." : "Choose a recipe to craft.");
+            IgCraftingData.Current = new CraftingScreenData(state.StationName, line, recipes);
+        }
+
         private static InventoryItemData MapInventorySlot(InventorySlot slot, int index)
         {
             var fallback = FindDefaultInventoryItem(slot.IconName);
@@ -723,7 +749,20 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             RefreshLiveTrade(result.Message);
             _activeTrade?.Refresh();
         }
-        private void TodoCraftAction(string recipeId) => LogTodoAndClose("craft recipe: " + recipeId);
+        private void TodoCraftAction(string recipeId)
+        {
+            if (!(_host is ICraftingCommandSink craftSink))
+            {
+                RefreshLiveCrafting("Craft commands are unavailable in this scene.");
+                _activeCrafting?.Refresh();
+                return;
+            }
+
+            var result = craftSink.ExecuteCraft(recipeId);
+            RefreshLiveInventory();
+            RefreshLiveCrafting(result.Message);
+            _activeCrafting?.Refresh();
+        }
         private void TodoFastTravelAction(string locationId) => LogTodoAndClose("fast travel: " + locationId);
         private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);
         private void TodoCombatAction(string actionId) => LogTodoAndClose("combat action: " + actionId);

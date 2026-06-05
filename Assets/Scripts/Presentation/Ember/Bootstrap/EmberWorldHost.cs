@@ -21,7 +21,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
     public sealed partial class EmberWorldHost : MonoBehaviour, EmberTickDriver.ITickListener,
         IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait, IPlayerSheetSource,
         IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ISpellBarSource, IJournalSource,
-        ITradeSource, ITradeCommandSink
+        ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink
     {
         [SerializeField] private SpriteRegistry _spriteRegistry;
 
@@ -381,6 +381,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         int IJournalSource.GetCurrentChapter() => (_adapter as IJournalSource)?.GetCurrentChapter() ?? 0;
         TradeLedgerState ITradeSource.ReadTradeState() => (_adapter as ITradeSource)?.ReadTradeState() ?? new TradeLedgerState("Quartermaster", "Current Holding", 0, 0, System.Array.Empty<TradeItemRow>(), System.Array.Empty<TradeItemRow>());
         TradeActionResult ITradeCommandSink.ExecuteTrade(TradeActionRequest request) => (_adapter as ITradeCommandSink)?.ExecuteTrade(request) ?? new TradeActionResult(false, "Trade commands are unavailable.");
+        CraftingLedgerState ICraftingSource.ReadCraftingState() => (_adapter as ICraftingSource)?.ReadCraftingState() ?? new CraftingLedgerState("No Workstation", System.Array.Empty<CraftingRecipeRow>());
+        CraftingActionResult ICraftingCommandSink.ExecuteCraft(string recipeId) => (_adapter as ICraftingCommandSink)?.ExecuteCraft(recipeId) ?? new CraftingActionResult(false, "Craft commands are unavailable.");
         public Sprite GetSprite(string name)
         {
             var registrySprite = _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;

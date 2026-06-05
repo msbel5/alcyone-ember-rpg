@@ -15,7 +15,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// <see cref="EmberDomainAdapterLocator.Register"/> once Captain's domain stores
     /// expose an integration adapter.
     /// </summary>
-    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait, IJournalSource, ITradeSource, ITradeCommandSink
+    public sealed class PlaceholderSimulationAdapter : IDomainSimulationAdapter, IDialogSourcePortrait, IJournalSource, ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink
     {
         private readonly List<JobQueueRow> _jobRows = new List<JobQueueRow>();
         private readonly List<ColonyNeedsRow> _needsRows = new List<ColonyNeedsRow>();
@@ -121,6 +121,42 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
 
             return new TradeActionResult(false, "Trade action unavailable.");
+        }
+
+        public CraftingLedgerState ReadCraftingState()
+        {
+            return new CraftingLedgerState(
+                "Smoke Test Workshop",
+                new[]
+                {
+                    new CraftingRecipeRow("1001", "Smelt Iron Ingot", "furnace", "Iron Ore x2 · Fuel x1", "Iron Ingot x1", HasIngredients("iron_ore", 2, "fuel", 1) ? "Ready" : "Need Iron Ore/Fuel", HasIngredients("iron_ore", 2, "fuel", 1)),
+                    new CraftingRecipeRow("1002", "Bake Bread", "bakery", "Grain x2 · Fuel x1", "Bread x1", HasIngredients("grain", 2, "fuel", 1) ? "Ready" : "Need Grain/Fuel", HasIngredients("grain", 2, "fuel", 1)),
+                });
+        }
+
+        public CraftingActionResult ExecuteCraft(string recipeId)
+        {
+            if (string.Equals(recipeId, "1001", System.StringComparison.Ordinal))
+            {
+                if (!HasIngredients("iron_ore", 2, "fuel", 1))
+                    return new CraftingActionResult(false, "Missing Iron Ore or Fuel.");
+                TryConsume("iron_ore", 2);
+                TryConsume("fuel", 1);
+                _inventorySlots.Add(new InventorySlot("iron_ingot", 1));
+                return new CraftingActionResult(true, "Crafted Iron Ingot.");
+            }
+
+            if (string.Equals(recipeId, "1002", System.StringComparison.Ordinal))
+            {
+                if (!HasIngredients("grain", 2, "fuel", 1))
+                    return new CraftingActionResult(false, "Missing Grain or Fuel.");
+                TryConsume("grain", 2);
+                TryConsume("fuel", 1);
+                _inventorySlots.Add(new InventorySlot("bread", 1));
+                return new CraftingActionResult(true, "Crafted Bread.");
+            }
+
+            return new CraftingActionResult(false, "Unknown recipe.");
         }
 
         public void AdvanceTick(int tickIndex)
@@ -353,6 +389,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private void UpdateInventory()
         {
             _inventorySlots.Clear();
+            _inventorySlots.Add(new InventorySlot("iron_ore",         2));
+            _inventorySlots.Add(new InventorySlot("fuel",             2));
+            _inventorySlots.Add(new InventorySlot("grain",            2));
             _inventorySlots.Add(new InventorySlot("iron_ingot",       4));
             _inventorySlots.Add(new InventorySlot("steel_longsword",  1));
             _inventorySlots.Add(new InventorySlot("leather_armor",    1));
@@ -414,6 +453,40 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 parts[i] = char.ToUpperInvariant(part[0]) + part.Substring(1);
             }
             return string.Join(" ", parts);
+        }
+
+        private bool HasIngredients(string a, int aQty, string b, int bQty)
+        {
+            return CountItem(a) >= aQty && CountItem(b) >= bQty;
+        }
+
+        private int CountItem(string templateId)
+        {
+            int total = 0;
+            for (int i = 0; i < _inventorySlots.Count; i++)
+            {
+                var slot = _inventorySlots[i];
+                if (string.Equals(slot.IconName, templateId, System.StringComparison.Ordinal))
+                    total += slot.Count;
+            }
+            return total;
+        }
+
+        private bool TryConsume(string templateId, int quantity)
+        {
+            for (int i = 0; i < _inventorySlots.Count; i++)
+            {
+                var slot = _inventorySlots[i];
+                if (!string.Equals(slot.IconName, templateId, System.StringComparison.Ordinal) || slot.Count < quantity)
+                    continue;
+
+                _inventorySlots.RemoveAt(i);
+                if (slot.Count > quantity)
+                    _inventorySlots.Insert(i, new InventorySlot(slot.IconName, slot.Count - quantity));
+                return true;
+            }
+
+            return false;
         }
     }
 }
