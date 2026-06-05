@@ -83,6 +83,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             pane.Add(portrait);
 
             var name = Text(IgMockData.Player.Name, Serif, 18, Parch, FontStyle.Bold);
+            name.style.whiteSpace = WhiteSpace.Normal;   // long hero names wrap inside the identity column instead of overflowing
             pane.Add(name);
             var klass = Text($"LV {IgMockData.Player.Level} {IgMockData.Player.ClassName}".ToUpperInvariant(), Sans, 12, Gold);
             klass.style.letterSpacing = 0.6f;

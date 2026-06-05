@@ -189,6 +189,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             _thread = new ScrollView();
             _thread.style.flexGrow = 1;
             _thread.style.minHeight = 0;
+            StyleScroll(_thread);   // slim gold themed scrollbar, not the default OS up/down arrows
             pane.Add(_thread);
 
             var askRow = Row();
@@ -297,7 +298,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             qBubble.style.backgroundColor = Alpha(Panel, 0.75f);
             Border(qBubble, GA(0.28f), 1);
             Radius(qBubble, 12);
-            qBubble.Add(Text(question, Sans, 13, Parch));
+            var qLabel = Text(question, Sans, 13, Parch);
+            qLabel.style.whiteSpace = WhiteSpace.Normal;
+            qBubble.Add(qLabel);
             wrap.Add(qBubble);
 
             var aBubble = new VisualElement();
@@ -311,6 +314,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             Border(aBubble, loading ? GA(0.10f) : Alpha(Amber, 0.27f), 1);
             Radius(aBubble, 12);
             var answerLabel = Text(answer, Serif, loading ? 13 : 15, loading ? GA(0.45f) : ParchDim, FontStyle.Italic);
+            answerLabel.style.whiteSpace = WhiteSpace.Normal;   // long prophecies wrap inside the bubble instead of overflowing on one line
             aBubble.Add(answerLabel);
             wrap.Add(aBubble);
             return new ThreadEntryView(wrap, aBubble, answerLabel, loading);

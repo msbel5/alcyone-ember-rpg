@@ -88,6 +88,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             _thread = new ScrollView();
             _thread.style.maxHeight = 200;
             _thread.style.minHeight = 0;
+            StyleScroll(_thread);   // slim gold themed scrollbar, not the default OS up/down arrows
             _threadCard.Add(_thread);
             _overlay.Add(_threadCard);
 

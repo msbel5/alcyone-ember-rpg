@@ -209,8 +209,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     break;
                 case "character":
                     _activeCharacter = new CharacterView(c, CloseScreen, OpenScreen);
+                    var playerPortrait = TryGetPlayerPortraitSprite();
+                    if (playerPortrait != null)
+                        _activeCharacter.SetPortrait(playerPortrait);
                     _activePlayerPortraitKey = ResolvePlayerPortraitKey();
-                    if (!string.IsNullOrEmpty(_activePlayerPortraitKey) && _host is ISpriteByName playerSprites)
+                    if (!_activeCharacter.HasPortrait && !string.IsNullOrEmpty(_activePlayerPortraitKey) && _host is ISpriteByName playerSprites)
                     {
                         var sp = playerSprites.GetSprite(_activePlayerPortraitKey);
                         if (sp != null)
@@ -1079,6 +1082,31 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         /// <summary>Proof/diagnostic hook: open a screen by id from the screenshot driver (verification tours).</summary>
         public void ProofOpenScreen(string id) => OpenScreen(id);
+
+        // The player's approved portrait travels from character creation as PNG bytes on the pending
+        // worldgen intent (real forge face if it generated, else the deterministic creation swatch).
+        // Build it into a Sprite once and cache it so the Character screen shows the real likeness
+        // instead of the "C" glyph fallback. Returns null when no portrait was carried.
+        private Sprite _playerPortraitSprite;
+        private bool _playerPortraitResolved;
+        private Sprite TryGetPlayerPortraitSprite()
+        {
+            if (_playerPortraitResolved)
+                return _playerPortraitSprite;
+            _playerPortraitResolved = true;
+
+            var png = EmberWorldGenIntent.Pending?.PortraitPng;
+            if (png == null || png.Length == 0)
+                return null;
+
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+            if (!texture.LoadImage(png))
+                return null;
+
+            _playerPortraitSprite = Sprite.Create(
+                texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+            return _playerPortraitSprite;
+        }
 
         private string ResolvePlayerPortraitKey()
         {

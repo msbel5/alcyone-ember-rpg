@@ -29,6 +29,12 @@ namespace EmberCrpg.Presentation.Ember.UI
         public string[] AnswerChoiceIds { get; }
         public string PortraitJson { get; }
 
+        // The approved portrait image (real forge face if it landed during creation, else the
+        // deterministic creation swatch), carried into gameplay so the Character screen can show the
+        // real likeness instead of the "C" glyph fallback. Settable because it is stamped just after
+        // construction at the worldgen-launch handoff (raw PNG bytes; no parse/manifest needed).
+        public byte[] PortraitPng { get; set; }
+
         public EmberWorldGenIntent(string mood, string calling, string start)
             : this(mood, calling, start, string.Empty, string.Empty, string.Empty, null)
         {

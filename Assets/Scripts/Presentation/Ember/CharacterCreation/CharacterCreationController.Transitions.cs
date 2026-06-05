@@ -94,6 +94,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 _seed,
                 _answerChoiceIds.ToArray(),
                 PortraitJson);
+            // Carry the approved portrait image (real forge face if it landed, else the deterministic
+            // swatch) into gameplay so the Character screen shows it instead of the "C" glyph fallback.
+            if (_characterPortraitTexture != null)
+                EmberWorldGenIntent.Pending.PortraitPng = _characterPortraitTexture.EncodeToPNG();
             if (AutoLaunchWorldgen && Application.isPlaying)
                 StartCoroutine(BeginVisibleWorldgen());
             Render();

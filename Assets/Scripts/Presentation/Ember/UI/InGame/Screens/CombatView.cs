@@ -235,7 +235,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             root.style.backgroundColor = C(0, 0, 0, 0.4f);
             root.style.marginTop = 6;
             root.style.marginRight = 6;
-            Radius(root, 999);
+            Radius(root, 6);   // small radius: 999 clips to an ellipse under UITK (same fix as the character sheet bars)
 
             fill = new VisualElement();
             fill.style.position = Position.Absolute;
@@ -243,7 +243,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             fill.style.top = 2;
             fill.style.bottom = 2;
             fill.style.backgroundColor = color;
-            Radius(fill, 999);
+            Radius(fill, 4);
             root.Add(fill);
 
             var text = Text(label, Sans, 9, Bone, FontStyle.Bold);
