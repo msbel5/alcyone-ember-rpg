@@ -1,3 +1,4 @@
+// Why this file is intentionally long: the complete Character screen stays in one UI Toolkit view so layout, live binding hooks, and modal-specific styling remain co-located and readable.
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,6 +11,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     public sealed class CharacterView
     {
         private readonly VisualElement _overlay;
+        private Image _portraitImage;
+        private Label _portraitGlyph;
+
+        public bool HasPortrait { get; private set; }
 
         public CharacterView(VisualElement stageCanvas, Action onClose, Action<string> onOpenScreen = null)
         {
@@ -26,7 +31,19 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         public void Close() { _overlay?.RemoveFromHierarchy(); }
 
-        private static VisualElement BuildIdentityPane()
+        public void SetPortrait(Sprite sprite)
+        {
+            if (sprite == null || _portraitImage == null)
+                return;
+
+            _portraitImage.sprite = sprite;
+            _portraitImage.style.display = DisplayStyle.Flex;
+            if (_portraitGlyph != null)
+                _portraitGlyph.style.display = DisplayStyle.None;
+            HasPortrait = true;
+        }
+
+        private VisualElement BuildIdentityPane()
         {
             var pane = new VisualElement();
             pane.style.width = 220;
@@ -44,11 +61,25 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             portrait.style.backgroundColor = InputBg;
             Border(portrait, Amber, 2);
             Radius(portrait, 12);
-            portrait.style.alignItems = Align.Center;
-            portrait.style.justifyContent = Justify.FlexEnd;
-            var glyph = Text("C", Serif, 96, GA(0.24f), FontStyle.Bold);
-            glyph.style.marginBottom = 18;
-            portrait.Add(glyph);
+            portrait.style.overflow = Overflow.Hidden;
+
+            _portraitImage = new Image();
+            _portraitImage.scaleMode = ScaleMode.ScaleToFit;
+            _portraitImage.style.position = Position.Absolute;
+            _portraitImage.style.left = 0;
+            _portraitImage.style.right = 0;
+            _portraitImage.style.top = 0;
+            _portraitImage.style.bottom = 0;
+            _portraitImage.style.display = DisplayStyle.None;
+            portrait.Add(_portraitImage);
+
+            _portraitGlyph = Text("C", Serif, 96, GA(0.24f), FontStyle.Bold);
+            _portraitGlyph.style.position = Position.Absolute;
+            _portraitGlyph.style.left = 0;
+            _portraitGlyph.style.right = 0;
+            _portraitGlyph.style.bottom = 18;
+            _portraitGlyph.style.unityTextAlign = TextAnchor.MiddleCenter;
+            portrait.Add(_portraitGlyph);
             pane.Add(portrait);
 
             var name = Text(IgMockData.Player.Name, Serif, 18, Parch, FontStyle.Bold);
@@ -59,10 +90,23 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var sign = Text($"{IgMockData.Player.Birthsign} · {IgMockData.Player.Alignment}", Serif, 12, PA(0.45f), FontStyle.Italic);
             pane.Add(sign);
 
-            pane.Add(BuildXpBar());
-            pane.Add(BuildVital("HP", IgMockData.Player.Hp, IgMockData.Player.HpMax, Health));
-            pane.Add(BuildVital("FAT", IgMockData.Player.Fatigue, IgMockData.Player.FatigueMax, Fatigue));
-            pane.Add(BuildVital("MP", IgMockData.Player.Mana, IgMockData.Player.ManaMax, Mana));
+            var meters = new VisualElement();
+            meters.style.marginTop = 12;
+
+            var xp = BuildXpBar();
+            xp.style.marginBottom = 5;
+            meters.Add(xp);
+
+            var hp = BuildVital("HP", IgMockData.Player.Hp, IgMockData.Player.HpMax, Health);
+            hp.style.marginBottom = 5;
+            meters.Add(hp);
+
+            var fatigue = BuildVital("FAT", IgMockData.Player.Fatigue, IgMockData.Player.FatigueMax, Fatigue);
+            fatigue.style.marginBottom = 5;
+            meters.Add(fatigue);
+
+            meters.Add(BuildVital("MP", IgMockData.Player.Mana, IgMockData.Player.ManaMax, Mana));
+            pane.Add(meters);
             return pane;
         }
 

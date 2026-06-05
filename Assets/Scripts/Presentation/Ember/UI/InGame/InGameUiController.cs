@@ -1,3 +1,4 @@
+// Why this file is intentionally long: the in-game UI controller is the single presentation orchestrator for HUD refresh, screen routing, and adapter-backed live read-model projection until the remaining screens are split behind narrower controllers.
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -34,6 +35,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private VisualElement _activeScreen;   // the overlay the open view added — tracked directly so ANY screen
                                                // (IgModal-named OR a bare Pause/Combat/LevelUp/Death/Dialog/DM/Loot
                                                // VisualElement) can be detected + closed, not just "IgModalOverlay"
+        private CharacterView _activeCharacter;
+        private string _activePlayerPortraitKey;
         private IDialogSource _activeDialogSource;   // live NPC conversation behind the redesigned DialogView
         private DialogView _activeDialog;
         private string _activeDialogPortrait;        // portrait key, re-resolved each frame until the sprite loads
@@ -138,6 +141,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 }
             }
 
+            if (_activeCharacter != null && !_activeCharacter.HasPortrait && !string.IsNullOrEmpty(_activePlayerPortraitKey) && _host is ISpriteByName playerSprites)
+            {
+                var sp = playerSprites.GetSprite(_activePlayerPortraitKey);
+                if (sp != null)
+                    _activeCharacter.SetPortrait(sp);
+            }
+
             // Stream the Oracle's async prophecy into the open Consul-Fate screen (same poll pattern as dialog).
             if (_activeOracle != null && _oraclePending)
             {
@@ -181,7 +191,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new InventoryView(c, CloseScreen, TodoInventoryAction);
                     break;
                 case "character":
-                    new CharacterView(c, CloseScreen, OpenScreen);
+                    _activeCharacter = new CharacterView(c, CloseScreen, OpenScreen);
+                    _activePlayerPortraitKey = ResolvePlayerPortraitKey();
+                    if (!string.IsNullOrEmpty(_activePlayerPortraitKey) && _host is ISpriteByName playerSprites)
+                    {
+                        var sp = playerSprites.GetSprite(_activePlayerPortraitKey);
+                        if (sp != null)
+                            _activeCharacter.SetPortrait(sp);
+                    }
                     break;
                 case "spellbook":
                     RefreshLiveSpells();
@@ -258,6 +275,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 _activeDialogSource.EndConversation();
                 _activeDialogSource = null; _activeDialog = null; _activeDialogPortrait = null;
             }
+            _activeCharacter = null; _activePlayerPortraitKey = null;
             _activeOracle = null; _oraclePending = false; _activeTrade = null; _activeCrafting = null; _activeSaveLoad = null; _activeCombat = null;
             if (_activeScreen != null) { _activeScreen.RemoveFromHierarchy(); _activeScreen = null; }
             // Safety net for IgModal-based views in case the tracked element ever desyncs.
@@ -1014,6 +1032,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         /// <summary>Proof/diagnostic hook: open a screen by id from the screenshot driver (verification tours).</summary>
         public void ProofOpenScreen(string id) => OpenScreen(id);
+
+        private string ResolvePlayerPortraitKey()
+        {
+            // TODO(player-portrait-runtime): character creation currently persists PortraitJson but does not
+            // register a stable gameplay sprite key for the player's forged portrait. Keep the Character screen
+            // glyph fallback until that handoff exists, instead of guessing a key and showing the wrong sprite.
+            return string.Empty;
+        }
 
         private static readonly (string id, string label)[] AllScreens =
         {
