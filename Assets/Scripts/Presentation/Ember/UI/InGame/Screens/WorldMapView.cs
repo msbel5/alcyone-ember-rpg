@@ -310,6 +310,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         private static Texture2D CreateMapTexture(OverlandMap map)
         {
+            // Prefer the rich planet render — identical to the char-creation "World Awakens" reveal — so the
+            // in-game World Map matches the world you shaped. The planet field is cached for the whole session
+            // in PlanetWorldContext and never cleared, so it is available here. Falls back to the flat overland
+            // tiles on loaded saves where the planet field is not in memory.
+            var planet = TryCreatePlanetMapTexture();
+            if (planet != null) return planet;
+
             if (map == null) return null;
             var image = OverlandMapImageSampler.Sample(map);
             var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
@@ -321,6 +328,36 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             texture.LoadRawTextureData(image.RgbaBytes);
             texture.Apply(false, true);
             return texture;
+        }
+
+        // Render the persisted planet field equirectangularly, exactly like the char-creation reveal. The
+        // overland grid the pins use is derived from this same field via PlanetToWorldMapper (same
+        // equirectangular projection), so the ToPercent pin positions still line up over the 128x64 tiles.
+        // No row-flip: this view draws through UITK Image.image, the same path the overland texture above uses
+        // without a flip (the reveal flips only because it blits into a different, V-inverted surface). If the
+        // planet comes out upside-down in play, flipping the rows here is the one-line fix.
+        private static Texture2D TryCreatePlanetMapTexture()
+        {
+            try
+            {
+                var field = EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldContext.Instance?.Field;
+                if (field == null) return null;
+
+                var image = EmberCrpg.Simulation.Worldgen.Planet.PlanetImageSampler.Sample(field, 512, 256);
+                var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
+                {
+                    filterMode = FilterMode.Point,
+                    wrapMode = TextureWrapMode.Clamp,
+                    name = "InGameWorldMapPlanet"
+                };
+                texture.LoadRawTextureData(image.Rgba);
+                texture.Apply(false, true);
+                return texture;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static MapLocationData[] BuildLocations(OverlandMap map, GridPosition playerTile, string startingSettlementName)
