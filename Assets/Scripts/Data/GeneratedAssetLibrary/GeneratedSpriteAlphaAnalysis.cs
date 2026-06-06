@@ -7,6 +7,7 @@ namespace EmberCrpg.Data.GeneratedAssets
     public sealed class GeneratedSpriteAlphaAnalysis
     {
         public PixelRect mainBounds;
+        public byte[] mainComponentMask;
         public int opaquePixelCount;
         public int mainComponentPixels;
         public int largeComponentCount;

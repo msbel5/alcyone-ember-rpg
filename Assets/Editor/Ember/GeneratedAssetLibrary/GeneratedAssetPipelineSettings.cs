@@ -25,9 +25,13 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
         public bool spriteMipMaps;
         public TextureImporterCompression spriteCompression = TextureImporterCompression.CompressedHQ;
         public byte alphaThreshold = 8;
+        public byte singleFigureAlphaThreshold = 160;
         public int cropPadding = 12;
         public int minimumLargeComponentPixels = 1024;
         public float largeComponentWarningRatio = 0.7f;
+        public float singleFigureUpperBodyFraction = 0.42f;
+        public int singleFigureUpperBodyMinPixels = 400;
+        public int singleFigureMaxAttempts = 6;
         public float billboardTargetHeight = 2.1f;
         public int materialMaxTextureSize = 2048;
         public FilterMode materialFilterMode = FilterMode.Trilinear;

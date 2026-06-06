@@ -25,7 +25,10 @@ namespace EmberCrpg.Tests.EditMode.Generation
                         || prompt.StartsWith(StaticPromptCatalog.EmberWallHeader),
                     Is.True,
                     entry.StaticPromptKey + " should open with EmberStyleHeader, EmberFloorHeader, or EmberWallHeader");
-                Assert.That(prompt, Does.EndWith(StaticPromptCatalog.EmberNegativeFooter), entry.StaticPromptKey);
+                if (entry.Category == "npc")
+                    Assert.That(prompt, Does.StartWith(StaticPromptCatalog.EmberNpcSpriteHeader), entry.StaticPromptKey);
+                else
+                    Assert.That(prompt, Does.EndWith(StaticPromptCatalog.EmberNegativeFooter), entry.StaticPromptKey);
             }
         }
 
@@ -97,12 +100,11 @@ namespace EmberCrpg.Tests.EditMode.Generation
                 var id = "npc_" + role.ToString().ToLowerInvariant();
                 Assert.That(catalog.TryGetPrompt(id, out var prompt), Is.True, id);
                 Assert.That(prompt, Does.StartWith(StaticPromptCatalog.EmberNpcSpriteHeader), id);
-                Assert.That(prompt, Does.Contain("exactly one person"), id);
-                Assert.That(prompt, Does.Contain("full-body character sprite"), id);
+                Assert.That(prompt, Does.Contain("one person standing alone"), id);
+                Assert.That(prompt, Does.Contain("full body shown head to boots"), id);
                 Assert.That(prompt, Does.Contain("consistent ember-lit palette"), id);
-                Assert.That(prompt, Does.Contain("no second person"), id);
-                Assert.That(prompt, Does.Contain("no crowd"), id);
-                Assert.That(prompt, Does.EndWith(StaticPromptCatalog.EmberNegativeFooter), id);
+                Assert.That(StaticPromptCatalog.EmberGenerationNegative, Does.Contain("no second character"), id);
+                Assert.That(StaticPromptCatalog.EmberGenerationNegative, Does.Contain("no duplicate person"), id);
             }
         }
     }

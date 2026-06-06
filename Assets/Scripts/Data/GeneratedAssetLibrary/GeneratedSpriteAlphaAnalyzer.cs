@@ -10,20 +10,31 @@ namespace EmberCrpg.Data.GeneratedAssets
             if (alpha == null || alpha.Length != width * height) throw new ArgumentException("Alpha buffer size does not match dimensions.", nameof(alpha));
 
             var visited = new bool[alpha.Length];
+            var queue = new int[alpha.Length];
             var analysis = new GeneratedSpriteAlphaAnalysis();
             var bestCount = 0;
+            int[] bestIndices = null;
 
             for (var i = 0; i < alpha.Length; i++)
             {
                 if (visited[i] || alpha[i] < threshold) continue;
-                var component = Flood(width, height, alpha, visited, threshold, i);
+                var component = Flood(width, height, alpha, visited, threshold, i, queue);
                 analysis.opaquePixelCount += component.count;
                 if (component.count >= minLargeComponentPixels) analysis.largeComponentCount++;
                 if (component.count <= bestCount) continue;
 
                 bestCount = component.count;
+                bestIndices = new int[component.count];
+                Buffer.BlockCopy(queue, 0, bestIndices, 0, component.count * sizeof(int));
                 analysis.mainComponentPixels = component.count;
                 analysis.mainBounds = new PixelRect(component.minX, component.minY, component.maxX - component.minX + 1, component.maxY - component.minY + 1);
+            }
+
+            if (bestIndices != null)
+            {
+                analysis.mainComponentMask = new byte[alpha.Length];
+                for (var i = 0; i < bestIndices.Length; i++)
+                    analysis.mainComponentMask[bestIndices[i]] = 255;
             }
 
             analysis.touchesEdge = analysis.mainBounds.x <= 0
@@ -37,9 +48,8 @@ namespace EmberCrpg.Data.GeneratedAssets
             return analysis;
         }
 
-        private static (int count, int minX, int minY, int maxX, int maxY) Flood(int width, int height, byte[] alpha, bool[] visited, byte threshold, int startIndex)
+        private static (int count, int minX, int minY, int maxX, int maxY) Flood(int width, int height, byte[] alpha, bool[] visited, byte threshold, int startIndex, int[] queue)
         {
-            var queue = new int[alpha.Length];
             var head = 0;
             var tail = 0;
             queue[tail++] = startIndex;

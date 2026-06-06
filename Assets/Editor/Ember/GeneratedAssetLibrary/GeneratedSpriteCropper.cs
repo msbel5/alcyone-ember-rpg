@@ -22,12 +22,19 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
                 if (analysis.mainBounds.width <= 0 || analysis.mainBounds.height <= 0)
                     throw new IOException("No opaque component passed the alpha threshold.");
 
-                var x = Mathf.Max(0, analysis.mainBounds.x - padding);
-                var y = Mathf.Max(0, analysis.mainBounds.y - padding);
-                var w = Mathf.Min(source.width - x, analysis.mainBounds.width + (padding * 2));
-                var h = Mathf.Min(source.height - y, analysis.mainBounds.height + (padding * 2));
-                var cropped = new Texture2D(w, h, TextureFormat.RGBA32, false);
-                cropped.SetPixels(source.GetPixels(x, y, w, h));
+                var rgba = new byte[pixels.Length * 4];
+                for (var i = 0; i < pixels.Length; i++)
+                {
+                    var offset = i * 4;
+                    rgba[offset + 0] = pixels[i].r;
+                    rgba[offset + 1] = pixels[i].g;
+                    rgba[offset + 2] = pixels[i].b;
+                    rgba[offset + 3] = pixels[i].a;
+                }
+
+                var crop = GeneratedSpriteCropUtility.CropRgba(source.width, source.height, rgba, analysis.mainBounds, padding);
+                var cropped = new Texture2D(crop.Width, crop.Height, TextureFormat.RGBA32, false);
+                cropped.LoadRawTextureData(crop.Rgba);
                 cropped.Apply();
 
                 try

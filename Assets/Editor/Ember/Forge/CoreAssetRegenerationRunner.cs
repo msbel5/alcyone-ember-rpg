@@ -11,6 +11,7 @@ using EmberCrpg.Infrastructure.AiDm;
 using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.Runtime;
 using EmberCrpg.Simulation.Generation;
+using EmberCrpg.Simulation.Forge;
 using UnityEditor;
 using UnityEngine;
 
@@ -102,7 +103,7 @@ namespace EmberCrpg.Editor.Ember.Forge
 
             var settings = LoadSettings();
             var database = GeneratedAssetDatabaseEditorUtility.LoadOrCreate();
-            using var forge = CreateForge();
+            using var forge = CreateForge(settings);
             var generation = await RunGenerationPhaseAsync(scope, runtimeRoot, catalog, toGenerate, forge, !Application.isBatchMode, cancellationToken);
 
             SyncFreshEntries(database, selected, runtimeRoot, catalog, settings, cancellationToken);
@@ -143,13 +144,13 @@ namespace EmberCrpg.Editor.Ember.Forge
             var toGenerate = ResolveGenerationEntries(selected, scan);
             Debug.Log("[CoreAssetRegen] Scope=" + scope + " selected=" + selected.Count + " staleBackedUp=" + backedUp + " queued=" + toGenerate.Count + ".");
 
+            var settings = LoadSettings();
             // Batchmode executeMethod cannot block the editor thread on an async task that posts continuations
             // back to Unity's sync context. Run only the pure generation phase off-thread; keep AssetDatabase on
             // the main thread before/after generation.
-            using var forge = CreateForge();
+            using var forge = CreateForge(settings);
             var generation = SyncTaskBridge.Run(() => RunGenerationPhaseAsync(scope, runtimeRoot, catalog, toGenerate, forge, false, CancellationToken.None));
 
-            var settings = LoadSettings();
             var database = GeneratedAssetDatabaseEditorUtility.LoadOrCreate();
             SyncFreshEntries(database, selected, runtimeRoot, catalog, settings, CancellationToken.None);
             database.RebuildStableIds();
@@ -173,7 +174,7 @@ namespace EmberCrpg.Editor.Ember.Forge
             string runtimeRoot,
             StaticPromptCatalog catalog,
             IReadOnlyList<ManifestEntry> toGenerate,
-            SerializedAssetForge forge,
+            IAssetForge forge,
             bool allowCancelableProgress,
             CancellationToken cancellationToken)
         {
@@ -331,13 +332,23 @@ namespace EmberCrpg.Editor.Ember.Forge
                 ?? ScriptableObject.CreateInstance<GeneratedAssetPipelineSettings>();
         }
 
-        private static SerializedAssetForge CreateForge()
+        private static SingleFigureRefiningAssetForge CreateForge(GeneratedAssetPipelineSettings settings)
         {
             var modelRoot = ResolveModelDirectory();
             var realForge = EmberForgeFactory.BuildForge(modelRoot, out _, out var failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
                 Debug.LogWarning("[CoreAssetRegen] Forge init note: " + failureReason);
-            return new SerializedAssetForge(realForge, new SnapshotResourceProbe(SystemInfo.graphicsMemorySize, SystemInfo.systemMemorySize));
+            var serialized = new SerializedAssetForge(realForge, new SnapshotResourceProbe(SystemInfo.graphicsMemorySize, SystemInfo.systemMemorySize));
+            var matte = new OnnxImageMatteService(modelRoot);
+            var gateThreshold = settings.singleFigureAlphaThreshold == 0 ? (byte)160 : settings.singleFigureAlphaThreshold;
+            var gate = new ConnectedComponentSingleFigureGate(
+                gateThreshold,
+                settings.minimumLargeComponentPixels,
+                settings.largeComponentWarningRatio,
+                settings.singleFigureUpperBodyFraction <= 0f ? 0.42f : settings.singleFigureUpperBodyFraction,
+                settings.singleFigureUpperBodyMinPixels <= 0 ? 400 : settings.singleFigureUpperBodyMinPixels);
+            var options = new SingleFigureRefinementOptions(settings.singleFigureMaxAttempts, gateThreshold, settings.cropPadding, settings.minimumLargeComponentPixels, settings.largeComponentWarningRatio);
+            return new SingleFigureRefiningAssetForge(serialized, matte, gate, options, SingleFigureSpritePolicies.NpcOnly, message => Debug.Log(message));
         }
 
         private static string ResolveModelDirectory()

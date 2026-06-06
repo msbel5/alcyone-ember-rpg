@@ -73,22 +73,25 @@ namespace EmberCrpg.Simulation.Forge
             if (selected == null)
                 throw new InvalidOperationException("Inference produced no outputs.");
 
-            try
+            var halfTensor = TryReadTensor<Float16>(selected);
+            if (halfTensor != null)
             {
-                var h = selected.AsTensor<Float16>();
-                var arr = new float[h.Length];
-                int i = 0;
-                foreach (var value in h) arr[i++] = (float)value;
+                var arr = new float[halfTensor.Length];
+                var i = 0;
+                foreach (var value in halfTensor) arr[i++] = (float)value;
                 return arr;
             }
-            catch (InvalidCastException)
+
+            var floatTensor = TryReadTensor<float>(selected);
+            if (floatTensor != null)
             {
-                var f = selected.AsTensor<float>();
-                var arr = new float[f.Length];
-                int i = 0;
-                foreach (var value in f) arr[i++] = value;
+                var arr = new float[floatTensor.Length];
+                var i = 0;
+                foreach (var value in floatTensor) arr[i++] = value;
                 return arr;
             }
+
+            throw new InvalidOperationException("Inference output '" + selected.Name + "' was not a float tensor.");
         }
 
         public static string ResolveInputName(InferenceSession session, string preferredName)
@@ -116,6 +119,18 @@ namespace EmberCrpg.Simulation.Forge
                 options.AppendExecutionProvider_CUDA(0);
 
             return options;
+        }
+
+        private static Tensor<TElement> TryReadTensor<TElement>(DisposableNamedOnnxValue value)
+        {
+            try
+            {
+                return value.AsTensor<TElement>();
+            }
+            catch (InvalidCastException)
+            {
+                return null;
+            }
         }
 #endif
 
