@@ -8,7 +8,7 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
 {
     public sealed partial class GeneratedAssetLibraryWindow : EditorWindow
     {
-        private const string DefaultDatabasePath = "Assets/Manifests/GeneratedAssets/GeneratedAssetDatabase.asset";
+        private const string DefaultDatabasePath = GeneratedAssetDatabaseEditorUtility.DefaultDatabasePath;
         private const string DefaultSettingsPath = "Assets/Settings/GeneratedAssetPipelineSettings.asset";
 
         private GeneratedAssetDatabase _database;
@@ -64,17 +64,7 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
 
         private void CreateDatabase()
         {
-            EmberSceneSavePolicy.EnsureFolderExists("Assets/Manifests");
-            EmberSceneSavePolicy.EnsureFolderExists("Assets/Manifests/GeneratedAssets");
-            var database = AssetDatabase.LoadAssetAtPath<GeneratedAssetDatabase>(DefaultDatabasePath);
-            if (database == null)
-            {
-                database = CreateInstance<GeneratedAssetDatabase>();
-                AssetDatabase.CreateAsset(database, DefaultDatabasePath);
-                AssetDatabase.SaveAssets();
-            }
-
-            _database = database;
+            _database = GeneratedAssetDatabaseEditorUtility.LoadOrCreate();
             _selectedIndex = _database.Records.Count > 0 ? 0 : -1;
             Selection.activeObject = _database;
         }

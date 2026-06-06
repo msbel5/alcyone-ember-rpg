@@ -102,15 +102,19 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     {
         public readonly ulong Id;
         public readonly string Name;
+        public readonly string SpriteRole;
         public readonly float WorldX;
         public readonly float WorldZ;
+        public readonly int Seed;
 
-        public SpawnableActor(ulong id, string name, float worldX, float worldZ)
+        public SpawnableActor(ulong id, string name, string spriteRole, float worldX, float worldZ, int seed)
         {
             Id = id;
             Name = name;
+            SpriteRole = spriteRole;
             WorldX = worldX;
             WorldZ = worldZ;
+            Seed = seed;
         }
     }
 

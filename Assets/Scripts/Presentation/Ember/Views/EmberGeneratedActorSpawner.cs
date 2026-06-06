@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EmberCrpg.Data.GeneratedAssets;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.Interaction;
@@ -163,7 +164,7 @@ namespace EmberCrpg.Presentation.Ember.Views
             billboard.transform.localPosition = new Vector3(0f, 0.9f, 0f);
 
             var renderer = billboard.AddComponent<SpriteRenderer>();
-            renderer.sprite = ResolvePlaceholderSprite();
+            renderer.sprite = ResolvePlaceholderSprite(candidate);
             renderer.sortingOrder = 10;
             FitBillboardToPlayableHeight(billboard.transform, renderer, _billboardTargetHeight);
             billboard.AddComponent<CameraFacingBillboard>();
@@ -283,8 +284,11 @@ namespace EmberCrpg.Presentation.Ember.Views
         // effectively guaranteed, so a spawned billboard almost always gets real character art. Only if
         // the registry is missing/empty do we fall back to a generated sprite — and that sprite is sized
         // to read at the SAME height as the others, so it can never balloon to fill the screen.
-        private Sprite ResolvePlaceholderSprite()
+        private Sprite ResolvePlaceholderSprite(SpawnableActor candidate)
         {
+            var generated = ResolveGeneratedSprite(candidate);
+            if (generated != null) return generated;
+
             if (_spriteRegistry != null && _placeholderSpriteKeys != null)
             {
                 for (int i = 0; i < _placeholderSpriteKeys.Length; i++)
@@ -297,6 +301,22 @@ namespace EmberCrpg.Presentation.Ember.Views
                 }
             }
             return GetOrCreateFallbackSprite();
+        }
+
+        private static Sprite ResolveGeneratedSprite(SpawnableActor candidate)
+        {
+            var database = GeneratedAssetRuntimeDatabase.Current;
+            if (GeneratedNpcBillboardResolver.TryResolveRecord(database, candidate.SpriteRole, candidate.Seed, out var record))
+            {
+                var librarySprite = GeneratedCoreSpriteLoader.TryLoadRelativeSprite(
+                    string.IsNullOrWhiteSpace(record.spritePath) ? record.relativeAssetPath : record.spritePath,
+                    record.stableId);
+                if (librarySprite != null)
+                    return librarySprite;
+            }
+
+            var fallbackCoreId = GeneratedNpcBillboardResolver.BuildFallbackCoreId(candidate.SpriteRole);
+            return string.IsNullOrEmpty(fallbackCoreId) ? null : GeneratedCoreSpriteLoader.TryLoadPortrait(fallbackCoreId);
         }
 
         private static bool IsPortraitKey(string key)

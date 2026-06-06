@@ -10,6 +10,11 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
 {
     public static class GeneratedTextureImportUtility
     {
+        public static void ApplyExistingColorTextureSettings(string assetPath, GeneratedAssetPipelineSettings settings, bool repeat, bool sRgb)
+        {
+            ApplyColorTextureSettings(assetPath, settings, repeat, sRgb);
+        }
+
         public static GeneratedTextureValidationReport ImportAlbedo(GeneratedAssetRecord record, string sourcePngPath, GeneratedAssetPipelineSettings settings)
         {
             var target = GeneratedTexturePathPolicy.ResolveAlbedoPath(record);

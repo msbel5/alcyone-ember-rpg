@@ -20,38 +20,60 @@ namespace EmberCrpg.Presentation.Ember.Sprites
 
         public static Sprite TryLoadPortrait(string id)
         {
-            var key = NormalizePortraitId(id);
+            var key = NormalizeCoreId(id);
             if (string.IsNullOrEmpty(key)) return null;
 
-            var path = ResolveExistingPath(key);
+            var path = ResolveExistingCorePath(key);
             if (string.IsNullOrEmpty(path)) return null;
-            if (!GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) return null;
+            if (IsManagedCoreId(key) && !GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) return null;
 
+            return LoadCachedSprite(key, path);
+        }
+
+        public static Sprite TryLoadRelativeSprite(string assetsRelativePath, string cacheKey = null)
+        {
+            if (string.IsNullOrWhiteSpace(assetsRelativePath)) return null;
+            var path = ResolveExistingAssetPath(assetsRelativePath);
+            if (string.IsNullOrEmpty(path)) return null;
+            return LoadCachedSprite(string.IsNullOrWhiteSpace(cacheKey) ? assetsRelativePath : cacheKey, path);
+        }
+
+        private static Sprite LoadCachedSprite(string cacheKey, string path)
+        {
             var ticks = File.GetLastWriteTimeUtc(path).Ticks;
-            if (Cache.TryGetValue(key, out var cached)
+            if (Cache.TryGetValue(cacheKey, out var cached)
                 && cached.Sprite != null
                 && string.Equals(cached.Path, path, StringComparison.Ordinal)
                 && cached.LastWriteTicks == ticks)
                 return cached.Sprite;
 
-            var sprite = LoadSprite(path, key);
+            var sprite = LoadSprite(path, cacheKey);
             if (sprite != null)
-                Cache[key] = new CachedSprite { Path = path, LastWriteTicks = ticks, Sprite = sprite };
+                Cache[cacheKey] = new CachedSprite { Path = path, LastWriteTicks = ticks, Sprite = sprite };
             return sprite;
         }
 
-        private static string NormalizePortraitId(string id)
+        private static string NormalizeCoreId(string id)
         {
             if (string.IsNullOrWhiteSpace(id)) return string.Empty;
             var key = id.Trim().ToLowerInvariant();
             if (key == "dm_portrait") return key;
+            if (key.StartsWith("npc_", StringComparison.Ordinal))
+                return key;
             if (key.StartsWith("portrait_npc_", StringComparison.Ordinal)
                 && key != "portrait_npc_placeholder")
                 return key;
             return string.Empty;
         }
 
-        private static string ResolveExistingPath(string key)
+        private static bool IsManagedCoreId(string key)
+        {
+            return key == "dm_portrait"
+                || key.StartsWith("npc_", StringComparison.Ordinal)
+                || (key.StartsWith("portrait_npc_", StringComparison.Ordinal) && key != "portrait_npc_placeholder");
+        }
+
+        private static string ResolveExistingCorePath(string key)
         {
             var fileName = key + ".png";
             string[] candidates =
@@ -73,6 +95,27 @@ namespace EmberCrpg.Presentation.Ember.Sprites
                 }
             }
             return string.Empty;
+        }
+
+        private static string ResolveExistingAssetPath(string assetsRelativePath)
+        {
+            var normalized = (assetsRelativePath ?? string.Empty).Replace('\\', '/').Trim();
+            if (string.IsNullOrEmpty(normalized)) return string.Empty;
+
+            if (normalized.StartsWith("Assets/Generated/Core/", StringComparison.OrdinalIgnoreCase))
+            {
+                var fileName = Path.GetFileName(normalized);
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    var generatedCore = ResolveExistingCorePath(Path.GetFileNameWithoutExtension(fileName));
+                    if (!string.IsNullOrEmpty(generatedCore))
+                        return generatedCore;
+                }
+            }
+
+            var projectRelative = normalized.Replace('/', Path.DirectorySeparatorChar);
+            var projectPath = Path.Combine(ProjectRoot(), projectRelative);
+            return File.Exists(projectPath) ? projectPath : string.Empty;
         }
 
         private static Sprite LoadSprite(string path, string key)

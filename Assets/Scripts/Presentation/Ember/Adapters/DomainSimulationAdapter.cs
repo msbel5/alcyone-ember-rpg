@@ -360,10 +360,43 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 list.Add(new SpawnableActor(
                     actor.Id.Value,
                     actor.Name ?? string.Empty,
+                    ResolveGeneratedSpriteRole(actor),
                     actor.Position.X - origin.X,
-                    actor.Position.Y - origin.Y));
+                    actor.Position.Y - origin.Y,
+                    StableSeed(actor.Id.Value)));
             }
             return list;
+        }
+
+        private string ResolveGeneratedSpriteRole(ActorRecord actor)
+        {
+            if (actor == null) return string.Empty;
+            if (_world?.NpcSeeds != null && actor.Id.Value >= GeneratedNpcActorOffset)
+            {
+                var npcId = new EmberCrpg.Domain.Worldgen.NpcId(actor.Id.Value - GeneratedNpcActorOffset);
+                var npc = _world.NpcSeeds.FirstOrDefault(candidate => candidate != null && candidate.Id.Equals(npcId));
+                if (npc != null)
+                    return "npc_" + npc.Role.ToString().ToLowerInvariant();
+            }
+
+            switch (actor.Role)
+            {
+                case ActorRole.Merchant: return "npc_merchant";
+                case ActorRole.Guard: return "npc_guard";
+                case ActorRole.Enemy: return "npc_bandit";
+                case ActorRole.Talker: return "npc_sage";
+                default: return "npc_rogue";
+            }
+        }
+
+        private static int StableSeed(ulong value)
+        {
+            unchecked
+            {
+                var folded = value ^ (value >> 32);
+                var seed = (int)(folded & 0x7fffffffUL);
+                return seed == 0 ? 1 : seed;
+            }
         }
 
         public bool TryReadWorksite(string siteName, out WorksiteViewState state)
