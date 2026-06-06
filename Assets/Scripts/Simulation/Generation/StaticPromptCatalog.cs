@@ -9,7 +9,11 @@ namespace EmberCrpg.Simulation.Generation
     {
         public const string EmberStyleHeader = "dark-fantasy ember-warm palette, painterly low-saturation, transparent background, single subject centered";
         public const string EmberCharacterPortraitHeader = EmberStyleHeader + ", exactly one person, centered character bust, no second person, no crowd";
-        public const string EmberNpcSpriteHeader = EmberStyleHeader + ", retro fantasy CRPG style, one solitary character, exactly one person, full-body character sprite, centered full body, standing, camera-facing game sprite, neutral pose, clean silhouette, hands visible, boots visible, plain studio backdrop, even lighting, no cast shadow, consistent ember-lit palette, no second person, no crowd";
+        // POSITIVE ONLY. SDXL-Turbo here runs at guidance 0 with no negative conditioning, so every word
+        // is a positive token. Avoid "sprite"/"game sprite"/"character sheet" vocabulary (those correlate
+        // with turnaround/design SHEETS in SDXL's training data) and avoid all "no X" phrases (CLIP reads
+        // "no second person" as the tokens "second person"). Pure constructive single-figure framing only.
+        public const string EmberNpcSpriteHeader = EmberStyleHeader + ", retro dark-fantasy CRPG, a single lone individual, one person standing alone, full body shown head to boots, facing forward, centered by itself, plain neutral studio backdrop, even soft lighting, consistent ember-lit palette";
         public const string EmberFloorHeader = "dark-fantasy retro fantasy material sample, seamless tileable floor material swatch, albedo only, flat diffuse color, top-down orthographic, evenly lit, no cast shadows, no baked lighting, no central subject";
         public const string EmberWallHeader = "dark-fantasy retro fantasy material sample, seamless tileable wall material swatch, albedo only, flat diffuse color, fronto-parallel orthographic, evenly lit, no cast shadows, no baked lighting, no central subject";
         public const string EmberNegativeFooter = "no text, no watermark, no border, no UI elements, no signature, no logo";
@@ -152,7 +156,12 @@ namespace EmberCrpg.Simulation.Generation
 
         private static void AddNpcSprite(Dictionary<string, string> prompts, string role, string body)
         {
-            prompts["npc_" + role] = EmberNpcSpriteHeader + ", " + body + ", " + EmberNpcSpritePromptTail + ", " + EmberNegativeFooter;
+            // Keep the POSITIVE purely constructive. The suppression terms (EmberNpcSpritePromptTail /
+            // EmberNegativeFooter) are "no X" phrases that, baked into this positive string on a guidance-0
+            // Turbo pipeline, were INJECTING "character sheet / twin / extra body" and producing the
+            // multi-figure sheets. They belong in the negative prompt (EmberGenerationNegative), which
+            // CFG-capable pipelines consume and Turbo simply ignores.
+            prompts["npc_" + role] = EmberNpcSpriteHeader + ", " + body;
         }
 
         private static void AddGeometric(
