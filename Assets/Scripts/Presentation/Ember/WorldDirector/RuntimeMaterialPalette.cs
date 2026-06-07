@@ -1,5 +1,5 @@
-using System.IO;
 using EmberCrpg.Domain.Overland;
+using EmberCrpg.Presentation.Ember.Sprites;
 using UnityEngine;
 
 namespace EmberCrpg.Presentation.Ember.WorldDirector
@@ -47,34 +47,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return mat;
         }
 
-        // Loads a generated PNG (persistent build path, then editor/streaming) into a Texture2D, or null.
-        // Mirrors the path resolution the Options Generated-Assets panel uses.
+        // Loads only provenance-fresh generated Core textures; stale cache entries fall through to tint.
         public static Texture2D LoadGeneratedTexture(string assetId)
         {
-            if (string.IsNullOrEmpty(assetId)) return null;
-            foreach (var path in GeneratedAssetPaths(assetId))
-            {
-                try
-                {
-                    if (!File.Exists(path)) continue;
-                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, true);
-                    if (tex.LoadImage(File.ReadAllBytes(path))) { tex.wrapMode = TextureWrapMode.Repeat; return tex; }
-                }
-                catch { /* a missing/locked asset must never break world realization */ }
-            }
-            return null;
-        }
-
-        private static string[] GeneratedAssetPaths(string assetId)
-        {
-            string file = assetId + ".png";
-            string editorRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
-            return new[]
-            {
-                Path.Combine(Application.persistentDataPath, "Generated", "Core", file),
-                Path.Combine(editorRoot, "Assets", "Generated", "Core", file),
-                Path.Combine(Application.streamingAssetsPath, "Generated", "Core", file),
-            };
+            return GeneratedCoreTextureLoader.TryLoad(assetId, TextureWrapMode.Repeat, FilterMode.Bilinear, true);
         }
 
         // Best-fit generated floor texture per biome (reuses the env_* floor assets until biome-specific

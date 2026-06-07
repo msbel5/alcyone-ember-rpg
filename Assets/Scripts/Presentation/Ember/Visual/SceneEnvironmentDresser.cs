@@ -1,5 +1,4 @@
-using System.IO;
-using EmberCrpg.Simulation.Generation;
+using EmberCrpg.Presentation.Ember.Sprites;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -76,37 +75,7 @@ namespace EmberCrpg.Presentation.Ember.Visual
         /// </summary>
         private static Texture2D TryLoadGenerated(string key)
         {
-            string fileName = key + ".png";
-            string[] candidates =
-            {
-                // Editor / play mode: <projectRoot>/Assets/Generated/Core
-                Path.Combine(Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath,
-                             "Assets", "Generated", "Core", fileName),
-                // Built player (runtime-writable): persistentDataPath/Generated/Core
-                Path.Combine(Application.persistentDataPath, "Generated", "Core", fileName),
-                // Optional bundled location
-                Path.Combine(Application.streamingAssetsPath, "Generated", "Core", fileName),
-            };
-
-            for (int i = 0; i < candidates.Length; i++)
-            {
-                try
-                {
-                    var path = candidates[i];
-                    if (string.IsNullOrEmpty(path) || !File.Exists(path)) continue;
-                    if (!GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) continue;
-                    var bytes = File.ReadAllBytes(path);
-                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                    if (!tex.LoadImage(bytes)) { Object.Destroy(tex); continue; }
-                    tex.name = key;
-                    return tex;
-                }
-                catch
-                {
-                    // Unreadable candidate — try the next location, never throw into scene load.
-                }
-            }
-            return null;
+            return GeneratedCoreTextureLoader.TryLoad(key, TextureWrapMode.Repeat, FilterMode.Bilinear, false);
         }
 
     }

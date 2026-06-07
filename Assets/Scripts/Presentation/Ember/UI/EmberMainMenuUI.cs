@@ -7,6 +7,7 @@ using EmberCrpg.Domain.Generation;
 using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.Loading;
 using EmberCrpg.Presentation.Ember.Runtime;
+using EmberCrpg.Presentation.Ember.Sprites;
 using EmberCrpg.Presentation.Ember.UI.Options;
 using TMPro;
 using EmberCrpg.Simulation.Generation;
@@ -247,18 +248,7 @@ namespace EmberCrpg.Presentation.Ember.UI
 
         private static Texture2D LoadGeneratedTexture(string entryId)
         {
-            var root = ForgeRuntimeHelpers.ResolveRuntimeRoot();
-            var path = Path.Combine(root, "Assets", "Generated", "Core", entryId + ".png");
-            if (!File.Exists(path)) return null;
-            if (!GeneratedAssetProvenance.IsFreshCoreAsset(entryId, path)) return null;
-            var bytes = File.ReadAllBytes(path);
-            var texture = ForgeRuntimeHelpers.TryDecodeTexture(bytes);
-            if (texture != null)
-            {
-                texture.wrapMode = TextureWrapMode.Clamp;
-                texture.filterMode = FilterMode.Bilinear;
-            }
-            return texture;
+            return GeneratedCoreTextureLoader.TryLoad(entryId, TextureWrapMode.Clamp, FilterMode.Bilinear, false);
         }
 
         private static async Task RunScenarioAssetTopUpAsync()

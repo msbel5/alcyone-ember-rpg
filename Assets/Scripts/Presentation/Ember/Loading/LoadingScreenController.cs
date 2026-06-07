@@ -1,8 +1,7 @@
 // Why this file is intentionally long: it implements the full PRD loading-screen lifecycle, visible progress, tips, backdrop, and fade behavior.
 using System;
 using System.Collections.Generic;
-using System.IO;
-using EmberCrpg.Simulation.Generation;
+using EmberCrpg.Presentation.Ember.Sprites;
 using EmberCrpg.Ui.Foundation;
 using UnityEngine;
 
@@ -217,29 +216,7 @@ namespace EmberCrpg.Presentation.Ember.Loading
 
         private static Texture2D TryLoadGeneratedTexture(string entryId)
         {
-            if (string.IsNullOrWhiteSpace(entryId)) return null;
-            var parent = Directory.GetParent(Application.dataPath);
-            var root = parent != null ? parent.FullName : Application.dataPath;
-            var path = Path.Combine(root, "Assets", "Generated", "Core", entryId + ".png");
-            if (!File.Exists(path)) return null;
-            if (!GeneratedAssetProvenance.IsFreshCoreAsset(entryId, path)) return null;
-            try
-            {
-                var bytes = File.ReadAllBytes(path);
-                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                if (tex.LoadImage(bytes))
-                {
-                    tex.wrapMode = TextureWrapMode.Clamp;
-                    tex.filterMode = FilterMode.Bilinear;
-                    return tex;
-                }
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning("[LoadingScreen] Failed to load generated texture '" + entryId + "': " + ex.Message);
-                return null;
-            }
+            return GeneratedCoreTextureLoader.TryLoad(entryId, TextureWrapMode.Clamp, FilterMode.Bilinear, false);
         }
 
         public void ApplyBackdrop(Texture2D texture)
