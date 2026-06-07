@@ -23,8 +23,8 @@ namespace EmberCrpg.Editor.Ember.Common
         public const string ScenesRoot = "Assets/Scenes";
         public const string EmberScenesDir = ScenesRoot + "/Ember";
 
-        public const string MaterialsRoot = "Assets/Art/Materials";
-        public const string PrefabsRoot = "Assets/Art/Prefabs";
+        public const string MaterialsRoot = "Assets/Generated/Materials";
+        public const string PrefabsRoot = "Assets/Generated/Prefabs";
 
         public const string AssetManifestPath = ArtRoot + "/manifest.json";
     }

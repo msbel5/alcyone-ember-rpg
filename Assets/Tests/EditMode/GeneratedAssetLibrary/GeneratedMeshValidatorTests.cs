@@ -27,8 +27,8 @@ namespace EmberCrpg.Tests.EditMode.GeneratedAssets
             var record = new GeneratedAssetRecord
             {
                 kind = GeneratedAssetKind.LargeStructureMesh,
-                generatedMeshPath = "Assets/Art/Prefabs/house.glb",
-                prefabPath = "Assets/Art/Prefabs/house.prefab",
+                generatedMeshPath = "Assets/Generated/Prefabs/house.glb",
+                prefabPath = "Assets/Generated/Prefabs/house.prefab",
                 triangleCount = 60000,
                 hasUVs = true,
                 hasNormals = true,
@@ -48,8 +48,8 @@ namespace EmberCrpg.Tests.EditMode.GeneratedAssets
             var record = new GeneratedAssetRecord
             {
                 kind = GeneratedAssetKind.SmallPropMesh,
-                generatedMeshPath = "Assets/Art/Prefabs/prop.fbx",
-                prefabPath = "Assets/Art/Prefabs/prop.prefab",
+                generatedMeshPath = "Assets/Generated/Prefabs/prop.fbx",
+                prefabPath = "Assets/Generated/Prefabs/prop.prefab",
                 hasUVs = true,
                 hasNormals = true,
                 licenseStatus = GeneratedAssetLicenseStatus.Forbidden,
