@@ -420,6 +420,9 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         }
         public Sprite GetSprite(string name)
         {
+            var generatedSprite = GeneratedCoreSpriteLoader.TryLoadByName(name);
+            if (generatedSprite != null) return generatedSprite;
+
             var registrySprite = _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;
             return registrySprite != null ? registrySprite : GeneratedCoreSpriteLoader.TryLoadPortrait(name);
         }

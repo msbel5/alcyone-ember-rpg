@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace EmberCrpg.Presentation.Ember.Sprites
 {
-    /// <summary>Loads generated Core portrait PNGs into runtime sprites, with a tiny timestamp cache.</summary>
+    /// <summary>Loads generated Core PNGs into runtime sprites, with a tiny timestamp cache.</summary>
     public static class GeneratedCoreSpriteLoader
     {
         private sealed class CachedSprite
@@ -18,23 +18,33 @@ namespace EmberCrpg.Presentation.Ember.Sprites
 
         private static readonly Dictionary<string, CachedSprite> Cache = new Dictionary<string, CachedSprite>(StringComparer.Ordinal);
 
+        public static Sprite TryLoadByName(string name)
+        {
+            return GeneratedCoreSpriteNameMapper.TryMap(name, out var coreId) ? TryLoadCoreId(coreId) : null;
+        }
+
         public static Sprite TryLoadPortrait(string id)
         {
-            var key = NormalizeCoreId(id);
+            var key = NormalizePortraitCoreId(id);
+            if (string.IsNullOrEmpty(key)) return null;
+            return TryLoadCoreId(key);
+        }
+
+        private static Sprite TryLoadCoreId(string id)
+        {
+            var key = NormalizeCoreKey(id);
             if (string.IsNullOrEmpty(key)) return null;
 
-            var managed = IsManagedCoreId(key);
-            // Walk every candidate root in priority order and return the FIRST copy that exists AND -- for managed
-            // ids -- passes the provenance freshness gate. Falling through a stale candidate (instead of returning
-            // null on the first hit) is essential: a stale dm_portrait left in persistentDataPath must NOT shadow
-            // the fresh, provenance-stamped copy shipped under <build>/Assets/Generated/Core.
+            // Walk every candidate root in priority order and return the FIRST copy that exists AND passes the
+            // provenance freshness gate. Falling through a stale candidate prevents persistentDataPath junk from
+            // shadowing fresh build/project generated Core assets.
             foreach (var path in CoreCandidatePaths(key))
             {
                 bool exists;
                 try { exists = File.Exists(path); }
                 catch { exists = false; }
                 if (!exists) continue;
-                if (managed && !GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) continue;
+                if (!GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) continue;
                 return LoadCachedSprite(key, path);
             }
             return null;
@@ -63,10 +73,10 @@ namespace EmberCrpg.Presentation.Ember.Sprites
             return sprite;
         }
 
-        private static string NormalizeCoreId(string id)
+        private static string NormalizePortraitCoreId(string id)
         {
             if (string.IsNullOrWhiteSpace(id)) return string.Empty;
-            var key = id.Trim().ToLowerInvariant();
+            var key = NormalizeCoreKey(id);
             if (key == "dm_portrait") return key;
             if (key.StartsWith("npc_", StringComparison.Ordinal))
                 return key;
@@ -76,11 +86,11 @@ namespace EmberCrpg.Presentation.Ember.Sprites
             return string.Empty;
         }
 
-        private static bool IsManagedCoreId(string key)
+        private static string NormalizeCoreKey(string id)
         {
-            return key == "dm_portrait"
-                || key.StartsWith("npc_", StringComparison.Ordinal)
-                || (key.StartsWith("portrait_npc_", StringComparison.Ordinal) && key != "portrait_npc_placeholder");
+            return string.IsNullOrWhiteSpace(id)
+                ? string.Empty
+                : id.Trim().ToLowerInvariant().Replace('-', '_').Replace(' ', '_');
         }
 
         private static IEnumerable<string> CoreCandidatePaths(string key)
@@ -91,13 +101,16 @@ namespace EmberCrpg.Presentation.Ember.Sprites
             yield return Path.Combine(Application.streamingAssetsPath, "Generated", "Core", fileName);
         }
 
-        private static string ResolveExistingCorePath(string key)
+        private static string ResolveFreshCorePath(string key)
         {
+            key = NormalizeCoreKey(key);
+            if (string.IsNullOrEmpty(key)) return string.Empty;
+
             foreach (var candidate in CoreCandidatePaths(key))
             {
                 try
                 {
-                    if (File.Exists(candidate)) return candidate;
+                    if (File.Exists(candidate) && GeneratedAssetProvenance.IsFreshCoreAsset(key, candidate)) return candidate;
                 }
                 catch
                 {
@@ -117,7 +130,7 @@ namespace EmberCrpg.Presentation.Ember.Sprites
                 var fileName = Path.GetFileName(normalized);
                 if (!string.IsNullOrEmpty(fileName))
                 {
-                    var generatedCore = ResolveExistingCorePath(Path.GetFileNameWithoutExtension(fileName));
+                    var generatedCore = ResolveFreshCorePath(Path.GetFileNameWithoutExtension(fileName));
                     if (!string.IsNullOrEmpty(generatedCore))
                         return generatedCore;
                 }
