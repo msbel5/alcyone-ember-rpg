@@ -34,11 +34,39 @@ namespace EmberCrpg.Editor.Ember.Build
                 if (report.summary.result != BuildResult.Succeeded)
                     throw new System.InvalidOperationException("Windows64 build failed: " + report.summary.result);
                 UnityEngine.Debug.Log("[Windows64BuildMenu] Build succeeded: " + output + " bytes=" + report.summary.totalSize);
+                CopyGeneratedCoreToBuild(Path.GetDirectoryName(output));
             }
             finally
             {
                 PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Standalone, oldStripping);
                 PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, oldBackend);
+            }
+        }
+
+        // The player loads generated assets from <buildDir>/Assets/Generated/Core (ForgeRuntimeHelpers /
+        // GeneratedCoreSpriteLoader resolve the runtime root as the parent of the _Data folder). Unity does NOT
+        // bundle the project's Assets/Generated/Core there, so ship the editor-generated PNGs explicitly.
+        private static void CopyGeneratedCoreToBuild(string buildDir)
+        {
+            try
+            {
+                var projectRoot = System.IO.Directory.GetParent(UnityEngine.Application.dataPath).FullName;
+                var src = Path.Combine(projectRoot, "Assets", "Generated", "Core");
+                if (!Directory.Exists(src)) return;
+                var dst = Path.Combine(buildDir, "Assets", "Generated", "Core");
+                if (Directory.Exists(dst)) Directory.Delete(dst, true);
+                Directory.CreateDirectory(dst);
+                var count = 0;
+                foreach (var file in Directory.GetFiles(src, "*.png", SearchOption.TopDirectoryOnly))
+                {
+                    File.Copy(file, Path.Combine(dst, Path.GetFileName(file)), true);
+                    count++;
+                }
+                UnityEngine.Debug.Log("[Windows64BuildMenu] Copied " + count + " generated Core PNGs to " + dst);
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogWarning("[Windows64BuildMenu] Generated Core copy failed: " + ex.Message);
             }
         }
 
