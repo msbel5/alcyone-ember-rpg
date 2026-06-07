@@ -1,7 +1,6 @@
 using EmberCrpg.Editor.Ember.Common;
 using EmberCrpg.Editor.Ember.SceneBuilders;
 using EmberCrpg.Editor.Ember.SceneRecipes;
-using EmberCrpg.Editor.Ember.Tools;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 
@@ -24,7 +23,6 @@ namespace EmberCrpg.Editor.Ember.Menu
         [MenuItem(Root + "All - Rebuild surviving scenes")]
         public static void BuildAll()
         {
-            SpriteRegistryAutoBuilder.Build();
             RunUiRecipe(new MainMenuSceneRecipe());
             RunUiRecipe(new CharacterCreationSceneRecipe());
             RunRecipe(new GeneratedWorldSceneRecipe());

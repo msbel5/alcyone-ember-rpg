@@ -3,7 +3,7 @@ using UnityEditor;
 namespace EmberCrpg.Editor.Ember.AssetImport
 {
     /// <summary>
-    /// Applies declarative import profiles when Unity imports a texture under <c>Assets/Art</c>.
+    /// Applies declarative import profiles when Unity imports a generated texture.
     /// The postprocessor is a thin dispatcher: classify → look up profile → mutate the
     /// <see cref="TextureImporter"/>. All rule data lives in the profile classes.
     /// </summary>

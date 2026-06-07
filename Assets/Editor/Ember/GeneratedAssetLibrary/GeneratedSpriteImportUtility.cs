@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.IO;
 using EmberCrpg.Data.GeneratedAssets;
 using EmberCrpg.Editor.Ember.AssetImport;
-using EmberCrpg.Editor.Ember.Tools;
 using UnityEditor;
 using UnityEngine;
 
@@ -44,7 +43,6 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
             if (settings.autoCreateBillboardPrefab)
                 record.prefabPath = GeneratedBillboardPrefabBuilder.CreateOrUpdate(record, settings);
 
-            SpriteRegistryAutoBuilder.Build();
             AssetDatabase.SaveAssets();
         }
 

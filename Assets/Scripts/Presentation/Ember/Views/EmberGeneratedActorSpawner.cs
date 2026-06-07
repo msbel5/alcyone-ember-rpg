@@ -38,7 +38,7 @@ namespace EmberCrpg.Presentation.Ember.Views
     /// Editor builder's AssetDatabase/SerializedObject paths are unavailable at play time).
     ///
     /// SPRITE + SIZE + SCATTER (SOUL-04 visual fix): each billboard draws from Generated/Core by role
-    /// (npc_guard, npc_sage, ...). Hand-authored Assets/Art sprites are deliberately not a normal path.
+    /// (npc_guard, npc_sage, ...). Hand-authored sprites are deliberately not a normal path.
     /// Missing generated art falls back to a small neutral quad so failures are visible without reintroducing
     /// the old Art/Characters dependency.
     /// </summary>

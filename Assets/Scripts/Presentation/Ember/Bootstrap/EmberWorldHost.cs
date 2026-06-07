@@ -24,8 +24,6 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ISaveLoadSource, ISaveLoadCommandSink,
         ILevelUpSource, ILevelUpCommandSink
     {
-        [SerializeField] private SpriteRegistry _spriteRegistry;
-
         private static IReadOnlyList<string> Topics => EmberRuntimeOptionsProvider.Current.WorldHost.DefaultTopics;
 
         private EmberTickDriver _tick;
@@ -421,8 +419,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             var generatedSprite = GeneratedCoreSpriteLoader.TryLoadByName(name);
             if (generatedSprite != null) return generatedSprite;
 
-            var registrySprite = _spriteRegistry != null ? _spriteRegistry.GetSprite(name) : null;
-            return registrySprite != null ? registrySprite : GeneratedCoreSpriteLoader.TryLoadPortrait(name);
+            return GeneratedCoreSpriteLoader.TryLoadPortrait(name);
         }
 
         /// <summary>

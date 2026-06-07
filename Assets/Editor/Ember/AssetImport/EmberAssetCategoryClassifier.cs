@@ -6,7 +6,7 @@ namespace EmberCrpg.Editor.Ember.AssetImport
     /// <summary>
     /// Maps an asset import path to an <see cref="AssetCategory"/>.
     /// Pure function over the path string. Folder layout under
-    /// <see cref="EmberAssetPaths.ArtRoot"/> is the only signal.
+    /// <see cref="EmberAssetPaths.GeneratedRoot"/> is the only signal.
     /// </summary>
     public static class EmberAssetCategoryClassifier
     {

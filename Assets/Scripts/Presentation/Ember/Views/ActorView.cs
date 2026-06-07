@@ -30,9 +30,7 @@ namespace EmberCrpg.Presentation.Ember.Views
     // drives SOUL-03 (ScheduleSystem) movement on the spawned views too. The spawn is CAPPED to the
     // nearest N (<=12) so a 750-NPC world never floods the scene. The construction (root + "Billboard"
     // child + SpriteRenderer + CameraFacingBillboard + ActorView, mirroring EmberWorldspaceBuilder.
-    // SpawnActor) is build-safe and uses the host SpriteRegistry's placeholder sprite; choosing a real
-    // per-role sprite/material and confirming billboard facing/scale is the only part that still wants a
-    // Unity Editor screenshot (see EmberGeneratedActorSpawner's header for the precise visual-proof TODO).
+    // SpawnActor) is build-safe and uses generated-core NPC sprites with a neutral generated placeholder.
     [DisallowMultipleComponent]
     public sealed class ActorView : MonoBehaviour, IDamageSink
     {

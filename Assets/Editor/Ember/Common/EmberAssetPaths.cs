@@ -5,20 +5,20 @@ namespace EmberCrpg.Editor.Ember.Common
 {
     public static class EmberAssetPaths
     {
-        public const string ArtRoot = "Assets/Art";
-        public const string CharactersDir = ArtRoot + "/Characters";
-        public const string ItemsDir = ArtRoot + "/Items";
-        public const string SpellsDir = ArtRoot + "/Spells";
-        public const string PortraitsDir = ArtRoot + "/Portraits";
-        public const string TilesDir = ArtRoot + "/Tiles";
-        public const string UiRoot = ArtRoot + "/UI";
+        public const string GeneratedRoot = "Assets/Generated";
+        public const string CharactersDir = GeneratedRoot + "/Sprites/Characters";
+        public const string ItemsDir = GeneratedRoot + "/Sprites/Items";
+        public const string SpellsDir = GeneratedRoot + "/Sprites/Spells";
+        public const string PortraitsDir = GeneratedRoot + "/Sprites/Portraits";
+        public const string TilesDir = GeneratedRoot + "/Textures";
+        public const string UiRoot = GeneratedRoot + "/UI";
         public const string UiBannersDir = UiRoot + "/Banners";
         public const string UiCombatHudDir = UiRoot + "/CombatHud";
         public const string UiStatusBarsDir = UiRoot + "/StatusBars";
         public const string UiStatusIconsDir = UiRoot + "/StatusIcons";
         public const string UiCommonDir = UiRoot + "/Common";
-        public const string BodySilhouettesDir = ArtRoot + "/BodySilhouettes";
-        public const string UiPlanDir = ArtRoot + "/UiPlan";
+        public const string BodySilhouettesDir = GeneratedRoot + "/BodySilhouettes";
+        public const string UiPlanDir = GeneratedRoot + "/UiPlan";
 
         public const string ScenesRoot = "Assets/Scenes";
         public const string EmberScenesDir = ScenesRoot + "/Ember";
@@ -26,6 +26,6 @@ namespace EmberCrpg.Editor.Ember.Common
         public const string MaterialsRoot = "Assets/Generated/Materials";
         public const string PrefabsRoot = "Assets/Generated/Prefabs";
 
-        public const string AssetManifestPath = ArtRoot + "/manifest.json";
+        public const string AssetManifestPath = GeneratedRoot + "/manifest.json";
     }
 }
