@@ -56,13 +56,23 @@ namespace EmberCrpg.Editor.Ember.Build
                 var dst = Path.Combine(buildDir, "Assets", "Generated", "Core");
                 if (Directory.Exists(dst)) Directory.Delete(dst, true);
                 Directory.CreateDirectory(dst);
-                var count = 0;
+                var pngCount = 0;
                 foreach (var file in Directory.GetFiles(src, "*.png", SearchOption.TopDirectoryOnly))
                 {
                     File.Copy(file, Path.Combine(dst, Path.GetFileName(file)), true);
-                    count++;
+                    pngCount++;
                 }
-                UnityEngine.Debug.Log("[Windows64BuildMenu] Copied " + count + " generated Core PNGs to " + dst);
+                // The runtime provenance gate (GeneratedAssetProvenance.IsFreshCoreAsset) requires the matching
+                // "<asset>.png.promptmeta" sidecar next to each PNG. Without it the player treats every shipped
+                // managed asset (npc_*, portrait_npc_*, dm_portrait) as stale, rejects the clean copy at load, and
+                // regenerates it on the main menu -- overwriting the editor-gated art. Ship the sidecars too.
+                var metaCount = 0;
+                foreach (var file in Directory.GetFiles(src, "*.promptmeta", SearchOption.TopDirectoryOnly))
+                {
+                    File.Copy(file, Path.Combine(dst, Path.GetFileName(file)), true);
+                    metaCount++;
+                }
+                UnityEngine.Debug.Log("[Windows64BuildMenu] Copied " + pngCount + " generated Core PNGs and " + metaCount + " provenance sidecars to " + dst);
             }
             catch (System.Exception ex)
             {

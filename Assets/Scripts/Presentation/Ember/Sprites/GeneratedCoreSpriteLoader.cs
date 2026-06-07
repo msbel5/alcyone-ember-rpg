@@ -23,11 +23,21 @@ namespace EmberCrpg.Presentation.Ember.Sprites
             var key = NormalizeCoreId(id);
             if (string.IsNullOrEmpty(key)) return null;
 
-            var path = ResolveExistingCorePath(key);
-            if (string.IsNullOrEmpty(path)) return null;
-            if (IsManagedCoreId(key) && !GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) return null;
-
-            return LoadCachedSprite(key, path);
+            var managed = IsManagedCoreId(key);
+            // Walk every candidate root in priority order and return the FIRST copy that exists AND -- for managed
+            // ids -- passes the provenance freshness gate. Falling through a stale candidate (instead of returning
+            // null on the first hit) is essential: a stale dm_portrait left in persistentDataPath must NOT shadow
+            // the fresh, provenance-stamped copy shipped under <build>/Assets/Generated/Core.
+            foreach (var path in CoreCandidatePaths(key))
+            {
+                bool exists;
+                try { exists = File.Exists(path); }
+                catch { exists = false; }
+                if (!exists) continue;
+                if (managed && !GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) continue;
+                return LoadCachedSprite(key, path);
+            }
+            return null;
         }
 
         public static Sprite TryLoadRelativeSprite(string assetsRelativePath, string cacheKey = null)
@@ -73,21 +83,21 @@ namespace EmberCrpg.Presentation.Ember.Sprites
                 || (key.StartsWith("portrait_npc_", StringComparison.Ordinal) && key != "portrait_npc_placeholder");
         }
 
-        private static string ResolveExistingCorePath(string key)
+        private static IEnumerable<string> CoreCandidatePaths(string key)
         {
             var fileName = key + ".png";
-            string[] candidates =
-            {
-                Path.Combine(Application.persistentDataPath, "Generated", "Core", fileName),
-                Path.Combine(ProjectRoot(), "Assets", "Generated", "Core", fileName),
-                Path.Combine(Application.streamingAssetsPath, "Generated", "Core", fileName),
-            };
+            yield return Path.Combine(Application.persistentDataPath, "Generated", "Core", fileName);
+            yield return Path.Combine(ProjectRoot(), "Assets", "Generated", "Core", fileName);
+            yield return Path.Combine(Application.streamingAssetsPath, "Generated", "Core", fileName);
+        }
 
-            for (int i = 0; i < candidates.Length; i++)
+        private static string ResolveExistingCorePath(string key)
+        {
+            foreach (var candidate in CoreCandidatePaths(key))
             {
                 try
                 {
-                    if (File.Exists(candidates[i])) return candidates[i];
+                    if (File.Exists(candidate)) return candidate;
                 }
                 catch
                 {
