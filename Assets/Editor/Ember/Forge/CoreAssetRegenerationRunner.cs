@@ -46,9 +46,14 @@ namespace EmberCrpg.Editor.Ember.Forge
 
         public static void RunBlocking(CoreAssetRegenerationScope scope)
         {
+            RunBlocking(scope, false);
+        }
+
+        public static void RunBlocking(CoreAssetRegenerationScope scope, bool forceRebuild)
+        {
             try
             {
-                var summary = RunBlockingCore(scope);
+                var summary = RunBlockingCore(scope, forceRebuild);
                 Debug.Log("[CoreAssetRegen] Completed scope=" + scope + " backup=" + summary.BackupRoot);
             }
             finally
@@ -124,7 +129,7 @@ namespace EmberCrpg.Editor.Ember.Forge
             return new CoreAssetRegenerationSummary(scope.ToString(), backupRoot, selected.Count, backedUp, toGenerate.Count, generation.Succeeded, generation.Failed, generation.Placeholders, CountCached(selected, runtimeRoot, catalog));
         }
 
-        private static CoreAssetRegenerationSummary RunBlockingCore(CoreAssetRegenerationScope scope)
+        private static CoreAssetRegenerationSummary RunBlockingCore(CoreAssetRegenerationScope scope, bool forceRebuild)
         {
             var catalog = StaticPromptCatalog.CreateDefault();
             var runtimeRoot = ForgeRuntimeHelpers.ResolveRuntimeRoot();
@@ -137,12 +142,12 @@ namespace EmberCrpg.Editor.Ember.Forge
 
             var stamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
             var backupRoot = Path.Combine(runtimeRoot, "Assets", "Generated", "_backup_" + stamp);
-            var backedUp = BackupStaleEntries(selected, runtimeRoot, backupRoot, catalog);
+            var backedUp = BackupStaleEntries(selected, runtimeRoot, backupRoot, catalog, forceRebuild);
             AssetDatabase.Refresh();
 
             var scan = AssetManifestScanner.ScanAsync(selected, runtimeRoot, CancellationToken.None, catalog).GetAwaiter().GetResult();
             var toGenerate = ResolveGenerationEntries(selected, scan);
-            Debug.Log("[CoreAssetRegen] Scope=" + scope + " selected=" + selected.Count + " staleBackedUp=" + backedUp + " queued=" + toGenerate.Count + ".");
+            Debug.Log("[CoreAssetRegen] Scope=" + scope + " selected=" + selected.Count + " backedUp=" + backedUp + " force=" + forceRebuild + " queued=" + toGenerate.Count + ".");
 
             var settings = LoadSettings();
             // Batchmode executeMethod cannot block the editor thread on an async task that posts continuations
@@ -217,7 +222,7 @@ namespace EmberCrpg.Editor.Ember.Forge
             return new CoreAssetGenerationPhaseSummary(succeeded, failed, placeholders);
         }
 
-        private static int BackupStaleEntries(IReadOnlyList<ManifestEntry> entries, string runtimeRoot, string backupRoot, StaticPromptCatalog catalog)
+        private static int BackupStaleEntries(IReadOnlyList<ManifestEntry> entries, string runtimeRoot, string backupRoot, StaticPromptCatalog catalog, bool forceAll = false)
         {
             var backedUp = 0;
             for (var i = 0; i < entries.Count; i++)
@@ -226,7 +231,7 @@ namespace EmberCrpg.Editor.Ember.Forge
                 if (entry == null || !entry.RequiresGeneration) continue;
                 var absolute = AssetManifestScanner.Resolve(runtimeRoot, entry.ExpectedPath);
                 if (!File.Exists(absolute)) continue;
-                if (GeneratedAssetProvenance.IsFresh(absolute, entry, catalog, out _)) continue;
+                if (!forceAll && GeneratedAssetProvenance.IsFresh(absolute, entry, catalog, out _)) continue;
                 MoveToBackup(absolute, runtimeRoot, backupRoot);
                 MoveToBackup(absolute + ".promptmeta", runtimeRoot, backupRoot);
                 backedUp++;
@@ -347,7 +352,14 @@ namespace EmberCrpg.Editor.Ember.Forge
                 settings.largeComponentWarningRatio,
                 settings.singleFigureUpperBodyFraction <= 0f ? 0.42f : settings.singleFigureUpperBodyFraction,
                 settings.singleFigureUpperBodyMinPixels <= 0 ? 400 : settings.singleFigureUpperBodyMinPixels);
-            var options = new SingleFigureRefinementOptions(settings.singleFigureMaxAttempts, gateThreshold, settings.cropPadding, settings.minimumLargeComponentPixels, settings.largeComponentWarningRatio);
+            var options = new SingleFigureRefinementOptions(
+                settings.singleFigureMaxAttempts,
+                gateThreshold,
+                settings.cropPadding,
+                settings.minimumLargeComponentPixels,
+                settings.largeComponentWarningRatio,
+                rejectFireArtifacts: settings.singleFigureRejectFireArtifacts,
+                fireArtifactMinPixels: settings.singleFigureFireArtifactMinPixels);
             return new SingleFigureRefiningAssetForge(serialized, matte, gate, options, SingleFigureSpritePolicies.NpcOnly, message => Debug.Log(message));
         }
 

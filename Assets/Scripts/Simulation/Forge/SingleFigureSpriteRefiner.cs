@@ -56,21 +56,23 @@ namespace EmberCrpg.Simulation.Forge
                 }
 
                 bestAttempt = ChooseBest(bestAttempt, refined);
-                _log("[SingleFigureGate] " + request.RequestId + " attempt=" + (attempt + 1) + "/" + _options.MaxAttempts + " components=" + refined.Gate.ComponentCount + " upper=" + refined.Gate.UpperBodyComponentCount + " accepted=" + refined.Accepted);
+                _log("[SingleFigureGate] " + request.RequestId + " attempt=" + (attempt + 1) + "/" + _options.MaxAttempts + " components=" + refined.Gate.ComponentCount + " upper=" + refined.Gate.UpperBodyComponentCount + " fire=" + (refined.HasFireArtifact ? 1 : 0) + " accepted=" + refined.Accepted);
                 if (!refined.Accepted) continue;
 
                 stopwatch.Stop();
                 return new AssetGenerationResult(request.RequestId, refined.FinalPng, generated.MimeType, stopwatch.ElapsedMilliseconds, true, string.Empty);
             }
 
-            if (bestAttempt != null)
+            if (bestAttempt != null && _options.AllowBestEffortFallback)
             {
                 stopwatch.Stop();
                 _log("[SingleFigureGate] " + request.RequestId + " fallback=best-of-" + _options.MaxAttempts + " components=" + bestAttempt.Gate.ComponentCount + " accepted=" + bestAttempt.Accepted);
                 return new AssetGenerationResult(request.RequestId, bestAttempt.FinalPng, "image/png", stopwatch.ElapsedMilliseconds, true, string.Empty);
             }
 
-            return await _inner.GenerateAsync(request, cancellationToken).ConfigureAwait(false);
+            stopwatch.Stop();
+            _log("[SingleFigureGate] " + request.RequestId + " rejected_all_attempts=" + _options.MaxAttempts);
+            return AssetGenerationResult.Failed(request.RequestId, "single_figure_gate_rejected_all_attempts");
         }
 
         private RefinedAttempt RefineAttempt(AssetGenerationResult generated)
@@ -78,9 +80,10 @@ namespace EmberCrpg.Simulation.Forge
             var frame = _codec.Decode(generated.ImageBytes);
             var matte = _matteService.Matte(frame.Rgba, frame.Width, frame.Height);
             var gate = _gate.Evaluate(matte);
+            var hasFireArtifact = _options.RejectFireArtifacts && HasFireArtifact(frame.Rgba, frame.Width, frame.Height, matte.SoftAlpha, gate.MainComponentMask);
             ApplyAlpha(frame.Rgba, matte.SoftAlpha, gate.MainComponentMask);
             if (gate.Bounds.Width <= 0 || gate.Bounds.Height <= 0)
-                return new RefinedAttempt(gate, generated.ImageBytes, false);
+                return new RefinedAttempt(gate, generated.ImageBytes, false, hasFireArtifact);
 
             var crop = GeneratedSpriteCropUtility.CropRgba(
                 frame.Width,
@@ -88,7 +91,28 @@ namespace EmberCrpg.Simulation.Forge
                 frame.Rgba,
                 new PixelRect(gate.Bounds.X, gate.Bounds.Y, gate.Bounds.Width, gate.Bounds.Height),
                 _options.CropPadding);
-            return new RefinedAttempt(gate, _codec.Encode(new SpriteImageFrame(crop.Width, crop.Height, crop.Rgba)), gate.IsSingleFigure && !gate.TouchesFrameEdge);
+            return new RefinedAttempt(gate, _codec.Encode(new SpriteImageFrame(crop.Width, crop.Height, crop.Rgba)), gate.IsSingleFigure && !gate.TouchesFrameEdge && !hasFireArtifact, hasFireArtifact);
+        }
+
+        private bool HasFireArtifact(byte[] rgba, int width, int height, byte[] alpha, byte[] mainMask)
+        {
+            var fireMask = new byte[width * height];
+            for (var i = 0; i < fireMask.Length; i++)
+            {
+                if (alpha != null && i < alpha.Length && alpha[i] < _options.AlphaThreshold) continue;
+                if (mainMask != null && i < mainMask.Length && mainMask[i] == 0) continue;
+
+                var offset = i * 4;
+                var r = rgba[offset + 0];
+                var g = rgba[offset + 1];
+                var b = rgba[offset + 2];
+                if (r >= 220 && g >= 90 && b <= 90 && r >= g && g > b)
+                    fireMask[i] = 255;
+            }
+
+            return GeneratedSpriteAlphaAnalyzer
+                .Analyze(width, height, fireMask, 1, _options.FireArtifactMinPixels)
+                .largeComponentCount > 0;
         }
 
         private static RefinedAttempt ChooseBest(RefinedAttempt current, RefinedAttempt candidate)
@@ -132,16 +156,18 @@ namespace EmberCrpg.Simulation.Forge
 
         private sealed class RefinedAttempt
         {
-            public RefinedAttempt(SingleFigureGateResult gate, byte[] finalPng, bool accepted)
+            public RefinedAttempt(SingleFigureGateResult gate, byte[] finalPng, bool accepted, bool hasFireArtifact)
             {
                 Gate = gate;
                 FinalPng = finalPng;
                 Accepted = accepted;
+                HasFireArtifact = hasFireArtifact;
             }
 
             public SingleFigureGateResult Gate { get; }
             public byte[] FinalPng { get; }
             public bool Accepted { get; }
+            public bool HasFireArtifact { get; }
         }
     }
 }

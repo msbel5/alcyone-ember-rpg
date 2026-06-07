@@ -31,7 +31,9 @@ namespace EmberCrpg.Editor.Ember.GeneratedAssets
         public float largeComponentWarningRatio = 0.7f;
         public float singleFigureUpperBodyFraction = 0.42f;
         public int singleFigureUpperBodyMinPixels = 400;
-        public int singleFigureMaxAttempts = 6;
+        public int singleFigureMaxAttempts = 8;
+        public bool singleFigureRejectFireArtifacts;
+        public int singleFigureFireArtifactMinPixels = 480;
         public float billboardTargetHeight = 2.1f;
         public int materialMaxTextureSize = 2048;
         public FilterMode materialFilterMode = FilterMode.Trilinear;

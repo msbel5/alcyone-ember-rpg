@@ -37,15 +37,10 @@ namespace EmberCrpg.Presentation.Ember.Views
     /// CameraFacingBillboard, and an ActorView on the root — but built with RUNTIME APIs only (the
     /// Editor builder's AssetDatabase/SerializedObject paths are unavailable at play time).
     ///
-    /// SPRITE + SIZE + SCATTER (SOUL-04 visual fix): each billboard draws a REAL character sprite from
-    /// the host's <see cref="SpriteRegistry"/> using the SAME keys authored ActorViews use (see
-    /// <see cref="_placeholderSpriteKeys"/>; "blacksmith" is EmberWorldspaceBuilder's universal fallback,
-    /// so it is effectively guaranteed). It is sized by <see cref="FitBillboardToPlayableHeight"/> to the
-    /// same ~2.1u height as authored actors, and fanned out on concentric rings by spawn index so the
-    /// co-located worldgen crowd does not stack on one tile / the camera. The earlier build resolved an
-    /// UNREGISTERED "npc_placeholder" key, which fell back to a 1x1 magenta texture that scaled into a
-    /// screen-filling shape — that path is gone; the only remaining fallback is a small neutral quad sized
-    /// to the same height, used solely when no registry is wired.
+    /// SPRITE + SIZE + SCATTER (SOUL-04 visual fix): each billboard draws from Generated/Core by role
+    /// (npc_guard, npc_sage, ...). Hand-authored Assets/Art sprites are deliberately not a normal path.
+    /// Missing generated art falls back to a small neutral quad so failures are visible without reintroducing
+    /// the old Art/Characters dependency.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class EmberGeneratedActorSpawner : MonoBehaviour
@@ -66,32 +61,9 @@ namespace EmberCrpg.Presentation.Ember.Views
         // billboards comfortably.
         [SerializeField] private float _spawnSpacing = 1.5f;
 
-        // Sprite registry keys, in priority order, resolved against the host's registry. These are
-        // REAL character-sprite file names that SpriteRegistryAutoBuilder always writes from
-        // Assets/Art/Characters — the SAME source authored ActorViews draw from. "blacksmith" is the
-        // authored universal fallback (EmberWorldspaceBuilder.ResolveSpriteAlias's default), so it is
-        // effectively guaranteed present. The first hit wins; we NEVER use an unregistered key (which
-        // would yield the 1x1 magenta "missing texture" placeholder that previously stretched into a
-        // screen-filling shape).
-        [SerializeField]
-        private string[] _placeholderSpriteKeys =
-        {
-            "blacksmith", "merchant", "innkeeper", "warrior", "knight"
-        };
-
-        private SpriteRegistry _spriteRegistry;
+        private static readonly HashSet<string> LoggedSpriteResolutions = new HashSet<string>();
         private Sprite _fallbackSprite;
         private readonly HashSet<ulong> _spawnedIds = new HashSet<ulong>();
-
-        /// <summary>
-        /// Inject the host's sprite registry so spawned billboards reuse the same placeholder lookup
-        /// authored views use. Optional: when null, every spawned billboard uses the generated fallback
-        /// sprite. Safe to call before <see cref="SpawnMissingNearbyActors"/>.
-        /// </summary>
-        public void Configure(SpriteRegistry spriteRegistry)
-        {
-            _spriteRegistry = spriteRegistry;
-        }
 
         /// <summary>
         /// Spawn a billboard for each nearby generated actor that has no authored ActorView. Returns the
@@ -278,28 +250,12 @@ namespace EmberCrpg.Presentation.Ember.Views
             t.localScale = new Vector3(scale, scale, scale);
         }
 
-        // Resolve the SAME sprite source authored ActorViews use: a real key in the host's registry,
-        // which SpriteRegistryAutoBuilder populates from Assets/Art/Characters. We try each configured
-        // key in order and take the first hit; "blacksmith" (the authored universal fallback) is
-        // effectively guaranteed, so a spawned billboard almost always gets real character art. Only if
-        // the registry is missing/empty do we fall back to a generated sprite — and that sprite is sized
-        // to read at the SAME height as the others, so it can never balloon to fill the screen.
+        // Normal path: generated AI billboard from Assets/Generated/Core. Last resort: neutral runtime quad.
         private Sprite ResolvePlaceholderSprite(SpawnableActor candidate)
         {
             var generated = ResolveGeneratedSprite(candidate);
             if (generated != null) return generated;
-
-            if (_spriteRegistry != null && _placeholderSpriteKeys != null)
-            {
-                for (int i = 0; i < _placeholderSpriteKeys.Length; i++)
-                {
-                    var key = _placeholderSpriteKeys[i];
-                    if (string.IsNullOrEmpty(key)) continue;
-                    if (IsPortraitKey(key)) continue;
-                    var s = _spriteRegistry.GetSprite(key);
-                    if (s != null) return s;
-                }
-            }
+            LogSpriteResolution(candidate.SpriteRole, "missing", "neutral-runtime-placeholder");
             return GetOrCreateFallbackSprite();
         }
 
@@ -312,16 +268,24 @@ namespace EmberCrpg.Presentation.Ember.Views
                     string.IsNullOrWhiteSpace(record.spritePath) ? record.relativeAssetPath : record.spritePath,
                     record.stableId);
                 if (librarySprite != null)
+                {
+                    LogSpriteResolution(candidate.SpriteRole, "library", string.IsNullOrWhiteSpace(record.spritePath) ? record.relativeAssetPath : record.spritePath);
                     return librarySprite;
+                }
             }
 
             var fallbackCoreId = GeneratedNpcBillboardResolver.BuildFallbackCoreId(candidate.SpriteRole);
-            return string.IsNullOrEmpty(fallbackCoreId) ? null : GeneratedCoreSpriteLoader.TryLoadPortrait(fallbackCoreId);
+            var fallback = string.IsNullOrEmpty(fallbackCoreId) ? null : GeneratedCoreSpriteLoader.TryLoadPortrait(fallbackCoreId);
+            if (fallback != null)
+                LogSpriteResolution(candidate.SpriteRole, "core", "Assets/Generated/Core/" + fallbackCoreId + ".png");
+            return fallback;
         }
 
-        private static bool IsPortraitKey(string key)
+        private static void LogSpriteResolution(string role, string source, string path)
         {
-            return key.IndexOf("portrait", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            var key = (role ?? string.Empty) + "|" + source + "|" + (path ?? string.Empty);
+            if (!LoggedSpriteResolutions.Add(key)) return;
+            Debug.Log("[NpcBillboardResolve] role=" + (role ?? string.Empty) + " source=" + source + " file=" + (path ?? string.Empty));
         }
 
         // Last-resort sprite for the (rare) case where no registry sprite resolves, so a billboard is

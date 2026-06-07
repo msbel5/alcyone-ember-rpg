@@ -389,8 +389,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         /// <summary>
         /// SOUL-04 (spawn-from-worldgen): ensure exactly one <see cref="EmberGeneratedActorSpawner"/>
-        /// exists and is configured with this host's sprite registry, mirroring the EnsurePauseMenu /
-        /// EnsureDialogBoxPanel pattern. The spawner is the single-responsibility component that
+        /// exists, mirroring the EnsurePauseMenu / EnsureDialogBoxPanel pattern. The spawner is the single-responsibility component that
         /// materialises billboards for nearby generated NPCs that have no authored ActorView; the host
         /// only owns its lifecycle, not the spawn logic. Idempotent: reuses an existing instance so a
         /// host re-run (additive load / domain reload) never attaches a second.
@@ -399,7 +398,6 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         {
             var existing = GetComponent<EmberGeneratedActorSpawner>();
             var spawner = existing == null ? gameObject.AddComponent<EmberGeneratedActorSpawner>() : existing;
-            spawner.Configure(_spriteRegistry);
             return spawner;
         }
     }

@@ -83,7 +83,7 @@ namespace EmberCrpg.Tests.EditMode.Forge
                 new MatteResult(8, 8, BuildAlpha(8, 8, (x, y) => x >= 0 && x <= 3 && y >= 1 && y <= 5 ? (byte)255 : (byte)0)),
                 new MatteResult(8, 8, BuildAlpha(8, 8, (x, y) => x >= 1 && x <= 5 && y >= 0 && y <= 6 ? (byte)255 : (byte)0)));
             var gate = new ConnectedComponentSingleFigureGate(1, 4, 0.95f, 0.42f, 2);
-            var options = new SingleFigureRefinementOptions(3, 1, 1, 4, 0.95f);
+            var options = new SingleFigureRefinementOptions(3, 1, 1, 4, 0.95f, allowBestEffortFallback: true);
             var codec = new PassthroughCodec(
                 new SpriteImageFrame(8, 8, SolidRgba(8, 8, 10)),
                 new SpriteImageFrame(8, 8, SolidRgba(8, 8, 20)),
@@ -96,6 +96,47 @@ namespace EmberCrpg.Tests.EditMode.Forge
             Assert.That(forge.RequestSeeds, Is.EqualTo(new uint[] { 5u, 6u, 7u }));
             Assert.That(codec.LastEncoded.Width, Is.LessThan(8));
             Assert.That(codec.LastEncoded.Height, Is.LessThanOrEqualTo(8));
+        }
+
+        [Test]
+        public async Task Refiner_FailsWhenNoAttemptAccepted_UnlessBestEffortIsExplicit()
+        {
+            var forge = new SequenceForge(new byte[] { 8 }, new byte[] { 9 });
+            var matte = new SequenceMatteService(
+                new MatteResult(8, 8, BuildAlpha(8, 8, (x, y) => x >= 0 && x <= 3 && y >= 0 && y <= 6 ? (byte)255 : (byte)0)),
+                new MatteResult(8, 8, BuildAlpha(8, 8, (x, y) => x >= 1 && x <= 7 && y >= 0 && y <= 6 ? (byte)255 : (byte)0)));
+            var gate = new ConnectedComponentSingleFigureGate(1, 4, 0.95f, 0.42f, 2);
+            var options = new SingleFigureRefinementOptions(2, 1, 1, 4, 0.95f);
+            var codec = new PassthroughCodec(
+                new SpriteImageFrame(8, 8, SolidRgba(8, 8, 10)),
+                new SpriteImageFrame(8, 8, SolidRgba(8, 8, 20)));
+            var refiner = new SingleFigureSpriteRefiner(forge, matte, gate, codec, options, NpcOnly, _ => { });
+
+            var result = await refiner.GenerateAsync(Request("npc_sage", 5), CancellationToken.None);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.FailureReason, Is.EqualTo("single_figure_gate_rejected_all_attempts"));
+            Assert.That(forge.RequestSeeds, Is.EqualTo(new uint[] { 5u, 6u }));
+        }
+
+        [Test]
+        public async Task Refiner_RejectsLargeFireArtifactAndRetries()
+        {
+            var forge = new SequenceForge(new byte[] { 11 }, new byte[] { 12 });
+            var matteMask = new MatteResult(16, 16, BuildAlpha(16, 16, (x, y) =>
+                x >= 4 && x <= 11 && y >= 1 && y <= 14 ? (byte)255 : (byte)0));
+            var matte = new SequenceMatteService(matteMask, matteMask);
+            var gate = new ConnectedComponentSingleFigureGate(1, 8, 0.7f, 0.42f, 2);
+            var options = new SingleFigureRefinementOptions(2, 1, 1, 8, 0.7f, rejectFireArtifacts: true, fireArtifactMinPixels: 2);
+            var codec = new PassthroughCodec(
+                WithFirePatch(16, 16),
+                new SpriteImageFrame(16, 16, SolidRgba(16, 16, 80)));
+            var refiner = new SingleFigureSpriteRefiner(forge, matte, gate, codec, options, NpcOnly, _ => { });
+
+            var result = await refiner.GenerateAsync(Request("npc_mage", 33), CancellationToken.None);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(forge.RequestSeeds, Is.EqualTo(new uint[] { 33u, 34u }));
         }
 
         [Test]
@@ -146,6 +187,24 @@ namespace EmberCrpg.Tests.EditMode.Forge
             Assert.That(result.IsSingleFigure, Is.False);
         }
 
+        [Test]
+        public void ConnectedComponentGate_RejectsTwoHeadsThatShareOneLowerBlob()
+        {
+            var gate = new ConnectedComponentSingleFigureGate(1, 40, 0.7f, 0.42f, 8);
+            var matte = new MatteResult(48, 96, BuildAlpha(48, 96, (x, y) =>
+            {
+                var leftHead = x >= 10 && x <= 18 && y >= 4 && y <= 20;
+                var rightHead = x >= 30 && x <= 38 && y >= 4 && y <= 20;
+                var sharedCloak = x >= 8 && x <= 40 && y >= 21 && y <= 88;
+                return leftHead || rightHead || sharedCloak ? (byte)255 : (byte)0;
+            }));
+
+            var result = gate.Evaluate(matte);
+
+            Assert.That(result.ComponentCount, Is.EqualTo(1));
+            Assert.That(result.IsSingleFigure, Is.False);
+        }
+
         private static AssetGenerationRequest Request(string id, uint seed)
         {
             return new AssetGenerationRequest(
@@ -183,6 +242,22 @@ namespace EmberCrpg.Tests.EditMode.Forge
                 rgba[offset + 3] = 255;
             }
             return rgba;
+        }
+
+        private static SpriteImageFrame WithFirePatch(int width, int height)
+        {
+            var rgba = SolidRgba(width, height, 80);
+            for (var y = 5; y <= 8; y++)
+            for (var x = 5; x <= 6; x++)
+            {
+                var offset = ((y * width) + x) * 4;
+                rgba[offset + 0] = 255;
+                rgba[offset + 1] = 160;
+                rgba[offset + 2] = 20;
+                rgba[offset + 3] = 255;
+            }
+
+            return new SpriteImageFrame(width, height, rgba);
         }
 
         private static bool NpcOnly(AssetGenerationRequest request)

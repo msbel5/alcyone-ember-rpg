@@ -30,5 +30,9 @@ namespace EmberCrpg.Editor.Ember.Forge
         public static void Cancel() => CoreAssetRegenerationRunner.Cancel();
 
         public static void RegenerateDefaultSubsetBatch() => CoreAssetRegenerationRunner.RunBlocking(CoreAssetRegenerationScope.DefaultSubset);
+
+        public static void RegenerateNpcBillboardsBatch() => CoreAssetRegenerationRunner.RunBlocking(CoreAssetRegenerationScope.NpcBillboards, forceRebuild: true);
+
+        public static void RegenerateMissingNpcBillboardsBatch() => CoreAssetRegenerationRunner.RunBlocking(CoreAssetRegenerationScope.NpcBillboards);
     }
 }

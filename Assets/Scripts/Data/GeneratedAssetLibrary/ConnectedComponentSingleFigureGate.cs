@@ -20,6 +20,8 @@ namespace EmberCrpg.Data.GeneratedAssets
         // the bounding box far wider than a lone standing figure. Reject anything wider than this. Kept above the
         // synthetic gate-test mattes' aspect so it only trips on real side-by-side pairs, not unit fixtures.
         private const float MaxFigureAspectRatio = 0.78f;
+        private const float HeadBandFraction = 0.24f;
+        private const float MinimumHeadRunWidthFraction = 0.08f;
 
         public ConnectedComponentSingleFigureGate(byte threshold, int minimumLargeComponentPixels, float dominantComponentRatio, float upperBodyFraction, int upperBodyMinimumLargePixels)
         {
@@ -37,8 +39,10 @@ namespace EmberCrpg.Data.GeneratedAssets
             var dominantRatio = analysis.opaquePixelCount <= 0 ? 0f : (float)analysis.mainComponentPixels / analysis.opaquePixelCount;
             var secondaryRatio = analysis.mainComponentPixels <= 0 ? 0f : (float)analysis.secondComponentPixels / analysis.mainComponentPixels;
             var upperBodyComponents = CountUpperBodyLargeComponents(matte);
+            var headRuns = CountTopBandRuns(matte, analysis.mainBounds, analysis.mainComponentMask);
             var isSingleFigure = analysis.largeComponentCount <= 1
                 && upperBodyComponents <= 1
+                && headRuns <= 1
                 && dominantRatio >= _dominantComponentRatio
                 && secondaryRatio < SecondaryFigureRejectRatio
                 && (analysis.aspectRatio <= 0f || analysis.aspectRatio <= MaxFigureAspectRatio);
@@ -51,6 +55,43 @@ namespace EmberCrpg.Data.GeneratedAssets
                 analysis.opaquePixelCount,
                 analysis.mainComponentPixels,
                 analysis.mainComponentMask);
+        }
+
+        private int CountTopBandRuns(MatteResult matte, PixelRect bounds, byte[] mainMask)
+        {
+            if (bounds.width <= 0 || bounds.height <= 0 || mainMask == null) return 0;
+            var bandHeight = Math.Max(1, (int)Math.Round(bounds.height * HeadBandFraction));
+            var yMin = Math.Max(0, bounds.y);
+            var yMax = Math.Min(matte.Height, yMin + bandHeight);
+            var xMin = Math.Max(0, bounds.x);
+            var xMax = Math.Min(matte.Width, bounds.x + bounds.width);
+            var minColumnPixels = Math.Max(1, bandHeight / 5);
+            var minRunWidth = Math.Max(1, (int)Math.Round(bounds.width * MinimumHeadRunWidthFraction));
+            var runs = 0;
+            var runWidth = 0;
+
+            for (var x = xMin; x < xMax; x++)
+            {
+                var columnPixels = 0;
+                for (var y = yMin; y < yMax; y++)
+                {
+                    var index = (y * matte.Width) + x;
+                    if (mainMask[index] == 0 || matte.SoftAlpha[index] < _threshold) continue;
+                    columnPixels++;
+                }
+
+                if (columnPixels >= minColumnPixels)
+                {
+                    runWidth++;
+                    continue;
+                }
+
+                if (runWidth >= minRunWidth) runs++;
+                runWidth = 0;
+            }
+
+            if (runWidth >= minRunWidth) runs++;
+            return runs;
         }
 
         private int CountUpperBodyLargeComponents(MatteResult matte)

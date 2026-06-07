@@ -21,6 +21,7 @@ namespace EmberCrpg.Presentation.Ember.Forge
         private NativeLlmClient _nativeLlm;
         private OnnxAssetForge _onnxForge;
         private SerializedAssetForge _serializedForge;
+        private SingleFigureRefiningAssetForge _refiningForge;
         private IAssetForge _activeForge;
         private CancellationTokenSource _cts;
         private string _forgeInitFailure = string.Empty;
@@ -34,7 +35,8 @@ namespace EmberCrpg.Presentation.Ember.Forge
 
             var realForge = EmberForgeFactory.BuildForge(modelRoot, out _onnxForge, out _forgeInitFailure);
             _serializedForge = new SerializedAssetForge(realForge, new UnityResourceProbe());
-            _activeForge = _serializedForge;
+            _refiningForge = RuntimeSingleFigureForgeFactory.WrapNpcBillboards(_serializedForge, modelRoot);
+            _activeForge = _refiningForge;
 
             ILlmRouter router = new LlmRoutingService(
                 req => _nativeLlm.Complete(req),
@@ -49,11 +51,11 @@ namespace EmberCrpg.Presentation.Ember.Forge
         {
             _cts?.Cancel();
             _cts?.Dispose();
-            _serializedForge?.Dispose();
+            ForgeLocator.Clear();
+            _refiningForge = null;
             _serializedForge = null;
             _nativeLlm?.Dispose();
             _onnxForge?.Dispose();
-            ForgeLocator.Clear();
         }
 
         private string ResolveModelDirectory()
