@@ -108,7 +108,29 @@ namespace EmberCrpg.Simulation.Forge
             var conditioning = SdxlConditioning.Concat(hidden768, encoder2.HiddenStates1280, encoder2.Pooled1280);
             var timeIds = new[] { (float)height, (float)width, 0f, 0f, (float)height, (float)width };
 
+            // Classifier-free guidance. SDXL-Turbo ships at guidance 0, so the negative prompt is normally dead.
+            // When a request asks for guidance > 1 we encode the negative the same way and blend per Euler step, so
+            // anti-malformation negatives ("two heads, multiple, deformed, extra limbs") actually steer the sample
+            // AWAY from those failures instead of being ignored text.
+            // NPC sprites get classifier-free guidance so the anti-malformation negative ("two heads, multiple,
+            // deformed, extra limbs") actually steers the sample AWAY from those failures. Other kinds keep the
+            // fast guidance-0 path. Self-contained here so no request/spec plumbing is needed.
+            var cfgGuidance = request.Subject == AssetSubjectKind.Npc ? 3f : 0f;
+            var useCfg = cfgGuidance > 1f;
+            SdxlConditioning negConditioning = null;
+            if (useCfg)
+            {
+                var cfgNegative = string.IsNullOrWhiteSpace(request.NegativePrompt)
+                    ? "two heads, multiple people, second person, extra limbs, extra head, deformed, mutated, character sheet, duplicate, group, collage"
+                    : request.NegativePrompt;
+                var negTokens = ToIntTokens(tokenizer.Tokenize(cfgNegative, ClipTokenLength, ClipBosId, ClipEosId));
+                var negHidden768 = EncodeText(_models.TextEncoder, negTokens, Encoder1PenultimateHiddenState);
+                var negEncoder2 = EncodeText2(negTokens);
+                negConditioning = SdxlConditioning.Concat(negHidden768, negEncoder2.HiddenStates1280, negEncoder2.Pooled1280);
+            }
+
             int steps = request.Steps >= 1 ? request.Steps : DefaultSteps;
+            if (useCfg && steps < 4) steps = 4;   // CFG needs a few denoise steps to take effect
             BuildEulerSchedule(steps, out var timesteps, out var sigmas);
             var latents = LatentNoiseSampler.SampleGaussian(request.Seed, latentLength, sigmas[0]);
 
@@ -118,6 +140,12 @@ namespace EmberCrpg.Simulation.Forge
                 float sigma = sigmas[step];
                 var scaled = ScaleLatentsForEulerInput(latents, sigma);
                 var eps = RunUnet(scaled, latentHeight, latentWidth, timesteps[step], conditioning, timeIds);
+                if (useCfg)
+                {
+                    var epsUncond = RunUnet(scaled, latentHeight, latentWidth, timesteps[step], negConditioning, timeIds);
+                    for (int i = 0; i < eps.Length; i++)
+                        eps[i] = epsUncond[i] + (cfgGuidance * (eps[i] - epsUncond[i]));
+                }
                 // Euler (epsilon-pred): x_{i+1} = x_i + (sigma_next - sigma) * eps
                 float dt = sigmas[step + 1] - sigma;
                 for (int i = 0; i < latents.Length; i++)

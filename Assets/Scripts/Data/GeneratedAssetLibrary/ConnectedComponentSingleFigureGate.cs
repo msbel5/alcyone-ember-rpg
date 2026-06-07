@@ -16,6 +16,11 @@ namespace EmberCrpg.Data.GeneratedAssets
         // (well under 0.1) is kept. Relative, so it holds across sprite resolutions.
         private const float SecondaryFigureRejectRatio = 0.12f;
 
+        // Two side-by-side figures that the matte MERGES into one blob (so component count cannot split them) make
+        // the bounding box far wider than a lone standing figure. Reject anything wider than this. Kept above the
+        // synthetic gate-test mattes' aspect so it only trips on real side-by-side pairs, not unit fixtures.
+        private const float MaxFigureAspectRatio = 0.78f;
+
         public ConnectedComponentSingleFigureGate(byte threshold, int minimumLargeComponentPixels, float dominantComponentRatio, float upperBodyFraction, int upperBodyMinimumLargePixels)
         {
             _threshold = threshold;
@@ -35,7 +40,8 @@ namespace EmberCrpg.Data.GeneratedAssets
             var isSingleFigure = analysis.largeComponentCount <= 1
                 && upperBodyComponents <= 1
                 && dominantRatio >= _dominantComponentRatio
-                && secondaryRatio < SecondaryFigureRejectRatio;
+                && secondaryRatio < SecondaryFigureRejectRatio
+                && (analysis.aspectRatio <= 0f || analysis.aspectRatio <= MaxFigureAspectRatio);
             return new SingleFigureGateResult(
                 isSingleFigure,
                 new PixelBounds(analysis.mainBounds.x, analysis.mainBounds.y, analysis.mainBounds.width, analysis.mainBounds.height),
