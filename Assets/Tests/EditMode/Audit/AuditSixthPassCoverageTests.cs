@@ -88,8 +88,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
         [Test]
         public void ConsultFateOutcomeBucket_DistributionMatches35_35_30()
         {
-            // Both DomainSimulationAdapter and PlaceholderSimulationAdapter now
-            // route through this bucket. Verify the boundaries are unchanged:
+            // DomainSimulationAdapter routes through this bucket. Verify the boundaries are unchanged:
             // rolls 1..35 → Setback, 36..70 → Neutral, 71..100 → Favourable.
             int setback = 0, neutral = 0, favourable = 0;
             for (int roll = 1; roll <= 100; roll++)

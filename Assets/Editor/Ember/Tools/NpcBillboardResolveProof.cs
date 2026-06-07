@@ -1,5 +1,7 @@
 using EmberCrpg.Data.GeneratedAssets;
+using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.Sprites;
+using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Simulation.Generation;
 using UnityEditor;
 using UnityEngine;
@@ -21,6 +23,20 @@ namespace EmberCrpg.Editor.Ember.Tools
             TraceName("steel_longsword");
             TraceName("fire");
             TraceName("inventory");
+        }
+
+        [MenuItem("Ember/Proof/Trace Unavailable Adapter")]
+        public static void TraceUnavailableAdapter()
+        {
+            var adapter = new UnavailableSimulationAdapter();
+            Debug.Log(
+                "[UnavailableAdapterProof] hud='" + adapter.HudText + "'" +
+                " jobs=" + adapter.JobQueueRows.Count +
+                " needs=" + adapter.ColonyNeedsRows.Count +
+                " factions=" + adapter.FactionRows.Count +
+                " inventory=" + adapter.InventorySlots.Count +
+                " journal=" + ((IJournalSource)adapter).GetChapters().Count +
+                " dialog='" + adapter.GetCurrentLine() + "'");
         }
 
         private static void Trace(string role)

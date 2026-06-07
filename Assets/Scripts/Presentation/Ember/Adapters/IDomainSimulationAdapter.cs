@@ -12,7 +12,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     // surface — callers had no way to take a dependency on just the slice they
     // needed. Split into five role interfaces; the legacy
     // IDomainSimulationAdapter aggregates them so existing implementations
-    // (PlaceholderSimulationAdapter)
     // and existing call sites stay compile-compatible.
 
     /// <summary>
@@ -131,7 +130,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // making missing routing invisible. Defaults removed: every
         // implementer must now explicitly handle each verb (or explicitly
         // return false with a deliberate refusal). Both production adapters
-        // (DomainSimulationAdapter, PlaceholderSimulationAdapter) already
+        // (DomainSimulationAdapter, UnavailableSimulationAdapter) already
         // override these; the test EmptySimulationAdapter was retired in
         // the sixth pass.
 

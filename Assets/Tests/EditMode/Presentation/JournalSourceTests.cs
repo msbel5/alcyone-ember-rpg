@@ -12,15 +12,13 @@ namespace EmberCrpg.Tests.EditMode.Presentation
     public sealed class JournalSourceTests
     {
         [Test]
-        public void PlaceholderAdapter_ExposesFallbackChapter()
+        public void UnavailableAdapter_DoesNotFabricateJournalChapter()
         {
-            var adapter = new PlaceholderSimulationAdapter();
+            var adapter = new UnavailableSimulationAdapter();
 
             var chapters = ((IJournalSource)adapter).GetChapters();
 
-            Assert.That(chapters, Has.Count.EqualTo(1));
-            Assert.That(chapters[0].Entries, Has.Count.EqualTo(1));
-            Assert.That(chapters[0].Entries[0].Status, Is.EqualTo(JournalEntryStatus.Active));
+            Assert.That(chapters, Is.Empty);
         }
 
         [Test]

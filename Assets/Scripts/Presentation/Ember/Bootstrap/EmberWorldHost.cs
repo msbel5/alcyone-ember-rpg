@@ -65,11 +65,9 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             _tick.Listener = this;
 
             // Codex audit (third pass A-P1): the live scene used to run on
-            // PlaceholderSimulationAdapter exclusively, so every HUD row was
-            // fabricated state. Prefer a registered domain adapter; if none
-            // is registered yet, try to bootstrap a DomainSimulationAdapter
-            // backed by a fresh WorldState. Only fall back to the
-            // placeholder when both routes fail (UI-only sandbox scenes).
+            // The old fallback fabricated HUD/gameplay rows here. Prefer a registered domain adapter; if none
+            // exists, bootstrap a real DomainSimulationAdapter. If that fails, use an honest disabled adapter
+            // that exposes empty/unavailable state rather than fake gameplay.
             _adapter = EmberDomainAdapterLocator.Current
                 ?? TryCreateDomainAdapter()
                 ?? CreateFallbackAdapter();
@@ -538,12 +536,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
 
         private static IDomainSimulationAdapter CreateFallbackAdapter()
         {
-            // Codex audit (sixth pass D-P3 #D4): the reflection-based lookup
-            // plus EmptySimulationAdapter inner fallback was dead in practice —
-            // PlaceholderSimulationAdapter lives in the same assembly as this
-            // host, so the typeof reference resolves at compile time. Drop the
-            // reflection + the duplicate empty-adapter implementation.
-            return new EmberCrpg.Presentation.Ember.Adapters.PlaceholderSimulationAdapter();
+            Debug.LogError("EmberWorldHost: BROKEN no real domain adapter is active; using unavailable adapter with no fabricated gameplay rows.");
+            return new EmberCrpg.Presentation.Ember.Adapters.UnavailableSimulationAdapter();
         }
 
         /// <summary>
@@ -551,8 +545,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         /// <see cref="DomainSimulationAdapter"/> over a fresh
         /// <see cref="EmberCrpg.Domain.World.WorldState"/>. Returns
         /// <c>null</c> if WorldFactory throws or if the construction
-        /// path is otherwise unavailable; the caller falls through to the
-        /// placeholder. Wrapped in try/catch so a missing
+        /// path is otherwise unavailable; the caller falls through to an
+        /// honest disabled adapter. Wrapped in try/catch so a missing
         /// Simulation-side dependency never crashes scene bootstrap.
         /// </summary>
         private static IDomainSimulationAdapter TryCreateDomainAdapter()
@@ -589,10 +583,10 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 // line, the host quietly fell through to the placeholder,
                 // and Mami saw an empty HUD with no clue why. Surface the
                 // exception so the failure is visible in the Editor console
-                // and player.log. We still return null so the caller's
-                // placeholder fallback runs (game stays bootable), but the
+                // and player.log. We still return null so the caller's honest
+                // unavailable fallback runs (game stays bootable), but the
                 // operator can now investigate the root cause.
-                Debug.LogError("EmberWorldHost: domain adapter bootstrap failed; falling back to PlaceholderSimulationAdapter. " + ex);
+                Debug.LogError("EmberWorldHost: domain adapter bootstrap failed; falling back to unavailable adapter. " + ex);
                 return null;
             }
         }
