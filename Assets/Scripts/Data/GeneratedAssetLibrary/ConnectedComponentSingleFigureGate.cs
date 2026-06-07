@@ -11,6 +11,11 @@ namespace EmberCrpg.Data.GeneratedAssets
         private readonly float _upperBodyFraction;
         private readonly int _upperBodyMinimumLargePixels;
 
+        // A second connected component at or above this fraction of the main one reads as a second figure.
+        // Tuned so a child-sized second NPC (~0.2-0.4 of the main) is rejected while a held prop or a stray flame
+        // (well under 0.1) is kept. Relative, so it holds across sprite resolutions.
+        private const float SecondaryFigureRejectRatio = 0.12f;
+
         public ConnectedComponentSingleFigureGate(byte threshold, int minimumLargeComponentPixels, float dominantComponentRatio, float upperBodyFraction, int upperBodyMinimumLargePixels)
         {
             _threshold = threshold;
@@ -25,10 +30,12 @@ namespace EmberCrpg.Data.GeneratedAssets
             if (matte == null) throw new ArgumentNullException(nameof(matte));
             var analysis = GeneratedSpriteAlphaAnalyzer.Analyze(matte.Width, matte.Height, matte.SoftAlpha, _threshold, _minimumLargeComponentPixels);
             var dominantRatio = analysis.opaquePixelCount <= 0 ? 0f : (float)analysis.mainComponentPixels / analysis.opaquePixelCount;
+            var secondaryRatio = analysis.mainComponentPixels <= 0 ? 0f : (float)analysis.secondComponentPixels / analysis.mainComponentPixels;
             var upperBodyComponents = CountUpperBodyLargeComponents(matte);
             var isSingleFigure = analysis.largeComponentCount <= 1
                 && upperBodyComponents <= 1
-                && dominantRatio >= _dominantComponentRatio;
+                && dominantRatio >= _dominantComponentRatio
+                && secondaryRatio < SecondaryFigureRejectRatio;
             return new SingleFigureGateResult(
                 isSingleFigure,
                 new PixelBounds(analysis.mainBounds.x, analysis.mainBounds.y, analysis.mainBounds.width, analysis.mainBounds.height),

@@ -13,6 +13,7 @@ namespace EmberCrpg.Data.GeneratedAssets
             var queue = new int[alpha.Length];
             var analysis = new GeneratedSpriteAlphaAnalysis();
             var bestCount = 0;
+            var secondBestCount = 0;
             int[] bestIndices = null;
 
             for (var i = 0; i < alpha.Length; i++)
@@ -21,13 +22,19 @@ namespace EmberCrpg.Data.GeneratedAssets
                 var component = Flood(width, height, alpha, visited, threshold, i, queue);
                 analysis.opaquePixelCount += component.count;
                 if (component.count >= minLargeComponentPixels) analysis.largeComponentCount++;
-                if (component.count <= bestCount) continue;
-
-                bestCount = component.count;
-                bestIndices = new int[component.count];
-                Buffer.BlockCopy(queue, 0, bestIndices, 0, component.count * sizeof(int));
-                analysis.mainComponentPixels = component.count;
-                analysis.mainBounds = new PixelRect(component.minX, component.minY, component.maxX - component.minX + 1, component.maxY - component.minY + 1);
+                if (component.count > bestCount)
+                {
+                    secondBestCount = bestCount;
+                    bestCount = component.count;
+                    bestIndices = new int[component.count];
+                    Buffer.BlockCopy(queue, 0, bestIndices, 0, component.count * sizeof(int));
+                    analysis.mainComponentPixels = component.count;
+                    analysis.mainBounds = new PixelRect(component.minX, component.minY, component.maxX - component.minX + 1, component.maxY - component.minY + 1);
+                }
+                else if (component.count > secondBestCount)
+                {
+                    secondBestCount = component.count;
+                }
             }
 
             if (bestIndices != null)
@@ -45,6 +52,7 @@ namespace EmberCrpg.Data.GeneratedAssets
             if (analysis.largeComponentCount > 1) analysis.warnings.Add("multiple_large_components");
             if (analysis.touchesEdge) analysis.warnings.Add("main_component_touches_edge");
             if (analysis.aspectRatio > 1.2f) analysis.warnings.Add("main_component_is_wide");
+            analysis.secondComponentPixels = secondBestCount;
             return analysis;
         }
 

@@ -10,6 +10,7 @@ namespace EmberCrpg.Data.GeneratedAssets
         public byte[] mainComponentMask;
         public int opaquePixelCount;
         public int mainComponentPixels;
+        public int secondComponentPixels;
         public int largeComponentCount;
         public bool touchesEdge;
         public float aspectRatio;
