@@ -15,7 +15,8 @@ namespace EmberCrpg.Tests.EditMode.Generation
             {
                 "humanoid_male", "humanoid_female", "beast_quadruped", "undead_humanoid", "construct", "aberration"
             }));
-            Assert.That(manifest.Archetypes.All(a => a.SilhouettePath.StartsWith("Assets/Art/BodySilhouettes/")), Is.True);
+            Assert.That(manifest.Archetypes.All(a => a.SilhouettePath.Length == 0), Is.True);
+            Assert.That(manifest.Archetypes.All(a => a.RequiresGeneration == false), Is.True);
             Assert.That(manifest.Archetypes.All(a => !a.RequiresGeneration), Is.True);
         }
     }

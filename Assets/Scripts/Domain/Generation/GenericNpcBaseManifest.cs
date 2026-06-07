@@ -53,18 +53,18 @@ namespace EmberCrpg.Domain.Generation
         {
             return new GenericNpcBaseManifest(new[]
             {
-                Row("humanoid_male", "Assets/Art/BodySilhouettes/humanoid_male.png", 20, 48, "male humanoid silhouette"),
-                Row("humanoid_female", "Assets/Art/BodySilhouettes/humanoid_female.png", 20, 48, "female humanoid silhouette"),
-                Row("beast_quadruped", "Assets/Art/BodySilhouettes/beast_quadruped.png", 55, 110, "quadruped beast silhouette"),
-                Row("undead_humanoid", "Assets/Art/BodySilhouettes/undead_humanoid.png", 180, 230, "undead humanoid silhouette"),
-                Row("construct", "Assets/Art/BodySilhouettes/construct.png", 25, 60, "construct silhouette"),
-                Row("aberration", "Assets/Art/BodySilhouettes/aberration.png", 260, 315, "aberration silhouette"),
+                Row("humanoid_male", 20, 48, "male humanoid archetype"),
+                Row("humanoid_female", 20, 48, "female humanoid archetype"),
+                Row("beast_quadruped", 55, 110, "quadruped beast archetype"),
+                Row("undead_humanoid", 180, 230, "undead humanoid archetype"),
+                Row("construct", 25, 60, "construct archetype"),
+                Row("aberration", 260, 315, "aberration archetype"),
             });
         }
 
-        private static ArchetypeEntry Row(string id, string path, int minHue, int maxHue, string notes)
+        private static ArchetypeEntry Row(string id, int minHue, int maxHue, string notes)
         {
-            return new ArchetypeEntry(id, path, minHue, maxHue, 0.35f, 0.75f, 0.25f, 0.70f, notes, false);
+            return new ArchetypeEntry(id, string.Empty, minHue, maxHue, 0.35f, 0.75f, 0.25f, 0.70f, notes, false);
         }
     }
 }

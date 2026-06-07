@@ -44,12 +44,6 @@ namespace EmberCrpg.Simulation.Generation
             entries.Add(new ManifestEntry("font_body", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_heading", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
             entries.Add(new ManifestEntry("font_mono", "font", "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset", "", 1, 1, false));
-            AddSilhouette(entries, "humanoid_male");
-            AddSilhouette(entries, "humanoid_female");
-            AddSilhouette(entries, "beast_quadruped");
-            AddSilhouette(entries, "undead_humanoid");
-            AddSilhouette(entries, "construct");
-            AddSilhouette(entries, "aberration");
             AddMany(entries, "item", 512, 512, true, "sdxl-turbo", "sword", "bow", "staff", "potion", "scroll", "key", "ring", "helm", "boots", "shield");
             AddMany(entries, "spell", 512, 512, true, "sdxl-turbo", "sleep", "heal", "fire", "ice", "shield", "lightning");
             AddSound(entries, "ui_click"); AddSound(entries, "ui_hover"); AddSound(entries, "dice_roll"); AddSound(entries, "level_up"); AddSound(entries, "error");
@@ -101,11 +95,6 @@ namespace EmberCrpg.Simulation.Generation
                 var entryId = "npc_" + role.ToString().ToLowerInvariant();
                 entries.Add(new ManifestEntry(entryId, "npc", "Assets/Generated/Core/" + entryId + ".png", entryId, NpcSpriteWidth, NpcSpriteHeight, true, NpcSpriteTimeoutSeconds, "sd15-lcm"));
             }
-        }
-
-        private static void AddSilhouette(List<ManifestEntry> entries, string id)
-        {
-            entries.Add(new ManifestEntry("silhouette_" + id, "silhouette", "Assets/Art/BodySilhouettes/" + id + ".png", "", 256, 512, false));
         }
 
         private static void AddSound(List<ManifestEntry> entries, string id)
