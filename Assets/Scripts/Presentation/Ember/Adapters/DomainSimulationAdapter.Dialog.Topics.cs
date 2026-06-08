@@ -1,0 +1,95 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.AiDm;
+using EmberCrpg.Domain.CharacterCreation;
+using EmberCrpg.Domain.Combat;
+using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Narrative;
+using EmberCrpg.Domain.Process;
+using EmberCrpg.Domain.World;
+using EmberCrpg.Domain.Worldgen;
+using EmberCrpg.Presentation.Ember.Forge;
+using EmberCrpg.Presentation.Ember.UI;
+using EmberCrpg.Presentation.Ember.Views;
+
+namespace EmberCrpg.Presentation.Ember.Adapters
+{
+    public sealed partial class DomainSimulationAdapter
+    {
+        private async Task GenerateNpcTopicAnswerAsync(NpcSeedRecord npc, string topicId, AskAboutTopic topic)
+        {
+            var router = ForgeLocator.LlmRouter;
+            if (router == null) return;
+
+            _isDialogThinking = true;
+            int gen = _conversationSerial;
+            var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
+
+            var request = new LlmRequest(
+                "npc_topic_answer",
+                "npc:" + npc.Id.Value + ":topic:" + topicId,
+                null,
+                180,
+                npc.Id.Value,
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
+                new List<string>());
+
+            // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and
+            // applied on the deterministic main-thread tick (not on the await's resumption thread).
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
+            _mainThreadApply.Enqueue(() =>
+            {
+                if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
+                // BUG-DIALOG-EMPTY: same whitespace guard as the greeting path — never overwrite the
+                // deterministic topic answer with an empty/whitespace inference result.
+                // BUG-DIALOG-TURNLEAK: also strip echoed chat-turn scaffolding; only a non-empty cleaned
+                // line replaces the deterministic topic answer.
+                var answer = SanitizeNpcLine(response?.Text);
+                if (!string.IsNullOrEmpty(answer))
+                    _currentDialogLine = answer;
+                _isDialogThinking = false;
+            });
+        }
+
+        // LLM-NOT-FIRING fix (topic answers): name-based answer for authored/ad-hoc actors with no
+        // NpcSeed, so picking an Ask-About topic yields a real local-LLM answer instead of only the
+        // deterministic one. Mirrors GenerateNpcTopicAnswerAsync.
+        private async Task GenerateAdHocTopicAnswerAsync(string actorName, string topicId, AskAboutTopic topic)
+        {
+            var router = ForgeLocator.LlmRouter;
+            if (router == null || string.IsNullOrEmpty(actorName)) return;
+
+            _isDialogThinking = true;
+            int gen = _conversationSerial;
+            var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
+            ulong seed = 1469598103934665603UL;
+            foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
+            foreach (var ch in topicId ?? string.Empty) { seed ^= ch; seed *= 1099511628211UL; }
+
+            var request = new LlmRequest(
+                "npc_topic_answer",
+                "npc:" + actorName + ":topic:" + topicId,
+                null,
+                180,
+                seed,
+                $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
+                new List<string>());
+
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
+            _mainThreadApply.Enqueue(() =>
+            {
+                if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
+                UnityEngine.Debug.Log($"[NpcTopic-adhoc] actor={actorName} topic={topicId} " +
+                    $"llm-len={(response?.Text?.Length ?? -1)} used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
+                // BUG-DIALOG-TURNLEAK: strip echoed chat-turn scaffolding; only a non-empty cleaned line
+                // replaces the deterministic topic answer.
+                var answer = SanitizeNpcLine(response?.Text);
+                if (!string.IsNullOrEmpty(answer))
+                    _currentDialogLine = answer;
+                _isDialogThinking = false;
+            });
+        }
+    }
+}
