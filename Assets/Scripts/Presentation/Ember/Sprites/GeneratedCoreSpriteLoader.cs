@@ -34,28 +34,17 @@ namespace EmberCrpg.Presentation.Ember.Sprites
         {
             var key = NormalizeCoreKey(id);
             if (string.IsNullOrEmpty(key)) return null;
-
-            // Walk every candidate root in priority order and return the FIRST copy that exists AND passes the
-            // provenance freshness gate. Falling through a stale candidate prevents persistentDataPath junk from
-            // shadowing fresh build/project generated Core assets.
-            foreach (var path in CoreCandidatePaths(key))
-            {
-                bool exists;
-                try { exists = File.Exists(path); }
-                catch { exists = false; }
-                if (!exists) continue;
-                if (!GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) continue;
-                return LoadCachedSprite(key, path);
-            }
-            return null;
+            return GeneratedCoreAssetStore.TryResolveFreshCorePath(key, out var path)
+                ? LoadCachedSprite(key, path)
+                : null;
         }
 
         public static Sprite TryLoadRelativeSprite(string assetsRelativePath, string cacheKey = null)
         {
             if (string.IsNullOrWhiteSpace(assetsRelativePath)) return null;
-            var path = ResolveExistingAssetPath(assetsRelativePath);
-            if (string.IsNullOrEmpty(path)) return null;
-            return LoadCachedSprite(string.IsNullOrWhiteSpace(cacheKey) ? assetsRelativePath : cacheKey, path);
+            return GeneratedCoreAssetStore.TryResolveAssetPath(assetsRelativePath, out var path)
+                ? LoadCachedSprite(string.IsNullOrWhiteSpace(cacheKey) ? assetsRelativePath : cacheKey, path)
+                : null;
         }
 
         private static Sprite LoadCachedSprite(string cacheKey, string path)
@@ -90,55 +79,7 @@ namespace EmberCrpg.Presentation.Ember.Sprites
         {
             return string.IsNullOrWhiteSpace(id)
                 ? string.Empty
-                : id.Trim().ToLowerInvariant().Replace('-', '_').Replace(' ', '_');
-        }
-
-        private static IEnumerable<string> CoreCandidatePaths(string key)
-        {
-            var fileName = key + ".png";
-            yield return Path.Combine(Application.persistentDataPath, "Generated", "Core", fileName);
-            yield return Path.Combine(ProjectRoot(), "Assets", "Generated", "Core", fileName);
-            yield return Path.Combine(Application.streamingAssetsPath, "Generated", "Core", fileName);
-        }
-
-        private static string ResolveFreshCorePath(string key)
-        {
-            key = NormalizeCoreKey(key);
-            if (string.IsNullOrEmpty(key)) return string.Empty;
-
-            foreach (var candidate in CoreCandidatePaths(key))
-            {
-                try
-                {
-                    if (File.Exists(candidate) && GeneratedAssetProvenance.IsFreshCoreAsset(key, candidate)) return candidate;
-                }
-                catch
-                {
-                    // Ignore unreadable candidates; missing generated art must degrade to the placeholder.
-                }
-            }
-            return string.Empty;
-        }
-
-        private static string ResolveExistingAssetPath(string assetsRelativePath)
-        {
-            var normalized = (assetsRelativePath ?? string.Empty).Replace('\\', '/').Trim();
-            if (string.IsNullOrEmpty(normalized)) return string.Empty;
-
-            if (normalized.StartsWith("Assets/Generated/Core/", StringComparison.OrdinalIgnoreCase))
-            {
-                var fileName = Path.GetFileName(normalized);
-                if (!string.IsNullOrEmpty(fileName))
-                {
-                    var generatedCore = ResolveFreshCorePath(Path.GetFileNameWithoutExtension(fileName));
-                    if (!string.IsNullOrEmpty(generatedCore))
-                        return generatedCore;
-                }
-            }
-
-            var projectRelative = normalized.Replace('/', Path.DirectorySeparatorChar);
-            var projectPath = Path.Combine(ProjectRoot(), projectRelative);
-            return File.Exists(projectPath) ? projectPath : string.Empty;
+                : GeneratedCoreAssetStore.NormalizeKey(id);
         }
 
         private static Sprite LoadSprite(string path, string key)
@@ -161,12 +102,6 @@ namespace EmberCrpg.Presentation.Ember.Sprites
             {
                 return null;
             }
-        }
-
-        private static string ProjectRoot()
-        {
-            var parent = Directory.GetParent(Application.dataPath);
-            return parent != null ? parent.FullName : Directory.GetCurrentDirectory();
         }
     }
 }

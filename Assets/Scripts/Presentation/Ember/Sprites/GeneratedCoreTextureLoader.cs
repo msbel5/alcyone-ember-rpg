@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using EmberCrpg.Simulation.Generation;
 using UnityEngine;
 
 namespace EmberCrpg.Presentation.Ember.Sprites
@@ -28,23 +27,12 @@ namespace EmberCrpg.Presentation.Ember.Sprites
             FilterMode filterMode,
             bool mipChain)
         {
-            var key = Normalize(entryId);
+            var key = GeneratedCoreAssetStore.NormalizeKey(entryId);
             if (string.IsNullOrEmpty(key)) return null;
 
-            foreach (var path in CandidatePaths(key))
-            {
-                try
-                {
-                    if (!File.Exists(path)) continue;
-                    if (!GeneratedAssetProvenance.IsFreshCoreAsset(key, path)) continue;
-                    return LoadCached(key, path, wrapMode, filterMode, mipChain);
-                }
-                catch
-                {
-                    // Unreadable/stale generated assets must not break scene realization.
-                }
-            }
-            return null;
+            return GeneratedCoreAssetStore.TryResolveFreshCorePath(key, out var path)
+                ? LoadCached(key, path, wrapMode, filterMode, mipChain)
+                : null;
         }
 
         private static Texture2D LoadCached(
@@ -74,27 +62,6 @@ namespace EmberCrpg.Presentation.Ember.Sprites
             tex.filterMode = filterMode;
             Cache[cacheKey] = new CachedTexture { Path = path, LastWriteTicks = ticks, Texture = tex };
             return tex;
-        }
-
-        private static IEnumerable<string> CandidatePaths(string key)
-        {
-            var fileName = key + ".png";
-            yield return Path.Combine(Application.persistentDataPath, "Generated", "Core", fileName);
-            yield return Path.Combine(ProjectRoot(), "Assets", "Generated", "Core", fileName);
-            yield return Path.Combine(Application.streamingAssetsPath, "Generated", "Core", fileName);
-        }
-
-        private static string Normalize(string entryId)
-        {
-            return string.IsNullOrWhiteSpace(entryId)
-                ? string.Empty
-                : entryId.Trim().ToLowerInvariant().Replace('-', '_').Replace(' ', '_');
-        }
-
-        private static string ProjectRoot()
-        {
-            var parent = Directory.GetParent(Application.dataPath);
-            return parent != null ? parent.FullName : Directory.GetCurrentDirectory();
         }
     }
 }
