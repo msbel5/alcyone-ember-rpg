@@ -42,9 +42,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             var player = _world.Actors?.FirstByRole(ActorRole.Player);
             var crafterId = player != null ? player.Id : new ActorId(1UL);
-            return _crafting.TryCraft(_world, recipe, crafterId, ResolveItemName, out var message)
-                ? new CraftingActionResult(true, message)
-                : new CraftingActionResult(false, message);
+            if (!_crafting.TryCraft(_world, recipe, crafterId, ResolveItemName, out var message))
+                return new CraftingActionResult(false, message);
+
+            ReevaluateQuestProgress();
+            return new CraftingActionResult(true, message);
         }
 
         private static bool TryResolveRecipe(string recipeId, out RecipeDef recipe)
