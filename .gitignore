@@ -120,7 +120,9 @@ secrets.json
 # EMB-021 — generated-asset policy: runtime image generation is a per-playthrough
 # cache on the player's machine, not tracked source. Only seed manifests / curated
 # authored art are tracked. Regenerated outputs are ignored:
-GeneratedAssets/
+# Ignore only the root-level scratch export folder. Do not hide
+# Assets/Resources/GeneratedAssets, which is the runtime Resources database.
+/GeneratedAssets/
 # keep the Core/ folder + its .meta tracked (stable runtime-output location);
 # ignore only the regenerated image/json outputs so they never get staged:
 Assets/Generated/Core/*.png
@@ -128,6 +130,15 @@ Assets/Generated/Core/*.png.meta
 Assets/Generated/Core/*.json
 Assets/Generated/Core/*.jpg
 Assets/Generated/Core/*.jpg.meta
+Assets/Generated/Core/*.promptmeta
+Assets/Generated/Core/*.promptmeta.meta
+Assets/Generated/_backup_*/
+Assets/Generated/_backup_*.meta
+
+# Local matte/segmentation models are downloaded on demand and must not be
+# committed. Keep the source path configurable; keep binaries out of Git.
+Assets/StreamingAssets/Models/matte/
+Assets/StreamingAssets/Models/matte.meta
 
 # Codex sandbox validation redirects
 .validation-appdata/
