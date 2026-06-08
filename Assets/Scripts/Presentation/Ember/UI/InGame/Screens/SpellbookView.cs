@@ -17,9 +17,18 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             content.style.flexDirection = FlexDirection.Row;
             content.style.backgroundColor = VoidWarm;
 
-            var school = IgMockData.SpellSchools[0];
-            var selected = school.Spells[0];
+            var school = FirstSchoolWithSpells();
+            if (school == null)
+            {
+                content.Add(EmptyState(
+                    "Spellbook",
+                    "No known spells are available.",
+                    "The live spell source has not exposed any castable spells yet."));
+                stageCanvas.Add(_overlay);
+                return;
+            }
 
+            var selected = school.Spells[0];
             content.Add(BuildSchoolPane(school.Name));
             content.Add(BuildSpellListPane(school, selected));
             content.Add(BuildSpellDetailPane(school.Name, selected, onCastNow));
@@ -49,6 +58,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             for (int i = 0; i < IgMockData.SpellSchools.Length; i++)
             {
                 var school = IgMockData.SpellSchools[i];
+                var spells = school.Spells ?? Array.Empty<SpellData>();
                 bool active = school.Name == activeSchool;
                 var row = Row();
                 row.style.alignItems = Align.Center;
@@ -71,7 +81,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 var title = Text(school.Name, Sans, 12, active ? Parch : PA(0.50f), FontStyle.Bold);
                 row.Add(title);
 
-                var count = Text(school.Spells.Length.ToString(), Sans, 10, active ? School(school.Name) : PA(0.28f));
+                var count = Text(spells.Length.ToString(), Sans, 10, active ? School(school.Name) : PA(0.28f));
                 count.style.marginLeft = StyleKeyword.Auto;
                 row.Add(count);
                 pane.Add(row);
@@ -82,6 +92,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         private static VisualElement BuildSpellListPane(SpellSchoolData school, SpellData selected)
         {
+            var spells = school.Spells ?? Array.Empty<SpellData>();
             var pane = new ScrollView();
             pane.style.flexGrow = 1;
             pane.style.paddingTop = 16;
@@ -89,14 +100,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             pane.style.paddingLeft = 20;
             pane.style.paddingRight = 20;
 
-            var label = Text($"{school.Name.ToUpperInvariant()} · {school.Spells.Length} SPELLS", Sans, 10, School(school.Name), FontStyle.Bold);
+            var label = Text($"{school.Name.ToUpperInvariant()} · {spells.Length} SPELLS", Sans, 10, School(school.Name), FontStyle.Bold);
             label.style.letterSpacing = 1.8f;
             label.style.marginBottom = 14;
             pane.Add(label);
 
-            for (int i = 0; i < school.Spells.Length; i++)
+            for (int i = 0; i < spells.Length; i++)
             {
-                var spell = school.Spells[i];
+                var spell = spells[i];
                 bool isSelected = spell.Name == selected.Name;
                 var card = Row();
                 card.style.alignItems = Align.Center;
@@ -227,6 +238,17 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         {
             string first = spell.Split(' ')[0];
             return first.Substring(0, Mathf.Min(4, first.Length));
+        }
+
+        private static SpellSchoolData FirstSchoolWithSpells()
+        {
+            var schools = IgMockData.SpellSchools ?? Array.Empty<SpellSchoolData>();
+            for (int i = 0; i < schools.Length; i++)
+            {
+                if (schools[i].Spells != null && schools[i].Spells.Length > 0)
+                    return schools[i];
+            }
+            return null;
         }
     }
 }

@@ -16,7 +16,18 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             _overlay = IgModal.Build("Colony", true, () => { Close(); onClose?.Invoke(); }, out var content);
             content.style.flexDirection = FlexDirection.Row;
 
-            var selected = IgMockData.ColonyNpcs[0];
+            var npcs = IgMockData.ColonyNpcs ?? Array.Empty<ColonyNpcData>();
+            if (npcs.Length == 0)
+            {
+                content.Add(EmptyState(
+                    "Colony",
+                    "No live colonists are available.",
+                    "The world has not projected needs, jobs, or schedules into this screen yet."));
+                stageCanvas.Add(_overlay);
+                return;
+            }
+
+            var selected = npcs[0];
             content.Add(BuildNpcGrid(selected.Name));
             content.Add(BuildTaskPane(selected, onAssignTask));
 
@@ -39,9 +50,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             wrap.style.flexWrap = Wrap.Wrap;
             pane.Add(wrap);
 
-            for (int i = 0; i < IgMockData.ColonyNpcs.Length; i++)
+            var npcs = IgMockData.ColonyNpcs ?? Array.Empty<ColonyNpcData>();
+            for (int i = 0; i < npcs.Length; i++)
             {
-                var npc = IgMockData.ColonyNpcs[i];
+                var npc = npcs[i];
                 bool selected = npc.Name == selectedName;
                 var card = new VisualElement();
                 card.style.width = Length.Percent(48.8f);
@@ -95,8 +107,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 top.Add(hpWrap);
                 card.Add(top);
 
-                for (int n = 0; n < npc.Needs.Length; n++)
-                    card.Add(BuildNeed(npc.Needs[n]));
+                var needs = npc.Needs ?? Array.Empty<NeedData>();
+                for (int n = 0; n < needs.Length; n++)
+                    card.Add(BuildNeed(needs[n]));
 
                 var task = Text("⟶ " + npc.Task, Serif, 12, PA(0.50f), FontStyle.Italic);
                 task.style.marginTop = 8;

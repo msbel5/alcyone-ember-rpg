@@ -399,8 +399,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private void RefreshLiveInventory()
         {
-            IgMockData.Inventory = IgMockData.DefaultInventory;
-            IgMockData.EquipSlots = IgMockData.DefaultEquipSlots;
+            IgMockData.Inventory = Array.Empty<InventoryItemData>();
+            IgMockData.EquipSlots = Array.Empty<EquipmentSlotData>();
             if (_host is ITradeSource tradeSrc)
             {
                 var trade = tradeSrc.ReadTradeState();
@@ -421,14 +421,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private void RefreshLiveSpells()
         {
-            IgMockData.SpellBar = IgMockData.DefaultSpellBar;
-            IgMockData.SpellSchools = IgMockData.DefaultSpellSchools;
+            IgMockData.SpellBar = Array.Empty<SpellBarSlotData>();
+            IgMockData.SpellSchools = Array.Empty<SpellSchoolData>();
             if (!(_host is ISpellBarSource spellSrc)) return;
 
             var slots = spellSrc.GetSlots();
             if (slots == null) return;
 
-            int slotCount = Mathf.Max(IgMockData.DefaultSpellBar.Length, slots.Count);
+            int slotCount = Mathf.Max(5, slots.Count);
             int selected = spellSrc.GetSelectedSlot();
             var liveBar = new SpellBarSlotData[slotCount];
             var resolved = new List<SpellDefinition>();
@@ -452,7 +452,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private void RefreshLiveColony()
         {
-            IgMockData.ColonyNpcs = IgMockData.DefaultColonyNpcs;
+            IgMockData.ColonyNpcs = Array.Empty<ColonyNpcData>();
 
             var builders = new Dictionary<string, ColonyNpcProjection>(StringComparer.Ordinal);
             if (_host is IColonyNeedsSource needsSrc)
@@ -506,15 +506,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             foreach (var pair in builders)
             {
                 var npc = pair.Value;
-                var fallback = FindDefaultNpc(npc.Name);
                 live.Add(new ColonyNpcData(
                     npc.Name,
-                    string.IsNullOrWhiteSpace(npc.Role) ? fallback != null ? fallback.Role : "Colonist" : npc.Role,
-                    fallback != null ? fallback.Hp : 0,
-                    fallback != null ? fallback.HpMax : 0,
-                    npc.Needs ?? (fallback != null ? fallback.Needs : Array.Empty<NeedData>()),
-                    string.IsNullOrWhiteSpace(npc.Mood) ? fallback != null ? fallback.Mood : "Unknown" : npc.Mood,
-                    string.IsNullOrWhiteSpace(npc.Task) ? fallback != null ? fallback.Task : "Idle" : npc.Task));
+                    string.IsNullOrWhiteSpace(npc.Role) ? "Colonist" : npc.Role,
+                    0,
+                    0,
+                    npc.Needs ?? Array.Empty<NeedData>(),
+                    string.IsNullOrWhiteSpace(npc.Mood) ? "Unknown" : npc.Mood,
+                    string.IsNullOrWhiteSpace(npc.Task) ? "Idle" : npc.Task));
             }
 
             live.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
@@ -523,7 +522,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private void RefreshLiveJournal()
         {
-            IgJournalData.Chapters = IgJournalData.DefaultChapters;
+            IgJournalData.Chapters = Array.Empty<JournalChapterData>();
             IgJournalData.CurrentChapter = 0;
             if (!(_host is IJournalSource journalSrc)) return;
 
@@ -779,17 +778,6 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 builders.Add(actorName, npc);
             }
             return npc;
-        }
-
-        private static ColonyNpcData FindDefaultNpc(string actorName)
-        {
-            for (int i = 0; i < IgMockData.DefaultColonyNpcs.Length; i++)
-            {
-                var npc = IgMockData.DefaultColonyNpcs[i];
-                if (string.Equals(npc.Name, actorName, StringComparison.Ordinal))
-                    return npc;
-            }
-            return null;
         }
 
         private static string MoodLabel(int mood)
