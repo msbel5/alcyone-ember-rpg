@@ -66,17 +66,15 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // The old fallback fabricated HUD/gameplay rows here. Prefer a registered domain adapter; if none
             // exists, bootstrap a real DomainSimulationAdapter. If that fails, use an honest disabled adapter
             // that exposes empty/unavailable state rather than fake gameplay.
-            _adapter = EmberDomainAdapterLocator.Current
-                ?? TryCreateDomainAdapter()
-                ?? CreateFallbackAdapter();
-            // Codex audit (seventh pass C-P2 #11): split the aggregate into
-            // narrow role-typed handles so host code paths depend on what
-            // they actually use.
-            _clock = _adapter;
-            _hud = _adapter;
-            _worldView = _adapter;
-            _commands = _adapter;
-            _oracle = _adapter;
+            var binding = EmberWorldHostAdapterBinding.Create(
+                EmberDomainAdapterLocator.Current ?? TryCreateDomainAdapter(),
+                CreateFallbackAdapter);
+            _adapter = binding.Adapter;
+            _clock = binding.Clock;
+            _hud = binding.Hud;
+            _worldView = binding.WorldView;
+            _commands = binding.Commands;
+            _oracle = binding.Oracle;
             EmberDomainAdapterLocator.Register(_adapter);
 
             // Codex ninth-pass A-P1: consume any pending world-gen intent
