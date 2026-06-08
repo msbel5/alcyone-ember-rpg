@@ -98,13 +98,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             // swatch) into gameplay so the Character screen shows it instead of the "C" glyph fallback.
             if (_characterPortraitTexture != null)
             {
-                try
-                {
-                    var portraitPng = _characterPortraitTexture.EncodeToPNG();
-                    EmberWorldGenIntent.Pending.PortraitPng = portraitPng;
-                    EmberWorldGenIntent.PlayerPortraitPng = portraitPng;   // durable: survives the host nulling Pending after seeding
-                }
-                catch (Exception ex) { Debug.LogWarning("[charcreation] portrait carry failed: " + ex.Message); }
+                PlayerPortraitHandoff.Publish(_characterPortraitTexture);
             }
             if (AutoLaunchWorldgen && Application.isPlaying)
                 StartCoroutine(BeginVisibleWorldgen());

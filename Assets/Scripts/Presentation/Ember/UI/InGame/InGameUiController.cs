@@ -1083,16 +1083,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 return _playerPortraitSprite;
             _playerPortraitResolved = true;
 
-            var png = EmberWorldGenIntent.PlayerPortraitPng;
-            if (png == null || png.Length == 0)
-                return null;
-
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
-            if (!texture.LoadImage(png))
-                return null;
-
-            _playerPortraitSprite = Sprite.Create(
-                texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+            _playerPortraitSprite = PlayerPortraitHandoff.TryCreateSprite();
             return _playerPortraitSprite;
         }
 

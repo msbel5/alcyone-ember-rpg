@@ -143,6 +143,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             PortraitJson = json.ToCanonicalJson();
             // Build the texture unconditionally (not gated on _panel) so the redesigned view always has it.
             _characterPortraitTexture = CharacterCreationPortraitSwatch.Build(json);
+            PlayerPortraitHandoff.Publish(_characterPortraitTexture);
             if (_panel != null)
             {
                 _panel.SetText("portraitJson", PortraitJson);
@@ -283,6 +284,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.filterMode = FilterMode.Bilinear;
             _characterPortraitTexture = texture;
+            PlayerPortraitHandoff.Publish(texture);
             // Don't clobber the continent map the reveal is showing in this shared slot; the dossier restores
             // the portrait from _characterPortraitTexture.
             if (_step != CreationStep.WorldHistoryReveal)
