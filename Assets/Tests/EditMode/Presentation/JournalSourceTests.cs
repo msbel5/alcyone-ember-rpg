@@ -44,6 +44,7 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             var adapter = new DomainSimulationAdapter(world);
 
             adapter.SeedWorld("grim", "survival", "crossroads", 7u);
+            world.Quests.Add(QuestCatalog.ForgeIronIngotId, new QuestState(1, world.Time));
             var chapters = ((IJournalSource)adapter).GetChapters();
 
             Assert.That(chapters, Is.Not.Empty);

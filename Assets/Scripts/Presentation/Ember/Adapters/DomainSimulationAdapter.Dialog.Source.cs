@@ -57,6 +57,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // ForgeLocator.LlmRouter. The async path replaces _currentDialogLine
             // on success; _isDialogThinking gates the "thinking…" indicator.
             if (string.IsNullOrEmpty(topicId)) return;
+            if (TryHandleQuestInteractionTopic(topicId)) return;
 
             // EMB-045: answer from THIS actor's topic set first; only fall back to the world list. An
             // actor never answers for a topic they did not offer.

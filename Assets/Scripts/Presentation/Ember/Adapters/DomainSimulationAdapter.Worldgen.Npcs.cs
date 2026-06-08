@@ -159,26 +159,5 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return !anchor.IsEmpty && _world.Sites.TryGet(anchor, out anchorSite);
         }
 
-        private static void EnsureInventoryContains(
-            InventoryState inventory,
-            ItemId seedItemId,
-            string templateId,
-            string displayName,
-            int requiredQuantity)
-        {
-            var existingQuantity = 0;
-            foreach (var item in inventory.Items)
-            {
-                if (!item.IsEquipment && string.Equals(item.TemplateId, templateId, System.StringComparison.Ordinal))
-                    existingQuantity += item.Quantity;
-            }
-
-            if (existingQuantity >= requiredQuantity)
-                return;
-
-            if (!inventory.TryAdd(new InventoryItem(seedItemId, templateId, displayName, requiredQuantity - existingQuantity)))
-                throw new System.InvalidOperationException($"Starting inventory could not accept required smithing input {templateId}.");
-        }
-
     }
 }

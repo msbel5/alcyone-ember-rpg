@@ -34,7 +34,7 @@ namespace EmberCrpg.Tests.EditMode.Quest
         }
 
         [Test]
-        public void Tick_WithIronIngot_CompletesQuest_AndAppendsQuestCompletedOnce()
+        public void Tick_WithIronIngot_MarksForgeObjectiveWithoutCompletingQuest()
         {
             var world = CreateQuestWorld();
             var questState = SeedForgeQuest(world);
@@ -45,27 +45,27 @@ namespace EmberCrpg.Tests.EditMode.Quest
             system.Tick(world);
             system.Tick(world);
 
-            Assert.That(questState.IsComplete, Is.True);
-            Assert.That(questState.IsSuccess, Is.True);
+            Assert.That(questState.IsComplete, Is.False);
+            Assert.That(questState.IsTaskTriggered(0), Is.True);
             Assert.That(CountEvents(world, WorldEventKind.QuestTaskTriggered), Is.EqualTo(1));
-            Assert.That(CountEvents(world, WorldEventKind.QuestCompleted), Is.EqualTo(1));
+            Assert.That(CountEvents(world, WorldEventKind.QuestCompleted), Is.EqualTo(0));
         }
 
         [Test]
-        public void WorldTickComposer_SmeltLoop_CompletesQuest_Deterministically()
+        public void WorldTickComposer_SmeltLoop_MarksForgeObjectiveDeterministically()
         {
             var first = RunSmeltQuest();
             var second = RunSmeltQuest();
 
-            Assert.That(first.QuestState.IsComplete, Is.True);
-            Assert.That(first.QuestState.IsSuccess, Is.True);
+            Assert.That(first.QuestState.IsComplete, Is.False);
+            Assert.That(first.QuestState.IsTaskTriggered(0), Is.True);
             Assert.That(first.IronIngotCount, Is.EqualTo(1));
-            Assert.That(first.QuestCompletedCount, Is.EqualTo(1));
-            Assert.That(first.CompletionTickMinutes, Is.GreaterThan(0));
-            Assert.That(first.CompletionTickMinutes, Is.EqualTo(second.CompletionTickMinutes));
+            Assert.That(first.QuestCompletedCount, Is.EqualTo(0));
+            Assert.That(first.TaskTriggeredTickMinutes, Is.GreaterThan(0));
+            Assert.That(first.TaskTriggeredTickMinutes, Is.EqualTo(second.TaskTriggeredTickMinutes));
         }
 
-        private static (QuestState QuestState, int IronIngotCount, int QuestCompletedCount, long CompletionTickMinutes) RunSmeltQuest()
+        private static (QuestState QuestState, int IronIngotCount, int QuestCompletedCount, long TaskTriggeredTickMinutes) RunSmeltQuest()
         {
             var world = CreateSmeltQuestWorld();
             var questState = SeedForgeQuest(world);
@@ -75,7 +75,7 @@ namespace EmberCrpg.Tests.EditMode.Quest
             for (var tick = 1; tick <= WorldTickComposer.TicksPerGameDay; tick++)
             {
                 composer.Advance(world, tick);
-                if (questState.IsComplete)
+                if (questState.IsTaskTriggered(0))
                     break;
             }
 
@@ -83,7 +83,7 @@ namespace EmberCrpg.Tests.EditMode.Quest
                 questState,
                 Quantity(world.PlayerInventory, "iron_ingot"),
                 CountEvents(world, WorldEventKind.QuestCompleted),
-                FirstEventTick(world, WorldEventKind.QuestCompleted));
+                FirstEventTick(world, WorldEventKind.QuestTaskTriggered));
         }
 
         private static WorldState CreateQuestWorld()

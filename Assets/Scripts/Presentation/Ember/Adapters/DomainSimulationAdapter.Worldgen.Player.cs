@@ -45,16 +45,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             player.MoveTo(CenterOfSite(SettlementSiteId(StartingSettlement)));
         }
 
-        private void SeedStartingQuest()
-        {
-            var quest = QuestCatalog.ForgeIronIngot();
-            _world.Quests ??= new QuestStore();
-            if (_world.Quests.Contains(quest.Id))
-                return;
-
-            _world.Quests.Add(quest.Id, new QuestState(quest.Tasks.Count, _world.Time));
-        }
-
         private GridPosition CenterOfSite(SiteId siteId)
         {
             if (_world.Sites != null && _world.Sites.TryGet(siteId, out var site))

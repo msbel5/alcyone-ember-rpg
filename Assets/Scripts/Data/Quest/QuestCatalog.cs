@@ -24,7 +24,6 @@ namespace EmberCrpg.Data.Quests
                         new IQuestAction[]
                         {
                             new AppendQuestEventAction(WorldEventKind.QuestTaskTriggered, "quest_task_triggered:forge_iron_ingot"),
-                            new CompleteQuestAction(success: true),
                         }),
                 },
                 completionTaskIndex: 0);

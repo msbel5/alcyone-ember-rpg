@@ -29,7 +29,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             HydrateNpcs(generated);
             HydrateHistory(generated);
             MovePlayerToStartingSettlement();
-            SeedStartingQuest();
         }
 
         private void HydrateSites(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)

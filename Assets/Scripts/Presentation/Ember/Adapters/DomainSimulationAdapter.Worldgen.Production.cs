@@ -75,20 +75,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     requesterId: anchor.Value == 0UL ? new ActorId(1UL) : new ActorId(anchor.Value)));
             }
 
-            // The live production loop currently consumes from world.PlayerInventory. Seed the exact
-            // recipe inputs there so the claimed smelting job can actually start and produce output.
-            EnsureInventoryContains(
-                _world.PlayerInventory ?? (_world.PlayerInventory = new InventoryState(10)),
-                new ItemId(9_000_000UL + baseId * 10UL + 4UL),
-                "iron_ore",
-                "Iron Ore",
-                requiredQuantity: 2);
-            EnsureInventoryContains(
-                _world.PlayerInventory,
-                new ItemId(9_000_000UL + baseId * 10UL + 5UL),
-                "fuel",
-                "Fuel",
-                requiredQuantity: 1);
+            // Player-facing smithing inputs are handed over by the forge quest giver. The worksite/job
+            // stay seeded so the settlement has a real forge anchor without making the player craft-ready
+            // before speaking to anyone.
         }
 
     }

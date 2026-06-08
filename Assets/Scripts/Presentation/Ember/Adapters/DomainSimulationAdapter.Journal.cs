@@ -74,9 +74,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (id == QuestCatalog.ForgeIronIngotId)
             {
                 if (state != null && state.IsComplete)
-                    return "The forge's request has been met. The first iron ingot now anchors your name in local memory.";
+                    return "The forged ingot has been delivered. The first useful work now anchors your name in local memory.";
+                if (state != null && state.IsTaskTriggered(0))
+                    return "Return the forged iron ingot to the smith who trusted you with ore and fuel.";
                 if (!string.IsNullOrWhiteSpace(settlement))
-                    return "The forge at " + settlement + " needs iron worked into an ingot. Begin there and prove you can shape something useful.";
+                    return "The forge at " + settlement + " needs iron worked into an ingot. Speak with a smith, take the materials, and prove you can shape something useful.";
             }
 
             if (state != null && state.IsComplete)
