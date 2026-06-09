@@ -92,6 +92,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (npc != null)
             {
                 var perActorTopics = AddQuestInteractionTopics(
+                    _activeDialogActorId,
                     npc,
                     NpcTopicCatalog.For(npc.Role, npc.Faction.Value, _world.Topics));
                 _conversation = new ConversationState(

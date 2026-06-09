@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using EmberCrpg.Domain.Actors;
 using EmberCrpg.Data.Quests;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Narrative;
+using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.Quest;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.Worldgen;
@@ -18,9 +20,9 @@ namespace EmberCrpg.Simulation.Quest
         private const string Fuel = "fuel";
         private const string IronIngot = "iron_ingot";
 
-        public IReadOnlyList<AskAboutTopic> BuildTopics(WorldState world, NpcSeedRecord npc)
+        public IReadOnlyList<AskAboutTopic> BuildTopics(WorldState world, ActorId actorId, NpcSeedRecord npc)
         {
-            if (!IsForgeQuestGiver(npc))
+            if (!IsForgeQuestGiver(world, actorId, npc))
                 return Array.Empty<AskAboutTopic>();
 
             var state = TryGetForgeState(world);
@@ -43,7 +45,7 @@ namespace EmberCrpg.Simulation.Quest
             line = string.Empty;
             if (!string.Equals(topicId, ForgeIronIngotTopicId, StringComparison.Ordinal))
                 return false;
-            if (world == null || !IsForgeQuestGiver(npc))
+            if (world == null || !IsForgeQuestGiver(world, actorId, npc))
                 return false;
 
             world.EnsureInvariants();
@@ -75,9 +77,20 @@ namespace EmberCrpg.Simulation.Quest
             return true;
         }
 
-        public static bool IsForgeQuestGiver(NpcSeedRecord npc)
+        public static bool IsForgeQuestGiver(WorldState world, ActorId actorId, NpcSeedRecord npc)
         {
-            return npc != null && (npc.Role == NpcRole.Blacksmith || npc.Role == NpcRole.Artisan);
+            if (npc != null && (npc.Role == NpcRole.Blacksmith || npc.Role == NpcRole.Artisan))
+                return true;
+            if (world?.Actors == null || actorId.IsEmpty || !world.Actors.TryGet(actorId, out var actor))
+                return false;
+
+            foreach (var preference in actor.JobPreferences)
+            {
+                if (preference.Kind == JobKind.Smith)
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool TryStartForgeQuest(WorldState world, ActorId actorId, NpcSeedRecord npc, out string line)

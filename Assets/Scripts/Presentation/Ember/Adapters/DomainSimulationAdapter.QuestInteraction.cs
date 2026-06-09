@@ -10,10 +10,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private readonly QuestInteractionService _questInteractions = new QuestInteractionService();
 
         private IReadOnlyList<AskAboutTopic> AddQuestInteractionTopics(
+            EmberCrpg.Domain.Core.ActorId actorId,
             NpcSeedRecord npc,
             IReadOnlyList<AskAboutTopic> baseTopics)
         {
-            var questTopics = _questInteractions.BuildTopics(_world, npc);
+            var questTopics = _questInteractions.BuildTopics(_world, actorId, npc);
             if (questTopics.Count == 0)
                 return baseTopics;
 
