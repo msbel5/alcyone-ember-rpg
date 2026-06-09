@@ -24,6 +24,7 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(options.WorldHost.FateResolvedSeconds, Is.EqualTo(7f));
             Assert.That(options.WorldHost.EscapeHoldQuitSeconds, Is.EqualTo(1f));
             Assert.That(options.WorldHost.ShowQuestGuidance, Is.True);
+            Assert.That(options.WorldHost.ShowQuestCompass, Is.True);
 
             Assert.That(options.Tick.MinutesPerTick, Is.EqualTo(1));
             Assert.That(options.Tick.TicksPerDay, Is.EqualTo(1440));
@@ -59,12 +60,14 @@ namespace EmberCrpg.Tests.EditMode.Presentation
         {
             var options = EmberRuntimeOptionsProvider.Current.Clone();
             options.WorldHost.ShowQuestGuidance = false;
+            options.WorldHost.ShowQuestCompass = false;
             options.CharacterCreation.PortraitForgeWaitFrames = 0;
             options.CharacterCreation.PortraitForgeTimeoutSeconds = 1f;
 
             EmberRuntimeOptionsProvider.Set(options);
 
             Assert.That(EmberRuntimeOptionsProvider.Current.WorldHost.ShowQuestGuidance, Is.False);
+            Assert.That(EmberRuntimeOptionsProvider.Current.WorldHost.ShowQuestCompass, Is.False);
             Assert.That(EmberRuntimeOptionsProvider.Current.CharacterCreation.PortraitForgeWaitFrames, Is.EqualTo(1));
             Assert.That(EmberRuntimeOptionsProvider.Current.CharacterCreation.PortraitForgeTimeoutSeconds, Is.EqualTo(5f));
         }

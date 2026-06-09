@@ -215,6 +215,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             try
             {
                 task = forge.GenerateAsync(request, _portraitForgeCancellation.Token);
+                AttachPortraitHandoffContinuation(task, generation, _portraitForgeCancellation);
             }
             catch (Exception ex)
             {
@@ -226,6 +227,30 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             AddLog("[portrait] forge image: generating " + spec.Width + "x" + spec.Height + "…");
             _portraitForgeUpgradeRoutine = StartCoroutine(AwaitPortraitForgeUpgrade(task, generation));
+        }
+
+        private void AttachPortraitHandoffContinuation(Task<AssetGenerationResult> task, int generation, CancellationTokenSource owner)
+        {
+            task.ContinueWith(done =>
+            {
+                try
+                {
+                    if (done.Status != TaskStatus.RanToCompletion)
+                        return;
+                    if (generation != _portraitGenSerial)
+                        return;
+
+                    var result = done.Result;
+                    if (!result.Success || result.IsPlaceholder || result.ImageBytes == null || result.ImageBytes.Length == 0)
+                        return;
+
+                    PlayerPortraitHandoff.PublishPng(result.ImageBytes);
+                }
+                finally
+                {
+                    owner.Dispose();
+                }
+            }, TaskScheduler.Default);
         }
 
         private AssetGenerationRequest BuildPortraitRequest(AssetKind kind, ImageGenSpec spec, int generation)
@@ -271,10 +296,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             _portraitForgeUpgradeRoutine = null;
             if (_portraitForgeCancellation != null)
-            {
-                _portraitForgeCancellation.Dispose();
                 _portraitForgeCancellation = null;
-            }
 
             if (generation != _portraitGenSerial)
                 yield break;
@@ -311,7 +333,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             RefreshPortraitView();   // re-render the redesigned view so the real forge image actually appears
         }
 
-        private void StopPortraitForgeUpgrade()
+        private void StopPortraitForgeUpgrade(bool cancel = true)
         {
             if (_portraitForgeUpgradeRoutine != null)
             {
@@ -321,16 +343,19 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             if (_portraitForgeCancellation != null)
             {
-                try { _portraitForgeCancellation.Cancel(); }
-                catch (ObjectDisposedException) { }
-                _portraitForgeCancellation.Dispose();
+                if (cancel)
+                {
+                    try { _portraitForgeCancellation.Cancel(); }
+                    catch (ObjectDisposedException) { }
+                    _portraitForgeCancellation.Dispose();
+                }
                 _portraitForgeCancellation = null;
             }
         }
 
         // Stop any in-flight upgrade coroutine (used on reroll/lock/regenerate). The Task keeps
         // running to completion harmlessly; its result is discarded via the generation check.
-        private void StopPortraitUpgrade()
+        private void StopPortraitUpgrade(bool cancelForge = true)
         {
             if (_portraitUpgradeRoutine != null)
             {
@@ -338,7 +363,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 _portraitUpgradeRoutine = null;
             }
 
-            StopPortraitForgeUpgrade();
+            StopPortraitForgeUpgrade(cancelForge);
         }
 
         private void AddLog(string line)

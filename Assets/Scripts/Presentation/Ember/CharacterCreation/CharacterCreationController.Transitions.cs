@@ -96,7 +96,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 PortraitJson);
             // Carry the approved portrait image (real forge face if it landed, else the deterministic
             // swatch) into gameplay so the Character screen shows it instead of the "C" glyph fallback.
-            if (_characterPortraitTexture != null)
+            if (!PlayerPortraitHandoff.CopyCurrentToPending() && _characterPortraitTexture != null)
             {
                 PlayerPortraitHandoff.Publish(_characterPortraitTexture);
             }

@@ -26,6 +26,7 @@ namespace EmberCrpg.Domain.Configuration
     {
         public IReadOnlyList<string> DefaultTopics { get; set; } = new[] { "rumors", "work", "trade", "fate" };
         public bool ShowQuestGuidance { get; set; } = true;
+        public bool ShowQuestCompass { get; set; } = true;
         public float FatePlaceholderSeconds { get; set; } = 3f;
         public float FateResolvedSeconds { get; set; } = 7f;
         public float EscapeHoldQuitSeconds { get; set; } = 1f;
@@ -155,6 +156,7 @@ namespace EmberCrpg.Domain.Configuration
                     FatePlaceholderSeconds = WorldHost.FatePlaceholderSeconds,
                     FateResolvedSeconds = WorldHost.FateResolvedSeconds,
                     ShowQuestGuidance = WorldHost.ShowQuestGuidance,
+                    ShowQuestCompass = WorldHost.ShowQuestCompass,
                     EscapeHoldQuitSeconds = WorldHost.EscapeHoldQuitSeconds,
                     SpellSlotCount = WorldHost.SpellSlotCount,
                     FallbackWorldSeed = WorldHost.FallbackWorldSeed,

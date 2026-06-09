@@ -38,6 +38,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                                                // VisualElement) can be detected + closed, not just "IgModalOverlay"
         private CharacterView _activeCharacter;
         private string _activePlayerPortraitKey;
+        private int _playerPortraitVersion = -1;
         private IDialogSource _activeDialogSource;   // live NPC conversation behind the redesigned DialogView
         private DialogView _activeDialog;
         private string _activeDialogPortrait;        // portrait key, re-resolved each frame until the sprite loads
@@ -152,6 +153,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 if (sp != null)
                     _activeCharacter.SetPortrait(sp);
             }
+            if (_activeCharacter != null && PlayerPortraitHandoff.Version != _playerPortraitVersion)
+            {
+                var sp = TryGetPlayerPortraitSprite(forceRefresh: true);
+                if (sp != null)
+                    _activeCharacter.SetPortrait(sp);
+            }
 
             if (_activeOracle != null && !_activeOracle.HasPortrait && _host is ISpriteByName oracleSprites)
             {
@@ -188,14 +195,26 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 d.SpellSlots = spells.GetSlots();
             if (_host is IEmberHudSource hud)
                 d.Location = hud.GetHudText();   // the real top-bar string (Tick/Day/mood/pop/settlement)
-            if (EmberRuntimeOptionsProvider.Current.WorldHost.ShowQuestGuidance && _host is IQuestGuidanceSource guidance)
+            var worldOptions = EmberRuntimeOptionsProvider.Current.WorldHost;
+            if ((worldOptions.ShowQuestGuidance || worldOptions.ShowQuestCompass) && _host is IQuestGuidanceSource guidance)
             {
                 var row = guidance.ReadQuestGuidance();
                 if (row.HasTarget)
-                    d.EventLine = row.Line;
+                {
+                    if (worldOptions.ShowQuestGuidance)
+                        d.EventLine = row.Line;
+                    if (worldOptions.ShowQuestCompass)
+                        d.CompassLine = BuildCompassLine(row);
+                }
             }
 
             _hud.Refresh(in d);
+        }
+
+        private static string BuildCompassLine(QuestGuidanceRow row)
+        {
+            var range = row.DistanceTiles <= 0 ? "nearby" : row.DistanceTiles + " tiles";
+            return "QUEST " + row.TargetName + " · " + range + " · " + row.Direction;
         }
 
         // Every in-game screen, opened by id. One modal at a time: CloseScreen() drops any open IgModal overlay
@@ -1096,13 +1115,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         // instead of the "C" glyph fallback. Returns null when no portrait was carried.
         private Sprite _playerPortraitSprite;
         private bool _playerPortraitResolved;
-        private Sprite TryGetPlayerPortraitSprite()
+        private Sprite TryGetPlayerPortraitSprite(bool forceRefresh = false)
         {
-            if (_playerPortraitResolved)
+            int version = PlayerPortraitHandoff.Version;
+            if (!forceRefresh && _playerPortraitResolved && version == _playerPortraitVersion)
                 return _playerPortraitSprite;
             _playerPortraitResolved = true;
 
             _playerPortraitSprite = PlayerPortraitHandoff.TryCreateSprite();
+            _playerPortraitVersion = version;
             return _playerPortraitSprite;
         }
 

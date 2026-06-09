@@ -27,6 +27,7 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             Editable(world, "Start", Options.WorldHost.FallbackStart, "next gen", text => CommitText(text, (o, v) => o.WorldHost.FallbackStart = v, () => Options.WorldHost.FallbackStart));
             Editable(world, "Spell Slots", Read(() => Options.WorldHost.SpellSlotCount), "live", text => CommitInt(text, (o, v) => o.WorldHost.SpellSlotCount = Math.Max(1, v), () => Options.WorldHost.SpellSlotCount));
             Editable(world, "Quest Guidance", Options.WorldHost.ShowQuestGuidance.ToString(), "live", text => CommitBool(text, (o, v) => o.WorldHost.ShowQuestGuidance = v, () => Options.WorldHost.ShowQuestGuidance));
+            Editable(world, "Quest Compass", Options.WorldHost.ShowQuestCompass.ToString(), "live", text => CommitBool(text, (o, v) => o.WorldHost.ShowQuestCompass = v, () => Options.WorldHost.ShowQuestCompass));
         }
 
         // Why: input edits should also refresh the action map so gameplay reads the new bindings without a restart.

@@ -11,6 +11,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
     {
         public string Location;     // "Day 3 · Dusk · Ashton Crossroads"
         public string EventLine;    // most recent world-event / narration line
+        public string CompassLine;  // optional quest/navigation target
         public int Gold, Level;
         public string ClassName;
         public int Hp, HpMax, Fatigue, FatigueMax, Mana, ManaMax;
@@ -28,7 +29,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         public Action<string> OnOpenScreen;   // "inventory" / "character" / "worldmap" / "journal" / "colony"
         public Action OnConsulDm;
 
-        private readonly Label _location, _gold, _level, _eventLine;
+        private readonly Label _location, _gold, _level, _eventLine, _compassLine;
         private readonly VitalBar _hp, _fat, _mp;
         private readonly List<Label> _spellLabels = new List<Label>();
 
@@ -64,6 +65,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
             // event log line
             var eventWrap = new VisualElement(); eventWrap.style.width = 320; eventWrap.style.flexShrink = 0;
+            _compassLine = Text("", Sans, 11, Gold, FontStyle.Bold);
+            _compassLine.style.letterSpacing = 0.8f;
+            _compassLine.style.marginBottom = 4;
+            _compassLine.style.display = DisplayStyle.None;
+            eventWrap.Add(_compassLine);
             _eventLine = Text("", Serif, 13, PA(0.60f), FontStyle.Italic);
             _eventLine.style.whiteSpace = WhiteSpace.Normal;
             eventWrap.Add(_eventLine);
@@ -128,6 +134,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         public void Refresh(in WorldHudData d)
         {
             if (!string.IsNullOrEmpty(d.Location)) _location.text = d.Location;
+            _compassLine.text = d.CompassLine ?? string.Empty;
+            _compassLine.style.display = string.IsNullOrEmpty(d.CompassLine) ? DisplayStyle.None : DisplayStyle.Flex;
             _eventLine.text = d.EventLine ?? string.Empty;
             _gold.text = "⊙ " + d.Gold + " gp";
             _level.text = "Lv " + d.Level + (string.IsNullOrEmpty(d.ClassName) ? "" : " " + d.ClassName);

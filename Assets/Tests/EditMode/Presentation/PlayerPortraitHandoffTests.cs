@@ -50,6 +50,35 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(EmberWorldGenIntent.Pending.PortraitPng, Is.EqualTo(EmberWorldGenIntent.PlayerPortraitPng));
         }
 
+        [Test]
+        public void PublishPng_IncrementsVersion_AndUpdatesSessionBytes()
+        {
+            var before = PlayerPortraitHandoff.Version;
+            var texture = Texture(4, 5, new Color32(160, 20, 42, 255));
+            var png = texture.EncodeToPNG();
+
+            Assert.That(PlayerPortraitHandoff.PublishPng(png), Is.True);
+
+            Assert.That(PlayerPortraitHandoff.Version, Is.GreaterThan(before));
+            Assert.That(EmberWorldGenIntent.PlayerPortraitPng, Is.Not.SameAs(png));
+            Assert.That(EmberWorldGenIntent.PlayerPortraitPng, Is.EqualTo(png));
+        }
+
+        [Test]
+        public void CopyCurrentToPending_CarriesLatestBytesWithoutRepublishing()
+        {
+            var texture = Texture(5, 4, new Color32(40, 200, 180, 255));
+            var png = texture.EncodeToPNG();
+
+            Assert.That(PlayerPortraitHandoff.PublishPng(png), Is.True);
+            EmberWorldGenIntent.Pending = new EmberWorldGenIntent("grim", "survival", "forge");
+
+            Assert.That(PlayerPortraitHandoff.CopyCurrentToPending(), Is.True);
+
+            Assert.That(EmberWorldGenIntent.Pending.PortraitPng, Is.Not.SameAs(EmberWorldGenIntent.PlayerPortraitPng));
+            Assert.That(EmberWorldGenIntent.Pending.PortraitPng, Is.EqualTo(EmberWorldGenIntent.PlayerPortraitPng));
+        }
+
         private static Texture2D Texture(int width, int height, Color32 color)
         {
             var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);

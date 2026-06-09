@@ -181,7 +181,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
         private void OnDestroy()
         {
-            StopPortraitUpgrade();
+            StopPortraitUpgrade(cancelForge: !_storyLaunched);
             if (_panel == null) return;
             UiSurfaceLocator.Current?.Unmount(_panel);
             _panel = null;

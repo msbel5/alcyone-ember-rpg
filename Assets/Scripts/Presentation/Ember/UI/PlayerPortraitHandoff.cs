@@ -10,6 +10,18 @@ namespace EmberCrpg.Presentation.Ember.UI
     /// </summary>
     public static class PlayerPortraitHandoff
     {
+        private static readonly object Gate = new object();
+        private static int _version;
+
+        public static int Version
+        {
+            get
+            {
+                lock (Gate)
+                    return _version;
+            }
+        }
+
         public static bool Publish(Texture2D texture)
         {
             if (texture == null)
@@ -21,10 +33,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                 if (png == null || png.Length == 0)
                     return false;
 
-                EmberWorldGenIntent.PlayerPortraitPng = png;
-                if (EmberWorldGenIntent.Pending != null)
-                    EmberWorldGenIntent.Pending.PortraitPng = png;
-                return true;
+                return PublishPng(png);
             }
             catch (Exception ex)
             {
@@ -33,9 +42,51 @@ namespace EmberCrpg.Presentation.Ember.UI
             }
         }
 
+        public static bool PublishPng(byte[] png)
+        {
+            if (png == null || png.Length == 0)
+                return false;
+
+            var copy = new byte[png.Length];
+            Buffer.BlockCopy(png, 0, copy, 0, png.Length);
+            lock (Gate)
+            {
+                EmberWorldGenIntent.PlayerPortraitPng = copy;
+                if (EmberWorldGenIntent.Pending != null)
+                    EmberWorldGenIntent.Pending.PortraitPng = copy;
+                _version++;
+            }
+            return true;
+        }
+
+        public static bool CopyCurrentToPending()
+        {
+            lock (Gate)
+            {
+                if (EmberWorldGenIntent.Pending == null)
+                    return false;
+                var source = EmberWorldGenIntent.PlayerPortraitPng;
+                if (source == null || source.Length == 0)
+                    return false;
+
+                var copy = new byte[source.Length];
+                Buffer.BlockCopy(source, 0, copy, 0, source.Length);
+                EmberWorldGenIntent.Pending.PortraitPng = copy;
+                return true;
+            }
+        }
+
         public static Sprite TryCreateSprite()
         {
-            var png = EmberWorldGenIntent.PlayerPortraitPng;
+            byte[] png;
+            lock (Gate)
+            {
+                var source = EmberWorldGenIntent.PlayerPortraitPng;
+                if (source == null || source.Length == 0)
+                    return null;
+                png = new byte[source.Length];
+                Buffer.BlockCopy(source, 0, png, 0, source.Length);
+            }
             if (png == null || png.Length == 0)
                 return null;
 

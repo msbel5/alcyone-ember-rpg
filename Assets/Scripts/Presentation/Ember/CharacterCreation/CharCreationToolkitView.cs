@@ -614,7 +614,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             host.Add(col); body.Add(host);
         }
 
-        // ── SCREEN 10 — The World Awakens (fixed 16:9 box) ────────────────────────────────────────────────────
+        // ── SCREEN 10 — The World Awakens (fixed 2:1 map box) ─────────────────────────────────────────────────
         public void RenderWorldReveal(int step, bool ready, Texture2D map, string narrative,
                                       bool canContinue, string nextLabel)
         {
@@ -624,17 +624,17 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             col.style.alignItems = Align.Center;
             col.style.flexGrow = 1; col.style.minHeight = 0;   // fill the height so the narrative can scroll inside it
 
-            // FIXED 16:9 map box. flexShrink 0 so the growing narrative NEVER squeezes it — the map keeps its
-            // full 640×360 (design: "never auto-size"). This was the bug: default flexShrink let it shrink.
+            // The overland sampler is 128×64 (2:1). Keep this frame 2:1 too, and stretch instead of crop so the
+            // reveal map and in-game map use the same projection.
             var box = new VisualElement();
-            box.style.width = 640; box.style.height = 360; box.style.flexShrink = 0; Radius(box, 14);
+            box.style.width = 640; box.style.height = 320; box.style.flexShrink = 0; Radius(box, 14);
             box.style.backgroundColor = Input; box.style.overflow = Overflow.Hidden;
             Border(box, ready ? Amber : PA(0.18f), 2);
             box.style.alignItems = Align.Center; box.style.justifyContent = Justify.Center;
             box.style.marginBottom = 14;
             if (ready && map != null)
             {
-                var img = new Image { image = map, scaleMode = ScaleMode.ScaleAndCrop };
+                var img = new Image { image = map, scaleMode = ScaleMode.StretchToFill };
                 img.style.width = Length.Percent(100); img.style.height = Length.Percent(100);
                 box.Add(img);
             }
