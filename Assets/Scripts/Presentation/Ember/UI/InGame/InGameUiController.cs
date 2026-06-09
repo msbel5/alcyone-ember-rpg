@@ -188,6 +188,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 d.SpellSlots = spells.GetSlots();
             if (_host is IEmberHudSource hud)
                 d.Location = hud.GetHudText();   // the real top-bar string (Tick/Day/mood/pop/settlement)
+            if (EmberRuntimeOptionsProvider.Current.WorldHost.ShowQuestGuidance && _host is IQuestGuidanceSource guidance)
+            {
+                var row = guidance.ReadQuestGuidance();
+                if (row.HasTarget)
+                    d.EventLine = row.Line;
+            }
 
             _hud.Refresh(in d);
         }
@@ -524,6 +530,19 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         {
             IgJournalData.Chapters = Array.Empty<JournalChapterData>();
             IgJournalData.CurrentChapter = 0;
+            IgJournalData.EmptyTitle = "Journal";
+            IgJournalData.EmptyBody = "No active quests — the world has asked nothing of you yet.";
+            IgJournalData.EmptyDetail = "No live quest has been accepted.";
+            if (EmberRuntimeOptionsProvider.Current.WorldHost.ShowQuestGuidance && _host is IQuestGuidanceSource guidance)
+            {
+                var row = guidance.ReadQuestGuidance();
+                if (row.HasTarget)
+                {
+                    IgJournalData.EmptyTitle = row.Title;
+                    IgJournalData.EmptyBody = row.Line;
+                    IgJournalData.EmptyDetail = "This is guidance only; speak with the NPC to accept the quest.";
+                }
+            }
             if (!(_host is IJournalSource journalSrc)) return;
 
             var chapters = journalSrc.GetChapters();

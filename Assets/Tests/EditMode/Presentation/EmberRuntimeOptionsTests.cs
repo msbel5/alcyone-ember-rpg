@@ -23,10 +23,14 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(options.WorldHost.FatePlaceholderSeconds, Is.EqualTo(3f));
             Assert.That(options.WorldHost.FateResolvedSeconds, Is.EqualTo(7f));
             Assert.That(options.WorldHost.EscapeHoldQuitSeconds, Is.EqualTo(1f));
+            Assert.That(options.WorldHost.ShowQuestGuidance, Is.True);
 
             Assert.That(options.Tick.MinutesPerTick, Is.EqualTo(1));
-            Assert.That(options.Tick.TicksPerDay, Is.EqualTo(240));
-            Assert.That(options.Tick.TicksPerHour, Is.EqualTo(10));
+            Assert.That(options.Tick.TicksPerDay, Is.EqualTo(1440));
+            Assert.That(options.Tick.TicksPerHour, Is.EqualTo(60));
+
+            Assert.That(options.CharacterCreation.PortraitForgeWaitFrames, Is.EqualTo(240));
+            Assert.That(options.CharacterCreation.PortraitForgeTimeoutSeconds, Is.EqualTo(120f));
         }
 
         [Test]
@@ -48,6 +52,21 @@ namespace EmberCrpg.Tests.EditMode.Presentation
 
             EmberRuntimeOptionsProvider.ResetToDefaults();
             Assert.That(EmberRuntimeOptionsProvider.Current.Menu.DecorationRefreshSeconds, Is.EqualTo(2f));
+        }
+
+        [Test]
+        public void Provider_NormalizesNewPlayabilityOptions()
+        {
+            var options = EmberRuntimeOptionsProvider.Current.Clone();
+            options.WorldHost.ShowQuestGuidance = false;
+            options.CharacterCreation.PortraitForgeWaitFrames = 0;
+            options.CharacterCreation.PortraitForgeTimeoutSeconds = 1f;
+
+            EmberRuntimeOptionsProvider.Set(options);
+
+            Assert.That(EmberRuntimeOptionsProvider.Current.WorldHost.ShowQuestGuidance, Is.False);
+            Assert.That(EmberRuntimeOptionsProvider.Current.CharacterCreation.PortraitForgeWaitFrames, Is.EqualTo(1));
+            Assert.That(EmberRuntimeOptionsProvider.Current.CharacterCreation.PortraitForgeTimeoutSeconds, Is.EqualTo(5f));
         }
     }
 }

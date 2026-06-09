@@ -22,6 +22,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
         public static JournalChapterData[] Chapters = DefaultChapters;
         public static int CurrentChapter = 0;
+        public static string EmptyTitle = "Journal";
+        public static string EmptyBody = "No active quests — the world has asked nothing of you yet.";
+        public static string EmptyDetail = "No live quest has been accepted.";
     }
 
     public sealed record JournalChapterData(int ChapterIndex, string Title, JournalEntryData[] Entries);

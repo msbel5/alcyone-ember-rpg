@@ -654,8 +654,8 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
 
             if (!string.IsNullOrEmpty(narrative))
             {
-                // The narrative SCROLLS in the remaining space (credits-roll) so long streaming history never
-                // pushes the page or clips off the bottom — it auto-follows the latest line as it streams in.
+                // The narrative scrolls in the remaining space, but starts at the first line. Auto-following
+                // the latest line made the deterministic chronicle look out of order and hid the genesis lines.
                 var scroll = new ScrollView(ScrollViewMode.Vertical);
                 scroll.style.flexGrow = 1; scroll.style.minHeight = 0; scroll.style.maxHeight = 400;
                 scroll.style.width = Length.Percent(100); scroll.style.maxWidth = 640; scroll.style.alignSelf = Align.Center;
@@ -669,7 +669,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 scroll.Add(card);
                 col.Add(scroll);
                 scroll.schedule.Execute(() => EmberCrpg.Presentation.Ember.UI.InGame.IgDesign.StyleScroll(scroll)).StartingIn(0);
-                scroll.schedule.Execute(() => scroll.scrollOffset = new Vector2(0f, float.MaxValue)).StartingIn(0);
+                scroll.schedule.Execute(() => scroll.scrollOffset = Vector2.zero).StartingIn(0);
             }
 
             host.Add(col); body.Add(host);

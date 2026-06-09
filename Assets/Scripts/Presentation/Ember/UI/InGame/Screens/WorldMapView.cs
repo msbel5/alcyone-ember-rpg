@@ -83,32 +83,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             {
                 var loc = locations[i];
                 bool isSelected = ReferenceEquals(loc, selected);
-
-                var pin = new VisualElement();
-                pin.style.position = Position.Absolute;
-                pin.style.left = Length.Percent(loc.XPercent);
-                pin.style.top = Length.Percent(loc.YPercent);
-                pin.style.translate = new Translate(new Length(-50, LengthUnit.Percent), new Length(-50, LengthUnit.Percent));
-                pin.style.alignItems = Align.Center;
-
-                var dot = new VisualElement();
-                float size = loc.IsCurrent ? 20f : (isSelected ? 16f : 12f);
-                dot.style.width = size;
-                dot.style.height = size;
-                dot.style.backgroundColor = loc.IsCurrent ? Gold : Alpha(LocationColor(loc.Kind), 0.56f);
-                Border(dot, loc.IsCurrent ? Amber : LocationColor(loc.Kind), loc.IsCurrent ? 2 : 1);
-                Radius(dot, 999);
-                pin.Add(dot);
-
-                if (loc.IsCurrent || isSelected)
-                {
-                    var label = Text(loc.Name, Sans, 10, loc.IsCurrent ? Gold : Parch, FontStyle.Bold);
-                    label.style.letterSpacing = 0.6f;
-                    label.style.marginTop = 4;
-                    pin.Add(label);
-                }
-
-                mapFrame.Add(pin);
+                AddLocationPin(mapFrame, loc, isSelected);
             }
 
             var player = new VisualElement();
@@ -263,6 +238,41 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             region.style.marginTop = 4;
             row.Add(region);
             return row;
+        }
+
+        private static void AddLocationPin(VisualElement mapFrame, MapLocationData loc, bool isSelected)
+        {
+            var pin = new VisualElement();
+            pin.style.position = Position.Absolute;
+            pin.style.left = Length.Percent(loc.XPercent);
+            pin.style.top = Length.Percent(loc.YPercent);
+            pin.style.width = 0;
+            pin.style.height = 0;
+            mapFrame.Add(pin);
+
+            float size = loc.IsCurrent ? 20f : (isSelected ? 16f : 12f);
+            var dot = new VisualElement();
+            dot.style.position = Position.Absolute;
+            dot.style.left = -size * 0.5f;
+            dot.style.top = -size * 0.5f;
+            dot.style.width = size;
+            dot.style.height = size;
+            dot.style.backgroundColor = loc.IsCurrent ? Gold : Alpha(LocationColor(loc.Kind), 0.56f);
+            Border(dot, loc.IsCurrent ? Amber : LocationColor(loc.Kind), loc.IsCurrent ? 2 : 1);
+            Radius(dot, 999);
+            pin.Add(dot);
+
+            if (!loc.IsCurrent && !isSelected)
+                return;
+
+            var label = Text(loc.Name, Sans, 10, loc.IsCurrent ? Gold : Parch, FontStyle.Bold);
+            label.style.position = Position.Absolute;
+            label.style.top = (size * 0.5f) + 4f;
+            label.style.left = -90;
+            label.style.width = 180;
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.style.letterSpacing = 0.6f;
+            pin.Add(label);
         }
 
         private static VisualElement BuildFact(string label, string value)

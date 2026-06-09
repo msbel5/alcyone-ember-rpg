@@ -22,7 +22,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         IEmberHudSource, IJobQueueSource, IColonyNeedsSource, IDialogSourcePortrait, IPlayerSheetSource,
         IInventorySource, ISpriteByName, IFactionSource, ICombatHudSource, ICombatScreenSource, ISpellBarSource, IJournalSource,
         ITradeSource, ITradeCommandSink, ICraftingSource, ICraftingCommandSink, ISaveLoadSource, ISaveLoadCommandSink,
-        ILevelUpSource, ILevelUpCommandSink
+        ILevelUpSource, ILevelUpCommandSink, IQuestGuidanceSource
     {
         private static IReadOnlyList<string> Topics => EmberRuntimeOptionsProvider.Current.WorldHost.DefaultTopics;
 

@@ -26,6 +26,7 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             Editable(world, "Calling", Options.WorldHost.FallbackCalling, "next gen", text => CommitText(text, (o, v) => o.WorldHost.FallbackCalling = v, () => Options.WorldHost.FallbackCalling));
             Editable(world, "Start", Options.WorldHost.FallbackStart, "next gen", text => CommitText(text, (o, v) => o.WorldHost.FallbackStart = v, () => Options.WorldHost.FallbackStart));
             Editable(world, "Spell Slots", Read(() => Options.WorldHost.SpellSlotCount), "live", text => CommitInt(text, (o, v) => o.WorldHost.SpellSlotCount = Math.Max(1, v), () => Options.WorldHost.SpellSlotCount));
+            Editable(world, "Quest Guidance", Options.WorldHost.ShowQuestGuidance.ToString(), "live", text => CommitBool(text, (o, v) => o.WorldHost.ShowQuestGuidance = v, () => Options.WorldHost.ShowQuestGuidance));
         }
 
         // Why: input edits should also refresh the action map so gameplay reads the new bindings without a restart.
@@ -66,6 +67,8 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             ReadOnly(timing, "History Unlock", Read(() => Options.CharacterCreation.HistoryUnlockSeconds));
             ReadOnly(timing, "History Chars/S", Read(() => Options.CharacterCreation.HistoryCharsPerSecond));
             ReadOnly(timing, "History Line Delay", Read(() => Options.CharacterCreation.HistoryLineDelaySeconds));
+            Editable(timing, "Portrait Forge Wait", Read(() => Options.CharacterCreation.PortraitForgeWaitFrames), "next portrait", text => CommitInt(text, (o, v) => o.CharacterCreation.PortraitForgeWaitFrames = Math.Max(1, v), () => Options.CharacterCreation.PortraitForgeWaitFrames));
+            Editable(timing, "Portrait Timeout", Read(() => Options.CharacterCreation.PortraitForgeTimeoutSeconds), "next portrait", text => CommitFloat(text, (o, v) => o.CharacterCreation.PortraitForgeTimeoutSeconds = Math.Max(5f, v), () => Options.CharacterCreation.PortraitForgeTimeoutSeconds));
         }
 
         private static EmberRuntimeOptions Options => EmberRuntimeOptionsProvider.Current;
@@ -109,6 +112,12 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
         {
             if (float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)) Apply(options => write(options, value));
             return Read(read);
+        }
+
+        private static string CommitBool(string raw, Action<EmberRuntimeOptions, bool> write, Func<bool> read)
+        {
+            if (bool.TryParse(raw, out var value)) Apply(options => write(options, value));
+            return read().ToString();
         }
 
         private static string Read<T>(Func<T> read) where T : IFormattable

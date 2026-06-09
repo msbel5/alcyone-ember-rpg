@@ -363,7 +363,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 ? filtered
                 : new System.Collections.Generic.List<WorldHistoryEvent>(history);
             if (source.Count <= max)
+            {
+                source.Sort(CompareHistoryEvents);
                 return source;
+            }
 
             var result = new System.Collections.Generic.List<WorldHistoryEvent>(max);
             for (int i = 0; i < max; i++)
@@ -371,7 +374,19 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 int idx = (int)((long)i * (source.Count - 1) / (max - 1));
                 result.Add(source[idx]);
             }
+            result.Sort(CompareHistoryEvents);
             return result;
+        }
+
+        private static int CompareHistoryEvents(WorldHistoryEvent left, WorldHistoryEvent right)
+        {
+            int byYear = left.Year.CompareTo(right.Year);
+            if (byYear != 0) return byYear;
+            int byKind = left.Kind.CompareTo(right.Kind);
+            if (byKind != 0) return byKind;
+            int bySubject = string.CompareOrdinal(left.Subject ?? string.Empty, right.Subject ?? string.Empty);
+            if (bySubject != 0) return bySubject;
+            return string.CompareOrdinal(left.Detail ?? string.Empty, right.Detail ?? string.Empty);
         }
 
         // Templated fallback reveal (used only if the real generation above fails). Original creation flow.

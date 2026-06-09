@@ -20,9 +20,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             if (chapters.Length == 0)
             {
                 content.Add(EmptyState(
-                    "Journal",
-                    "No active quests — the world has asked nothing of you yet.",
-                    "A live journal read model is not available in the current domain surface."));
+                    IgJournalData.EmptyTitle,
+                    IgJournalData.EmptyBody,
+                    IgJournalData.EmptyDetail));
                 stageCanvas.Add(_overlay);
                 return;
             }

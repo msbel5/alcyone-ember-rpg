@@ -55,6 +55,7 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(chapters[0].Entries[0].Status, Is.EqualTo(JournalEntryStatus.Completed));
             Assert.That(chapters[0].Entries[0].Body, Does.Contain("delivered"));
             Assert.That(world.PlayerInventory.Contains("iron_ingot"), Is.False);
+            Assert.That(((IQuestGuidanceSource)adapter).ReadQuestGuidance().HasTarget, Is.False);
         }
 
         [Test]
@@ -87,6 +88,42 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             var source = adapter.GetDialogSource(actorId);
 
             Assert.That(source.GetTopics(), Does.Contain(QuestInteractionService.ForgeIronIngotTopicId));
+        }
+
+        [Test]
+        public void QuestGuidance_PointsToForgeQuestGiverBeforeJournalExists()
+        {
+            var world = new WorldFactory().Create(roomSeed: 19);
+            var npcId = new NpcId(9UL);
+            var actorId = new ActorId(10_000UL + npcId.Value);
+            world.NpcSeeds.Add(new NpcSeedRecord(
+                npcId,
+                new SettlementId(1UL),
+                new FactionId(1UL),
+                "Bera the Smith",
+                982,
+                NpcRole.Farmer));
+            world.Actors.Add(new ActorRecord(
+                actorId,
+                "Bera the Smith",
+                ActorRole.Talker,
+                new EmberStatBlock(40, 40, 40, 40, 40, 40),
+                new ActorVitals(new VitalStat(30, 30), new VitalStat(30, 30), new VitalStat(20, 20)),
+                new GridPosition(3, 1),
+                accuracy: 35,
+                dodge: 30,
+                armor: 4,
+                baseDamage: 4,
+                jobPreferences: new[] { new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)) }));
+            var adapter = new DomainSimulationAdapter(world);
+
+            var guidance = ((IQuestGuidanceSource)adapter).ReadQuestGuidance();
+
+            Assert.That(world.Quests.Contains(QuestCatalog.ForgeIronIngotId), Is.False);
+            Assert.That(guidance.HasTarget, Is.True);
+            Assert.That(guidance.TargetName, Is.EqualTo("Bera the Smith"));
+            Assert.That(guidance.Title, Is.EqualTo("Quest Lead"));
+            Assert.That(guidance.Line, Does.Contain("forge work"));
         }
     }
 }

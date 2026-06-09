@@ -8,11 +8,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EmberCrpg.Domain.CharacterCreation;
+using EmberCrpg.Domain.Configuration;
 using EmberCrpg.Domain.Forge;
 using EmberCrpg.Domain.Generation;
 using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.Loading;
+using EmberCrpg.Presentation.Ember.Runtime;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Simulation.CharacterCreation;
@@ -172,26 +174,43 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             if (!Application.isPlaying) return;
             if (generation != _portraitGenSerial) return;
 
+            StopPortraitForgeUpgrade();
+            _portraitForgeUpgradeRoutine = StartCoroutine(AwaitForgeAndGeneratePortrait(json, portraitSeed, generation));
+        }
+
+        private IEnumerator AwaitForgeAndGeneratePortrait(NpcPromptJson json, uint portraitSeed, int generation)
+        {
+            ForgeRuntimeHelpers.EnsureForgeBootstrap();
+            var options = EmberRuntimeOptionsProvider.Current.CharacterCreation;
+            for (int waited = 0; waited < options.PortraitForgeWaitFrames && ForgeLocator.AssetForge == null; waited++)
+            {
+                if (generation != _portraitGenSerial)
+                    yield break;
+                yield return null;
+            }
+
+            _portraitForgeUpgradeRoutine = null;
+            if (generation != _portraitGenSerial)
+                yield break;
+
             var forge = ForgeLocator.AssetForge;
-            if (forge == null) { AddLog("[portrait] forge image: no forge wired."); return; }
+            if (forge == null) { AddLog("[portrait] forge image: no forge wired."); yield break; }
             try
             {
-                if (!forge.IsAvailable()) { AddLog("[portrait] forge image: forge unavailable (models missing)."); return; }
+                if (!forge.IsAvailable()) { AddLog("[portrait] forge image: forge unavailable (models missing)."); yield break; }
             }
             catch
             {
                 AddLog("[portrait] forge image: IsAvailable() threw.");
-                return;
+                yield break;
             }
-
-            StopPortraitForgeUpgrade();
 
             var subject = PortraitPromptBuilder.Build(json);
             var kind = AssetKind.Portrait;
             var spec = new DefaultImageGenSpecFactory().Create(kind, subject, portraitSeed);
             var request = BuildPortraitRequest(kind, spec, generation);
 
-            _portraitForgeCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            _portraitForgeCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(options.PortraitForgeTimeoutSeconds));
             Task<AssetGenerationResult> task;
             try
             {
@@ -202,7 +221,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 _portraitForgeCancellation.Dispose();
                 _portraitForgeCancellation = null;
                 AddLog("[portrait] Forge request failed to start: " + ex.Message);
-                return;
+                yield break;
             }
 
             AddLog("[portrait] forge image: generating " + spec.Width + "x" + spec.Height + "…");

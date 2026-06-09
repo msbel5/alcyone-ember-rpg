@@ -25,6 +25,7 @@ namespace EmberCrpg.Domain.Configuration
     public sealed class WorldHostRuntimeOptions
     {
         public IReadOnlyList<string> DefaultTopics { get; set; } = new[] { "rumors", "work", "trade", "fate" };
+        public bool ShowQuestGuidance { get; set; } = true;
         public float FatePlaceholderSeconds { get; set; } = 3f;
         public float FateResolvedSeconds { get; set; } = 7f;
         public float EscapeHoldQuitSeconds { get; set; } = 1f;
@@ -100,6 +101,8 @@ namespace EmberCrpg.Domain.Configuration
         public float HistoryUnlockSeconds { get; set; } = 8f;
         public float HistoryCharsPerSecond { get; set; } = 30f;
         public float HistoryLineDelaySeconds { get; set; } = 0.3f;
+        public int PortraitForgeWaitFrames { get; set; } = 240;
+        public float PortraitForgeTimeoutSeconds { get; set; } = 120f;
     }
 
     public sealed class EmberRuntimeOptions
@@ -151,6 +154,7 @@ namespace EmberCrpg.Domain.Configuration
                     DefaultTopics = WorldHost.DefaultTopics == null ? Array.Empty<string>() : new List<string>(WorldHost.DefaultTopics),
                     FatePlaceholderSeconds = WorldHost.FatePlaceholderSeconds,
                     FateResolvedSeconds = WorldHost.FateResolvedSeconds,
+                    ShowQuestGuidance = WorldHost.ShowQuestGuidance,
                     EscapeHoldQuitSeconds = WorldHost.EscapeHoldQuitSeconds,
                     SpellSlotCount = WorldHost.SpellSlotCount,
                     FallbackWorldSeed = WorldHost.FallbackWorldSeed,
@@ -215,6 +219,8 @@ namespace EmberCrpg.Domain.Configuration
                     HistoryUnlockSeconds = CharacterCreation.HistoryUnlockSeconds,
                     HistoryCharsPerSecond = CharacterCreation.HistoryCharsPerSecond,
                     HistoryLineDelaySeconds = CharacterCreation.HistoryLineDelaySeconds,
+                    PortraitForgeWaitFrames = CharacterCreation.PortraitForgeWaitFrames,
+                    PortraitForgeTimeoutSeconds = CharacterCreation.PortraitForgeTimeoutSeconds,
                 },
             };
         }
@@ -261,6 +267,8 @@ namespace EmberCrpg.Domain.Configuration
             options.CharacterCreation.HistoryUnlockSeconds = Math.Max(0f, options.CharacterCreation.HistoryUnlockSeconds);
             options.CharacterCreation.HistoryCharsPerSecond = Math.Max(1f, options.CharacterCreation.HistoryCharsPerSecond);
             options.CharacterCreation.HistoryLineDelaySeconds = Math.Max(0f, options.CharacterCreation.HistoryLineDelaySeconds);
+            options.CharacterCreation.PortraitForgeWaitFrames = Math.Max(1, options.CharacterCreation.PortraitForgeWaitFrames);
+            options.CharacterCreation.PortraitForgeTimeoutSeconds = Math.Max(5f, options.CharacterCreation.PortraitForgeTimeoutSeconds);
 
             options.Input.MoveUpPath = string.IsNullOrWhiteSpace(options.Input.MoveUpPath) ? "<Keyboard>/w" : options.Input.MoveUpPath;
             options.Input.MoveDownPath = string.IsNullOrWhiteSpace(options.Input.MoveDownPath) ? "<Keyboard>/s" : options.Input.MoveDownPath;
