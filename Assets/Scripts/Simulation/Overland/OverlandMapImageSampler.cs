@@ -171,22 +171,9 @@ namespace EmberCrpg.Simulation.Overland
             return (y * width) + x;
         }
 
-        private static int FloorToInt(double value)
-        {
-            return (int)Math.Floor(value);
-        }
-
         private static int SampleTileIndex(int pixel, int pixelCount, int tileCount)
         {
-            double sample = ((pixel + 0.5d) * tileCount) / pixelCount;
-            return Clamp(FloorToInt(sample), 0, tileCount - 1);
-        }
-
-        private static int Clamp(int value, int min, int max)
-        {
-            if (value < min)
-                return min;
-            return value > max ? max : value;
+            return OverlandMapProjection.PixelCenterToTileIndex(pixel, pixelCount, tileCount);
         }
 
         private static byte ToByte(double value)

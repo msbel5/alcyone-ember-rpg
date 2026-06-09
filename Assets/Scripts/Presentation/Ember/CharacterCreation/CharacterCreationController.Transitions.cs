@@ -264,23 +264,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 string subject = string.IsNullOrWhiteSpace(e.Subject) ? string.Empty : e.Subject + " - ";
                 _historyTimeline.Add("Year " + e.Year + " - " + subject + e.Detail);
             }
-            _revealMapTexture = TryBuildPlanetRevealTexture();
-        }
-
-        // Render the generated planet (the actual sphere, equirectangular) for the reveal image slot.
-        private Texture2D TryBuildPlanetRevealTexture()
-        {
-            try
-            {
-                var field = EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldContext.Instance.Field;
-                if (field == null) return null;
-                return PlanetMapTextureFactory.Create(field, 512, 256, "CharacterCreationPlanetMap");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning("[charcreation] planet reveal texture failed. " + ex.Message);
-                return null;
-            }
+            _revealMapTexture = TryBuildRevealMapTexture(world);
         }
 
         // Generate the player's actual world for the reveal. Pure + deterministic (no hydration / no sim side
@@ -312,7 +296,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             {
                 var map = EmberCrpg.Simulation.Overland.OverlandWorldgen.Generate(
                     world, EmberCrpg.Domain.Overland.OverlandParameters.Default);
-                var image = EmberCrpg.Simulation.Overland.OverlandMapImageSampler.Sample(map);
+                var image = EmberCrpg.Simulation.Overland.OverlandMapImageSampler.Sample(map, 512, 256);
                 var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, mipChain: false)
                 {
                     wrapMode = TextureWrapMode.Clamp,

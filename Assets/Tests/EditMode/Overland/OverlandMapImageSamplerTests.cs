@@ -86,6 +86,23 @@ namespace EmberCrpg.Tests.EditMode.Overland
             }
         }
 
+        [Test]
+        public void Projection_TileCenterAndSamplerShareOneGrid()
+        {
+            const int tiles = 128;
+            const int pixels = 512;
+
+            Assert.That(OverlandMapProjection.TileCenterPercent(0, tiles), Is.EqualTo(0.390625f).Within(0.0001f));
+            Assert.That(OverlandMapProjection.TileCenterPercent(127, tiles), Is.EqualTo(99.609375f).Within(0.0001f));
+
+            for (int tile = 0; tile < tiles; tile += 17)
+            {
+                var center = OverlandMapProjection.TileCenterNormalized(tile, tiles);
+                int pixel = (int)System.Math.Floor(center * pixels);
+                Assert.That(OverlandMapProjection.PixelCenterToTileIndex(pixel, pixels, tiles), Is.EqualTo(tile));
+            }
+        }
+
         private static Pixel ReadPixel(OverlandMapImage image, int x, int y)
         {
             int offset = ((y * image.Width) + x) * 4;

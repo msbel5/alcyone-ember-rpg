@@ -11,6 +11,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     public static class RuntimeBuildingBuilder
     {
         private const float WallThickness = 0.25f;
+        private const float DoorWidth = 1.6f;
 
         public static GameObject Build(Transform parent, BuildingPlacement placement)
         {
@@ -31,12 +32,62 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             float halfZ = placement.SizeZ / 2f;
             float wallY = placement.Height / 2f;
 
-            // North + south walls span X; east + west walls span Z. Interior left open.
-            AddWall(root.transform, new Vector3(0f, wallY, halfZ), new Vector3(placement.SizeX, placement.Height, WallThickness), material);
-            AddWall(root.transform, new Vector3(0f, wallY, -halfZ), new Vector3(placement.SizeX, placement.Height, WallThickness), material);
-            AddWall(root.transform, new Vector3(halfX, wallY, 0f), new Vector3(WallThickness, placement.Height, placement.SizeZ), material);
-            AddWall(root.transform, new Vector3(-halfX, wallY, 0f), new Vector3(WallThickness, placement.Height, placement.SizeZ), material);
+            var entrance = ChooseEntranceSide(placement);
+
+            // North + south walls span X; east + west walls span Z. The entrance is a full-height gap facing
+            // the settlement center so NPCs and the player can reach spawned actors before room interiors exist.
+            AddWallX(root.transform, halfZ, placement.SizeX, placement.Height, material, entrance == DoorSide.North);
+            AddWallX(root.transform, -halfZ, placement.SizeX, placement.Height, material, entrance == DoorSide.South);
+            AddWallZ(root.transform, halfX, placement.SizeZ, placement.Height, material, entrance == DoorSide.East);
+            AddWallZ(root.transform, -halfX, placement.SizeZ, placement.Height, material, entrance == DoorSide.West);
             return root;
+        }
+
+        private static DoorSide ChooseEntranceSide(BuildingPlacement placement)
+        {
+            if (Mathf.Abs(placement.OriginX) > Mathf.Abs(placement.OriginZ))
+                return placement.OriginX >= 0f ? DoorSide.West : DoorSide.East;
+            return placement.OriginZ >= 0f ? DoorSide.South : DoorSide.North;
+        }
+
+        private static void AddWallX(
+            Transform parent,
+            float z,
+            float width,
+            float height,
+            Material material,
+            bool withDoor)
+        {
+            if (!withDoor || width <= DoorWidth + WallThickness)
+            {
+                AddWall(parent, new Vector3(0f, height / 2f, z), new Vector3(width, height, WallThickness), material);
+                return;
+            }
+
+            float segmentWidth = (width - DoorWidth) / 2f;
+            float offset = (DoorWidth + segmentWidth) / 2f;
+            AddWall(parent, new Vector3(-offset, height / 2f, z), new Vector3(segmentWidth, height, WallThickness), material);
+            AddWall(parent, new Vector3(offset, height / 2f, z), new Vector3(segmentWidth, height, WallThickness), material);
+        }
+
+        private static void AddWallZ(
+            Transform parent,
+            float x,
+            float depth,
+            float height,
+            Material material,
+            bool withDoor)
+        {
+            if (!withDoor || depth <= DoorWidth + WallThickness)
+            {
+                AddWall(parent, new Vector3(x, height / 2f, 0f), new Vector3(WallThickness, height, depth), material);
+                return;
+            }
+
+            float segmentDepth = (depth - DoorWidth) / 2f;
+            float offset = (DoorWidth + segmentDepth) / 2f;
+            AddWall(parent, new Vector3(x, height / 2f, -offset), new Vector3(WallThickness, height, segmentDepth), material);
+            AddWall(parent, new Vector3(x, height / 2f, offset), new Vector3(WallThickness, height, segmentDepth), material);
         }
 
         private static void AddWall(Transform parent, Vector3 localPosition, Vector3 size, Material material)
@@ -48,6 +99,14 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             wall.transform.localScale = size;
             var renderer = wall.GetComponent<MeshRenderer>();
             if (renderer != null) renderer.sharedMaterial = material;
+        }
+
+        private enum DoorSide
+        {
+            North,
+            South,
+            East,
+            West
         }
     }
 }

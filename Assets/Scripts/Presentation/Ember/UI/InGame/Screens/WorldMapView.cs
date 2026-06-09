@@ -4,7 +4,6 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Overland;
 using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.UI.InGame;
-using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Simulation.Overland;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -34,11 +33,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             }
 
             var playerTile = world.PlayerOverlandTile;
-            var texture = CreateMapTexture(map, out var invertMarkerY);
-            var locations = BuildLocations(map, playerTile, world.StartingSettlementName, invertMarkerY);
+            var texture = CreateMapTexture(map);
+            var locations = BuildLocations(map, playerTile, world.StartingSettlementName);
             var selected = ChooseSelectedLocation(map, playerTile, world.StartingSettlementName, locations);
 
-            content.Add(BuildMapArea(map, playerTile, selected, locations, texture, invertMarkerY));
+            content.Add(BuildMapArea(map, playerTile, selected, locations, texture));
             content.Add(BuildDetailPane(map, playerTile, selected, locations, onFastTravel));
 
             stageCanvas.Add(_overlay);
@@ -51,8 +50,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             GridPosition playerTile,
             MapLocationData selected,
             IReadOnlyList<MapLocationData> locations,
-            Texture2D texture,
-            bool invertMarkerY)
+            Texture2D texture)
         {
             var area = new VisualElement();
             area.style.flexGrow = 1;
@@ -92,7 +90,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             var player = new VisualElement();
             player.style.position = Position.Absolute;
             player.style.left = Length.Percent(ToPercent(playerTile.X, map.Width));
-            player.style.top = Length.Percent(ToYPercent(playerTile.Y, map.Height, invertMarkerY));
+            player.style.top = Length.Percent(ToPercent(playerTile.Y, map.Height));
             player.style.translate = new Translate(new Length(-50, LengthUnit.Percent), new Length(-50, LengthUnit.Percent));
             player.style.width = 28;
             player.style.height = 28;
@@ -321,22 +319,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             }
         }
 
-        private static Texture2D CreateMapTexture(OverlandMap map, out bool invertMarkerY)
+        private static Texture2D CreateMapTexture(OverlandMap map)
         {
-            // Prefer the rich planet render — identical to the char-creation "World Awakens" reveal — so the
-            // in-game World Map matches the world you shaped. The planet field is cached for the whole session
-            // in PlanetWorldContext and never cleared, so it is available here. Falls back to the flat overland
-            // tiles on loaded saves where the planet field is not in memory.
-            var planet = TryCreatePlanetMapTexture();
-            if (planet != null)
-            {
-                invertMarkerY = true;
-                return planet;
-            }
-
-            invertMarkerY = false;
             if (map == null) return null;
-            var image = OverlandMapImageSampler.Sample(map);
+            // This atlas is the authoritative in-game map: every pixel samples the same OverlandMap tile-space
+            // that markers use below, so dots/ring cannot drift against a separate planet PNG projection.
+            var image = OverlandMapImageSampler.Sample(map, 512, 256);
             var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
             {
                 filterMode = FilterMode.Point,   // crisp tiles so coastal land reads clearly under the markers
@@ -348,28 +336,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return texture;
         }
 
-        // Render the persisted planet field through the same presentation bridge as the char-creation reveal,
-        // so both maps share one row-orientation policy.
-        private static Texture2D TryCreatePlanetMapTexture()
-        {
-            try
-            {
-                var field = EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldContext.Instance?.Field;
-                if (field == null) return null;
-
-                return PlanetMapTextureFactory.Create(field, 512, 256, "InGameWorldMapPlanet");
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static MapLocationData[] BuildLocations(
-            OverlandMap map,
-            GridPosition playerTile,
-            string startingSettlementName,
-            bool invertMarkerY)
+        private static MapLocationData[] BuildLocations(OverlandMap map, GridPosition playerTile, string startingSettlementName)
         {
             var locations = new MapLocationData[map.Settlements.Count];
             for (int i = 0; i < map.Settlements.Count; i++)
@@ -384,7 +351,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                     settlement.TemplatePackTag,
                     string.Equals(settlement.Name, startingSettlementName, StringComparison.Ordinal),
                     ToPercent(settlement.TilePosition.X, map.Width),
-                    ToYPercent(settlement.TilePosition.Y, map.Height, invertMarkerY),
+                    ToPercent(settlement.TilePosition.Y, map.Height),
                     OverlandMap.ChebyshevDistance(playerTile, settlement.TilePosition));
             }
 
@@ -440,13 +407,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         private static float ToPercent(int coordinate, int size)
         {
             if (size <= 0) return 50f;
-            return ((coordinate + 0.5f) / size) * 100f;
-        }
-
-        private static float ToYPercent(int coordinate, int size, bool invert)
-        {
-            var percent = ToPercent(coordinate, size);
-            return invert ? 100f - percent : percent;
+            return OverlandMapProjection.TileCenterPercent(coordinate, size);
         }
 
         private static void FitMapFrame(VisualElement area, VisualElement frame, int mapWidth, int mapHeight)
