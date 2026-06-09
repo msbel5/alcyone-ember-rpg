@@ -1,3 +1,5 @@
+using EmberCrpg.Domain.Actors;
+
 namespace EmberCrpg.Presentation.Ember.UI
 {
     /// <summary>Read-model for optional navigation help; it reports real world targets, never starts quests.</summary>
@@ -26,5 +28,10 @@ namespace EmberCrpg.Presentation.Ember.UI
     public interface IQuestGuidanceSource
     {
         QuestGuidanceRow ReadQuestGuidance();
+    }
+
+    public interface IQuestGuidanceTracker
+    {
+        void UpdateQuestGuidancePlayerLocalPosition(GridPosition localPosition);
     }
 }

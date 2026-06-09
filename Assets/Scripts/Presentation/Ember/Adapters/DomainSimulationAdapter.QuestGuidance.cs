@@ -8,8 +8,18 @@ using EmberCrpg.Simulation.Quest;
 
 namespace EmberCrpg.Presentation.Ember.Adapters
 {
-    public sealed partial class DomainSimulationAdapter : IQuestGuidanceSource
+    public sealed partial class DomainSimulationAdapter : IQuestGuidanceSource, IQuestGuidanceTracker
     {
+        private GridPosition? _questGuidancePlayerPosition;
+
+        public void UpdateQuestGuidancePlayerLocalPosition(GridPosition localPosition)
+        {
+            var origin = BillboardOrigin();
+            _questGuidancePlayerPosition = new GridPosition(
+                origin.X + localPosition.X,
+                origin.Y + localPosition.Y);
+        }
+
         public QuestGuidanceRow ReadQuestGuidance()
         {
             if (_world?.Actors == null || _world.Quests == null)
@@ -72,18 +82,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         private int DistanceFromPlayer(ActorRecord target)
         {
-            return TryGetPlayer(out var player)
-                ? Chebyshev(player.Position, target.Position)
+            return TryGetGuidancePlayerPosition(out var playerPosition)
+                ? Chebyshev(playerPosition, target.Position)
                 : 0;
         }
 
         private string DirectionFromPlayer(ActorRecord target)
         {
-            if (!TryGetPlayer(out var player))
+            if (!TryGetGuidancePlayerPosition(out var playerPosition))
                 return "nearby";
 
-            int dx = target.Position.X - player.Position.X;
-            int dy = target.Position.Y - player.Position.Y;
+            int dx = target.Position.X - playerPosition.X;
+            int dy = target.Position.Y - playerPosition.Y;
             if (dx == 0 && dy == 0) return "nearby";
 
             string vertical = dy < 0 ? "north" : (dy > 0 ? "south" : string.Empty);
@@ -96,6 +106,24 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private bool TryGetPlayer(out ActorRecord player)
         {
             return _world.Actors.TryFirstByRole(ActorRole.Player, out player);
+        }
+
+        private bool TryGetGuidancePlayerPosition(out GridPosition position)
+        {
+            if (_questGuidancePlayerPosition.HasValue)
+            {
+                position = _questGuidancePlayerPosition.Value;
+                return true;
+            }
+
+            if (TryGetPlayer(out var player))
+            {
+                position = player.Position;
+                return true;
+            }
+
+            position = default;
+            return false;
         }
 
         private static int Chebyshev(GridPosition a, GridPosition b)

@@ -1,3 +1,4 @@
+using EmberCrpg.Presentation.Ember.UI;
 using UnityEngine;
 
 namespace EmberCrpg.Presentation.Ember.WorldDirector
@@ -52,6 +53,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             AddControllerByName(rig, "EmberPlayerInventoryToggle");
             AddControllerByName(rig, "EmberPlayerSpellCaster");
             AddControllerByName(rig, "EmberPlayerMeleeSwing");
+            rig.AddComponent<QuestGuidancePlayerTracker>();
             return rig;
         }
 

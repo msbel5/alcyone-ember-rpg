@@ -4,6 +4,7 @@ using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Overland;
 using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.UI.InGame;
+using EmberCrpg.Presentation.Ember.Worldgen;
 using EmberCrpg.Simulation.Overland;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -340,12 +341,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return texture;
         }
 
-        // Render the persisted planet field equirectangularly, exactly like the char-creation reveal. The
-        // overland grid the pins use is derived from this same field via PlanetToWorldMapper (same
-        // equirectangular projection), so the ToPercent pin positions still line up over the 128x64 tiles.
-        // No row-flip: this view draws through UITK Image.image, the same path the overland texture above uses
-        // without a flip (the reveal flips only because it blits into a different, V-inverted surface). If the
-        // planet comes out upside-down in play, flipping the rows here is the one-line fix.
+        // Render the persisted planet field through the same presentation bridge as the char-creation reveal,
+        // so both maps share one row-orientation policy.
         private static Texture2D TryCreatePlanetMapTexture()
         {
             try
@@ -353,16 +350,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 var field = EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldContext.Instance?.Field;
                 if (field == null) return null;
 
-                var image = EmberCrpg.Simulation.Worldgen.Planet.PlanetImageSampler.Sample(field, 512, 256);
-                var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
-                {
-                    filterMode = FilterMode.Point,
-                    wrapMode = TextureWrapMode.Clamp,
-                    name = "InGameWorldMapPlanet"
-                };
-                texture.LoadRawTextureData(image.Rgba);
-                texture.Apply(false, true);
-                return texture;
+                return PlanetMapTextureFactory.Create(field, 512, 256, "InGameWorldMapPlanet");
             }
             catch (Exception)
             {

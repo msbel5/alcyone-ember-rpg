@@ -125,6 +125,50 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(guidance.Title, Is.EqualTo("Quest Lead"));
             Assert.That(guidance.Line, Does.Contain("forge work"));
         }
+
+        [Test]
+        public void QuestGuidance_TracksLivePlayerLocalPosition()
+        {
+            var world = new WorldFactory().Create(roomSeed: 20);
+            var npcId = new NpcId(10UL);
+            var actorId = new ActorId(10_000UL + npcId.Value);
+            var targetPosition = new GridPosition(6, 4);
+            world.NpcSeeds.Add(new NpcSeedRecord(
+                npcId,
+                new SettlementId(1UL),
+                new FactionId(1UL),
+                "Corin the Smith",
+                983,
+                NpcRole.Farmer));
+            world.Actors.Add(new ActorRecord(
+                actorId,
+                "Corin the Smith",
+                ActorRole.Talker,
+                new EmberStatBlock(40, 40, 40, 40, 40, 40),
+                new ActorVitals(new VitalStat(30, 30), new VitalStat(30, 30), new VitalStat(20, 20)),
+                targetPosition,
+                accuracy: 35,
+                dodge: 30,
+                armor: 4,
+                baseDamage: 4,
+                jobPreferences: new[] { new ActorJobPreference(JobKind.Smith, JobPriority.Active(1)) }));
+            var adapter = new DomainSimulationAdapter(world);
+            var origin = adapter.BillboardOriginCell();
+            var tracker = (IQuestGuidanceTracker)adapter;
+
+            tracker.UpdateQuestGuidancePlayerLocalPosition(new GridPosition(1 - origin.X, 4 - origin.Y));
+            var far = ((IQuestGuidanceSource)adapter).ReadQuestGuidance();
+
+            tracker.UpdateQuestGuidancePlayerLocalPosition(new GridPosition(6 - origin.X, 4 - origin.Y));
+            var near = ((IQuestGuidanceSource)adapter).ReadQuestGuidance();
+
+            Assert.That(far.HasTarget, Is.True);
+            Assert.That(far.DistanceTiles, Is.EqualTo(5));
+            Assert.That(far.Direction, Is.EqualTo("east"));
+            Assert.That(near.HasTarget, Is.True);
+            Assert.That(near.DistanceTiles, Is.EqualTo(0));
+            Assert.That(near.Direction, Is.EqualTo("nearby"));
+        }
     }
 }
 #endif

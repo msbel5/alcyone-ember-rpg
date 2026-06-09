@@ -274,19 +274,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             {
                 var field = EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldContext.Instance.Field;
                 if (field == null) return null;
-                var image = EmberCrpg.Simulation.Worldgen.Planet.PlanetImageSampler.Sample(field, 512, 256);
-                var tex = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
-                {
-                    wrapMode = TextureWrapMode.Clamp,
-                    filterMode = FilterMode.Point,
-                };
-                int stride = image.Width * 4;
-                var flipped = new byte[image.Rgba.Length];
-                for (int row = 0; row < image.Height; row++)
-                    System.Array.Copy(image.Rgba, row * stride, flipped, (image.Height - 1 - row) * stride, stride);
-                tex.LoadRawTextureData(flipped);
-                tex.Apply(false, false);
-                return tex;
+                return PlanetMapTextureFactory.Create(field, 512, 256, "CharacterCreationPlanetMap");
             }
             catch (Exception ex)
             {
