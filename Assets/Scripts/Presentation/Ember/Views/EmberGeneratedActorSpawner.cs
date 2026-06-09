@@ -154,6 +154,7 @@ namespace EmberCrpg.Presentation.Ember.Views
             // subtly moving at their current spot so the town reads as alive instead of frozen statues. Visual
             // only — never written back to the sim.
             actorView.EnableWander(2.2f);
+            root.AddComponent<GeneratedNpcAccessibilityGuard>();
 
             // Dialog: author the stable id on an EmberInteractable too (3-arg overload built for runtime
             // spawners) so the interact raycaster prefers the id-keyed GetDialogSource(ActorId) path and

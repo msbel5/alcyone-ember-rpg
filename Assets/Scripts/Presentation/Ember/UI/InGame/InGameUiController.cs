@@ -213,8 +213,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private static string BuildCompassLine(QuestGuidanceRow row)
         {
-            var range = row.DistanceTiles <= 0 ? "nearby" : row.DistanceTiles + " tiles";
-            return "QUEST " + row.TargetName + " · " + range + " · " + row.Direction + " · N↑ E→";
+            if (row.DistanceTiles <= 0)
+                return "QUEST " + row.TargetName + " · nearby";
+            return "QUEST " + row.TargetName + " · " + row.DistanceTiles + " tiles · " + row.Direction;
         }
 
         // Every in-game screen, opened by id. One modal at a time: CloseScreen() drops any open IgModal overlay

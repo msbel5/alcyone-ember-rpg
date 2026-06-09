@@ -17,6 +17,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var root = new GameObject("Building");
             root.transform.SetParent(parent, worldPositionStays: false);
             root.transform.localPosition = new Vector3(placement.OriginX, 0f, placement.OriginZ);
+            root.AddComponent<BuildingAccessibilityVolume>().Configure(
+                placement.SizeX,
+                placement.SizeZ,
+                margin: 0.9f);
 
             // Use the generated wall texture when it exists; fall back to a flat wall colour otherwise.
             var material = RuntimeMaterialPalette.Textured(
