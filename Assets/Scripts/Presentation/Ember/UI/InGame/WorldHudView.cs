@@ -56,6 +56,17 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             top.Add(topRight);
             canvas.Add(top);
 
+            // ── COMPASS STRIP (thin, just above the vitals) — rotates with the player; N = map north (+Z).
+            _compassStrip = Text("", Sans, 11, PA(0.55f), FontStyle.Bold);
+            _compassStrip.pickingMode = PickingMode.Ignore;
+            _compassStrip.style.position = Position.Absolute;
+            _compassStrip.style.left = 0;
+            _compassStrip.style.right = 0;
+            _compassStrip.style.bottom = 96;
+            _compassStrip.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _compassStrip.style.letterSpacing = 2f;
+            canvas.Add(_compassStrip);
+
             // ── BOTTOM HUD (height 90) ──
             var bottom = Row();
             bottom.pickingMode = PickingMode.Ignore;
@@ -131,8 +142,44 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             canvas.Add(bottom);
         }
 
+        private Label _compassStrip;
+        private UnityEngine.Camera _compassCam;
+        private int _compassCamProbe;
+        private static readonly string[] Winds = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+
+        // Five 45° windows centred on the heading, e.g. "W | NW | · N · | NE | E". World convention:
+        // +Z = north (WorldSpaceProjection), and Unity yaw 0 faces +Z, so yaw IS the map heading.
+        private void RefreshCompass()
+        {
+            if (_compassStrip == null) return;
+            if (_compassCam == null || !_compassCam.isActiveAndEnabled)
+            {
+                if (--_compassCamProbe > 0) return;
+                _compassCamProbe = 30; // the rig camera is not tagged MainCamera; re-probe cheaply
+                _compassCam = UnityEngine.Camera.main;
+                if (_compassCam == null)
+                {
+                    var cams = UnityEngine.Camera.allCameras;
+                    if (cams != null && cams.Length > 0) _compassCam = cams[0];
+                }
+                if (_compassCam == null) return;
+            }
+
+            float yaw = ((_compassCam.transform.eulerAngles.y % 360f) + 360f) % 360f;
+            int centre = (int)Math.Round(yaw / 45f) % 8;
+            var sb = new System.Text.StringBuilder(48);
+            for (int i = -2; i <= 2; i++)
+            {
+                int w = (((centre + i) % 8) + 8) % 8;
+                if (i != -2) sb.Append("   |   ");
+                sb.Append(i == 0 ? "· " + Winds[w] + " ·" : Winds[w]);
+            }
+            _compassStrip.text = sb.ToString();
+        }
+
         public void Refresh(in WorldHudData d)
         {
+            RefreshCompass();
             if (!string.IsNullOrEmpty(d.Location)) _location.text = d.Location;
             _compassLine.text = d.CompassLine ?? string.Empty;
             _compassLine.style.display = string.IsNullOrEmpty(d.CompassLine) ? DisplayStyle.None : DisplayStyle.Flex;

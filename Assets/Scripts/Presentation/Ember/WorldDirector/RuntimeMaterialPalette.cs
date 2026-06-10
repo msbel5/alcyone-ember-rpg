@@ -118,6 +118,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 mat.EnableKeyword("_EMISSION");
                 mat.SetColor("_EmissionColor", new Color(0.04f, 0.12f, 0.20f, 1f));
             }
+            // DOUBLE-SIDED: the sheet is a single plane — one-sided it vanishes when the player walks below
+            // the waterline (the shore bowl is walkable), and the shadowed bowl under it read as a growing
+            // BLACK band from outside. Culling off keeps water visibly water from every side.
+            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", 0f);
             _water = mat;
             return mat;
         }
