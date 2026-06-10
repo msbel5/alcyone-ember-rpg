@@ -136,6 +136,33 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return mat;
         }
 
+        // Solid-colour material with the colour carried in a real 4x4 texture (the bulletproof path the water
+        // fix proved: colour-only runtime materials collapsed to black twice in player builds). Cached per
+        // colour so interiors across a whole town share a handful of materials.
+        private static readonly System.Collections.Generic.Dictionary<uint, Material> SolidCache =
+            new System.Collections.Generic.Dictionary<uint, Material>();
+
+        public static Material Solid(Color color)
+        {
+            var c32 = (Color32)color;
+            uint key = ((uint)c32.r << 24) | ((uint)c32.g << 16) | ((uint)c32.b << 8) | c32.a;
+            if (SolidCache.TryGetValue(key, out var cached)) return cached;
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var mat = new Material(shader);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", Color.white);
+            var tex = new Texture2D(4, 4, TextureFormat.RGBA32, mipChain: false);
+            var px = new Color32[16];
+            for (int i = 0; i < px.Length; i++) px[i] = c32;
+            tex.SetPixels32(px);
+            tex.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+            if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
+            if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", tex);
+            SolidCache[key] = mat;
+            return mat;
+        }
+
         public static Color GroundColor(BiomeKind biome)
         {
             switch (biome)
