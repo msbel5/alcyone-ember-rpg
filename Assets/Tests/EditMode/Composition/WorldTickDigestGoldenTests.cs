@@ -9,8 +9,11 @@ namespace EmberCrpg.Tests.EditMode.Composition
 {
     public sealed class WorldTickDigestGoldenTests
     {
-        // Re-baselined on 2026-06-03 for coherent time: 60/1440 tick cadence and per-tick schedule movement.
-        private const string BaselineHash = "3c63d493c1ceda5d58e140ebbb199b616e788d54c943f16285dee33094bfa2b8";
+        // Re-baselined on 2026-06-10: NeedsStep now emits ONE summary event per hourly crossing instead of
+        // one per actor (the per-actor spam grew the unbounded event log to ~1GB by day 90 and the Gen2 GC
+        // pauses were the felt per-tick stutter). Determinism itself is unchanged — the same-seed double
+        // advance still produced byte-identical digests in the run that captured this value.
+        private const string BaselineHash = "f1dd4ef0316041fd36181482d9e3d9546edcd15c0d5f9e15a6b41214be887abb";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

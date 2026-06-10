@@ -243,11 +243,35 @@ namespace EmberCrpg.Simulation.Composition
             public override void Run(in TickContext context)
             {
                 var world = context.World;
+                int ticked = 0;
+                EmberCrpg.Domain.Core.ActorId anchor = default;
                 foreach (var actor in world.Actors.Records)
                 {
-                    if (actor != null)
-                        _needs.TickActorNeeds(actor, world.Events, context.Stamp, ticks: 1);
+                    if (actor == null) continue;
+                    if (ticked == 0) anchor = actor.Id; // deterministic representative for the summary event
+                    actor.ApplyNeeds(_needs.TickNeeds(actor.Needs));
+                    _needs.RecomputeMood(actor);
+                    ticked++;
                 }
+
+                // ONE summary event per hourly crossing instead of one per actor: per-actor NeedChanged spam
+                // grew the unbounded event log by ~900 entries every game hour (~2M events / ~1GB heap by day
+                // 90), and the resulting Gen2 GC pauses were the 1.4-second "slow tick" spikes the profiler
+                // pinned on NeedsStep. Needs/mood stay fully deterministic per actor — only the audit trail
+                // is summarized. (TickActorNeeds keeps its per-actor event for callers that want the trace.)
+                if (ticked > 0 && world.Events != null)
+                    world.Events.Append(new EmberCrpg.Domain.World.WorldEvent(
+                        context.Stamp,
+                        EmberCrpg.Domain.World.WorldEventKind.NeedChanged,
+                        anchor,
+                        default,
+                        "needs_tick_summary",
+                        new EmberCrpg.Domain.World.ReasonTrace(new[]
+                        {
+                            "needs_tick",
+                            "actors:" + ticked,
+                            "time:" + context.Stamp.TotalMinutes,
+                        })));
             }
         }
 

@@ -135,7 +135,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         private static string BuildForgeGuidanceLine(QuestState state, string actorName, int distance, string direction)
         {
-            var range = distance <= 0 ? "nearby" : distance + " tiles " + direction;
+            // The distance is measured in the LOCAL actor grid (metres), not overland tiles — labelling it
+            // "tiles" made a 160m stroll read like a 6400km journey and the arrow feel broken.
+            var range = distance <= 0 ? "nearby" : distance + "m " + direction;
             if (state == null)
                 return actorName + " has forge work (" + range + "). Press E nearby, then ask about forge work.";
             if (state.IsTaskTriggered(0))
