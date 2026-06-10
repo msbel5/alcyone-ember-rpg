@@ -48,9 +48,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // Streaming terrain (Phase C): a bubble of seamless Unity-Terrain tiles loaded around the player as
             // they walk (Daggerfall-style), instead of one fixed plane. Flat where the settlement sits, gentle
             // hills outward, biome-textured, no hard edge — the ground "renders as you go".
+            // Bind the streamed terrain to the SAME WorldGeography the atlas map renders from, so the ground
+            // the player walks is the map (real elevation, sea, beaches) — not a detached Perlin pad.
+            WorldGeoSampler.TryCreate(map, view.PlayerOverlandTile, seed, out var geoSampler);
+            Debug.Log(geoSampler != null
+                ? $"[WorldDirector] terrain bound to world geography (REAL — sea at {geoSampler.SeaLevelMeters:0.#}m rel.)"
+                : "[WorldDirector] no geography snapshot — legacy Perlin terrain (PARTIAL).");
+
             var streamerGo = new GameObject("TerrainStreamer");
             streamerGo.transform.SetParent(root.transform, worldPositionStays: false);
-            streamerGo.AddComponent<TerrainStreamer>().Initialize(seed, homeTile.Biome);
+            streamerGo.AddComponent<TerrainStreamer>().Initialize(seed, homeTile.Biome, geoSampler);
 
             for (int i = 0; i < layout.Buildings.Count; i++)
                 RuntimeBuildingBuilder.Build(root.transform, layout.Buildings[i]);

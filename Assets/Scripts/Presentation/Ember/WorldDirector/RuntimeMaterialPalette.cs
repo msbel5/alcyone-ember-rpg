@@ -91,6 +91,31 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return WallTextureIds[i];
         }
 
+        private static Material _water;
+
+        /// <summary>
+        /// Shared translucent water surface material (sea/lakes), OpenMW-style flat plane shading. Cached —
+        /// every streamed tile that touches the sea reuses the same instance.
+        /// </summary>
+        public static Material Water()
+        {
+            if (_water != null) return _water;
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var mat = new Material(shader) { renderQueue = 3000 };
+            var color = new Color(0.10f, 0.34f, 0.52f, 0.78f);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f); // URP transparent
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.9f);
+            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+            mat.SetOverrideTag("RenderType", "Transparent");
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            _water = mat;
+            return mat;
+        }
+
         public static Color GroundColor(BiomeKind biome)
         {
             switch (biome)
