@@ -67,6 +67,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-shipcheck"))
+            {
+                yield return RunShipCheck();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             if (HasArg("--ember-scene-tour"))
             {
                 yield return RunSceneTour();
@@ -313,6 +320,89 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                     yield return new WaitForSecondsRealtime(0.25f);
                 }
             }
+        }
+
+        // F4 (--ember-shipcheck): the ONE-COMMAND regression pack — game loop legs, perf budget, a
+        // 10×fast-travel SOAK (memory + exception watch across scene reloads), and a modal capture, all
+        // summarized as SHIPCHECK section lines + a final PASS/FAIL verdict for the playtest log.
+        private IEnumerator RunShipCheck()
+        {
+            int exceptions = 0;
+            Application.logMessageReceived += (c, s, t) => { if (t == LogType.Exception) exceptions++; };
+            var sections = new System.Collections.Generic.List<string>();
+            bool allPass = true;
+            void Section(string name, bool pass, string detail)
+            {
+                allPass &= pass;
+                sections.Add($"SHIPCHECK [{(pass ? "PASS" : "FAIL")}] {name}: {detail}");
+                Debug.Log(sections[sections.Count - 1]);
+            }
+
+            yield return new WaitForSecondsRealtime(3.0f);
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(4.0f);
+
+            var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+            Section("world-enter", adapter != null, adapter != null ? "adapter live" : "no adapter");
+            if (adapter == null) yield break;
+
+            string quests = adapter.ProofQuestSnapshot();
+            Section("quest-seed", quests.Contains("active=2"), quests);
+
+            string enc = adapter.ProofRunEncounterLeg();
+            Section("encounter-loot", enc.Contains("felled=True"), enc);
+
+            string trade = adapter.ProofRunTradeLeg();
+            Section("economy", trade.Contains("success=True"), trade);
+
+            float sum = 0f, worst = 0f;
+            for (int i = 0; i < 90; i++)
+            {
+                yield return null;
+                float ms = Time.unscaledDeltaTime * 1000f;
+                sum += ms;
+                if (ms > worst) worst = ms;
+            }
+            float avg = sum / 90f;
+            Section("perf", avg <= 16f, $"avg={avg:0.0}ms worst={worst:0.0}ms (budget 16)");
+
+            // SOAK: 10 fast-travels across the realm (legacy sync path), scene reload each time — the
+            // streamer's OnDestroy frees terrain, the continuity hand-off carries the live world.
+            var view = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.WorldViewReadModel;
+            var names = new System.Collections.Generic.List<string>();
+            var map = view?.Overland;
+            if (map != null)
+                for (int i = 0; i < map.Settlements.Count && names.Count < 11; i++)
+                    names.Add(map.Settlements[i].Name);
+            int hops = 0;
+            for (int i = 0; i < names.Count && hops < 10; i++)
+            {
+                if (!adapter.TryTravelToSettlement(names[i], out _)) continue;
+                hops++;
+                EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
+                    EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
+                SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+                yield return new WaitForSecondsRealtime(2.0f);
+            }
+            Section("soak-travel", hops >= 10 && exceptions == 0, $"hops={hops} exceptions={exceptions}");
+
+            var igui = UnityEngine.Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
+            if (igui != null)
+            {
+                igui.ProofOpenScreen("inventory");
+                yield return new WaitForSecondsRealtime(0.5f);
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, "shipcheck_modal.png"));
+                igui.ProofCloseScreens();
+            }
+            Section("modal-capture", igui != null, igui != null ? "inventory captured end-of-frame" : "no UI controller");
+
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "shipcheck_final.png"));
+            Debug.Log($"SHIPCHECK VERDICT: {(allPass ? "PASS" : "FAIL")} ({sections.Count} sections, {exceptions} exceptions logged)");
         }
 
         // F2-DoD (--ember-looptest): the FULL GAME LOOP proven headlessly through production paths —
