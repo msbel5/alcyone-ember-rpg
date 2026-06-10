@@ -163,6 +163,23 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return sb.ToString();
         }
 
+        /// <summary>
+        /// F8-DoD: bind the encounter WITHOUT fighting and refresh the combat read once — the battle
+        /// mirror flips, and the music director's next poll must switch to the BATTLE slot. The headless
+        /// encounter leg resolves in one frame, too fast for any audible/loggable transition.
+        /// </summary>
+        public string ProofBindEncounterForMusic()
+        {
+            var outlawSeed = _world?.NpcSeeds?.FirstOrDefault(n => n != null && n.Role == EmberCrpg.Domain.Worldgen.NpcRole.Outlaw);
+            if (outlawSeed == null) return "LOOP-PROOF: no outlaw to bind for the music proof.";
+            var actorId = new ActorId(GeneratedNpcActorOffset + outlawSeed.Id.Value);
+            if (_world.Actors == null || !_world.Actors.TryGet(actorId, out var outlaw) || outlaw == null)
+                return "LOOP-PROOF: outlaw actor missing for the music proof.";
+            TryBeginWorldEncounter(outlaw, outlawSeed);
+            ReadCombatScreenState(); // publishes the battle mirror
+            return "LOOP-PROOF: encounter bound for the BATTLE-music transition window.";
+        }
+
         public string ProofRunEncounterLeg()
         {
             var outlawSeed = _world?.NpcSeeds?.FirstOrDefault(n => n != null && n.Role == EmberCrpg.Domain.Worldgen.NpcRole.Outlaw);

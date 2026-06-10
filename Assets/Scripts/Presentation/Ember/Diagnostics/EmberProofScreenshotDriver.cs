@@ -431,7 +431,12 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
             Debug.Log(adapter.ProofQuestSnapshot());
             Debug.Log(adapter.ProofGreetingSample()); // F6-DoD: 3 roles, 3 DIFFERENT greetings
+
+            // F8-DoD: hold the encounter open across two music polls — BATTLE in, then DAY back out.
+            Debug.Log(adapter.ProofBindEncounterForMusic());
+            yield return new WaitForSecondsRealtime(2.6f); // music director polls at 2s → slot=BATTLE logs
             Debug.Log(adapter.ProofRunEncounterLeg());
+            yield return new WaitForSecondsRealtime(2.6f); // settle read cleared the mirror → back to DAY/NIGHT
             yield return new WaitForSecondsRealtime(0.4f);
             Debug.Log(adapter.ProofRunTradeLeg());
             Debug.Log(adapter.ProofQuestSnapshot());
