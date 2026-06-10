@@ -20,9 +20,10 @@ namespace EmberCrpg.Tests.EditMode.Overland
         public void EverySettlementPin_LandsOnNonOceanPixels_OfTheRenderedAtlas()
         {
             var worldParameters = WorldgenParameters.Default;
-            // Engine-free planet defaults (subdivision 3) — same pipeline and projection math as the live
-            // level-4 path, just fewer tiles, so the alignment guarantee transfers and the test stays fast.
-            var field = PlanetGenerator.Generate(42u, PlanetParameters.Default);
+            // LIVE-SHAPED planet parameters (PlanetWorldService.ToPlanetParameters: subdivision 4, 32 plates,
+            // 0.62 oceanic, drift 0.04) — testing subdivision 3 let live-only coastal cases slip through
+            // (Cremouroucross pinned on ocean in the shipped build while this test stayed green).
+            var field = PlanetGenerator.Generate(42u, new PlanetParameters(4, 32, 0.62d, 0d, 0.04d));
             var world = PlanetToWorldMapper.Map(field, worldParameters);
             Assert.That(world.PlanetData, Is.Not.Null, "the planet sidecar must survive projection");
 

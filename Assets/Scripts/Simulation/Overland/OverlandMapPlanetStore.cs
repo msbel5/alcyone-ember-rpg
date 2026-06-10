@@ -113,14 +113,13 @@ namespace EmberCrpg.Simulation.Overland
                 if (dot > bestDot) { bestDot = dot; best = i; }
             }
 
-            // A coastal cell's centre can resolve to a WATER tile (the baked dots used to mask this); the
+            // A coastal cell's centre can resolve to an OCEAN tile (the baked dots used to mask this); the
             // settlement is on land by construction, so anchor to the nearest LAND tile in the 2-ring
-            // neighbourhood instead — the pin then provably sits on its own land pixels.
-            // Snap by the PAINTER'S rule (elevation vs SeaLevelThreshold), not the IsLand flag — a tile can
-            // carry IsLand=true yet render as water when its elevation sits below the threshold, which is
-            // exactly the divergence that stranded pins in open water.
-            double sea = field.Parameters.SeaLevelThreshold;
-            if (field.TileAt(best).Elevation < sea)
+            // neighbourhood instead. The predicate MUST be the painter's actual ocean rule —
+            // PlanetImageSampler.Color paints ocean iff !IsLand (lake/river tiles are land-side inland
+            // water and are fine to pin on). An elevation-threshold predicate here left pins stranded on
+            // ocean-painted tiles whose elevation sat above the threshold.
+            if (!field.TileAt(best).IsLand)
             {
                 double bestLandDot = double.NegativeInfinity;
                 int land = -1;
@@ -131,7 +130,7 @@ namespace EmberCrpg.Simulation.Overland
                     for (int j = -1; j < ring2.Count; j++)
                     {
                         int cand = j < 0 ? ring1[i] : ring2[j];
-                        if (field.TileAt(cand).Elevation < sea) continue;
+                        if (!field.TileAt(cand).IsLand) continue;
                         var q = grid.TileAt(cand).Position;
                         double d = (q.X * dx) + (q.Y * dy) + (q.Z * dz);
                         if (d > bestLandDot) { bestLandDot = d; land = cand; }
