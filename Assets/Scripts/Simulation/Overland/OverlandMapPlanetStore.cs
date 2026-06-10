@@ -55,7 +55,16 @@ namespace EmberCrpg.Simulation.Overland
             long key = ((long)width << 32) | (uint)height;
             if (cache.BySize.TryGetValue(key, out image)) return true;
 
-            image = PlanetImageSampler.Sample(field, width, height);
+            var sampled = PlanetImageSampler.Sample(field, width, height);
+            // PlanetImageSampler emits row 0 = NORTH, but Unity's LoadRawTextureData puts the FIRST byte row
+            // at the BOTTOM of the texture (the overland raster already obeys that convention, which is why
+            // its markers aligned). Flip to south-first here so the planet atlas is a drop-in replacement —
+            // without this the displayed map is vertically mirrored and every pin reads "in the sea".
+            var flipped = new byte[sampled.Rgba.Length];
+            int stride = width * 4;
+            for (int row = 0; row < height; row++)
+                System.Array.Copy(sampled.Rgba, row * stride, flipped, (height - 1 - row) * stride, stride);
+            image = new PlanetImage(width, height, flipped);
             cache.BySize[key] = image;
             return true;
         }

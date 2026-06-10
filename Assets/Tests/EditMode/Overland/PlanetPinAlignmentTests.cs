@@ -42,7 +42,9 @@ namespace EmberCrpg.Tests.EditMode.Overland
 
                 int px = System.Math.Clamp((int)(xPct / 100f * W), 0, W - 1);
                 int py = System.Math.Clamp((int)(yPct / 100f * H), 0, H - 1);
-                int idx = ((py * W) + px) * 4;
+                // PlanetAtlas stores rows SOUTH-first (Unity LoadRawTextureData convention); pin percents are
+                // top-origin (north = 0%), so flip the row to read the pixel the UI actually shows under the pin.
+                int idx = (((H - 1 - py) * W) + px) * 4;
                 byte r = image.Rgba[idx], g = image.Rgba[idx + 1], b = image.Rgba[idx + 2];
 
                 // Ocean pixels are blue-dominant; land is green/tan/grey/white. A pin on its own land tile

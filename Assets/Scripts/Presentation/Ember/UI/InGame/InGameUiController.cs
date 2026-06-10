@@ -1135,6 +1135,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         /// <summary>Proof/diagnostic hook: open a screen by id from the screenshot driver (verification tours).</summary>
         public void ProofOpenScreen(string id) => OpenScreen(id);
 
+        /// <summary>Proof/diagnostic hook: programmatic Escape — close any open modal/browser between captures.</summary>
+        public void ProofCloseScreens() => CloseAll();
+
         // The player's approved portrait travels from character creation as PNG bytes on the pending
         // worldgen intent (real forge face if it generated, else the deterministic creation swatch).
         // Build it into a Sprite once and cache it so the Character screen shows the real likeness

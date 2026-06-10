@@ -287,7 +287,12 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 foreach (var s in igScreens)
                 {
                     igui.ProofOpenScreen(s);
-                    yield return CaptureFixedAfter(0.45f, "ig_" + s + ".png");
+                    // REALTIME waits: opening a modal pauses the game (timeScale 0), so scaled WaitForSeconds
+                    // never elapses — the tour deadlocked on the FIRST modal until a human pressed Escape.
+                    yield return new WaitForSecondsRealtime(0.6f);
+                    CaptureToPng(Path.Combine(_outputDir, "ig_" + s + ".png"));
+                    igui.ProofCloseScreens(); // programmatic Escape so the next screen opens cleanly
+                    yield return new WaitForSecondsRealtime(0.25f);
                 }
             }
         }
