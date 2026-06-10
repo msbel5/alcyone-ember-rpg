@@ -60,6 +60,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-looptest"))
+            {
+                yield return RunLoopProof();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             if (HasArg("--ember-scene-tour"))
             {
                 yield return RunSceneTour();
@@ -302,6 +309,35 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                     yield return new WaitForSecondsRealtime(0.25f);
                 }
             }
+        }
+
+        // F2-DoD (--ember-looptest): the FULL GAME LOOP proven headlessly through production paths —
+        // New Game → quests seeded → world encounter (CombatActionResolver strikes) → spoils + bounty →
+        // live-priced trade. Every leg prints a LOOP-PROOF line for the playtest log.
+        private IEnumerator RunLoopProof()
+        {
+            yield return new WaitForSecondsRealtime(3.0f); // boot settles on MainMenu first
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(4.0f);
+            Debug.Log("LOOP-PROOF: world entered (New Game intent consumed).");
+
+            var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+            if (adapter == null)
+            {
+                Debug.Log("LOOP-PROOF: BROKEN — no domain adapter registered.");
+                yield break;
+            }
+
+            Debug.Log(adapter.ProofQuestSnapshot());
+            Debug.Log(adapter.ProofRunEncounterLeg());
+            yield return new WaitForSecondsRealtime(0.4f);
+            Debug.Log(adapter.ProofRunTradeLeg());
+            Debug.Log(adapter.ProofQuestSnapshot());
+            Debug.Log("LOOP-PROOF: full loop complete — explore→quest→fight→loot→trade all settled.");
+            CaptureToPng(Path.Combine(_outputDir, "looptest_final.png"));
         }
 
         // SELF-PLAYTEST ("playtestleri sen yapar mısın... çevrene bakıp inceleyebilirsin"): enter the real

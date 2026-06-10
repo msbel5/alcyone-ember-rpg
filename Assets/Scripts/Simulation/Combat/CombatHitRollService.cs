@@ -19,8 +19,11 @@ namespace EmberCrpg.Simulation.Combat
             // could see noise. Roll first, decide after.
             var roll = rng.RollPercent();
             var chance = attackerAccuracy - defenderDodge;
-            if (chance >= 100) return true;
-            if (chance <= 0) return false;
+            // LOOP-PROOF finding (looptest3): the raw difference made any pairing with dodge >= accuracy a
+            // PERMANENT 0% — a fresh player literally could not hit an outlaw (60/60 misses in the full-loop
+            // proof). Classic floor/ceiling keeps every swing a gamble: 5% graze floor, 95% whiff ceiling.
+            if (chance < 5) chance = 5;
+            else if (chance > 95) chance = 95;
             return roll <= chance;
         }
     }

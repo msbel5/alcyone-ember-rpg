@@ -41,18 +41,33 @@ namespace EmberCrpg.Tests.EditMode.Combat
         }
 
         // ----- CombatHitRollService -----
+        // CONTRACT CHANGE (full-loop proof finding): the raw accuracy-dodge difference made dodge>=accuracy
+        // a PERMANENT 0% — a fresh player literally could not hit an outlaw. The service now clamps the
+        // chance to [5,95]: every swing stays a gamble (5% graze floor, 5% whiff ceiling).
         [Test]
-        public void Hit_AccuracyMinusDodgeAbove100_AlwaysHits()
+        public void Hit_HighChance_CapsAt95_SoMissesStayPossible()
         {
-            var hit = new CombatHitRollService().Roll(150, 10, new XorShiftRng(1));
-            Assert.That(hit, Is.True);
+            int hits = 0, misses = 0;
+            for (uint seed = 1; seed <= 400; seed++)
+            {
+                if (new CombatHitRollService().Roll(150, 10, new XorShiftRng(seed))) hits++;
+                else misses++;
+            }
+            Assert.That(hits, Is.GreaterThan(300), "a ~95% chance should land most swings");
+            Assert.That(misses, Is.GreaterThan(0), "the 95 ceiling must keep a whiff possible");
         }
 
         [Test]
-        public void Hit_AccuracyMinusDodgeBelowZero_NeverHits()
+        public void Hit_LowChance_FloorsAt5_SoHitsStayPossible()
         {
-            var hit = new CombatHitRollService().Roll(5, 50, new XorShiftRng(1));
-            Assert.That(hit, Is.False);
+            int hits = 0, misses = 0;
+            for (uint seed = 1; seed <= 400; seed++)
+            {
+                if (new CombatHitRollService().Roll(5, 50, new XorShiftRng(seed))) hits++;
+                else misses++;
+            }
+            Assert.That(misses, Is.GreaterThan(300), "a ~5% chance should miss most swings");
+            Assert.That(hits, Is.GreaterThan(0), "the 5 floor must keep a graze possible");
         }
 
         [Test]

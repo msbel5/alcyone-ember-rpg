@@ -38,6 +38,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return best;
         }
 
+        // Session-local; deliberately NOT persisted — both sides of a save/load restore start at 0, so
+        // replay from one snapshot stays deterministic while distinct strikes in one minute roll fresh.
+        private uint _meleeStrikeSerial;
+
         public bool TryMeleeStrike(string targetActorName, int rawDamage)
         {
             // Codex audit (fourth pass A-P1): concrete melee command. Resolves
@@ -95,8 +99,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // save/load.
             uint timeSeed = (uint)(_world.Time.TotalMinutes & 0xFFFFFFFFL);
             uint eventSeed = (uint)((_world.Events?.Events?.Count ?? 0) & 0xFFFFFFFFL);
+            // LOOP-PROOF finding (looptest2): "Events.Count advances every Resolve" is FALSE for misses —
+            // no event lands, so the seed froze and a first miss replayed IDENTICALLY forever within the
+            // same minute (60/60 misses, fatigue untouched). A session-local strike serial breaks the loop;
+            // two sessions restored from one snapshot both start it at 0, so save/load replay still agrees.
+            _meleeStrikeSerial++;
             var rng = new EmberCrpg.Simulation.Rng.XorShiftRng(
-                (timeSeed * 2654435761u) ^ (eventSeed * 1597334677u) ^ 0xE3B6_1EE7u);
+                (timeSeed * 2654435761u) ^ (eventSeed * 1597334677u) ^ (_meleeStrikeSerial * 0x9E3779B9u) ^ 0xE3B6_1EE7u);
             // Codex audit (seventh pass A-P2 #6): previously hard-coded
             // SiteId(1UL) so every combat event was logged under a synthetic
             // location. Derive the site from the actual world: closest

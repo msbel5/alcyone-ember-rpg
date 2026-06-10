@@ -1,3 +1,4 @@
+using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 
@@ -50,6 +51,69 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             WorldEncounterSignal.Raise();
             UnityEngine.Debug.Log($"[Encounter] world encounter begun vs '{actor.Name}' (outlaw).");
             return true;
+        }
+
+        // ----- F2-DoD LOOP PROOF (--ember-looptest) ----------------------------------------------------
+        // Proof-only entry points that run the loop's legs through the EXACT production paths (encounter
+        // binding, CombatActionResolver strikes, quest/spoils settlement, live-priced trade) and return
+        // LOOP-PROOF transcript lines for the playtest log. Same diagnostics precedent as the Proof* hooks.
+
+        public string ProofQuestSnapshot()
+        {
+            int active = 0, complete = 0;
+            if (_world?.Quests != null)
+            {
+                foreach (var kv in _world.Quests.Active)
+                {
+                    active++;
+                    if (kv.Value.IsComplete) complete++;
+                }
+            }
+            return $"LOOP-PROOF: quests active={active} complete={complete}, purse={_world?.PlayerGold ?? -1} gold.";
+        }
+
+        public string ProofRunEncounterLeg()
+        {
+            var outlawSeed = _world?.NpcSeeds?.FirstOrDefault(n => n != null && n.Role == EmberCrpg.Domain.Worldgen.NpcRole.Outlaw);
+            if (outlawSeed == null) return "LOOP-PROOF: no outlaw in this world — encounter leg skipped.";
+
+            var actorId = new ActorId(GeneratedNpcActorOffset + outlawSeed.Id.Value);
+            if (_world.Actors == null || !_world.Actors.TryGet(actorId, out var outlaw) || outlaw == null)
+                return "LOOP-PROOF: BROKEN — outlaw seed has no actor.";
+
+            int goldBefore = _world.PlayerGold;
+            TryBeginWorldEncounter(outlaw, outlawSeed);
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            // Proof verifies the PATH (hit→damage→death→spoils→bounty), not balance: a fresh player's real
+            // chance vs an outlaw clamps to the 5% floor, so the proof swings harder and longer than a
+            // starting kit would. The thin-progression finding is reported separately.
+            int swings = 0;
+            while (outlaw.IsAlive && swings < 150)
+            {
+                TryMeleeStrike(outlaw.Name, 20);
+                swings++;
+                if (swings % 10 == 0)
+                    UnityEngine.Debug.Log($"LOOP-PROOF: swing {swings}: '{_lastCombatLine}' | " +
+                        $"enemyHp={outlaw.Vitals.Health.Current}/{outlaw.Vitals.Health.Max}, " +
+                        $"playerFatigue={player?.Vitals.Fatigue.Current ?? -1}/{player?.Vitals.Fatigue.Max ?? -1}");
+            }
+            ReadCombatScreenState(); // settles spoils + bounty exactly the way the open screen would
+            return $"LOOP-PROOF: encounter vs '{outlaw.Name}' — {swings} swings, felled={!outlaw.IsAlive}, " +
+                   $"enemyHp={outlaw.Vitals.Health.Current}, last='{_lastCombatLine}', " +
+                   $"purse {goldBefore}->{_world.PlayerGold} gold (spoils+bounty).";
+        }
+
+        public string ProofRunTradeLeg()
+        {
+            var state = ReadTradeState();
+            if (state.MerchantItems == null || state.MerchantItems.Count == 0)
+                return "LOOP-PROOF: merchant stock empty — trade leg skipped.";
+
+            var first = state.MerchantItems[0];
+            int before = _world.PlayerGold;
+            var result = ExecuteTrade(new EmberCrpg.Presentation.Ember.UI.TradeActionRequest(
+                EmberCrpg.Presentation.Ember.UI.TradeActionKind.Buy, first.TemplateId));
+            return $"LOOP-PROOF: buy '{first.TemplateId}' success={result.Success}, purse {before}->{_world.PlayerGold} gold.";
         }
 
         /// <summary>Victory closes the loop: spoils to the purse, encounter unbinds. Called per combat read.</summary>
