@@ -73,6 +73,36 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
                 accepted.Add(candidate);
             }
 
+            // F5/density-B (user-approved "dengeli"): a SECOND, relaxed-spacing pass grows the pool toward
+            // ~150 sites using NON-FOREST candidates only — farm-side counts grow, so the farm>forest mix
+            // invariant holds BY CONSTRUCTION (the naive global spacing cut broke it; see MinimumSpacingFor).
+            // Primary-band leftovers gave only +7 (the ≥0.38 maxima pool is small): a SECONDARY suitability
+            // band (0.30–0.38 local maxima, still non-forest, relaxed pass only) supplies the rest.
+            const int TargetSites = 150;
+            const double SecondaryBandFloor = 0.30d;
+            int relaxedSpacing = Math.Max(2, spacing - 1);
+
+            var relaxedPool = new List<Candidate>(candidates);
+            for (int tileId = 0; tileId < field.TileCount; tileId++)
+            {
+                if (suitability[tileId] >= SecondaryBandFloor && suitability[tileId] < MinimumSuitability
+                    && IsLocalMaximum(field, suitability, tileId))
+                    relaxedPool.Add(new Candidate(tileId, suitability[tileId], capacity[tileId]));
+            }
+            relaxedPool.Sort(CompareCandidates);
+
+            for (int i = 0; i < relaxedPool.Count && accepted.Count < TargetSites; i++)
+            {
+                Candidate extra = relaxedPool[i];
+                if (occupied[extra.TileId]) continue;
+                var extraBiome = field.TileAt(extra.TileId).Biome;
+                if (extraBiome == PlanetBiome.TemperateForest || extraBiome == PlanetBiome.Taiga
+                    || extraBiome == PlanetBiome.TropicalRainforest) continue; // forest hamlets stay capped
+                if (spacingSearch.HasMarkedWithin(occupied, extra.TileId, relaxedSpacing - 1)) continue;
+                occupied[extra.TileId] = true;
+                accepted.Add(extra);
+            }
+
             int capitalIndex = CapitalIndex(accepted);
             var settlements = new PlanetSettlement[accepted.Count];
             for (int i = 0; i < accepted.Count; i++)

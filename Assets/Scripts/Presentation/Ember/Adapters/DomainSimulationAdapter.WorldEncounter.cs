@@ -93,8 +93,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // Proof verifies the PATH (hit→damage→death→spoils→bounty), not balance: a fresh player's real
             // chance vs an outlaw clamps to the 5% floor, so the proof swings harder and longer than a
             // starting kit would. The thin-progression finding is reported separately.
+            // 250-swing budget: at the fresh-player 5% floor the kill needs ~3 hits (E[hits]=12.5);
+            // a 150 cap failed once on a ~2% bad-dice tail (looktest7: 2 hits, enemy at 9hp).
             int swings = 0;
-            while (outlaw.IsAlive && swings < 150)
+            while (outlaw.IsAlive && swings < 250)
             {
                 TryMeleeStrike(outlaw.Name, 20);
                 swings++;

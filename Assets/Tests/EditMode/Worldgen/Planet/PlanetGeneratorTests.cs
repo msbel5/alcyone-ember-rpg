@@ -16,7 +16,10 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
             oceanicFraction: 0.65d,
             seaLevelThreshold: 0d,
             driftScale: 0.035d);
-        private const ulong Seed42Digest = 91494514383486361UL;
+        // Re-baselined 2026-06-10 for v0.2 density-B: SettlementStage gained a relaxed-spacing second pass
+        // (non-forest only) growing the site pool toward ~150 — the settlement layer, and so the digest,
+        // changed by design. Determinism itself is re-proven every run by the same-seed double generate.
+        private const ulong Seed42Digest = 11414931061137974583UL;
         private const double MeaningfulOreThreshold = 0.05d;
         private const double DepositCoreOreThreshold = 0.50d;
         private const double RichMiningOreThreshold = 0.68d;
@@ -314,10 +317,14 @@ namespace EmberCrpg.Tests.EditMode.Worldgen.Planet
                 Assert.That(tile.Biome, Is.Not.EqualTo(PlanetBiome.Ice), $"settlement tile={settlement.TileId}");
                 Assert.That(tile.FreshWater, Is.GreaterThanOrEqualTo(SettlementStage.MinimumFreshWater), $"settlement tile={settlement.TileId}");
 
+                // CONTRACT CHANGE (v0.2 density-B): the pool now grows with a SECOND, relaxed-spacing pass
+                // (non-forest candidates only, so the farm>forest mix holds by construction). The pairwise
+                // floor is therefore spacing-1, not spacing — still clear rings between every two towns.
+                int relaxedFloor = Math.Max(2, spacing - 1);
                 for (int j = i + 1; j < field.Settlements.Count; j++)
                 {
-                    int distance = GraphDistance(field, settlement.TileId, field.Settlements[j].TileId, spacing);
-                    Assert.That(distance, Is.GreaterThanOrEqualTo(spacing), $"settlements {settlement.TileId} and {field.Settlements[j].TileId}");
+                    int distance = GraphDistance(field, settlement.TileId, field.Settlements[j].TileId, relaxedFloor);
+                    Assert.That(distance, Is.GreaterThanOrEqualTo(relaxedFloor), $"settlements {settlement.TileId} and {field.Settlements[j].TileId}");
                 }
             }
 
