@@ -138,6 +138,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (renderer != null)
             {
                 renderer.sharedMaterial = RuntimeMaterialPalette.Water();
+                // One log per water sheet: lets a playtest log answer "was that black thing OUR water, and
+                // with which shader?" instead of guessing from screenshots.
+                Debug.Log($"[Terrain] water sheet under '{tile.name}' at local y={localY:0.#} shader='{renderer.sharedMaterial.shader?.name}'");
                 // No shadows on the water sheet: at low sun angles the shore-bowl rim shadowed the ENTIRE
                 // plane, which is exactly the "black area outside town" the playtest reported.
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

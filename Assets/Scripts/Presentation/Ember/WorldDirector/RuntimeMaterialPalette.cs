@@ -112,6 +112,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var color = new Color(0.18f, 0.45f, 0.65f, 1f);
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+            // BULLETPROOF COLOR PATH: building textures provably render in the player, so carry the blue in
+            // an actual _BaseMap texture too — whatever variant/keyword the build strips, a textured surface
+            // cannot collapse to black the way a colour-only material did in two playtests.
+            var tex = new Texture2D(4, 4, TextureFormat.RGBA32, mipChain: false);
+            var px = new Color32[16];
+            for (int i = 0; i < px.Length; i++) px[i] = new Color32(46, 115, 166, 255);
+            tex.SetPixels32(px);
+            tex.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+            if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
+            if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", tex);
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.55f);
             if (mat.HasProperty("_EmissionColor"))
             {
