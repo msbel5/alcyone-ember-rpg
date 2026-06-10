@@ -41,6 +41,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 if (!string.Equals(settlement.Name, settlementName, System.StringComparison.OrdinalIgnoreCase))
                     continue;
 
+                // Honest travel time: one overland tile edge is 40 km — call it a day's journey. Capture the
+                // origin tile BEFORE the move so the distance is real.
+                var fromTile = ResolvePlayerOverlandTile();
+                int tiles = EmberCrpg.Domain.Overland.OverlandMap.ChebyshevDistance(fromTile, settlement.TilePosition);
+                int days = System.Math.Min(14, System.Math.Max(1, tiles));
+
                 // The REAL move: the domain player actor relocates to the destination settlement's site, so
                 // schedules/quests/save all see the new position. Everything else (overland tile, billboard
                 // origin, HUD town name) re-derives from it.
@@ -49,7 +55,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
                 _currentSettlement = settlement.Id;
                 _billboardOriginResolved = false; // NPC grid→world re-bases on the new settlement centre
-                message = "Travelled to " + settlement.Name + ".";
+
+                // The world LIVES through the journey: advance the real clock (AdvanceTick takes an ABSOLUTE
+                // tick index) so schedules/needs/prices tick along. PARTIAL (honest): capped at 14 days so a
+                // cross-continent hop cannot freeze the scene cut for minutes — the cap trades sim-honesty
+                // for UX until ticking is chunked behind a loading screen.
+                AdvanceTick(_tick + (days * EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay));
+
+                message = "Travelled to " + settlement.Name + " — " + days + (days == 1 ? " day" : " days") + " on the road.";
                 return true;
             }
 

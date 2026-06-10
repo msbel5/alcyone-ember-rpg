@@ -158,7 +158,7 @@ namespace EmberCrpg.Simulation.Worldgen
                 villageCount,
                 Math.Max(1, factionCount),
                 Math.Max(1, npcCount),
-                historyYears: 400,
+                historyYears: 1200, // DF-depth ask: three eras of simulated history (cost is linear in years)
                 worldStartYear: 1,
                 style: style,
                 genre: genre,

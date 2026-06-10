@@ -14,7 +14,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             var world = WorldgenService.Generate(42u, parameters);
 
             Assert.That(parameters.RegionCount, Is.EqualTo(50));
-            Assert.That(parameters.HistoryYears, Is.EqualTo(400));
+            Assert.That(parameters.HistoryYears, Is.EqualTo(1200)); // DF-depth: three simulated eras
             Assert.That(world.Settlements.Count, Is.LessThanOrEqualTo(parameters.SettlementCount));
             Assert.That(world.Settlements.Count, Is.GreaterThan(150));
             Assert.That(world.TotalPopulation, Is.Not.EqualTo(parameters.TargetPopulation));

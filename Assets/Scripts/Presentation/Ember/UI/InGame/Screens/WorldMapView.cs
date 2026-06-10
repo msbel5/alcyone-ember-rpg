@@ -206,6 +206,31 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 pane.Add(travelNote);
             }
 
+            // Legend: the pin colors finally explain themselves ("dots are meaningless" playtest feedback).
+            var legendHead = Text("LEGEND", Sans, 10, Gold, FontStyle.Bold);
+            legendHead.style.letterSpacing = 1.8f;
+            legendHead.style.marginBottom = 6;
+            pane.Add(legendHead);
+
+            var legend = Row();
+            legend.style.flexWrap = Wrap.Wrap;
+            legend.style.marginBottom = 14;
+            foreach (var settlementKind in new[]
+            {
+                SettlementKind.City, SettlementKind.Town, SettlementKind.Village, SettlementKind.Hamlet,
+                SettlementKind.Inn, SettlementKind.Shrine, SettlementKind.Dungeon,
+            })
+            {
+                var item = Text(LocationIcon(settlementKind) + " " + settlementKind, Sans, 9, LocationColor(settlementKind));
+                item.style.marginRight = 10;
+                item.style.marginBottom = 4;
+                legend.Add(item);
+            }
+            var youItem = Text("● You", Sans, 9, Gold);
+            youItem.style.marginBottom = 4;
+            legend.Add(youItem);
+            pane.Add(legend);
+
             var head = Text("SETTLEMENTS", Sans, 10, Gold, FontStyle.Bold);
             head.style.letterSpacing = 1.8f;
             head.style.marginBottom = 14;
