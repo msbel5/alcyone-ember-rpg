@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EmberCrpg.Data.Recipes;
 using EmberCrpg.Domain.Quest;
 using EmberCrpg.Domain.World;
 
@@ -20,7 +21,14 @@ namespace EmberCrpg.Data.Quests
                 new[]
                 {
                     new QuestTask(
-                        new InventoryHasItemTagCondition("iron_ingot", 1),
+                        new AllQuestCondition(new IQuestCondition[]
+                        {
+                            new InventoryHasItemTagCondition("iron_ingot", 1),
+                            new WorldEventOccurredCondition(
+                                WorldEventKind.RecipeCompleted,
+                                "recipe_completed:" + ProductionRecipeRegistry.SmeltIronIngotId.Value,
+                                atOrAfterQuestStart: false),
+                        }),
                         new IQuestAction[]
                         {
                             new AppendQuestEventAction(WorldEventKind.QuestTaskTriggered, "quest_task_triggered:forge_iron_ingot"),

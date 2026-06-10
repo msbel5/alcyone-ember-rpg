@@ -59,6 +59,45 @@ namespace EmberCrpg.Tests.EditMode.Presentation
         }
 
         [Test]
+        public void ForgeQuest_PreexistingIngot_DoesNotCompleteWithoutPostQuestCraft()
+        {
+            var world = new WorldFactory().Create(roomSeed: 21);
+            var smith = new NpcSeedRecord(
+                new NpcId(11UL),
+                new SettlementId(1UL),
+                new FactionId(1UL),
+                "Toma the Smith",
+                984,
+                NpcRole.Blacksmith);
+            world.NpcSeeds.Add(smith);
+            world.PlayerInventory.TryAdd(new InventoryItem(new ItemId(900UL), "iron_ingot", "Iron Ingot", 1));
+            var adapter = new DomainSimulationAdapter(world);
+            var source = adapter.GetDialogSource("Toma the Smith");
+
+            source.SelectTopic(QuestInteractionService.ForgeIronIngotTopicId);
+            source.SelectTopic(QuestInteractionService.ForgeIronIngotTopicId);
+
+            var chapters = ((IJournalSource)adapter).GetChapters();
+            Assert.That(chapters[0].Entries[0].Status, Is.EqualTo(JournalEntryStatus.Active));
+            Assert.That(Count(world.PlayerInventory, "iron_ingot"), Is.EqualTo(1));
+
+            Assert.That(((ICraftingCommandSink)adapter).ExecuteCraft("1001").Success, Is.True);
+            source.SelectTopic(QuestInteractionService.ForgeIronIngotTopicId);
+
+            Assert.That(Count(world.PlayerInventory, "iron_ingot"), Is.EqualTo(1));
+            Assert.That(((IJournalSource)adapter).GetChapters()[0].Entries[0].Status, Is.EqualTo(JournalEntryStatus.Completed));
+        }
+
+        private static int Count(EmberCrpg.Domain.Inventory.InventoryState inventory, string templateId)
+        {
+            var total = 0;
+            foreach (var item in inventory.Items)
+                if (item.TemplateId == templateId)
+                    total += item.Quantity;
+            return total;
+        }
+
+        [Test]
         public void ForgeQuest_IsOfferedBySmithJobWorkerEvenWhenNpcRoleIsGeneric()
         {
             var world = new WorldFactory().Create(roomSeed: 18);

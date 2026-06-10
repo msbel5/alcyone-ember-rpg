@@ -34,7 +34,7 @@ namespace EmberCrpg.Tests.EditMode.Quest
         }
 
         [Test]
-        public void Tick_WithIronIngot_MarksForgeObjectiveWithoutCompletingQuest()
+        public void Tick_WithPreexistingIronIngot_DoesNotMarkForgeObjective()
         {
             var world = CreateQuestWorld();
             var questState = SeedForgeQuest(world);
@@ -43,6 +43,28 @@ namespace EmberCrpg.Tests.EditMode.Quest
             system.Tick(world);
             world.PlayerInventory.TryAdd(new InventoryItem(new ItemId(501UL), "iron_ingot", "Iron Ingot", 1));
             system.Tick(world);
+            system.Tick(world);
+
+            Assert.That(questState.IsComplete, Is.False);
+            Assert.That(questState.IsTaskTriggered(0), Is.False);
+            Assert.That(CountEvents(world, WorldEventKind.QuestTaskTriggered), Is.EqualTo(0));
+            Assert.That(CountEvents(world, WorldEventKind.QuestCompleted), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Tick_WithPostQuestCraftEvent_MarksForgeObjectiveWithoutCompletingQuest()
+        {
+            var world = CreateQuestWorld();
+            var questState = SeedForgeQuest(world);
+            var system = new QuestSystem();
+
+            world.PlayerInventory.TryAdd(new InventoryItem(new ItemId(501UL), "iron_ingot", "Iron Ingot", 1));
+            world.Events.Append(new WorldEvent(
+                world.Time,
+                WorldEventKind.RecipeCompleted,
+                Player,
+                ForgeSite,
+                "recipe_completed:1001"));
             system.Tick(world);
 
             Assert.That(questState.IsComplete, Is.False);

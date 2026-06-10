@@ -42,6 +42,29 @@ namespace EmberCrpg.Domain.Quest
             return total;
         }
 
+        /// <summary>Returns true when a matching event exists at or after the supplied deterministic tick.</summary>
+        public bool HasEvent(WorldEventKind kind, string reason, GameTime atOrAfter)
+        {
+            if (kind == WorldEventKind.None)
+                throw new ArgumentException("WorldEventKind.None cannot satisfy a quest condition.", nameof(kind));
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new ArgumentException("Event reason is required.", nameof(reason));
+            if (_world.Events == null)
+                return false;
+
+            var normalizedReason = reason.Trim();
+            for (int i = 0; i < _world.Events.Count; i++)
+            {
+                var evt = _world.Events.Events[i];
+                if (evt.Kind == kind
+                    && evt.Tick >= atOrAfter
+                    && string.Equals(evt.Reason, normalizedReason, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+
         /// <summary>Returns true when the supplied actor exists and is currently dead.</summary>
         public bool IsActorDead(ActorId actorId)
         {
