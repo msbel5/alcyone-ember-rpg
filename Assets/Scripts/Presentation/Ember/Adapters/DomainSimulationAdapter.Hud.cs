@@ -16,6 +16,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // Anchor the player in the real generated world: name the settlement they started in.
                 var town = ResolveStartingSettlementName();
                 var where = string.IsNullOrEmpty(town) ? string.Empty : $"   •   {town}";
+                // Player overland tile on the HUD: the map, the side panel and the 3D world all key off this
+                // coordinate, so showing it is the player's ground-truth anchor ("where exactly am I?").
+                if (GeneratedWorld != null && _world?.Overland != null)
+                {
+                    var tile = ResolvePlayerOverlandTile();
+                    where += $"   •   Tile {tile.X},{tile.Y}";
+                }
                 if (profile == null)
                     return $"Tick {_tick:0000}   Day {day:000}{where}";
                 // Population is the world the HISTORY simulated (sum of surviving settlement populations),

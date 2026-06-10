@@ -135,7 +135,14 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             water.transform.localPosition = new Vector3(tileSize * 0.5f, localY, tileSize * 0.5f);
             water.transform.localScale = new Vector3(tileSize / 10f, 1f, tileSize / 10f);
             var renderer = water.GetComponent<MeshRenderer>();
-            if (renderer != null) renderer.sharedMaterial = RuntimeMaterialPalette.Water();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = RuntimeMaterialPalette.Water();
+                // No shadows on the water sheet: at low sun angles the shore-bowl rim shadowed the ENTIRE
+                // plane, which is exactly the "black area outside town" the playtest reported.
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+            }
         }
 
         // Legacy continuous height function (origin-flat + Perlin hills) for scenes without world geography.

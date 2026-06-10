@@ -105,10 +105,19 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // Opaque cannot fail that way on any pipeline; translucency is polish for later.
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             var mat = new Material(shader);
-            var color = new Color(0.09f, 0.30f, 0.47f, 1f);
+            // Bright readable sea blue: the previous dark navy + smoothness 0.85 read as a BLACK hole in
+            // playtests — with no runtime reflection probes the specular term is black, and under grim
+            // ambient a dark albedo carries almost no visible light. Brighter base + modest smoothness +
+            // a faint emission floor make water unmistakably WATER in every lighting mood.
+            var color = new Color(0.18f, 0.45f, 0.65f, 1f);
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.85f);
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.55f);
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                mat.EnableKeyword("_EMISSION");
+                mat.SetColor("_EmissionColor", new Color(0.04f, 0.12f, 0.20f, 1f));
+            }
             _water = mat;
             return mat;
         }
