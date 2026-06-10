@@ -55,6 +55,20 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 : (sproutCount > 0 && sproutCount >= seedCount ? 1 : 0);
             EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.Publish(
                 seedCount + sproutCount + ripeCount, stage);
+
+            // F1/CARAVANS: how many caravans are AT the home site right now — the plaza trade cart shows
+            // itself only while one is in town, so the daily CaravanSystem becomes watchable.
+            int atSite = 0;
+            var caravans = _world.Caravans;
+            if (caravans != null)
+            {
+                for (int i = 0; i < caravans.Count; i++)
+                {
+                    if (caravans[i] != null && caravans[i].CurrentSiteId.Equals(site))
+                        atSite++;
+                }
+            }
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeCaravanMirror.Publish(atSite);
         }
     }
 }

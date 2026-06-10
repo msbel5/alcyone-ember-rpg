@@ -110,6 +110,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 Debug.Log("[WorldDirector] dungeon mouth realized by the plaza.");
             }
 
+            // TRADE CART (F1/caravans): realized once, VISIBLE only while a caravan is at this site — the
+            // CaravanCartView polls the mirror the adapter feeds each tick.
+            RuntimeCaravanBuilder.Build(root.transform);
+            Debug.Log("[WorldDirector] trade cart realized (visibility bound to the caravan mirror).");
+
             // REGION BANNER (political identity v1): a pole + flag at the plaza edge, coloured
             // deterministically from the tile's RegionId — neighbouring towns of the same region fly the
             // same colours, crossing a border changes them. Faction-level refinement is the queued v2.
