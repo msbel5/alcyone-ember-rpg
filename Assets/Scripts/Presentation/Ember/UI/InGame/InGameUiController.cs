@@ -1005,6 +1005,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             }
 
             Debug.Log("[Travel] " + message + " Re-realizing the world at the destination.");
+            // Carry the LIVE world across the reload: the old host's OnDestroy clears the locator mid-load,
+            // and without this hand-off the new host would bootstrap a fresh default world (the bug where
+            // travel ended in a black screen + "overland unavailable").
+            EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(EmberDomainAdapterLocator.Current);
             UnityEngine.SceneManagement.SceneManager.LoadScene(EmberCrpg.Presentation.Ember.EmberScenes.GeneratedWorld);
         }
         private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);

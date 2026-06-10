@@ -66,8 +66,11 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // The old fallback fabricated HUD/gameplay rows here. Prefer a registered domain adapter; if none
             // exists, bootstrap a real DomainSimulationAdapter. If that fails, use an honest disabled adapter
             // that exposes empty/unavailable state rather than fake gameplay.
+            // Fast travel reloads this scene; the locator was Cleared by the OLD host's OnDestroy during the
+            // load, so a deliberately carried live world (EmberWorldContinuity) must win over creating a
+            // fresh one — otherwise travel silently replaced the played world with a default one.
             var binding = EmberWorldHostAdapterBinding.Create(
-                EmberDomainAdapterLocator.Current ?? TryCreateDomainAdapter(),
+                EmberDomainAdapterLocator.Current ?? EmberWorldContinuity.Take() ?? TryCreateDomainAdapter(),
                 CreateFallbackAdapter);
             _adapter = binding.Adapter;
             _clock = binding.Clock;

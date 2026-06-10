@@ -308,7 +308,9 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, mipChain: false)
                 {
                     wrapMode = TextureWrapMode.Clamp,
-                    filterMode = FilterMode.Point,
+                    // Bilinear: the reveal map is a painting of the world, not a tile inspector — Point made
+                    // the 1024x512 relief render look like chunky pixels ("the maps got uglier").
+                    filterMode = FilterMode.Bilinear,
                 };
                 texture.LoadRawTextureData(image.RgbaBytes);
                 texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);

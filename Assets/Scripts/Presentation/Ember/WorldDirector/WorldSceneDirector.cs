@@ -29,7 +29,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var map = view.Overland;
             if (map == null)
             {
-                Debug.LogWarning("[WorldDirector] no overland map — skipping realize (standalone scene?).");
+                // BROKEN-state failsafe: never strand the player in a black void. Build the Perlin fallback
+                // pad + lighting + a rig so the scene stays walkable, and say loudly that the world is missing
+                // (this should be unreachable now that fast travel carries the adapter across the reload).
+                Debug.LogError("[WorldDirector] BROKEN: no overland map in the generated-world scene — realizing an empty fallback pad.");
+                var fallbackRoot = new GameObject("GeneratedLocation");
+                var fallbackStreamer = new GameObject("TerrainStreamer");
+                fallbackStreamer.transform.SetParent(fallbackRoot.transform, worldPositionStays: false);
+                fallbackStreamer.AddComponent<TerrainStreamer>().Initialize(1u, BiomeKind.Plains);
+                RuntimeLightingRig.Apply(fallbackRoot.transform, BiomeKind.Plains);
+                RuntimePlayerRig.Build(new Vector3(0f, 0.2f, 0f), Quaternion.identity);
                 return;
             }
 

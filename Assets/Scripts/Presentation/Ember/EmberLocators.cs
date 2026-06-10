@@ -28,6 +28,7 @@ namespace EmberCrpg.Presentation.Ember
             ForgeLocator.Clear();
             UiSurfaceLocator.Clear();
             EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending = null;
+            EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Clear();
         }
     }
 }
