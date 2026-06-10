@@ -57,11 +57,17 @@ namespace EmberCrpg.Simulation.WorldDirector
             var nearestData = _field.TileAt(nearest);
             if (nearestData.IsLake && !double.IsNaN(lakeLevel))
                 waterLevel = Math.Max(waterLevel, lakeLevel);
-            // Rivers are land-side water too: the river tile's own surface acts as the local water level,
-            // so hydrology finally shows in 3D as a wet band through the terrain (v1 "wetlands" at ~28km
-            // tile scale — true narrow channel carving from Flow direction is the queued v2).
+            // Rivers v2 — a CHANNEL, not a flooded plain: the river tile's surface is the water level, and
+            // the ground under it is pressed a couple of metres BELOW that line, so the water sheet reads as
+            // a river bed cut into the terrain with dry banks where neighbouring land tiles take over the
+            // blend. (True meander carving from per-tile Flow vectors stays future work.)
             if (nearestData.IsRiver)
+            {
                 waterLevel = Math.Max(waterLevel, nearestData.Elevation);
+                double channelBed = waterLevel - (3.0d / 600.0d); // ~3m below the waterline in planet units
+                if (elevation > channelBed)
+                    elevation = channelBed;
+            }
         }
 
         private void BlendTile(int tileId, double x, double y, double z, ref double wSum, ref double eSum, ref double lakeLevel)

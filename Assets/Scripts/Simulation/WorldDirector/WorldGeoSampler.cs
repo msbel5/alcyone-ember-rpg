@@ -48,6 +48,7 @@ namespace EmberCrpg.Simulation.WorldDirector
         private readonly int _homeY;
         private readonly double _homeElev;
         private readonly uint _seed;
+        private readonly bool _suppressHighLocalWater;
         private readonly bool _hasShore;
         private readonly double _shoreDirX;
         private readonly double _shoreDirZ;
@@ -85,7 +86,26 @@ namespace EmberCrpg.Simulation.WorldDirector
                 // water plane. Raise the reference so the pad keeps ~2.5m of freeboard — the waterline then
                 // sits just below town level, exactly how a real port reads.
                 double freeboard = 2.5d / HeightScaleMeters;
-                if (_homeElev < homeWater + freeboard) _homeElev = homeWater + freeboard;
+                double lift = (homeWater + freeboard) - _homeElev;
+                // Hoist the pad only for GENUINE waterside towns: an IDW blend near a mountain lake can claim
+                // a water level hundreds of metres above the actual ground, and hoisting the whole town to
+                // that phantom line sank the real sea ~400m underground (water sheets at local y=-262 in the
+                // self-playtest log). A riparian lift is a few metres at most.
+                if (lift > 0d && lift <= 12d / HeightScaleMeters)
+                {
+                    _homeElev = homeWater + freeboard; // genuine waterside town: lift the pad a hair above
+                }
+                else if (lift > 12d / HeightScaleMeters)
+                {
+                    // PHANTOM water: the blend claims a lake level far above the actual ground. Hoisting to
+                    // it sank the sea ~400m underground; NOT hoisting floods the plaza. Suppress local water
+                    // above sea instead — the town stays playable, the phantom lake reads as a dry basin.
+                    _suppressHighLocalWater = true;
+                    double seaFloor = _surface.SeaLevel + freeboard;
+                    if (_homeElev < seaFloor) _homeElev = seaFloor; // the pad still keeps freeboard over TRUE sea
+                    Diagnostics.EmberLog.For("GeoSampler").Warn(
+                        $"phantom home water +{lift * HeightScaleMeters:0}m above ground — suppressing local water above sea level");
+                }
                 SeaLevelMeters = (_surface.SeaLevel - _homeElev) * HeightScaleMeters;
 
                 // Port/lakeside settlements realize their OWN shore (Daggerfall: the location includes its
@@ -93,8 +113,12 @@ namespace EmberCrpg.Simulation.WorldDirector
                 // Sample() can ramp the terrain down to a real walkable waterline past the town pad.
                 double homeLat = (Math.PI / 2d) - (((home.Y + 0.5d) / map.Height) * Math.PI);
                 double homeLon = (((home.X + 0.5d) / map.Width) * 2d * Math.PI) - Math.PI;
-                if (_surface.TryFindShore(homeLat, homeLon, out double east, out double north, out double shoreWater))
+                if (_surface.TryFindShore(homeLat, homeLon, out double east, out double north, out double shoreWater)
+                    && (shoreWater - _homeElev) * HeightScaleMeters > -60d)
                 {
+                    // The vertical reachability gate: a plateau town 400m above the sea has "water nearby" on
+                    // the sphere but no walkable shore — claiming one carved a crater to the heightmap floor
+                    // and spawned water sheets underground (local y=-262 in the self-playtest log).
                     _hasShore = true;
                     _shoreDirX = east;  // +X = east
                     _shoreDirZ = north; // +Z = north (WorldSpaceProjection: tileY shrinks northward)
@@ -148,6 +172,9 @@ namespace EmberCrpg.Simulation.WorldDirector
                     if (_shoreWaterY > waterY) waterY = _shoreWaterY;
                 }
             }
+
+            if (_suppressHighLocalWater && waterY > SeaLevelMeters)
+                waterY = SeaLevelMeters; // phantom-water world: only true sea level counts locally
 
             double aboveWater = meters - waterY;
             double sand = aboveWater <= 0d ? 1d : Clamp01(1d - (aboveWater / BeachBandMeters));

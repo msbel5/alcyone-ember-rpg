@@ -110,7 +110,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             const float MaxLocalWaterAboveHome = 8f;
             if (!float.IsNaN(pre.WaterY))
             {
-                if (pre.WaterY <= MaxLocalWaterAboveHome)
+                if (pre.WaterY - GeoYMin < 2f)
+                {
+                    // Below the vertical window: a plateau town's distant sea sits under the clipped terrain
+                    // floor — the sheet would render underground (invisible) and spam misleading logs.
+                }
+                else if (pre.WaterY <= MaxLocalWaterAboveHome)
                     AddWaterSurface(go.transform, tileSize, pre.WaterY - GeoYMin); // sea OR lake level, per tile
                 else
                     Debug.Log($"[Terrain] skipped sky-water sheet under 'TerrainTile_{tileX}_{tileZ}' (claimed level +{pre.WaterY:0.#}m above home — no basin)");

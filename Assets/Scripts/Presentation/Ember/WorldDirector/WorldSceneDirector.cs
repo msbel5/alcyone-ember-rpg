@@ -93,6 +93,15 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 Debug.Log($"[WorldDirector] {(coal >= iron ? "coal" : "iron")} mine realized at town edge (iron={iron:0.00}, coal={coal:0.00}).");
             }
 
+            // DUNGEON MOUTH: a Dungeon "settlement" is a delve, not a hamlet — realize a big dark cave mouth
+            // by the plaza (the mine builder's construction at delve scale) so the location reads as what
+            // the map legend promises. Interior cells are the queued v2.
+            if (kind == SettlementKind.Dungeon)
+            {
+                RuntimeMineBuilder.Build(root.transform, 9f, seed % 360u, coal: true);
+                Debug.Log("[WorldDirector] dungeon mouth realized by the plaza.");
+            }
+
             // REGION BANNER (political identity v1): a pole + flag at the plaza edge, coloured
             // deterministically from the tile's RegionId — neighbouring towns of the same region fly the
             // same colours, crossing a border changes them. Faction-level refinement is the queued v2.
