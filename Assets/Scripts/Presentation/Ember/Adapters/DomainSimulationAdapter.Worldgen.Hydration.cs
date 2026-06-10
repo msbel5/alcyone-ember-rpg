@@ -49,8 +49,23 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var settlement = generated.Settlements[i];
                 var id = SettlementSiteId(settlement.Id);
                 if (_world.Sites.Contains(id)) continue;
-                int x = (i % 32) * 12;
-                int y = (i / 32) * 12;
+
+                // COORDINATE MERGE (F1, architectural debt paid): the settlement site sits at its overland
+                // tile's WORLD offset (tile × 40km, centred in the tile) instead of a compact (i%32)*12m
+                // grid where every town overlapped every other. The domain grid and the walkable world now
+                // share one coordinate space — cross-city grid distances are real metres, NPCs inherit their
+                // town's true position via the site bounds, and the residency filter stops being load-bearing.
+                int x, y;
+                if (settlement.HasTilePosition)
+                {
+                    x = (settlement.TileX * 40000) + 20000;
+                    y = (settlement.TileY * 40000) + 20000;
+                }
+                else
+                {
+                    x = (i % 32) * 12; // legacy worlds without tile data keep the old compact layout
+                    y = (i / 32) * 12;
+                }
                 // Site spans the whole town (~1 cell ≈ 1 m) so NPC homes/day-spots spread across the settlement
                 // and align with the building ring (8-24 m), instead of clumping inside a 2-6 m dot at the centre.
                 int radius = settlement.Size == SettlementSize.Capital ? 28 : settlement.Size == SettlementSize.City ? 24 : settlement.Size == SettlementSize.Town ? 18 : 14;
