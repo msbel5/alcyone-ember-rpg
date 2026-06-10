@@ -229,6 +229,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         // first. The HUD buttons (I/C/M/J/K/DM) + the ☰ screen browser route here.
         private void OpenScreen(string screenId)
         {
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioDirector.PlayUiClick(); // F3/audio: every screen open clicks
             CloseScreen();
             CloseBrowser();
             RefreshLivePlayer();   // feed the screens the REAL created character (name / stats / vitals)

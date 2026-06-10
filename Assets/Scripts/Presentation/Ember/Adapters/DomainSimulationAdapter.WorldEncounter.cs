@@ -23,6 +23,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         }
     }
 
+    /// <summary>Second one-shot for the AUDIO sting (the UI consumes WorldEncounterSignal — one flag, one consumer).</summary>
+    public static class WorldEncounterStingFeed
+    {
+        private static bool _pending;
+        public static void Raise() => _pending = true;
+        public static bool Consume() { if (!_pending) return false; _pending = false; return true; }
+    }
+
     public sealed partial class DomainSimulationAdapter
     {
         private ActorId _worldEncounterId;
@@ -49,6 +57,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _worldEncounterLootGranted = false;
             _lastCombatLine = $"{actor.Name} draws steel!";
             WorldEncounterSignal.Raise();
+            WorldEncounterStingFeed.Raise();
             UnityEngine.Debug.Log($"[Encounter] world encounter begun vs '{actor.Name}' (outlaw).");
             return true;
         }

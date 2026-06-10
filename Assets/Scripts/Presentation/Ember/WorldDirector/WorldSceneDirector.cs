@@ -129,6 +129,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var spawn = new Vector3(layout.PlayerSpawnX, 0.2f, layout.PlayerSpawnZ);
             RuntimePlayerRig.Build(spawn, Quaternion.Euler(0f, layout.PlayerFacingDeg, 0f));
 
+            // F3/audio v1: procedural minimum sound set — wind ambience, motion footsteps, encounter sting.
+            RuntimeAudioDirector.Attach(GameObject.Find("PlayerRig"));
+
             // Realize READINESS REPORT (asset-gate v1): one summary line a playtest log is checked against.
             // v2 (queued) blocks behind the loading screen until missing forge sprites are generated.
             bool shore = geoSampler != null && geoSampler.HasLocalShore;
