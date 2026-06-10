@@ -39,9 +39,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 size = new Vector3(tileSize, geo ? GeoYMax - GeoYMin : LegacyHeight, tileSize),
             };
 
-            float minElev = 0f;
+            float waterY = float.NaN;
             data.SetHeights(0, 0, geo
-                ? BuildGeoHeights(sampler, tileX, tileZ, tileSize, out minElev)
+                ? BuildGeoHeights(sampler, tileX, tileZ, tileSize, out waterY)
                 : BuildLegacyHeights(tileX, tileZ, tileSize, seed));
 
             var assets = GetBiomeAssets(biome);
@@ -69,25 +69,31 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (assets.Material != null)
                 go.GetComponent<Terrain>().materialTemplate = assets.Material;
 
-            if (geo && minElev < (float)sampler.SeaLevelMeters + 0.05f)
-                AddWaterSurface(go.transform, tileSize, (float)sampler.SeaLevelMeters - GeoYMin);
+            if (geo && !float.IsNaN(waterY))
+                AddWaterSurface(go.transform, tileSize, waterY - GeoYMin); // sea OR lake level, per tile
             return go;
         }
 
-        // Heights from the world geography function, normalized into the [GeoYMin, GeoYMax] window. The
-        // terrain object sits at y = GeoYMin so heightmap 0..1 maps back to true relative metres.
-        private static float[,] BuildGeoHeights(WorldGeoSampler sampler, int tileX, int tileZ, float tileSize, out float minElev)
+        // Heights from the world geography function, normalized into the [GeoYMin, GeoYMax] window (the
+        // terrain object sits at y = GeoYMin so heightmap 0..1 maps back to true relative metres). Also
+        // reports the highest LOCAL water surface (sea or lake) under any wet sample, so the tile carries
+        // ONE water plane at the right level instead of assuming global sea.
+        private static float[,] BuildGeoHeights(WorldGeoSampler sampler, int tileX, int tileZ, float tileSize, out float waterSurfaceY)
         {
             var heights = new float[HeightmapRes, HeightmapRes];
             float step = tileSize / (HeightmapRes - 1);
-            minElev = float.MaxValue;
+            waterSurfaceY = float.NaN;
             for (int y = 0; y < HeightmapRes; y++)
             {
                 for (int x = 0; x < HeightmapRes; x++)
                 {
-                    float e = (float)sampler.Sample((tileX * tileSize) + (x * step), (tileZ * tileSize) + (y * step)).ElevationMeters;
-                    if (e < minElev) minElev = e;
-                    heights[y, x] = Mathf.Clamp01((e - GeoYMin) / (GeoYMax - GeoYMin));
+                    var s = sampler.Sample((tileX * tileSize) + (x * step), (tileZ * tileSize) + (y * step));
+                    if (s.IsWater)
+                    {
+                        float w = (float)s.WaterSurfaceMeters;
+                        if (float.IsNaN(waterSurfaceY) || w > waterSurfaceY) waterSurfaceY = w;
+                    }
+                    heights[y, x] = Mathf.Clamp01(((float)s.ElevationMeters - GeoYMin) / (GeoYMax - GeoYMin));
                 }
             }
             return heights;

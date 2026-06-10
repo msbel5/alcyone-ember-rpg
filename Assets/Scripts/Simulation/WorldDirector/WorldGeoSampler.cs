@@ -7,25 +7,28 @@ namespace EmberCrpg.Simulation.WorldDirector
 {
     public readonly struct GeoSample
     {
-        public GeoSample(double elevationMeters, bool isWater, double sandBlend01)
+        public GeoSample(double elevationMeters, bool isWater, double sandBlend01, double waterSurfaceMeters)
         {
             ElevationMeters = elevationMeters;
             IsWater = isWater;
             SandBlend01 = sandBlend01;
+            WaterSurfaceMeters = waterSurfaceMeters;
         }
 
         public double ElevationMeters { get; }
         public bool IsWater { get; }
         public double SandBlend01 { get; }
+
+        /// <summary>Local water level (sea, or the lake surface when standing in a lake tile), relative metres.</summary>
+        public double WaterSurfaceMeters { get; }
     }
 
     /// <summary>
-    /// Continuous world-space geography function: (x,z metres) → elevation / water / beach, sampled from the
-    /// SAME WorldGeography grid the atlas map renders (Daggerfall recipe: coarse world data bicubic-interpolated
-    /// plus deterministic detail noise). This is what makes the walkable terrain and the map two views of one
-    /// world instead of a Perlin pad next to a picture. Elevation is RELATIVE to the home settlement's ground
-    /// (origin = 0) so the player rig / building y≈0 contract is preserved; the sea surface sits at
-    /// <see cref="SeaLevelMeters"/> in the same relative space. Engine-free and deterministic per seed.
+    /// Continuous world-space geography function: (x,z metres) → elevation / water / beach. With a planet
+    /// sidecar (OverlandMapPlanetStore) it samples the SAME icosphere the map renders — true coastlines and
+    /// LAKES at ~28km feature scale — falling back to bicubic over the 128x64 WorldGeography raster for
+    /// legacy worlds. Elevation is RELATIVE to the home settlement's ground (origin = 0) so the player rig /
+    /// building y≈0 contract holds; the local water surface is exposed per sample. Engine-free, deterministic.
     /// </summary>
     public sealed class WorldGeoSampler
     {
@@ -37,6 +40,7 @@ namespace EmberCrpg.Simulation.WorldDirector
 
         private readonly OverlandMapGeographySnapshot _geo;
         private readonly OverlandMap _map;
+        private readonly PlanetSurfaceSampler _surface; // null on the legacy non-planet path
         private readonly int _homeX;
         private readonly int _homeY;
         private readonly double _homeElev;
@@ -49,38 +53,61 @@ namespace EmberCrpg.Simulation.WorldDirector
         {
             sampler = null;
             if (map == null || !OverlandMapGeographyStore.TryGet(map, out var geo)) return false;
-            sampler = new WorldGeoSampler(map, geo, homeTile, seed);
+            OverlandMapPlanetStore.TryGet(map, out var planet); // optional rich source
+            sampler = new WorldGeoSampler(map, geo, planet == null ? null : new PlanetSurfaceSampler(planet), homeTile, seed);
             return true;
         }
 
-        private WorldGeoSampler(OverlandMap map, OverlandMapGeographySnapshot geo, GridPosition home, uint seed)
+        private WorldGeoSampler(OverlandMap map, OverlandMapGeographySnapshot geo, PlanetSurfaceSampler surface, GridPosition home, uint seed)
         {
             _map = map;
             _geo = geo;
+            _surface = surface;
             _homeX = home.X;
             _homeY = home.Y;
             _seed = seed == 0u ? 1u : seed;
-            _homeElev = Bicubic(home.X + 0.5d, home.Y + 0.5d);
-            SeaLevelMeters = (ComputeSeaReference(geo) - _homeElev) * HeightScaleMeters;
+
+            if (_surface != null)
+            {
+                SurfaceAt(home.X + 0.5d, home.Y + 0.5d, out _homeElev, out _);
+                SeaLevelMeters = (_surface.SeaLevel - _homeElev) * HeightScaleMeters;
+            }
+            else
+            {
+                _homeElev = Bicubic(home.X + 0.5d, home.Y + 0.5d);
+                SeaLevelMeters = (ComputeSeaReference(geo) - _homeElev) * HeightScaleMeters;
+            }
         }
 
         public GeoSample Sample(double worldXMeters, double worldZMeters)
         {
             double tx = WorldSpaceProjection.TileFracX(_homeX, worldXMeters);
             double ty = WorldSpaceProjection.TileFracY(_homeY, worldZMeters);
-            double meters = (Bicubic(tx, ty) - _homeElev) * HeightScaleMeters;
 
-            // Detail noise fades on the settlement pad and damps near the sea so beaches stay readable; the
-            // whole field then blends to home ground (0) inside the pad so the town never sits on a slope.
+            double meters, waterY;
+            if (_surface != null)
+            {
+                SurfaceAt(tx, ty, out double elev, out double water);
+                meters = (elev - _homeElev) * HeightScaleMeters;
+                waterY = (water - _homeElev) * HeightScaleMeters;
+            }
+            else
+            {
+                meters = (Bicubic(tx, ty) - _homeElev) * HeightScaleMeters;
+                waterY = SeaLevelMeters;
+            }
+
+            // Detail noise fades on the settlement pad and damps near the water line so beaches stay
+            // readable; the whole field then blends to home ground (0) inside the pad.
             double dist = Math.Sqrt((worldXMeters * worldXMeters) + (worldZMeters * worldZMeters));
             double settleBlend = SmoothRamp(dist);
-            double coastDamp = Math.Max(0.25d, Clamp01(Math.Abs(meters - SeaLevelMeters) / 10d));
+            double coastDamp = Math.Max(0.25d, Clamp01(Math.Abs(meters - waterY) / 10d));
             meters += DetailNoise(worldXMeters, worldZMeters) * DetailAmpMeters * settleBlend * coastDamp;
             meters *= settleBlend;
 
-            double aboveSea = meters - SeaLevelMeters;
-            double sand = aboveSea <= 0d ? 1d : Clamp01(1d - (aboveSea / BeachBandMeters));
-            return new GeoSample(meters, aboveSea < 0d, sand);
+            double aboveWater = meters - waterY;
+            double sand = aboveWater <= 0d ? 1d : Clamp01(1d - (aboveWater / BeachBandMeters));
+            return new GeoSample(meters, aboveWater < 0d, sand, waterY);
         }
 
         /// <summary>Dominant biome for the overland tile under the given world position (water → Coast).</summary>
@@ -92,8 +119,17 @@ namespace EmberCrpg.Simulation.WorldDirector
             return _map.TryGetTile(WrapX(tx), ClampY(ty), out var tile) ? tile.Biome : BiomeKind.Plains;
         }
 
-        // Sea reference is data-driven (midpoint between the highest water tile and the lowest land tile) so
-        // the sampler never hardcodes a sea constant that could drift from the worldgen's land mask.
+        // Tile-fraction → equirect lat/lon, IDENTICAL to the atlas/projection convention (row 0 = north,
+        // lon -π at x=0), then the planet surface blend. One projection, one truth.
+        private void SurfaceAt(double tileFracX, double tileFracY, out double elevation, out double waterLevel)
+        {
+            double lat = (Math.PI / 2d) - ((tileFracY / _map.Height) * Math.PI);
+            double lon = ((tileFracX / _map.Width) * 2d * Math.PI) - Math.PI;
+            _surface.Sample(lat, lon, out elevation, out waterLevel);
+        }
+
+        // Sea reference for LEGACY worlds is data-driven (midpoint between the highest water tile and the
+        // lowest land tile); planet worlds use the planet's own SeaLevelThreshold instead.
         private static double ComputeSeaReference(OverlandMapGeographySnapshot geo)
         {
             double maxWater = double.NegativeInfinity, minLand = double.PositiveInfinity;
