@@ -15,19 +15,20 @@ namespace EmberCrpg.Tests.EditMode.WorldDirector
     /// </summary>
     public sealed class WorldGeoSamplerShoreTests
     {
-        [Test]
-        public void CoastalSettlements_RealizeWalkableWater_WithinTheStreamedBubble()
+        // F1-DoD: the guarantee must hold on MORE THAN the shipped seed — three live-shaped planets.
+        [TestCase(42u)]
+        [TestCase(7u)]
+        [TestCase(1337u)]
+        public void CoastalSettlements_RealizeWalkableWater_WithinTheStreamedBubble(uint seed)
         {
-            var field = PlanetGenerator.Generate(42u, new PlanetParameters(4, 32, 0.62d, 0d, 0.04d));
-            var world = PlanetToWorldMapper.Map(field, WorldgenParameters.Default);
-            var map = OverlandWorldgen.Generate(world, new OverlandParameters(PlanetToWorldMapper.GeographyWidth, PlanetToWorldMapper.GeographyHeight));
+            var map = GenerateLiveShapedMap(seed);
             Assert.That(map.Settlements.Count, Is.GreaterThan(0));
 
             int shoreSettlements = 0;
             for (int i = 0; i < map.Settlements.Count; i++)
             {
                 var s = map.Settlements[i];
-                Assert.That(WorldGeoSampler.TryCreate(map, s.TilePosition, 42u, out var sampler), Is.True);
+                Assert.That(WorldGeoSampler.TryCreate(map, s.TilePosition, seed, out var sampler), Is.True);
                 Assert.That(sampler.Sample(0d, 0d).IsWater, Is.False, s.Name + " plaza must stay dry");
                 if (!sampler.HasLocalShore) continue;
                 shoreSettlements++;
@@ -50,6 +51,32 @@ namespace EmberCrpg.Tests.EditMode.WorldDirector
 
             Assert.That(shoreSettlements, Is.GreaterThan(0),
                 "a 0.62-ocean planet must yield at least one settlement with a realizable shore");
+        }
+
+        // F1-DoD: the full worldgen chain (planet → world → overland) is deterministic per seed — the same
+        // seed twice yields identical settlement rosters (count, names, tiles, kinds).
+        [TestCase(42u)]
+        [TestCase(7u)]
+        [TestCase(1337u)]
+        public void WorldgenChain_SameSeed_YieldsIdenticalSettlements(uint seed)
+        {
+            var a = GenerateLiveShapedMap(seed);
+            var b = GenerateLiveShapedMap(seed);
+            Assert.That(b.Settlements.Count, Is.EqualTo(a.Settlements.Count), "settlement count must be deterministic");
+            for (int i = 0; i < a.Settlements.Count; i++)
+            {
+                Assert.That(b.Settlements[i].Name, Is.EqualTo(a.Settlements[i].Name));
+                Assert.That(b.Settlements[i].Kind, Is.EqualTo(a.Settlements[i].Kind));
+                Assert.That(b.Settlements[i].TilePosition.X, Is.EqualTo(a.Settlements[i].TilePosition.X));
+                Assert.That(b.Settlements[i].TilePosition.Y, Is.EqualTo(a.Settlements[i].TilePosition.Y));
+            }
+        }
+
+        private static OverlandMap GenerateLiveShapedMap(uint seed)
+        {
+            var field = PlanetGenerator.Generate(seed, new PlanetParameters(4, 32, 0.62d, 0d, 0.04d));
+            var world = PlanetToWorldMapper.Map(field, WorldgenParameters.Default);
+            return OverlandWorldgen.Generate(world, new OverlandParameters(PlanetToWorldMapper.GeographyWidth, PlanetToWorldMapper.GeographyHeight));
         }
     }
 }

@@ -102,6 +102,11 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
 
+            // F1/density note: spacing 4 was TRIED to grow the site pool past ~88 — it broke the world's
+            // farm>forest settlement-mix invariant (denser pools over-admit forest maxima) and the planet
+            // golden digest. The pool stays spacing-5; density rides the late-frontier founding wave, which
+            // founds EVERY viable site (~88 on the shipped seed). Growing past that is a real design
+            // trade-off (flavor vs density) — escalated to the user with the A/B/C density question.
             return Math.Max(2, Math.Min(6, field.Grid.SubdivisionLevel + 1));
         }
 

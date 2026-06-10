@@ -17,9 +17,43 @@ namespace EmberCrpg.Simulation.Worldgen
             return new HistoryWorldProjection(settlements, figures);
         }
 
+        // F1/density — user-approved DEFAULT B ("dengeli", ~130 settlements; A/C just change this number).
+        // The 1200-year history prunes ~200 founded settlements to as few as 7 on harsh seeds; a 5120km
+        // continent with single-digit towns reads post-apocalyptic, not Daggerfall. Revive the most STORIED
+        // fallen settlements (oldest FoundedYear first — deterministic) as hamlets until the floor holds;
+        // their real history (founding, collapse, figures) stays in the chronicle.
+        private const int TargetSurvivingSettlements = 130;
+
+        private static void ReviveTowardTarget(HistoryState state)
+        {
+            int alive = 0;
+            for (int i = 0; i < state.Settlements.Length; i++)
+                if (IsSurvivingSettlement(state.Settlements[i])) alive++;
+            if (alive >= TargetSurvivingSettlements) return;
+
+            // Evidence (lookaround19: settlements=66 with the floor in place): history never COLLAPSES a
+            // founded settlement — scarcity happens at FOUNDING (66 of ~200 candidates ever founded). So the
+            // floor founds the remainder as a LATE FRONTIER WAVE (year 1100 hamlets), deterministic by index.
+            int founded = 0;
+            for (int i = 0; i < state.Settlements.Length && alive < TargetSurvivingSettlements; i++)
+            {
+                var s = state.Settlements[i];
+                if (s.Founded) continue;
+                s.Founded = true;
+                s.CurrentTier = SettlementSize.Hamlet;
+                s.FoundedYear = 1100;
+                alive++;
+                founded++;
+            }
+            Diagnostics.EmberLog.For("Worldgen").Info(
+                $"density floor: late frontier wave founded {founded} hamlets ({alive} now standing, target {TargetSurvivingSettlements}).");
+        }
+
         private static List<SettlementRecord> ProjectSettlements(HistoryState state)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
+
+            ReviveTowardTarget(state); // F1/density default B
 
             var survivingByRegion = new List<int>[state.Regions.Length];
             for (int i = 0; i < state.Settlements.Length; i++)

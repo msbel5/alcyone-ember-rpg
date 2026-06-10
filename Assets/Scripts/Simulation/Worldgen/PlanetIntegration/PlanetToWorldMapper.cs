@@ -732,9 +732,40 @@ namespace EmberCrpg.Simulation.Worldgen.PlanetIntegration
 
     internal static class PlanetHistoryProjection
     {
+        // F1/density — user-approved DEFAULT B ("dengeli", ~130; A/C just change the number). History founds
+        // only ~66 of the 200 candidates on the shipped seed; a 5120km continent with 66 towns reads sparse.
+        // Found the remainder as a LATE FRONTIER WAVE (year-1100 hamlets, deterministic by index) until the
+        // floor holds. This is the PLANET path the live game uses (the legacy WorldgenService projection has
+        // the same floor — keep both in step).
+        private const int TargetSurvivingSettlements = 130;
+
+        private static void ReviveTowardTarget(HistoryState state)
+        {
+            int alive = 0;
+            for (int i = 0; i < state.Settlements.Length; i++)
+                if (IsSurvivingSettlement(state.Settlements[i])) alive++;
+            if (alive >= TargetSurvivingSettlements) return;
+
+            int founded = 0;
+            for (int i = 0; i < state.Settlements.Length && alive < TargetSurvivingSettlements; i++)
+            {
+                var s = state.Settlements[i];
+                if (s.Founded) continue;
+                s.Founded = true;
+                s.CurrentTier = SettlementSize.Hamlet;
+                s.FoundedYear = 1100;
+                alive++;
+                founded++;
+            }
+            Diagnostics.EmberLog.For("Worldgen").Info(
+                $"density floor (planet path): late frontier wave founded {founded} hamlets ({alive} standing, target {TargetSurvivingSettlements}).");
+        }
+
         public static IReadOnlyList<SettlementRecord> ProjectSettlements(HistoryState state)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
+
+            ReviveTowardTarget(state); // F1/density default B
 
             var survivingByRegion = new List<int>[state.Regions.Length];
             for (int i = 0; i < state.Settlements.Length; i++)
