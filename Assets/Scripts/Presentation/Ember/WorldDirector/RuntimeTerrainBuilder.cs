@@ -31,46 +31,80 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         public static GameObject BuildTile(
             Transform parent, int tileX, int tileZ, float tileSize, BiomeKind biome, uint seed, WorldGeoSampler sampler = null)
         {
-            bool geo = sampler != null;
+            if (sampler != null)
+                return BuildTileFromPrecompute(parent, tileX, tileZ, tileSize, biome, Precompute(sampler, tileX, tileZ, tileSize));
+
             var data = new TerrainData
             {
                 heightmapResolution = HeightmapRes,
                 alphamapResolution = AlphamapRes,
-                size = new Vector3(tileSize, geo ? GeoYMax - GeoYMin : LegacyHeight, tileSize),
+                size = new Vector3(tileSize, LegacyHeight, tileSize),
             };
-
-            float waterY = float.NaN;
-            data.SetHeights(0, 0, geo
-                ? BuildGeoHeights(sampler, tileX, tileZ, tileSize, out waterY)
-                : BuildLegacyHeights(tileX, tileZ, tileSize, seed));
-
+            data.SetHeights(0, 0, BuildLegacyHeights(tileX, tileZ, tileSize, seed));
             var assets = GetBiomeAssets(biome);
-            if (geo)
-            {
-                data.terrainLayers = new[]
-                {
-                    assets.Layer,
-                    GetBiomeAssets(BiomeKind.Coast).Layer,    // beach sand
-                    GetBiomeAssets(BiomeKind.Mountain).Layer, // steep rock
-                };
-                data.SetAlphamaps(0, 0, BuildGeoAlpha(sampler, tileX, tileZ, tileSize));
-            }
-            else
-            {
-                data.terrainLayers = new[] { assets.Layer };
-                data.SetAlphamaps(0, 0, FullCoverAlpha());
-            }
+            data.terrainLayers = new[] { assets.Layer };
+            data.SetAlphamaps(0, 0, FullCoverAlpha());
 
             var go = Terrain.CreateTerrainGameObject(data); // also adds a TerrainCollider
             go.name = $"TerrainTile_{tileX}_{tileZ}";
             go.transform.SetParent(parent, worldPositionStays: false);
-            go.transform.localPosition = new Vector3(tileX * tileSize, geo ? GeoYMin : 0f, tileZ * tileSize);
+            go.transform.localPosition = new Vector3(tileX * tileSize, 0f, tileZ * tileSize);
+            if (assets.Material != null)
+                go.GetComponent<Terrain>().materialTemplate = assets.Material;
+            return go;
+        }
+
+        /// <summary>Pure-C# half of a geo tile (heights + splats + water level): NO Unity scene APIs, so the
+        /// streamer can run it on a background thread and walking never pays the 129x129 sampling spike in a
+        /// single frame ("oyun her tickte kasıyor" part 2).</summary>
+        public sealed class TilePrecompute
+        {
+            public float[,] Heights;
+            public float[,,] Alpha;
+            public float WaterY;
+        }
+
+        public static TilePrecompute Precompute(WorldGeoSampler sampler, int tileX, int tileZ, float tileSize)
+        {
+            return new TilePrecompute
+            {
+                Heights = BuildGeoHeights(sampler, tileX, tileZ, tileSize, out float waterY),
+                Alpha = BuildGeoAlpha(sampler, tileX, tileZ, tileSize),
+                WaterY = waterY,
+            };
+        }
+
+        /// <summary>Main-thread half: turns a precompute into the live Terrain GameObject.</summary>
+        public static GameObject BuildTileFromPrecompute(
+            Transform parent, int tileX, int tileZ, float tileSize, BiomeKind biome, TilePrecompute pre)
+        {
+            var data = new TerrainData
+            {
+                heightmapResolution = HeightmapRes,
+                alphamapResolution = AlphamapRes,
+                size = new Vector3(tileSize, GeoYMax - GeoYMin, tileSize),
+            };
+            data.SetHeights(0, 0, pre.Heights);
+
+            var assets = GetBiomeAssets(biome);
+            data.terrainLayers = new[]
+            {
+                assets.Layer,
+                GetBiomeAssets(BiomeKind.Coast).Layer,    // beach sand
+                GetBiomeAssets(BiomeKind.Mountain).Layer, // steep rock
+            };
+            data.SetAlphamaps(0, 0, pre.Alpha);
+
+            var go = Terrain.CreateTerrainGameObject(data); // also adds a TerrainCollider
+            go.name = $"TerrainTile_{tileX}_{tileZ}";
+            go.transform.SetParent(parent, worldPositionStays: false);
+            go.transform.localPosition = new Vector3(tileX * tileSize, GeoYMin, tileZ * tileSize);
 
             if (assets.Material != null)
                 go.GetComponent<Terrain>().materialTemplate = assets.Material;
 
-            if (geo && !float.IsNaN(waterY))
-                AddWaterSurface(go.transform, tileSize, waterY - GeoYMin); // sea OR lake level, per tile
+            if (!float.IsNaN(pre.WaterY))
+                AddWaterSurface(go.transform, tileSize, pre.WaterY - GeoYMin); // sea OR lake level, per tile
             return go;
         }
 

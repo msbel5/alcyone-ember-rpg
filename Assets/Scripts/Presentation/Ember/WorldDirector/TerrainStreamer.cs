@@ -41,6 +41,17 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             Debug.Log($"[WorldDirector] terrain streaming online (tile {_tileSize:0}m, {(_viewRadius * 2) + 1}x{(_viewRadius * 2) + 1} bubble, {(_sampler != null ? "geography-bound" : "Perlin fallback")})");
         }
 
+        // ASYNC STREAMING ("oyun her tickte kasıyor" part 2): the pure-C# sampling half of a tile runs on a
+        // background task (one in flight), only the Unity object assembly happens on the main thread. The
+        // initial bubble stays synchronous so the player always spawns on solid ground. Thread-safety note:
+        // only the single worker calls WorldGeoSampler.Sample during a job (PlanetSurfaceSampler's greedy-walk
+        // cache is single-consumer); the main thread only calls BiomeAt, which touches disjoint state.
+        private readonly Queue<Vector2Int> _pendingBuilds = new Queue<Vector2Int>();
+        private readonly HashSet<Vector2Int> _queued = new HashSet<Vector2Int>();
+        private System.Threading.Tasks.Task<RuntimeTerrainBuilder.TilePrecompute> _buildJob;
+        private Vector2Int _buildJobKey;
+        private bool _initialBubbleBuilt;
+
         private void Update()
         {
             if (_player == null)
@@ -50,6 +61,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 _player = rig.transform;
             }
 
+            PumpStreaming();
+
             var tile = new Vector2Int(
                 Mathf.FloorToInt(_player.position.x / _tileSize),
                 Mathf.FloorToInt(_player.position.z / _tileSize));
@@ -58,7 +71,42 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             Refresh(tile);
         }
 
-        // Generate any missing tiles in the bubble; destroy tiles that fell outside it.
+        private bool InBubble(Vector2Int key)
+            => Mathf.Abs(key.x - _current.x) <= _viewRadius && Mathf.Abs(key.y - _current.y) <= _viewRadius;
+
+        private void PumpStreaming()
+        {
+            if (_buildJob != null && _buildJob.IsCompleted)
+            {
+                try
+                {
+                    var pre = _buildJob.Result;
+                    if (!_tiles.ContainsKey(_buildJobKey) && InBubble(_buildJobKey))
+                        _tiles[_buildJobKey] = RuntimeTerrainBuilder.BuildTileFromPrecompute(
+                            transform, _buildJobKey.x, _buildJobKey.y, _tileSize, TileBiome(_buildJobKey), pre);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[WorldDirector] tile precompute failed for {_buildJobKey}: {ex.Message}");
+                }
+                _buildJob = null;
+            }
+
+            while (_buildJob == null && _pendingBuilds.Count > 0)
+            {
+                var key = _pendingBuilds.Dequeue();
+                _queued.Remove(key);
+                if (_tiles.ContainsKey(key) || !InBubble(key)) continue;
+                _buildJobKey = key;
+                var sampler = _sampler;
+                int x = key.x, z = key.y;
+                float size = _tileSize;
+                _buildJob = System.Threading.Tasks.Task.Run(() => RuntimeTerrainBuilder.Precompute(sampler, x, z, size));
+            }
+        }
+
+        // Schedule missing tiles in the bubble (async on the geo path after the first bubble; sync legacy);
+        // destroy tiles that fell outside it.
         private void Refresh(Vector2Int centre)
         {
             for (int dx = -_viewRadius; dx <= _viewRadius; dx++)
@@ -66,10 +114,19 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 for (int dz = -_viewRadius; dz <= _viewRadius; dz++)
                 {
                     var key = new Vector2Int(centre.x + dx, centre.y + dz);
-                    if (!_tiles.ContainsKey(key))
+                    if (_tiles.ContainsKey(key) || _queued.Contains(key)) continue;
+                    if (_sampler == null || !_initialBubbleBuilt)
+                    {
+                        // Legacy Perlin is cheap; the FIRST geo bubble must also be synchronous so the player
+                        // spawns on solid ground instead of falling through a not-yet-streamed tile.
                         _tiles[key] = RuntimeTerrainBuilder.BuildTile(transform, key.x, key.y, _tileSize, TileBiome(key), _seed, _sampler);
+                        continue;
+                    }
+                    _pendingBuilds.Enqueue(key);
+                    _queued.Add(key);
                 }
             }
+            _initialBubbleBuilt = true;
 
             var stale = new List<Vector2Int>();
             foreach (var kv in _tiles)
