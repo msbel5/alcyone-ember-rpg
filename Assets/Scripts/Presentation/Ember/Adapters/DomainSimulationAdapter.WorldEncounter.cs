@@ -78,6 +78,22 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return $"LOOP-PROOF: world-quests active={active} complete={complete}, purse={_world?.PlayerGold ?? -1} gold.";
         }
 
+        /// <summary>F6-DoD: greeting lines from three DIFFERENT-role NPCs — variety must show in the log.</summary>
+        public string ProofGreetingSample()
+        {
+            if (_world?.NpcSeeds == null) return "LOOP-PROOF: no npc seeds for greeting sample.";
+            var seen = new System.Collections.Generic.HashSet<EmberCrpg.Domain.Worldgen.NpcRole>();
+            var sb = new System.Text.StringBuilder("LOOP-PROOF greetings:");
+            foreach (var npc in _world.NpcSeeds)
+            {
+                if (npc == null || !seen.Add(npc.Role)) continue;
+                sb.Append("\n  [").Append(npc.Role).Append("] ")
+                  .Append(DeterministicGreeting(npc.Name, npc, null));
+                if (seen.Count >= 3) break;
+            }
+            return sb.ToString();
+        }
+
         public string ProofRunEncounterLeg()
         {
             var outlawSeed = _world?.NpcSeeds?.FirstOrDefault(n => n != null && n.Role == EmberCrpg.Domain.Worldgen.NpcRole.Outlaw);

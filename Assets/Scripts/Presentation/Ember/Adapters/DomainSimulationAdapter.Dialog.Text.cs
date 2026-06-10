@@ -25,33 +25,90 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// keeps count of every footstep, including yours."); otherwise composes a role+name greeting;
         /// otherwise a generic safe fallback. Used as the synchronous line the async LLM may replace.
         /// </summary>
-        private static string DeterministicGreeting(
+        private string DeterministicGreeting(
             string actorName, NpcSeedRecord npc, IReadOnlyList<AskAboutTopic> topics)
         {
-            // 1) Lead with the first topic answer that carries real copy — this is the persona/AskAbout
-            //    line the player reads as the NPC speaking in character.
-            if (topics != null)
+            // F6/dialog variety ("npc benzer konuşma seçenekleri sunuyor"): the old line was the FIRST
+            // topic answer — every same-role NPC opened identically. DFU recipe: a greeting matrix of
+            // SOCIAL GROUP × TIME OF DAY, picked deterministically per (npc, day); then ~35% of the time a
+            // REAL rumor rides along — a recent world event retold, or the nearest delve revealed (the DFU
+            // 35% map-reveal made conversational).
+            if (npc == null)
             {
-                foreach (var t in topics)
+                if (topics != null)
+                    foreach (var t in topics)
+                        if (t != null && !string.IsNullOrWhiteSpace(t.Answer))
+                            return t.Answer.Trim();
+                return string.IsNullOrWhiteSpace(actorName)
+                    ? "Someone waits for you to speak."
+                    : actorName + " waits for you to speak.";
+            }
+
+            int hour = (int)((_world.Time.TotalMinutes / GameTime.MinutesPerHour) % 24);
+            int slot = hour < 6 ? 3 : hour < 12 ? 0 : hour < 18 ? 1 : 2; // day/evening/night/morning indexing below
+            string[] pool = GreetingPool(SocialGroupFor(npc.Role), slot);
+            long day = _world.Time.TotalMinutes / (24L * GameTime.MinutesPerHour);
+            uint h = unchecked(((uint)npc.Id.Value * 2654435761u) ^ ((uint)day * 40503u) ^ 0x9E37u);
+            string town = ResolveStartingSettlementName() ?? "this holding";
+            string line = string.Format(pool[h % (uint)pool.Length], actorName, town);
+
+            if (((h >> 8) % 100) < 35)
+            {
+                string rumor = ComposeRumor(h);
+                if (!string.IsNullOrEmpty(rumor)) line = line + " " + rumor;
+            }
+            return line;
+        }
+
+        // DFU social groups — tone per group, one line per time slot (day/evening/night/morning).
+        private static int SocialGroupFor(EmberCrpg.Domain.Worldgen.NpcRole role)
+        {
+            switch (role)
+            {
+                case EmberCrpg.Domain.Worldgen.NpcRole.Merchant:
+                case EmberCrpg.Domain.Worldgen.NpcRole.Innkeeper: return 1;
+                case EmberCrpg.Domain.Worldgen.NpcRole.Priest:
+                case EmberCrpg.Domain.Worldgen.NpcRole.Scholar: return 2;
+                case EmberCrpg.Domain.Worldgen.NpcRole.Noble: return 3;
+                case EmberCrpg.Domain.Worldgen.NpcRole.Outlaw: return 4;
+                default: return 0; // farmers, guards, smiths, artisans — commoners
+            }
+        }
+
+        private static readonly string[][] GreetingMatrix =
+        {
+            new[] { "\"Fair day to you, stranger. {1} keeps us busy.\"", "\"Long day behind me. Say what you need.\"", "\"You walk late. Honest folk are abed.\"", "\"Up with the sun, same as every day in {1}.\"" },
+            new[] { "\"Welcome, welcome! Coin opens every door in {1}.\"", "\"Closing soon — but for you, I'll linger.\"", "\"Trade at this hour? Desperate... or rich.\"", "\"First customer of the morning brings luck!\"" },
+            new[] { "\"The Flame keeps {1}, traveler. Peace upon you.\"", "\"Evening rites soon. Speak, but be brief.\"", "\"The night watch belongs to the faithful. Why are YOU awake?\"", "\"A blessed morning. The embers burned clean.\"" },
+            new[] { "\"{0} acknowledges you. State your business in {1}.\"", "\"You interrupt my evening. Make it worth my while.\"", "\"Audiences at this hour are... irregular.\"", "\"Mornings are for petitions. You have one, I assume?\"" },
+            new[] { "\"Keep your voice down. Daylight has eyes in {1}.\"", "\"Dusk's good for business. Yours or mine?\"", "\"Night work, is it? Now you speak my tongue.\"", "\"Mornings are for marks. Don't be one.\"" },
+        };
+
+        private static string[] GreetingPool(int group, int slot)
+        {
+            var row = GreetingMatrix[group];
+            // lead with the slot's own line; keep two neighbours reachable so the same NPC still varies by day
+            return new[] { row[slot], row[(slot + 1) % 4], row[(slot + 2) % 4] };
+        }
+
+        // A REAL rumor: a recent world event retold (only if its Reason reads as a sentence), or the
+        // nearest delve revealed with distance + bearing.
+        private string ComposeRumor(uint h)
+        {
+            if ((h & 1) == 0)
+            {
+                var events = _world.Events?.Events;
+                if (events != null && events.Count > 0)
                 {
-                    if (t != null && !string.IsNullOrWhiteSpace(t.Answer))
-                        return t.Answer.Trim();
+                    var e = events[events.Count - 1 - (int)(h % (uint)System.Math.Min(8, events.Count))];
+                    if (e != null && !string.IsNullOrWhiteSpace(e.Reason) && e.Reason.Contains(" "))
+                        return "They say " + char.ToLowerInvariant(e.Reason[0]) + e.Reason.Substring(1).TrimEnd('.') + ".";
                 }
             }
-
-            // 2) No topic copy available: greet from role + name when we have a seed.
-            bool hasName = !string.IsNullOrWhiteSpace(actorName);
-            if (npc != null)
-            {
-                return hasName
-                    ? $"{actorName} the {npc.Role} regards you. \"Speak your piece.\""
-                    : $"The {npc.Role} regards you. \"Speak your piece.\"";
-            }
-
-            // 3) Last-resort generic line (still never empty).
-            return hasName
-                ? $"{actorName} waits for you to speak."
-                : "Someone waits for you to speak.";
+            var row = NearestDungeonRow();
+            return row.HasTarget
+                ? "And mind yourself — dark things stir at " + row.TargetName + ", " + row.DistanceTiles + " tiles " + row.Direction + "."
+                : null;
         }
 
         // BUG-DIALOG-BRAND: WorldProfile.Style is an INTERNAL codename enum (e.g. "LowFantasy").

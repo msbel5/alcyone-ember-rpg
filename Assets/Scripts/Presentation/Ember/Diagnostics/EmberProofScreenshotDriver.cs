@@ -426,6 +426,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             }
 
             Debug.Log(adapter.ProofQuestSnapshot());
+            Debug.Log(adapter.ProofGreetingSample()); // F6-DoD: 3 roles, 3 DIFFERENT greetings
             Debug.Log(adapter.ProofRunEncounterLeg());
             yield return new WaitForSecondsRealtime(0.4f);
             Debug.Log(adapter.ProofRunTradeLeg());
