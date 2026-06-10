@@ -55,7 +55,9 @@ namespace EmberCrpg.Simulation.Overland
             long key = ((long)width << 32) | (uint)height;
             if (cache.BySize.TryGetValue(key, out image)) return true;
 
-            var sampled = PlanetImageSampler.Sample(field, width, height);
+            // No baked settlement dots: the UI pins are the ONLY marker layer (Daggerfall rule — the map
+            // image carries terrain truth, markers are drawn from data on top, so they can never disagree).
+            var sampled = PlanetImageSampler.Sample(field, width, height, stampSettlements: false);
             // PlanetImageSampler emits row 0 = NORTH, but Unity's LoadRawTextureData puts the FIRST byte row
             // at the BOTTOM of the texture (the overland raster already obeys that convention, which is why
             // its markers aligned). Flip to south-first here so the planet atlas is a drop-in replacement —
@@ -109,6 +111,33 @@ namespace EmberCrpg.Simulation.Overland
                 var p = grid.TileAt(i).Position;
                 double dot = (p.X * dx) + (p.Y * dy) + (p.Z * dz);
                 if (dot > bestDot) { bestDot = dot; best = i; }
+            }
+
+            // A coastal cell's centre can resolve to a WATER tile (the baked dots used to mask this); the
+            // settlement is on land by construction, so anchor to the nearest LAND tile in the 2-ring
+            // neighbourhood instead — the pin then provably sits on its own land pixels.
+            // Snap by the PAINTER'S rule (elevation vs SeaLevelThreshold), not the IsLand flag — a tile can
+            // carry IsLand=true yet render as water when its elevation sits below the threshold, which is
+            // exactly the divergence that stranded pins in open water.
+            double sea = field.Parameters.SeaLevelThreshold;
+            if (field.TileAt(best).Elevation < sea)
+            {
+                double bestLandDot = double.NegativeInfinity;
+                int land = -1;
+                var ring1 = grid.TileAt(best).Neighbors;
+                for (int i = 0; i < ring1.Count; i++)
+                {
+                    var ring2 = grid.TileAt(ring1[i]).Neighbors;
+                    for (int j = -1; j < ring2.Count; j++)
+                    {
+                        int cand = j < 0 ? ring1[i] : ring2[j];
+                        if (field.TileAt(cand).Elevation < sea) continue;
+                        var q = grid.TileAt(cand).Position;
+                        double d = (q.X * dx) + (q.Y * dy) + (q.Z * dz);
+                        if (d > bestLandDot) { bestLandDot = d; land = cand; }
+                    }
+                }
+                if (land >= 0) best = land;
             }
 
             var pos = grid.TileAt(best).Position;

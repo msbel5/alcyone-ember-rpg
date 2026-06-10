@@ -29,7 +29,7 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
     {
         private const int BandSearchRadius = 3;
 
-        public static PlanetImage Sample(PlanetField field, int width, int height)
+        public static PlanetImage Sample(PlanetField field, int width, int height, bool stampSettlements = true)
         {
             if (field == null) throw new ArgumentNullException(nameof(field));
             if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width));
@@ -82,7 +82,9 @@ namespace EmberCrpg.Simulation.Worldgen.Planet
             }
 
             // Overlay emergent settlements as type-coloured markers so the colony seed is visible on the map.
-            var settlements = field.Settlements;
+            // The ATLAS path passes stampSettlements:false — baked dots are a SECOND marker layer that can
+            // never align with the UI pins (the exact sin the old PlanetMapTextureFactory was deleted for).
+            var settlements = stampSettlements ? field.Settlements : null;
             if (settlements != null)
             {
                 for (int i = 0; i < settlements.Count; i++)
