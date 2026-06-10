@@ -106,8 +106,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // the map legend promises. Interior cells are the queued v2.
             if (kind == SettlementKind.Dungeon)
             {
-                RuntimeMineBuilder.Build(root.transform, 9f, seed % 360u, coal: true);
-                Debug.Log("[WorldDirector] dungeon mouth realized by the plaza.");
+                float delveAngle = seed % 360u;
+                RuntimeMineBuilder.Build(root.transform, 9f, delveAngle, coal: true);
+                // F2/dungeon interiors v1: the mouth now leads into a torch-lit corridor and a chamber with
+                // a loot chest — walk past the mound and into the dark. Encounters bind in the next F2 item.
+                RuntimeDungeonBuilder.Build(root.transform, 9f, delveAngle);
+                Debug.Log("[WorldDirector] dungeon mouth + torch-lit interior realized (corridor, chamber, chest).");
             }
 
             // TRADE CART (F1/caravans): realized once, VISIBLE only while a caravan is at this site — the
