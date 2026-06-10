@@ -394,8 +394,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                     TryGetRegionText(map, settlement.TilePosition) ?? "Unknown Region",
                     settlement.TemplatePackTag,
                     string.Equals(settlement.Name, startingSettlementName, StringComparison.Ordinal),
-                    ToPercent(settlement.TilePosition.X, map.Width),
-                    ToPercent(settlement.TilePosition.Y, map.Height),
+                    AnchorXPercent(map, settlement.TilePosition),
+                    AnchorYPercent(map, settlement.TilePosition),
                     OverlandMap.ChebyshevDistance(playerTile, settlement.TilePosition));
             }
 
@@ -453,6 +453,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             if (size <= 0) return 50f;
             return OverlandMapProjection.TileCenterPercent(coordinate, size);
         }
+
+        // ONE map truth: pins anchor to the icosphere tile their overland cell maps to (PlanetAtlas), so a
+        // dot can never sit on a neighbouring ocean tile's pixels. Cell-centre fallback for legacy worlds.
+        private static float AnchorXPercent(OverlandMap map, GridPosition tile)
+            => PlanetAtlas.TryGetTileAnchorPercent(map, tile.X, tile.Y, out var x, out _) ? x : ToPercent(tile.X, map.Width);
+
+        private static float AnchorYPercent(OverlandMap map, GridPosition tile)
+            => PlanetAtlas.TryGetTileAnchorPercent(map, tile.X, tile.Y, out _, out var y) ? y : ToPercent(tile.Y, map.Height);
 
         private static void FitMapFrame(VisualElement area, VisualElement frame, int mapWidth, int mapHeight)
         {
