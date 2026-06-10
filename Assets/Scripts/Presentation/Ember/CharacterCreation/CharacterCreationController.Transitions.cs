@@ -311,9 +311,40 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 int revealW, revealH;
                 if (EmberCrpg.Simulation.Overland.PlanetAtlas.TryRender(map, 1024, 512, out var planetImage))
                 {
-                    revealRgba = planetImage.Rgba;
+                    // CLONE before stamping: the atlas image is cached and shared with the in-game M map —
+                    // stamping pins into the shared buffer would resurrect the baked-marker sin there.
+                    revealRgba = (byte[])planetImage.Rgba.Clone();
                     revealW = planetImage.Width;
                     revealH = planetImage.Height;
+
+                    // Same pins, second canvas: stamp the SAME PlanetAtlas anchors the in-game map uses, so
+                    // settlement positions are verifiable from character creation onward — one anchor
+                    // function, two surfaces, never a second marker truth.
+                    int stamped = 0;
+                    for (int i = 0; i < map.Settlements.Count; i++)
+                    {
+                        var s = map.Settlements[i];
+                        if (!EmberCrpg.Simulation.Overland.PlanetAtlas.TryGetTileAnchorPercent(
+                                map, s.TilePosition.X, s.TilePosition.Y, out float xPct, out float yPct))
+                            continue;
+
+                        int px = Mathf.Clamp((int)(xPct / 100f * revealW), 1, revealW - 2);
+                        int py = Mathf.Clamp((int)(yPct / 100f * revealH), 1, revealH - 2);
+                        int row = revealH - 1 - py; // atlas rows are stored south-first (texture convention)
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                int idx = (((row + dy) * revealW) + px + dx) * 4;
+                                bool centre = dx == 0 && dy == 0;
+                                revealRgba[idx] = centre ? (byte)244 : (byte)20;
+                                revealRgba[idx + 1] = centre ? (byte)214 : (byte)18;
+                                revealRgba[idx + 2] = centre ? (byte)64 : (byte)16;
+                            }
+                        }
+                        stamped++;
+                    }
+                    Debug.Log($"[charcreation] reveal pins stamped: {stamped}/{map.Settlements.Count} (same anchors as the in-game map)");
                 }
                 else
                 {

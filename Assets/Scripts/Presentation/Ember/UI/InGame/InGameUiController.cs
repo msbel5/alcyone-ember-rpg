@@ -1133,7 +1133,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private void CloseAll() { CloseScreen(); CloseBrowser(); }
 
         /// <summary>Proof/diagnostic hook: open a screen by id from the screenshot driver (verification tours).</summary>
-        public void ProofOpenScreen(string id) => OpenScreen(id);
+        public void ProofOpenScreen(string id)
+        {
+            // Diagnostics for the known-broken proof tour (modals render manually but not in proof captures):
+            // these counters tell the next autoplay log whether the overlay was even added to the canvas.
+            int before = _stage?.Canvas != null ? _stage.Canvas.childCount : -1;
+            OpenScreen(id);
+            int after = _stage?.Canvas != null ? _stage.Canvas.childCount : -1;
+            UnityEngine.Debug.Log($"[ProofUI] open '{id}': stage={(_stage != null)} canvas {before}->{after} active={(_activeScreen != null)}");
+        }
 
         /// <summary>Proof/diagnostic hook: programmatic Escape — close any open modal/browser between captures.</summary>
         public void ProofCloseScreens() => CloseAll();

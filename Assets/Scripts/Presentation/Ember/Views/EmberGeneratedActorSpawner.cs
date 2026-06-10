@@ -101,7 +101,9 @@ namespace EmberCrpg.Presentation.Ember.Views
             pending.Sort((a, b) =>
                 SqrDistanceXZ(a, anchor).CompareTo(SqrDistanceXZ(b, anchor)));
 
-            int cap = Mathf.Max(0, _maxSpawnCount);
+            // Kind-aware density from the director (an Inn spawns a handful, a City a crowd); falls back to
+            // the serialized default when no realize has set it (baked scenes).
+            int cap = Mathf.Max(0, EmberCrpg.Presentation.Ember.WorldDirector.RuntimeNpcDensity.CapOrDefault(_maxSpawnCount));
             int toSpawn = Mathf.Min(cap, pending.Count);
 
             int spawned = 0;

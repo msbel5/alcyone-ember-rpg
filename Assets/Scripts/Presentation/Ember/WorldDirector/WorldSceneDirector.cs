@@ -47,7 +47,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             string name = string.IsNullOrEmpty(view.StartingSettlementName) ? "the wilds" : view.StartingSettlementName;
             uint seed = homeTile.PropVariationSeed == 0u ? 1u : homeTile.PropVariationSeed;
 
+            // Project-standard logger seam: Simulation code logs through EmberLog once a sink exists.
+            if (EmberCrpg.Simulation.Diagnostics.EmberLog.Sink == null)
+                EmberCrpg.Simulation.Diagnostics.EmberLog.Sink = Debug.Log;
+
             Debug.Log($"[WorldDirector] directing settlement '{name}' kind={kind} biome={homeTile.Biome} seed={seed}");
+
+            // Population identity: an Inn must not draw a city crowd. The spawner is created by the host
+            // AFTER this method, so the kind-aware cap travels via the static channel.
+            RuntimeNpcDensity.Cap = NpcCapFor(kind);
+            Debug.Log($"[WorldDirector] npc billboard cap for {kind}: {RuntimeNpcDensity.Cap}");
 
             var context = new SettlementContext(name, kind, homeTile.Biome, seed);
             var layout = SettlementLayoutStrategyFactory.For(kind).Plan(context);
@@ -76,7 +85,28 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
             var spawn = new Vector3(layout.PlayerSpawnX, 0.2f, layout.PlayerSpawnZ);
             RuntimePlayerRig.Build(spawn, Quaternion.Euler(0f, layout.PlayerFacingDeg, 0f));
-            Debug.Log($"[WorldDirector] player rig at {spawn} — realize complete for '{name}'.");
+
+            // Realize READINESS REPORT (asset-gate v1): one summary line a playtest log is checked against.
+            // v2 (queued) blocks behind the loading screen until missing forge sprites are generated.
+            bool shore = geoSampler != null && geoSampler.HasLocalShore;
+            Debug.Log($"[WorldDirector] realize complete for '{name}': kind={kind}, buildings={layout.Buildings.Count}, " +
+                      $"geo={(geoSampler != null ? "REAL" : "LEGACY")}, localShore={shore}, npcCap={RuntimeNpcDensity.Cap}, rig at {spawn}.");
+        }
+
+        // Kind → billboard density: the visible half of settlement identity (layout size is the other half).
+        private static int NpcCapFor(SettlementKind kind)
+        {
+            switch (kind)
+            {
+                case SettlementKind.City: return 24;
+                case SettlementKind.Town: return 16;
+                case SettlementKind.Village: return 10;
+                case SettlementKind.Hamlet: return 6;
+                case SettlementKind.Inn: return 5;
+                case SettlementKind.Shrine: return 4;
+                case SettlementKind.Dungeon: return 3;
+                default: return 10;
+            }
         }
 
         private static RegionTile ResolveHomeTile(OverlandMap map, GridPosition tilePosition)

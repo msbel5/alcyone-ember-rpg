@@ -130,14 +130,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         {
             switch (biome)
             {
-                case BiomeKind.Plains:   return new Color(0.34f, 0.40f, 0.22f);
-                case BiomeKind.Forest:   return new Color(0.18f, 0.30f, 0.18f);
-                case BiomeKind.Mountain: return new Color(0.40f, 0.39f, 0.42f);
-                case BiomeKind.Coast:    return new Color(0.46f, 0.42f, 0.30f);
-                case BiomeKind.Swamp:    return new Color(0.24f, 0.28f, 0.22f);
-                case BiomeKind.Desert:   return new Color(0.62f, 0.55f, 0.36f);
-                case BiomeKind.Tundra:   return new Color(0.58f, 0.60f, 0.62f);
-                case BiomeKind.Ash:      return new Color(0.26f, 0.22f, 0.22f);
+                // Saturated, clearly-separated tints ("her yer aynı" fix): the shared crackle textures made
+                // every biome read identical when the tints sat this close together.
+                case BiomeKind.Plains:   return new Color(0.32f, 0.46f, 0.18f);
+                case BiomeKind.Forest:   return new Color(0.12f, 0.33f, 0.14f);
+                case BiomeKind.Mountain: return new Color(0.42f, 0.42f, 0.50f);
+                case BiomeKind.Coast:    return new Color(0.68f, 0.60f, 0.40f);
+                case BiomeKind.Swamp:    return new Color(0.22f, 0.32f, 0.18f);
+                case BiomeKind.Desert:   return new Color(0.76f, 0.62f, 0.32f);
+                case BiomeKind.Tundra:   return new Color(0.64f, 0.68f, 0.74f);
+                case BiomeKind.Ash:      return new Color(0.22f, 0.17f, 0.17f);
                 default:                 return new Color(0.30f, 0.30f, 0.28f);
             }
         }
