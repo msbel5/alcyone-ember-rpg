@@ -29,9 +29,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 ? forgeState
                 : null;
             if (state != null && state.IsComplete)
-                return QuestGuidanceRow.None;
+                return NearestDungeonRow(); // F5: the errand is done — guide the explorer to the dark
             if (!TryFindForgeQuestGiver(out var actor, out var npc))
-                return QuestGuidanceRow.None;
+                return NearestDungeonRow();
 
             // Cross-settlement quests speak OVERLAND (tiles between home settlements). Domain site placement
             // is compact — every town's local grid overlaps — so raw grid distance toward a giver who lives
@@ -59,6 +59,34 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var title = state == null ? "Quest Lead" : "Quest Marker";
             var line = BuildForgeGuidanceLine(state, actor.Name, distance, direction, unit);
             return new QuestGuidanceRow(true, title, line, actor.Name, distance, direction, unit);
+        }
+
+        // F5/dungeon discovery ("dungeon bulamadım"): when the forge errand is complete or has no giver,
+        // the compass row guides the EXPLORER — nearest Dungeon-kind settlement by overland tiles.
+        private QuestGuidanceRow NearestDungeonRow()
+        {
+            var map = _world?.Overland;
+            if (map == null) return QuestGuidanceRow.None;
+            if (!TryGetSettlementTile(CurrentSettlementOrStart, out int htx, out int hty))
+                return QuestGuidanceRow.None;
+
+            string bestName = null;
+            int bestDist = int.MaxValue, bdx = 0, bdy = 0;
+            for (int i = 0; i < map.Settlements.Count; i++)
+            {
+                var s = map.Settlements[i];
+                if (s.Kind != EmberCrpg.Domain.Overland.SettlementKind.Dungeon) continue;
+                int dx = s.TilePosition.X - htx, dy = s.TilePosition.Y - hty;
+                int d = System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy));
+                if (d < bestDist) { bestDist = d; bestName = s.Name; bdx = dx; bdy = dy; }
+            }
+            if (bestName == null) return QuestGuidanceRow.None;
+
+            string direction = OverlandDirection(bdx, bdy);
+            string line = bestDist == 0
+                ? "You stand at the delve of " + bestName + " — its dark mouth waits by the plaza."
+                : "Nearest delve: " + bestName + " — " + bestDist + " tiles " + direction + " (fast travel via the map).";
+            return new QuestGuidanceRow(true, "Delve Lead", line, bestName, bestDist, direction, "tiles");
         }
 
         private bool TryFindForgeQuestGiver(out ActorRecord actor, out NpcSeedRecord npc)
