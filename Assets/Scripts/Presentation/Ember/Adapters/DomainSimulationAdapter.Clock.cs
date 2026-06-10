@@ -8,6 +8,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             DrainMainThreadApply(); // DET-02: apply queued off-thread LLM results on the main thread
             _tick = tickIndex;
             _tickComposer.Advance(_world, tickIndex);
+            PublishFieldMirror();
         }
 
         // DET-02: post-await LLM continuations enqueue their _world / dialog-state writes here instead
@@ -28,5 +29,32 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         }
         public int TickIndex => _tick;
 
+        // F1/CROPS: publish the home site's REAL PlantGrowth stage census to the field mirror each tick —
+        // the realized farm plot's stalks read it and rise from seed to ripe as sim days pass. Cheap scan
+        // (a handful of plant components); dominant stage keeps the visual stable.
+        private void PublishFieldMirror()
+        {
+            var plants = _world?.Plants;
+            if (plants == null) return;
+
+            var site = SettlementSiteId(CurrentSettlementOrStart);
+            int seedCount = 0, sproutCount = 0, ripeCount = 0;
+            foreach (var row in plants.Rows)
+            {
+                var p = row.Value;
+                if (p == null || !p.SiteId.Equals(site)) continue;
+                switch (p.StageId.Value)
+                {
+                    case "ripe": ripeCount++; break;
+                    case "sprout": sproutCount++; break;
+                    default: seedCount++; break;
+                }
+            }
+
+            int stage = ripeCount > 0 && ripeCount >= sproutCount && ripeCount >= seedCount ? 2
+                : (sproutCount > 0 && sproutCount >= seedCount ? 1 : 0);
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.Publish(
+                seedCount + sproutCount + ripeCount, stage);
+        }
     }
 }

@@ -93,6 +93,14 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 Debug.Log($"[WorldDirector] {(coal >= iron ? "coal" : "iron")} mine realized at town edge (iron={iron:0.00}, coal={coal:0.00}).");
             }
 
+            // FIELDS (F1/crops): farming settlements realize a tilled plot at the edge whose stalks read the
+            // REAL PlantGrowth stage through the field mirror — crops visibly rise as sim days pass.
+            if (kind == SettlementKind.Village || kind == SettlementKind.Hamlet || kind == SettlementKind.Town)
+            {
+                RuntimeFieldBuilder.Build(root.transform, layout.GroundRadius + 8f, (seed % 360u) + 137f);
+                Debug.Log("[WorldDirector] farm plot realized (living stalks bound to the field mirror).");
+            }
+
             // DUNGEON MOUTH: a Dungeon "settlement" is a delve, not a hamlet — realize a big dark cave mouth
             // by the plaza (the mine builder's construction at delve scale) so the location reads as what
             // the map legend promises. Interior cells are the queued v2.
