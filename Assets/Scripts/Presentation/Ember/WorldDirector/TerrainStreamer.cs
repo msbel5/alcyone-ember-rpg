@@ -150,6 +150,30 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             }
         }
 
+        private void OnDestroy()
+        {
+            // SCENE-RELOAD LEAK ("her fast travelde kasma artıyor"): tiles that fall out of the bubble free
+            // their TerrainData explicitly, but on fast travel the whole streamer dies with the scene and the
+            // ~25 LIVE tiles' TerrainData (heightmap + alphamaps, several MB each) survived as orphan assets —
+            // hundreds of MB leaked per journey, degrading every subsequent run. Free them all here.
+            int freed = 0;
+            foreach (var kv in _tiles)
+            {
+                var go = kv.Value;
+                if (go == null) continue;
+                var terrain = go.GetComponent<Terrain>();
+                if (terrain != null && terrain.terrainData != null)
+                {
+                    Destroy(terrain.terrainData);
+                    freed++;
+                }
+            }
+            _tiles.Clear();
+            _pendingBuilds.Clear();
+            _queued.Clear();
+            Debug.Log($"[WorldDirector] streamer shutdown: freed {freed} live TerrainData assets.");
+        }
+
         // Biome of the overland tile under this streamed tile's centre — the world stops being one biome.
         private BiomeKind TileBiome(Vector2Int key)
         {
