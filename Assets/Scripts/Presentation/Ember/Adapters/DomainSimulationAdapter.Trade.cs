@@ -33,9 +33,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 return new TradeActionResult(false, "That item has no trade value yet.");
 
             var pre = _world?.Actors?.FirstByRole(ActorRole.Player)?.Stats.Pre ?? 50;
+            int basis = LivePriceOr(meta.BasePrice, templateId);
             TradeOperationResult result = request.Kind == TradeActionKind.Buy
-                ? _tradeService.TryBuy(_world, templateId, _tradeService.ComputeBuyPrice(meta.BasePrice, pre))
-                : _tradeService.TrySell(_world, templateId, _tradeService.ComputeSellPrice(meta.BasePrice, pre));
+                ? _tradeService.TryBuy(_world, templateId, _tradeService.ComputeBuyPrice(basis, pre))
+                : _tradeService.TrySell(_world, templateId, _tradeService.ComputeSellPrice(basis, pre));
+            if (result.Success && basis != meta.BasePrice)
+                UnityEngine.Debug.Log($"[Trade] live market price used for '{templateId}': {basis} (base {meta.BasePrice}).");
             return new TradeActionResult(result.Success, result.Message);
         }
 
@@ -51,9 +54,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var item = inventory.Items[i];
                 if (item == null) continue;
                 var meta = ResolveTradeMeta(item.TemplateId, item.DisplayName);
+                int basis = LivePriceOr(meta.BasePrice, item.TemplateId);
                 int price = isSellSide
-                    ? _tradeService.ComputeSellPrice(meta.BasePrice, pre)
-                    : _tradeService.ComputeBuyPrice(meta.BasePrice, pre);
+                    ? _tradeService.ComputeSellPrice(basis, pre)
+                    : _tradeService.ComputeBuyPrice(basis, pre);
                 bool canAfford = isSellSide || (_world?.PlayerGold ?? 0) >= price;
                 bool equipped = item.IsEquipment && _world?.PlayerEquipment != null && _world.PlayerEquipment.IsEquipped(item.Id);
                 rows.Add(new TradeItemRow(item.TemplateId, meta.DisplayName, meta.Category, item.Quantity, price, canAfford, equipped));
@@ -61,6 +65,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             rows.Sort(CompareTradeRows);
             return rows.ToArray();
+        }
+
+        // F2/live economy: the sim's PriceSystem writes per-site prices into WorldState.Prices daily. When
+        // the home site lists the item, that LIVE market price replaces the static content base price; an
+        // unlisted item keeps the base (the ledger returns 0 for unknown tags — safe fallback).
+        private int LivePriceOr(int basePrice, string templateId)
+        {
+            var ledger = _world?.Prices;
+            if (ledger == null || string.IsNullOrWhiteSpace(templateId)) return basePrice;
+            int live = ledger.GetPrice(SettlementSiteId(CurrentSettlementOrStart), templateId);
+            return live > 0 ? live : basePrice;
         }
 
         private void EnsureTradeStock()
