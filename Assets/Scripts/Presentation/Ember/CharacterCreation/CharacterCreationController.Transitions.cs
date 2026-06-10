@@ -304,15 +304,33 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 var map = EmberCrpg.Simulation.Overland.OverlandWorldgen.Generate(
                     world,
                     parameters);
-                var image = EmberCrpg.Simulation.Overland.OverlandMapImageSampler.Sample(map, 1024, 512);
-                var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, mipChain: false)
+                // ONE map truth: the reveal must show the SAME render the in-game map uses. The playtest
+                // caught the two disagreeing by a vertical mirror — the legacy raster path draws the world
+                // flipped relative to the planet atlas. Planet first; raster only for legacy worlds.
+                byte[] revealRgba;
+                int revealW, revealH;
+                if (EmberCrpg.Simulation.Overland.PlanetAtlas.TryRender(map, 1024, 512, out var planetImage))
+                {
+                    revealRgba = planetImage.Rgba;
+                    revealW = planetImage.Width;
+                    revealH = planetImage.Height;
+                }
+                else
+                {
+                    var image = EmberCrpg.Simulation.Overland.OverlandMapImageSampler.Sample(map, 1024, 512);
+                    revealRgba = image.RgbaBytes;
+                    revealW = image.Width;
+                    revealH = image.Height;
+                }
+
+                var texture = new Texture2D(revealW, revealH, TextureFormat.RGBA32, mipChain: false)
                 {
                     wrapMode = TextureWrapMode.Clamp,
                     // Bilinear: the reveal map is a painting of the world, not a tile inspector — Point made
                     // the 1024x512 relief render look like chunky pixels ("the maps got uglier").
                     filterMode = FilterMode.Bilinear,
                 };
-                texture.LoadRawTextureData(image.RgbaBytes);
+                texture.LoadRawTextureData(revealRgba);
                 texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
                 return texture;
             }
