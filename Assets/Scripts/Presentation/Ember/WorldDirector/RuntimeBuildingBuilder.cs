@@ -50,7 +50,63 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 new Vector3(placement.SizeX - WallThickness, 0.06f, placement.SizeZ - WallThickness), RuntimeMaterialPalette.Solid(new Color(0.42f, 0.30f, 0.18f)));
             Furnish(root.transform, placement, entrance);
             AddHearthLight(root.transform, placement);
+
+            // F5/facades (DFU recipe): a real hinged door in the entrance gap (proximity-opened, −90° over
+            // 1.5s, click sound) and a window on each side wall — the box finally reads as a HOUSE.
+            AddDoor(root.transform, placement, entrance);
+            AddWindows(root.transform, placement, entrance);
             return root;
+        }
+
+        private static void AddDoor(Transform root, BuildingPlacement placement, DoorSide entrance)
+        {
+            float halfX = placement.SizeX / 2f, halfZ = placement.SizeZ / 2f;
+            const float doorH = 2.2f;
+
+            // Hinge sits at the gap's edge on the entrance wall; the panel swings INTO the room.
+            Vector3 hingePos; float yaw;
+            switch (entrance)
+            {
+                case DoorSide.North: hingePos = new Vector3(-DoorWidth / 2f, doorH / 2f, halfZ); yaw = 0f; break;
+                case DoorSide.South: hingePos = new Vector3(DoorWidth / 2f, doorH / 2f, -halfZ); yaw = 180f; break;
+                case DoorSide.East: hingePos = new Vector3(halfX, doorH / 2f, DoorWidth / 2f); yaw = 90f; break;
+                default: hingePos = new Vector3(-halfX, doorH / 2f, -DoorWidth / 2f); yaw = 270f; break;
+            }
+
+            var hinge = new GameObject("DoorHinge");
+            hinge.transform.SetParent(root, worldPositionStays: false);
+            hinge.transform.localPosition = hingePos;
+            hinge.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            hinge.AddComponent<RuntimeDoorView>();
+
+            var panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            panel.name = "DoorPanel";
+            var col = panel.GetComponent<Collider>();
+            if (col != null) Object.Destroy(col); // never trap the player mid-swing
+            panel.transform.SetParent(hinge.transform, worldPositionStays: false);
+            panel.transform.localPosition = new Vector3(DoorWidth / 2f, 0f, 0f);
+            panel.transform.localScale = new Vector3(DoorWidth - 0.08f, doorH, 0.1f);
+            panel.GetComponent<MeshRenderer>().sharedMaterial =
+                RuntimeMaterialPalette.Solid(new Color(0.33f, 0.22f, 0.11f));
+        }
+
+        private static void AddWindows(Transform root, BuildingPlacement placement, DoorSide entrance)
+        {
+            float halfX = placement.SizeX / 2f, halfZ = placement.SizeZ / 2f;
+            var glass = RuntimeMaterialPalette.Solid(new Color(0.30f, 0.40f, 0.55f)); // dusk-lit pane
+            bool entranceOnX = entrance == DoorSide.North || entrance == DoorSide.South;
+
+            // One window per SIDE wall (perpendicular to the door), proud of the wall by 3cm so it reads.
+            if (entranceOnX)
+            {
+                AddSlab(root, "WindowE", new Vector3(halfX + 0.03f, 1.5f, 0f), new Vector3(0.06f, 1.0f, 0.9f), glass);
+                AddSlab(root, "WindowW", new Vector3(-halfX - 0.03f, 1.5f, 0f), new Vector3(0.06f, 1.0f, 0.9f), glass);
+            }
+            else
+            {
+                AddSlab(root, "WindowN", new Vector3(0f, 1.5f, halfZ + 0.03f), new Vector3(0.9f, 1.0f, 0.06f), glass);
+                AddSlab(root, "WindowS", new Vector3(0f, 1.5f, -halfZ - 0.03f), new Vector3(0.9f, 1.0f, 0.06f), glass);
+            }
         }
 
         // Deterministic interior dressing: 2-4 pieces against the wall OPPOSITE the door (never blocking the
