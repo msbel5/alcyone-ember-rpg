@@ -212,6 +212,17 @@ namespace EmberCrpg.Simulation.Composition
         /// (e.g. after a Restore that resets the driver) re-anchors without
         /// rewinding domain state.
         /// </summary>
+        // TICK PROFILER ("her tick atışında bir an kasıyoruz"): per-system stopwatch, reported through
+        // EmberLog only when a tick is slow enough to feel (>12ms) — the playtest log then names the
+        // exact system eating the frame instead of guessing. Engine-free; silent when no sink is bound.
+        private static readonly System.Diagnostics.Stopwatch SystemWatch = new System.Diagnostics.Stopwatch();
+        private static readonly Dictionary<string, double> TickCosts = new Dictionary<string, double>();
+        private static readonly Diagnostics.EmberLogger PerfLog = Diagnostics.EmberLog.For("TickPerf");
+        private const double SlowTickMs = 12d;
+
+        private static void Accumulate(string name, double ms)
+            => TickCosts[name] = TickCosts.TryGetValue(name, out double prior) ? prior + ms : ms;
+
         public void Advance(WorldState world, int tickIndex)
         {
             if (world == null) return;
@@ -219,9 +230,16 @@ namespace EmberCrpg.Simulation.Composition
             _lastTickIndex = tickIndex;
             if (delta <= 0) return;
 
+            TickCosts.Clear();
+            var advanceWatch = System.Diagnostics.Stopwatch.StartNew();
+
             // 1) Always advance game time and per-tick magic through the declarative registry.
             foreach (var system in _tickRegistry.PerTick)
+            {
+                SystemWatch.Restart();
                 system.Run(new TickContext(world, world.Time, delta));
+                Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
+            }
 
             // 2) Hourly tick: NeedsSystem decays per-actor needs at its
             // design rate. Codex audit (seventh pass A-P1 #1): previously the
@@ -250,7 +268,11 @@ namespace EmberCrpg.Simulation.Composition
                 var stamp = new GameTime(stampMinutes < 0 ? 0 : stampMinutes);
 
                 foreach (var system in _tickRegistry.Hourly)
+                {
+                    SystemWatch.Restart();
                     system.Run(new TickContext(world, stamp, delta));
+                    Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
+                }
             }
 
             _ticksSinceDaily += delta;
@@ -265,7 +287,24 @@ namespace EmberCrpg.Simulation.Composition
                 var stamp = new GameTime(stampMinutes < 0 ? 0 : stampMinutes);
 
                 foreach (var system in _tickRegistry.Daily)
+                {
+                    SystemWatch.Restart();
                     system.Run(new TickContext(world, stamp, delta));
+                    Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
+                }
+            }
+
+            double totalMs = advanceWatch.Elapsed.TotalMilliseconds;
+            if (totalMs > SlowTickMs)
+            {
+                var report = new System.Text.StringBuilder(160);
+                report.Append("slow tick ").Append(tickIndex).Append(": ").Append(totalMs.ToString("0.0")).Append("ms —");
+                foreach (var kv in TickCosts)
+                {
+                    if (kv.Value < 1d) continue; // only systems that actually cost something
+                    report.Append(' ').Append(kv.Key).Append('=').Append(kv.Value.ToString("0.0")).Append("ms");
+                }
+                PerfLog.Warn(report.ToString());
             }
         }
 
