@@ -92,6 +92,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 assets.Layer,
                 GetBiomeAssets(BiomeKind.Coast).Layer,    // beach sand
                 GetBiomeAssets(BiomeKind.Mountain).Layer, // steep rock
+                DirtLayer(),                              // F5: noise-broken meadow patches (DFU recipe)
             };
             data.SetAlphamaps(0, 0, pre.Alpha);
 
@@ -123,6 +124,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 else
                     Debug.Log($"[Terrain] skipped sky-water sheet under 'TerrainTile_{tileX}_{tileZ}' (claimed level +{pre.WaterY:0.#}m above home — no basin)");
             }
+
+            // F5/vegetation: deterministic tree scatter (grass-weighted, slope-gated, town-cleared).
+            int trees = RuntimeVegetation.Scatter(go.transform, go.GetComponent<Terrain>(), tileX, tileZ, tileSize, biome);
+            if (trees > 0)
+                Debug.Log($"[Terrain] vegetation: {trees} trees on 'TerrainTile_{tileX}_{tileZ}'.");
             return go;
         }
 
@@ -154,7 +160,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         // Splat weights: sand from the sampler's beach band, rock from local slope, biome ground otherwise.
         private static float[,,] BuildGeoAlpha(WorldGeoSampler sampler, int tileX, int tileZ, float tileSize)
         {
-            var alpha = new float[AlphamapRes, AlphamapRes, 3];
+            var alpha = new float[AlphamapRes, AlphamapRes, 4];
             float step = tileSize / (AlphamapRes - 1);
             for (int y = 0; y < AlphamapRes; y++)
             {
@@ -168,12 +174,62 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
                     float sand = (float)s.SandBlend01;
                     float rock = Mathf.Clamp01((slope - 0.45f) / 0.30f) * (1f - sand);
+
+                    // F5/ground variety (DFU recipe): flat ground was 100% base layer — break it with
+                    // fBm-driven dirt patches (~50m features, 3 octaves). Own hash-lattice noise: pure C#,
+                    // deterministic, and safe on the precompute worker thread.
+                    float n = Fbm((float)wx * 0.02f, (float)wz * 0.02f);
+                    float dirt = Mathf.Clamp01((n - 0.52f) / 0.18f) * 0.85f * Mathf.Max(0f, 1f - sand - rock);
+
                     alpha[y, x, 1] = sand;
                     alpha[y, x, 2] = rock;
-                    alpha[y, x, 0] = Mathf.Max(0f, 1f - sand - rock);
+                    alpha[y, x, 3] = dirt;
+                    alpha[y, x, 0] = Mathf.Max(0f, 1f - sand - rock - dirt);
                 }
             }
             return alpha;
+        }
+
+        // Deterministic 3-octave value-noise fBm (hash lattice + smoothstep) — thread-safe, no UnityEngine.
+        private static float Fbm(float x, float z)
+        {
+            float sum = 0f, amp = 0.5f;
+            for (int o = 0; o < 3; o++)
+            {
+                sum += amp * ValueNoise(x, z);
+                x *= 2f; z *= 2f; amp *= 0.4f; // DFU persistence 0.4
+            }
+            return sum / 0.78f; // normalize (0.5+0.2+0.08)
+        }
+
+        private static float ValueNoise(float x, float z)
+        {
+            int x0 = Mathf.FloorToInt(x), z0 = Mathf.FloorToInt(z);
+            float fx = x - x0, fz = z - z0;
+            fx = fx * fx * (3f - 2f * fx);
+            fz = fz * fz * (3f - 2f * fz);
+            float a = Hash01(x0, z0), b = Hash01(x0 + 1, z0), c = Hash01(x0, z0 + 1), d = Hash01(x0 + 1, z0 + 1);
+            return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, d, fx), fz);
+        }
+
+        private static float Hash01(int x, int z)
+        {
+            unchecked
+            {
+                uint h = ((uint)x * 374761393u) ^ ((uint)z * 668265263u);
+                h = (h ^ (h >> 13)) * 1274126177u;
+                return (h & 0xFFFFFF) / (float)0x1000000;
+            }
+        }
+
+        private static TerrainLayer _dirtLayer;
+        private static TerrainLayer DirtLayer()
+        {
+            if (_dirtLayer != null) return _dirtLayer;
+            var texture = RuntimeMaterialPalette.LoadGeneratedTexture("ground_dirt")
+                          ?? SolidTexture(new Color(0.42f, 0.33f, 0.22f)); // earthy meadow-break tone
+            _dirtLayer = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(14f, 14f) };
+            return _dirtLayer;
         }
 
         // Translucent sea/lake plane at the exact sampler sea height (OpenMW recipe: flat quad, no collider).
