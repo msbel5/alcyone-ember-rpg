@@ -81,6 +81,23 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 RuntimeBuildingBuilder.Build(root.transform, layout.Buildings[i]);
             Debug.Log($"[WorldDirector] {layout.Buildings.Count} buildings built");
 
+            // MINES (content phase): the planet's ore layer reaches the ground — a rich IronOre/Coal tile
+            // under the settlement realizes a mine mouth at the town edge (the sim's mining worksites get
+            // their visible anchor; the richer ore picks the face).
+            if (EmberCrpg.Simulation.Overland.PlanetAtlas.TryGetTileOre(
+                    map, view.PlayerOverlandTile.X, view.PlayerOverlandTile.Y, out double iron, out double coal)
+                && (iron > 0.5d || coal > 0.5d))
+            {
+                float mineAngle = seed % 360u;
+                RuntimeMineBuilder.Build(root.transform, layout.GroundRadius + 14f, mineAngle, coal >= iron);
+                Debug.Log($"[WorldDirector] {(coal >= iron ? "coal" : "iron")} mine realized at town edge (iron={iron:0.00}, coal={coal:0.00}).");
+            }
+
+            // REGION BANNER (political identity v1): a pole + flag at the plaza edge, coloured
+            // deterministically from the tile's RegionId — neighbouring towns of the same region fly the
+            // same colours, crossing a border changes them. Faction-level refinement is the queued v2.
+            BuildRegionBanner(root.transform, homeTile.RegionId.Value);
+
             RuntimeLightingRig.Apply(root.transform, homeTile.Biome);
 
             var spawn = new Vector3(layout.PlayerSpawnX, 0.2f, layout.PlayerSpawnZ);
@@ -91,6 +108,32 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             bool shore = geoSampler != null && geoSampler.HasLocalShore;
             Debug.Log($"[WorldDirector] realize complete for '{name}': kind={kind}, buildings={layout.Buildings.Count}, " +
                       $"geo={(geoSampler != null ? "REAL" : "LEGACY")}, localShore={shore}, npcCap={RuntimeNpcDensity.Cap}, rig at {spawn}.");
+        }
+
+        private static void BuildRegionBanner(Transform parent, ulong regionValue)
+        {
+            var root = new GameObject("RegionBanner");
+            root.transform.SetParent(parent, worldPositionStays: false);
+            root.transform.localPosition = new Vector3(3.2f, 0f, 3.2f); // plaza edge, clear of the spawn
+
+            float hue = ((regionValue * 47UL) % 360UL) / 360f;
+            var flagColor = Color.HSVToRGB(hue, 0.62f, 0.78f);
+
+            var pole = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pole.name = "Pole";
+            pole.transform.SetParent(root.transform, worldPositionStays: false);
+            pole.transform.localPosition = new Vector3(0f, 2.1f, 0f);
+            pole.transform.localScale = new Vector3(0.12f, 4.2f, 0.12f);
+            pole.GetComponent<MeshRenderer>().sharedMaterial = RuntimeMaterialPalette.Solid(new Color(0.35f, 0.27f, 0.18f));
+
+            var flag = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            flag.name = "Flag";
+            flag.transform.SetParent(root.transform, worldPositionStays: false);
+            flag.transform.localPosition = new Vector3(0.66f, 3.6f, 0f);
+            flag.transform.localScale = new Vector3(1.2f, 0.8f, 0.05f);
+            flag.GetComponent<MeshRenderer>().sharedMaterial = RuntimeMaterialPalette.Solid(flagColor);
+
+            Debug.Log($"[WorldDirector] region banner raised (region {regionValue}, hue {hue:0.00}).");
         }
 
         // Kind → billboard density: the visible half of settlement identity (layout size is the other half).

@@ -71,6 +71,37 @@ namespace EmberCrpg.Simulation.Overland
             return true;
         }
 
+        /// <summary>
+        /// Ore richness (0..1) of the icosphere tile under an overland cell — drives local mine realization
+        /// (content phase: the planet's resource layer reaching the ground). False for legacy worlds.
+        /// </summary>
+        public static bool TryGetTileOre(OverlandMap map, int tileX, int tileY, out double ironOre, out double coal)
+        {
+            ironOre = 0d;
+            coal = 0d;
+            if (!OverlandMapPlanetStore.TryGet(map, out var field)) return false;
+
+            double lat = (System.Math.PI / 2d) - (((tileY + 0.5d) / map.Height) * System.Math.PI);
+            double lon = (((tileX + 0.5d) / map.Width) * 2d * System.Math.PI) - System.Math.PI;
+            double cosLat = System.Math.Cos(lat);
+            double dx = cosLat * System.Math.Cos(lon), dy = System.Math.Sin(lat), dz = cosLat * System.Math.Sin(lon);
+
+            var grid = field.Grid;
+            int best = 0;
+            double bestDot = double.NegativeInfinity;
+            for (int i = 0; i < grid.Count; i++)
+            {
+                var p = grid.TileAt(i).Position;
+                double dot = (p.X * dx) + (p.Y * dy) + (p.Z * dz);
+                if (dot > bestDot) { bestDot = dot; best = i; }
+            }
+
+            var data = field.TileAt(best);
+            ironOre = data.IronOre;
+            coal = data.Coal;
+            return true;
+        }
+
         private static readonly ConditionalWeakTable<OverlandMap, Dictionary<int, (float x, float y)>> AnchorCache =
             new ConditionalWeakTable<OverlandMap, Dictionary<int, (float x, float y)>>();
 
