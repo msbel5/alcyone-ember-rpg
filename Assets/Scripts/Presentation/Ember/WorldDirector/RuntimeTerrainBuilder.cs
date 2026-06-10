@@ -103,8 +103,18 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (assets.Material != null)
                 go.GetComponent<Terrain>().materialTemplate = assets.Material;
 
+            // No water above the town's head: IDW blending near big elevation steps can claim a "lake level"
+            // far above the home settlement with no basin to hold it — that sheet renders as a giant teal
+            // triangle IN THE SKY ("gökyüzünde deniz efekti"). Local realization keeps water at or below the
+            // settlement (sea −2.5m, lakeside shores likewise); anything higher is a blend artifact — skip it.
+            const float MaxLocalWaterAboveHome = 8f;
             if (!float.IsNaN(pre.WaterY))
-                AddWaterSurface(go.transform, tileSize, pre.WaterY - GeoYMin); // sea OR lake level, per tile
+            {
+                if (pre.WaterY <= MaxLocalWaterAboveHome)
+                    AddWaterSurface(go.transform, tileSize, pre.WaterY - GeoYMin); // sea OR lake level, per tile
+                else
+                    Debug.Log($"[Terrain] skipped sky-water sheet under 'TerrainTile_{tileX}_{tileZ}' (claimed level +{pre.WaterY:0.#}m above home — no basin)");
+            }
             return go;
         }
 

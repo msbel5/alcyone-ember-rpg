@@ -145,6 +145,16 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private Label _compassStrip;
         private UnityEngine.Camera _compassCam;
         private int _compassCamProbe;
+        private float _smoothedMs;
+
+        // Measured frame time on the compass strip ("kasma" reports become NUMBERS): exponentially smoothed
+        // so it reads steady; >33ms sustained = the stutter is real and this tells us exactly how bad.
+        private string FrameMsSuffix()
+        {
+            float ms = UnityEngine.Time.unscaledDeltaTime * 1000f;
+            _smoothedMs = _smoothedMs <= 0f ? ms : (_smoothedMs * 0.95f) + (ms * 0.05f);
+            return "      " + _smoothedMs.ToString("0.0") + " ms";
+        }
         private static readonly string[] Winds = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 
         // Five 45° windows centred on the heading, e.g. "W | NW | · N · | NE | E". World convention:
@@ -174,6 +184,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 if (i != -2) sb.Append("   |   ");
                 sb.Append(i == 0 ? "· " + Winds[w] + " ·" : Winds[w]);
             }
+            sb.Append(FrameMsSuffix());
             _compassStrip.text = sb.ToString();
         }
 
