@@ -450,6 +450,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             yield return new WaitForSecondsRealtime(4.0f);
 
             var rig = GameObject.Find("PlayerRig");
+            Vector3 spawnPos = rig != null ? rig.transform.position : Vector3.zero;
             for (int i = 0; i < 6; i++)
             {
                 if (rig != null) rig.transform.rotation = Quaternion.Euler(0f, i * 60f, 0f);
@@ -508,6 +509,23 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield return new WaitForSecondsRealtime(0.45f);
                 CaptureToPng(Path.Combine(_outputDir, "look_farm.png"));
                 if (cc2 != null) cc2.enabled = true;
+            }
+
+            // F6-DoD: jump the clock to ~23:00 (game starts 08:00), return to the SAME spawn spot, and
+            // capture the street again — citizens must be gone (curfew), guards/outlaws may remain.
+            var nightAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+            if (rig != null && nightAdapter != null)
+            {
+                var cc3 = rig.GetComponent<CharacterController>();
+                if (cc3 != null) cc3.enabled = false;
+                rig.transform.position = spawnPos;
+                rig.transform.rotation = Quaternion.identity;
+                nightAdapter.ProofAdvanceHours(15);
+                Debug.Log("[Proof] clock advanced 15h — capturing the night street for the curfew contrast.");
+                yield return new WaitForSecondsRealtime(2.6f); // curfew views poll at 2s
+                CaptureToPng(Path.Combine(_outputDir, "look_night.png"));
+                if (cc3 != null) cc3.enabled = true;
             }
         }
 

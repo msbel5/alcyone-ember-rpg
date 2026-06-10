@@ -78,6 +78,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return $"LOOP-PROOF: world-quests active={active} complete={complete}, purse={_world?.PlayerGold ?? -1} gold.";
         }
 
+        /// <summary>PROOF-ONLY: jump the sim clock forward N hours (night-street capture etc.).</summary>
+        public void ProofAdvanceHours(int hours)
+        {
+            int ticksPerHour = EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay / 24;
+            AdvanceTick(_tick + (hours * ticksPerHour));
+        }
+
         /// <summary>F6-DoD: greeting lines from three DIFFERENT-role NPCs — variety must show in the log.</summary>
         public string ProofGreetingSample()
         {
