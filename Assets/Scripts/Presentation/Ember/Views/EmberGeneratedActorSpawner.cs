@@ -192,6 +192,25 @@ namespace EmberCrpg.Presentation.Ember.Views
         // Player anchor for the nearest-N cull. Prefer the PlayerRig GameObject (the convention
         // EmberSaveService uses to find the player), then Camera.main, then world origin — always a
         // sensible, non-throwing fallback so a scene without a rig still spawns the closest-to-origin set.
+        // STREAMING RESPAWN ("quest 250m diyor ama orası boş"): the original call was one-shot at host init,
+        // so NPCs that become nearby only after the player WALKS never materialized. SpawnMissingNearbyActors
+        // is re-entrant and capped, so re-scanning when the player has moved far enough streams billboards in
+        // as you walk — Daggerfall-style — without ever double-spawning.
+        private Vector2 _lastScanAnchor = new Vector2(float.MinValue, float.MinValue);
+        private float _nextScanTime;
+        private const float ScanIntervalSeconds = 2.5f;
+        private const float ScanMoveThresholdMeters = 40f;
+
+        private void Update()
+        {
+            if (Time.unscaledTime < _nextScanTime) return;
+            _nextScanTime = Time.unscaledTime + ScanIntervalSeconds;
+            var anchor = ResolvePlayerAnchorXZ();
+            if ((anchor - _lastScanAnchor).sqrMagnitude < ScanMoveThresholdMeters * ScanMoveThresholdMeters) return;
+            _lastScanAnchor = anchor;
+            SpawnMissingNearbyActors();
+        }
+
         private static Vector2 ResolvePlayerAnchorXZ()
         {
             var rig = GameObject.Find("PlayerRig");
