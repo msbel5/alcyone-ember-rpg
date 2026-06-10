@@ -116,7 +116,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     // floor — the sheet would render underground (invisible) and spam misleading logs.
                 }
                 else if (pre.WaterY <= MaxLocalWaterAboveHome)
+                {
                     AddWaterSurface(go.transform, tileSize, pre.WaterY - GeoYMin); // sea OR lake level, per tile
+                    RuntimeWaterIndex.Register(tileX, tileZ, pre.WaterY, tileSize); // F3/swim: SwimView probes this
+                }
                 else
                     Debug.Log($"[Terrain] skipped sky-water sheet under 'TerrainTile_{tileX}_{tileZ}' (claimed level +{pre.WaterY:0.#}m above home — no basin)");
             }

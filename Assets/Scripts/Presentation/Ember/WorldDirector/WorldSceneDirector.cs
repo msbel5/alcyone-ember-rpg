@@ -132,6 +132,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // F3/audio v1: procedural minimum sound set — wind ambience, motion footsteps, encounter sting.
             RuntimeAudioDirector.Attach(GameObject.Find("PlayerRig"));
 
+            // F3/swim v1: underwater blue fog below the local waterline (water index fed by the streamer).
+            RuntimeWaterIndex.Clear(); // fresh location → fresh levels (travel reload)
+            SwimView.Attach(GameObject.Find("PlayerRig"));
+
             // Realize READINESS REPORT (asset-gate v1): one summary line a playtest log is checked against.
             // v2 (queued) blocks behind the loading screen until missing forge sprites are generated.
             bool shore = geoSampler != null && geoSampler.HasLocalShore;
