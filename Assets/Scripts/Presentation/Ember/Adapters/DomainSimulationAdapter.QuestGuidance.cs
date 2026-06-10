@@ -145,7 +145,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             int dy = target.Position.Y - playerPosition.Y;
             if (dx == 0 && dy == 0) return "nearby";
 
-            string vertical = dy < 0 ? "north" : (dy > 0 ? "south" : string.Empty);
+            // ACTOR-grid convention: ProjectActor maps grid +Y onto Unity +Z, and +Z is north (the
+            // test-locked WorldSpaceProjection chain), so a LARGER target Y is NORTH of the player.
+            // The previous dy<0=north line copied the OVERLAND row rule (tileY shrinks northward) into the
+            // wrong space — the user proved it: walking compass-N grew a "5m north" quest distance.
+            string vertical = dy > 0 ? "north" : (dy < 0 ? "south" : string.Empty);
             string horizontal = dx < 0 ? "west" : (dx > 0 ? "east" : string.Empty);
             if (vertical.Length == 0) return horizontal;
             if (horizontal.Length == 0) return vertical;
