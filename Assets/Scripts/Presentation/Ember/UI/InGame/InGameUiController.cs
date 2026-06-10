@@ -215,7 +215,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         {
             if (row.DistanceTiles <= 0)
                 return "QUEST " + row.TargetName + " · nearby";
-            return "QUEST " + row.TargetName + " · " + row.DistanceTiles + "m · " + row.Direction; // local-grid metres, not tiles
+            return "QUEST " + row.TargetName + " · " + row.DistanceTiles + row.Unit + " · " + row.Direction; // "m" local, "tiles" overland
         }
 
         // Every in-game screen, opened by id. One modal at a time: CloseScreen() drops any open IgModal overlay

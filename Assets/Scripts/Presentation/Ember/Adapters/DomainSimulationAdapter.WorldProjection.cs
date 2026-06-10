@@ -100,10 +100,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             if (_world.Actors == null) return System.Array.Empty<SpawnableActor>();
             var origin = BillboardOrigin(); // SAME re-basing as ProjectActor, so a spawned billboard lands exactly where the per-tick sync will push it
+            // SETTLEMENT-MEMBERSHIP FILTER ("o NPC 11 tile ötedeki şehrin adamı ama burada belirdi"): domain
+            // site placement is compact — every town's local grid overlaps in world units — so projecting ALL
+            // actors made other cities' people materialize as ghosts in whichever town the player stands.
+            // Only residents of the CURRENT settlement spawn here; everyone else stays data until you travel.
+            var here = CurrentSettlementOrStart;
             var list = new List<SpawnableActor>();
             foreach (var actor in _world.Actors.Records)
             {
                 if (actor == null || actor.Role == ActorRole.Player) continue;
+                var seed = ResolveNpcForActor(actor);
+                if (seed != null && !seed.Home.Equals(here)) continue;
                 list.Add(new SpawnableActor(
                     actor.Id.Value,
                     actor.Name ?? string.Empty,

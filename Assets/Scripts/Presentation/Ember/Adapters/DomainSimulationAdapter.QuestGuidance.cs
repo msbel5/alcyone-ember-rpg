@@ -33,11 +33,32 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (!TryFindForgeQuestGiver(out var actor, out var npc))
                 return QuestGuidanceRow.None;
 
-            var distance = DistanceFromPlayer(actor);
-            var direction = DirectionFromPlayer(actor);
+            // Cross-settlement quests speak OVERLAND (tiles between home settlements). Domain site placement
+            // is compact — every town's local grid overlaps — so raw grid distance toward a giver who lives
+            // 11 tiles away read "80m east" and pointed at empty ground. Local metres only when the giver
+            // actually lives where the player stands.
+            int distance;
+            string direction;
+            string unit;
+            var here = CurrentSettlementOrStart;
+            if (npc != null && !npc.Home.Equals(here)
+                && TryGetSettlementTile(npc.Home, out int gtx, out int gty)
+                && TryGetSettlementTile(here, out int htx, out int hty))
+            {
+                distance = System.Math.Max(System.Math.Abs(gtx - htx), System.Math.Abs(gty - hty));
+                direction = OverlandDirection(gtx - htx, gty - hty);
+                unit = "tiles";
+            }
+            else
+            {
+                distance = DistanceFromPlayer(actor);
+                direction = DirectionFromPlayer(actor);
+                unit = "m";
+            }
+
             var title = state == null ? "Quest Lead" : "Quest Marker";
-            var line = BuildForgeGuidanceLine(state, actor.Name, distance, direction);
-            return new QuestGuidanceRow(true, title, line, actor.Name, distance, direction);
+            var line = BuildForgeGuidanceLine(state, actor.Name, distance, direction, unit);
+            return new QuestGuidanceRow(true, title, line, actor.Name, distance, direction, unit);
         }
 
         private bool TryFindForgeQuestGiver(out ActorRecord actor, out NpcSeedRecord npc)
@@ -78,6 +99,34 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 if (string.Equals(_world.NpcSeeds[i].Name, actor.Name, System.StringComparison.Ordinal))
                     return _world.NpcSeeds[i];
             return null;
+        }
+
+        private bool TryGetSettlementTile<TId>(TId id, out int tileX, out int tileY)
+        {
+            tileX = 0;
+            tileY = 0;
+            var map = _world?.Overland;
+            if (map == null) return false;
+            for (int i = 0; i < map.Settlements.Count; i++)
+            {
+                if (!map.Settlements[i].Id.Equals(id)) continue;
+                var p = map.Settlements[i].TilePosition;
+                tileX = p.X;
+                tileY = p.Y;
+                return true;
+            }
+            return false;
+        }
+
+        // Same compass convention as the overland map: tileY shrinks northward (atlas row 0 = north).
+        private static string OverlandDirection(int dx, int dy)
+        {
+            if (dx == 0 && dy == 0) return "here";
+            string vertical = dy < 0 ? "north" : (dy > 0 ? "south" : string.Empty);
+            string horizontal = dx < 0 ? "west" : (dx > 0 ? "east" : string.Empty);
+            if (vertical.Length == 0) return horizontal;
+            if (horizontal.Length == 0) return vertical;
+            return vertical + "-" + horizontal;
         }
 
         private int DistanceFromPlayer(ActorRecord target)
@@ -133,11 +182,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return dx > dy ? dx : dy;
         }
 
-        private static string BuildForgeGuidanceLine(QuestState state, string actorName, int distance, string direction)
+        private static string BuildForgeGuidanceLine(QuestState state, string actorName, int distance, string direction, string unit)
         {
-            // The distance is measured in the LOCAL actor grid (metres), not overland tiles — labelling it
-            // "tiles" made a 160m stroll read like a 6400km journey and the arrow feel broken.
-            var range = distance <= 0 ? "nearby" : distance + "m " + direction;
+            var range = distance <= 0 ? "nearby" : distance + unit + " " + direction;
             if (state == null)
                 return actorName + " has forge work (" + range + "). Press E nearby, then ask about forge work.";
             if (state.IsTaskTriggered(0))
