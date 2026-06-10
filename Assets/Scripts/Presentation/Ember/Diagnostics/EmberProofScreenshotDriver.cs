@@ -389,6 +389,20 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
                 if (cc != null) cc.enabled = true;
             }
+
+            // F1-DoD: the FARM PLOT sits at the town edge — walk there and capture it (crops + soil).
+            var farm = GameObject.Find("FarmPlot");
+            if (rig != null && farm != null)
+            {
+                var cc2 = rig.GetComponent<CharacterController>();
+                if (cc2 != null) cc2.enabled = false;
+                var f = farm.transform.position;
+                rig.transform.position = f + new Vector3(0f, 1.2f, -7f);
+                rig.transform.rotation = Quaternion.Euler(18f, 0f, 0f);
+                yield return new WaitForSecondsRealtime(0.45f);
+                CaptureToPng(Path.Combine(_outputDir, "look_farm.png"));
+                if (cc2 != null) cc2.enabled = true;
+            }
         }
 
         private IEnumerator RunRescueProof()
