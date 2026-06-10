@@ -89,3 +89,15 @@ pack + soak: 10 fast-travels, exception & memory watch — current verdict: PASS
 - World quests (bounty/pilgrimage) are not yet persisted in saves; the forge quest and the whole world state
   round-trip byte-identically (digest-verified).
 - Swimming is an underwater tint (no drowning); dungeon interiors await their encounter haunters' billboards.
+
+### v0.2 "Living World" additions
+
+Trees and noise-broken ground, hinged doors and windows, night curfew (streets empty 22:00-06:00, guards
+and outlaws prowl), social-group greetings with live-event rumors and 35% delve reveals, a nearest-delve
+compass, population-scaled farm belts feeding a real grow->harvest->stockpile->price chain, GemRB-style
+DAY/NIGHT/BATTLE procedural music with a DOOM-style 8-channel SFX pool, and the uncapped day-by-day travel
+loading screen. Shipcheck: 8 sections, PASS.
+
+Known limits added in v0.2 (honest): TTS voice-over is DESIGNED but not wired (forge-cache pattern ready;
+needs a local piper/kokoro install) - greetings stay text. Work-pose icons and needs-driven errand walks
+are the next staging slice. Sky stays bright right after big proof-clock jumps.

@@ -46,13 +46,51 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         }
     }
 
-    /// <summary>Player-rig audio behaviour: motion-driven footsteps + looping ambience + encounter sting.</summary>
+    /// <summary>Player-rig audio behaviour: motion-driven footsteps + looping ambience + encounter sting.
+    /// SFX v2 (DOOM s_sound recipe): a fixed CHANNEL POOL with priority eviction, same-origin dedup and
+    /// distance attenuation replaces the single one-shot source.</summary>
     public sealed class RuntimeAudioDirector : MonoBehaviour
     {
         private CharacterController _controller;
-        private AudioSource _oneShot, _ambience;
+        private AudioSource _ambience;
         private Vector3 _lastPos;
         private float _stepClock;
+
+        // DOOM channel pool: 8 channels, each remembers its origin id + priority.
+        private readonly AudioSource[] _channels = new AudioSource[8];
+        private readonly int[] _channelOrigin = new int[8];
+        private readonly int[] _channelPriority = new int[8];
+        private AudioSource _oneShot; // legacy alias = channel 0 (sting/click callers)
+
+        /// <summary>Play a clip on the pool: same-origin replaces, else free slot, else evict lower priority.</summary>
+        public void PlayAt(int originId, AudioClip clip, float volume, int priority, Vector3 worldPos)
+        {
+            // distance attenuation (DOOM close/clip distances scaled to our town: full <8m, silent >64m)
+            float d = Vector3.Distance(transform.position, worldPos);
+            if (d > 64f) return;
+            float atten = d < 8f ? 1f : 1f - ((d - 8f) / 56f);
+
+            int slot = -1;
+            for (int i = 0; i < _channels.Length; i++)
+                if (_channelOrigin[i] == originId && _channels[i].isPlaying) { slot = i; break; } // origin dedup
+            if (slot < 0)
+                for (int i = 0; i < _channels.Length; i++)
+                    if (!_channels[i].isPlaying) { slot = i; break; } // free channel
+            if (slot < 0)
+            {
+                int lowest = 0;
+                for (int i = 1; i < _channels.Length; i++)
+                    if (_channelPriority[i] < _channelPriority[lowest]) lowest = i;
+                if (_channelPriority[lowest] >= priority) return; // everything louder matters more
+                slot = lowest; // priority eviction
+            }
+
+            _channels[slot].Stop();
+            _channelOrigin[slot] = originId;
+            _channelPriority[slot] = priority;
+            _channels[slot].pitch = 0.94f + ((originId * 2654435761u) % 13u) / 100f; // DOOM pitch variation
+            _channels[slot].PlayOneShot(clip, volume * atten);
+        }
 
         public static void Attach(GameObject playerRig)
         {
@@ -73,8 +111,14 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
-            _oneShot = gameObject.AddComponent<AudioSource>();
-            _oneShot.playOnAwake = false;
+            for (int i = 0; i < _channels.Length; i++)
+            {
+                _channels[i] = gameObject.AddComponent<AudioSource>();
+                _channels[i].playOnAwake = false;
+                _channelPriority[i] = int.MinValue;
+            }
+            _oneShot = _channels[0];
+            Debug.Log("[Audio] SFX channel pool ready (8 channels, priority eviction + origin dedup + distance attenuation).");
             _ambience = gameObject.AddComponent<AudioSource>();
             _ambience.clip = RuntimeAudioForge.Wind;
             _ambience.loop = true;
@@ -98,12 +142,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 if (_stepClock >= 0.45f)
                 {
                     _stepClock = 0f;
-                    _oneShot.PlayOneShot(RuntimeAudioForge.Footstep, 0.8f);
+                    PlayAt(originId: 1, RuntimeAudioForge.Footstep, 0.8f, priority: 1, transform.position);
                 }
             }
 
             if (EmberCrpg.Presentation.Ember.Adapters.WorldEncounterStingFeed.Consume())
-                _oneShot.PlayOneShot(RuntimeAudioForge.Sting, 0.9f);
+                PlayAt(originId: 2, RuntimeAudioForge.Sting, 0.9f, priority: 5, transform.position);
         }
     }
 }
