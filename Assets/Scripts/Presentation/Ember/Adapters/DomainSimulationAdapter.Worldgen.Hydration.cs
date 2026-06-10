@@ -28,6 +28,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             HydrateFactions(generated);
             HydrateNpcs(generated);
             HydrateHistory(generated);
+            SeedWorldQuests(); // F2/quest variety: kill + visit quests join the forge errand
             MovePlayerToStartingSettlement();
         }
 

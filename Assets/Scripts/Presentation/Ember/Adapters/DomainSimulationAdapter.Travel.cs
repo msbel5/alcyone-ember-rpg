@@ -56,6 +56,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 _currentSettlement = settlement.Id;
                 _billboardOriginResolved = false; // NPC grid→world re-bases on the new settlement centre
 
+                // F2/quest variety: arriving at a Shrine completes the VISIT pilgrimage (one-shot, paid in gold).
+                if (settlement.Kind == EmberCrpg.Domain.Overland.SettlementKind.Shrine)
+                    CompleteWorldQuest(ShrinePilgrimageQuestId, 40, "Pilgrimage complete");
+
                 // The world LIVES through the journey: advance the real clock (AdvanceTick takes an ABSOLUTE
                 // tick index) so schedules/needs/prices tick along. PARTIAL (honest): capped at 14 days so a
                 // cross-continent hop cannot freeze the scene cut for minutes — the cap trades sim-honesty

@@ -10,11 +10,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public CombatScreenState ReadCombatScreenState()
         {
             var player = _world.Actors?.FirstByRole(ActorRole.Player);
-            var enemy = _world.Actors?.FirstByRole(ActorRole.Enemy);
+            // F2/encounters: a bound WORLD opponent (E on an outlaw) takes precedence over the authored
+            // slice's room-based Enemy actor; victory settles spoils and unbinds.
+            var worldEnemy = WorldEncounterEnemy();
+            SettleWorldEncounterIfOver(worldEnemy);
+            var enemy = worldEnemy ?? _world.Actors?.FirstByRole(ActorRole.Enemy);
             bool hasEncounter = player != null
                 && enemy != null
                 && enemy.IsAlive
-                && _world.CurrentRoomId == _world.EnemyRoomId;
+                && (worldEnemy != null || _world.CurrentRoomId == _world.EnemyRoomId);
 
             var spells = new List<CombatSpellActionRow>();
             if (hasEncounter)

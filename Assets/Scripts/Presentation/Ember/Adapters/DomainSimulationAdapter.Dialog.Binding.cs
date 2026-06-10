@@ -68,6 +68,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             npc ??= _world.NpcSeeds.FirstOrDefault(
                 n => string.Equals(n.Name, actor.Name, System.StringComparison.Ordinal));
 
+            // F2/encounters: an outlaw doesn't talk — E on a hostile binds a WORLD ENCOUNTER and signals
+            // the UI to open the combat screen instead of starting a conversation.
+            if (TryBeginWorldEncounter(actor, npc))
+                return this;
+
             BeginConversation(actor.Id, npc != null ? npc.Id : default, actor.Name, npc);
             return this;
         }

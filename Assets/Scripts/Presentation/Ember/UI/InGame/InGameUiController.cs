@@ -179,6 +179,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 }
             }
 
+            // F2/encounters: the adapter signals "an outlaw drew steel" — open the combat screen on the spot.
+            if (EmberCrpg.Presentation.Ember.Adapters.WorldEncounterSignal.Consume())
+            {
+                OpenScreen("combat");
+                Debug.Log("[InGameUI] world encounter signal consumed — combat screen opened.");
+            }
+
             if (_activeCombat != null && _host is ICombatScreenSource combatScreen)
                 _activeCombat.Refresh(combatScreen.ReadCombatScreenState());
 
