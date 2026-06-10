@@ -66,5 +66,29 @@ namespace EmberCrpg.Tests.EditMode.WorldDirector
                 Assert.That(b.Height, Is.GreaterThan(0f));
             }
         }
+
+        [Test]
+        public void Plan_BuildingsKeepStreetClearance()
+        {
+            var strategy = new VillageLayoutStrategy();
+            var layout = strategy.Plan(new SettlementContext("Walkable", SettlementKind.Town, BiomeKind.Plains, 777u));
+
+            for (int i = 0; i < layout.Buildings.Count; i++)
+            {
+                for (int j = i + 1; j < layout.Buildings.Count; j++)
+                {
+                    Assert.That(HasStreetGap(layout.Buildings[i], layout.Buildings[j]), Is.True, "Buildings " + i + " and " + j + " block each other.");
+                }
+            }
+        }
+
+        private static bool HasStreetGap(BuildingPlacement a, BuildingPlacement b)
+        {
+            const float expectedClearance = 3.75f;
+            float minGapX = ((a.SizeX + b.SizeX) * 0.5f) + expectedClearance;
+            float minGapZ = ((a.SizeZ + b.SizeZ) * 0.5f) + expectedClearance;
+            return System.Math.Abs(a.OriginX - b.OriginX) >= minGapX
+                || System.Math.Abs(a.OriginZ - b.OriginZ) >= minGapZ;
+        }
     }
 }

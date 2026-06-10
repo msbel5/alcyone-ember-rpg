@@ -324,7 +324,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             if (map == null) return null;
             // This atlas is the authoritative in-game map: every pixel samples the same OverlandMap tile-space
             // that markers use below, so dots/ring cannot drift against a separate planet PNG projection.
-            var image = OverlandMapImageSampler.Sample(map, 512, 256);
+            var image = OverlandMapImageSampler.Sample(map, 1024, 512);
             var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
             {
                 filterMode = FilterMode.Point,   // crisp tiles so coastal land reads clearly under the markers

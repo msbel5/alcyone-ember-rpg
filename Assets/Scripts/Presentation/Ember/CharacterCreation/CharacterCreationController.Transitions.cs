@@ -294,9 +294,17 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
         {
             try
             {
+                var geography = world?.Geography;
+                if (geography == null)
+                    throw new InvalidOperationException("Generated world has no geography.");
+
+                var parameters = new EmberCrpg.Domain.Overland.OverlandParameters(
+                    geography.Width,
+                    geography.Height);
                 var map = EmberCrpg.Simulation.Overland.OverlandWorldgen.Generate(
-                    world, EmberCrpg.Domain.Overland.OverlandParameters.Default);
-                var image = EmberCrpg.Simulation.Overland.OverlandMapImageSampler.Sample(map, 512, 256);
+                    world,
+                    parameters);
+                var image = EmberCrpg.Simulation.Overland.OverlandMapImageSampler.Sample(map, 1024, 512);
                 var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, mipChain: false)
                 {
                     wrapMode = TextureWrapMode.Clamp,

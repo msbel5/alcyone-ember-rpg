@@ -61,29 +61,35 @@ namespace EmberCrpg.Tests.EditMode.Overland
             var shore = ReadPixel(image, map.Tiles[shoreIndex].X, map.Tiles[shoreIndex].Y);
             var ocean = ReadPixel(image, map.Tiles[oceanIndex].X, map.Tiles[oceanIndex].Y);
 
-            Assert.That(shore.R, Is.GreaterThan(ocean.R + 80));
-            Assert.That(shore.G, Is.GreaterThan(ocean.G + 70));
+            Assert.That(shore.R, Is.GreaterThan(ocean.R + 55));
+            Assert.That(shore.G, Is.GreaterThan(ocean.G + 35));
             Assert.That(ocean.B, Is.GreaterThan(ocean.R + 45));
         }
 
         [Test]
-        public void Sample_UpscaledImage_RepeatsExactTileColors()
+        public void Sample_UpscaledImage_AddsGeographyReliefWithinTileProjection()
         {
             var map = OverlandWorldgen.Generate(42u, OverlandParameters.Default);
-            var native = OverlandMapImageSampler.Sample(map, map.Width, map.Height);
-            var upscaled = OverlandMapImageSampler.Sample(map, map.Width * 2, map.Height * 2);
+            var upscaled = OverlandMapImageSampler.Sample(map, map.Width * 4, map.Height * 4);
+            bool foundReliefVariation = false;
 
             for (int y = 0; y < map.Height; y++)
             {
                 for (int x = 0; x < map.Width; x++)
                 {
-                    var expected = ReadPixel(native, x, y);
-                    Assert.That(ReadPixel(upscaled, (x * 2) + 0, (y * 2) + 0), Is.EqualTo(expected));
-                    Assert.That(ReadPixel(upscaled, (x * 2) + 1, (y * 2) + 0), Is.EqualTo(expected));
-                    Assert.That(ReadPixel(upscaled, (x * 2) + 0, (y * 2) + 1), Is.EqualTo(expected));
-                    Assert.That(ReadPixel(upscaled, (x * 2) + 1, (y * 2) + 1), Is.EqualTo(expected));
+                    var first = ReadPixel(upscaled, x * 4, y * 4);
+                    if (!ReadPixel(upscaled, (x * 4) + 3, (y * 4) + 3).Equals(first))
+                    {
+                        foundReliefVariation = true;
+                        break;
+                    }
                 }
+
+                if (foundReliefVariation)
+                    break;
             }
+
+            Assert.That(foundReliefVariation, Is.True, "Upscaled atlas should use geography relief, not flat duplicated tile blocks.");
         }
 
         [Test]

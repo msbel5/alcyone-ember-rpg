@@ -37,12 +37,11 @@ namespace EmberCrpg.Simulation.Overland
 
             var regionIds = geography.CopyRegionIds();
             var biomes = geography.CopyOverlandBiomes();
-            var land = geography.CopyLandMask();
             var settlements = ProjectSettlements(world.Settlements, geography);
             var tileSeeds = RollTileSeeds(normalizedSeed, geography.TileCount);
             var tiles = BuildTiles(geography.Width, geography.Height, regionIds, biomes, tileSeeds, settlements);
             var map = new OverlandMap(geography.Width, geography.Height, tiles, settlements);
-            OverlandMapLandMaskStore.Register(map, land);
+            OverlandMapGeographyStore.Register(map, geography);
             return map;
         }
 

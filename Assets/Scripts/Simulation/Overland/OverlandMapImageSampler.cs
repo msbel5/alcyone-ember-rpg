@@ -1,6 +1,5 @@
 // Why this file is intentionally long: the deterministic overland image sampler co-locates cache-key, land-mask, and pixel sampling helpers so map rendering stays engine-free and reproducible in one unit.
 using System;
-using System.Runtime.CompilerServices;
 using EmberCrpg.Domain.Overland;
 
 namespace EmberCrpg.Simulation.Overland
@@ -52,17 +51,20 @@ namespace EmberCrpg.Simulation.Overland
                 throw new ArgumentOutOfRangeException(nameof(height), height, "Image height must be positive.");
 
             ulong cacheKey = ComputeCacheKey(map, width, height);
-            var tileColors = BuildTileColors(map);
+            OverlandMapGeographyStore.TryGet(map, out var geography);
             var rgba = new byte[checked(width * height * 4)];
 
             for (int y = 0; y < height; y++)
             {
                 int tileY = SampleTileIndex(y, height, map.Height);
+                double geoY = ContinuousTileCoordinate(y, height, map.Height);
 
                 for (int x = 0; x < width; x++)
                 {
                     int tileX = SampleTileIndex(x, width, map.Width);
-                    var color = tileColors[ToIndex(tileX, tileY, map.Width)];
+                    double geoX = ContinuousTileCoordinate(x, width, map.Width);
+                    var tile = map.Tiles[ToIndex(tileX, tileY, map.Width)];
+                    var color = PixelColor(tile, tileX, tileY, geoX, geoY, geography);
 
                     int offset = ((y * width) + x) * 4;
                     rgba[offset] = ToByte(color.R);
@@ -96,8 +98,13 @@ namespace EmberCrpg.Simulation.Overland
                 hash = Mix(hash, tile.X);
                 hash = Mix(hash, tile.Y);
                 hash = Mix(hash, (int)tile.Biome);
-                if (OverlandMapLandMaskStore.TryIsLandAt(map, tile.X, tile.Y, out bool isLand))
-                    hash = Mix(hash, isLand ? 1 : 0);
+                if (OverlandMapGeographyStore.TryGet(map, out var geography))
+                {
+                    hash = Mix(hash, geography.IsLand(tile.X, tile.Y) ? 1 : 0);
+                    hash = Mix(hash, Quantize(geography.Elevation(tile.X, tile.Y)));
+                    hash = Mix(hash, Quantize(geography.Temperature(tile.X, tile.Y)));
+                    hash = Mix(hash, Quantize(geography.Moisture(tile.X, tile.Y)));
+                }
                 hash = Mix(hash, tile.PropVariationSeed);
                 hash = Mix(hash, tile.SettlementIds.Count);
             }
@@ -114,17 +121,26 @@ namespace EmberCrpg.Simulation.Overland
             return hash;
         }
 
-        private static Rgb[] BuildTileColors(OverlandMap map)
+        private static Rgb PixelColor(
+            RegionTile tile,
+            int tileX,
+            int tileY,
+            double geoX,
+            double geoY,
+            OverlandMapGeographySnapshot geography)
         {
-            var colors = new Rgb[map.Width * map.Height];
-            for (int i = 0; i < map.Tiles.Count; i++)
-            {
-                var tile = map.Tiles[i];
-                bool hasLandSignal = OverlandMapLandMaskStore.TryIsLandAt(map, tile.X, tile.Y, out bool isLand);
-                colors[ToIndex(tile.X, tile.Y, map.Width)] = BiomeColor(tile.Biome, hasLandSignal, isLand);
-            }
+            if (geography == null)
+                return BiomeColor(tile.Biome, hasLandSignal: false, isLand: false);
 
-            return colors;
+            bool isLand = geography.IsLand(tileX, tileY);
+            double elevation = Bilinear(geography, geoX, geoY, Channel.Elevation);
+            double temperature = Bilinear(geography, geoX, geoY, Channel.Temperature);
+            double moisture = Bilinear(geography, geoX, geoY, Channel.Moisture);
+            double relief = Relief(geography, geoX, geoY, elevation);
+
+            return isLand
+                ? LandColor(tile.Biome, elevation, temperature, moisture, relief)
+                : WaterColor(elevation, relief, NeighborLandScore(geography, tileX, tileY));
         }
 
         // Byte equivalents of the former OverlandMapPanel Unity Color palette.
@@ -145,6 +161,47 @@ namespace EmberCrpg.Simulation.Overland
                 case BiomeKind.Ash: return new Rgb(87d, 61d, 61d);
                 default: return new Rgb(77d, 77d, 77d);
             }
+        }
+
+        private static Rgb LandColor(BiomeKind biome, double elevation, double temperature, double moisture, double relief)
+        {
+            var baseColor = BiomeColor(biome, hasLandSignal: true, isLand: true);
+            if (biome == BiomeKind.Mountain)
+                baseColor = Lerp(baseColor, new Rgb(196d, 194d, 188d), Clamp01((elevation - 0.58d) * 2.2d));
+            else if (biome == BiomeKind.Forest)
+                baseColor = Lerp(baseColor, new Rgb(34d, 72d, 38d), Clamp01(moisture * 0.8d));
+            else if (biome == BiomeKind.Desert)
+                baseColor = Lerp(baseColor, new Rgb(211d, 190d, 122d), Clamp01(temperature * 0.7d));
+
+            double moistureTint = 0.94d + (Clamp01(moisture) * 0.12d);
+            return Scale(baseColor, relief * moistureTint);
+        }
+
+        private static Rgb WaterColor(double elevation, double relief, double neighborLandScore)
+        {
+            double shallow = Clamp01((elevation + 0.08d) * 6d);
+            shallow = Math.Max(shallow, neighborLandScore * 0.65d);
+            var deep = new Rgb(22d, 59d, 111d);
+            var shelf = new Rgb(56d, 123d, 183d);
+            return Scale(Lerp(deep, shelf, shallow), 0.9d + ((relief - 0.75d) * 0.28d));
+        }
+
+        private static double Relief(OverlandMapGeographySnapshot geography, double x, double y, double elevation)
+        {
+            double east = Bilinear(geography, x + 1d, y, Channel.Elevation);
+            double south = Bilinear(geography, x, y + 1d, Channel.Elevation);
+            double slope = ((elevation - east) * 0.55d) + ((elevation - south) * 0.35d);
+            return Clamp(0.78d + (elevation * 0.34d) + slope, 0.5d, 1.25d);
+        }
+
+        private static double NeighborLandScore(OverlandMapGeographySnapshot geography, int x, int y)
+        {
+            int count = 0;
+            if (geography.IsLand(x - 1, y)) count++;
+            if (geography.IsLand(x + 1, y)) count++;
+            if (geography.IsLand(x, y - 1)) count++;
+            if (geography.IsLand(x, y + 1)) count++;
+            return count / 4d;
         }
 
         private static ulong Mix(ulong hash, int value)
@@ -176,6 +233,68 @@ namespace EmberCrpg.Simulation.Overland
             return OverlandMapProjection.PixelCenterToTileIndex(pixel, pixelCount, tileCount);
         }
 
+        private static double ContinuousTileCoordinate(int pixel, int pixelCount, int tileCount)
+        {
+            return (((pixel + 0.5d) / pixelCount) * tileCount) - 0.5d;
+        }
+
+        private static double Bilinear(OverlandMapGeographySnapshot geography, double x, double y, Channel channel)
+        {
+            int x0 = (int)Math.Floor(x);
+            int y0 = (int)Math.Floor(y);
+            double tx = x - x0;
+            double ty = y - y0;
+
+            double a = Sample(geography, x0, y0, channel);
+            double b = Sample(geography, x0 + 1, y0, channel);
+            double c = Sample(geography, x0, y0 + 1, channel);
+            double d = Sample(geography, x0 + 1, y0 + 1, channel);
+            return Lerp(Lerp(a, b, tx), Lerp(c, d, tx), ty);
+        }
+
+        private static double Sample(OverlandMapGeographySnapshot geography, int x, int y, Channel channel)
+        {
+            switch (channel)
+            {
+                case Channel.Temperature: return geography.Temperature(x, y);
+                case Channel.Moisture: return geography.Moisture(x, y);
+                default: return geography.Elevation(x, y);
+            }
+        }
+
+        private static Rgb Lerp(Rgb a, Rgb b, double t)
+        {
+            t = Clamp01(t);
+            return new Rgb(Lerp(a.R, b.R, t), Lerp(a.G, b.G, t), Lerp(a.B, b.B, t));
+        }
+
+        private static double Lerp(double a, double b, double t)
+        {
+            return a + ((b - a) * t);
+        }
+
+        private static Rgb Scale(Rgb color, double scale)
+        {
+            return new Rgb(color.R * scale, color.G * scale, color.B * scale);
+        }
+
+        private static double Clamp01(double value)
+        {
+            return Clamp(value, 0d, 1d);
+        }
+
+        private static double Clamp(double value, double min, double max)
+        {
+            if (value < min)
+                return min;
+            return value > max ? max : value;
+        }
+
+        private static int Quantize(double value)
+        {
+            return (int)Math.Round(value * 10000d, MidpointRounding.AwayFromZero);
+        }
+
         private static byte ToByte(double value)
         {
             int rounded = (int)Math.Round(value, MidpointRounding.AwayFromZero);
@@ -197,59 +316,12 @@ namespace EmberCrpg.Simulation.Overland
             public double G { get; }
             public double B { get; }
         }
-    }
 
-    internal static class OverlandMapLandMaskStore
-    {
-        private static readonly ConditionalWeakTable<OverlandMap, LandMaskSnapshot> LandMasks = new ConditionalWeakTable<OverlandMap, LandMaskSnapshot>();
-
-        public static void Register(OverlandMap map, bool[] landMask)
+        private enum Channel
         {
-            if (map == null)
-                throw new ArgumentNullException(nameof(map));
-            if (landMask == null)
-                throw new ArgumentNullException(nameof(landMask));
-            if (landMask.Length != map.Width * map.Height)
-                throw new ArgumentException("Land mask length must equal map width * height.", nameof(landMask));
-
-            LandMasks.Remove(map);
-            LandMasks.Add(map, new LandMaskSnapshot(map.Width, map.Height, landMask));
-        }
-
-        public static bool TryIsLandAt(OverlandMap map, int x, int y, out bool isLand)
-        {
-            isLand = false;
-            if (map == null || !LandMasks.TryGetValue(map, out var snapshot))
-                return false;
-
-            return snapshot.TryIsLandAt(x, y, out isLand);
-        }
-
-        private sealed class LandMaskSnapshot
-        {
-            private readonly bool[] _landMask;
-
-            public LandMaskSnapshot(int width, int height, bool[] landMask)
-            {
-                Width = width;
-                Height = height;
-                _landMask = (bool[])landMask.Clone();
-            }
-
-            public int Width { get; }
-            public int Height { get; }
-
-            public bool TryIsLandAt(int x, int y, out bool isLand)
-            {
-                if (x < 0 || y < 0 || x >= Width || y >= Height)
-                {
-                    isLand = false;
-                    return false;
-                }
-
-                isLand = _landMask[(y * Width) + x];
-                return true;
-            }
+            Elevation,
+            Temperature,
+            Moisture,
         }
     }
 }
