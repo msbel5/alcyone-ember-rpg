@@ -10,6 +10,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     /// </summary>
     public static class RuntimeFieldMirror
     {
+        /// <summary>F6: sim hour-of-day (0-23), published per tick — night-time street staging reads it.</summary>
+        public static int HourOfDay { get; set; }
+
         public static int PlantCount { get; private set; }
 
         /// <summary>0 = seed, 1 = sprout, 2 = ripe (dominant stage among the home site's plants).</summary>

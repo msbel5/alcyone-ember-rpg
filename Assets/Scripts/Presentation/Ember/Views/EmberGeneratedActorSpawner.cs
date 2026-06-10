@@ -131,6 +131,12 @@ namespace EmberCrpg.Presentation.Ember.Views
             root.transform.SetParent(transform, worldPositionStays: false);
             root.transform.position = new Vector3(candidate.WorldX + offset.x, 0f, candidate.WorldZ + offset.y);
 
+            // F6/night staging: citizens leave the street 22:00–06:00; guards and outlaws keep prowling.
+            var curfew = root.AddComponent<EmberCrpg.Presentation.Ember.WorldDirector.NightCurfewView>();
+            var spriteRole = candidate.SpriteRole ?? string.Empty;
+            curfew.Prowler = spriteRole.IndexOf("guard", System.StringComparison.OrdinalIgnoreCase) >= 0
+                          || spriteRole.IndexOf("outlaw", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
             // "Billboard" child — ActorView.Awake binds it by this exact name. Same local offset and
             // SpriteRenderer sorting order as EmberWorldspaceBuilder.SpawnActor's authored billboard.
             var billboard = new GameObject("Billboard");
