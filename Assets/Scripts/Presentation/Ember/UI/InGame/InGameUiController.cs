@@ -1000,24 +1000,67 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         // not yet advance world time by the real 40km/tile distance.
         private void FastTravelAction(string settlementName)
         {
-            if (!(EmberDomainAdapterLocator.Current is IWorldTravelSink travel))
+            // F3/loading screen: travel is CHUNKED — one sim-day per frame behind a full-screen overlay, so
+            // the 14-day cap is gone and a cross-continent hop stays responsive while the world truly lives
+            // through every day of the road.
+            var adapter = EmberDomainAdapterLocator.Current as DomainSimulationAdapter;
+            var hostMono = _host as MonoBehaviour;
+            if (adapter == null || hostMono == null)
             {
                 LogTodoAndClose("fast travel unavailable: no live travel sink");
                 return;
             }
 
-            if (!travel.TryTravelToSettlement(settlementName, out var message))
+            if (!adapter.TryBeginTravelToSettlement(settlementName, out int days, out var message))
             {
                 LogTodoAndClose(message);
                 return;
             }
 
-            Debug.Log("[Travel] " + message + " Re-realizing the world at the destination.");
+            CloseAll();
+            Debug.Log("[Travel] " + message + " (ticking " + days + " days behind the loading screen)");
+            hostMono.StartCoroutine(TravelRoutine(adapter, days));
+        }
+
+        private System.Collections.IEnumerator TravelRoutine(DomainSimulationAdapter adapter, int days)
+        {
+            BuildTravelOverlay(out var dayLabel);
+            for (int d = 1; d <= days; d++)
+            {
+                dayLabel.text = $"On the road — day {d} of {days}";
+                adapter.AdvanceTravelDay();
+                yield return null; // a frame per day keeps the overlay alive and the editor responsive
+            }
+
+            Debug.Log($"[Travel] arrival after {days} ticked days — re-realizing the world at the destination.");
             // Carry the LIVE world across the reload: the old host's OnDestroy clears the locator mid-load,
             // and without this hand-off the new host would bootstrap a fresh default world (the bug where
             // travel ended in a black screen + "overland unavailable").
             EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(EmberDomainAdapterLocator.Current);
             UnityEngine.SceneManagement.SceneManager.LoadScene(EmberCrpg.Presentation.Ember.EmberScenes.GeneratedWorld);
+        }
+
+        private void BuildTravelOverlay(out Label dayLabel)
+        {
+            var overlay = new VisualElement();
+            overlay.style.position = Position.Absolute;
+            overlay.style.left = 0; overlay.style.top = 0; overlay.style.right = 0; overlay.style.bottom = 0;
+            overlay.style.backgroundColor = new Color(0.05f, 0.04f, 0.04f, 0.97f);
+            overlay.style.justifyContent = Justify.Center;
+            overlay.style.alignItems = Align.Center;
+
+            var title = new Label("Fast Travel");
+            title.style.fontSize = 30;
+            title.style.color = new Color(0.85f, 0.72f, 0.45f);
+            overlay.Add(title);
+
+            dayLabel = new Label("Setting out...");
+            dayLabel.style.fontSize = 18;
+            dayLabel.style.color = new Color(0.78f, 0.75f, 0.70f);
+            dayLabel.style.marginTop = 10;
+            overlay.Add(dayLabel);
+
+            _stage.Canvas.Add(overlay); // the scene reload tears it down with the canvas
         }
         private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);
         private void TodoCombatAction(string actionId)

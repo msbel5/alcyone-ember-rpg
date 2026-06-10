@@ -26,8 +26,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
         }
 
-        public bool TryTravelToSettlement(string settlementName, out string message)
+        public bool TryBeginTravelToSettlement(string settlementName, out int travelDays, out string message)
         {
+            travelDays = 0;
             var map = _world?.Overland;
             if (map == null || string.IsNullOrWhiteSpace(settlementName))
             {
@@ -60,18 +61,36 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 if (settlement.Kind == EmberCrpg.Domain.Overland.SettlementKind.Shrine)
                     CompleteWorldQuest(ShrinePilgrimageQuestId, 40, "Pilgrimage complete");
 
-                // The world LIVES through the journey: advance the real clock (AdvanceTick takes an ABSOLUTE
-                // tick index) so schedules/needs/prices tick along. PARTIAL (honest): capped at 14 days so a
-                // cross-continent hop cannot freeze the scene cut for minutes — the cap trades sim-honesty
-                // for UX until ticking is chunked behind a loading screen.
-                AdvanceTick(_tick + (days * EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay));
-
-                message = "Travelled to " + settlement.Name + " — " + days + (days == 1 ? " day" : " days") + " on the road.";
+                // F3/loading screen: the clock does NOT advance here any more. The UI ticks the journey
+                // day-by-day behind the travel overlay via AdvanceTravelDay (one sim-day per frame), so a
+                // cross-continent hop no longer freezes the scene cut — and the 14-day cap is GONE: the
+                // world lives through the WHOLE journey.
+                travelDays = System.Math.Max(1, tiles);
+                message = "Travelling to " + settlement.Name + " — " + travelDays + (travelDays == 1 ? " day" : " days") + " on the road.";
                 return true;
             }
 
+            travelDays = 0;
             message = "Unknown settlement: " + settlementName;
             return false;
+        }
+
+        /// <summary>One sim-day of the journey — called per frame by the travel overlay coroutine.</summary>
+        public void AdvanceTravelDay()
+            => AdvanceTick(_tick + EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay);
+
+        /// <summary>
+        /// Legacy SYNC travel (proof drivers + non-coroutine callers): begin + tick the days inline, capped
+        /// at 14 so a headless caller can't stall for minutes. The game UI uses the chunked path above.
+        /// </summary>
+        public bool TryTravelToSettlement(string settlementName, out string message)
+        {
+            if (!TryBeginTravelToSettlement(settlementName, out int days, out message))
+                return false;
+            int capped = System.Math.Min(14, days);
+            for (int d = 0; d < capped; d++)
+                AdvanceTravelDay();
+            return true;
         }
 
         private SettlementId NearestSettlementToPlayer()
