@@ -59,9 +59,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private EmberCrpg.Domain.Actors.GridPosition BillboardOrigin()
         {
             if (_billboardOriginResolved) return _billboardOrigin;
-            if (!StartingSettlement.IsEmpty && _world?.Sites != null)
+            // CURRENT settlement (fast travel re-bases the crowd on the destination; TryTravelToSettlement
+            // resets _billboardOriginResolved so this re-resolves).
+            var anchor = CurrentSettlementOrStart;
+            if (!anchor.IsEmpty && _world?.Sites != null)
             {
-                var siteId = SettlementSiteId(StartingSettlement);
+                var siteId = SettlementSiteId(anchor);
                 if (_world.Sites.TryGet(siteId, out _))
                 {
                     _billboardOrigin = CenterOfSite(siteId);

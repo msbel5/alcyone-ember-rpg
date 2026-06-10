@@ -17,14 +17,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         public string StartingSettlementName => ResolveStartingSettlementName();
 
-        // The player's region is their starting settlement's overland tile when that settlement was placed
-        // on the map; otherwise the settlement nearest the map centre; otherwise the centre itself.
+        // The player's overland tile is their CURRENT settlement's tile (fast travel moves it; defaults to
+        // the starting settlement); otherwise the settlement nearest the map centre; otherwise the centre.
         private GridPosition ResolvePlayerOverlandTile()
         {
             var map = _world?.Overland;
             if (map == null) return default;
 
-            if (!StartingSettlement.IsEmpty && map.TryGetSettlement(StartingSettlement, out var home))
+            var current = CurrentSettlementOrStart;
+            if (!current.IsEmpty && map.TryGetSettlement(current, out var home))
                 return home.TilePosition;
 
             var centre = new GridPosition(map.Width / 2, map.Height / 2);
@@ -33,14 +34,16 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return centre;
         }
 
-        // Prefer the overland settlement's name; fall back to the GeneratedWorld record, which always
-        // contains the starting id even when that settlement was not selected for the overland subset.
+        // Prefer the CURRENT settlement's name (fast travel moves it; defaults to the starting one); fall
+        // back to the GeneratedWorld record, which always contains the starting id even when that settlement
+        // was not selected for the overland subset.
         private string ResolveStartingSettlementName()
         {
-            if (StartingSettlement.IsEmpty) return null;
+            var current = CurrentSettlementOrStart;
+            if (current.IsEmpty) return null;
 
             var map = _world?.Overland;
-            if (map != null && map.TryGetSettlement(StartingSettlement, out var settlement)
+            if (map != null && map.TryGetSettlement(current, out var settlement)
                 && !string.IsNullOrEmpty(settlement.Name))
                 return settlement.Name;
 
@@ -48,7 +51,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (records != null)
             {
                 for (int i = 0; i < records.Count; i++)
-                    if (records[i].Id.Equals(StartingSettlement))
+                    if (records[i].Id.Equals(current))
                         return records[i].Name;
             }
             return null;

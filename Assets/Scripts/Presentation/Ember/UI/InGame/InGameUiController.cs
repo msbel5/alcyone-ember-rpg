@@ -255,7 +255,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new JournalView(c, CloseScreen);
                     break;
                 case "worldmap":
-                    new WorldMapView(c, CloseScreen, TodoFastTravelAction);
+                    new WorldMapView(c, CloseScreen, FastTravelAction);
                     break;
                 case "colony":
                     RefreshLiveColony();
@@ -985,7 +985,28 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             RefreshLiveCrafting(result.Message);
             _activeCrafting?.Refresh();
         }
-        private void TodoFastTravelAction(string locationId) => LogTodoAndClose("fast travel: " + locationId);
+        // REAL fast travel: the adapter moves the domain player actor to the destination settlement, then
+        // reloading the world scene re-runs the proven EmberWorldHost.Awake path — the locator-registered
+        // adapter survives the load, so WorldSceneDirector realizes the DESTINATION tile (its geography,
+        // its layout, its NPCs) with zero stale references. PARTIAL (honest): travel is instant; it does
+        // not yet advance world time by the real 40km/tile distance.
+        private void FastTravelAction(string settlementName)
+        {
+            if (!(EmberDomainAdapterLocator.Current is IWorldTravelSink travel))
+            {
+                LogTodoAndClose("fast travel unavailable: no live travel sink");
+                return;
+            }
+
+            if (!travel.TryTravelToSettlement(settlementName, out var message))
+            {
+                LogTodoAndClose(message);
+                return;
+            }
+
+            Debug.Log("[Travel] " + message + " Re-realizing the world at the destination.");
+            UnityEngine.SceneManagement.SceneManager.LoadScene(EmberCrpg.Presentation.Ember.EmberScenes.GeneratedWorld);
+        }
         private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);
         private void TodoCombatAction(string actionId)
         {

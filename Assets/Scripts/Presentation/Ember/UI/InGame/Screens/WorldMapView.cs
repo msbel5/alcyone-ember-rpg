@@ -154,7 +154,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
             var copy = Text(
                 selected != null
-                    ? "Current overland projection. Travel routing is not exposed from this in-game UI yet."
+                    ? "Current overland projection. Click a settlement to travel — the world re-realizes there."
                     : "The atlas is live, but no settlements are projected onto it yet.",
                 Serif,
                 14,
@@ -176,17 +176,35 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                     pane.Add(BuildFact("Template Pack", selected.TemplatePackTag));
             }
 
-            var travelNote = Text(
-                onFastTravel != null
-                    ? "Fast travel is not wired to a live route source yet."
-                    : "Fast travel is unavailable from this screen.",
-                Sans,
-                11,
-                PA(0.34f));
-            travelNote.style.whiteSpace = WhiteSpace.Normal;
-            travelNote.style.marginTop = 18;
-            travelNote.style.marginBottom = 18;
-            pane.Add(travelNote);
+            if (onFastTravel != null && selected != null && !selected.IsCurrent)
+            {
+                string target = selected.Name;
+                var travelButton = new Button(() => onFastTravel(target)) { text = "TRAVEL TO " + target.ToUpperInvariant() };
+                travelButton.style.marginTop = 18;
+                travelButton.style.marginBottom = 18;
+                travelButton.style.paddingTop = 10;
+                travelButton.style.paddingBottom = 10;
+                travelButton.style.backgroundColor = GA(0.14f);
+                travelButton.style.color = Gold;
+                travelButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+                Border(travelButton, Gold, 1);
+                Radius(travelButton, 9);
+                pane.Add(travelButton);
+            }
+            else
+            {
+                var travelNote = Text(
+                    onFastTravel == null
+                        ? "Fast travel is unavailable from this screen."
+                        : "You are here. Click another settlement to travel.",
+                    Sans,
+                    11,
+                    PA(0.34f));
+                travelNote.style.whiteSpace = WhiteSpace.Normal;
+                travelNote.style.marginTop = 18;
+                travelNote.style.marginBottom = 18;
+                pane.Add(travelNote);
+            }
 
             var head = Text("SETTLEMENTS", Sans, 10, Gold, FontStyle.Bold);
             head.style.letterSpacing = 1.8f;
@@ -203,12 +221,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             }
 
             for (int i = 0; i < locations.Count; i++)
-                pane.Add(BuildLocationRow(locations[i], ReferenceEquals(locations[i], selected)));
+                pane.Add(BuildLocationRow(locations[i], ReferenceEquals(locations[i], selected), onFastTravel));
 
             return pane;
         }
 
-        private static VisualElement BuildLocationRow(MapLocationData loc, bool selected)
+        private static VisualElement BuildLocationRow(MapLocationData loc, bool selected, Action<string> onFastTravel)
         {
             var row = new VisualElement();
             row.style.marginBottom = 6;
@@ -219,6 +237,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             row.style.backgroundColor = selected ? GA(0.10f) : Dark(0.55f);
             Border(row, selected ? Gold : PA(0.10f), selected ? 2 : 1);
             Radius(row, 9);
+
+            // Clicking any non-current settlement row IS the travel action (no second selection pass needed).
+            if (onFastTravel != null && !loc.IsCurrent)
+            {
+                string target = loc.Name;
+                row.RegisterCallback<ClickEvent>(_ => onFastTravel(target));
+            }
 
             var top = Row();
             top.style.alignItems = Align.Center;
