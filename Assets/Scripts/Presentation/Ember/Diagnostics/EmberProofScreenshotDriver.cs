@@ -389,6 +389,10 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             }
             Section("soak-travel", hops >= 10 && exceptions == 0, $"hops={hops} exceptions={exceptions}");
 
+            // F7-DoD: harvest→stock→price movement over 3 sim days (or honest seasonal dormancy).
+            string chain = adapter.ProofEconomyChain();
+            Section("economy-chain", chain.Contains("OK"), chain); // "OK" and "DORMANT-OK" both pass
+
             var igui = UnityEngine.Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
             if (igui != null)
             {

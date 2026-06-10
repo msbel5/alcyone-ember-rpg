@@ -14,6 +14,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // slice's room-based Enemy actor; victory settles spoils and unbinds.
             var worldEnemy = WorldEncounterEnemy();
             SettleWorldEncounterIfOver(worldEnemy);
+            // F8/music: the BATTLE slot follows the live world encounter.
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeBattleMirror.Active =
+                worldEnemy != null && worldEnemy.IsAlive;
             var enemy = worldEnemy ?? _world.Actors?.FirstByRole(ActorRole.Enemy);
             bool hasEncounter = player != null
                 && enemy != null

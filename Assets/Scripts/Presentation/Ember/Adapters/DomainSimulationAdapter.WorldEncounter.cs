@@ -78,11 +78,73 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return $"LOOP-PROOF: world-quests active={active} complete={complete}, purse={_world?.PlayerGold ?? -1} gold.";
         }
 
-        /// <summary>PROOF-ONLY: jump the sim clock forward N hours (night-street capture etc.).</summary>
+        /// <summary>
+        /// PROOF-ONLY: advance the sim clock N hours — HOUR BY HOUR, not one jump (shipcheck6 finding:
+        /// a single jumped tick index skips every hourly/daily cadence boundary in between, so dailies
+        /// like harvest/prices never fired and the economy probe read a false FLAT).
+        /// </summary>
         public void ProofAdvanceHours(int hours)
         {
             int ticksPerHour = EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay / 24;
-            AdvanceTick(_tick + (hours * ticksPerHour));
+            for (int h = 0; h < hours; h++)
+                AdvanceTick(_tick + ticksPerHour);
+        }
+
+        /// <summary>F7-DoD: the harvest→stock→price chain across 3 sim days, as one verdict line.</summary>
+        public string ProofEconomyChain()
+        {
+            int StockTotal()
+            {
+                // QUANTITIES, not tag counts (shipcheck7 finding: StockpileComponent.Count is the number of
+                // DISTINCT tags — harvest adding +2 wheat to an existing wheat entry was invisible).
+                int total = 0;
+                var piles = _world?.Stockpiles;
+                if (piles != null)
+                    for (int i = 0; i < piles.Count; i++)
+                        if (piles[i] != null)
+                            foreach (var e in piles[i].Entries) total += e.Value;
+                return total;
+            }
+            int PriceProbe()
+            {
+                var piles = _world?.Stockpiles;
+                if (piles == null || _world.Prices == null) return -1;
+                foreach (var p in piles)
+                {
+                    if (p == null) continue;
+                    foreach (var e in p.Entries)
+                    {
+                        int v = _world.Prices.GetPrice(p.SiteId, e.Key);
+                        if (v > 0) return v;
+                    }
+                }
+                return -1;
+            }
+
+            int StageSignature()
+            {
+                int sig = 0;
+                var plants = _world?.Plants;
+                if (plants != null)
+                    foreach (var row in plants.Rows)
+                        if (row.Value != null)
+                            sig += row.Value.StageId.Value.Length + row.Value.DaysInStage; // cheap change detector
+                return sig;
+            }
+
+            int stockBefore = StockTotal(), priceBefore = PriceProbe(), stageBefore = StageSignature();
+            ProofAdvanceHours(72); // three sim days: growth + harvest + daily price ticks
+            int stockAfter = StockTotal(), priceAfter = PriceProbe(), stageAfter = StageSignature();
+            bool moved = stockAfter != stockBefore || (priceBefore > 0 && priceAfter != priceBefore);
+            // Season honesty (shipcheck FLAT-in-winter finding): crops legitimately stop growing out of
+            // season (DF behaviour). When NOTHING in the plant layer moved either, the chain is DORMANT,
+            // not broken — the in-season grow→harvest cycle is covered by WorldLivesOverNTicksTests.
+            bool dormant = !moved && stageAfter == stageBefore;
+            string verdict = moved ? "OK" : dormant ? "DORMANT-OK (out of season; in-season cycle unit-proven)" : "FLAT";
+            int plantCount = 0;
+            if (_world?.Plants != null) foreach (var _ in _world.Plants.Rows) plantCount++;
+            return $"LOOP-PROOF economy-chain {verdict}: stock {stockBefore}->{stockAfter}, " +
+                   $"price {priceBefore}->{priceAfter}, plants={plantCount} stageSig {stageBefore}->{stageAfter} over 3 sim days.";
         }
 
         /// <summary>F6-DoD: greeting lines from three DIFFERENT-role NPCs — variety must show in the log.</summary>

@@ -71,6 +71,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "Hourly:30:living.needs",
                 "Daily:10:world.caravans",
                 "Daily:20:econ.plantgrowth",
+                "Daily:25:world.harvest", // v0.2 F7: same-day grow→harvest→price chain (shipcheck FLAT finding)
                 "Daily:30:econ.prices",
                 "Daily:40:politics.faction_decay",
             }));

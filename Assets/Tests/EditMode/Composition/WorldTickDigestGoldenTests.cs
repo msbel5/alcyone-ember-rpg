@@ -13,7 +13,10 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // one per actor (the per-actor spam grew the unbounded event log to ~1GB by day 90 and the Gen2 GC
         // pauses were the felt per-tick stutter). Determinism itself is unchanged — the same-seed double
         // advance still produced byte-identical digests in the run that captured this value.
-        private const string BaselineHash = "f1dd4ef0316041fd36181482d9e3d9546edcd15c0d5f9e15a6b41214be887abb";
+        // Re-baselined 2026-06-11 for v0.2 F7 HarvestStep (daily grow→harvest→price chain — ripe crops now
+        // yield into stockpiles and replant; the shipcheck economy-chain FLAT finding drove it). Determinism
+        // held: the same-seed double advance produced identical digests in the capturing run.
+        private const string BaselineHash = "88be0d13a986d56dfc7c8e259e20e0cf63e2a412cf1da6405434e3106afb9b56";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

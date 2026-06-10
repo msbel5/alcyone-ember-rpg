@@ -43,10 +43,16 @@ namespace EmberCrpg.Tests.EditMode.Composition
             for (var tick = 1; tick <= TwoGameDaysTicks; tick++)
                 composer.Advance(world, tick);
 
-            // (a) a PlantComponent growth stage advanced (seed -> sprout -> ...).
+            // (a) the crop LIVED: either its stage advanced, or it completed a FULL grow→harvest cycle —
+            // v0.2 F7's HarvestStep replants ripe crops at seed the same day, so a crop back at "seed"
+            // with yield in the stockpile is more alive than a stuck stage, not less.
             var grownStage = world.Plants.Get(PlantId).StageId;
-            Assert.That(grownStage, Is.Not.EqualTo(startStage),
-                "a crop should have advanced at least one growth stage over two game-days");
+            bool stageAdvanced = !grownStage.Equals(startStage);
+            bool harvested = false;
+            foreach (var pile in world.Stockpiles)
+                if (pile != null && pile.Get("wheat") > 0) { harvested = true; break; }
+            Assert.That(stageAdvanced || harvested, Is.True,
+                "a crop should advance a stage OR complete a harvest cycle over two game-days");
 
             // (b) the pending job was claimed AND some actor is no longer idle.
             Assert.That(world.Jobs.GetStatus(Job), Is.EqualTo(JobStatus.Assigned),

@@ -48,6 +48,7 @@ namespace EmberCrpg.Simulation.Composition
                 new NeedsStep(needs),
                 new CaravanStep(caravans),
                 new PlantGrowthStep(plantGrowth, seasonCalendar, plantSpecies),
+                new HarvestStep(),
                 new PriceStepSystem(priceUpdate),
                 new FactionDecayStep(factionDecay, Normalize(factionDecayConfig)),
             });
@@ -290,6 +291,46 @@ namespace EmberCrpg.Simulation.Composition
                 var world = context.World;
                 if (world.Caravans != null)
                     _caravans.Tick(world.Caravans, world.FindTradeRoute, world.FindStockpile, context.Stamp, world.Events);
+            }
+        }
+
+        // F7/economy-chain (shipcheck "FLAT" finding): plants ripened but NOTHING harvested them — stockpiles
+        // and prices sat frozen forever. Daily harvest: every RIPE plant yields 2 units of its species into
+        // its site's stockpile and is replanted at seed, closing the growth→stock→price loop.
+        private sealed class HarvestStep : StepBase
+        {
+            public HarvestStep() : base("world.harvest", TickCadence.Daily, 25) { } // growth(20) → harvest(25) → prices(30): same-day chain
+
+            public override void Run(in TickContext context)
+            {
+                var world = context.World;
+                if (world.Plants == null || world.Stockpiles == null) return;
+
+                // snapshot the ripe set first — Replace() during iteration would mutate Rows
+                var ripe = new System.Collections.Generic.List<EmberCrpg.Domain.Process.PlantComponent>();
+                foreach (var row in world.Plants.Rows)
+                    if (row.Value != null && row.Value.StageId.Value == "ripe")
+                        ripe.Add(row.Value);
+
+                foreach (var p in ripe)
+                {
+                    EmberCrpg.Domain.Process.StockpileComponent pile = null;
+                    for (int i = 0; i < world.Stockpiles.Count; i++)
+                    {
+                        var candidate = world.Stockpiles[i];
+                        if (candidate != null && candidate.SiteId.Equals(p.SiteId)) { pile = candidate; break; }
+                    }
+                    if (pile == null)
+                    {
+                        pile = new EmberCrpg.Domain.Process.StockpileComponent(p.SiteId);
+                        world.Stockpiles.Add(pile);
+                    }
+
+                    pile.Add(p.SpeciesId, 2); // a ripe plot yields two units
+                    world.Plants.Replace(p.Id, new EmberCrpg.Domain.Process.PlantComponent(
+                        p.Id, p.SiteId, p.Position, p.SpeciesId,
+                        new EmberCrpg.Domain.Process.PlantStageId("seed"), 0)); // replant
+                }
             }
         }
 

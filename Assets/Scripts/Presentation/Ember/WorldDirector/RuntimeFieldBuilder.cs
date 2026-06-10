@@ -56,9 +56,24 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         }
     }
 
-    /// <summary>Realizes one tilled farm plot (soil slab + a grid of living stalks) at the settlement edge.</summary>
+    /// <summary>
+    /// Realizes the settlement's FARM BELT: plot count derives from population (F7, DF ratios — one farmer
+    /// works ~10 plots and feeds 3-7 people; the belt is the symbolic visual of that rural district).
+    /// Plots fan out along an arc at the town edge.
+    /// </summary>
     public static class RuntimeFieldBuilder
     {
+        public static GameObject BuildBelt(Transform parent, float distance, float angleDeg, int plots)
+        {
+            var belt = new GameObject("FarmBelt");
+            belt.transform.SetParent(parent, worldPositionStays: false);
+            const float arcStepDeg = 9f; // ~12m apart at the default radius
+            float start = angleDeg - (arcStepDeg * (plots - 1) / 2f);
+            for (int i = 0; i < plots; i++)
+                Build(belt.transform, distance, start + (i * arcStepDeg));
+            return belt;
+        }
+
         public static GameObject Build(Transform parent, float distance, float angleDeg)
         {
             var root = new GameObject("FarmPlot");

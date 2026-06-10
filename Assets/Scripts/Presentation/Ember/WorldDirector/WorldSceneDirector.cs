@@ -93,12 +93,18 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 Debug.Log($"[WorldDirector] {(coal >= iron ? "coal" : "iron")} mine realized at town edge (iron={iron:0.00}, coal={coal:0.00}).");
             }
 
-            // FIELDS (F1/crops): farming settlements realize a tilled plot at the edge whose stalks read the
-            // REAL PlantGrowth stage through the field mirror — crops visibly rise as sim days pass.
-            if (kind == SettlementKind.Village || kind == SettlementKind.Hamlet || kind == SettlementKind.Town)
+            // FIELDS (F7/economy realism): the farm BELT derives from population — DF ratios (1 farmer ≈ 10
+            // plots ≈ feeds 3-7 people) scaled to a readable visual. Tier populations: Capital 180k, City
+            // 75k, Town 6k, Village 650, Hamlet 200. Stalks still read the live PlantGrowth mirror.
+            if (kind != SettlementKind.Dungeon && kind != SettlementKind.Shrine)
             {
-                RuntimeFieldBuilder.Build(root.transform, layout.GroundRadius + 8f, (seed % 360u) + 137f);
-                Debug.Log("[WorldDirector] farm plot realized (living stalks bound to the field mirror).");
+                int pop = kind == SettlementKind.City ? 75000
+                    : kind == SettlementKind.Town ? 6000
+                    : kind == SettlementKind.Village ? 650
+                    : kind == SettlementKind.Hamlet ? 200 : 350;
+                int plots = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(pop) / 9f), 2, 12);
+                RuntimeFieldBuilder.BuildBelt(root.transform, layout.GroundRadius + 10f, (seed % 360u) + 137f, plots);
+                Debug.Log($"[WorldDirector] fields={plots} plots for pop={pop} ({kind}) — farm belt at the town edge.");
             }
 
             // DUNGEON MOUTH: a Dungeon "settlement" is a delve, not a hamlet — realize a big dark cave mouth
@@ -131,6 +137,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
             // F3/audio v1: procedural minimum sound set — wind ambience, motion footsteps, encounter sting.
             RuntimeAudioDirector.Attach(GameObject.Find("PlayerRig"));
+
+            // F8/music: GemRB DAY/NIGHT/BATTLE slots, procedurally synthesized, slot follows sim hour +
+            // the battle mirror, variant rotates — slot transitions logged for the shipcheck.
+            RuntimeMusicDirector.Attach(GameObject.Find("PlayerRig"));
 
             // F3/swim v1: underwater blue fog below the local waterline (water index fed by the streamer).
             RuntimeWaterIndex.Clear(); // fresh location → fresh levels (travel reload)
