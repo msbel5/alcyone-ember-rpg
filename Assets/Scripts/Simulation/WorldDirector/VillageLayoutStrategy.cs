@@ -32,8 +32,25 @@ namespace EmberCrpg.Simulation.WorldDirector
         public SettlementLayout Plan(in SettlementContext context)
         {
             var rng = new XorShiftRng(context.Seed == 0u ? 1u : context.Seed);
-            int span = (_maxBuildings - _minBuildings) + 1;
-            int count = _minBuildings + rng.NextInt(span);
+
+            // Kind scale — a City must not read like a Village ("every town looks the same" playtest fix):
+            // cities sprawl over more rings with taller buildings, towns sit in between, villages keep the
+            // small ring. Each settlement also rolls a DOMINANT material so towns get a visual identity
+            // (timber town vs stone town) instead of every shell cycling the same four colours.
+            int minBuildings = _minBuildings, maxBuildings = _maxBuildings;
+            float firstRingRadius = _ringRadius;
+            float heightBoost = 0f;
+            switch (context.Kind)
+            {
+                case EmberCrpg.Domain.Overland.SettlementKind.City:
+                    minBuildings = 26; maxBuildings = 40; firstRingRadius = 16f; heightBoost = 2.5f; break;
+                case EmberCrpg.Domain.Overland.SettlementKind.Town:
+                    minBuildings = 14; maxBuildings = 24; firstRingRadius = 15f; heightBoost = 1.0f; break;
+            }
+            int dominantMaterial = rng.NextInt(4);
+
+            int span = (maxBuildings - minBuildings) + 1;
+            int count = minBuildings + rng.NextInt(span);
 
             // Distribute buildings across wide rings around a real plaza. Candidates that would block streets
             // are rejected deterministically; the settlement may contain fewer buildings than requested, but it
@@ -41,10 +58,10 @@ namespace EmberCrpg.Simulation.WorldDirector
             var buildings = new List<BuildingPlacement>(count);
             int placed = 0;
             int ring = 0;
-            float lastRingRadius = _ringRadius;
+            float lastRingRadius = firstRingRadius;
             while (placed < count && ring < MaxRings)
             {
-                float ringRadius = _ringRadius + (ring * RingSpacingMeters);
+                float ringRadius = firstRingRadius + (ring * RingSpacingMeters);
                 lastRingRadius = ringRadius;
                 int capacity = Math.Max(6, (int)((2.0 * Math.PI * ringRadius) / MinimumArcSpacingMeters));
                 for (int i = 0; i < capacity && placed < count; i++)
@@ -58,8 +75,8 @@ namespace EmberCrpg.Simulation.WorldDirector
                     float z = (float)(Math.Sin(angle) * radius);
                     float sizeX = 3.5f + (rng.NextInt(220) / 100f);           // 3.5..5.7m
                     float sizeZ = 3.5f + (rng.NextInt(220) / 100f);
-                    float height = 2.8f + (rng.NextInt(320) / 100f);          // 2.8..6.0m
-                    int material = rng.NextInt(4);
+                    float height = 2.8f + heightBoost + (rng.NextInt(320) / 100f); // village 2.8..6.0m; town/city taller
+                    int material = rng.NextInt(100) < 60 ? dominantMaterial : rng.NextInt(4); // town material identity
 
                     var candidate = new BuildingPlacement(x, z, sizeX, sizeZ, height, material);
                     if (BlocksPlaza(candidate) || OverlapsAny(candidate, buildings))
