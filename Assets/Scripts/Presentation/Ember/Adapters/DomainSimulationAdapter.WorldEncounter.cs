@@ -70,15 +70,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public string ProofQuestSnapshot()
         {
             int active = 0, complete = 0;
-            if (_world?.Quests != null)
+            foreach (var kv in _worldQuests)
             {
-                foreach (var kv in _world.Quests.Active)
-                {
-                    active++;
-                    if (kv.Value.IsComplete) complete++;
-                }
+                active++;
+                if (kv.Value != null && kv.Value.IsComplete) complete++;
             }
-            return $"LOOP-PROOF: quests active={active} complete={complete}, purse={_world?.PlayerGold ?? -1} gold.";
+            return $"LOOP-PROOF: world-quests active={active} complete={complete}, purse={_world?.PlayerGold ?? -1} gold.";
         }
 
         public string ProofRunEncounterLeg()

@@ -1192,6 +1192,19 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             OpenScreen(id);
             int after = _stage?.Canvas != null ? _stage.Canvas.childCount : -1;
             UnityEngine.Debug.Log($"[ProofUI] open '{id}': stage={(_stage != null)} canvas {before}->{after} active={(_activeScreen != null)}");
+
+            // Proof-modal render hunt: the overlay ATTACHES (childCount grows) but never shows in captures.
+            // One frame later, log the attached element's RESOLVED geometry — zero size / display:none /
+            // opacity 0 each point to a different root cause.
+            var canvas = _stage?.Canvas;
+            canvas?.schedule.Execute(() =>
+            {
+                var last = canvas.childCount > 0 ? canvas[canvas.childCount - 1] : null;
+                UnityEngine.Debug.Log(last == null
+                    ? $"[ProofUI] modal probe '{id}': canvas is EMPTY one frame later"
+                    : $"[ProofUI] modal probe '{id}': last='{last.name}' size={last.resolvedStyle.width:0}x{last.resolvedStyle.height:0} " +
+                      $"display={last.resolvedStyle.display} opacity={last.resolvedStyle.opacity:0.##} visible={last.visible}");
+            }).ExecuteLater(120);
         }
 
         /// <summary>Proof/diagnostic hook: programmatic Escape — close any open modal/browser between captures.</summary>

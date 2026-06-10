@@ -304,6 +304,10 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                     // REALTIME waits: opening a modal pauses the game (timeScale 0), so scaled WaitForSeconds
                     // never elapses — the tour deadlocked on the FIRST modal until a human pressed Escape.
                     yield return new WaitForSecondsRealtime(0.6f);
+                    // MODAL HUNT CLOSED: CaptureScreenshotAsTexture is only defined AFTER end-of-frame — a
+                    // mid-frame call grabbed the backbuffer before the UI Toolkit pass, so the (proven
+                    // attached + fully resolved) modal never appeared in captures. Wait for the frame edge.
+                    yield return new WaitForEndOfFrame();
                     CaptureToPng(Path.Combine(_outputDir, "ig_" + s + ".png"));
                     igui.ProofCloseScreens(); // programmatic Escape so the next screen opens cleanly
                     yield return new WaitForSecondsRealtime(0.25f);
@@ -361,6 +365,17 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield return new WaitForSecondsRealtime(0.35f);
                 CaptureToPng(Path.Combine(_outputDir, $"look_{i * 60:000}.png"));
             }
+
+            // F3-DoD perf probe: average + worst frame over a 90-frame window in live gameplay.
+            float sum = 0f, worst = 0f;
+            for (int i = 0; i < 90; i++)
+            {
+                yield return null;
+                float ms = Time.unscaledDeltaTime * 1000f;
+                sum += ms;
+                if (ms > worst) worst = ms;
+            }
+            Debug.Log($"[Perf] gameplay frames: avg={sum / 90f:0.0}ms worst={worst:0.0}ms over 90 frames (budget avg<=16ms).");
 
             var building = GameObject.Find("Building");
             if (rig != null && building != null)
