@@ -9,10 +9,11 @@ namespace EmberCrpg.Tests.EditMode.WorldDirector
     public sealed class SettlementLayoutStrategyFactoryTests
     {
         [Test]
-        public void For_PopulousKinds_UseVillageStrategy()
+        public void For_PopulousKinds_UseStreetGraph_VillageKeepsRing()
         {
-            Assert.That(SettlementLayoutStrategyFactory.For(SettlementKind.City), Is.TypeOf<VillageLayoutStrategy>());
-            Assert.That(SettlementLayoutStrategyFactory.For(SettlementKind.Town), Is.TypeOf<VillageLayoutStrategy>());
+            // SettlementLayoutGraph v1: cities and towns lay out along radial streets; villages keep the ring.
+            Assert.That(SettlementLayoutStrategyFactory.For(SettlementKind.City), Is.TypeOf<StreetLayoutStrategy>());
+            Assert.That(SettlementLayoutStrategyFactory.For(SettlementKind.Town), Is.TypeOf<StreetLayoutStrategy>());
             Assert.That(SettlementLayoutStrategyFactory.For(SettlementKind.Village), Is.TypeOf<VillageLayoutStrategy>());
         }
 

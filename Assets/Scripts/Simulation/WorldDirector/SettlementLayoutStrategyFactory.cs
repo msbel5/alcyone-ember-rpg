@@ -11,6 +11,7 @@ namespace EmberCrpg.Simulation.WorldDirector
     {
         private static readonly ISettlementLayoutStrategy Village = new VillageLayoutStrategy();
         private static readonly ISettlementLayoutStrategy Compact = new CompactLayoutStrategy();
+        private static readonly ISettlementLayoutStrategy Streets = new StreetLayoutStrategy();
 
         public static ISettlementLayoutStrategy For(SettlementKind kind)
         {
@@ -18,6 +19,7 @@ namespace EmberCrpg.Simulation.WorldDirector
             {
                 case SettlementKind.City:
                 case SettlementKind.Town:
+                    return Streets; // SettlementLayoutGraph v1: radial avenues, not rings
                 case SettlementKind.Village:
                     return Village;
                 case SettlementKind.Hamlet:
