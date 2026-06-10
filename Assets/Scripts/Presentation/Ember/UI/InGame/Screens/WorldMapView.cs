@@ -347,16 +347,35 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         private static Texture2D CreateMapTexture(OverlandMap map)
         {
             if (map == null) return null;
-            // This atlas is the authoritative in-game map: every pixel samples the same OverlandMap tile-space
-            // that markers use below, so dots/ring cannot drift against a separate planet PNG projection.
-            var image = OverlandMapImageSampler.Sample(map, 1024, 512);
-            var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false)
+            // Authoritative in-game map. Prefer the rich planet-sourced render (organic icosphere sampling —
+            // the pre-projection look) and fall back to the blocky overland raster only for legacy worlds.
+            // Both share the SAME equirect tile-space as the markers, so dots/ring cannot drift.
+            byte[] rgba;
+            int width, height;
+            FilterMode filter;
+            if (PlanetAtlas.TryRender(map, 1024, 512, out var planetImage))
             {
-                filterMode = FilterMode.Point,   // crisp tiles so coastal land reads clearly under the markers
+                rgba = planetImage.Rgba;
+                width = planetImage.Width;
+                height = planetImage.Height;
+                filter = FilterMode.Bilinear; // organic planet render reads as a painting, not a tile grid
+            }
+            else
+            {
+                var image = OverlandMapImageSampler.Sample(map, 1024, 512);
+                rgba = image.RgbaBytes;
+                width = image.Width;
+                height = image.Height;
+                filter = FilterMode.Point; // crisp tiles so coastal land reads clearly under the markers
+            }
+
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+            {
+                filterMode = filter,
                 wrapMode = TextureWrapMode.Clamp,
                 name = "InGameWorldMap"
             };
-            texture.LoadRawTextureData(image.RgbaBytes);
+            texture.LoadRawTextureData(rgba);
             texture.Apply(false, true);
             return texture;
         }

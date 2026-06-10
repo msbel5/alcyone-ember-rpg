@@ -43,7 +43,7 @@ namespace EmberCrpg.Simulation.Worldgen.PlanetIntegration
             var notableFigures = PlanetHistoryProjection.ProjectNotableFigures(historyResult.State, projectedSettlements);
             var npcs = PlanetNpcSeeder.Seed(field.Seed, parameters, projectedSettlements, factions);
 
-            return new GeneratedWorld(
+            var world = new GeneratedWorld(
                 field.Seed,
                 regions,
                 projectedSettlements,
@@ -53,6 +53,10 @@ namespace EmberCrpg.Simulation.Worldgen.PlanetIntegration
                 historyResult.Events,
                 notableFigures,
                 projection.Geography);
+            // Keep the rich planet source on the world (the projection above flattens it to 128x64; the
+            // atlas/terrain layers want the real thing — coastlines, rivers, lakes live only here).
+            world.PlanetData = field;
+            return world;
         }
     }
 

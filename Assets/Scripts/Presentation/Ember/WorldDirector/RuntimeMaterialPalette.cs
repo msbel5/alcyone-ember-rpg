@@ -100,18 +100,15 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         public static Material Water()
         {
             if (_water != null) return _water;
+            // OPAQUE deep blue on purpose: the runtime URP transparent recipe (keywords + blend state set by
+            // hand) rendered as a BLACK plane in the player build (variant stripped / keyword not applied).
+            // Opaque cannot fail that way on any pipeline; translucency is polish for later.
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            var mat = new Material(shader) { renderQueue = 3000 };
-            var color = new Color(0.10f, 0.34f, 0.52f, 0.78f);
+            var mat = new Material(shader);
+            var color = new Color(0.09f, 0.30f, 0.47f, 1f);
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
-            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f); // URP transparent
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.9f);
-            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
-            mat.SetOverrideTag("RenderType", "Transparent");
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.85f);
             _water = mat;
             return mat;
         }

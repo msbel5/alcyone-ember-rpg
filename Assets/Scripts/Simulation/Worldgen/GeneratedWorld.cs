@@ -152,6 +152,14 @@ namespace EmberCrpg.Simulation.Worldgen
         public IReadOnlyList<NotableFigureRecord> NotableFigures { get; }
         public WorldGeography Geography { get; }
 
+        /// <summary>
+        /// The full-resolution planet simulation this world was projected from (icosphere tiles carrying
+        /// elevation / climate / hydrology, incl. rivers and lakes). Optional sidecar: null on the legacy
+        /// non-planet path and NOT part of any save payload — it exists so renderers and terrain samplers
+        /// can use the rich source instead of the flattened 128x64 geography raster.
+        /// </summary>
+        public EmberCrpg.Simulation.Worldgen.Planet.PlanetField PlanetData { get; set; }
+
         public int TotalPopulation
         {
             get

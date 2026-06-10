@@ -42,6 +42,7 @@ namespace EmberCrpg.Simulation.Overland
             var tiles = BuildTiles(geography.Width, geography.Height, regionIds, biomes, tileSeeds, settlements);
             var map = new OverlandMap(geography.Width, geography.Height, tiles, settlements);
             OverlandMapGeographyStore.Register(map, geography);
+            OverlandMapPlanetStore.Register(map, world.PlanetData); // rich planet sidecar (no-op on the legacy path)
             return map;
         }
 
