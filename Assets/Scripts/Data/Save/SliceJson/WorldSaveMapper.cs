@@ -161,9 +161,11 @@ world.Items = ToItemStore(data.itemRecords);
             world.LlmProposalLog = ToLlmProposalLog(data.llmProposalLog);
             world.NpcSeeds = ToNpcSeeds(data.npcSeeds);
             world.WorldProfile = ToWorldProfile(data.worldProfile);
-            world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory.Capacity);
+            // Digest-roundtrip finding: a seed world without inventories NREd here — same saver/loader
+            // asymmetry as ToInventoryData; the save data's own capacity wins anyway when present.
+            world.PlayerInventory = ToInventoryState(data.inventory, world.PlayerInventory?.Capacity ?? 0);
             world.PlayerEquipment = ToEquipmentState(data.playerEquipment);
-            world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory.Capacity);
+            world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory?.Capacity ?? 0);
             world.PlayerLevel = data.playerLevel > 0 ? data.playerLevel : Math.Max(1, world.PlayerLevel);
             world.PlayerKnownSpellIds = data.playerKnownSpellIds != null && data.playerKnownSpellIds.Length > 0
                 ? new List<string>(data.playerKnownSpellIds)

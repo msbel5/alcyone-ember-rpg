@@ -130,6 +130,12 @@ namespace EmberCrpg.Data.Save
 
         private static InventorySaveData ToInventoryData(InventoryState inventory)
         {
+            // Saver/loader symmetry (digest-roundtrip finding): the LOADER tolerates a null inventory
+            // (`inventory?.capacity ?? fallback`) but the saver crashed on one — a pre-trade world with no
+            // PlayerInventory could not be saved. Empty data round-trips to the same null-equivalent state.
+            if (inventory == null)
+                return new InventorySaveData { capacity = 0, items = Array.Empty<ItemSaveData>() };
+
             return new InventorySaveData
             {
                 capacity = inventory.Capacity,
