@@ -57,9 +57,13 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         // entrance), seeded from the building's position so re-realizing the town reproduces every room.
         private static void Furnish(Transform root, BuildingPlacement placement, DoorSide entrance)
         {
-            uint seed = unchecked((uint)((placement.OriginX * 73856093f) + (placement.OriginZ * 19349663f)) | 1u);
-            var wood = RuntimeMaterialPalette.Solid(new Color(0.36f, 0.25f, 0.15f));
-            var cloth = RuntimeMaterialPalette.Solid(new Color(0.45f, 0.32f, 0.30f));
+            // Seed from QUANTIZED ints — casting a negative float product straight to uint is undefined
+            // behaviour in .NET (can collapse to 0), which would make every room identical or bare.
+            int qx = Mathf.RoundToInt(placement.OriginX * 10f);
+            int qz = Mathf.RoundToInt(placement.OriginZ * 10f);
+            uint seed = unchecked(((uint)qx * 73856093u) ^ ((uint)qz * 19349663u)) | 1u;
+            var wood = RuntimeMaterialPalette.Solid(new Color(0.55f, 0.40f, 0.24f));   // lighter: readable in hearth-lit murk
+            var cloth = RuntimeMaterialPalette.Solid(new Color(0.62f, 0.45f, 0.42f));
 
             // Back wall direction = opposite the entrance; the lateral axis spreads the pieces.
             Vector3 back;
@@ -89,6 +93,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     default: AddSlab(root, "Crate", pos + new Vector3(0f, 0.35f, 0f), new Vector3(0.7f, 0.7f, 0.7f), wood); break;
                 }
             }
+            Debug.Log($"[Building] furnished {pieces} pieces at ({placement.OriginX:0.#},{placement.OriginZ:0.#})");
         }
 
         private static void AddHearthLight(Transform root, BuildingPlacement placement)

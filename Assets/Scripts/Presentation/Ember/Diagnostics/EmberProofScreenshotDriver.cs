@@ -53,6 +53,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-lookaround"))
+            {
+                yield return RunLookAround();
+                if (HasArg("--ember-proof-quit")) Application.Quit();
+                yield break;
+            }
+
             if (HasArg("--ember-scene-tour"))
             {
                 yield return RunSceneTour();
@@ -294,6 +301,57 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                     igui.ProofCloseScreens(); // programmatic Escape so the next screen opens cleanly
                     yield return new WaitForSecondsRealtime(0.25f);
                 }
+            }
+        }
+
+        // SELF-PLAYTEST ("playtestleri sen yapar mısın... çevrene bakıp inceleyebilirsin"): enter the real
+        // generated world, pan a full 360° at spawn, then walk to the nearest building, look through the
+        // doorway, step INSIDE and pan the room — the agent inspects the captures by eye afterwards.
+        private IEnumerator RunLookAround()
+        {
+            // Let the boot flow land on MainMenu FIRST — loading GeneratedWorld during boot gets stomped by
+            // the boot sequence's own MainMenu navigation (all six captures came back as the main menu).
+            yield return new WaitForSecondsRealtime(3.0f);
+
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(4.0f);
+
+            var rig = GameObject.Find("PlayerRig");
+            for (int i = 0; i < 6; i++)
+            {
+                if (rig != null) rig.transform.rotation = Quaternion.Euler(0f, i * 60f, 0f);
+                yield return new WaitForSecondsRealtime(0.35f);
+                CaptureToPng(Path.Combine(_outputDir, $"look_{i * 60:000}.png"));
+            }
+
+            var building = GameObject.Find("Building");
+            if (rig != null && building != null)
+            {
+                var cc = rig.GetComponent<CharacterController>();
+                if (cc != null) cc.enabled = false; // CharacterController fights direct teleports
+
+                var b = building.transform.position;
+                var dir = b - rig.transform.position;
+                dir.y = 0f;
+                var d = dir.sqrMagnitude > 1f ? dir.normalized : Vector3.forward;
+
+                rig.transform.position = b - (d * 6f) + (Vector3.up * 0.1f); // just outside the doorway side
+                rig.transform.rotation = Quaternion.LookRotation(d);
+                yield return new WaitForSecondsRealtime(0.45f);
+                CaptureToPng(Path.Combine(_outputDir, "look_building_outside.png"));
+
+                rig.transform.position = b + (Vector3.up * 0.1f); // inside the room
+                yield return new WaitForSecondsRealtime(0.45f);
+                for (int i = 0; i < 4; i++)
+                {
+                    rig.transform.rotation = Quaternion.Euler(20f, i * 90f, 0f); // tilt down: furniture is knee-height
+                    yield return new WaitForSecondsRealtime(0.3f);
+                    CaptureToPng(Path.Combine(_outputDir, $"look_inside_{i * 90:000}.png"));
+                }
+
+                if (cc != null) cc.enabled = true;
             }
         }
 
