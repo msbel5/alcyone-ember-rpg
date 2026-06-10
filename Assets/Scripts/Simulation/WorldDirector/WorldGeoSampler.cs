@@ -37,6 +37,9 @@ namespace EmberCrpg.Simulation.WorldDirector
         private const double FlatRadiusMeters = 60d;    // settlement pad stays exactly at home ground level
         private const double FlattenRampMeters = 220d;
         private const double BeachBandMeters = 4d;
+        private const double ShoreStartMeters = 300d;   // local shore begins past the pad flatten (60+220)
+        private const double ShoreRampMeters = 260d;    // full waterline by ~560m — inside the streamed bubble
+        private const double ShoreDepthMeters = 8d;     // a real seabed below the local waterline
 
         private readonly OverlandMapGeographySnapshot _geo;
         private readonly OverlandMap _map;
@@ -45,6 +48,13 @@ namespace EmberCrpg.Simulation.WorldDirector
         private readonly int _homeY;
         private readonly double _homeElev;
         private readonly uint _seed;
+        private readonly bool _hasShore;
+        private readonly double _shoreDirX;
+        private readonly double _shoreDirZ;
+        private readonly double _shoreWaterY;
+
+        /// <summary>True when the home settlement realizes a local shoreline (planet water within ~3 tiles).</summary>
+        public bool HasLocalShore => _hasShore;
 
         /// <summary>Sea surface height relative to the home settlement ground (usually negative inland).</summary>
         public double SeaLevelMeters { get; }
@@ -69,8 +79,27 @@ namespace EmberCrpg.Simulation.WorldDirector
 
             if (_surface != null)
             {
-                SurfaceAt(home.X + 0.5d, home.Y + 0.5d, out _homeElev, out _);
+                SurfaceAt(home.X + 0.5d, home.Y + 0.5d, out _homeElev, out double homeWater);
+                // A settlement is built ABOVE its waterline: lakeside/low-coastal home cells can blend to a
+                // ground level at or below the local water, which would spawn the town pad UNDER its own
+                // water plane. Raise the reference so the pad keeps ~2.5m of freeboard — the waterline then
+                // sits just below town level, exactly how a real port reads.
+                double freeboard = 2.5d / HeightScaleMeters;
+                if (_homeElev < homeWater + freeboard) _homeElev = homeWater + freeboard;
                 SeaLevelMeters = (_surface.SeaLevel - _homeElev) * HeightScaleMeters;
+
+                // Port/lakeside settlements realize their OWN shore (Daggerfall: the location includes its
+                // waterfront). When the planet says water is within ~3 tiles, remember the bearing so
+                // Sample() can ramp the terrain down to a real walkable waterline past the town pad.
+                double homeLat = (Math.PI / 2d) - (((home.Y + 0.5d) / map.Height) * Math.PI);
+                double homeLon = (((home.X + 0.5d) / map.Width) * 2d * Math.PI) - Math.PI;
+                if (_surface.TryFindShore(homeLat, homeLon, out double east, out double north, out double shoreWater))
+                {
+                    _hasShore = true;
+                    _shoreDirX = east;  // +X = east
+                    _shoreDirZ = north; // +Z = north (WorldSpaceProjection: tileY shrinks northward)
+                    _shoreWaterY = (shoreWater - _homeElev) * HeightScaleMeters;
+                }
             }
             else
             {
@@ -104,6 +133,21 @@ namespace EmberCrpg.Simulation.WorldDirector
             double coastDamp = Math.Max(0.25d, Clamp01(Math.Abs(meters - waterY) / 10d));
             meters += DetailNoise(worldXMeters, worldZMeters) * DetailAmpMeters * settleBlend * coastDamp;
             meters *= settleBlend;
+
+            // Local shore realization: past the town pad, in the direction of the nearest planet water tile,
+            // the ground ramps down to a seabed below the local waterline — real walkable water in sight of
+            // the plaza. The global map truth is untouched; this only fires when the planet says water is near.
+            if (_hasShore)
+            {
+                double along = (worldXMeters * _shoreDirX) + (worldZMeters * _shoreDirZ);
+                double w = Clamp01((along - ShoreStartMeters) / ShoreRampMeters);
+                w = w * w * (3d - (2d * w));
+                if (w > 0d)
+                {
+                    meters = Lerp(meters, _shoreWaterY - ShoreDepthMeters, w);
+                    if (_shoreWaterY > waterY) waterY = _shoreWaterY;
+                }
+            }
 
             double aboveWater = meters - waterY;
             double sand = aboveWater <= 0d ? 1d : Clamp01(1d - (aboveWater / BeachBandMeters));

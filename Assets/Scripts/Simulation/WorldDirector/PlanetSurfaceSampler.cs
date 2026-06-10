@@ -98,6 +98,65 @@ namespace EmberCrpg.Simulation.WorldDirector
             return current;
         }
 
+        /// <summary>
+        /// Finds the nearest WATER tile (ocean !IsLand, or lake) within 3 rings of the tile under lat/lon and
+        /// returns the unit bearing toward it (local east/north) plus its water level — what a port or
+        /// lakeside settlement needs to realize its OWN shore locally (the Daggerfall location-includes-shore
+        /// pattern). False when the location is genuinely inland.
+        /// </summary>
+        public bool TryFindShore(double lat, double lon, out double bearingEast, out double bearingNorth, out double waterLevel)
+        {
+            bearingEast = 0d;
+            bearingNorth = 0d;
+            waterLevel = SeaLevel;
+            double cosLat = Math.Cos(lat);
+            double x = cosLat * Math.Cos(lon), y = Math.Sin(lat), z = cosLat * Math.Sin(lon);
+            int home = NearestTile(x, y, z, lat);
+
+            var visited = new HashSet<int> { home };
+            var frontier = new List<int> { home };
+            int bestWater = -1;
+            double bestDot = double.NegativeInfinity;
+            for (int ring = 0; ring < 3; ring++)
+            {
+                var next = new List<int>();
+                for (int f = 0; f < frontier.Count; f++)
+                {
+                    var nbs = _field.Grid.TileAt(frontier[f]).Neighbors;
+                    for (int i = 0; i < nbs.Count; i++)
+                    {
+                        int t = nbs[i];
+                        if (!visited.Add(t)) continue;
+                        next.Add(t);
+                        var data = _field.TileAt(t);
+                        if (data.IsLand && !data.IsLake) continue;
+                        double d = Dot(t, x, y, z);
+                        if (d > bestDot) { bestDot = d; bestWater = t; }
+                    }
+                }
+                if (bestWater >= 0) break; // the closest ring with water wins
+                frontier = next;
+            }
+
+            if (bestWater < 0) return false;
+
+            var p = _field.Grid.TileAt(bestWater).Position;
+            double wLat = Math.Asin(Clamp1(p.Y));
+            double wLon = Math.Atan2(p.Z, p.X);
+            double dLon = wLon - lon;
+            if (dLon > Math.PI) dLon -= 2d * Math.PI;
+            if (dLon < -Math.PI) dLon += 2d * Math.PI;
+            double east = dLon * cosLat, north = wLat - lat;
+            double len = Math.Sqrt((east * east) + (north * north));
+            if (len < 1e-12d) return false;
+            bearingEast = east / len;
+            bearingNorth = north / len;
+
+            var waterData = _field.TileAt(bestWater);
+            waterLevel = waterData.IsLake ? Math.Max(SeaLevel, waterData.Elevation) : SeaLevel;
+            return true;
+        }
+
         private double Dot(int tileId, double x, double y, double z)
         {
             var p = _field.Grid.TileAt(tileId).Position;
