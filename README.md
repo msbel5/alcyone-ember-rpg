@@ -194,3 +194,15 @@ in 2.6s + "closed=5.5m" on screen (DoD ≥4m).
 Honest limits: a dweller crossing a connector can ground its billboard on the corridor ROOF for a
 few steps (F19 polish); the chest close-up frame sits on the torch's shadow side and reads dark
 (F33 framing); chest-opened state still isn't save-persisted (F22).
+
+F19 dungeon variety SHIPPED: three delve archetypes — Mağara (warm firelight on dark wet rock),
+Kripta (pale dressed stone under cold blue grave-light), Harabe (mossy sandstone in sickly
+green-gold) — picked deterministically from the dungeon seed and stamped into the realize log
+("archetype=Kripta rooms=8 ..."). Two root findings on the way: worlds rolled as few as ONE dungeon
+(the F9 invariant guaranteed one; the floor is now THREE per world, never demoting City/Town —
+worldgen goldens survived), and the raw seed % 3 pick was BIASED (every realize seed is structurally
+divisible by 3 — all delves came out Mağara) so the seed goes through a murmur-style finalizer first.
+Proof (Reports/proof-f19d): travel to all 3 delves of the proof world, one interior frame each,
+eye-verified distinct palettes; "[Proof] F19 delve census: 3 dungeon(s)" + three "archetype=" lines;
+EditMode sweep test pins reachability of all three + the proof-seed trio mapping to ≥2 archetypes.
+Honest PARTIAL: music does not vary by archetype yet (DAY/NIGHT/BATTLE slots are archetype-agnostic).

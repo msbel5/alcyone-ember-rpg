@@ -899,6 +899,55 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 {
                     Debug.Log("[Proof] delve leg skipped — no delve target or travel refused.");
                 }
+
+                // F19-DoD VARIETY LEG: travel to up to two MORE delves and capture one interior frame
+                // each — the realize log line carries "archetype=" per visit. A world may roll fewer
+                // than three dungeons (the invariant guarantees only ONE); the archetype-mapping
+                // EditMode test proves all three palettes exist, this leg shows what THIS world has.
+                var firstDelve = nightAdapter.ReadDelveGuidance().TargetName;
+                var delveNames = nightAdapter.ProofListDelveNames();
+                Debug.Log($"[Proof] F19 delve census: {delveNames.Count} dungeon(s) in this world.");
+                int variants = 0;
+                for (int d = 0; d < delveNames.Count && variants < 2; d++)
+                {
+                    string delveName = delveNames[d];
+                    if (delveName == firstDelve) continue; // the F18 leg already covered it
+                    if (!nightAdapter.TryTravelToSettlement(delveName, out _)) continue;
+                    EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
+                        EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
+                    SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+                    yield return new WaitForSecondsRealtime(1.5f);
+                    var rigV = GameObject.Find("PlayerRig");
+                    var interiorV = GameObject.Find("DungeonInterior");
+                    if (rigV == null || interiorV == null)
+                    {
+                        Debug.Log($"[Proof] F19 variant '{delveName}' skipped — rig/interior missing.");
+                        continue;
+                    }
+                    var ccV = rigV.GetComponent<CharacterController>();
+                    if (ccV != null) ccV.enabled = false;
+                    var fpsV = rigV.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
+                    if (fpsV != null) fpsV.enabled = false;
+                    FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>()?.ProofCloseScreens();
+                    yield return null;
+                    rigV.transform.position = DelveLayout.StartRoomWorld + Vector3.up * 1.0f;
+                    rigV.transform.rotation = Quaternion.LookRotation(
+                        DelveLayout.FootprintCenterWorld + Vector3.up - rigV.transform.position);
+                    yield return new WaitForSecondsRealtime(0.6f);
+                    yield return new WaitForEndOfFrame();
+                    variants++;
+                    CaptureToPng(Path.Combine(_outputDir, $"look_delve_variant_{variants}.png"));
+                    yield return new WaitForSecondsRealtime(0.4f); // async capture lands before we move on
+                    Debug.Log($"[Proof] F19 variant captured: '{delveName}' (frame {variants}).");
+                    if (fpsV != null)
+                    {
+                        fpsV.enabled = true;
+                        fpsV.SyncYaw(rigV.transform.eulerAngles.y);
+                    }
+                    if (ccV != null) ccV.enabled = true;
+                }
+                if (variants == 0)
+                    Debug.Log("[Proof] F19: no second delve in this world — variety rests on the mapping test.");
             }
         }
 

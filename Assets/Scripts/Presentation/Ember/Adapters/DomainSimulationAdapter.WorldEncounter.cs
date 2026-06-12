@@ -483,6 +483,19 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return sb.ToString();
         }
 
+        /// <summary>F19 proof: every Dungeon-kind settlement name in map order — the variety leg
+        /// travels down this list (worlds may roll as few as one delve; that is honest output).</summary>
+        public System.Collections.Generic.List<string> ProofListDelveNames()
+        {
+            var names = new System.Collections.Generic.List<string>();
+            var map = _world?.Overland;
+            if (map == null) return names;
+            for (int i = 0; i < map.Settlements.Count; i++)
+                if (map.Settlements[i].Kind == EmberCrpg.Domain.Overland.SettlementKind.Dungeon)
+                    names.Add(map.Settlements[i].Name);
+            return names;
+        }
+
         /// <summary>F18-DoD: bind the delve's WARDEN (the boss — "Warden of X") for the boss leg.</summary>
         public string ProofBindDelveWarden()
         {

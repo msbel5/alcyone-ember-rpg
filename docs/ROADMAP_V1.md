@@ -61,9 +61,17 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   şef ≤3 hücre — hazineyi asla bırakmaz; leash dışı ine geri yürür). Chase kanıtı: cheb 14→8 (sim) +
   "closed=5.5m" (görsel, DoD ≥4m). Dürüst borçlar: koridor çatısı üstüne grounding yapan billboard
   (F19 polish), sandık yakın çekimi meşalenin gölge tarafında loş (F33 framing).
-- [ ] **F19 Zindan çeşitliliği**: 3 arketip (mağara/kripta/harabe — malzeme paleti + ışık rengi +
+- [x] **F19 Zindan çeşitliliği**: 3 arketip (mağara/kripta/harabe — malzeme paleti + ışık rengi +
   müzik varyantı farklı). Arketip = settlement seed'den deterministik.
   **DoD:** 3 farklı zindana travel + her birinden iç kare; arketip adı realize logunda.
+  **KANIT (lookaround, Reports/proof-f19d):** 3 zindana travel (Cryneaduford=Kripta seed 886870881 /
+  Criomuveawick=Harabe 502681080 / Vhiriorothcross=Mağara 328528998) — üç realize logu "archetype=" taşıyor,
+  üç iç kare göz-doğrulamalı FARKLI (soğuk mavi mezar ışığı / yeşil-altın / sıcak turuncu).
+  **Kök bulgular:** (1) dünya tek zindan yuvarlıyordu — F9 invariantı ≥3'e çıkarıldı (EnsureMinimumDungeons,
+  City/Town asla düşürülmez; golden kırılmadı, PlayableLoop testi ≥3 pinler); (2) ham seed%3 hep Mağara
+  verdi — realize seed'leri yapısal olarak 3'e bölünüyor; murmur-finalizer hash sonra seçim (proof-caught
+  bias, DungeonArchetypeTests sweep + proof-seed çeşitlilik testi). DÜRÜST PARTIAL: müzik varyantı henüz
+  arketipe bağlı değil (DAY/NIGHT/BATTLE slotları arketip-agnostik; v0.5 kapanışına aday iş).
 - [ ] **F20 Tuzak + kilit**: ezici plaka tuzağı (görünür, 8 dmg, sesli) + kilitli şef kapısı
   (anahtar rastgele ara odada). Kapı/anahtar HUD event satırına yazar.
   **DoD:** looptest anahtar→kapı→şef akış satırları + tuzak hasar logu.
@@ -143,4 +151,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F19 <<<
+>>> CURRENT: F20 <<<

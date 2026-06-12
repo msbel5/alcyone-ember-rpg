@@ -46,8 +46,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var rootPos = root.transform.position;
             root.transform.position = new Vector3(rootPos.x, crest + 0.05f, rootPos.z);
 
-            var rock = RuntimeMaterialPalette.Solid(new Color(0.20f, 0.18f, 0.17f));
-            var floor = RuntimeMaterialPalette.Solid(new Color(0.14f, 0.13f, 0.12f));
+            // F19: archetype palette — Mağara/Kripta/Harabe from the same seed that shaped the graph.
+            var archetype = RuntimeDungeonArchetype.For(dungeonSeed);
+            var rock = RuntimeMaterialPalette.Solid(archetype.Rock);
+            var floor = RuntimeMaterialPalette.Solid(archetype.Floor);
 
             // Mouth ramp up onto the floated floor (same recipe as the barrow).
             float mouthGround = SampleGroundY(root.transform.TransformPoint(new Vector3(0f, 0f, 1.5f)));
@@ -114,8 +116,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
                 bool isBoss = room.Id == bossRoomId;
                 Torch(root.transform, c + new Vector3(0f, 2.6f, 0f), isBoss ? 16f : 11f,
-                    isBoss ? new Color(1f, 0.42f, 0.22f) : new Color(1f, 0.62f, 0.30f),
-                    isBoss ? 4.2f : 3.4f);
+                    isBoss ? archetype.BossTorch : archetype.Torch,
+                    isBoss ? archetype.TorchIntensity + 0.8f : archetype.TorchIntensity);
 
                 // Dwellers: 0-2 per non-start room (deterministic); the room adjacent to the start is
                 // guaranteed one so the chase proof always has a pursuer in sight.
@@ -202,8 +204,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 dwellerSpots,
                 root.transform.TransformPoint(chestLocal + new Vector3(1.8f, 0f, 1.2f)));
 
-            Debug.Log($"[WorldDirector] multi-room delve realized: rooms={rooms.Count} doors={layout.Doors.Count} " +
-                      $"dwellerSpots={dwellerSpots.Count} bossRoom=R{bossRoomId} seed={dungeonSeed}.");
+            Debug.Log($"[WorldDirector] multi-room delve realized: archetype={archetype.Name} rooms={rooms.Count} " +
+                      $"doors={layout.Doors.Count} dwellerSpots={dwellerSpots.Count} bossRoom=R{bossRoomId} seed={dungeonSeed}.");
             return root;
         }
 

@@ -124,6 +124,9 @@ namespace EmberCrpg.Tests.EditMode.Presentation
 
             var row = ((IQuestGuidanceSource)adapter).ReadDelveGuidance();
             Assert.That(row.HasTarget, Is.True, "every generated world must contain at least one delve");
+            // F19: one delve starved the dungeon game — the floor is now three (variety to travel).
+            Assert.That(adapter.ProofListDelveNames().Count, Is.GreaterThanOrEqualTo(3),
+                "v0.5 worlds guarantee three delves where the map affords them");
         }
 
         // F14 ("düşman kovalasın"): a hostile that SEES the player closes one grid cell per AI cadence

@@ -34,28 +34,33 @@ namespace EmberCrpg.Simulation.Overland
                 placements.Add(new OverlandSettlement(record.Id, kind, new GridPosition(record.TileX, record.TileY), record.Name, TemplatePackTag(kind)));
             }
 
-            EnsureAtLeastOneDungeon(placements);
+            EnsureMinimumDungeons(placements);
             return placements;
         }
 
-        // DISCOVERABILITY INVARIANT (v0.3 F9 "zindanı bulamadım" root): Dungeon kind only emerges from
-        // SMALL settlements in Mountain/Ash/Swamp biomes, so a temperate planet can legitimately roll
-        // ZERO delves — the delve compass, the map legend, and every rumor then point at nothing. Every
-        // world guarantees at least one: deterministically, the LAST small placement becomes the delve.
-        private static void EnsureAtLeastOneDungeon(List<OverlandSettlement> placements)
+        // DISCOVERABILITY INVARIANT (v0.3 F9 "zindanı bulamadım" root; v0.5 F19 raised the floor):
+        // Dungeon kind only emerges from SMALL settlements in Mountain/Ash/Swamp biomes, so a temperate
+        // planet can legitimately roll ZERO delves — and ONE delve starves the dungeon game (no variety
+        // to travel between). Every world now guarantees THREE where the map affords them:
+        // deterministically, the LAST small placements (never City/Town) become delves.
+        private const int MinimumDungeons = 3;
+
+        private static void EnsureMinimumDungeons(List<OverlandSettlement> placements)
         {
+            int dungeons = 0;
             for (int i = 0; i < placements.Count; i++)
                 if (placements[i].Kind == SettlementKind.Dungeon)
-                    return;
+                    dungeons++;
 
-            for (int i = placements.Count - 1; i >= 0; i--)
+            for (int i = placements.Count - 1; i >= 0 && dungeons < MinimumDungeons; i--)
             {
                 var p = placements[i];
-                if (p.Kind == SettlementKind.City || p.Kind == SettlementKind.Town)
+                if (p.Kind == SettlementKind.City || p.Kind == SettlementKind.Town
+                    || p.Kind == SettlementKind.Dungeon)
                     continue; // never demote a population centre into a delve
                 placements[i] = new OverlandSettlement(
                     p.Id, SettlementKind.Dungeon, p.TilePosition, p.Name, TemplatePackTag(SettlementKind.Dungeon));
-                return;
+                dungeons++;
             }
         }
 
