@@ -101,6 +101,36 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(4, 2)));
         }
 
+        // F27: midday routes civilians to the LUNCH SPOT; the watch and enemies never join the meal,
+        // and the table empties back to the normal rhythm after 14:00.
+        [Test]
+        public void Advance_LunchWindow_RoutesCiviliansToLunchSpot_ButNeverGuards()
+        {
+            var lunchSpot = new GridPosition(5, 0);
+            var noonMeal = new GameTime((12 * GameTime.MinutesPerHour) + 30); // 12:30
+
+            var actors = new ActorStore();
+            actors.Add(Record(new GridPosition(0, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9)));
+            var system = new ScheduleSystem();
+
+            system.Advance(actors, noonMeal, lunchSpot);
+            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 0)),
+                "a civilian steps toward the tavern at midday");
+
+            var guards = new ActorStore();
+            guards.Add(Record(new GridPosition(0, 0), ActorRole.Guard)
+                .WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(0, 9)));
+            system.Advance(guards, noonMeal, lunchSpot);
+            Assert.That(guards.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(0, 1)),
+                "the watch keeps its post route — no lunch for the law");
+
+            var after = new ActorStore();
+            after.Add(Record(new GridPosition(5, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9)));
+            system.Advance(after, new GameTime(15 * GameTime.MinutesPerHour), lunchSpot);
+            Assert.That(after.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(6, 1)),
+                "after the meal the day anchor pulls again");
+        }
+
         [Test]
         public void Advance_PinnedEnemyLairGuard_HoldsPositionEvenWhenDisplaced()
         {

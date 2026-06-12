@@ -600,13 +600,32 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     { host = actor; break; }
                 }
             }
-            if (host == null) return "no host NPC here";
             var origin = BillboardOrigin();
-            host.MoveTo(new GridPosition(
+            var tavernGrid = new GridPosition(
                 origin.X + UnityEngine.Mathf.RoundToInt(tavernWorld.x),
-                origin.Y + UnityEngine.Mathf.RoundToInt(tavernWorld.z)));
+                origin.Y + UnityEngine.Mathf.RoundToInt(tavernWorld.z));
+            // F27: publish the communal LUNCH SPOT — ScheduleSystem routes civilians here 12:00-13:59.
+            _world.TavernCell = tavernGrid;
+            if (host == null) return "no host NPC here";
+            host.MoveTo(tavernGrid);
             UnityEngine.Debug.Log($"[Tavern] host seated inside: {host.Name}.");
             return host.Name;
+        }
+
+        /// <summary>F27-DoD proof: how many civilians sit within 6 cells of the lunch spot right now.</summary>
+        public string ProofLunchCensus()
+        {
+            if (_world?.TavernCell == null || _world.Actors == null) return "LUNCH: no tavern cell published.";
+            var spot = _world.TavernCell.Value;
+            int count = 0;
+            foreach (var a in _world.Actors.Records)
+            {
+                if (a == null || !a.IsAlive || a.Role == ActorRole.Player
+                    || a.Role == ActorRole.Enemy || a.Role == ActorRole.Guard) continue;
+                if (Chebyshev(a.Position, spot) <= 6) count++;
+            }
+            UnityEngine.Debug.Log($"[Lunch] {count} civilians at the tavern (hour {(int)((_world.Time.TotalMinutes / 60) % 24):00}).");
+            return $"LUNCH: {count} civilians within 6 cells of the tavern.";
         }
 
         /// <summary>F26-DoD proof: the tavern sleep flow as one honest transcript line.</summary>

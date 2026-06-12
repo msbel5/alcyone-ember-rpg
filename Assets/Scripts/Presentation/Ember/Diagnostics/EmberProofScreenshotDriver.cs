@@ -795,6 +795,30 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 }
             }
 
+            // F27-DoD: midday at the tavern — civilians walked in over the lunch window (the schedule
+            // routes them 12:00-13:59); pose icons (mug) ride their billboards. Census + one frame.
+            if (rig != null && nightAdapter != null
+                && EmberCrpg.Presentation.Ember.WorldDirector.RuntimeInteriorInfo.TavernWorld != Vector3.zero)
+            {
+                nightAdapter.ProofAdvanceHours(1); // ~12:1x → ~13:1x — still lunch, a full hour of walking done
+                Debug.Log("[Proof] F27 " + nightAdapter.ProofLunchCensus());
+                FindFirstObjectByType<EmberCrpg.Presentation.Ember.Views.EmberGeneratedActorSpawner>()?.SpawnMissingNearbyActors();
+                var fpsL = rig.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
+                if (fpsL != null) fpsL.enabled = false;
+                var tavern = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeInteriorInfo.TavernWorld;
+                rig.transform.position = tavern + new Vector3(5.5f, 1.6f, 5.5f);
+                rig.transform.rotation = Quaternion.LookRotation(tavern + Vector3.up * 1.0f - rig.transform.position);
+                yield return new WaitForSecondsRealtime(1.2f); // views glide in + icons poll
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, "look_tavern_lunch.png"));
+                yield return new WaitForSecondsRealtime(0.4f); // async capture separation
+                if (fpsL != null)
+                {
+                    fpsL.enabled = true;
+                    fpsL.SyncYaw(rig.transform.eulerAngles.y);
+                }
+            }
+
             // F10-DoD: travel to the nearest DELVE, walk the corridor into the chamber, and eye-proof the
             // haunters guarding the chest, the red hit flash, and the corpse pose after the kill.
             if (nightAdapter != null)

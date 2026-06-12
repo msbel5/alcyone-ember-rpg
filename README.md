@@ -254,7 +254,7 @@ byte-identical). Proof: WorldQuests_SurviveSaveLoadRoundtrip — an open contrac
 and the bounty/pilgrimage states round-trip byte-identically through save→load; the F21 looptest
 fetch leg stays green seeding from the world store. (This closes F21's honest PARTIAL.)
 
-### v0.7 "Yaşayan Evren" — in progress (F24 SHIPPED)
+### v0.7 "Yaşayan Evren" — SHIPPED (shipcheck 9/9 PASS, perf 12.5ms avg; tag v0.7.0-living-universe)
 
 F24 sky v2 SHIPPED: a real procedural day cycle. The sun's pitch and intensity ride the clock; the
 sky clear-colour cycles night-navy → dawn-rose → day-blue → dusk-amber (morning and evening blush
@@ -280,6 +280,15 @@ the deterministic pick is exercised by play, and the proof driver can force any 
 Proof (Reports/proof-f25d): three visually distinct frames + "[Weather] day=N season=S biome=B →
 kind" lines + the rain-loop forge metric. Honest PARTIALs: music does not soften in rain yet;
 snow tints the air (haze + flakes), not the terrain splats.
+
+F27 NPC daily-life staging SHIPPED: the midday meal is REAL — between 12:00 and 13:59 the schedule
+routes every civilian (never the watch, never outlaws) to the tavern, and the street visibly drains
+into a lunch crowd; after 14:00 the normal work/anchor rhythm pulls them back. Pose pictograms ride
+the billboards: an amber MUG over everyone at lunch, a HAMMER over workers (farmers, blacksmiths,
+artisans) through the working day — 12×12 generated pixel-mask sprites on the hostile-marker's
+camera-facing family. Proof (Reports/proof-f27a): "[Lunch] 17 civilians at the tavern (hour 13)" +
+a frame of the lunch crowd with mug icons clearly overhead. EditMode: lunch routing, guard
+exemption, and the post-meal return are all pinned (fallback 1460/1460).
 
 F26 functional interiors SHIPPED: the first three shells of every settlement now WORK. The TAVERN
 (amber sign-glow) sells sleep — E inside, 5 gold, vitals refill and the clock walks 8 hours forward

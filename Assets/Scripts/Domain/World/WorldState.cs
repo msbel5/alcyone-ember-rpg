@@ -149,6 +149,9 @@ namespace EmberCrpg.Domain.World
         // and the watch's BOUNTY on the player's head (>0 = guards hunt on sight).
         public int PlayerReputation;
         public int PlayerBountyGold;
+        // F27: the communal LUNCH SPOT (the tavern) — realize-derived, deliberately NOT saved
+        // (each realize republishes it); civilians route here over the midday window.
+        public EmberCrpg.Domain.Actors.GridPosition? TavernCell;
         public List<string> PlayerKnownSpellIds = new List<string>();
         public List<RoomPickup> Pickups = new List<RoomPickup>();
         public List<DungeonRoomState> DungeonRoomStates = new List<DungeonRoomState>();
@@ -215,6 +218,7 @@ namespace EmberCrpg.Domain.World
             WorldQuestStates = other.WorldQuestStates;
             PlayerReputation = other.PlayerReputation;
             PlayerBountyGold = other.PlayerBountyGold;
+            TavernCell = other.TavernCell;
             PlayerKnownSpellIds = other.PlayerKnownSpellIds;
             Pickups = other.Pickups;
             DungeonRoomStates = other.DungeonRoomStates;

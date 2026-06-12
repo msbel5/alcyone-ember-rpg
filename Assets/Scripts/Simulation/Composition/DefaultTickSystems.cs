@@ -211,7 +211,7 @@ namespace EmberCrpg.Simulation.Composition
             public override void Run(in TickContext context)
             {
                 if (context.World.Actors != null)
-                    _schedule.Advance(context.World.Actors, context.Stamp);
+                    _schedule.Advance(context.World.Actors, context.Stamp, context.World.TavernCell);
             }
         }
 

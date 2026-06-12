@@ -175,9 +175,20 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   DÜRÜST PARTIAL: host pinleme MoveTo'yla (takvim saatler içinde dışarı yürütebilir — kalıcı
   re-home ActorStore replace v2); iç kare kompozisyonu duvar-köşe ağırlıklı (F33 çerçeve cilası);
   "kapıdan girince realize" mevcut furnish'in üstünde (ayrı interior scene yok — şimdilik tasarım).
-- [ ] **F27 NPC ihtiyaç koşuları**: işe gidiş/eve dönüş zaten var; öğlen taverna yemeği + work-pose
+- [x] **F27 NPC ihtiyaç koşuları**: işe gidiş/eve dönüş zaten var; öğlen taverna yemeği + work-pose
   ikonu (çekiç/çapa billboard üstü mini quad) eklenir.
   **DoD:** öğlen tavernada ≥2 NPC karesi; pose ikonları karede.
+  **KANIT (lookaround, Reports/proof-f27a):** "[Lunch] 17 civilians at the tavern (hour 13)" +
+  look_tavern_lunch.png — tavernaya toplanmış 12+ sivil billboard, üstlerinde amber MUG ikonları
+  görünür. ÖĞLE DOMAIN'DE: ScheduleSystem 12:00-13:59 LUNCH penceresi — siviller (asla
+  Enemy/Guard) WorldState.TavernCell'e yürür (realize PinHostInsideTavern yayınlar; alan
+  realize-türevi, bilinçli olarak save'e yazılmaz). Poz ikonları: NpcPoseIconView — 12×12 üretilmiş
+  piksel-maske sprite'ları (çekiç: iş saatleri × işçi roller; mug: öğle × herkes), hostile-marker
+  ailesi kamera-bakışlı quad. EditMode: lunch yönlendirme + guard-muafiyeti + 14:00 sonrası normal
+  ritim testi (fallback 1460/1460).
+
+> **v0.7 KAPANIŞ KANITI:** SHIPCHECK VERDICT: PASS (9 sections, 0 exceptions) — perf avg=12,5ms
+> worst=426ms (bütçe 16). Tag: v0.7.0-living-universe.
 
 ## v0.8 "BÜYÜ + BESTIARY" — içerik genişlemesi
 
@@ -226,4 +237,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F27 <<<
+>>> CURRENT: F28 <<<

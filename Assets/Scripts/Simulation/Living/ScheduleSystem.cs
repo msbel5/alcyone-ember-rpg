@@ -20,12 +20,24 @@ namespace EmberCrpg.Simulation.Living
         /// <summary>End game-hour (exclusive) of the working day.</summary>
         public const int WorkEndHour = 20;
 
+        /// <summary>F27: the midday meal — 12:00-13:59. Civilians route to the communal lunch spot
+        /// (the tavern, when the realize step has published one).</summary>
+        public const int LunchStartHour = 12;
+        public const int LunchEndHour = 14;
+
         /// <summary>
         /// Advances one game-hour of schedule movement. Assigned actors route to their worksite
         /// during work hours, idle daytime actors route to their day anchor, and all living actors
         /// route home outside work hours.
         /// </summary>
         public void Advance(ActorStore actors, GameTime time)
+        {
+            Advance(actors, time, lunchSpot: null);
+        }
+
+        /// <summary>F27 overload: when the realize step published a communal LUNCH SPOT (the tavern),
+        /// civilians route there over the midday window instead of their work/anchor target.</summary>
+        public void Advance(ActorStore actors, GameTime time, GridPosition? lunchSpot)
         {
             if (actors == null)
                 return;
@@ -42,10 +54,23 @@ namespace EmberCrpg.Simulation.Living
                 if (actor.Role == ActorRole.Enemy && actor.Home.Equals(actor.DayAnchor))
                     continue;
 
-                var next = StepToward(actor.Position, ResolveTarget(actor, time));
+                // F27: midday — civilians (never enemies or the watch) head for the lunch spot.
+                var target = lunchSpot.HasValue && IsLunchHour(time)
+                             && actor.Role != ActorRole.Enemy && actor.Role != ActorRole.Guard
+                    ? lunchSpot.Value
+                    : ResolveTarget(actor, time);
+
+                var next = StepToward(actor.Position, target);
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
             }
+        }
+
+        /// <summary>True within the midday meal window (12:00-13:59).</summary>
+        public static bool IsLunchHour(GameTime time)
+        {
+            var hour = time.Hour;
+            return hour >= LunchStartHour && hour < LunchEndHour;
         }
 
         /// <summary>True when the supplied timestamp falls within the working day.</summary>

@@ -175,7 +175,15 @@ namespace EmberCrpg.Presentation.Ember.Views
             // F18: NOT for hostiles — a monster idles still and chases with PURPOSE (DOOM/Daggerfall);
             // the ±2.2m mill made pursuers read drunk and ate ~1.5m of the measured chase closure.
             if (!hostileRole)
+            {
                 actorView.EnableWander(2.2f);
+                // F27: pose pictograms — a hammer over workers in work hours, a mug over everyone
+                // at the midday meal (the schedule's lunch window).
+                bool workerRole = spriteRole.IndexOf("farmer", System.StringComparison.OrdinalIgnoreCase) >= 0
+                    || spriteRole.IndexOf("blacksmith", System.StringComparison.OrdinalIgnoreCase) >= 0
+                    || spriteRole.IndexOf("artisan", System.StringComparison.OrdinalIgnoreCase) >= 0;
+                root.AddComponent<NpcPoseIconView>().Bind(workerRole);
+            }
             root.AddComponent<GeneratedNpcAccessibilityGuard>();
             // F10: the sync plane is y=0 — ground the view on what it actually stands on (terrain or a
             // built floor) so hillside NPCs and the floated dungeon chamber's haunters stay visible.
