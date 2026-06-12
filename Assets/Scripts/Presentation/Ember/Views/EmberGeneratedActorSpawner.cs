@@ -167,12 +167,15 @@ namespace EmberCrpg.Presentation.Ember.Views
             // Walk speed ~1.2 m/s, matched to the colony schedule's 1 tile / 0.83 s tick, so the billboard
             // glides continuously with the sim instead of stride-then-pausing (combat keeps the snap chase).
             // F14: hostiles glide at chase speed (sim steps 1 cell / 0.45s ≈ 2.2 m/s) so the view keeps up.
-            actorView.SetGroundSpeed(hostileRole ? 2.4f : 1.3f);
+            actorView.SetGroundSpeed(hostileRole ? 3.4f : 1.3f); // F18: diagonal chase steps peak 3.13 m/s
             // The colony schedule now disperses NPCs across the (enlarged) settlement and walks each between its
             // home and a DISTINCT day-spot. On top of that purposeful motion, a small idle mill keeps them
             // subtly moving at their current spot so the town reads as alive instead of frozen statues. Visual
             // only — never written back to the sim.
-            actorView.EnableWander(2.2f);
+            // F18: NOT for hostiles — a monster idles still and chases with PURPOSE (DOOM/Daggerfall);
+            // the ±2.2m mill made pursuers read drunk and ate ~1.5m of the measured chase closure.
+            if (!hostileRole)
+                actorView.EnableWander(2.2f);
             root.AddComponent<GeneratedNpcAccessibilityGuard>();
             // F10: the sync plane is y=0 — ground the view on what it actually stands on (terrain or a
             // built floor) so hillside NPCs and the floated dungeon chamber's haunters stay visible.

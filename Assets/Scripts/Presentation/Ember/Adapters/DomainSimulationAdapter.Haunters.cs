@@ -21,9 +21,21 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// </summary>
         public int EnsureDungeonHaunters(UnityEngine.Vector3 chamberSpotA, UnityEngine.Vector3 chamberSpotB)
         {
+            // Compat shim (tests + single-chamber callers): two dwellers, no boss.
+            return EnsureDungeonDwellers(
+                new System.Collections.Generic.List<UnityEngine.Vector3> { chamberSpotA, chamberSpotB },
+                bossSpot: null);
+        }
+
+        /// <summary>F18: populate the multi-room delve — 0-2 Outlaw dwellers per room (spots from the
+        /// realize step) + ONE boss (2× health, 1.5× damage) guarding the hoard. Deterministic ids
+        /// (settlement*16 + index) keep it idempotent; corpses persist and block respawn.</summary>
+        public int EnsureDungeonDwellers(
+            System.Collections.Generic.IReadOnlyList<UnityEngine.Vector3> spots, UnityEngine.Vector3? bossSpot)
+        {
             var here = CurrentSettlementOrStart;
             var map = _world?.Overland;
-            if (map == null || _world.Actors == null || _world.NpcSeeds == null) return 0;
+            if (map == null || _world.Actors == null || _world.NpcSeeds == null || spots == null) return 0;
 
             string settlementName = null;
             bool isDungeon = false;
@@ -37,44 +49,54 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (!isDungeon || string.IsNullOrEmpty(settlementName)) return 0;
 
             var faction = _world.NpcSeeds.Count > 0 ? _world.NpcSeeds[0].Faction : new FactionId(1UL);
-            var origin = BillboardOrigin();
-            var spots = new[] { chamberSpotA, chamberSpotB };
-            var titles = new[] { "Haunter of ", "Stalker of " };
+            string[] titles = { "Haunter of ", "Stalker of ", "Lurker of ", "Prowler of " };
             int created = 0;
-            for (int k = 0; k < spots.Length; k++)
+
+            int CreateDweller(int slotIndex, UnityEngine.Vector3 world, string name, bool boss)
             {
-                var npcId = new NpcId(HaunterNpcIdBase + (here.Value * 2UL) + (ulong)k);
+                var npcId = new NpcId(HaunterNpcIdBase + (here.Value * 16UL) + (ulong)slotIndex);
                 var actorId = new ActorId(GeneratedNpcActorOffset + npcId.Value);
-                if (_world.Actors.Contains(actorId)) continue; // alive or corpse — never duplicate
+                if (_world.Actors.Contains(actorId)) return 0; // alive or corpse — never duplicate
 
                 bool seedExists = false;
                 for (int i = 0; i < _world.NpcSeeds.Count; i++)
                     if (_world.NpcSeeds[i] != null && _world.NpcSeeds[i].Id.Equals(npcId)) { seedExists = true; break; }
                 if (!seedExists)
-                    _world.NpcSeeds.Add(new NpcSeedRecord(
-                        npcId, here, faction, titles[k] + settlementName, 980, NpcRole.Outlaw));
+                    _world.NpcSeeds.Add(new NpcSeedRecord(npcId, here, faction, name, 980, NpcRole.Outlaw));
 
-                // ProjectActor world = grid - origin, 1 unit = 1 cell → grid = origin + rounded world XZ.
+                var origin = BillboardOrigin();
                 var grid = new GridPosition(
-                    origin.X + UnityEngine.Mathf.RoundToInt(spots[k].x),
-                    origin.Y + UnityEngine.Mathf.RoundToInt(spots[k].z));
+                    origin.X + UnityEngine.Mathf.RoundToInt(world.x),
+                    origin.Y + UnityEngine.Mathf.RoundToInt(world.z));
+                var baseVitals = VitalsFor(NpcRole.Outlaw);
+                var vitals = boss
+                    ? new ActorVitals( // F18 boss: 2× health, full pools
+                        new VitalStat(baseVitals.Health.Max * 2, baseVitals.Health.Max * 2),
+                        baseVitals.Fatigue, baseVitals.Mana)
+                    : baseVitals;
                 var actor = new ActorRecord(
                     actorId,
-                    titles[k] + settlementName,
+                    name,
                     ToActorRole(NpcRole.Outlaw),
                     StatsFor(NpcRole.Outlaw),
-                    VitalsFor(NpcRole.Outlaw),
+                    vitals,
                     grid,
-                    accuracy: 30, // matches the v0.3 outlaw rebalance in HydrateNpcs (50-base hit curve)
+                    accuracy: boss ? 38 : 30, // v0.3 outlaw rebalance baseline; the boss reads meaner
                     dodge: 20,
-                    armor: 4,
-                    baseDamage: 10,
+                    armor: boss ? 6 : 4,
+                    baseDamage: boss ? 15 : 10, // 1.5× boss damage
                     topicIds: new[] { "rumors", "work", "trade" },
                     home: grid,
                     dayAnchor: grid);
                 _world.Actors.Add(actor);
-                created++;
+                return 1;
             }
+
+            int cap = System.Math.Min(spots.Count, 9);
+            for (int k = 0; k < cap; k++)
+                created += CreateDweller(k, spots[k], titles[k % titles.Length] + settlementName, boss: false);
+            if (bossSpot.HasValue)
+                created += CreateDweller(15, bossSpot.Value, "Warden of " + settlementName, boss: true);
             return created;
         }
     }

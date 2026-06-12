@@ -203,7 +203,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             // F14 hostile AI pump: outlaws in sight give chase every unpaused frame (throttled inside).
             if (!open && EmberDomainAdapterLocator.Current
                     is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter aiAdapter)
+            {
                 aiAdapter.TickHostileAi(Time.unscaledTime);
+                // F18: chase steps land between world ticks — push fresh view targets at frame rate so
+                // the pursuit is VISIBLE at full speed (views otherwise jump only on the tick cadence).
+                if (_host is EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost chaseHost)
+                    chaseHost.ProjectWorldViewsNow();
+            }
 
             // F13 live-encounter pump: the combat read settles spoils + publishes the battle mirror, the
             // HUD shows the enemy panel, and the enemy swings BACK on its own clock while unpaused.

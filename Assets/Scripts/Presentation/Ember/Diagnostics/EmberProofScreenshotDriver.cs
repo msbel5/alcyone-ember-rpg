@@ -12,6 +12,7 @@ using EmberCrpg.Simulation.Worldgen;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CCStep = EmberCrpg.Presentation.Ember.CharacterCreation.CharacterCreationController.CreationStep;
+using DelveLayout = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeDungeonLayoutInfo;
 
 namespace EmberCrpg.Presentation.Ember.Diagnostics
 {
@@ -696,16 +697,30 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                         // both chamber captures faced the same wall while the haunters stood 6m away.
                         var fps4 = rig4.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
                         if (fps4 != null) fps4.enabled = false;
-                        // F14-DoD CHASE PROOF: stand at the corridor mouth (~10.5m from the chamber spots —
-                        // inside the 12m sight) and let the haunters COME. Two consecutive captures + logged
+                        // The scene reload re-arms the F17 XP auto-open; an open modal both pollutes the
+                        // captures AND gates the hostile-AI pump (chase would freeze). Clear it first.
+                        var delveUi = FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
+                        delveUi?.ProofCloseScreens();
+                        yield return null;
+
+                        // F18: world anchors come from the realize step (RuntimeDungeonLayoutInfo) — the
+                        // single-chamber local-axis guesses died with the multi-room delve.
+                        bool IsDweller(string n) =>
+                            n.StartsWith("Haunter") || n.StartsWith("Stalker") || n.StartsWith("Lurker")
+                            || n.StartsWith("Prowler") || n.StartsWith("Warden");
+                        Debug.Log($"[Proof] F18 delve layout: rooms={DelveLayout.RoomCount} " +
+                                  $"dwellerSpots={DelveLayout.DwellerSpots.Count} extent={DelveLayout.FootprintExtentMeters:0.0}m");
+
+                        // F14-DoD CHASE PROOF: stand in the START room and let the nearest dweller COME
+                        // (sight 18 covers the 16m room lattice). Two consecutive captures + logged
                         // distances must show ≥4m closed (AI steps 1 cell / 0.45s ≈ 2.2 m/s).
-                        rig4.transform.position = interior.transform.TransformPoint(new Vector3(0f, 1.0f, -10.0f));
+                        rig4.transform.position = DelveLayout.StartRoomWorld + Vector3.up * 1.0f;
                         yield return null; // views already exist (scene-arrival spawn); capture A at once —
                                            // a 0.6s pre-wait let the chase eat ~3m before the A frame
                         Transform chaseTarget = null;
                         foreach (var view in FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None))
                         {
-                            if (!view.name.StartsWith("Haunter") && !view.name.StartsWith("Stalker")) continue;
+                            if (!IsDweller(view.name) || view.name.StartsWith("Warden")) continue;
                             if (chaseTarget == null
                                 || (view.transform.position - rig4.transform.position).sqrMagnitude
                                    < (chaseTarget.position - rig4.transform.position).sqrMagnitude)
@@ -713,12 +728,14 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                         }
                         if (chaseTarget != null)
                         {
+                            Debug.Log("[Proof] chase A " + nightAdapter.ProofChaseDebug());
                             float distA = Vector3.Distance(chaseTarget.position, rig4.transform.position);
                             rig4.transform.rotation = Quaternion.LookRotation(
                                 chaseTarget.position + Vector3.up * 0.9f - rig4.transform.position);
                             yield return new WaitForEndOfFrame();
                             CaptureToPng(Path.Combine(_outputDir, "look_dungeon_chase_a.png"));
                             yield return new WaitForSecondsRealtime(2.6f); // ~5.7m of chase at 2.2 m/s
+                            Debug.Log("[Proof] chase B " + nightAdapter.ProofChaseDebug());
                             float distB = Vector3.Distance(chaseTarget.position, rig4.transform.position);
                             rig4.transform.rotation = Quaternion.LookRotation(
                                 chaseTarget.position + Vector3.up * 0.9f - rig4.transform.position);
@@ -726,17 +743,20 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                             CaptureToPng(Path.Combine(_outputDir, "look_dungeon_chase_b.png"));
                             Debug.Log($"[Proof] F14 chase: a={distA:0.0}m b={distB:0.0}m closed={distA - distB:0.0}m " +
                                       $"(DoD: >=4m over two consecutive frames).");
+                            // ScreenCapture is ASYNC — moving the camera in the same frame as the call
+                            // makes the PNG show the NEXT pose (chamber aim), not this one.
+                            yield return new WaitForSecondsRealtime(0.4f);
                         }
                         else
                         {
                             Debug.Log("[Proof] BROKEN — no haunter view found for the F14 chase proof.");
                         }
 
-                        // Stand at the chamber mouth (corridor end), then AIM the camera at the nearest
-                        // haunter view — the first runs proved the haunters stand 5-7m away while a fixed
-                        // axis guess captured a wall corner instead.
-                        rig4.transform.position = interior.transform.TransformPoint(new Vector3(0f, 1.0f, -14.2f));
-                        rig4.transform.rotation = Quaternion.LookRotation(interior.transform.TransformDirection(Vector3.back));
+                        // Stand in the start room, then AIM the camera at the nearest dweller view — the
+                        // first runs proved fixed axis guesses capture wall corners instead of monsters.
+                        rig4.transform.position = DelveLayout.StartRoomWorld + Vector3.up * 1.0f;
+                        rig4.transform.rotation = Quaternion.LookRotation(
+                            DelveLayout.FootprintCenterWorld + Vector3.up - rig4.transform.position);
                         yield return new WaitForSecondsRealtime(1.0f);
 
                         // Positional evidence + camera lock: the haunters must STAND in the chamber, not
@@ -744,7 +764,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                         Transform nearestHaunter = null;
                         foreach (var view in FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None))
                         {
-                            if (!view.name.StartsWith("Haunter") && !view.name.StartsWith("Stalker")) continue;
+                            if (!IsDweller(view.name)) continue;
                             var sr = view.GetComponentInChildren<SpriteRenderer>(true);
                             Debug.Log($"[Proof] haunter view '{view.name}' at {view.transform.position} " +
                                       $"(rig at {rig4.transform.position}, dist={Vector3.Distance(view.transform.position, rig4.transform.position):0.0}m) " +
@@ -764,15 +784,24 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                             Debug.Log($"[Proof] rig aimed at haunter: fwd={rig4.transform.forward} rot={rig4.transform.rotation.eulerAngles}");
                         }
                         CaptureToPng(Path.Combine(_outputDir, "look_dungeon_chamber.png"));
+                        // Async-capture separation: the roof toggle + topdown teleport below must not
+                        // land in the frame this capture actually renders (chamber == topdown otherwise).
+                        yield return new WaitForSecondsRealtime(0.4f);
 
-                        // Decisive layout evidence: a top-down frame of the whole interior — terrain
-                        // pokes, wall layout, chest, and both haunters in ONE capture (no axis guessing).
-                        var center = interior.transform.TransformPoint(new Vector3(0f, 0f, -18.5f));
-                        rig4.transform.position = center + Vector3.up * 16f;
+                        // F18-DoD: a top-down frame over the WHOLE footprint — the room graph (rooms,
+                        // corridors, chest, dwellers) must read in ONE capture. Roofs are hidden for the
+                        // frame (cutaway view), then restored — they'd otherwise be all the camera sees.
+                        var roofs = new List<MeshRenderer>();
+                        foreach (var mr in interior.GetComponentsInChildren<MeshRenderer>())
+                            if (mr.name.EndsWith("Roof")) { mr.enabled = false; roofs.Add(mr); }
+                        float topHeight = Mathf.Max(16f, DelveLayout.FootprintExtentMeters * 1.25f);
+                        rig4.transform.position = DelveLayout.FootprintCenterWorld + Vector3.up * topHeight;
                         rig4.transform.rotation = Quaternion.LookRotation(Vector3.down, interior.transform.forward);
                         yield return new WaitForSecondsRealtime(0.4f);
                         CaptureToPng(Path.Combine(_outputDir, "look_dungeon_topdown.png"));
-                        rig4.transform.position = interior.transform.TransformPoint(new Vector3(0f, 1.0f, -14.2f));
+                        yield return new WaitForSecondsRealtime(0.4f); // capture lands before roofs return
+                        foreach (var mr in roofs) mr.enabled = true;
+                        rig4.transform.position = DelveLayout.StartRoomWorld + Vector3.up * 1.0f;
                         if (nearestHaunter != null)
                             rig4.transform.rotation = Quaternion.LookRotation(nearestHaunter.position + Vector3.up * 0.9f - rig4.transform.position);
                         yield return new WaitForSecondsRealtime(0.3f);
@@ -793,19 +822,57 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
                             Debug.Log(nightAdapter.ProofFinishBoundEncounter());
                             yield return null;
+                            delveUi?.ProofCloseScreens(); // the kill XP may cross a level — clear the auto-modal
                             yield return new WaitForSecondsRealtime(0.4f); // flash decays, corpse pose holds
                             CaptureToPng(Path.Combine(_outputDir, "look_dungeon_felled.png"));
+                            // Async-capture separation: the boss-room teleport below must not steal this
+                            // frame (the corpse pose rendered as the boss room otherwise).
+                            yield return new WaitForSecondsRealtime(0.4f);
 
-                            // F16-DoD: open the chest (driver can't press E), log the sword grant, and
-                            // capture the hinged-open lid from beside the chest.
+                            // F18-DoD BOSS LEG: descend to the boss room, frame the Warden, bind it, fell
+                            // it ("looptest şefe kadar iner"), then open the hoard for the loot line.
+                            rig4.transform.position = DelveLayout.BossRoomWorld + Vector3.up * 1.0f;
+                            Transform wardenView = null;
+                            foreach (var view in FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None))
+                                if (view.name.StartsWith("Warden")) { wardenView = view.transform; break; }
+                            if (wardenView != null)
+                                rig4.transform.rotation = Quaternion.LookRotation(
+                                    wardenView.position + Vector3.up * 0.9f - rig4.transform.position);
+                            delveUi?.ProofCloseScreens(); // a clear HUD before the boss frame
+                            yield return new WaitForSecondsRealtime(0.4f);
+                            yield return new WaitForEndOfFrame();
+                            CaptureToPng(Path.Combine(_outputDir, "look_dungeon_boss.png"));
+                            yield return new WaitForSecondsRealtime(0.4f); // capture separation
+
+                            string wardenName = nightAdapter.ProofBindDelveWarden();
+                            if (!string.IsNullOrEmpty(wardenName))
+                            {
+                                Debug.Log($"[Proof] F18 boss bound: {wardenName}.");
+                                Debug.Log(nightAdapter.ProofFinishBoundEncounter());
+                                yield return null;
+                                delveUi?.ProofCloseScreens(); // boss XP may cross a level — clear the auto-modal
+                                yield return new WaitForSecondsRealtime(0.4f); // flash decays, corpse pose holds
+                                CaptureToPng(Path.Combine(_outputDir, "look_dungeon_boss_felled.png"));
+                                yield return new WaitForSecondsRealtime(0.4f); // capture separation
+                            }
+                            else
+                            {
+                                Debug.Log("[Proof] BROKEN — no Warden bound at the delve (F18 boss leg).");
+                            }
+
+                            // F16-DoD: open the chest (driver can't press E), log the sword grant — the
+                            // F18 "loot satırı" — and capture the hinged-open lid beside the hoard.
                             var chestView = FindFirstObjectByType<EmberCrpg.Presentation.Ember.WorldDirector.RuntimeChestView>();
                             if (chestView != null)
                             {
                                 Debug.Log("[Proof] chest: " + chestView.ProofOpen());
-                                // Frame the chest from inside the chamber, slightly above, lid in view.
-                                rig4.transform.position = interior.transform.TransformPoint(new Vector3(0f, 1.5f, -19.3f));
+                                var chestEye = chestView.transform.position;
+                                var standDir = DelveLayout.BossRoomWorld - chestEye;
+                                standDir.y = 0f;
+                                if (standDir.sqrMagnitude < 0.01f) standDir = Vector3.back;
+                                rig4.transform.position = chestEye + standDir.normalized * 2.4f + Vector3.up * 1.1f;
                                 rig4.transform.rotation = Quaternion.LookRotation(
-                                    chestView.transform.position + Vector3.up * 0.45f - rig4.transform.position);
+                                    chestEye + Vector3.up * 0.45f - rig4.transform.position);
                                 yield return new WaitForSecondsRealtime(0.5f);
                                 yield return new WaitForEndOfFrame();
                                 CaptureToPng(Path.Combine(_outputDir, "look_dungeon_chest.png"));

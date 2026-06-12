@@ -101,6 +101,35 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(4, 2)));
         }
 
+        [Test]
+        public void Advance_PinnedEnemyLairGuard_HoldsPositionEvenWhenDisplaced()
+        {
+            var actors = new ActorStore();
+            var lair = new GridPosition(8, 8);
+            actors.Add(Record(new GridPosition(3, 3), ActorRole.Enemy).WithHomeAndAnchor(lair, lair));
+            var system = new ScheduleSystem();
+
+            system.Advance(actors, WorkHour);   // would step toward the day anchor...
+            system.Advance(actors, NightHour);  // ...or home — a lair guard does neither.
+
+            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(3, 3)),
+                "F18: a pinned Enemy (home == dayAnchor) is chase-driven only; the daily rhythm must not rubber-band it");
+        }
+
+        [Test]
+        public void Advance_CommutingEnemy_StillWalksHomeAtNight()
+        {
+            var actors = new ActorStore();
+            actors.Add(Record(new GridPosition(5, 5), ActorRole.Enemy)
+                .WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9)));
+            var system = new ScheduleSystem();
+
+            system.Advance(actors, NightHour);
+
+            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(4, 4)),
+                "street outlaws (home != dayAnchor) keep the F6 curfew commute");
+        }
+
         private static ActorRecord AssignedActor(GridPosition position)
         {
             var actor = Record(position);
@@ -113,12 +142,12 @@ namespace EmberCrpg.Tests.EditMode.Living
             return Record(position);
         }
 
-        private static ActorRecord Record(GridPosition position)
+        private static ActorRecord Record(GridPosition position, ActorRole role = ActorRole.Talker)
         {
             return new ActorRecord(
                 new ActorId(1),
                 "Mover",
-                ActorRole.Talker,
+                role,
                 new EmberStatBlock(10, 10, 10, 10, 10, 10),
                 new ActorVitals(
                     new VitalStat(10, 10),

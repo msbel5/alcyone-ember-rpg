@@ -168,3 +168,29 @@ Known limits added in v0.3 (honest): steep hillsides can still clip a dungeon-ba
 surface detection is name-based (built "Floor" slabs vs terrain); per-step audio variation rotates 4
 pre-rendered variants (+pitch jitter) instead of re-rendering the dip cascade per step; melody voices are
 sine-family (no wavetable timbres yet).
+
+### v0.5 "Zindan Çağı" — in progress (F18 SHIPPED)
+
+F18 multi-room delve SHIPPED: the single barrow chamber grew into the real thing — the domain's
+deterministic MultiRoomDungeonGenerator (5-10 rooms + mid-wall doors, seeded per settlement) is now
+REALIZED behind the cave mouth on a 16m lattice: per-room torch-lit chambers with sealed walls,
+door gaps, corridor connectors, an entry hall, 0-2 dwellers per room (Haunter/Stalker/Lurker/Prowler
+of X), and a BOSS room at the end of the graph — "Warden of X" (2× HP, 1.5× damage, acc 38) guarding
+a 1.4× hoard chest. The realize step records world anchors (RuntimeDungeonLayoutInfo) so proofs and
+dweller placement stopped guessing local axes.
+Proof (Reports/proof-f18h): "multi-room delve realized: rooms=5 doors=4 bossRoom=R4" + a roof-hidden
+topdown frame showing the whole room graph; "[Proof] F18 boss bound: Warden of Vhiriorothcross
+(80/80 hp)" felled in 15 swings (a regular dweller falls in ~7); chest loot line "You take the Worn
+Iron Sword (+8 acc, +5 dmg)".
+Three real bugs root-caused on the way (the chase read at half speed): (1) ScheduleSystem stepped a
+chasing dweller BACK toward its lair every world tick — pinned Enemies (home == dayAnchor) are now
+exempt (2 new EditMode tests); (2) billboards only learned new sim positions on the ~0.83s world
+tick — the HUD pump now refreshes view targets at frame rate after each hostile-AI step
+(ProjectWorldViewsNow, no clock advance); (3) the boss chased too — hostiles now have a LAIR LEASH
+(dwellers hunt ≤10 cells from home, the Warden holds ≤3 and never abandons the hoard; past the
+leash they stalk back). Hostile sight raised 12→18 for the room lattice; hostile billboards no
+longer idle-wander (monsters hold still and pursue with purpose). Chase proof: sim Chebyshev 14→8
+in 2.6s + "closed=5.5m" on screen (DoD ≥4m).
+Honest limits: a dweller crossing a connector can ground its billboard on the corridor ROOF for a
+few steps (F19 polish); the chest close-up frame sits on the torch's shadow side and reads dark
+(F33 framing); chest-opened state still isn't save-persisted (F22).

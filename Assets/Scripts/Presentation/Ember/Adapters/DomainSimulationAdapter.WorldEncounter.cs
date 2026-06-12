@@ -231,7 +231,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     continue;
 
                 int dist = Chebyshev(hostile.Position, target);
-                if (dist > 12 || dist <= 2) continue; // beyond sight, or already at melee reach
+                if (dist <= 2) continue; // already at melee reach
+
+                // F18 LAIR LEASH (pinned guards only — home == dayAnchor, the dungeon-dweller
+                // contract): a dweller hunts its own halls (10 cells of home), the BOSS never
+                // leaves the hoard (3). Past the leash, or with the player out of sight (18 —
+                // the 16m room lattice needs more than the old 12), it stalks BACK to its post;
+                // ScheduleSystem deliberately ignores pinned guards, so this is its only way home.
+                bool pinned = hostile.Home.Equals(hostile.DayAnchor);
+                bool lairBoss = seed.Id.Value >= HaunterNpcIdBase
+                    && (seed.Id.Value - HaunterNpcIdBase) % 16UL == 15UL;
+                int homeDist = Chebyshev(hostile.Position, hostile.Home);
+                if (dist > 18 || (pinned && homeDist >= (lairBoss ? 3 : 10)))
+                {
+                    if (pinned && homeDist > 0)
+                        hostile.MoveTo(new GridPosition(
+                            hostile.Position.X + System.Math.Sign(hostile.Home.X - hostile.Position.X),
+                            hostile.Position.Y + System.Math.Sign(hostile.Home.Y - hostile.Position.Y)));
+                    continue;
+                }
 
                 int dx = System.Math.Sign(target.X - hostile.Position.X);
                 int dy = System.Math.Sign(target.Y - hostile.Position.Y);
@@ -441,9 +459,32 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                    $"(weapon={EquippedWeapon()?.DisplayName ?? "none"}).";
         }
 
-        /// <summary>F10-DoD: bind the CURRENT settlement's haunter (an Outlaw homed HERE — street outlaws
-        /// elsewhere don't qualify) so the dungeon leg fights the chamber guard, not a random bandit.</summary>
-        public string ProofBindDungeonHaunter()
+        /// <summary>F18 diagnostics: sim-side chase telemetry — position + Chebyshev distance of every
+        /// living dweller vs the live player body, logged at the two chase frames so view lag and sim
+        /// stall read apart in Player.log.</summary>
+        public string ProofChaseDebug()
+        {
+            var here = CurrentSettlementOrStart;
+            if (_world?.NpcSeeds == null || _world.Actors == null) return "chase-debug: no world";
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            if (player == null) return "chase-debug: no player";
+            var target = PlayerCombatPosition(player);
+            var sb = new System.Text.StringBuilder($"chase-debug target=({target.X},{target.Y})");
+            for (int i = 0; i < _world.NpcSeeds.Count; i++)
+            {
+                var seed = _world.NpcSeeds[i];
+                if (seed == null || seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw || !seed.Home.Equals(here))
+                    continue;
+                var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
+                if (!_world.Actors.TryGet(actorId, out var hostile) || hostile == null || !hostile.IsAlive)
+                    continue;
+                sb.Append($" | {hostile.Name} pos=({hostile.Position.X},{hostile.Position.Y}) cheb={Chebyshev(hostile.Position, target)}");
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>F18-DoD: bind the delve's WARDEN (the boss — "Warden of X") for the boss leg.</summary>
+        public string ProofBindDelveWarden()
         {
             var here = CurrentSettlementOrStart;
             if (_world?.NpcSeeds == null || _world.Actors == null) return string.Empty;
@@ -452,14 +493,48 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var seed = _world.NpcSeeds[i];
                 if (seed == null || seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw || !seed.Home.Equals(here))
                     continue;
+                if (!seed.Name.StartsWith("Warden of")) continue;
+                var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
+                if (!_world.Actors.TryGet(actorId, out var warden) || warden == null || !warden.IsAlive)
+                    continue;
+                TryBeginWorldEncounter(warden, seed);
+                ReadCombatScreenState();
+                return $"{warden.Name} ({warden.Vitals.Health.Current}/{warden.Vitals.Health.Max} hp)";
+            }
+            return string.Empty;
+        }
+
+        /// <summary>F10-DoD: bind the CURRENT settlement's haunter (an Outlaw homed HERE — street outlaws
+        /// elsewhere don't qualify) so the dungeon leg fights the chamber guard, not a random bandit.</summary>
+        public string ProofBindDungeonHaunter()
+        {
+            var here = CurrentSettlementOrStart;
+            if (_world?.NpcSeeds == null || _world.Actors == null) return string.Empty;
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            // F18: rooms spread dwellers up to ~50m apart — bind the NEAREST living one (the one that
+            // chased in), never the Warden (the boss leg binds that one itself).
+            ActorRecord nearest = null;
+            EmberCrpg.Domain.Worldgen.NpcSeedRecord nearestSeed = null;
+            int nearestDist = int.MaxValue;
+            for (int i = 0; i < _world.NpcSeeds.Count; i++)
+            {
+                var seed = _world.NpcSeeds[i];
+                if (seed == null || seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw || !seed.Home.Equals(here))
+                    continue;
+                if (seed.Name.StartsWith("Warden of")) continue;
                 var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
                 if (!_world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive)
                     continue;
-                TryBeginWorldEncounter(actor, seed);
-                ReadCombatScreenState(); // publish the battle mirror
-                return actor.Name;
+                int dist = player != null ? Chebyshev(PlayerCombatPosition(player), actor.Position) : 0;
+                if (nearest != null && dist >= nearestDist) continue;
+                nearest = actor;
+                nearestSeed = seed;
+                nearestDist = dist;
             }
-            return string.Empty;
+            if (nearest == null) return string.Empty;
+            TryBeginWorldEncounter(nearest, nearestSeed);
+            ReadCombatScreenState(); // publish the battle mirror
+            return nearest.Name;
         }
 
         /// <summary>F10-DoD: resolve the bound encounter to the end (same dice as a player mashing attack)

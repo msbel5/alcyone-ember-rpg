@@ -46,6 +46,11 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             _worldViewProjector?.ProjectTick(tickIndex);
         }
 
+        /// <summary>F14/F18: real-time movers (hostile chase, 1 cell/0.45s) step the sim BETWEEN world
+        /// ticks; refresh view targets WITHOUT advancing the clock so billboards see every chase step.
+        /// Proof-measured: targets only refreshed on the ~0.83s tick made the pursuit read half-speed.</summary>
+        public void ProjectWorldViewsNow() => _worldViewProjector?.Project();
+
         public string GetHudText() => _hud.HudText;
         IReadOnlyList<JobQueueRow> IJobQueueSource.GetRows() => _worldView.JobQueueRows;
         IReadOnlyList<ColonyNeedsRow> IColonyNeedsSource.GetRows() => _worldView.ColonyNeedsRows;

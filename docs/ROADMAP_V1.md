@@ -46,10 +46,21 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
 
 ## v0.5 "ZİNDAN ÇAĞI" — tek oda değil, gerçek delve
 
-- [ ] **F18 Çok-odalı prosedürel zindan**: barrow → 4-7 oda + koridor grafı (deterministik seed;
+- [x] **F18 Çok-odalı prosedürel zindan**: barrow → 4-7 oda + koridor grafı (deterministik seed;
   mevcut MultiRoomDungeonGenerator domain'i realize'a bağlanır). Oda başına 0-2 haunter, son odada
   şef (2× HP, 1.5× dmg) + büyük sandık.
   **DoD:** topdown karesi oda grafını gösterir; looptest şefe kadar iner, loot satırı.
+  **KANIT (lookaround delve legi, Reports/proof-f18h):** "multi-room delve realized: rooms=5 doors=4
+  dwellerSpots=2 bossRoom=R4" · topdown karesi 5 oda + 4 koridoru gösteriyor (çatılar capture
+  sırasında gizlenir) · "[Proof] F18 boss bound: Warden of X (80/80 hp)" → "felled=True in 15 swings"
+  + boss/boss_felled kareleri · loot satırı "You take the Worn Iron Sword (+8 acc, +5 dmg)".
+  **Kök-neden avı (3 gerçek bug):** (1) ScheduleSystem kovalayan dweller'ı her tick inine geri
+  adımlatıyordu (lastik bant; pinned Enemy artık takvimden muaf + 2 EditMode testi), (2) billboard'lar
+  yeni sim pozisyonunu yalnız ~0.83s dünya tick'inde öğreniyordu (chase yarı hızda OKUNUYORDU;
+  ProjectWorldViewsNow kare hızında hedef tazeler), (3) şef de kovalıyordu (lair leash: dweller ≤10,
+  şef ≤3 hücre — hazineyi asla bırakmaz; leash dışı ine geri yürür). Chase kanıtı: cheb 14→8 (sim) +
+  "closed=5.5m" (görsel, DoD ≥4m). Dürüst borçlar: koridor çatısı üstüne grounding yapan billboard
+  (F19 polish), sandık yakın çekimi meşalenin gölge tarafında loş (F33 framing).
 - [ ] **F19 Zindan çeşitliliği**: 3 arketip (mağara/kripta/harabe — malzeme paleti + ışık rengi +
   müzik varyantı farklı). Arketip = settlement seed'den deterministik.
   **DoD:** 3 farklı zindana travel + her birinden iç kare; arketip adı realize logunda.
@@ -132,4 +143,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F18 <<<
+>>> CURRENT: F19 <<<

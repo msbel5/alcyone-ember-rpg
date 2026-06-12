@@ -116,20 +116,17 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 RuntimeMineBuilder.Build(root.transform, 9f, delveAngle, coal: true);
                 // F2/dungeon interiors v1: the mouth now leads into a torch-lit corridor and a chamber with
                 // a loot chest — walk past the mound and into the dark. Encounters bind in the next F2 item.
-                var delve = RuntimeDungeonBuilder.Build(root.transform, 9f, delveAngle);
-                Debug.Log("[WorldDirector] dungeon mouth + torch-lit interior realized (corridor, chamber, chest).");
+                // F18: the barrow grew into the deterministic 5-10 room graph (rooms+corridors+boss).
+                RuntimeDungeonBuilder.Build(root.transform, 9f, delveAngle, (int)seed);
 
-                // F10 haunters ("savaşamadım"): two Outlaw actors guard the chest — combat lives where the
-                // player expects it. Spots flank the chest (chamber local z -22.5); the adapter pins their
-                // home/dayAnchor there so the per-tick sync keeps them in the chamber.
-                var haunterAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                // F10→F18 dwellers: 0-2 Outlaws per room + the Warden (2× HP, 1.5× dmg) by the hoard.
+                var dwellerAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
                     as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
-                int haunters = haunterAdapter != null
-                    ? haunterAdapter.EnsureDungeonHaunters(
-                        delve.transform.TransformPoint(new Vector3(-1.2f, 0f, -20.6f)),
-                        delve.transform.TransformPoint(new Vector3(1.2f, 0f, -20.6f)))
+                int dwellers = dwellerAdapter != null
+                    ? dwellerAdapter.EnsureDungeonDwellers(
+                        RuntimeDungeonLayoutInfo.DwellerSpots, RuntimeDungeonLayoutInfo.BossSpot)
                     : 0;
-                Debug.Log($"[WorldDirector] dungeon haunters ensured: +{haunters} (idempotent — corpses stay down).");
+                Debug.Log($"[WorldDirector] delve dwellers ensured: +{dwellers} across {RuntimeDungeonLayoutInfo.RoomCount} rooms (idempotent — corpses stay down).");
             }
 
             // TRADE CART (F1/caravans): realized once, VISIBLE only while a caravan is at this site — the
@@ -203,7 +200,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 case SettlementKind.Hamlet: return 6;
                 case SettlementKind.Inn: return 5;
                 case SettlementKind.Shrine: return 4;
-                case SettlementKind.Dungeon: return 8; // F10: 2 chamber haunters must never lose the nearest-N cull to plaza strays (≤4 residents + 2 haunters fits)
+                case SettlementKind.Dungeon: return 14; // F18: ≤9 dwellers + the Warden + plaza strays must all fit the nearest-N cull
                 default: return 10;
             }
         }

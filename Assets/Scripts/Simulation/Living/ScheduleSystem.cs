@@ -35,6 +35,13 @@ namespace EmberCrpg.Simulation.Living
                 if (actor == null || !actor.IsAlive)
                     continue;
 
+                // F18 lair guards: a pinned Enemy (home == dayAnchor, the F10 dungeon-dweller contract)
+                // has no daily rhythm — its only mover is the hostile-pursuit AI. Stepping it back home
+                // every tick rubber-bands an active chase (proof: 1.8m closed instead of ~5.7m over
+                // 2.6s). Commuting enemies (street outlaws, home != dayAnchor) keep the F6 curfew walk.
+                if (actor.Role == ActorRole.Enemy && actor.Home.Equals(actor.DayAnchor))
+                    continue;
+
                 var next = StepToward(actor.Position, ResolveTarget(actor, time));
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
