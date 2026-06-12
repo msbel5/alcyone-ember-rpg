@@ -665,35 +665,70 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     IgJournalData.EmptyDetail = "This is guidance only; speak with the NPC to accept the quest.";
                 }
             }
-            if (!(_host is IJournalSource journalSrc)) return;
-
-            var chapters = journalSrc.GetChapters();
-            if (chapters == null || chapters.Count == 0) return;
-
-            var live = new JournalChapterData[chapters.Count];
-            for (int i = 0; i < chapters.Count; i++)
+            var live = Array.Empty<JournalChapterData>();
+            if (_host is IJournalSource journalSrc)
             {
-                var chapter = chapters[i];
-                var entries = chapter.Entries ?? Array.Empty<JournalEntryRow>();
-                var rows = new JournalEntryData[entries.Count];
-                for (int e = 0; e < entries.Count; e++)
+                var chapters = journalSrc.GetChapters();
+                if (chapters != null && chapters.Count > 0)
                 {
-                    var entry = entries[e];
-                    rows[e] = new JournalEntryData(
-                        entry.EntryId,
-                        entry.Title,
-                        entry.DateLabel,
-                        entry.Body,
-                        entry.CategoryLabel,
-                        JournalStatusLabel(entry.Status),
-                        entry.Status);
-                }
+                    live = new JournalChapterData[chapters.Count];
+                    for (int i = 0; i < chapters.Count; i++)
+                    {
+                        var chapter = chapters[i];
+                        var entries = chapter.Entries ?? Array.Empty<JournalEntryRow>();
+                        var rows = new JournalEntryData[entries.Count];
+                        for (int e = 0; e < entries.Count; e++)
+                        {
+                            var entry = entries[e];
+                            rows[e] = new JournalEntryData(
+                                entry.EntryId,
+                                entry.Title,
+                                entry.DateLabel,
+                                entry.Body,
+                                entry.CategoryLabel,
+                                JournalStatusLabel(entry.Status),
+                                entry.Status);
+                        }
 
-                live[i] = new JournalChapterData(chapter.ChapterIndex, chapter.Title, rows);
+                        live[i] = new JournalChapterData(chapter.ChapterIndex, chapter.Title, rows);
+                    }
+                    IgJournalData.CurrentChapter = Mathf.Clamp(journalSrc.GetCurrentChapter(), 0, live.Length - 1);
+                }
             }
 
+            // F21: generated contracts are REAL journal records — their own chapter, live status.
+            if (EmberDomainAdapterLocator.Current
+                    is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter contractAdapter)
+            {
+                var contracts = contractAdapter.ReadGeneratedQuests();
+                if (contracts != null && contracts.Count > 0)
+                {
+                    var rows = new JournalEntryData[contracts.Count];
+                    for (int i = 0; i < contracts.Count; i++)
+                    {
+                        var q = contracts[i];
+                        var status = q.Completed ? EmberCrpg.Presentation.Ember.UI.JournalEntryStatus.Completed
+                            : q.Failed ? EmberCrpg.Presentation.Ember.UI.JournalEntryStatus.Failed
+                            : EmberCrpg.Presentation.Ember.UI.JournalEntryStatus.Active;
+                        rows[i] = new JournalEntryData(
+                            "contract-" + q.Id.Value,
+                            q.Title,
+                            $"Day {q.DeadlineDay} latest",
+                            $"{q.GiverName} pays {q.RewardGold} gold. "
+                                + (q.Completed ? "Done." : q.Failed ? "The deadline passed." : "Open contract."),
+                            "Contract",
+                            JournalStatusLabel(status),
+                            status);
+                    }
+                    var withContracts = new JournalChapterData[live.Length + 1];
+                    for (int i = 0; i < live.Length; i++) withContracts[i] = live[i];
+                    withContracts[live.Length] = new JournalChapterData(live.Length, "Contracts", rows);
+                    live = withContracts;
+                }
+            }
+
+            if (live.Length == 0) return;
             IgJournalData.Chapters = live;
-            IgJournalData.CurrentChapter = Mathf.Clamp(journalSrc.GetCurrentChapter(), 0, live.Length - 1);
         }
 
         private void RefreshLiveTrade(string statusLine = null)

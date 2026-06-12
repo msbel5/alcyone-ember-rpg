@@ -90,9 +90,18 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
 
 ## v0.6 "GÖREV MAKİNESİ" — DFU tarzı sonsuz iş
 
-- [ ] **F21 Görev üreticisi**: 4 şablon (getir/öldür/teslim et/ziyaret) × hedef (zindan/yerleşim/NPC)
+- [x] **F21 Görev üreticisi**: 4 şablon (getir/öldür/teslim et/ziyaret) × hedef (zindan/yerleşim/NPC)
   × süre limiti; veren NPC rolüne göre (lonca yok, kişiler var). Journal'a gerçek kayıt.
   **DoD:** EditMode: 20 seed → 20 geçerli görev; looptest bir fetch görevini uçtan uca kapatır.
+  **KANIT (Reports/proof-f21a):** WorldQuestGenerator (Simulation, saf-deterministik: splitmix64 +
+  xorshift64*, şablon rotasyonu — ham madde eksikse sıradaki şablon) + WorldQuestRecord (Domain).
+  Test: 20 seed → 20 geçerli (veren/ödül/deadline/şablon-alan invariantları) + determinizm + 4 şablon
+  erişilebilirliği + verensiz dünya null (fallback'te koşar, 1458/1458). Looptest: "[QuestGen]
+  accepted #9100: Bring ale to Grire Theashal (38g, deadline day 7)" → cargo CANLI ekonomiden satın
+  alındı → "[QuestGen] completed #9100 — +38 gold (purse 349)". Journal: üretilen kontratlar J
+  ekranında kendi "Contracts" bölümü (canlı durum: Active/Completed/Failed; deadline geçince lazy
+  FAIL). Veren roller: Merchant/Noble/Priest/Scholar/Innkeeper/Blacksmith/Healer. DÜRÜST PARTIAL:
+  kontratlar adapter-local — save kalıcılığı F22'nin işi (bilinçli sıralama).
 - [ ] **F22 Görev kalıcılığı**: dünya görevleri (bounty/pilgrimage dahil) save/load'da korunur
   (WorldSaveMapper genişler — adapter-local dictionary kalkar).
   **DoD:** save→load→journal aynı; digest roundtrip testi genişletilmiş haliyle yeşil.
@@ -163,4 +172,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F21 <<<
+>>> CURRENT: F22 <<<

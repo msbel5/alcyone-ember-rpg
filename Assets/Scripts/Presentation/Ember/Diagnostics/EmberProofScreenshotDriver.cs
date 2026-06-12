@@ -537,6 +537,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
             Debug.Log(adapter.ProofRunTradeLeg());
             Debug.Log(adapter.ProofQuestSnapshot());
+            // F21-DoD: a generated FETCH contract closed end to end — accept, buy the cargo through
+            // the live economy, turn in. Three [QuestGen] lines + one LOOP-PROOF summary.
+            Debug.Log(adapter.ProofRunGeneratedQuestLeg());
             // F15-DoD: lose to an outlaw AFK, awaken at the plaza — the toll line + a LIVE HUD frame
             // (full vitals + the "You awaken..." event line) prove the loop has no dead-end.
             var deathAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current

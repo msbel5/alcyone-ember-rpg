@@ -207,6 +207,22 @@ eye-verified distinct palettes; "[Proof] F19 delve census: 3 dungeon(s)" + three
 EditMode sweep test pins reachability of all three + the proof-seed trio mapping to ≥2 archetypes.
 Honest PARTIAL: music does not vary by archetype yet (DAY/NIGHT/BATTLE slots are archetype-agnostic).
 
+### v0.6 "Görev Makinesi" — in progress (F21 SHIPPED)
+
+F21 quest generator SHIPPED: endless DFU-style work, minted deterministically. Four templates —
+FETCH (bring cargo to the giver), KILL (hunt a named outlaw), DELIVER (carry cargo to another
+settlement), VISIT (reach a settlement) — picked per seed with template rotation when a world lacks
+raw material (no outlaws → next template). PEOPLE give the work (no guilds yet): merchants, nobles,
+priests, scholars, innkeepers, blacksmiths, healers of the current town. Every contract carries a
+reward and a real deadline (3-7 days; overdue contracts FAIL in the journal). Generated contracts
+appear in the J journal as their own "Contracts" chapter with live status. Fetch/deliver cargo comes
+from the LIVE economy stock, so every contract is honestly completable.
+Proof (Reports/proof-f21a): looptest closes a fetch end-to-end — "[QuestGen] accepted #9100: Bring
+ale to Grire Theashal (38g, deadline day 7)" → cargo bought through the live market → "[QuestGen]
+completed #9100 — +38 gold". EditMode: 20 seeds → 20 valid quests + determinism + all-four-templates
+reachability (runs in the pure fallback harness, 1458/1458).
+Honest PARTIAL: contracts live adapter-local — save persistence is F22's explicit job.
+
 F20 traps + locks SHIPPED: the way down to the Warden now fights back. A rust-red CRUSHING PLATE
 sits mid-corridor on the boss path — step on it and it gives way underfoot: 8 damage, the mechanism
 groans, the HUD combat line tells you what bit you. The boss connector carries a LOCKED DOOR whose
