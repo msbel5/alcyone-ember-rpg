@@ -166,7 +166,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
                 int dwellers = dwellerAdapter != null
                     ? dwellerAdapter.EnsureDungeonDwellers(
-                        RuntimeDungeonLayoutInfo.DwellerSpots, RuntimeDungeonLayoutInfo.BossSpot)
+                        RuntimeDungeonLayoutInfo.DwellerSpots, RuntimeDungeonLayoutInfo.BossSpot,
+                        RuntimeDungeonLayoutInfo.ArchetypeName) // F29: archetype picks the bestiary mix
                     : 0;
                 Debug.Log($"[WorldDirector] delve dwellers ensured: +{dwellers} across {RuntimeDungeonLayoutInfo.RoomCount} rooms (idempotent — corpses stay down).");
             }

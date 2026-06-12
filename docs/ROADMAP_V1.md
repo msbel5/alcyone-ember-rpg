@@ -213,9 +213,25 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   DÜRÜST PARTIAL: wind_step hız çarpanı (×1.5) ve recall_gate rig-snap'i kablolu + EditMode'lu
   ama kare-kanıtsız (lookaround sadece 3 bolt + lantern çeker); "büyü kitabı ekranı" yok —
   slotlar bilinen-büyü sırası (1-8), yeni büyü level-up seçimiyle öğrenilir.
-- [ ] **F29 Bestiary**: 6 düşman tipi (haydut/iskelet/kurt/örümcek/hayalet/şef-varyantları) —
+- [x] **F29 Bestiary**: 6 düşman tipi (haydut/iskelet/kurt/örümcek/hayalet/şef-varyantları) —
   billboard sprite forge promptları + stat blokları + zindan arketipine göre dağılım.
   **DoD:** 3 farklı tip tek karede (zindan odası) + tip-bazlı vuruş sesi varyantı logu.
+  **KANIT (lookaround, validation-output/proof-f29):** look_bestiary_trio.png — Kripta odasında
+  TEK karede üç ayrı tip: Grave Wisp (buz-mavisi tül) + Pit Spider (mor, alçak-geniş) + Bone
+  Walker (kemik-beyazı, uzun); "[Audio] hit variant=bone/wail/chitin/flesh" — DÖRT malzeme
+  varyantı logda (modal-bank synth'in tip-bazlı re-voice'u: pitch/decay/thump). WorldBestiaryCatalog
+  (saf Simulation): 5 taban tip (stat + sprite rolü + vuruş malzemesi + forge prompt gövdesi,
+  EmberNpcSpriteHeader zarfıyla StaticPromptCatalog + CoreAssetManifest'e kayıtlı) + şef kuralı —
+  Warden adını korur, arketipin APEX tipini giyer (Mağara→kurt, Kripta→hayalet, Harabe→haydut;
+  2×hp + 1.5×dmg, logda hp=28/44/32 doğrulandı). Dağılım: Mağara{kurt,örümcek,haydut} /
+  Kripta{iskelet,hayalet,örümcek} / Harabe{haydut,iskelet,örümcek} — bu dünyada üç arketip de
+  gerçekleşti ([Bestiary] spawn logları). Forge-OFF görsel kimlik: BestiaryBillboardSpriteFactory
+  piksel-maske silüetleri (tip-bazlı boy: kurt 1.2 / örümcek 0.9 / hayalet 2.2) — forge-ON'da
+  kütüphane sprite'ı kazanır (spawner: library → silhouette → neutral). EditMode: katalog
+  bütünlüğü + arketip rotasyon determinizmi + apex + isim→tip gidiş-dönüşü (fallback 1470/1470).
+  Eski koruma: chase 6.1m kapama, boss bağlama, loot satırı bestiary adlarıyla yeşil (0 BROKEN).
+  DÜRÜST PARTIAL: silüetler bloklu-piksel (forge-ON SDXL sprite'ları F30+ kanıtında); kurt/hayalet
+  ayrı kare almadı (trio karesi + spawn logları kapsıyor).
 - [ ] **F30 Ses v3**: biyom ambiyansı (kuş/rüzgâr/gece cırcır), yağmur/kar katmanı, savaş müziği
   yoğunluk katmanı (şef odasında +perküsyon), 2 yeni zemin (kar/çakıl). TTS: piper varsa selamlama
   seslendir (yoksa dürüst PARTIAL kalır).
@@ -255,4 +271,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F29 <<<
+>>> CURRENT: F30 <<<

@@ -847,6 +847,39 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                    $"target '{target.Name}' posted 3 cells east of {castFrom}.";
         }
 
+        /// <summary>
+        /// F29 LOOP-PROOF: the bestiary family photo — re-post three LIVING dwellers of three
+        /// DISTINCT types shoulder-to-shoulder at the given world spot (the rig's view snaps
+        /// billboards on >5m moves), so one frame shows three different monsters. Returns the
+        /// census line; the dwellers are the real catalog-spawned actors, only re-posed.
+        /// </summary>
+        public string ProofArrangeBestiaryPhoto(UnityEngine.Vector3 centerWorld)
+        {
+            if (_world?.Actors == null) return "LOOP-PROOF: no world for the bestiary photo.";
+            var origin = BillboardOrigin();
+            var center = new EmberCrpg.Domain.Actors.GridPosition(
+                origin.X + UnityEngine.Mathf.RoundToInt(centerWorld.x),
+                origin.Y + UnityEngine.Mathf.RoundToInt(centerWorld.z));
+
+            var seenTypes = new System.Collections.Generic.List<string>();
+            int posted = 0;
+            foreach (var actor in _world.Actors.Records)
+            {
+                if (actor == null || !actor.IsAlive) continue;
+                var entry = EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.FromActorName(actor.Name);
+                if (entry == null || seenTypes.Contains(entry.Key)) continue;
+                seenTypes.Add(entry.Key);
+                // Shoulder to shoulder: 2 cells apart so the silhouettes never overlap in frame.
+                actor.MoveTo(new EmberCrpg.Domain.Actors.GridPosition(center.X + (posted - 1) * 2, center.Y));
+                posted++;
+                UnityEngine.Debug.Log($"[Bestiary] photo slot {posted}: '{actor.Name}' type={entry.Key}");
+                if (posted == 3) break;
+            }
+            return posted >= 3
+                ? $"LOOP-PROOF: bestiary trio posted — {string.Join("|", seenTypes)} at {center}."
+                : $"LOOP-PROOF: BROKEN — only {posted} distinct living bestiary types found ({string.Join("|", seenTypes)}).";
+        }
+
         public string ProofRunTradeLeg()
         {
             var state = ReadTradeState();

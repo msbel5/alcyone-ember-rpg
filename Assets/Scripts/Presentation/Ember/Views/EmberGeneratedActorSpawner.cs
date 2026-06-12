@@ -134,8 +134,10 @@ namespace EmberCrpg.Presentation.Ember.Views
             // F6/night staging: citizens leave the street 22:00–06:00; guards and outlaws keep prowling.
             var curfew = root.AddComponent<EmberCrpg.Presentation.Ember.WorldDirector.NightCurfewView>();
             var spriteRole = candidate.SpriteRole ?? string.Empty;
+            // F29: bestiary monsters ("monster_*") are hostile by definition.
             bool hostileRole = spriteRole.IndexOf("outlaw", System.StringComparison.OrdinalIgnoreCase) >= 0
-                            || spriteRole.IndexOf("bandit", System.StringComparison.OrdinalIgnoreCase) >= 0;
+                            || spriteRole.IndexOf("bandit", System.StringComparison.OrdinalIgnoreCase) >= 0
+                            || spriteRole.StartsWith("monster_", System.StringComparison.OrdinalIgnoreCase);
             curfew.Prowler = hostileRole
                           || spriteRole.IndexOf("guard", System.StringComparison.OrdinalIgnoreCase) >= 0;
 
@@ -148,7 +150,9 @@ namespace EmberCrpg.Presentation.Ember.Views
             var renderer = billboard.AddComponent<SpriteRenderer>();
             renderer.sprite = ResolvePlaceholderSprite(candidate);
             renderer.sortingOrder = 10;
-            FitBillboardToPlayableHeight(billboard.transform, renderer, _billboardTargetHeight);
+            // F29: monsters keep their own stature — a wolf is hip-high, a wisp looms.
+            FitBillboardToPlayableHeight(billboard.transform, renderer,
+                BestiaryBillboardSpriteFactory.TargetHeightFor(spriteRole, _billboardTargetHeight));
             var facing = billboard.AddComponent<CameraFacingBillboard>();
 
             // F10 hit feel: every spawned actor can flash on a landed strike and fall flat on death.
@@ -328,6 +332,14 @@ namespace EmberCrpg.Presentation.Ember.Views
         {
             var generated = ResolveGeneratedSprite(candidate);
             if (generated != null) return generated;
+            // F29: bestiary roles fall back to their generated SILHOUETTE, never the neutral grey —
+            // a wolf must read as a wolf even with the forge off (library wins when it exists).
+            var silhouette = BestiaryBillboardSpriteFactory.For(candidate.SpriteRole);
+            if (silhouette != null)
+            {
+                LogSpriteResolution(candidate.SpriteRole, "bestiary-silhouette", "runtime-pixel-mask");
+                return silhouette;
+            }
             LogSpriteResolution(candidate.SpriteRole, "missing", "neutral-runtime-placeholder");
             return GetOrCreateFallbackSprite();
         }

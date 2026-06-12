@@ -95,8 +95,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 $"slice_spell_cast id:{spell.TemplateId} mana:{executed.ManaSpent}"));
             LogCombat(executed.Message);
             // F10/F13 hit feel: a landed hostile spell flashes the target billboard like a melee hit.
+            // F29: the feed carries the struck material so the impact variant matches the monster.
             if (!requestedTarget.Id.Equals(player.Id))
-                EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseHit(requestedTarget.Id.Value);
+                EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseHit(
+                    requestedTarget.Id.Value, HitMaterialFor(requestedTarget));
 
             // F28 WARD: a committed cast with timed ShieldBuff rows writes them into the player's
             // ward bag — the tick decays it, the enemy-strike mitigation seam consumes it, the

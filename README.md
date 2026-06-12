@@ -322,3 +322,22 @@ cast; new spells are learned via level-up picks. EditMode: effect tests for the 
 ward mitigation, mana growth (fallback 1466/1466). Honest PARTIALs: wind_step's ×1.5 stride and
 recall's rig-snap are wired + unit-tested but not frame-proven; there is no spellbook reorder
 screen — slots follow known-spell order.
+
+F29 bestiary SHIPPED: dungeon dwellers are a six-strong bestiary now — bandit, skeleton (Bone
+Walker), wolf (Fen Wolf), spider (Pit Spider), ghost (Grave Wisp), and boss variants: the Warden
+keeps its name but wears its archetype's APEX type with 2x health / 1.5x damage (a great wolf in
+the cave, a wisp in the crypt, a bandit chief in the ruin). The archetype picks the type rotation
+(cave runs beasts, crypt the dead, ruin squatters); stats, sprite roles, hit materials and the
+SDXL forge prompt bodies all live in one pure-Simulation catalog (WorldBestiaryCatalog), with the
+prompts registered through the house style envelope into the forge manifest. Every strike now
+sounds like what it lands on: the modal-bank hit synth is re-voiced per material (bone clicks,
+hide thuds, chitin snaps, wisps ring) and logs its variant.
+Proof (validation-output/proof-f29): look_bestiary_trio.png — ghost + spider + skeleton clearly
+distinct in ONE crypt-room frame; "[Audio] hit variant=bone/wail/chitin/flesh" lines; all three
+archetype mixes spawned in one proof world; the F14/F18 chase (6.1m closed), boss-bind and loot
+legs stayed green under the new names (0 BROKEN). With the forge off the types read via generated
+pixel-mask silhouettes with per-type stature (spider crouches at 0.9m, the wisp looms at 2.2m);
+with the forge on the library sprite wins. EditMode: catalog completeness, rotation determinism,
+apex picks, name round-trips (fallback 1470/1470). Honest PARTIALs: silhouettes are blocky pixel
+stand-ins until a forge-on pass bakes real sprites; wolf/ghost appear via logs + trio frame, no
+solo frames.

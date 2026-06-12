@@ -140,6 +140,20 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return WorksiteKind.Generic;
         }
 
+        /// <summary>F29: the struck target's hit-impact material — bestiary types by name prefix;
+        /// the Warden sounds like its archetype's apex; everyone else thuds as flesh.</summary>
+        private static string HitMaterialFor(ActorRecord target)
+        {
+            if (target?.Name != null && target.Name.StartsWith("Warden of", System.StringComparison.Ordinal))
+            {
+                var apex = EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.Find(
+                    EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.ApexKeyFor(
+                        EmberCrpg.Presentation.Ember.WorldDirector.RuntimeDungeonLayoutInfo.ArchetypeName));
+                if (apex != null) return apex.HitMaterial;
+            }
+            return EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.HitMaterialForName(target?.Name);
+        }
+
         /// <summary>
         /// F28 WARD: the resolver's defender-mitigation seam, bound to the PLAYER's shield-buff
         /// bag (cast writes it, the tick decays it, the save round-trips it). Consumes ward

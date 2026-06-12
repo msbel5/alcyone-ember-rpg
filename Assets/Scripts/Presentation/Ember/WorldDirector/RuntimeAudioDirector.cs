@@ -14,6 +14,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         // F11 footsteps v2: 4 pre-rendered VARIANTS per surface (each coloured by its own random
         // dip-cascade — the Crackdown 2 recipe); the director rotates them + the pool adds pitch jitter.
         public static AudioClip[] FootstepDirt, FootstepStone;
+        // F29 BESTIARY: hit-impact variants by struck MATERIAL — the same modal-bank synth with the
+        // modes re-pitched and re-damped per body (bone clicks, hide thuds, chitin snaps, wisps ring).
+        private static System.Collections.Generic.Dictionary<string, AudioClip> _hitVariants;
+
+        public static AudioClip HitVariant(string material)
+        {
+            if (_hitVariants != null && material != null && _hitVariants.TryGetValue(material, out var clip))
+                return clip;
+            return Hit;
+        }
 
         public static void EnsureForged()
         {
@@ -27,6 +37,14 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             }
             DoorCreak = ForgeMetered("door_creak", RuntimeAudioSynth.RenderDoorCreak(0xC4EA7u));
             Hit = ForgeMetered("hit_impact", RuntimeAudioSynth.RenderHitImpact(0x1417u));
+            _hitVariants = new System.Collections.Generic.Dictionary<string, AudioClip>
+            {
+                ["flesh"] = Hit,
+                ["bone"] = ForgeMetered("hit_bone", RuntimeAudioSynth.RenderHitImpact(0x1418u, pitch: 1.9f, decayScale: 0.55f, thumpAmount: 0.5f)),
+                ["hide"] = ForgeMetered("hit_hide", RuntimeAudioSynth.RenderHitImpact(0x1419u, pitch: 0.8f, decayScale: 0.9f, thumpAmount: 1.1f)),
+                ["chitin"] = ForgeMetered("hit_chitin", RuntimeAudioSynth.RenderHitImpact(0x141Au, pitch: 2.6f, decayScale: 0.35f, thumpAmount: 0.4f)),
+                ["wail"] = ForgeMetered("hit_wail", RuntimeAudioSynth.RenderHitImpact(0x141Bu, pitch: 0.6f, decayScale: 2.2f, thumpAmount: 0.15f)),
+            };
             Wind = Synth("forge_wind", 3.0f, (t, rng) => (rng() * 2f - 1f) * 0.16f, smooth: 24);
             Rain = ForgeMetered("rain_loop", RenderRain(0xA17EBu)); // F25: hiss bed + droplet ticks
             Sting = Synth("forge_sting", 0.45f, (t, rng) =>
@@ -257,7 +275,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (WorldCombatFeedbackFeed.HitStamp != _hitStampSeen)
             {
                 _hitStampSeen = WorldCombatFeedbackFeed.HitStamp;
-                PlayAt(originId: 5, RuntimeAudioForge.Hit, 0.85f, priority: 4, transform.position);
+                // F29: the thud matches the BODY — bone clicks, hide thuds, chitin snaps, wisps ring.
+                var material = WorldCombatFeedbackFeed.HitMaterial;
+                Debug.Log($"[Audio] hit variant={material}");
+                PlayAt(originId: 5, RuntimeAudioForge.HitVariant(material), 0.85f, priority: 4, transform.position);
             }
         }
     }

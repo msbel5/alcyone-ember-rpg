@@ -186,6 +186,14 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         /// the F10 flash's audible twin.</summary>
         public static float[] RenderHitImpact(uint seed)
         {
+            return RenderHitImpact(seed, pitch: 1f, decayScale: 1f, thumpAmount: 1f);
+        }
+
+        // F29 BESTIARY: the same modal bank, re-voiced per struck MATERIAL — pitch scales the mode
+        // frequencies (bone/chitin ring high, hide/wail sit low), decayScale stretches or chokes the
+        // ring (a wisp lingers, chitin snaps shut), thumpAmount weighs the noise-thud body.
+        public static float[] RenderHitImpact(uint seed, float pitch, float decayScale, float thumpAmount)
+        {
             const float seconds = 0.22f;
             int count = (int)(seconds * Rate);
             var data = new float[count];
@@ -199,9 +207,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 float t = i / (float)Rate;
                 float s = 0f;
                 for (int m = 0; m < freqs.Length; m++)
-                    s += amps[m] * Mathf.Exp(-t / decay[m]) * Mathf.Sin(2f * Mathf.PI * freqs[m] * t);
+                    s += amps[m] * Mathf.Exp(-t / (decay[m] * decayScale)) * Mathf.Sin(2f * Mathf.PI * freqs[m] * pitch * t);
                 thump.Tick((rng() * 2f - 1f) * Mathf.Exp(-t * 55f));
-                data[i] = s * 0.22f + thump.Lp * 0.9f;
+                data[i] = s * 0.22f + thump.Lp * 0.9f * thumpAmount;
             }
             Normalize(data, 0.6f);
             return data;

@@ -280,9 +280,10 @@ namespace EmberCrpg.Tests.EditMode.Presentation
                 new UnityEngine.Vector3(player.Position.X - origin.X + 8, 0f, player.Position.Y - origin.Y),
                 new UnityEngine.Vector3(player.Position.X - origin.X + 9, 0f, player.Position.Y - origin.Y + 2)),
                 Is.EqualTo(2));
+            // F29: dwellers carry bestiary names now — slot 0 in a Mağara rotation is the wolf.
             ActorRecord haunter = null;
             foreach (var a in world.Actors.Records)
-                if (a != null && a.Name.StartsWith("Haunter of")) { haunter = a; break; }
+                if (a != null && EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.IsBestiaryName(a.Name)) { haunter = a; break; }
             Assert.That(haunter, Is.Not.Null);
             int Cheb() => System.Math.Max(
                 System.Math.Abs(haunter.Position.X - player.Position.X),
@@ -303,7 +304,8 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(Cheb(), Is.LessThanOrEqualTo(3), "the chase must reach melee reach");
             var combat = ((ICombatScreenSource)adapter).ReadCombatScreenState();
             Assert.That(combat.HasEncounter, Is.True, "aggro range must auto-bind the encounter");
-            Assert.That(combat.EnemyName, Does.StartWith("Haunter of").Or.StartWith("Stalker of"));
+            Assert.That(EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.IsBestiaryName(combat.EnemyName), Is.True,
+                $"the auto-bound enemy must be a bestiary dweller (was '{combat.EnemyName}')");
         }
 
         // F15 ("ölüm bir duvar değil, bedel"): respawn 20% altın keser, canları doldurur, saati tam

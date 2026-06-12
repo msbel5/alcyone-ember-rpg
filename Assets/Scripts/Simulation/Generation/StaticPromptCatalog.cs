@@ -152,6 +152,16 @@ namespace EmberCrpg.Simulation.Generation
             AddNpcSprite(prompts, "rogue", "a nimble rogue in fitted dark leather, lockpicks at the belt, cloak pulled close");
             AddNpcSprite(prompts, "beggar", "a hungry beggar in patched rags and frayed cloak, empty bowl, tired guarded posture");
             AddNpcSprite(prompts, "bandit", "a rough bandit in mismatched leathers, scarf mask loose at the neck, notched axe at the hip");
+            AddBestiaryPrompts(prompts);
+        }
+
+        // F29 BESTIARY: the monster billboard prompt BODIES live in the bestiary catalog (single
+        // source of truth next to the stats); the same NPC-sprite style envelope wraps them here
+        // so the style-invariant tests hold for monsters exactly as they do for villagers.
+        private static void AddBestiaryPrompts(Dictionary<string, string> prompts)
+        {
+            foreach (var entry in EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.All)
+                prompts[entry.SpriteRole] = EmberNpcSpriteHeader + ", " + entry.ForgePrompt;
         }
 
         private static void AddNpcSprite(Dictionary<string, string> prompts, string role, string body)

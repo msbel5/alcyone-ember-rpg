@@ -10,12 +10,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     {
         public static int HitStamp { get; private set; }
         public static ulong HitTargetId { get; private set; }
+        // F29: what the strike LANDED ON — the bestiary's hit material ("flesh"/"bone"/"hide"/
+        // "chitin"/"wail") keys the audio director's impact variant.
+        public static string HitMaterial { get; private set; } = "flesh";
         public static int FelledStamp { get; private set; }
         public static ulong FelledTargetId { get; private set; }
 
-        public static void RaiseHit(ulong targetActorId)
+        public static void RaiseHit(ulong targetActorId, string hitMaterial = "flesh")
         {
             HitTargetId = targetActorId;
+            HitMaterial = string.IsNullOrEmpty(hitMaterial) ? "flesh" : hitMaterial;
             HitStamp++;
         }
 

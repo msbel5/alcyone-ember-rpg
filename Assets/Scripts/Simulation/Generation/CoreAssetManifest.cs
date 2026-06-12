@@ -95,6 +95,15 @@ namespace EmberCrpg.Simulation.Generation
                 var entryId = "npc_" + role.ToString().ToLowerInvariant();
                 entries.Add(new ManifestEntry(entryId, "npc", "Assets/Generated/Core/" + entryId + ".png", entryId, NpcSpriteWidth, NpcSpriteHeight, true, NpcSpriteTimeoutSeconds, "sd15-lcm"));
             }
+
+            // F29 BESTIARY: one billboard per monster type — prompts come from the bestiary catalog
+            // via StaticPromptCatalog; with the forge OFF the runtime silhouettes stand in.
+            foreach (var monster in EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.All)
+            {
+                entries.Add(new ManifestEntry(
+                    monster.SpriteRole, "npc", "Assets/Generated/Core/" + monster.SpriteRole + ".png",
+                    monster.SpriteRole, NpcSpriteWidth, NpcSpriteHeight, true, NpcSpriteTimeoutSeconds, "sd15-lcm"));
+            }
         }
 
         private static void AddSound(List<ManifestEntry> entries, string id)

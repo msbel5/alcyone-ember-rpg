@@ -920,9 +920,11 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
                         // F18: world anchors come from the realize step (RuntimeDungeonLayoutInfo) — the
                         // single-chamber local-axis guesses died with the multi-room delve.
+                        // F29: dwellers are bestiary-typed now ("Fen Wolf of X" / "Bone Walker of X"
+                        // / ...) — the catalog is the single source of truth for the name prefixes.
                         bool IsDweller(string n) =>
-                            n.StartsWith("Haunter") || n.StartsWith("Stalker") || n.StartsWith("Lurker")
-                            || n.StartsWith("Prowler") || n.StartsWith("Warden");
+                            EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.IsBestiaryName(n)
+                            || n.StartsWith("Warden");
                         Debug.Log($"[Proof] F18 delve layout: rooms={DelveLayout.RoomCount} " +
                                   $"dwellerSpots={DelveLayout.DwellerSpots.Count} extent={DelveLayout.FootprintExtentMeters:0.0}m");
 
@@ -1115,6 +1117,40 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                         else
                         {
                             Debug.Log("[Proof] BROKEN — no haunter bound at the delve (expected 2 chamber outlaws).");
+                        }
+
+                        // F29-DoD: the BESTIARY family photo — three living dwellers of three
+                        // DISTINCT types posted shoulder-to-shoulder in the start room, one frame;
+                        // then one melee strike so the typed thud logs "[Audio] hit variant=...".
+                        Debug.Log("[Proof] F29 " + nightAdapter.ProofArrangeBestiaryPhoto(DelveLayout.StartRoomWorld));
+                        rig4.transform.position = DelveLayout.StartRoomWorld + new Vector3(0f, 1.0f, -3.4f);
+                        rig4.transform.rotation = Quaternion.LookRotation(
+                            DelveLayout.StartRoomWorld + Vector3.up * 0.9f - rig4.transform.position);
+                        yield return new WaitForSecondsRealtime(1.4f); // tick sync snaps the trio's views (>5m = snap)
+                        delveUi?.ProofCloseScreens();
+                        yield return new WaitForEndOfFrame();
+                        CaptureToPng(Path.Combine(_outputDir, "look_bestiary_trio.png"));
+                        yield return new WaitForSecondsRealtime(0.4f); // async capture separation
+
+                        Transform photoTarget = null;
+                        foreach (var view in FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None))
+                        {
+                            if (!IsDweller(view.name) || view.name.StartsWith("Warden")) continue;
+                            if (photoTarget == null
+                                || (view.transform.position - rig4.transform.position).sqrMagnitude
+                                   < (photoTarget.position - rig4.transform.position).sqrMagnitude)
+                                photoTarget = view.transform;
+                        }
+                        if (photoTarget != null)
+                        {
+                            int trioSwings = 0;
+                            while (trioSwings < 250 && !nightAdapter.TryMeleeStrike(photoTarget.name, 20)) trioSwings++;
+                            Debug.Log($"[Proof] F29 typed thud: struck '{photoTarget.name}' after {trioSwings + 1} swings " +
+                                      "(the [Audio] hit variant line above is the DoD log).");
+                        }
+                        else
+                        {
+                            Debug.Log("[Proof] BROKEN — no bestiary view found for the F29 typed-thud strike.");
                         }
                         if (fps4 != null)
                         {

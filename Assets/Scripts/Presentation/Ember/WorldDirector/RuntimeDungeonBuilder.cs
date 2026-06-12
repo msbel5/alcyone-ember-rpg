@@ -48,6 +48,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
             // F19: archetype palette — Mağara/Kripta/Harabe from the same seed that shaped the graph.
             var archetype = RuntimeDungeonArchetype.For(dungeonSeed);
+            // F29: the bestiary reads the archetype from the layout info (single-writer rule).
+            RuntimeDungeonLayoutInfo.RecordArchetype(archetype.Name);
             var rock = RuntimeMaterialPalette.Solid(archetype.Rock);
             var floor = RuntimeMaterialPalette.Solid(archetype.Floor);
 

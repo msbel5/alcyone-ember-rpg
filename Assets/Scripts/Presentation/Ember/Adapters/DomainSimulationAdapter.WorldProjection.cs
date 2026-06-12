@@ -128,6 +128,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string ResolveGeneratedSpriteRole(ActorRecord actor)
         {
             if (actor == null) return string.Empty;
+            // F29 BESTIARY: dungeon dwellers wear their TYPE, not the generic outlaw coat. The name
+            // encodes the type ("Fen Wolf of X"); the Warden wears the live delve's apex type.
+            var bestiary = EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.FromActorName(actor.Name);
+            if (bestiary != null) return bestiary.SpriteRole;
+            if (actor.Name != null && actor.Name.StartsWith("Warden of", System.StringComparison.Ordinal))
+            {
+                var apex = EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.Find(
+                    EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.ApexKeyFor(
+                        EmberCrpg.Presentation.Ember.WorldDirector.RuntimeDungeonLayoutInfo.ArchetypeName));
+                if (apex != null) return apex.SpriteRole;
+            }
             if (_world?.NpcSeeds != null && actor.Id.Value >= GeneratedNpcActorOffset)
             {
                 var npcId = new EmberCrpg.Domain.Worldgen.NpcId(actor.Id.Value - GeneratedNpcActorOffset);

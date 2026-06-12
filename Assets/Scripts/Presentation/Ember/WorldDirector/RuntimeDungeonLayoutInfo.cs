@@ -21,6 +21,14 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         public static Vector3 TrapWorld { get; private set; }
         public static Vector3 KeyWorld { get; private set; }
         public static Vector3 BossDoorWorld { get; private set; }
+        // F29: the realized delve's archetype name (Mağara/Kripta/Harabe) — the bestiary's
+        // type-rotation key. Same single-writer rule as the anchors (RuntimeDungeonBuilder).
+        public static string ArchetypeName { get; private set; } = "Mağara";
+
+        public static void RecordArchetype(string archetypeName)
+        {
+            if (!string.IsNullOrEmpty(archetypeName)) ArchetypeName = archetypeName;
+        }
 
         public static void Record(
             int roomCount, Vector3 entry, Vector3 startRoom, Vector3 bossRoom, Vector3 chest,

@@ -86,11 +86,20 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 bossSpot: null);
         }
 
-        /// <summary>F18: populate the multi-room delve — 0-2 Outlaw dwellers per room (spots from the
+        /// <summary>F18: populate the multi-room delve — 0-2 dwellers per room (spots from the
         /// realize step) + ONE boss (2× health, 1.5× damage) guarding the hoard. Deterministic ids
-        /// (settlement*16 + index) keep it idempotent; corpses persist and block respawn.</summary>
+        /// (settlement*16 + index) keep it idempotent; corpses persist and block respawn.
+        /// F29: dwellers are BESTIARY types now — the archetype picks the type rotation (cave runs
+        /// beasts, crypt the dead, ruin squatters) and the boss wears the archetype's apex type.</summary>
         public int EnsureDungeonDwellers(
             System.Collections.Generic.IReadOnlyList<UnityEngine.Vector3> spots, UnityEngine.Vector3? bossSpot)
+        {
+            return EnsureDungeonDwellers(spots, bossSpot, "Mağara"); // compat shim (tests + old callers)
+        }
+
+        public int EnsureDungeonDwellers(
+            System.Collections.Generic.IReadOnlyList<UnityEngine.Vector3> spots, UnityEngine.Vector3? bossSpot,
+            string archetypeName)
         {
             var here = CurrentSettlementOrStart;
             var map = _world?.Overland;
@@ -108,10 +117,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (!isDungeon || string.IsNullOrEmpty(settlementName)) return 0;
 
             var faction = _world.NpcSeeds.Count > 0 ? _world.NpcSeeds[0].Faction : new FactionId(1UL);
-            string[] titles = { "Haunter of ", "Stalker of ", "Lurker of ", "Prowler of " };
             int created = 0;
 
-            int CreateDweller(int slotIndex, UnityEngine.Vector3 world, string name, bool boss)
+            int CreateDweller(int slotIndex, UnityEngine.Vector3 world,
+                EmberCrpg.Simulation.Bestiary.BestiaryEntry entry, string name, bool boss)
             {
                 var npcId = new NpcId(HaunterNpcIdBase + (here.Value * 16UL) + (ulong)slotIndex);
                 var actorId = new ActorId(GeneratedNpcActorOffset + npcId.Value);
@@ -128,11 +137,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     origin.X + UnityEngine.Mathf.RoundToInt(world.x),
                     origin.Y + UnityEngine.Mathf.RoundToInt(world.z));
                 var baseVitals = VitalsFor(NpcRole.Outlaw);
-                var vitals = boss
-                    ? new ActorVitals( // F18 boss: 2× health, full pools
-                        new VitalStat(baseVitals.Health.Max * 2, baseVitals.Health.Max * 2),
-                        baseVitals.Fatigue, baseVitals.Mana)
-                    : baseVitals;
+                // F29: health from the bestiary row; the boss keeps its 2× rule on top.
+                int healthMax = boss ? entry.HealthMax * 2 : entry.HealthMax;
+                var vitals = new ActorVitals(
+                    new VitalStat(healthMax, healthMax), baseVitals.Fatigue, baseVitals.Mana);
                 var actor = new ActorRecord(
                     actorId,
                     name,
@@ -140,22 +148,34 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     StatsFor(NpcRole.Outlaw),
                     vitals,
                     grid,
-                    accuracy: boss ? 38 : 30, // v0.3 outlaw rebalance baseline; the boss reads meaner
-                    dodge: 20,
-                    armor: boss ? 6 : 4,
-                    baseDamage: boss ? 15 : 10, // 1.5× boss damage
+                    accuracy: boss ? entry.Accuracy + 8 : entry.Accuracy,
+                    dodge: entry.Dodge,
+                    armor: boss ? entry.Armor + 2 : entry.Armor,
+                    baseDamage: boss ? (entry.BaseDamage * 3) / 2 : entry.BaseDamage, // 1.5× boss damage
                     topicIds: new[] { "rumors", "work", "trade" },
                     home: grid,
                     dayAnchor: grid);
                 _world.Actors.Add(actor);
+                UnityEngine.Debug.Log($"[Bestiary] dweller spawned: '{name}' type={entry.Key} " +
+                    $"archetype={archetypeName} hp={healthMax} dmg={actor.BaseDamage} boss={boss}");
                 return 1;
             }
 
             int cap = System.Math.Min(spots.Count, 9);
             for (int k = 0; k < cap; k++)
-                created += CreateDweller(k, spots[k], titles[k % titles.Length] + settlementName, boss: false);
+            {
+                var entry = EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.EntryForSlot(archetypeName, k);
+                created += CreateDweller(k, spots[k], entry, entry.DisplayPrefix + settlementName, boss: false);
+            }
             if (bossSpot.HasValue)
-                created += CreateDweller(15, bossSpot.Value, "Warden of " + settlementName, boss: true);
+            {
+                // The boss keeps its Warden NAME (quests + proofs bind it by that) but wears the
+                // archetype's apex TYPE — the "şef-varyantı": a great wolf in the cave, a wisp in
+                // the crypt, a bandit chief in the ruin.
+                var apex = EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.Find(
+                    EmberCrpg.Simulation.Bestiary.WorldBestiaryCatalog.ApexKeyFor(archetypeName));
+                created += CreateDweller(15, bossSpot.Value, apex, "Warden of " + settlementName, boss: true);
+            }
             return created;
         }
     }
