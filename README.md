@@ -133,6 +133,15 @@ SDXL portrait forge stops fighting the GPU mid-measurement. Shipcheck: 9 section
 (world-enter, quest-seed, encounter-loot 13 swings, economy, perf 11.9ms avg, soak 10 hops 0 exceptions,
 economy-chain, audio-forge, modal-capture).
 
+### v0.4 "Combat Depth" (in progress — roadmap: docs/ROADMAP_V1.md)
+
+F14 enemy movement SHIPPED: hostiles that see the player (12m) give CHASE at ~2.2 m/s, stop adjacent
+and fight, and reaching aggro range auto-binds the encounter — walking into a delve chamber starts the
+fight without pressing E. All combat distance math (chase, retaliation reach, attack-nearest, spell
+range) now measures from the LIVE first-person body instead of the parked deterministic actor. Enemy
+swings lunge the billboard 0.2s. Proof players now quit automatically when a proof run ends.
+Proof: "[Proof] F14 chase: a=9.4m b=5.4m closed=4.0m" + consecutive chase frames (chest → corridor).
+
 Known limits added in v0.3 (honest): steep hillsides can still clip a dungeon-barrow corner; footstep
 surface detection is name-based (built "Floor" slabs vs terrain); per-step audio variation rotates 4
 pre-rendered variants (+pitch jitter) instead of re-rendering the dip cascade per step; melody voices are

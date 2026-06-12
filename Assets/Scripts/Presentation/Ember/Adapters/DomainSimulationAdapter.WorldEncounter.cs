@@ -181,6 +181,46 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         }
 
         private float _nextEnemyStrikeAt;
+        private float _nextHostileAiAt;
+
+        /// <summary>
+        /// F14 ENEMY MOVEMENT ("düşman kovalasın"): hostiles that SEE the player (12 cells ≈ 12m) give
+        /// chase — one grid cell per 0.45s ≈ 2.2 m/s, the DFU street speed — and STOP adjacent (≤2
+        /// cells ≈ 1.6m) to fight. Reaching aggro range (≤3) auto-binds the world encounter, so walking
+        /// into a delve chamber starts the fight without pressing E. Positions move through the SAME
+        /// ActorRecord.MoveTo the ScheduleSystem uses; the id-keyed sync carries billboards along.
+        /// Honest limit: only ONE enemy binds at a time (multi-enemy melee is F18's chamber fight).
+        /// </summary>
+        public void TickHostileAi(float unscaledNow)
+        {
+            if (unscaledNow < _nextHostileAiAt) return;
+            _nextHostileAiAt = unscaledNow + 0.45f;
+            if (_world?.NpcSeeds == null || _world.Actors == null) return;
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            if (player == null || !player.IsAlive) return;
+            var target = PlayerCombatPosition(player); // the LIVE body, not the parked actor
+            var here = CurrentSettlementOrStart;
+
+            for (int i = 0; i < _world.NpcSeeds.Count; i++)
+            {
+                var seed = _world.NpcSeeds[i];
+                if (seed == null || seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw || !seed.Home.Equals(here))
+                    continue;
+                var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
+                if (!_world.Actors.TryGet(actorId, out var hostile) || hostile == null || !hostile.IsAlive)
+                    continue;
+
+                int dist = Chebyshev(hostile.Position, target);
+                if (dist > 12 || dist <= 2) continue; // beyond sight, or already at melee reach
+
+                int dx = System.Math.Sign(target.X - hostile.Position.X);
+                int dy = System.Math.Sign(target.Y - hostile.Position.Y);
+                hostile.MoveTo(new GridPosition(hostile.Position.X + dx, hostile.Position.Y + dy));
+
+                if (Chebyshev(hostile.Position, target) <= 3 && WorldEncounterEnemy() == null)
+                    TryBeginWorldEncounter(hostile, seed); // aggro: music flips, panel appears, sting plays
+            }
+        }
 
         /// <summary>
         /// F13 REAL-TIME COMBAT ("savaş ekranında pause olmamalı"): the bound enemy fights BACK on its
@@ -197,7 +237,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             var player = _world.Actors?.FirstByRole(ActorRole.Player);
             if (player == null || !player.IsAlive) return;
-            if (Chebyshev(player.Position, enemy.Position) > 6)
+            if (Chebyshev(PlayerCombatPosition(player), enemy.Position) > 6)
             {
                 _lastCombatLine = $"{enemy.Name} stalks closer...";
                 return;
@@ -223,6 +263,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _lastCombatLine = outcome.Hit
                 ? $"{enemy.Name} hits you for {outcome.Damage}!"
                 : $"{enemy.Name} misses you.";
+            // F14 attack feel: the striking billboard lunges (the view consumes this stamp).
+            EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseEnemyStrike(enemy.Id.Value);
         }
 
         /// <summary>F10-DoD: bind the CURRENT settlement's haunter (an Outlaw homed HERE — street outlaws

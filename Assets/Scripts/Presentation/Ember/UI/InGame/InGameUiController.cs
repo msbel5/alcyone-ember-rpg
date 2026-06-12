@@ -199,6 +199,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 d.Mana = s.Mana; d.ManaMax = s.ManaMax;
             }
 
+            // F14 hostile AI pump: outlaws in sight give chase every unpaused frame (throttled inside).
+            if (!open && EmberDomainAdapterLocator.Current
+                    is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter aiAdapter)
+                aiAdapter.TickHostileAi(Time.unscaledTime);
+
             // F13 live-encounter pump: the combat read settles spoils + publishes the battle mirror, the
             // HUD shows the enemy panel, and the enemy swings BACK on its own clock while unpaused.
             if (_host is ICombatScreenSource liveCombat)

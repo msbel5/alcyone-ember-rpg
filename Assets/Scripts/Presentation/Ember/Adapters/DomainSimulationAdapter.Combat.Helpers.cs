@@ -81,6 +81,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             ActorRecord best = null;
             var bestDistance = int.MaxValue;
+            // F14: spell range measures from the LIVE body (tracker-fed guidance position) — the parked
+            // player actor sits at the plaza while the rig fights in the delve chamber.
+            var castFrom = PlayerCombatPosition(player);
             foreach (var candidate in _world.Actors.Records)
             {
                 if (candidate == null || candidate.Id.Equals(player.Id) || !candidate.IsAlive)
@@ -94,7 +97,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     continue;
                 }
 
-                var distance = player.Position.ManhattanDistanceTo(candidate.Position);
+                var distance = castFrom.ManhattanDistanceTo(candidate.Position);
                 if (spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.Touch && distance != 1)
                     continue;
                 if ((spell.TargetKind == EmberCrpg.Domain.Magic.SpellTargetKind.SingleTarget

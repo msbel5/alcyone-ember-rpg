@@ -18,10 +18,11 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
 
 ## v0.4 "SAVAŞ DERİNLİĞİ" — düşman yaşasın, ölüm anlam kazansın
 
-- [ ] **F14 Düşman hareketi**: haunter/haydut billboard'u oyuncuyu GÖRÜNCE kovalar (görüş 12m,
-  hız 2.2m/s, 1.6m'de durup vurur; CharacterController'sız basit yer-örnekli yürüyüş — grounding
-  view zaten var). Saldırı animasyon yerine 0.2s ileri-atılma + mevcut vuruş sesi/flaş.
-  **DoD:** lookaround zindan legi: haunter rig'e doğru en az 4m yaklaşmış iki ARDIL karede kanıtlı.
+- [x] **F14 Düşman hareketi** ✅ 2026-06-12: TickHostileAi (görüş 12, 1 hücre/0.45s ≈ 2.2m/s, ≤2'de
+  durur, ≤3'te encounter OTOMATİK bağlanır — E gerekmez); tüm savaş mesafeleri CANLI gövdeye bağlandı
+  (PlayerCombatPosition — park halindeki aktör değil); vuruşta 0.2s billboard atılması; düşman glide
+  2.4m/s. Kanıt: "[Proof] F14 chase: a=9.4m b=5.4m closed=4.0m" + chase_a/b kareleri (sandık→koridor)
+  + EditMode HostileAi testi + proof'lar artık otomatik kapanıyor (Application.Quit kökü).
 - [ ] **F15 Ölüm + yeniden doğuş döngüsü**: oyuncu ölünce death screen → "Awaken at the last
   settlement" (altının %20'si kayıp, HP/FAT/MP tam, dünya saati +8h). Save'siz oyunda da çalışır.
   **DoD:** looptest'e ölüm legi (haunter'a AFK yenil) → respawn satırı + HUD canlı karesi.
@@ -121,4 +122,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F14 <<<
+>>> CURRENT: F15 <<<

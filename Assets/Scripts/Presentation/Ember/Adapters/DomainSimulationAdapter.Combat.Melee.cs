@@ -24,14 +24,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             var player = _world.Actors?.FirstByRole(ActorRole.Player);
             if (player == null) return null;
+            // F14: range from the LIVE body (tracker-fed) — in a delve the parked actor sits at the
+            // plaza while the rig fights in the chamber; "attack nearest" must measure from the rig.
+            var from = PlayerCombatPosition(player);
             ActorRecord best = null;
             int bestDist = int.MaxValue;
             ulong bestId = ulong.MaxValue;
             foreach (var a in _world.Actors.Records)
             {
                 if (a == null || a.Role == ActorRole.Player) continue;
-                int d = System.Math.Max(System.Math.Abs(a.Position.X - player.Position.X),
-                                        System.Math.Abs(a.Position.Y - player.Position.Y));
+                int d = System.Math.Max(System.Math.Abs(a.Position.X - from.X),
+                                        System.Math.Abs(a.Position.Y - from.Y));
                 if (d > maxRange) continue;
                 if (d < bestDist || (d == bestDist && a.Id.Value < bestId)) { best = a; bestDist = d; bestId = a.Id.Value; }
             }

@@ -210,6 +210,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return false;
         }
 
+        // F14: combat distance math reads the LIVE first-person body (the tracker-fed guidance position),
+        // not the parked deterministic player actor — in a delve the actor sits at the plaza centre while
+        // the rig walks the chamber; chase/reach/strike must follow the body. Headless proofs and tests
+        // never push the tracker, so this falls back to the actor position there — both contexts honest.
+        private GridPosition PlayerCombatPosition(ActorRecord player)
+        {
+            return TryGetGuidancePlayerPosition(out var live) ? live : player.Position;
+        }
+
         private static int Chebyshev(GridPosition a, GridPosition b)
         {
             int dx = System.Math.Abs(a.X - b.X);

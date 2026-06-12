@@ -14,8 +14,9 @@ namespace EmberCrpg.Presentation.Ember.Views
         private ulong _actorId;
         private SpriteRenderer _sprite;
         private Behaviour _billboardFacing; // CameraFacingBillboard — disabled once the corpse lies down
-        private int _hitSeen, _felledSeen;
+        private int _hitSeen, _felledSeen, _strikeSeen;
         private float _flashUntil;
+        private float _lungeUntil;
         private bool _fallen;
         private Color _baseColor = Color.white;
 
@@ -46,6 +47,32 @@ namespace EmberCrpg.Presentation.Ember.Views
                 _felledSeen = WorldCombatFeedbackFeed.FelledStamp;
                 if (WorldCombatFeedbackFeed.FelledTargetId == _actorId)
                     Fall();
+            }
+
+            // F14 attack tell: when THIS actor swings, its billboard lunges toward the camera for 0.2s.
+            // Offset only the child board (the sync owns the root); it snaps back when the window ends.
+            if (WorldCombatFeedbackFeed.EnemyStrikeStamp != _strikeSeen)
+            {
+                _strikeSeen = WorldCombatFeedbackFeed.EnemyStrikeStamp;
+                if (WorldCombatFeedbackFeed.EnemyStrikeId == _actorId && !_fallen)
+                    _lungeUntil = Time.unscaledTime + 0.2f;
+            }
+            if (_sprite != null && !_fallen)
+            {
+                var cam = UnityEngine.Camera.main; // fully-qualified: Ember.Camera namespace shadows the type
+                var board = _sprite.transform;
+                if (Time.unscaledTime < _lungeUntil && cam != null)
+                {
+                    var toCam = cam.transform.position - board.parent.position;
+                    toCam.y = 0f;
+                    if (toCam.sqrMagnitude > 0.01f)
+                        board.localPosition = new Vector3(0f, board.localPosition.y,
+                            0f) + board.parent.InverseTransformDirection(toCam.normalized) * 0.35f;
+                }
+                else if (board.localPosition.x != 0f || board.localPosition.z != 0f)
+                {
+                    board.localPosition = new Vector3(0f, board.localPosition.y, 0f);
+                }
             }
         }
 

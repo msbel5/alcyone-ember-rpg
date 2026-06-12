@@ -134,8 +134,10 @@ namespace EmberCrpg.Presentation.Ember.Views
             // F6/night staging: citizens leave the street 22:00–06:00; guards and outlaws keep prowling.
             var curfew = root.AddComponent<EmberCrpg.Presentation.Ember.WorldDirector.NightCurfewView>();
             var spriteRole = candidate.SpriteRole ?? string.Empty;
-            curfew.Prowler = spriteRole.IndexOf("guard", System.StringComparison.OrdinalIgnoreCase) >= 0
-                          || spriteRole.IndexOf("outlaw", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            bool hostileRole = spriteRole.IndexOf("outlaw", System.StringComparison.OrdinalIgnoreCase) >= 0
+                            || spriteRole.IndexOf("bandit", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            curfew.Prowler = hostileRole
+                          || spriteRole.IndexOf("guard", System.StringComparison.OrdinalIgnoreCase) >= 0;
 
             // "Billboard" child — ActorView.Awake binds it by this exact name. Same local offset and
             // SpriteRenderer sorting order as EmberWorldspaceBuilder.SpawnActor's authored billboard.
@@ -154,8 +156,7 @@ namespace EmberCrpg.Presentation.Ember.Views
 
             // F10 ("savaşamadım"): hostiles must READ hostile from across the street — a red diamond
             // floats over outlaw/bandit billboards (root-parented, unscaled; faces the camera itself).
-            if (spriteRole.IndexOf("outlaw", System.StringComparison.OrdinalIgnoreCase) >= 0
-                || spriteRole.IndexOf("bandit", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            if (hostileRole)
                 AddHostileMarker(root.transform);
 
             // ActorView on the root, stamped with the stable id so the host's id-keyed PushWorldViews
@@ -165,7 +166,8 @@ namespace EmberCrpg.Presentation.Ember.Views
             actorView.BindDomainActorId(id);
             // Walk speed ~1.2 m/s, matched to the colony schedule's 1 tile / 0.83 s tick, so the billboard
             // glides continuously with the sim instead of stride-then-pausing (combat keeps the snap chase).
-            actorView.SetGroundSpeed(1.3f);
+            // F14: hostiles glide at chase speed (sim steps 1 cell / 0.45s ≈ 2.2 m/s) so the view keeps up.
+            actorView.SetGroundSpeed(hostileRole ? 2.4f : 1.3f);
             // The colony schedule now disperses NPCs across the (enlarged) settlement and walks each between its
             // home and a DISTINCT day-spot. On top of that purposeful motion, a small idle mill keeps them
             // subtly moving at their current spot so the town reads as alive instead of frozen statues. Visual

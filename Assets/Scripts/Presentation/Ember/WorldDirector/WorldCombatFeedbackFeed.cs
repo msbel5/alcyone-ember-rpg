@@ -24,5 +24,15 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             FelledTargetId = targetActorId;
             FelledStamp++;
         }
+
+        // F14: the ENEMY's own swing — its billboard lunges for 0.2s (attack tell without animation).
+        public static int EnemyStrikeStamp { get; private set; }
+        public static ulong EnemyStrikeId { get; private set; }
+
+        public static void RaiseEnemyStrike(ulong attackerActorId)
+        {
+            EnemyStrikeId = attackerActorId;
+            EnemyStrikeStamp++;
+        }
     }
 }

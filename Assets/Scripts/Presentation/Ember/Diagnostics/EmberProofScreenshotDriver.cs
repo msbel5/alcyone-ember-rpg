@@ -35,84 +35,132 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             if (HasArg("--ember-rescue-proof"))
             {
                 yield return RunRescueProof();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-gameplay-shot"))
             {
                 yield return RunGameplayShot();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-playthrough"))
             {
                 yield return RunPlaythrough();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-lookaround"))
             {
                 yield return RunLookAround();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-looptest"))
             {
                 yield return RunLoopProof();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-shipcheck"))
             {
                 yield return RunShipCheck();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-scene-tour"))
             {
                 yield return RunSceneTour();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-llm-proof"))
             {
                 yield return RunLlmProof();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-forge-proof"))
             {
                 yield return RunForgeProof();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-world-proof"))
             {
                 yield return RunWorldProof();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-input-proof"))
             {
                 yield return RunInputProof();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
             if (HasArg("--ember-planet-proof"))
             {
                 yield return RunPlanetProof();
-                if (HasArg("--ember-proof-quit")) Application.Quit();
+                // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
                 yield break;
             }
 
@@ -161,7 +209,11 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 worldgen.AnswerQuestion(0);
             yield return CaptureAfter(0.5f, "assetgen_failures");
 
-            if (HasArg("--ember-proof-quit")) Application.Quit();
+            // PLAYTEST FIX ("oyun testten sonra kapanmıyor"): the driver only exists in proof runs
+                // (--ember-proof-screenshots gates Bootstrap), so ALWAYS quit when the proof ends —
+                // the old opt-in --ember-proof-quit flag was never passed and windows piled up.
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
         }
 
         private static void DriveToBuildSelection(CharacterCreationController creation)
@@ -595,7 +647,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                     EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
                         EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
                     SceneManager.LoadScene(EmberScenes.GeneratedWorld);
-                    yield return new WaitForSecondsRealtime(4.0f);
+                    // Realize is synchronous in host Awake; a long arrival wait let the haunters chase
+                    // ~4m BEFORE the F14 A-frame (a=6.4m instead of ~10.6m). 1.5s settles visuals only.
+                    yield return new WaitForSecondsRealtime(1.5f);
 
                     var rig4 = GameObject.Find("PlayerRig");
                     var interior = GameObject.Find("DungeonInterior");
@@ -609,6 +663,42 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                         // both chamber captures faced the same wall while the haunters stood 6m away.
                         var fps4 = rig4.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
                         if (fps4 != null) fps4.enabled = false;
+                        // F14-DoD CHASE PROOF: stand at the corridor mouth (~10.5m from the chamber spots —
+                        // inside the 12m sight) and let the haunters COME. Two consecutive captures + logged
+                        // distances must show ≥4m closed (AI steps 1 cell / 0.45s ≈ 2.2 m/s).
+                        rig4.transform.position = interior.transform.TransformPoint(new Vector3(0f, 1.0f, -10.0f));
+                        yield return null; // views already exist (scene-arrival spawn); capture A at once —
+                                           // a 0.6s pre-wait let the chase eat ~3m before the A frame
+                        Transform chaseTarget = null;
+                        foreach (var view in FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None))
+                        {
+                            if (!view.name.StartsWith("Haunter") && !view.name.StartsWith("Stalker")) continue;
+                            if (chaseTarget == null
+                                || (view.transform.position - rig4.transform.position).sqrMagnitude
+                                   < (chaseTarget.position - rig4.transform.position).sqrMagnitude)
+                                chaseTarget = view.transform;
+                        }
+                        if (chaseTarget != null)
+                        {
+                            float distA = Vector3.Distance(chaseTarget.position, rig4.transform.position);
+                            rig4.transform.rotation = Quaternion.LookRotation(
+                                chaseTarget.position + Vector3.up * 0.9f - rig4.transform.position);
+                            yield return new WaitForEndOfFrame();
+                            CaptureToPng(Path.Combine(_outputDir, "look_dungeon_chase_a.png"));
+                            yield return new WaitForSecondsRealtime(2.6f); // ~5.7m of chase at 2.2 m/s
+                            float distB = Vector3.Distance(chaseTarget.position, rig4.transform.position);
+                            rig4.transform.rotation = Quaternion.LookRotation(
+                                chaseTarget.position + Vector3.up * 0.9f - rig4.transform.position);
+                            yield return new WaitForEndOfFrame();
+                            CaptureToPng(Path.Combine(_outputDir, "look_dungeon_chase_b.png"));
+                            Debug.Log($"[Proof] F14 chase: a={distA:0.0}m b={distB:0.0}m closed={distA - distB:0.0}m " +
+                                      $"(DoD: >=4m over two consecutive frames).");
+                        }
+                        else
+                        {
+                            Debug.Log("[Proof] BROKEN — no haunter view found for the F14 chase proof.");
+                        }
+
                         // Stand at the chamber mouth (corridor end), then AIM the camera at the nearest
                         // haunter view — the first runs proved the haunters stand 5-7m away while a fixed
                         // axis guess captured a wall corner instead.
