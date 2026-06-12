@@ -23,6 +23,67 @@ namespace EmberCrpg.Tests.EditMode.Save
         private static readonly WorldComponentId SoilId = new WorldComponentId(10UL);
         private static readonly ActorId Worker = new ActorId(1UL);
 
+        // F22: world quests joined the digest + the mapper — save→load must keep the journal
+        // identical: an OPEN generated contract, a COMPLETED one, and the fixed pair's states.
+        [Test]
+        public void WorldQuests_SurviveSaveLoadRoundtrip()
+        {
+            var world = BuildSeededWorld();
+            SeedWorldQuests(world);
+
+            var before = WorldStateDigest.Compute(world);
+            var data = WorldSaveMapper.ToData(world);
+            var loaded = WorldSaveMapper.ToWorld(data, BuildSeededWorld());
+
+            Assert.That(WorldStateDigest.Compute(loaded), Is.EqualTo(before),
+                "world quests must survive the roundtrip byte-identically");
+            Assert.That(loaded.WorldContracts.Count, Is.EqualTo(2));
+            Assert.That(loaded.WorldContracts[0].Title, Is.EqualTo("Bring ale to Maren"));
+            Assert.That(loaded.WorldContracts[0].Completed, Is.False);
+            Assert.That(loaded.WorldContracts[1].Completed, Is.True, "the closed contract stays closed");
+            Assert.That(loaded.WorldQuestStates[9001UL].IsComplete, Is.True, "bounty completion persists");
+            Assert.That(loaded.WorldQuestStates[9002UL].IsComplete, Is.False, "open pilgrimage stays open");
+        }
+
+        private static void SeedWorldQuests(WorldState world)
+        {
+            world.WorldContracts.Add(new EmberCrpg.Domain.Quest.WorldQuestRecord
+            {
+                Id = new EmberCrpg.Domain.Quest.QuestId(9100UL),
+                Template = EmberCrpg.Domain.Quest.WorldQuestTemplate.Fetch,
+                GiverNpcId = new EmberCrpg.Domain.Worldgen.NpcId(10UL),
+                GiverName = "Maren",
+                TargetSettlementId = new EmberCrpg.Domain.Worldgen.SettlementId(1UL),
+                TargetSettlementName = "Hearthome",
+                TargetNpcId = new EmberCrpg.Domain.Worldgen.NpcId(10UL),
+                TargetNpcName = "Maren",
+                ItemTemplateId = "ale",
+                RewardGold = 35,
+                DeadlineDay = 6,
+                Title = "Bring ale to Maren",
+            });
+            var closed = new EmberCrpg.Domain.Quest.WorldQuestRecord
+            {
+                Id = new EmberCrpg.Domain.Quest.QuestId(9101UL),
+                Template = EmberCrpg.Domain.Quest.WorldQuestTemplate.Visit,
+                GiverNpcId = new EmberCrpg.Domain.Worldgen.NpcId(11UL),
+                GiverName = "Olun",
+                TargetSettlementId = new EmberCrpg.Domain.Worldgen.SettlementId(2UL),
+                TargetSettlementName = "Yonderbrook",
+                RewardGold = 42,
+                DeadlineDay = 8,
+                Completed = true,
+                Title = "Visit Yonderbrook",
+            };
+            world.WorldContracts.Add(closed);
+
+            var bounty = new EmberCrpg.Domain.Quest.QuestState(1, world.Time);
+            bounty.MarkTaskTriggered(0);
+            bounty.SetCompleted(success: true);
+            world.WorldQuestStates[9001UL] = bounty;
+            world.WorldQuestStates[9002UL] = new EmberCrpg.Domain.Quest.QuestState(1, world.Time);
+        }
+
         [Test]
         public void SaveThenLoad_PreservesWorldDigest()
         {

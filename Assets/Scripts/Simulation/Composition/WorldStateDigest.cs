@@ -48,6 +48,7 @@ namespace EmberCrpg.Simulation.Composition
             AppendSpellCooldowns(sb, world.PlayerSpellCooldowns);
             AppendShieldBuffs(sb, world.PlayerShieldBuffs);
             AppendEvents(sb, world.Events);
+            AppendWorldQuests(sb, world);
 
             return sb.ToString();
         }
@@ -373,6 +374,68 @@ namespace EmberCrpg.Simulation.Composition
                 sb.Append('|');
                 AppendIntField(sb, buffs.GetRemainingTicks(spellId));
                 sb.Append('\n');
+            }
+        }
+
+        // F22: world quests joined the digest. The section is SKIPPED when both stores are empty so
+        // every pre-F22 golden digest (worlds without contracts) stays byte-identical.
+        private static void AppendWorldQuests(StringBuilder sb, WorldState world)
+        {
+            var contracts = world.WorldContracts;
+            var states = world.WorldQuestStates;
+            bool hasContracts = contracts != null && contracts.Count > 0;
+            bool hasStates = states != null && states.Count > 0;
+            if (!hasContracts && !hasStates)
+                return;
+
+            AppendSectionHeader(sb, "WORLDQUESTS");
+            if (hasContracts)
+            {
+                for (var i = 0; i < contracts.Count; i++)
+                {
+                    var q = contracts[i];
+                    if (q == null) continue;
+                    sb.Append("c|");
+                    AppendUlongField(sb, q.Id.Value);
+                    sb.Append('|');
+                    AppendIntField(sb, (int)q.Template);
+                    sb.Append('|');
+                    AppendUlongField(sb, q.GiverNpcId.Value);
+                    sb.Append('|');
+                    AppendUlongField(sb, q.TargetSettlementId.Value);
+                    sb.Append('|');
+                    AppendUlongField(sb, q.TargetNpcId.Value);
+                    sb.Append('|');
+                    sb.Append(q.ItemTemplateId);
+                    sb.Append('|');
+                    AppendIntField(sb, q.RewardGold);
+                    sb.Append('|');
+                    AppendIntField(sb, q.DeadlineDay);
+                    sb.Append('|');
+                    AppendBoolField(sb, q.Completed);
+                    sb.Append('|');
+                    AppendBoolField(sb, q.Failed);
+                    sb.Append('\n');
+                }
+            }
+            if (hasStates)
+            {
+                var keys = new List<ulong>(states.Keys);
+                keys.Sort();
+                foreach (var key in keys)
+                {
+                    var state = states[key];
+                    if (state == null) continue;
+                    sb.Append("s|");
+                    AppendUlongField(sb, key);
+                    sb.Append('|');
+                    AppendBoolField(sb, state.IsComplete);
+                    sb.Append('|');
+                    AppendBoolField(sb, state.IsSuccess);
+                    sb.Append('|');
+                    AppendLongField(sb, state.StartTick.TotalMinutes);
+                    sb.Append('\n');
+                }
             }
         }
 

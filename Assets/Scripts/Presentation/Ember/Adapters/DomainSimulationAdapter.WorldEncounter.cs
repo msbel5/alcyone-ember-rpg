@@ -70,7 +70,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public string ProofQuestSnapshot()
         {
             int active = 0, complete = 0;
-            foreach (var kv in _worldQuests)
+            foreach (var kv in WorldQuestStates ?? new System.Collections.Generic.Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState>())
             {
                 active++;
                 if (kv.Value != null && kv.Value.IsComplete) complete++;

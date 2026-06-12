@@ -71,6 +71,8 @@ namespace EmberCrpg.Domain.World
         /// </summary>
         public void EnsureInvariants()
         {
+            WorldContracts ??= new List<EmberCrpg.Domain.Quest.WorldQuestRecord>();
+            WorldQuestStates ??= new Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState>();
             Actors ??= new ActorStore();
             Items ??= new ItemStore();
             Sites ??= new SiteStore();
@@ -138,6 +140,11 @@ namespace EmberCrpg.Domain.World
         public int PlayerLevel = 1;
         // F17: kill/quest experience; gates the level-up screen (PlayerLevelUpService.XpForNextLevel).
         public int PlayerXp;
+        // F22: world quests PERSIST — generated contracts (F21) + the fixed bounty/pilgrimage pair's
+        // runtime states live on the world root (the adapter-local stores died here). Keyed by raw
+        // QuestId.Value because the kernel QuestStore stays catalog-only (the F2 lesson).
+        public List<EmberCrpg.Domain.Quest.WorldQuestRecord> WorldContracts = new List<EmberCrpg.Domain.Quest.WorldQuestRecord>();
+        public Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState> WorldQuestStates = new Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState>();
         public List<string> PlayerKnownSpellIds = new List<string>();
         public List<RoomPickup> Pickups = new List<RoomPickup>();
         public List<DungeonRoomState> DungeonRoomStates = new List<DungeonRoomState>();
@@ -200,6 +207,8 @@ namespace EmberCrpg.Domain.World
             MerchantInventory = other.MerchantInventory;
             PlayerLevel = other.PlayerLevel;
             PlayerXp = other.PlayerXp;
+            WorldContracts = other.WorldContracts;
+            WorldQuestStates = other.WorldQuestStates;
             PlayerKnownSpellIds = other.PlayerKnownSpellIds;
             Pickups = other.Pickups;
             DungeonRoomStates = other.DungeonRoomStates;

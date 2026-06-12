@@ -221,7 +221,14 @@ Proof (Reports/proof-f21a): looptest closes a fetch end-to-end — "[QuestGen] a
 ale to Grire Theashal (38g, deadline day 7)" → cargo bought through the live market → "[QuestGen]
 completed #9100 — +38 gold". EditMode: 20 seeds → 20 valid quests + determinism + all-four-templates
 reachability (runs in the pure fallback harness, 1458/1458).
-Honest PARTIAL: contracts live adapter-local — save persistence is F22's explicit job.
+F22 quest persistence SHIPPED: world quests survive saves. Generated contracts and the fixed
+bounty/pilgrimage pair's states moved from adapter-local stores onto the WORLD ROOT
+(WorldState.WorldContracts / WorldQuestStates — the 3-layer persistence pattern), WorldSaveMapper
+carries them both ways, and the contract serial derives restore-safely from what exists. The world
+digest gained a WORLDQUESTS section (skipped when empty, so every pre-F22 golden stayed
+byte-identical). Proof: WorldQuests_SurviveSaveLoadRoundtrip — an open contract, a completed one,
+and the bounty/pilgrimage states round-trip byte-identically through save→load; the F21 looptest
+fetch leg stays green seeding from the world store. (This closes F21's honest PARTIAL.)
 
 F20 traps + locks SHIPPED: the way down to the Warden now fights back. A rust-red CRUSHING PLATE
 sits mid-corridor on the boss path — step on it and it gives way underfoot: 8 damage, the mechanism

@@ -9,30 +9,39 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private static readonly QuestId OutlawBountyQuestId = new QuestId(9001UL);
         private static readonly QuestId ShrinePilgrimageQuestId = new QuestId(9002UL);
 
-        // ADAPTER-LOCAL store (probe-run finding): parking these in WorldState.Quests made QuestSystem.Tick
-        // and the Journal call QuestCatalog.Resolve on ids the catalog doesn't know — KeyNotFoundException
-        // EVERY TICK (it killed the screen tour). World quests are presentation-flow state; the kernel's
-        // store stays catalog-only. PARTIAL (honest): not yet persisted in saves — F4 save work picks it up.
-        private readonly System.Collections.Generic.Dictionary<QuestId, QuestState> _worldQuests
-            = new System.Collections.Generic.Dictionary<QuestId, QuestState>();
+        // F22: the stores live on the WORLD ROOT now (WorldState.WorldQuestStates / WorldContracts)
+        // so WorldSaveMapper carries them — the adapter-local dictionary died here. Keyed by raw
+        // QuestId.Value because the kernel QuestStore stays catalog-only (the F2 lesson).
+        private System.Collections.Generic.Dictionary<ulong, QuestState> WorldQuestStates
+            => _world?.WorldQuestStates;
 
-        /// <summary>Seeded at hydration: a KILL bounty (fell any outlaw) and a VISIT pilgrimage (reach a Shrine).</summary>
+        /// <summary>Seeded at hydration: a KILL bounty (fell any outlaw) and a VISIT pilgrimage (reach a
+        /// Shrine). Idempotent — a RESTORED world keeps its saved states.</summary>
         private void SeedWorldQuests()
         {
-            if (_world == null) return;
-            if (!_worldQuests.ContainsKey(OutlawBountyQuestId))
-                _worldQuests[OutlawBountyQuestId] = new QuestState(1, _world.Time);
-            if (!_worldQuests.ContainsKey(ShrinePilgrimageQuestId))
-                _worldQuests[ShrinePilgrimageQuestId] = new QuestState(1, _world.Time);
+            if (_world == null || WorldQuestStates == null) return;
+            if (!WorldQuestStates.ContainsKey(OutlawBountyQuestId.Value))
+                WorldQuestStates[OutlawBountyQuestId.Value] = new QuestState(1, _world.Time);
+            if (!WorldQuestStates.ContainsKey(ShrinePilgrimageQuestId.Value))
+                WorldQuestStates[ShrinePilgrimageQuestId.Value] = new QuestState(1, _world.Time);
             UnityEngine.Debug.Log("[Quest] world quests seeded: outlaw bounty (kill) + shrine pilgrimage (visit).");
         }
 
-        // F21 GENERATED QUESTS ("görev makinesi"): minted on demand by the deterministic
-        // WorldQuestGenerator, held adapter-local like the fixed pair above. PARTIAL (honest):
-        // save persistence is F22's explicit job (the adapter-local dictionary dies there).
-        private readonly System.Collections.Generic.List<EmberCrpg.Domain.Quest.WorldQuestRecord> _generatedQuests
-            = new System.Collections.Generic.List<EmberCrpg.Domain.Quest.WorldQuestRecord>();
-        private ulong _nextGeneratedQuestSerial = 9100UL;
+        // F21 GENERATED QUESTS ("görev makinesi") — F22: backed by WorldState.WorldContracts so
+        // saves carry every contract; the serial derives from what already exists (restore-safe).
+        private System.Collections.Generic.List<EmberCrpg.Domain.Quest.WorldQuestRecord> _generatedQuests
+            => _world?.WorldContracts;
+
+        private ulong NextGeneratedQuestSerial()
+        {
+            ulong max = 9099UL;
+            var contracts = _generatedQuests;
+            if (contracts != null)
+                for (int i = 0; i < contracts.Count; i++)
+                    if (contracts[i] != null && contracts[i].Id.Value > max)
+                        max = contracts[i].Id.Value;
+            return max + 1UL;
+        }
 
         /// <summary>F21: mint + accept one generated quest for the CURRENT settlement. Deterministic
         /// in the seed; the optional template force keeps proofs reproducible.</summary>
@@ -43,8 +52,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var quest = EmberCrpg.Simulation.Quest.WorldQuestGenerator.Generate(
                 _world.NpcSeeds, _world.Overland.Settlements, CurrentSettlementOrStart,
                 CurrentWorldDay(), seed, force);
-            if (quest == null) return null;
-            quest.Id = new QuestId(_nextGeneratedQuestSerial++);
+            if (quest == null || _generatedQuests == null) return null;
+            quest.Id = new QuestId(NextGeneratedQuestSerial());
             _generatedQuests.Add(quest);
             _lastCombatLine = $"Accepted: {quest.Title} ({quest.RewardGold}g, day {quest.DeadlineDay} latest).";
             UnityEngine.Debug.Log($"[QuestGen] accepted #{quest.Id.Value}: {quest.Title} from {quest.GiverName} " +
@@ -131,7 +140,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// <summary>One-shot completion: marks the task, closes the quest, pays the reward into the purse.</summary>
         private void CompleteWorldQuest(QuestId id, int goldReward, string label)
         {
-            if (_world == null || !_worldQuests.TryGetValue(id, out var state) || state == null || state.IsComplete) return;
+            if (_world == null || WorldQuestStates == null
+                || !WorldQuestStates.TryGetValue(id.Value, out var state) || state == null || state.IsComplete) return;
             state.MarkTaskTriggered(0);
             state.SetCompleted(success: true);
             _world.PlayerGold += goldReward;

@@ -102,9 +102,17 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   ekranında kendi "Contracts" bölümü (canlı durum: Active/Completed/Failed; deadline geçince lazy
   FAIL). Veren roller: Merchant/Noble/Priest/Scholar/Innkeeper/Blacksmith/Healer. DÜRÜST PARTIAL:
   kontratlar adapter-local — save kalıcılığı F22'nin işi (bilinçli sıralama).
-- [ ] **F22 Görev kalıcılığı**: dünya görevleri (bounty/pilgrimage dahil) save/load'da korunur
+- [x] **F22 Görev kalıcılığı**: dünya görevleri (bounty/pilgrimage dahil) save/load'da korunur
   (WorldSaveMapper genişler — adapter-local dictionary kalkar).
   **DoD:** save→load→journal aynı; digest roundtrip testi genişletilmiş haliyle yeşil.
+  **KANIT:** WorldState.WorldContracts + WorldQuestStates (3-katman desen: alan + EnsureInvariants +
+  CopyFrom; reflection guard geçti) · WorldSaveData.worldContracts/worldQuestStates DTO'ları +
+  mapper iki yön · adapter-local _worldQuests sözlüğü ve _generatedQuests listesi ÖLDÜ (property
+  redirect; kontrat seri numarası restore-güvenli max+1) · digest'e WORLDQUESTS bölümü (boşsa
+  atlanır — pre-F22 golden'lar byte-aynı kaldı) · WorldQuests_SurviveSaveLoadRoundtrip: açık kontrat
+  + kapalı kontrat + bounty-tamam/pilgrimage-açık → save→load → digest byte-aynı + alan eşitlikleri.
+  Looptest regresyonu: seed artık dünya store'undan, F21 fetch legi uçtan uca yeşil. Kapılar:
+  fallback 1459/1459, EditMode 19/19, Build Success.
 - [ ] **F23 İtibar + suç**: sivile vurmak = suç → muhafız saldırır + kelle parası; görev tamamlama
   +itibar, itibar yüksekse fiyatlar %10 iner (ekonomi köprüsü hazır).
   **DoD:** sivile vur→muhafız agro karesi; itibar satırı HUD/character ekranında.
@@ -172,4 +180,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F22 <<<
+>>> CURRENT: F23 <<<
