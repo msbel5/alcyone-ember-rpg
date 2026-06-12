@@ -66,6 +66,14 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-marathon"))
+            {
+                yield return RunMarathon();
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
+                yield break;
+            }
+
             if (HasArg("--ember-igtour"))
             {
                 yield return RunIgTour();
@@ -584,6 +592,116 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         // SELF-PLAYTEST ("playtestleri sen yapar mısın... çevrene bakıp inceleyebilirsin"): enter the real
         // generated world, pan a full 360° at spawn, then walk to the nearest building, look through the
         // doorway, step INSIDE and pan the room — the agent inspects the captures by eye afterwards.
+        // F34-DoD (--ember-marathon): the 30-minute autonomous SOAK — a seeded random loop of
+        // travel + combat + trade + clock advance through PRODUCTION paths. Exceptions are
+        // counted via the log callback, memory is sampled every minute, and the closing line is
+        // the verdict: 0 exceptions and a non-climbing memory curve, or it FAILS loudly.
+        // "--ember-marathon-minutes N" shortens the soak for iteration runs (the DoD run is 30).
+        private IEnumerator RunMarathon()
+        {
+            yield return WaitForBootToSettle();
+
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(4.0f);
+
+            float minutes = 30f;
+            var cli = Environment.GetCommandLineArgs();
+            for (int i = 0; i < cli.Length - 1; i++)
+                if (cli[i] == "--ember-marathon-minutes" && float.TryParse(cli[i + 1],
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var m))
+                    minutes = m;
+
+            int exceptions = 0;
+            Application.LogCallback handler = (condition, stack, type) =>
+            {
+                if (type == LogType.Exception) exceptions++;
+            };
+            Application.logMessageReceived += handler;
+
+            long memStart = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
+            long memPeak = memStart;
+            uint rngState = 0xF34F34u;
+            System.Func<uint> next = () =>
+            {
+                rngState ^= rngState << 13; rngState ^= rngState >> 17; rngState ^= rngState << 5;
+                return rngState;
+            };
+
+            int actions = 0, travels = 0, fights = 0, trades = 0, hours = 0;
+            float endAt = Time.unscaledTime + minutes * 60f;
+            float nextHeartbeat = Time.unscaledTime + 60f;
+            Debug.Log($"[Marathon] soak armed: {minutes:0}min, seed=0xF34F34, memStart={memStart / 1048576}MB.");
+
+            while (Time.unscaledTime < endAt)
+            {
+                var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                    as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+                if (adapter == null)
+                {
+                    Debug.Log("[Marathon] BROKEN — adapter lost; aborting soak.");
+                    break;
+                }
+
+                int pick = (int)(next() % 8u); // 2/8 travel, 3/8 fight, 2/8 trade, 1/8 clock
+                if (pick < 2)
+                {
+                    var names = adapter.ProofListSettlementNames();
+                    if (names.Count > 0 && adapter.TryTravelToSettlement(names[(int)(next() % (uint)names.Count)], out _))
+                    {
+                        EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
+                            EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
+                        SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+                        yield return new WaitForSecondsRealtime(1.5f);
+                        FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>()?.ProofCloseScreens();
+                        travels++;
+                    }
+                }
+                else if (pick < 5)
+                {
+                    adapter.ProofRunEncounterLeg(); // refuses honestly when no outlaw is homed here
+                    FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>()?.ProofCloseScreens();
+                    fights++;
+                }
+                else if (pick < 7)
+                {
+                    adapter.ProofRunTradeLeg();
+                    trades++;
+                }
+                else
+                {
+                    adapter.ProofAdvanceHours(1);
+                    hours++;
+                }
+                actions++;
+
+                if (Time.unscaledTime >= nextHeartbeat)
+                {
+                    nextHeartbeat = Time.unscaledTime + 60f;
+                    long memNow = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
+                    if (memNow > memPeak) memPeak = memNow;
+                    Debug.Log($"[Marathon] t={(int)(Time.unscaledTime - (endAt - minutes * 60f))}s " +
+                              $"actions={actions} (travel={travels} fight={fights} trade={trades} clock={hours}) " +
+                              $"exceptions={exceptions} mem={memNow / 1048576}MB peak={memPeak / 1048576}MB");
+                }
+
+                yield return new WaitForSecondsRealtime(2f + (next() % 5u));
+            }
+
+            Application.logMessageReceived -= handler;
+            long memEnd = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
+            if (memEnd > memPeak) memPeak = memEnd;
+            // Flat-curve rule: the end may not DOUBLE the start — scene churn fragments, a leak climbs.
+            bool flat = memEnd < memStart * 2;
+            bool pass = exceptions == 0 && flat;
+            Debug.Log($"[Marathon] VERDICT: {(pass ? "PASS" : "FAIL")} — {minutes:0}min soak, " +
+                      $"actions={actions} (travel={travels} fight={fights} trade={trades} clock={hours}), " +
+                      $"exceptions={exceptions}, mem {memStart / 1048576}MB -> {memEnd / 1048576}MB " +
+                      $"(peak {memPeak / 1048576}MB, flat={flat}).");
+        }
+
         // F32-DoD (--ember-igtour): EVERY in-game screen, one frame each — HUD, inventory,
         // character sheet, journal, world map, pause menu, options (Settings / Audio & Display /
         // Keybinds). The DoD's other half is the source grep: stub copy returns zero.

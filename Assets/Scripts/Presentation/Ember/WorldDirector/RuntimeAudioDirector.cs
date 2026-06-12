@@ -189,6 +189,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // F33: the post-FX rig (bloom + vignette + context grade).
             if (playerRig.GetComponent<RuntimePostFxView>() == null)
                 playerRig.AddComponent<RuntimePostFxView>();
+            // F34: the 5-minute autosave cadence.
+            if (playerRig.GetComponent<RuntimeAutosaveView>() == null)
+                playerRig.AddComponent<RuntimeAutosaveView>();
         }
 
         // Built floors are named slabs ("Floor", "CorrFloor", "ChamberFloor"); raw terrain is a Terrain

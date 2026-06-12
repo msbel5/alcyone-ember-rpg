@@ -69,6 +69,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return "MAINQUEST: " + line;
         }
 
+        /// <summary>F34: every settlement name — the marathon's travel roulette wheel.</summary>
+        public System.Collections.Generic.List<string> ProofListSettlementNames()
+        {
+            var names = new System.Collections.Generic.List<string>();
+            var map = _world?.Overland;
+            if (map == null) return names;
+            for (int i = 0; i < map.Settlements.Count; i++)
+                names.Add(map.Settlements[i].Name);
+            return names;
+        }
+
         public string ProofMainQuestSnapshot()
         {
             var quest = _world?.MainQuest;
