@@ -11,21 +11,25 @@ namespace EmberCrpg.Tests.EditMode.Magic
     public sealed class WorldSpellCatalogTests
     {
         [Test]
-        public void All_ListsThreeStarterSpellsInStableOrder()
+        public void All_ListsTheEightSchoolSpellsInStableOrder()
         {
-            var ids = new[]
-            {
-                WorldSpellCatalog.All[0].TemplateId,
-                WorldSpellCatalog.All[1].TemplateId,
-                WorldSpellCatalog.All[2].TemplateId,
-            };
+            // F28: the school grew from the three starters to EIGHT — order stays append-only so
+            // saved PlayerKnownSpellIds and slot indices never shuffle between versions.
+            var ids = new string[WorldSpellCatalog.All.Count];
+            for (var i = 0; i < ids.Length; i++)
+                ids[i] = WorldSpellCatalog.All[i].TemplateId;
 
-            Assert.That(WorldSpellCatalog.All.Count, Is.EqualTo(3));
+            Assert.That(WorldSpellCatalog.All.Count, Is.EqualTo(8));
             Assert.That(ids, Is.EqualTo(new[]
             {
                 WorldSpellCatalog.FlameBoltTemplateId,
                 WorldSpellCatalog.MendingTouchTemplateId,
                 WorldSpellCatalog.EmberWardTemplateId,
+                WorldSpellCatalog.FrostLanceTemplateId,
+                WorldSpellCatalog.SparkArcTemplateId,
+                WorldSpellCatalog.LanternGlowTemplateId,
+                WorldSpellCatalog.WindStepTemplateId,
+                WorldSpellCatalog.RecallGateTemplateId,
             }));
         }
 

@@ -150,6 +150,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (playerRig == null || playerRig.GetComponent<RuntimeAudioDirector>() != null) return;
             RuntimeAudioForge.EnsureForged();
             playerRig.AddComponent<RuntimeAudioDirector>();
+            // F28: signature-spell consumer rides the same rig (lantern orb + recall snap).
+            if (playerRig.GetComponent<RuntimeSpellFxView>() == null)
+                playerRig.AddComponent<RuntimeSpellFxView>();
         }
 
         // Built floors are named slabs ("Floor", "CorrFloor", "ChamberFloor"); raw terrain is a Terrain

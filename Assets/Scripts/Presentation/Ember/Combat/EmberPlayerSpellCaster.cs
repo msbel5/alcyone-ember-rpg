@@ -45,7 +45,9 @@ namespace EmberCrpg.Presentation.Ember.Combat
 
         private void Update()
         {
-            for (int i = 0; i < 5; i++)
+            // F28: the school is eight strong — keys 1-8 (hardware supports 1-9; the dialog
+            // modal's own number picker stays safe behind the IsModalOpen guard in Cast).
+            for (int i = 0; i < 8; i++)
             {
                 if (EmberInput.NumberKeyDown(i + 1))
                 {
@@ -91,8 +93,37 @@ namespace EmberCrpg.Presentation.Ember.Combat
             }
         }
 
+        /// <summary>F28 proof hook: cast through the SAME adapter path and fly the tinted bolt —
+        /// the driver cannot press number keys. Returns whether the cast fired.</summary>
+        public bool ProofCast(int slotIndex)
+        {
+            var adapter = EmberDomainAdapterLocator.Current;
+            if (adapter == null) return false;
+            bool fired = adapter.TryCastSpell(slotIndex);
+            if (fired && _eye != null)
+            {
+                StopAllCoroutines();
+                StartCoroutine(FlyBolt());
+            }
+            return fired;
+        }
+
+        // F28: the bolt wears its damage type — flame orange / frost ice-blue / spark white-gold.
+        private static Color BoltTint(string templateId)
+        {
+            switch (templateId)
+            {
+                case "frost_lance": return new Color(0.45f, 0.80f, 1f);
+                case "spark_arc": return new Color(1f, 0.95f, 0.55f);
+                default: return new Color(1f, 0.58f, 0.22f); // the flame family
+            }
+        }
+
         private IEnumerator FlyBolt()
         {
+            var tint = BoltTint(EmberCrpg.Presentation.Ember.WorldDirector.RuntimeSpellFxMirror.LastCastTemplate);
+            _boltMaterial.color = new Color(tint.r, tint.g, tint.b, 0.95f);
+            _boltLight.color = tint;
             _bolt.gameObject.SetActive(true);
             Vector3 from = _eye.position + _eye.forward * 0.6f - _eye.up * 0.15f;
             Vector3 to = from + _eye.forward * 8f; // matches FLAME BOLT's 8-tile reach

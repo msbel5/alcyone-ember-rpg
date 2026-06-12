@@ -30,6 +30,15 @@ namespace EmberCrpg.Domain.Magic
         public string Code => _code ?? None.Code;
         public bool IsEmpty => string.IsNullOrEmpty(_code) || Code == None.Code;
 
+        /// <summary>
+        /// True for the seven authored vitals/shield verbs. False for OPEN-SET world codes
+        /// (e.g. "light"/"haste"/"recall") whose magnitude is measured in world units
+        /// (minutes of glow, seconds of haste) rather than vitals points.
+        /// </summary>
+        public bool IsCanonical =>
+            Equals(DirectDamage) || Equals(RestoreHealth) || Equals(RestoreFatigue)
+            || Equals(ShieldBuff) || Equals(RestoreMana) || Equals(DirectMana) || Equals(DirectFatigue);
+
         public static SpellEffectCode FromCode(string code)
         {
             if (string.IsNullOrWhiteSpace(code))

@@ -94,6 +94,12 @@ Reports/validation-fallback*.log
 Reports/build-windows64*.log
 Reports/build-*.log
 Reports/*.tmp
+# Proof-run screenshots are REPRODUCIBLE artifacts (the build regenerates them via
+# --ember-lookaround/looptest/shipcheck); the durable record is the roadmap KANIT text +
+# Player.log lines. ~430MB of iteration PNGs do not belong in history.
+Reports/proof-*/
+Reports/proofs/
+Reports/shipcheck-*/
 
 # cuDNN 9 redistributable DLLs are huge (~830MB). Devs install locally
 # from https://developer.nvidia.com/cudnn-9-archive and copy into

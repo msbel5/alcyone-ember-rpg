@@ -6,8 +6,9 @@ using NUnit.Framework;
 
 // Design note:
 // Pins the deterministic Sprint 5 shield-buff application slice: a successful cast can write its
-// timed ShieldBuff effects into a ShieldBuffState container without changing the existing
-// instantaneous-only resolution rejection contract.
+// timed ShieldBuff effects into a ShieldBuffState container. F28 contract change: the
+// instantaneous resolver now SKIPS timed rows instead of rejecting them, so both services can
+// act on the same cast.
 namespace EmberCrpg.Tests.EditMode.Magic
 {
     /// <summary>Verifies SpellEffectResolutionService.ApplyShieldBuffs deterministic behavior.</summary>
@@ -193,8 +194,10 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
-        public void ApplyShieldBuffs_DoesNotAffectInstantaneousResolutionRejection()
+        public void ApplyShieldBuffs_AndInstantaneousResolutionSkipsTheTimedShield()
         {
+            // F28 contract change: the instantaneous resolver SKIPS the timed shield row instead
+            // of rejecting — both services act on the same cast without stepping on each other.
             var target = CreateGuard();
             var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var state = new ShieldBuffState();
@@ -205,8 +208,8 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             Assert.That(buffApplication.Success, Is.True);
             Assert.That(state.IsActive(WorldSpellCatalog.EmberWardTemplateId), Is.True);
-            Assert.That(instantaneous.Success, Is.False);
-            Assert.That(instantaneous.Error, Is.EqualTo(SpellEffectResolutionError.NonInstantaneousEffect));
+            Assert.That(instantaneous.Success, Is.True);
+            Assert.That(instantaneous.AppliedEffectCount, Is.EqualTo(0));
             Assert.That(target.Vitals.Health.Current, Is.EqualTo(13));
         }
 

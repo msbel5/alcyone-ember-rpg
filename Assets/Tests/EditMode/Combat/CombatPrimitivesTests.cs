@@ -132,5 +132,35 @@ namespace EmberCrpg.Tests.EditMode.Combat
             Assert.That(events.Count, Is.EqualTo(1));
             Assert.That(events.Events[0].Kind, Is.EqualTo(WorldEventKind.CombatResolved));
         }
+
+        [Test]
+        public void Resolver_DefenderMitigation_ReducesTheDamageThatLands()
+        {
+            // F28 WARD: the optional mitigation seam runs after the dice, before health — the
+            // outcome and the defender's vitals must both report the MITIGATED damage.
+            var attacker = new ActorRecord(
+                new ActorId(1UL), "Att", ActorRole.Guard,
+                new EmberStatBlock(10, 10, 10, 10, 10, 10),
+                new ActorVitals(new VitalStat(12, 12), new VitalStat(8, 8), new VitalStat(6, 6)),
+                new GridPosition(0, 0),
+                accuracy: 150, dodge: 0, armor: 0, baseDamage: 5);
+            var defender = new ActorRecord(
+                new ActorId(2UL), "Def", ActorRole.Guard,
+                new EmberStatBlock(10, 10, 10, 10, 10, 10),
+                new ActorVitals(new VitalStat(12, 12), new VitalStat(8, 8), new VitalStat(6, 6)),
+                new GridPosition(1, 0),
+                accuracy: 10, dodge: 0, armor: 1, baseDamage: 1);
+            var def = new CombatActionDef(new CombatActionId("slash"), 0, "h", "d", "swing");
+            var events = new WorldEventLog();
+
+            // Same dice as Resolver_HitTrue (seed 1 → hit, 4 raw); the ward eats 3 of it.
+            var outcome = new CombatActionResolver(new CombatHitRollService(), new CombatDamageService())
+                .Resolve(def, attacker, defender, 0, new XorShiftRng(1), default, new SiteId(1UL), events,
+                    defenderMitigation: rolled => rolled - 3);
+
+            Assert.That(outcome.Hit, Is.True);
+            Assert.That(outcome.Damage, Is.EqualTo(1));
+            Assert.That(defender.Vitals.Health.Current, Is.EqualTo(11));
+        }
     }
 }

@@ -84,22 +84,24 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
-        public void ResolveInstantaneousEffects_NonInstantaneousEffect_IsRejectedWithoutMutatingTarget()
+        public void ResolveInstantaneousEffects_TimedEffect_IsSkippedWithoutMutatingTarget()
         {
+            // F28 contract change: a timed effect (ember_ward's shield) no longer REJECTS the
+            // whole resolution — it is SKIPPED (the buff systems own it) and the cast commits.
             var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4);
             var cast = SpellCastResult.Ok(WorldSpellCatalog.CreateEmberWard(), 15, "cast");
             var service = new SpellEffectResolutionService();
 
             var result = service.ResolveInstantaneousEffects(cast, target);
 
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.Error, Is.EqualTo(SpellEffectResolutionError.NonInstantaneousEffect));
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(0));
             Assert.That(result.Spell.TemplateId, Is.EqualTo(WorldSpellCatalog.EmberWardTemplateId));
             Assert.That(target.Vitals.Health.Current, Is.EqualTo(13));
         }
 
         [Test]
-        public void ResolveInstantaneousEffects_UnsupportedInstantaneousShieldBuff_IsRejectedWithoutMutatingTarget()
+        public void ResolveInstantaneousEffects_UnsupportedShieldBuff_IsSkippedWhileSupportedSubsetApplies()
         {
             var target = CreateActor(601, "Guard", ActorRole.Guard, health: 13, mana: 4, fatigue: 7);
             var spell = new SpellDefinition(
@@ -117,13 +119,14 @@ namespace EmberCrpg.Tests.EditMode.Magic
 
             var result = service.ResolveInstantaneousEffects(cast, target);
 
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.Error, Is.EqualTo(SpellEffectResolutionError.UnsupportedEffect));
-            Assert.That(result.AppliedEffectCount, Is.EqualTo(0));
-            Assert.That(result.TotalDamage, Is.EqualTo(0));
+            // F28 contract change: the unsupported ShieldBuff row is skipped (not a rejection);
+            // the supported DirectDamage row still lands. Mixed spells resolve their legal subset.
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.AppliedEffectCount, Is.EqualTo(1));
+            Assert.That(result.TotalDamage, Is.EqualTo(3));
             Assert.That(result.TotalHealing, Is.EqualTo(0));
             Assert.That(result.TotalRestoredFatigue, Is.EqualTo(0));
-            Assert.That(target.Vitals.Health.Current, Is.EqualTo(13));
+            Assert.That(target.Vitals.Health.Current, Is.EqualTo(10));
             Assert.That(target.Vitals.Fatigue.Current, Is.EqualTo(7));
         }
 

@@ -302,7 +302,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 new EmberCrpg.Simulation.Combat.CombatDamageService());
             var outcome = resolver.Resolve(action, enemy, player,
                 damageBandWidth: System.Math.Max(1, enemy.BaseDamage / 2),
-                rng: rng, now: _world.Time, siteId: ResolveCombatSiteId(enemy, player), events: _world.Events);
+                rng: rng, now: _world.Time, siteId: ResolveCombatSiteId(enemy, player), events: _world.Events,
+                defenderMitigation: AbsorbWithPlayerWard); // F28: ember_ward finally guards for real
             _lastCombatLine = outcome.Hit
                 ? $"{enemy.Name} hits you for {outcome.Damage}!"
                 : $"{enemy.Name} misses you.";
@@ -804,6 +805,46 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return $"LOOP-PROOF: encounter vs '{outlaw.Name}' — {swings} swings, felled={!outlaw.IsAlive}, " +
                    $"enemyHp={outlaw.Vitals.Health.Current}, last='{_lastCombatLine}', " +
                    $"purse {goldBefore}->{_world.PlayerGold} gold (spoils+bounty).";
+        }
+
+        /// <summary>
+        /// F28 LOOP-PROOF: arm the spell-school leg — learn the whole catalog (live play earns
+        /// these one level-up pick at a time; the proof cannot grind XP), refill the caster's
+        /// mana, and post a living enemy three cells EAST of the live combat position so hostile
+        /// bolts have a legal target. Idempotent: the driver calls it before each cast (mana and
+        /// the target's health are topped up every time, so earlier bolts cannot starve later ones).
+        /// </summary>
+        public string ProofArmSpellSchool()
+        {
+            if (_world == null) return "LOOP-PROOF: no world to arm the spell school.";
+            var player = _world.Actors?.FirstByRole(ActorRole.Player);
+            if (player == null) return "LOOP-PROOF: no player actor for the spell school.";
+
+            _world.PlayerKnownSpellIds ??= new System.Collections.Generic.List<string>();
+            foreach (var spell in EmberCrpg.Simulation.Magic.WorldSpellCatalog.All)
+                if (!_world.PlayerKnownSpellIds.Contains(spell.TemplateId))
+                    _world.PlayerKnownSpellIds.Add(spell.TemplateId);
+
+            // Proof pool: a LEVELED caster's mana (live play grows it +2 per Mnd point at level-up)
+            // — the school's priciest spell (recall, 20) must be castable repeatedly in one leg;
+            // the 12-point loadout pool would refuse frost (17) before the frame was even taken.
+            player.ApplyVitals(player.Vitals.WithMana(new VitalStat(40, 40)));
+
+            ActorRecord target = null;
+            foreach (var candidate in _world.Actors.Records)
+            {
+                if (candidate == null || !candidate.IsAlive || candidate.Role != ActorRole.Enemy) continue;
+                target = candidate;
+                break;
+            }
+            if (target == null)
+                return $"LOOP-PROOF: spell school armed (known={_world.PlayerKnownSpellIds.Count}) — no living enemy to post.";
+
+            var castFrom = PlayerCombatPosition(player);
+            target.MoveTo(new EmberCrpg.Domain.Actors.GridPosition(castFrom.X + 3, castFrom.Y));
+            target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Restore(target.Vitals.Health.Max)));
+            return $"LOOP-PROOF: spell school armed — known={_world.PlayerKnownSpellIds.Count}, " +
+                   $"target '{target.Name}' posted 3 cells east of {castFrom}.";
         }
 
         public string ProofRunTradeLeg()

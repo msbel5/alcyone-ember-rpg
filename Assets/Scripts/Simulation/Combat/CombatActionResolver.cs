@@ -34,7 +34,11 @@ namespace EmberCrpg.Simulation.Combat
             // F16 EQUIPMENT: gear modifies the dice without mutating the immutable ActorRecord stats —
             // the caller passes the equipped weapon's bonuses (0 = bare hands, the old behaviour).
             int attackerAccuracyBonus = 0,
-            int attackerDamageBonus = 0)
+            int attackerDamageBonus = 0,
+            // F28 WARD: defender-side mitigation seam — the caller injects absorption (e.g. the
+            // player's shield-buff bag) so the resolver stays ignorant of buff storage (DIP).
+            // Receives the rolled damage, returns what actually lands. Null = old behaviour.
+            Func<int, int> defenderMitigation = null)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (attacker == null) throw new ArgumentNullException(nameof(attacker));
@@ -60,6 +64,10 @@ namespace EmberCrpg.Simulation.Combat
             var damage = hit
                 ? _damage.Roll(attacker.BaseDamage + attackerDamageBonus, damageBandWidth, defender.Armor, rng)
                 : 0;
+            // Mitigation runs AFTER the dice and BEFORE health: the event and the outcome both
+            // report the damage that actually landed, so logs and HUD stay truthful.
+            if (damage > 0 && defenderMitigation != null)
+                damage = Math.Max(0, defenderMitigation(damage));
             if (damage > 0)
                 defender.ApplyVitals(defender.Vitals.WithHealth(defender.Vitals.Health.Damage(damage)));
 

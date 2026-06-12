@@ -30,6 +30,11 @@ namespace EmberCrpg.Simulation.Magic
 
         public int EstimateEffectCost(SpellEffectSpec effect)
         {
+            // F28: open-set world codes ("light"/"haste"/"recall") measure magnitude in WORLD
+            // units (minutes of glow, seconds of haste) — not vitals points. Their mana price is
+            // authored in the catalog, not derived, so the estimator prices them at zero.
+            if (!effect.Kind.IsCanonical)
+                return 0;
             return effect.Magnitude + CalculateDurationComponent(effect.DurationTicks);
         }
 

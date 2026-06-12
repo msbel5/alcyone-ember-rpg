@@ -81,6 +81,84 @@ namespace EmberCrpg.Simulation.Magic
                 effects: new[] { new SpellEffectSpec(SpellEffectCode.ShieldBuff, 4, 30) });
         }
 
+        // ----- F28: the spell school grows to EIGHT — three damage types, shield, heal, light,
+        // haste and a recall gate. "light"/"haste"/"recall" are OPEN-SET effect codes: the pure
+        // resolver consumes mana and no-ops them; the presentation layer reacts by template id.
+        public const string FrostLanceTemplateId = "frost_lance";
+        public const string SparkArcTemplateId = "spark_arc";
+        public const string LanternGlowTemplateId = "lantern_glow";
+        public const string WindStepTemplateId = "wind_step";
+        public const string RecallGateTemplateId = "recall_gate";
+
+        public static SpellDefinition CreateFrostLance()
+        {
+            return new SpellDefinition(
+                FrostLanceTemplateId,
+                "Frost Lance",
+                MagicSchool.Destruction,
+                SpellTargetKind.SingleTarget,
+                manaCost: 17, // the flame curve: ceil(11 dmg * 3/2) — the estimator is the floor
+                rangeInTiles: 7,
+                cooldownTicks: 9,
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 11, 0) });
+        }
+
+        public static SpellDefinition CreateSparkArc()
+        {
+            return new SpellDefinition(
+                SparkArcTemplateId,
+                "Spark Arc",
+                MagicSchool.Destruction,
+                SpellTargetKind.SingleTarget,
+                manaCost: 9, // the flame curve: ceil(6 dmg * 3/2) — the estimator is the floor
+                rangeInTiles: 9,
+                cooldownTicks: 3,
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.DirectDamage, 6, 0) });
+        }
+
+        public static SpellDefinition CreateLanternGlow()
+        {
+            return new SpellDefinition(
+                LanternGlowTemplateId,
+                "Lantern Glow",
+                MagicSchool.Alteration,
+                SpellTargetKind.CasterSelf,
+                manaCost: 6,
+                rangeInTiles: 0,
+                cooldownTicks: 20,
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.FromCode("light"), 60, 60) });
+        }
+
+        public static SpellDefinition CreateWindStep()
+        {
+            return new SpellDefinition(
+                WindStepTemplateId,
+                "Wind Step",
+                MagicSchool.Alteration,
+                SpellTargetKind.CasterSelf,
+                manaCost: 12,
+                rangeInTiles: 0,
+                cooldownTicks: 30,
+                effects: new[]
+                {
+                    new SpellEffectSpec(SpellEffectCode.RestoreFatigue, 10, 0), // real wind in the legs
+                    new SpellEffectSpec(SpellEffectCode.FromCode("haste"), 30, 30),
+                });
+        }
+
+        public static SpellDefinition CreateRecallGate()
+        {
+            return new SpellDefinition(
+                RecallGateTemplateId,
+                "Recall Gate",
+                MagicSchool.Alteration,
+                SpellTargetKind.CasterSelf,
+                manaCost: 20,
+                rangeInTiles: 0,
+                cooldownTicks: 60,
+                effects: new[] { new SpellEffectSpec(SpellEffectCode.FromCode("recall"), 1, 0) });
+        }
+
         private static SpellDefinition[] BuildSpells()
         {
             return new[]
@@ -88,6 +166,11 @@ namespace EmberCrpg.Simulation.Magic
                 CreateFlameBolt(),
                 CreateMendingTouch(),
                 CreateEmberWard(),
+                CreateFrostLance(),
+                CreateSparkArc(),
+                CreateLanternGlow(),
+                CreateWindStep(),
+                CreateRecallGate(),
             };
         }
 

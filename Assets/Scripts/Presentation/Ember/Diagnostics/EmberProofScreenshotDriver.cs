@@ -819,6 +819,73 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 }
             }
 
+            // F28-DoD: the spell school — the three damage types wear their COLOURS in the world
+            // (flame orange / frost ice-blue / spark white-gold). The adapter arms each cast
+            // (learns the catalog, refills mana, posts a living target three cells east), then
+            // ProofCast flies the tinted bolt through the REAL cast path and the frame is taken
+            // mid-flight. Lantern Glow holds its held-orb for a fourth frame.
+            if (rig != null && nightAdapter != null)
+            {
+                var spellCaster = rig.GetComponent<EmberCrpg.Presentation.Ember.Combat.EmberPlayerSpellCaster>();
+                var fpsS = rig.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
+                if (spellCaster != null)
+                {
+                    if (fpsS != null) fpsS.enabled = false;
+                    rig.transform.position = EmberCrpg.Presentation.Ember.WorldDirector.RuntimePlayerSpawn.Position + Vector3.up * 0.2f;
+                    rig.transform.rotation = Quaternion.Euler(0f, 90f, 0f); // face +X — the armed target stands 3 cells east
+                    yield return null; // the combat-position tracker reads the rig's new spot before arming
+
+                    int SlotOf(string templateId)
+                    {
+                        var slots = nightAdapter.SpellSlots;
+                        for (int s = 0; s < slots.Count; s++)
+                            if (slots[s] == templateId) return s;
+                        return -1;
+                    }
+
+                    var boltLegs = new[]
+                    {
+                        (template: EmberCrpg.Simulation.Magic.WorldSpellCatalog.FlameBoltTemplateId, frame: "look_spell_flame.png"),
+                        (template: EmberCrpg.Simulation.Magic.WorldSpellCatalog.FrostLanceTemplateId, frame: "look_spell_frost.png"),
+                        (template: EmberCrpg.Simulation.Magic.WorldSpellCatalog.SparkArcTemplateId, frame: "look_spell_spark.png"),
+                    };
+                    foreach (var leg in boltLegs)
+                    {
+                        Debug.Log("[Proof] F28 " + nightAdapter.ProofArmSpellSchool());
+                        int slot = SlotOf(leg.template);
+                        bool fired = slot >= 0 && spellCaster.ProofCast(slot);
+                        Debug.Log($"[Proof] F28 cast {leg.template}: slot={slot} fired={fired}");
+                        yield return new WaitForSecondsRealtime(0.1f); // mid-flight (~3m of the 8m, 0.28s total)
+                        yield return new WaitForEndOfFrame();
+                        CaptureToPng(Path.Combine(_outputDir, leg.frame));
+                        yield return new WaitForSecondsRealtime(0.6f); // capture separation + the bolt expires
+                    }
+
+                    Debug.Log("[Proof] F28 " + nightAdapter.ProofArmSpellSchool());
+                    int lanternSlot = SlotOf(EmberCrpg.Simulation.Magic.WorldSpellCatalog.LanternGlowTemplateId);
+                    bool lanternFired = lanternSlot >= 0 && spellCaster.ProofCast(lanternSlot);
+                    Debug.Log($"[Proof] F28 cast lantern_glow: slot={lanternSlot} fired={lanternFired}");
+                    yield return new WaitForSecondsRealtime(0.5f); // the rig view notices the window and lights the orb
+                    yield return new WaitForEndOfFrame();
+                    CaptureToPng(Path.Combine(_outputDir, "look_spell_lantern.png"));
+                    yield return new WaitForSecondsRealtime(0.4f); // async capture separation
+                    // Snuff the 60s window NOW — the held orb must not photobomb the delve frames
+                    // that the F10-F20 eye-checks already pinned.
+                    EmberCrpg.Presentation.Ember.WorldDirector.RuntimeSpellFxMirror.LightUntilRealtime = 0f;
+                    yield return null; // the view notices and destroys the orb before the next leg
+
+                    if (fpsS != null)
+                    {
+                        fpsS.enabled = true;
+                        fpsS.SyncYaw(rig.transform.eulerAngles.y);
+                    }
+                }
+                else
+                {
+                    Debug.Log("[Proof] BROKEN — no EmberPlayerSpellCaster on the rig for the F28 spell leg.");
+                }
+            }
+
             // F10-DoD: travel to the nearest DELVE, walk the corridor into the chamber, and eye-proof the
             // haunters guarding the chest, the red hit flash, and the corpse pose after the kill.
             if (nightAdapter != null)

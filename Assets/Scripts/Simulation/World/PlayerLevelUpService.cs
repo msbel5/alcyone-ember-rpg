@@ -81,7 +81,19 @@ namespace EmberCrpg.Simulation.World
                     player.Stats.Mnd + choice.MndDelta,
                     player.Stats.Ins + choice.InsDelta,
                     player.Stats.Pre + choice.PreDelta);
-                world.ReplaceActorView(ActorRole.Player, CloneWithStats(player, updatedStats));
+                // F28 MANA ECONOMY: Mind grows the mana pool (+2 max per Mnd point, the gain
+                // arrives FILLED). Without this the 12-point loadout pool could never cast
+                // ember_ward (15), frost_lance (17) or recall_gate (20) — the school stayed
+                // sealed at the starter spells no matter how many levels were earned.
+                var updatedVitals = player.Vitals;
+                if (choice.MndDelta > 0)
+                {
+                    var manaGain = choice.MndDelta * 2;
+                    updatedVitals = updatedVitals.WithMana(new VitalStat(
+                        updatedVitals.Mana.Current + manaGain,
+                        updatedVitals.Mana.Max + manaGain));
+                }
+                world.ReplaceActorView(ActorRole.Player, CloneWithStats(player, updatedStats, updatedVitals));
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -112,14 +124,14 @@ namespace EmberCrpg.Simulation.World
             return true;
         }
 
-        private static ActorRecord CloneWithStats(ActorRecord source, EmberStatBlock stats)
+        private static ActorRecord CloneWithStats(ActorRecord source, EmberStatBlock stats, ActorVitals vitals)
         {
             var copy = new ActorRecord(
                 source.Id,
                 source.Name,
                 source.Role,
                 stats,
-                source.Vitals,
+                vitals,
                 source.Position,
                 source.Accuracy,
                 source.Dodge,

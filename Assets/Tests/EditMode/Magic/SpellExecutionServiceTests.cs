@@ -193,8 +193,12 @@ namespace EmberCrpg.Tests.EditMode.Magic
         }
 
         [Test]
-        public void TryExecute_TimedUnsupportedEffect_DoesNotSpendManaOrMutateCaster()
+        public void TryExecute_TimedEffectSpell_CommitsManaAndSkipsTimedResolution()
         {
+            // F28 contract change: ember_ward's timed shield no longer aborts the execution —
+            // the cast commits (mana + cooldown), the instantaneous resolver skips the timed
+            // row (0 applied), and the buff systems own the shield. The old all-or-nothing
+            // rejection silently refused ember_ward in live play.
             var caster = CreateActor(701, "Acolyte", ActorRole.Player, x: 1, y: 1, health: 16, mana: 20);
             var service = new SpellExecutionService();
 
@@ -204,11 +208,11 @@ namespace EmberCrpg.Tests.EditMode.Magic
                 new[] { WorldSpellCatalog.EmberWardTemplateId },
                 requestedTarget: caster);
 
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.Error, Is.EqualTo(SpellExecutionError.ResolutionRejected));
-            Assert.That(result.EffectResolutionResult.Error, Is.EqualTo(SpellEffectResolutionError.NonInstantaneousEffect));
-            Assert.That(result.ManaSpent, Is.EqualTo(0));
-            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(20));
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.EffectResolutionResult.Success, Is.True);
+            Assert.That(result.EffectResolutionResult.AppliedEffectCount, Is.EqualTo(0));
+            Assert.That(result.ManaSpent, Is.EqualTo(15));
+            Assert.That(caster.Vitals.Mana.Current, Is.EqualTo(5));
             Assert.That(caster.Vitals.Health.Current, Is.EqualTo(16));
         }
 

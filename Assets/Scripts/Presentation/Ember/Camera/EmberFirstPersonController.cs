@@ -130,6 +130,10 @@ namespace EmberCrpg.Presentation.Ember.Camera
 
             Vector3 targetInput = (transform.forward * vertical + transform.right * horizontal).normalized;
             float targetSpeed = _baseSpeed * (isSprinting ? _sprintMultiplier : 1f);
+            // F28 WIND STEP: the haste window quickens the stride (stacks with sprint) — the cast
+            // path stamps the mirror; expiry is just the window closing.
+            if (Time.unscaledTime < EmberCrpg.Presentation.Ember.WorldDirector.RuntimeSpellFxMirror.HasteUntilRealtime)
+                targetSpeed *= 1.5f;
             
             if (targetInput.magnitude < 0.1f) targetSpeed = 0f;
 

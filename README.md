@@ -299,3 +299,26 @@ Proof: looptest "LOOP-PROOF tavern-sleep: hp 39->62/62, purse 349->344, +8h" + "
 inside" + three interior frames tinted by their sign light. EditMode: sleep gold-gate/refill/+8h and
 temple heal tests. Honest PARTIALs: the host is seated by MoveTo (the daily schedule may walk them
 out over hours — persistent re-homing is v2); interior frame composition favors wall corners (F33).
+
+### v0.8 "Büyü + Bestiary" — in progress
+
+F28 spell school SHIPPED: the school is EIGHT — three damage types (Flame Bolt / Frost Lance /
+Spark Arc), a shield (Ember Ward), a heal (Mending Touch), a light (Lantern Glow), a haste
+(Wind Step) and a recall gate — and the three damage types wear their colours in the WORLD: the
+flying bolt and its point light tint orange / ice-blue / white-gold by template id.
+Proof (validation-output/proof-f28): look_spell_flame/frost/spark.png show three distinctly
+tinted bolts mid-flight over the settlement street, all fired through the real cast path
+(mana committed, target validated, damage landed); look_spell_lantern.png shows the held
+lantern orb. Three ROOT FIXES shipped with it: (1) the legacy resolver REJECTED any spell with
+a timed or open-set effect — ember_ward never actually cast in live play; the resolver now
+resolves the supported instantaneous subset and SKIPS the rest, the ward is recorded into
+PlayerShieldBuffs on cast and eats enemy melee damage through a new defender-mitigation seam in
+CombatActionResolver; (2) ranged casts measured range from the player's PARKED actor cell, so
+casting away from the plaza silently refused — the record now syncs to the live body at cast
+time; (3) the mana economy: Mind points grow the pool (+2 max each, the 12-point loadout could
+never reach ward 15 / frost 17 / recall 20), damage prices follow the flame curve, and the cost
+estimator prices open-set codes at zero (their magnitude is world-units, not vitals). Keys 1-8
+cast; new spells are learned via level-up picks. EditMode: effect tests for the five new spells,
+ward mitigation, mana growth (fallback 1466/1466). Honest PARTIALs: wind_step's ×1.5 stride and
+recall's rig-snap are wired + unit-tested but not frame-proven; there is no spellbook reorder
+screen — slots follow known-spell order.

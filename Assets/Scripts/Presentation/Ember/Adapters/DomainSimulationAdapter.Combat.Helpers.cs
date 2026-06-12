@@ -140,5 +140,20 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return WorksiteKind.Generic;
         }
 
+        /// <summary>
+        /// F28 WARD: the resolver's defender-mitigation seam, bound to the PLAYER's shield-buff
+        /// bag (cast writes it, the tick decays it, the save round-trips it). Consumes ward
+        /// magnitude before health and tells the player what the ward ate.
+        /// </summary>
+        private int AbsorbWithPlayerWard(int incomingDamage)
+        {
+            var wardBag = _world?.PlayerShieldBuffs;
+            if (wardBag == null || incomingDamage <= 0) return incomingDamage;
+            var absorption = new EmberCrpg.Simulation.Magic.ShieldBuffService().AbsorbDamage(wardBag, incomingDamage);
+            if (absorption.AbsorbedDamage > 0)
+                LogCombat($"Your ward absorbs {absorption.AbsorbedDamage} damage!");
+            return absorption.RemainingDamage;
+        }
+
     }
 }

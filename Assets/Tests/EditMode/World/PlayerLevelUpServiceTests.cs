@@ -34,6 +34,26 @@ namespace EmberCrpg.Tests.EditMode.World
         }
 
         [Test]
+        public void TryApply_MindPoints_GrowTheManaPool()
+        {
+            // F28 mana economy: +2 max mana per Mnd point (the gain arrives filled) — the road
+            // from the 12-point loadout pool to ember_ward (15), frost_lance (17), recall (20).
+            var world = new WorldFactory().Create(79);
+            world.PlayerXp = PlayerLevelUpService.XpForNextLevel(world.PlayerLevel);
+            var before = world.Actors.FirstByRole(ActorRole.Player).Vitals.Mana;
+
+            var success = new PlayerLevelUpService().TryApply(
+                world,
+                new PlayerLevelUpChoice(0, 0, 0, 5, 0, 0, null),
+                out _);
+
+            Assert.That(success, Is.True);
+            var after = world.Actors.FirstByRole(ActorRole.Player).Vitals.Mana;
+            Assert.That(after.Max, Is.EqualTo(before.Max + 10));
+            Assert.That(after.Current, Is.EqualTo(before.Current + 10));
+        }
+
+        [Test]
         public void TryApply_RejectsWrongPointBudget()
         {
             var world = new WorldFactory().Create(78);

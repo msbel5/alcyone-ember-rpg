@@ -192,9 +192,27 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
 
 ## v0.8 "BÜYÜ + BESTIARY" — içerik genişlemesi
 
-- [ ] **F28 Büyü okulu**: 8 büyü (3 hasar tipi + kalkan + şifa + ışık + hız + teleport-to-entrance);
+- [x] **F28 Büyü okulu**: 8 büyü (3 hasar tipi + kalkan + şifa + ışık + hız + teleport-to-entrance);
   büyü kitabı ekranından slot atama; mana ekonomisi dengelenir.
   **DoD:** EditMode etki testleri + 3 büyünün dünya VFX karesi (bolt sistemi genişler).
+  **KANIT (lookaround, validation-output/proof-f28):** look_spell_flame/frost/spark.png — üç
+  hasar tipi DÜNYADA kendi rengini giyer (turuncu / buz-mavisi / beyaz-altın bolt, BoltTint +
+  RuntimeSpellFxMirror.LastCastTemplate); look_spell_lantern.png — elde-taşınan LanternGlow orb'u
+  karede + "[Spell] lantern glow orb lit (60s)" logu; 4 cast da gerçek yoldan (`fired=True`,
+  ProofCast → TryCastSpell → SpellExecutionService). Katalog 8: flame/mending/ward/frost/spark/
+  lantern/wind/recall (append-only sıra testi). EditMode (fallback 1466/1466): etki testleri
+  (frost 11 / spark 6 hasar, wind_step +10 fatigue, açık-küme kodlar vitals'a dokunmaz), ward
+  hafifletme dikişi, +2 mana/Mnd büyümesi. ÜÇ KÖK DÜZELTME: (1) resolver SÖZLEŞME değişimi —
+  zamanlı/açık-küme efekt artık cast'i REDDETMEZ, atlanır (ember_ward canlıda bu yüzden hiç
+  atılamıyordu); ward artık cast'te PlayerShieldBuffs'a yazılır + düşman vuruşunda
+  defenderMitigation dikişiyle emer; (2) cast anında oyuncu kaydı CANLI bedene senkronlanır —
+  validator park edilmiş plaza hücresinden ölçüyordu, park noktasından uzak her menzilli cast
+  sessizce reddediliyordu; (3) mana ekonomisi: Mnd puanı +2 max mana (12'lik havuz ward 15 /
+  frost 17 / recall 20'yi hiç açamazdı), frost/spark fiyatı flame eğrisinde (ceil(dmg×3/2)),
+  estimator açık-küme kodları 0 fiyatlar (büyüklük dünya-birimi). Tuşlar 1-8.
+  DÜRÜST PARTIAL: wind_step hız çarpanı (×1.5) ve recall_gate rig-snap'i kablolu + EditMode'lu
+  ama kare-kanıtsız (lookaround sadece 3 bolt + lantern çeker); "büyü kitabı ekranı" yok —
+  slotlar bilinen-büyü sırası (1-8), yeni büyü level-up seçimiyle öğrenilir.
 - [ ] **F29 Bestiary**: 6 düşman tipi (haydut/iskelet/kurt/örümcek/hayalet/şef-varyantları) —
   billboard sprite forge promptları + stat blokları + zindan arketipine göre dağılım.
   **DoD:** 3 farklı tip tek karede (zindan odası) + tip-bazlı vuruş sesi varyantı logu.
@@ -237,4 +255,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F28 <<<
+>>> CURRENT: F29 <<<

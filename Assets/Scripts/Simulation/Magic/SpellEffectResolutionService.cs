@@ -49,6 +49,7 @@ namespace EmberCrpg.Simulation.Magic
                 return validation;
 
             var effects = castResult.Spell.Effects;
+            var appliedCount = 0;
             var totalDamage = 0;
             var totalHealing = 0;
             var totalRestoredFatigue = 0;
@@ -58,6 +59,14 @@ namespace EmberCrpg.Simulation.Magic
             for (var i = 0; i < effects.Count; i++)
             {
                 var effect = effects[i];
+                // F28 contract change: this service owns ONLY the instantaneous legacy vitals
+                // effects. Timed effects (shield/haste/light) belong to the buff systems, and
+                // OPEN-SET codes ("light"/"haste"/"recall") to the presentation layer — both are
+                // SKIPPED here, never rejected, so a mixed or signature spell still commits its
+                // mana and the owning system reacts. The old all-or-nothing rejection predated
+                // the open-set SpellEffectCode redesign and silently refused ember_ward in play.
+                if (!effect.IsInstantaneous || !IsSupported(effect.Kind))
+                    continue;
                 var before = target.Vitals.Health.Current;
                 if (effect.Kind == SpellEffectCode.DirectDamage)
                 {
@@ -93,18 +102,19 @@ namespace EmberCrpg.Simulation.Magic
                     target.ApplyVitals(target.Vitals.WithFatigue(target.Vitals.Fatigue.Damage(effect.Magnitude)));
                     totalDirectFatigueDamage += before - target.Vitals.Fatigue.Current;
                 }
+                appliedCount++;
             }
 
             return SpellEffectResolutionResult.Ok(
                 castResult.Spell,
-                effects.Count,
+                appliedCount,
                 totalDamage,
                 totalHealing,
                 totalRestoredFatigue,
                 totalRestoredMana,
                 totalDirectManaDamage,
                 totalDirectFatigueDamage,
-                $"Resolved {effects.Count} instantaneous effect(s) from {castResult.Spell.DisplayName}.");
+                $"Resolved {appliedCount} instantaneous effect(s) from {castResult.Spell.DisplayName}.");
         }
 
         public ShieldBuffApplicationResult ApplyShieldBuffs(SpellCastResult castResult, ShieldBuffState shieldBuffState)
@@ -167,16 +177,9 @@ namespace EmberCrpg.Simulation.Magic
             if (target == null || !target.IsAlive)
                 return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.InvalidTarget, spell, "A living target is required for spell effect resolution.");
 
-            var effects = spell.Effects;
-            for (var i = 0; i < effects.Count; i++)
-            {
-                var effect = effects[i];
-                if (!effect.IsInstantaneous)
-                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.NonInstantaneousEffect, spell, "Timed spell effects are not resolved by this service.");
-                if (!IsSupported(effect.Kind))
-                    return SpellEffectResolutionResult.Fail(SpellEffectResolutionError.UnsupportedEffect, spell, "Only direct damage, restore health, restore fatigue, restore mana, direct mana, and direct fatigue are supported in this increment.");
-            }
-
+            // F28 contract change: timed and open-set effect codes no longer REJECT the cast —
+            // the resolve loop skips them (their owners are the buff systems / presentation).
+            // Validation keeps only the hard preconditions: a spell and a living target.
             return SpellEffectResolutionResult.Ok(spell, 0, 0, 0, 0, 0, 0, 0, $"{spell.DisplayName} passed instantaneous effect validation.");
         }
 
