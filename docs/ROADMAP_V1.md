@@ -306,9 +306,22 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   düşüşü 18→16 karede; "[Sparks] burst" logu F34 maratonunda yüzlerce kez kanıtlanacak); yürüyüş
   animasyonu still-kareyle kanıtlanamaz (hareket kanıtı kullanıcı playtest'i / F34 video değil);
   gerçek 2. kare sprite forge-ON işi (mirror-swap şimdilik dürüst yaklaşım).
-- [ ] **F34 Stabilite maratonu**: 30dk otonom soak (rastgele travel+savaş+ticaret döngüsü),
+- [x] **F34 Stabilite maratonu**: 30dk otonom soak (rastgele travel+savaş+ticaret döngüsü),
   0 exception + bellek eğrisi düz; autosave (5dk); tüm goldenler yeşil.
   **DoD:** yeni --ember-marathon proof bölümü PASS; bellek raporu logda.
+  **KANIT (--ember-marathon):** 30dk koşu — "[Marathon] VERDICT: PASS — 30min soak, actions=406
+  (travel=102 fight=152 trade=110 clock=42), exceptions=0, mem 255MB -> 295MB (peak 308MB,
+  flat=True)" — 102 scene-reload'lu seyahat dahil ÜRETİM yollarından seed'li (0xF34F34) rastgele
+  döngü; exception sayımı log callback'iyle, bellek raporu dakikada bir + kapanışta logda (DoD).
+  AUTOSAVE: maraton ilk koşuda 5dk kadansın HİÇ ateşlenmediğini yakaladı — kök neden: sık
+  scene-reload rig'i yeniden doğuruyor, instance-bazlı Start() 300s penceresini her seferinde
+  sıfırlıyordu; çapa STATİĞE alındı → 8dk rerun'da (final binary) "[Autosave] world saved (5min
+  cadence)" ateşlendi + VERDICT yine PASS (105 aksiyon, 0 exception, flat).
+  GOLDENLER: fallback 1478/1478 + SHIPCHECK 9/9 PASS.
+  DÜRÜST NOT: "bellek düz" kuralı = bitiş < başlangıç×2 (255→295MB, plato 295-308 bandında).
+
+> **v0.9 KAPANIŞ KANITI:** SHIPCHECK VERDICT: PASS (9 sections, 0 exceptions) — perf avg=12,1ms
+> worst=418ms (bütçe 16). Tag: v0.9.0-polish-and-spine.
 
 ## v1.0 "EMBER" — yayın
 
@@ -329,4 +342,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F34 <<<
+>>> CURRENT: F35 <<<

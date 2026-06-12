@@ -358,7 +358,7 @@ so greetings stay text-only.
 v0.8 CLOSURE: SHIPCHECK VERDICT PASS -- 9 sections, 0 exceptions, perf avg 12.7ms / worst 440ms
 (budget 16ms). Tagged v0.8.0-spell-and-beast.
 
-### v0.9 "Cila + İskelet Hikâye" — in progress
+### v0.9 "Cila + İskelet Hikâye" — SHIPPED (shipcheck 9/9 PASS, perf 12.1ms avg; tag v0.9.0-polish-and-spine)
 
 F31 main quest spine SHIPPED: the game has a beginning, a middle and an END. Three acts -- gather
 the ancient inscription pieces from the delves (one per delve; the requirement adapts to worlds
@@ -404,3 +404,16 @@ everything on: SHIPCHECK 9/9 PASS, avg 12.4ms / worst 466ms against the 16ms bud
 PARTIALs: this run's hitflash frame missed the 0.15s flash / 0.32s spark windows (the hp drop is
 in frame; the spark log will print hundreds of times in F34's marathon); a still frame cannot
 prove a gait -- the walk needs eyes in motion.
+
+F34 stability marathon SHIPPED: the world survives being LIVED IN. The new --ember-marathon soak
+runs a seeded random loop of travel + combat + trade + clock advance through production paths --
+the 30-minute DoD run: 406 actions (102 travels with full scene reloads, 152 fights, 110 trades),
+ZERO exceptions, memory 255MB -> 295MB with a 295-308MB plateau (flat). Exceptions are counted at
+the log-callback level; memory is reported every minute and at the close. The marathon earned its
+keep immediately: the first run proved the new 5-minute AUTOSAVE never fired -- frequent scene
+reloads rebirthed the rig and a per-instance timer reset the window every time; the anchor moved
+to a static, and the 8-minute rerun on the final binary logged "[Autosave] world saved (5min
+cadence)" with another PASS verdict. All goldens green: fallback 1478/1478.
+
+v0.9 CLOSURE: SHIPCHECK VERDICT PASS -- 9 sections, 0 exceptions, perf avg 12.1ms / worst 418ms
+(budget 16ms). Tagged v0.9.0-polish-and-spine. One version remains: v1.0 "EMBER".
