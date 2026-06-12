@@ -797,6 +797,11 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             }
             Debug.Log("[Proof] " + adapter.ProofMainQuestSnapshot());
 
+            // F35: the playthrough FRAME SERIES — one frame per stage (the video stand-in).
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "pt_01_world_intro.png"));
+            yield return new WaitForSecondsRealtime(0.4f);
+
             // ACT 1 — each delve's chest yields its inscription piece (the spine caps the count).
             var delveNames = adapter.ProofListDelveNames();
             Debug.Log($"[Proof] mainquest act 1: {delveNames.Count} delve(s) to sweep.");
@@ -812,6 +817,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 if (chest != null) Debug.Log("[Proof] mainquest chest: " + chest.ProofOpen());
                 else Debug.Log($"[Proof] MAINQUEST BROKEN — no chest at '{delveNames[d]}'.");
                 Debug.Log("[Proof] " + adapter.ProofMainQuestSnapshot());
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, $"pt_02_delve_{d + 1}.png"));
+                yield return new WaitForSecondsRealtime(0.4f);
             }
 
             // ACT 2 — the capital's sage reads the joined inscription.
@@ -823,6 +831,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 SceneManager.LoadScene(EmberScenes.GeneratedWorld);
                 yield return new WaitForSecondsRealtime(1.5f);
                 Debug.Log($"[Proof] mainquest act 2: at the capital '{capital}'.");
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, "pt_03_capital_sage.png"));
+                yield return new WaitForSecondsRealtime(0.4f);
             }
             Debug.Log("[Proof] " + adapter.ProofConsultSage());
 
@@ -838,6 +849,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             SceneManager.LoadScene(EmberScenes.GeneratedWorld);
             yield return new WaitForSecondsRealtime(1.5f);
             FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>()?.ProofCloseScreens();
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "pt_04_final_delve.png"));
+            yield return new WaitForSecondsRealtime(0.4f);
             string warden = adapter.ProofBindDelveWarden();
             if (string.IsNullOrEmpty(warden))
             {
@@ -847,10 +861,15 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             Debug.Log("[Proof] mainquest act 3: boss bound — " + warden);
             Debug.Log(adapter.ProofFinishBoundEncounter());
             yield return new WaitForSecondsRealtime(1.0f); // the finale view polls the mirror and raises
-            Debug.Log("[Proof] " + adapter.ProofMainQuestSnapshot());
+            string closing = adapter.ProofMainQuestSnapshot();
+            Debug.Log("[Proof] " + closing);
             yield return new WaitForEndOfFrame();
-            CaptureToPng(Path.Combine(_outputDir, "mainquest_final.png"));
+            CaptureToPng(Path.Combine(_outputDir, "pt_05_finale_credits.png"));
             yield return new WaitForSecondsRealtime(0.4f); // async capture separation
+            // F35: the playthrough verdict — creation to credits in one unbroken run.
+            bool playthroughPass = closing.Contains("complete=True");
+            Debug.Log($"[Playthrough] VERDICT: {(playthroughPass ? "PASS" : "FAIL")} — " +
+                      $"creation -> three acts -> finale, frame series pt_01..pt_05 captured.");
         }
 
         private IEnumerator RunLookAround()

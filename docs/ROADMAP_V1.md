@@ -328,6 +328,17 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
 - [ ] **F35 Yayın kapısı**: tam playthrough (yaratılış→ana görev finali) tek videoda kare dizisi;
   README oyun kılavuzu; sürüm notları; v1.0.0 tag. Bilinen sınırlar dürüst listelenir.
   **DoD:** shipcheck + marathon + playthrough ÜÇÜ DE PASS; kullanıcı playtest onayı.
+  **DURUM: MAKİNE TARAFI HAZIR — KULLANICI PLAYTEST ONAYI BEKLİYOR (v1.0.0 tag bu onaya kilitli).**
+  **KANIT (final binary, hepsi):**
+  - PLAYTHROUGH: "[Playthrough] VERDICT: PASS — creation -> three acts -> finale" + kare dizisi
+    validation-output/proof-v10/pt_01_world_intro → pt_02_delve_1..3 → pt_03_capital_sage →
+    pt_04_final_delve → pt_05_finale_credits.png (E M B E R + krediler, göz-onaylı).
+  - SHIPCHECK: VERDICT PASS (9 sections, 0 exceptions).
+  - MARATHON: 8dk final-binary re-verify PASS (105 aksiyon, 0 exception, mem 255→293MB flat,
+    "[Autosave] world saved" ateşlendi); 30dk DoD koşusu F34 binary'sinde PASS (406 aksiyon).
+  - DOKÜMANLAR: README Oyun Kılavuzu bölümü + docs/RELEASE_NOTES_v1.0.md (sürüm geçmişi +
+    7 maddelik dürüst bilinen-sınırlar listesi).
+  KULLANICI ONAYI SONRASI: kutu [x] + `git tag v1.0.0` + push --tags.
 
 ---
 

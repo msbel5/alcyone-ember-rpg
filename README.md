@@ -417,3 +417,27 @@ cadence)" with another PASS verdict. All goldens green: fallback 1478/1478.
 
 v0.9 CLOSURE: SHIPCHECK VERDICT PASS -- 9 sections, 0 exceptions, perf avg 12.1ms / worst 418ms
 (budget 16ms). Tagged v0.9.0-polish-and-spine. One version remains: v1.0 "EMBER".
+
+## Oyun Kılavuzu (v1.0)
+
+**Döngü:** Yeni Oyun bir gezegen üretir ve seni başlangıç kasabasına bırakır. Journal'daki intro
+ana görevi verir: zindanlardaki ESKİ YAZIT parçalarını topla (her zindanın sandığında bir parça),
+bütünlenen yazıtı BAŞKENTİN BİLGESİNE götür, sonra FİNAL ZİNDANINA in ve Warden'ını devir —
+krediler yükselir. Yol boyunca: üretilmiş görevler (journal), ticaret, taverna uykusu (5 altın,
++8 saat), tapınak şifası, gece yasağı, yaşayan NPC ritimleri.
+
+**Kontroller:** WASD hareket · fare bakış · Shift koşu · Space zıplama · E etkileşim
+(konuş/kapı/sandık/uyku/şifa) · Sol-tık yakın saldırı · 1-8 büyü · Tab envanter · M harita ·
+J journal · C karakter · R kâhin · Esc duraklat (kaydet/yükle/ayarlar/keybind listesi).
+
+**Büyü okulu (8):** Flame Bolt / Frost Lance / Spark Arc (üç hasar tipi, mermiler kendi rengini
+giyer) · Ember Ward (kalkan — gelen hasarı emer) · Mending Touch (şifa) · Lantern Glow (60sn el
+feneri) · Wind Step (+yorgunluk, 30sn hız) · Recall Gate (kasaba merkezine dönüş). Yeni büyüler
+seviye atlarken seçilir; Mnd puanı mana havuzunu büyütür (+2/puan).
+
+**Bestiary (6):** Haydut, Bone Walker (iskelet), Fen Wolf, Pit Spider, Grave Wisp (hayalet) +
+arketipe göre şef-varyantı Warden (mağara→kurt, kripta→hayalet, harabe→haydut; 2× can).
+Vuruş sesi vurduğun gövdeye göre değişir.
+
+**Bilinen sınırlar:** docs/RELEASE_NOTES_v1.0.md'deki dürüst liste — forge-OFF silüetler,
+salt-okunur keybind'ler, journal-intro, mirror-frame yürüyüş ve diğerleri.
