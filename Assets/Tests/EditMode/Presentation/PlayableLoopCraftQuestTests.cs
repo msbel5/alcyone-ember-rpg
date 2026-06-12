@@ -129,6 +129,22 @@ namespace EmberCrpg.Tests.EditMode.Presentation
                 "v0.5 worlds guarantee three delves where the map affords them");
         }
 
+        // F24: the sky's time source is world-time TRUTH — after a clock JUMP the per-tick mirror
+        // must agree with world.Time exactly (the tick re-derivation drifted and lit midnight skies).
+        [Test]
+        public void SkyTimeSource_MirrorMatchesWorldTime_AfterClockJump()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "wanderer", "crossroads", null);
+
+            adapter.ProofAdvanceHours(16); // crosses midnight — the classic bright-sky repro
+            Assert.That(
+                EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.MinutesOfDay,
+                Is.EqualTo((int)(world.Time.TotalMinutes % EmberCrpg.Domain.Core.GameTime.MinutesPerDay)),
+                "the sky mirror must carry world-time truth through any clock jump");
+        }
+
         // F23: an aimed strike at a civilian is a CRIME — bounty posted, reputation drops, and the
         // WATCH starts hunting through the same chase AI the outlaws use.
         [Test]

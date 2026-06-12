@@ -58,6 +58,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // F6/night staging: the street empties after dark — curfew views read this hour.
             EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.HourOfDay =
                 (int)((_world.Time.TotalMinutes / EmberCrpg.Domain.Core.GameTime.MinutesPerHour) % 24);
+            // F24: the sky reads WORLD-TIME TRUTH in minutes — the old tick re-derivation drifted
+            // after clock jumps (respawn +8h, travel days) and left bright skies at midnight.
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.MinutesOfDay =
+                (int)(_world.Time.TotalMinutes % EmberCrpg.Domain.Core.GameTime.MinutesPerDay);
 
             // F1/CARAVANS: how many caravans are AT the home site right now — the plaza trade cart shows
             // itself only while one is in town, so the daily CaravanSystem becomes watchable.

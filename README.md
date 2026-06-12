@@ -207,6 +207,17 @@ eye-verified distinct palettes; "[Proof] F19 delve census: 3 dungeon(s)" + three
 EditMode sweep test pins reachability of all three + the proof-seed trio mapping to ≥2 archetypes.
 Honest PARTIAL: music does not vary by archetype yet (DAY/NIGHT/BATTLE slots are archetype-agnostic).
 
+F20 traps + locks SHIPPED: the way down to the Warden now fights back. A rust-red CRUSHING PLATE
+sits mid-corridor on the boss path — step on it and it gives way underfoot: 8 damage, the mechanism
+groans, the HUD combat line tells you what bit you. The boss connector carries a LOCKED DOOR whose
+key — the Tarnished Key, a real inventory item — waits on a pedestal in a deterministic middle room;
+the lock CONSUMES the key (pick another delve's key later, same pack slot), and without it the door
+says so once per approach. Proof (Reports/proof-f20a): "[Trap] crushing plate fired: 8 damage." (HP
+drop visible in the trap frame) → "[Key] You take the Tarnished Key" → "[Door] The Tarnished Key
+turns — the boss door grinds open." → Warden bound. EditMode roundtrip: pickup → duplicate-pickup
+refused → consume → second consume refused.
+
+
 ### v0.6 "Görev Makinesi" — SHIPPED (shipcheck 9/9 PASS, perf 11.6ms avg; tag v0.6.0-quest-machine)
 
 F23 reputation + crime SHIPPED: an AIMED strike at a civilian is a CRIME — the watch posts a 40g
@@ -243,12 +254,15 @@ byte-identical). Proof: WorldQuests_SurviveSaveLoadRoundtrip — an open contrac
 and the bounty/pilgrimage states round-trip byte-identically through save→load; the F21 looptest
 fetch leg stays green seeding from the world store. (This closes F21's honest PARTIAL.)
 
-F20 traps + locks SHIPPED: the way down to the Warden now fights back. A rust-red CRUSHING PLATE
-sits mid-corridor on the boss path — step on it and it gives way underfoot: 8 damage, the mechanism
-groans, the HUD combat line tells you what bit you. The boss connector carries a LOCKED DOOR whose
-key — the Tarnished Key, a real inventory item — waits on a pedestal in a deterministic middle room;
-the lock CONSUMES the key (pick another delve's key later, same pack slot), and without it the door
-says so once per approach. Proof (Reports/proof-f20a): "[Trap] crushing plate fired: 8 damage." (HP
-drop visible in the trap frame) → "[Key] You take the Tarnished Key" → "[Door] The Tarnished Key
-turns — the boss door grinds open." → Warden bound. EditMode roundtrip: pickup → duplicate-pickup
-refused → consume → second consume refused.
+### v0.7 "Yaşayan Evren" — in progress (F24 SHIPPED)
+
+F24 sky v2 SHIPPED: a real procedural day cycle. The sun's pitch and intensity ride the clock; the
+sky clear-colour cycles night-navy → dawn-rose → day-blue → dusk-amber (morning and evening blush
+differently); night raises a STAR DOME (140 unlit pinpricks on a deterministic golden-angle
+hemisphere — built from the sprite shader every billboard already guarantees) and a MOON (a generated
+soft-disc sprite riding the sun's azimuth at 8-62° elevation, opposite phase). ROOT FIX: the sky now
+reads world-time TRUTH (RuntimeFieldMirror.MinutesOfDay, published per tick from world.Time) — the
+old TickIndex re-derivation drifted after clock jumps (respawn +8h, travel days) and left midnight
+skies bright; that bug is dead, pinned by an EditMode truth test across a 16-hour jump.
+Proof (Reports/proof-f24b): four frames at 06/12/18/24 — dawn-rose, clear blue, amber dusk, and a
+star field with the moon in frame — all visually distinct; logs carry the truth minutes per frame.

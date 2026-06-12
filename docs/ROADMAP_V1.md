@@ -135,9 +135,18 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
 
 ## v0.7 "YAŞAYAN EVREN" — gökyüzü, hava, iç mekânlar
 
-- [ ] **F24 Gökyüzü v2**: prosedürel gün döngüsü (güneş pozisyonu saatten, şafak/alacakaranlık
+- [x] **F24 Gökyüzü v2**: prosedürel gün döngüsü (güneş pozisyonu saatten, şafak/alacakaranlık
   gradyanı, gece yıldız + ay). Clock-jump sonrası parlak gök bug'ı kökten ölür.
   **DoD:** 06/12/18/24 saatlerinde 4 kare — dördü görsel olarak FARKLI ve doğru.
+  **KANIT (lookaround, Reports/proof-f24b):** sky_06 şafak-gülü / sky_12 masmavi / sky_18 amber
+  alacakaranlık / sky_24 lacivert + 140 yıldız + AY (62° elevasyon, karede) — dördü göz-doğrulamalı
+  FARKLI; log: "F24 sky_06 captured at hour=06 (minutesOfDay=375)" … hour=00. KÖK FIX: SkyController
+  artık RuntimeFieldMirror.MinutesOfDay okuyor (Clock partial'ı her tick world.Time GERÇEĞİNDEN
+  yayınlar) — TickIndex yeniden-türetimi clock-jump'larda kayıyordu (parlak gece bug'ının kökü, ÖLDÜ;
+  EditMode truth testi: +16h jump sonrası mirror == world.Time%1440). Gök cisimleri build-safe:
+  yıldızlar = golden-angle yarımkürede 140 unlit küp (Sprites/Default — billboard'lar garantiliyor),
+  ay = üretilmiş 64px yumuşak-disk sprite, kubbe kamerayı takip eder. Şafak gülü ≠ alacakaranlık
+  amberi (sabah/akşam ayrımlı lerp).
 - [ ] **F25 Hava durumu**: yağmur/sis/kar (biyom+mevsim deterministik); yağmur partikül + ses
   (PhISM hazır), sis fog yoğunluğu, kar terrain tint. Müzik yağmurda yumuşak varyanta düşer.
   **DoD:** 3 hava durumu karesi + "[Weather]" log satırları + yağmur sesi forge metriği.
@@ -196,4 +205,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F24 <<<
+>>> CURRENT: F25 <<<

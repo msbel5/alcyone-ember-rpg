@@ -13,6 +13,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         /// <summary>F6: sim hour-of-day (0-23), published per tick — night-time street staging reads it.</summary>
         public static int HourOfDay { get; set; }
 
+        /// <summary>F24: sim minutes-of-day (0-1439), published per tick from world-time TRUTH —
+        /// the sky's sun/star cycle reads this (tick re-derivations drifted after clock jumps).
+        /// Defaults to 08:00, the WorldFactory start, so a pre-tick frame still looks like morning.</summary>
+        public static int MinutesOfDay { get; set; } = 8 * 60;
+
         public static int PlantCount { get; private set; }
 
         /// <summary>0 = seed, 1 = sprout, 2 = ripe (dominant stage among the home site's plants).</summary>

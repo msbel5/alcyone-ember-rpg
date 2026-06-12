@@ -707,6 +707,34 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 }
             }
 
+            // F24-DoD: FOUR sky frames — 06 dawn-rose, 12 day-blue, 18 dusk-amber, 24 night with
+            // stars + moon. These hour jumps are exactly the clock jumps that used to leave midnight
+            // bright; the sky reads world-time TRUTH now (RuntimeFieldMirror.MinutesOfDay).
+            if (rig != null && nightAdapter != null)
+            {
+                var fpsS = rig.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
+                if (fpsS != null) fpsS.enabled = false;
+                int[] skyAdvance = { 22, 6, 6, 6 };       // ~08:00 → 06 → 12 → 18 → 24
+                float[] skyPitch = { -12f, -35f, -12f, -55f }; // horizon sun / high blue / horizon dusk / stars+moon
+                string[] skyName = { "sky_06", "sky_12", "sky_18", "sky_24" };
+                for (int s = 0; s < 4; s++)
+                {
+                    nightAdapter.ProofAdvanceHours(skyAdvance[s]);
+                    rig.transform.rotation = Quaternion.Euler(skyPitch[s], 150f, 0f); // toward the sun azimuth
+                    yield return new WaitForSecondsRealtime(0.8f);
+                    yield return new WaitForEndOfFrame();
+                    CaptureToPng(Path.Combine(_outputDir, skyName[s] + ".png"));
+                    yield return new WaitForSecondsRealtime(0.4f); // async capture separation
+                    Debug.Log($"[Proof] F24 {skyName[s]} captured at hour={EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.HourOfDay:00} " +
+                              $"(minutesOfDay={EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.MinutesOfDay}).");
+                }
+                if (fpsS != null)
+                {
+                    fpsS.enabled = true;
+                    fpsS.SyncYaw(rig.transform.eulerAngles.y);
+                }
+            }
+
             // F10-DoD: travel to the nearest DELVE, walk the corridor into the chamber, and eye-proof the
             // haunters guarding the chest, the red hit flash, and the corpse pose after the kill.
             if (nightAdapter != null)
