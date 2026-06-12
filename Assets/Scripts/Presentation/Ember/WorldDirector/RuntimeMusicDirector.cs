@@ -102,9 +102,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (raining != _rainHushOn)
             {
                 _rainHushOn = raining;
-                _source.volume = raining ? 0.18f : 0.30f;
                 Debug.Log($"[Music] rain hush {(raining ? "ON (0.30->0.18)" : "off (0.18->0.30)")}.");
             }
+            // F32: the user's music volume rides every poll (slider changes apply within 2s).
+            float musicVol = EmberCrpg.Presentation.Ember.UI.Options.RuntimePlayerSettings.MusicVolume;
+            _source.volume = (_rainHushOn ? 0.18f : 0.30f) * musicVol;
+            if (_bossPerc != null) _bossPerc.volume = 0.22f * musicVol;
 
             // F30 BOSS LAYER: the Warden fight stacks a driving percussion loop over the BATTLE bed.
             bool bossLayer = RuntimeBattleMirror.Active && RuntimeBattleMirror.BossActive;

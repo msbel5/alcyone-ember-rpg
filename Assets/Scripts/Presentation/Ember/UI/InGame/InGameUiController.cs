@@ -325,6 +325,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         // Every in-game screen, opened by id. One modal at a time: CloseScreen() drops any open IgModal overlay
         // first. The HUD buttons (I/C/M/J/K/DM) + the ☰ screen browser route here.
+        /// <summary>F32 proof hook: the ig-tour toggles the Tab browser programmatically
+        /// (ProofOpenScreen already exists further down for the named screens).</summary>
+        public void ProofToggleBrowser() => ToggleBrowser();
+
         private void OpenScreen(string screenId)
         {
             EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioDirector.PlayUiClick(); // F3/audio: every screen open clicks

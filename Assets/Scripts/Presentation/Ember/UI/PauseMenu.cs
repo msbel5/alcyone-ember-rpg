@@ -145,6 +145,14 @@ namespace EmberCrpg.Presentation.Ember.UI
             _optionsScreen.Open(this);
         }
 
+        /// <summary>F32 proof hook: open options programmatically (the ig-tour can't click) and
+        /// hand the screen back so the driver can walk its sections.</summary>
+        public OptionsScreen ProofOpenOptions()
+        {
+            OpenOptions();
+            return _optionsScreen;
+        }
+
         private void PreviousSlot()
         {
             _slotState.MovePrevious();

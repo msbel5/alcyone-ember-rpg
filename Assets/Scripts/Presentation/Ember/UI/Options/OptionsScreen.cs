@@ -115,6 +115,18 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             ShowSection(0);
         }
 
+        /// <summary>F32 proof hook: select a section by title (the ig-tour can't click the rail).</summary>
+        public bool ProofShowSection(string title)
+        {
+            for (int i = 0; i < _sections.Count; i++)
+                if (_sections[i].Title == title)
+                {
+                    ShowSection(i);
+                    return true;
+                }
+            return false;
+        }
+
         // Why: selecting a tab replaces only the content mount and highlights the active button.
         private void ShowSection(int index)
         {

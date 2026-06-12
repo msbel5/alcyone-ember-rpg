@@ -377,3 +377,16 @@ by its 60px text rect. EditMode: act gating, per-delve uniqueness, small-world a
 invariant healing (fallback 1474/1474). Honest PARTIALs: the intro is journal text (no dedicated
 intro screen yet -- F32); the sage consult is the adapter path (live E-key sage dialog lands with
 F32's UI pass); the finale overlay has no restart flow.
+
+F32 UI/UX polish SHIPPED: the options screen grew two real tabs -- AUDIO & DISPLAY (music / SFX /
+mouse-sensitivity sliders that apply LIVE through RuntimePlayerSettings and persist via
+PlayerPrefs, plus a resolution cycler with APPLY) and KEYBINDS (the full control list, every row
+VERIFIED against the live input handling -- the F5/F9 quicksave rows claimed by old comments did
+not exist and were cut). The "no dead buttons" rule landed with teeth: the aspirational BG1
+action-bar sub-levels (modal abilities, formations, quick weapons/items, innates, bard songs --
+~25 stub entries, every one answering with an apology) are GONE, and all 12 standard-strip slots
+now perform a real action or point at a real key. The "not yet available" source grep returns
+ZERO. Proof (--ember-igtour, validation-output/proof-f32): 9 frames -- HUD, inventory, character,
+journal, map, pause, and all three options tabs -- eye-checked. Honest PARTIALs: keybinds are
+read-only (rebinding out of scope); the resolution control is a cycler, not a dropdown; the
+volume sliders work by code-path proof, ear confirmation belongs to the user.

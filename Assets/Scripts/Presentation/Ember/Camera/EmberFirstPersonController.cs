@@ -111,7 +111,9 @@ namespace EmberCrpg.Presentation.Ember.Camera
             float multiplier = Mathf.Lerp(1f, curvedMag / Mathf.Max(mag, 0.001f), _mouseCurveStrength);
 
             // Cap so a scene-baked over-high value (4.5) can't make the look feel twitchy.
-            float sensitivity = Mathf.Min(_mouseSensitivity, MaxMouseSensitivity);
+            // F32: the user's sensitivity multiplier (options slider, PlayerPrefs-backed).
+            float sensitivity = Mathf.Min(_mouseSensitivity, MaxMouseSensitivity)
+                * EmberCrpg.Presentation.Ember.UI.Options.RuntimePlayerSettings.MouseSensitivity;
             Vector2 targetMouseDelta = new Vector2(rawX, rawY) * sensitivity * multiplier;
             _currentMouseDelta = Vector2.SmoothDamp(_currentMouseDelta, targetMouseDelta, ref _mouseDeltaVelocity, _lookSmoothing);
 

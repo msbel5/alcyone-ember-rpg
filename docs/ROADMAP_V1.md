@@ -270,9 +270,23 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   DÜRÜST PARTIAL: intro JOURNAL narrative'inde (ayrı intro ekranı yok — F32 UI cilası); bilge
   danışması proof/dialog-üstü adapter yolu (canlı E-tuşu sage diyaloğu entegrasyonu F32);
   final ekranında ESC/yeniden-başlat akışı yok (overlay kalıcı — koşu biter).
-- [ ] **F32 UI/UX cilası**: ayarlar menüsü (ses seviyeleri, mouse hassasiyeti, çözünürlük),
+- [x] **F32 UI/UX cilası**: ayarlar menüsü (ses seviyeleri, mouse hassasiyeti, çözünürlük),
   keybind listesi ekranı, TODO aksiyon yollarının temizliği (Codex listesi), ölü buton kalmaz.
   **DoD:** ig-tour tüm ekran kareleri + "not yet available" grep'i sıfır döner.
+  **KANIT (--ember-igtour, validation-output/proof-f32):** 9 kare — hud / inventory / character /
+  journal / map / pause + ÜÇ options sekmesi (Settings / Audio & Display / Keybinds), hepsi
+  göz-onaylı. YENİ: AudioDisplaySection (müzik/SFX/hassasiyet slider'ları + çözünürlük
+  döngüleyici+APPLY; RuntimePlayerSettings PlayerPrefs'e yazar; tüketiciler CANLI: müzik direktörü
+  poll'da, PlayAt SFX çarpanı, FPS bakış hassasiyeti) + KeybindsSection (canlı tuşlara karşı
+  DOĞRULANMIŞ dürüst liste — F5/F9 quicksave yoktu, listeden çıkarıldı) — ikisi de registry
+  auto-discovery ile sekmeleşti. "not yet available" grep'i SIFIR: hayalet BG1 alt-seviyeleri
+  (modal/formation/quick-weapons/items/innate/songs, ~25 stub) SİLİNDİ; Standard şerit 12 slotun
+  hepsi gerçek aksiyon ya da gerçek-tuşa işaret (CHAR→C, JOURN→J, ORCL→R, REST→taverna,
+  OPTS/KEYS→Esc yolu). Proof iki şey yakaladı: ProofOpenScreen zaten varmış (CS0111 → duplicate
+  silindi); ekran kancaları (PauseMenu.ProofOpenOptions, OptionsScreen.ProofShowSection) eklendi.
+  DÜRÜST PARTIAL: keybind listesi salt-okunur (rebinding kapsam dışı); çözünürlük döngüleyici
+  dropdown değil (bilinçli — primitiften dropdown maliyete değmez); slider'lar canlı ama kulak
+  onayı kullanıcıda.
 - [ ] **F33 Görsel cila**: URP volume (hafif bloom+vignette+color grade per biyom), vuruş kıvılcım
   partikülü, billboard 2-kare yürüyüş animasyonu (sprite swap).
   **DoD:** önce/sonra karşılaştırma kareleri; perf bütçesi korunur (shipcheck).
@@ -299,4 +313,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F32 <<<
+>>> CURRENT: F33 <<<

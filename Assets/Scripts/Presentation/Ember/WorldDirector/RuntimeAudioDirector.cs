@@ -146,6 +146,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         /// <summary>Play a clip on the pool: same-origin replaces, else free slot, else evict lower priority.</summary>
         public void PlayAt(int originId, AudioClip clip, float volume, int priority, Vector3 worldPos)
         {
+            // F32: the user's SFX volume rides every one-shot.
+            volume *= EmberCrpg.Presentation.Ember.UI.Options.RuntimePlayerSettings.SfxVolume;
             // distance attenuation (DOOM close/clip distances scaled to our town: full <8m, silent >64m)
             float d = Vector3.Distance(transform.position, worldPos);
             if (d > 64f) return;
@@ -298,6 +300,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         {
             if (Time.unscaledTime < _nextBiomePoll) return;
             _nextBiomePoll = Time.unscaledTime + 2f;
+            // F32: the user's SFX volume rides the loops too (slider applies within 2s).
+            float sfxVol = EmberCrpg.Presentation.Ember.UI.Options.RuntimePlayerSettings.SfxVolume;
+            if (_ambience != null) _ambience.volume = 0.35f * sfxVol;
+            if (_biome != null && _biomeLayer != "none") _biome.volume = 0.12f * sfxVol;
             int hour = RuntimeFieldMirror.HourOfDay;
             bool indoors = IsOnBuiltFloor();
             string layer = indoors ? "none" : (hour >= 20 || hour < 6 ? "crickets" : "birds");

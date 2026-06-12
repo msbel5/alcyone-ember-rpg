@@ -26,60 +26,27 @@ namespace EmberCrpg.Presentation.Ember.UI
                         new ActionDef("SPL4", "Cast spell slot 4", "F4", ActionCmd.CastSlot, 3),
                         new ActionDef("SPL5", "Cast spell slot 5 (click only — F5 quicksaves)", "F5", ActionCmd.CastSlot, 4));
 
-                case ActionLevel.Modal:
-                    return Pad(
-                        new ActionDef("DETECT", "Toggle detect", "F1", ActionCmd.Info, 0, "Detect modal not yet available."),
-                        new ActionDef("TURN", "Turn undead", "F2", ActionCmd.Info, 0, "Turn undead not yet available."),
-                        new ActionDef("BLESS", "Bless aura", "F3", ActionCmd.Info, 0, "Bless modal not yet available."));
+                // F32 ("ölü buton kalmaz"): the aspirational BG1 sub-levels (modal abilities,
+                // formations, quick weapons/items, innates, bard songs) had NO backing systems —
+                // every entry was a stub apology. A button that lies is worse than no button:
+                // the rows are GONE, and the standard strip below points every slot at a REAL
+                // action or a REAL key that exists today.
 
-                case ActionLevel.Formation:
-                    return Pad(
-                        new ActionDef("LINE", "Line formation", "F1", ActionCmd.Info, 0, "Formation presets not yet available."),
-                        new ActionDef("WEDGE", "Wedge formation", "F2", ActionCmd.Info, 0, "Formation presets not yet available."),
-                        new ActionDef("BOX", "Box formation", "F3", ActionCmd.Info, 0, "Formation presets not yet available."),
-                        new ActionDef("SKEIN", "Skein formation", "F4", ActionCmd.Info, 0, "Formation presets not yet available."));
-
-                case ActionLevel.QWeapons:
-                    return Pad(
-                        new ActionDef("WPN1", "Quick weapon 1", "F1", ActionCmd.Info, 0, "Weapon swap not yet available."),
-                        new ActionDef("WPN2", "Quick weapon 2", "F2", ActionCmd.Info, 0, "Weapon swap not yet available."),
-                        new ActionDef("WPN3", "Quick weapon 3", "F3", ActionCmd.Info, 0, "Weapon swap not yet available."),
-                        new ActionDef("WPN4", "Quick weapon 4", "F4", ActionCmd.Info, 0, "Weapon swap not yet available."));
-
-                case ActionLevel.QItems:
-                    return Pad(
-                        new ActionDef("ITM1", "Quick item 1", "F1", ActionCmd.Info, 0, "Quick items not yet available."),
-                        new ActionDef("ITM2", "Quick item 2", "F2", ActionCmd.Info, 0, "Quick items not yet available."),
-                        new ActionDef("ITM3", "Quick item 3", "F3", ActionCmd.Info, 0, "Quick items not yet available."),
-                        new ActionDef("ITM4", "Quick item 4", "F4", ActionCmd.Info, 0, "Quick items not yet available."));
-
-                case ActionLevel.Innate:
-                    return Pad(
-                        new ActionDef("INN1", "Innate ability 1", "F1", ActionCmd.Info, 0, "Innate abilities not yet available."),
-                        new ActionDef("INN2", "Innate ability 2", "F2", ActionCmd.Info, 0, "Innate abilities not yet available."),
-                        new ActionDef("INN3", "Innate ability 3", "F3", ActionCmd.Info, 0, "Innate abilities not yet available."));
-
-                case ActionLevel.Songs:
-                    return Pad(
-                        new ActionDef("SONG1", "Bard song 1", "F1", ActionCmd.Info, 0, "Bard songs not yet available."),
-                        new ActionDef("SONG2", "Bard song 2", "F2", ActionCmd.Info, 0, "Bard songs not yet available."),
-                        new ActionDef("SONG3", "Bard song 3", "F3", ActionCmd.Info, 0, "Bard songs not yet available."));
-
-                default: // Standard (BG1 UAW_STANDARD)
+                default: // Standard (BG1 UAW_STANDARD) — every slot is real or an honest signpost.
                     return new[]
                     {
-                        new ActionDef("ATK",   "Attack nearest",   "F1",  ActionCmd.Attack),
-                        new ActionDef("CAST",  "Quick-cast a spell","F2", ActionCmd.SwitchTo, (int)ActionLevel.QSpells),
-                        new ActionDef("TALK",  "Talk to nearest NPC","F3",ActionCmd.Info, 0, "Approach an NPC and press E to talk."),
-                        new ActionDef("INV",   "Inventory",        "F4",  ActionCmd.Info, 0, "Press Tab to open your inventory."),
-                        new ActionDef("CHAR",  "Character sheet",  "F5",  ActionCmd.Info, 0, "Character sheet not yet available."),
-                        new ActionDef("MAP",   "World map",        "F6",  ActionCmd.Info, 0, "Press M to open the world map."),
-                        new ActionDef("JOURN", "Journal",          "F7",  ActionCmd.Info, 0, "Journal not yet available."),
-                        new ActionDef("SRCH",  "Search the area",  "F8",  ActionCmd.Info, 0, "Nothing to search here yet."),
-                        new ActionDef("STLTH", "Toggle stealth",   "F9",  ActionCmd.Info, 0, "Stealth not yet available."),
-                        new ActionDef("MODAL", "Modal abilities",  "F10", ActionCmd.SwitchTo, (int)ActionLevel.Modal),
-                        new ActionDef("FORM",  "Formation presets","F11", ActionCmd.SwitchTo, (int)ActionLevel.Formation),
-                        new ActionDef("EQUIP", "Quick equipment",  "F12", ActionCmd.Info, 0, "Equipment panel not yet available."),
+                        new ActionDef("ATK",   "Attack nearest",    "F1",  ActionCmd.Attack),
+                        new ActionDef("CAST",  "Quick-cast a spell","F2",  ActionCmd.SwitchTo, (int)ActionLevel.QSpells),
+                        new ActionDef("TALK",  "Talk to nearest NPC","F3", ActionCmd.Info, 0, "Approach an NPC and press E to talk."),
+                        new ActionDef("INV",   "Inventory",         "F4",  ActionCmd.Info, 0, "Press Tab to open your inventory."),
+                        new ActionDef("CHAR",  "Character sheet",   "F5",  ActionCmd.Info, 0, "Press C to open your character sheet."),
+                        new ActionDef("MAP",   "World map",         "F6",  ActionCmd.Info, 0, "Press M to open the world map."),
+                        new ActionDef("JOURN", "Journal",           "F7",  ActionCmd.Info, 0, "Press J to open your journal."),
+                        new ActionDef("ORCL",  "Ask the oracle",    "F8",  ActionCmd.Info, 0, "Press R to ask the oracle."),
+                        new ActionDef("REST",  "Rest",              "F9",  ActionCmd.Info, 0, "Sleep at a tavern: press E at the tavern host (5 gold, +8h)."),
+                        new ActionDef("OPTS",  "Options",           "F10", ActionCmd.Info, 0, "Esc opens the pause menu: save, load, options."),
+                        new ActionDef("KEYS",  "Keybinds",          "F11", ActionCmd.Info, 0, "Esc -> Options -> Keybinds lists every control."),
+                        new ActionDef("EQUIP", "Equipment",         "F12", ActionCmd.Info, 0, "Press Tab — your gear lives in the pack (best blade auto-equips)."),
                     };
             }
         }
@@ -138,7 +105,7 @@ namespace EmberCrpg.Presentation.Ember.UI
                     Sink()?.TryInteract(def.Info ?? string.Empty);
                     break;
                 case ActionCmd.Info:
-                    // Replaces the old Debug.Log stub: route the "not yet available" / hint copy
+                    // Replaces the old Debug.Log stub: route the signpost / hint copy
                     // through the command sink's combat line so it surfaces in-world, not the console.
                     Sink()?.LogCombat(def.Info ?? def.Tooltip ?? def.Label);
                     break;

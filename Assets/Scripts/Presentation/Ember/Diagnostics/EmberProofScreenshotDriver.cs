@@ -66,6 +66,14 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-igtour"))
+            {
+                yield return RunIgTour();
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
+                yield break;
+            }
+
             if (HasArg("--ember-mainquest"))
             {
                 yield return RunMainQuest();
@@ -576,6 +584,79 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         // SELF-PLAYTEST ("playtestleri sen yapar mısın... çevrene bakıp inceleyebilirsin"): enter the real
         // generated world, pan a full 360° at spawn, then walk to the nearest building, look through the
         // doorway, step INSIDE and pan the room — the agent inspects the captures by eye afterwards.
+        // F32-DoD (--ember-igtour): EVERY in-game screen, one frame each — HUD, inventory,
+        // character sheet, journal, world map, pause menu, options (Settings / Audio & Display /
+        // Keybinds). The DoD's other half is the source grep: stub copy returns zero.
+        private IEnumerator RunIgTour()
+        {
+            yield return WaitForBootToSettle();
+
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(4.0f);
+
+            var ui = FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
+            if (ui == null)
+            {
+                Debug.Log("[Proof] IGTOUR BROKEN — no InGameUiController.");
+                yield break;
+            }
+            ui.ProofCloseScreens();
+            yield return new WaitForSecondsRealtime(0.4f);
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "igtour_hud.png"));
+            yield return new WaitForSecondsRealtime(0.4f);
+
+            // The world-side screens, one by one (the browser is Tab's inventory).
+            ui.ProofToggleBrowser();
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "igtour_inventory.png"));
+            yield return new WaitForSecondsRealtime(0.4f);
+            ui.ProofCloseScreens();
+
+            string[] screens = { "character", "journal", "map" };
+            foreach (var id in screens)
+            {
+                ui.ProofOpenScreen(id);
+                yield return new WaitForSecondsRealtime(0.5f);
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, $"igtour_{id}.png"));
+                yield return new WaitForSecondsRealtime(0.4f);
+                ui.ProofCloseScreens();
+                yield return null;
+            }
+
+            // The pause stack: menu, then the options sections (F32's new tabs included).
+            var pause = FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.PauseMenu>(FindObjectsInactive.Include);
+            if (pause == null)
+            {
+                Debug.Log("[Proof] IGTOUR BROKEN — no PauseMenu.");
+                yield break;
+            }
+            pause.Pause();
+            yield return new WaitForSecondsRealtime(0.6f);
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "igtour_pause.png"));
+            yield return new WaitForSecondsRealtime(0.4f);
+
+            var options = pause.ProofOpenOptions();
+            yield return new WaitForSecondsRealtime(0.6f);
+            string[] sections = { "Settings", "Audio & Display", "Keybinds" };
+            foreach (var section in sections)
+            {
+                bool shown = options != null && options.ProofShowSection(section);
+                Debug.Log($"[Proof] igtour options section '{section}': shown={shown}");
+                yield return new WaitForSecondsRealtime(0.5f);
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, $"igtour_options_{section.Replace(" & ", "_").Replace(" ", "_").ToLowerInvariant()}.png"));
+                yield return new WaitForSecondsRealtime(0.4f);
+            }
+            pause.Resume();
+            Debug.Log("[Proof] igtour complete — 9 frames: hud, inventory, character, journal, map, pause, 3 options sections.");
+        }
+
         // F31-DoD (--ember-mainquest): the THREE-ACT SPINE end to end through production paths —
         // Act 1: travel each delve and open its chest (the inscription piece rides the loot grant);
         // Act 2: travel the capital and consult the sage; Act 3: travel the FINAL delve, fell its
