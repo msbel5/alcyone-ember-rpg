@@ -36,7 +36,11 @@ namespace EmberCrpg.Presentation.Ember.Views
             {
                 _hitSeen = WorldCombatFeedbackFeed.HitStamp;
                 if (WorldCombatFeedbackFeed.HitTargetId == _actorId && !_fallen)
+                {
                     _flashUntil = Time.unscaledTime + 0.15f;
+                    // F33: the landed strike throws SPARKS from the struck billboard.
+                    RuntimeHitSparks.Burst(transform.position + Vector3.up * 1.1f);
+                }
             }
 
             if (_sprite != null && !_fallen)

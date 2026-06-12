@@ -287,9 +287,25 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   DÜRÜST PARTIAL: keybind listesi salt-okunur (rebinding kapsam dışı); çözünürlük döngüleyici
   dropdown değil (bilinçli — primitiften dropdown maliyete değmez); slider'lar canlı ama kulak
   onayı kullanıcıda.
-- [ ] **F33 Görsel cila**: URP volume (hafif bloom+vignette+color grade per biyom), vuruş kıvılcım
+- [x] **F33 Görsel cila**: URP volume (hafif bloom+vignette+color grade per biyom), vuruş kıvılcım
   partikülü, billboard 2-kare yürüyüş animasyonu (sprite swap).
   **DoD:** önce/sonra karşılaştırma kareleri; perf bütçesi korunur (shipcheck).
+  **KANIT:** ÖNCE/SONRA aynı poz — proof-f30/look_000.png (düz gri, kenar karartması yok) vs
+  proof-f33/look_000.png (vignette köşeler, kaldırımda kontrast/derinlik, sprite'lar daha sıcak) —
+  göz-onaylı; Kripta chamber'da soğuk mavi-yeşil grade görünür. RuntimePostFxView: runtime-built
+  GLOBAL Volume (bloom 0.65 + vignette 0.22 + ColorAdjustments) — BUILD GERÇEĞİ: UberPost
+  varyantları player build'de HAYATTA ("[PostFx] runtime volume armed" + kare kanıtı; F18 planının
+  'AssetDatabase yok' kaygısı kod-üretimli profille aşıldı). Bağlam derecesi 2s poll: delve
+  arketipi (Mağara sıcak / Kripta soğuk / Harabe hasta-yeşil) ↔ overworld nötr — üçü de logda.
+  PERF (DoD): SHIPCHECK 9/9 PASS, avg=12,4ms worst=466ms (bütçe 16) — post-FX açıkken korundu;
+  lookaround probe avg=7,0ms. Kıvılcım: RuntimeHitSparks — 24'lük manuel quad havuzu (ParticleSystem
+  player'da çizmez — F25 gerçeği), ActorCombatFeedbackView vuruş dalından Burst. 2-kare yürüyüş:
+  BillboardWalkAnimView — hareket halinde 0.28s kadansla mirror-frame (flipX) + %5 squash; spawner
+  her billboard'a takar. Build, Camera namespace çakışmasını yakaladı (CS0118 → UnityEngine.Camera).
+  DÜRÜST PARTIAL: hitflash karesi bu turda 0.15s flash/0.32s kıvılcım penceresini ıskaladı (HP
+  düşüşü 18→16 karede; "[Sparks] burst" logu F34 maratonunda yüzlerce kez kanıtlanacak); yürüyüş
+  animasyonu still-kareyle kanıtlanamaz (hareket kanıtı kullanıcı playtest'i / F34 video değil);
+  gerçek 2. kare sprite forge-ON işi (mirror-swap şimdilik dürüst yaklaşım).
 - [ ] **F34 Stabilite maratonu**: 30dk otonom soak (rastgele travel+savaş+ticaret döngüsü),
   0 exception + bellek eğrisi düz; autosave (5dk); tüm goldenler yeşil.
   **DoD:** yeni --ember-marathon proof bölümü PASS; bellek raporu logda.
@@ -313,4 +329,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F33 <<<
+>>> CURRENT: F34 <<<

@@ -186,6 +186,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // F31: the finale overlay consumer (the main quest's final screen + credits).
             if (playerRig.GetComponent<RuntimeFinaleView>() == null)
                 playerRig.AddComponent<RuntimeFinaleView>();
+            // F33: the post-FX rig (bloom + vignette + context grade).
+            if (playerRig.GetComponent<RuntimePostFxView>() == null)
+                playerRig.AddComponent<RuntimePostFxView>();
         }
 
         // Built floors are named slabs ("Floor", "CorrFloor", "ChamberFloor"); raw terrain is a Terrain

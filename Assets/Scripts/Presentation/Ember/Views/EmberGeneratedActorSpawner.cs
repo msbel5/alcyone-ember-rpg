@@ -157,6 +157,8 @@ namespace EmberCrpg.Presentation.Ember.Views
 
             // F10 hit feel: every spawned actor can flash on a landed strike and fall flat on death.
             root.AddComponent<ActorCombatFeedbackView>().Bind(candidate.Id, renderer, facing);
+            // F33: the two-frame walk — mirror-swap gait while the root glides.
+            root.AddComponent<BillboardWalkAnimView>().Bind(renderer);
 
             // F10 ("savaşamadım"): hostiles must READ hostile from across the street — a red diamond
             // floats over outlaw/bandit billboards (root-parented, unscaled; faces the camera itself).

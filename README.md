@@ -390,3 +390,17 @@ ZERO. Proof (--ember-igtour, validation-output/proof-f32): 9 frames -- HUD, inve
 journal, map, pause, and all three options tabs -- eye-checked. Honest PARTIALs: keybinds are
 read-only (rebinding out of scope); the resolution control is a cycler, not a dropdown; the
 volume sliders work by code-path proof, ear confirmation belongs to the user.
+
+F33 visual polish SHIPPED: the frame found its depth. A runtime-built URP global Volume (light
+bloom 0.65 + vignette 0.22 + context colour grade) rides the player rig -- and the UberPost
+variants SURVIVE the player build (a real risk on this project's history of stripped shaders;
+the before/after frames are the proof: proof-f30 vs proof-f33, same poses, visibly deeper).
+The grade follows context: warm firelit cave, cold blue-green crypt, sickly green-gold ruin,
+near-neutral overworld -- all three archetype casts logged in one run. Landed strikes now throw
+SPARKS (a 24-quad manual pool on the proven unlit path -- ParticleSystem still renders nothing
+in players), and billboards WALK: a mirror-frame gait (flipX + squash at step cadence) replaces
+the ice-skate glide while a real forged second frame remains future work. Perf held with
+everything on: SHIPCHECK 9/9 PASS, avg 12.4ms / worst 466ms against the 16ms budget. Honest
+PARTIALs: this run's hitflash frame missed the 0.15s flash / 0.32s spark windows (the hp drop is
+in frame; the spark log will print hundreds of times in F34's marathon); a still frame cannot
+prove a gait -- the walk needs eyes in motion.
