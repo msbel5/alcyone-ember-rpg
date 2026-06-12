@@ -67,14 +67,24 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             Torch(root.transform, new Vector3(0f, 2.2f, -7f), 9f);
             Torch(root.transform, c + new Vector3(0f, 2.6f, 0f), 14f);
 
-            // Loot chest against the chamber's back wall: body, lid, gold band.
+            // Loot chest against the chamber's back wall: body, lid, gold band. F16: it OPENS —
+            // proximity + E grants the tier-up sword (RuntimeChestView), the lid hinges back.
             var chest = new Vector3(0f, 0f, -22.5f);
-            Slab(root.transform, "ChestBody", chest + new Vector3(0f, 0.35f, 0f), new Vector3(1.2f, 0.7f, 0.8f),
+            var chestRoot = new GameObject("DungeonChest");
+            chestRoot.transform.SetParent(root.transform, worldPositionStays: false);
+            chestRoot.transform.localPosition = chest;
+            Slab(chestRoot.transform, "ChestBody", new Vector3(0f, 0.35f, 0f), new Vector3(1.2f, 0.7f, 0.8f),
                 RuntimeMaterialPalette.Solid(new Color(0.36f, 0.24f, 0.13f)));
-            Slab(root.transform, "ChestLid", chest + new Vector3(0f, 0.78f, 0f), new Vector3(1.26f, 0.18f, 0.86f),
-                RuntimeMaterialPalette.Solid(new Color(0.30f, 0.20f, 0.11f)));
-            Slab(root.transform, "ChestBand", chest + new Vector3(0f, 0.5f, 0.41f), new Vector3(0.25f, 0.5f, 0.06f),
+            var lid = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            lid.name = "ChestLid";
+            lid.transform.SetParent(chestRoot.transform, worldPositionStays: false);
+            lid.transform.localPosition = new Vector3(0f, 0.78f, -0.43f); // hinge at the back edge
+            lid.transform.localScale = new Vector3(1.26f, 0.18f, 0.86f);
+            var lidRenderer = lid.GetComponent<MeshRenderer>();
+            if (lidRenderer != null) lidRenderer.sharedMaterial = RuntimeMaterialPalette.Solid(new Color(0.30f, 0.20f, 0.11f));
+            Slab(chestRoot.transform, "ChestBand", new Vector3(0f, 0.5f, 0.41f), new Vector3(0.25f, 0.5f, 0.06f),
                 RuntimeMaterialPalette.Solid(new Color(0.78f, 0.62f, 0.22f)));
+            chestRoot.AddComponent<RuntimeChestView>().Bind(lid.transform);
             return root;
         }
 

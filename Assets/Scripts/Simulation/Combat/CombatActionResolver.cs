@@ -30,7 +30,11 @@ namespace EmberCrpg.Simulation.Combat
             IDeterministicRng rng,
             GameTime now,
             SiteId siteId,
-            WorldEventLog events)
+            WorldEventLog events,
+            // F16 EQUIPMENT: gear modifies the dice without mutating the immutable ActorRecord stats —
+            // the caller passes the equipped weapon's bonuses (0 = bare hands, the old behaviour).
+            int attackerAccuracyBonus = 0,
+            int attackerDamageBonus = 0)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (attacker == null) throw new ArgumentNullException(nameof(attacker));
@@ -52,8 +56,10 @@ namespace EmberCrpg.Simulation.Combat
             if (action.StaminaCost > 0)
                 attacker.ApplyVitals(attacker.Vitals.WithFatigue(attacker.Vitals.Fatigue.Damage(action.StaminaCost)));
 
-            var hit = _hit.Roll(attacker.Accuracy, defender.Dodge, rng);
-            var damage = hit ? _damage.Roll(attacker.BaseDamage, damageBandWidth, defender.Armor, rng) : 0;
+            var hit = _hit.Roll(attacker.Accuracy + attackerAccuracyBonus, defender.Dodge, rng);
+            var damage = hit
+                ? _damage.Roll(attacker.BaseDamage + attackerDamageBonus, damageBandWidth, defender.Armor, rng)
+                : 0;
             if (damage > 0)
                 defender.ApplyVitals(defender.Vitals.WithHealth(defender.Vitals.Health.Damage(damage)));
 

@@ -29,5 +29,13 @@ namespace EmberCrpg.Simulation.Inventory
         {
             return new InventoryItem(new ItemId(3001), AshTrainingBladeTemplateId, "Ash Training Blade", 1, EquipmentSlot.Weapon, 5, 2);
         }
+
+        public const string WornIronSwordTemplateId = "worn_iron_sword";
+
+        /// <summary>F16: the dungeon chest's tier-up reward — one tier above the starting blade.</summary>
+        public static InventoryItem CreateWornIronSword()
+        {
+            return new InventoryItem(new ItemId(3002), WornIronSwordTemplateId, "Worn Iron Sword", 1, EquipmentSlot.Weapon, 8, 5);
+        }
     }
 }

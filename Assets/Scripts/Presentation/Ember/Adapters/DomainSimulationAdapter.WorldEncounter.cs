@@ -351,6 +351,81 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                    $"(-20%), hp={player.Vitals.Health.Current}/{player.Vitals.Health.Max}, +{hoursPassed}h. '{awaken}'";
         }
 
+        /// <summary>
+        /// F16 CHEST LOOT: the delve chamber's chest yields the tier-up weapon (Worn Iron Sword,
+        /// +8 acc/+5 dmg vs the starting blade's +5/+2) and AUTO-EQUIPS it when it beats the current
+        /// hand. One sword per world (template-guarded — looting twice finds the chest empty).
+        /// Honest limit: chest-opened state itself isn't save-persisted yet (F22 alanı).
+        /// </summary>
+        public string LootDungeonChest()
+        {
+            var inventory = _world?.PlayerInventory;
+            if (inventory == null) return "No pack to carry loot.";
+            foreach (var item in inventory.Items)
+                if (item != null && string.Equals(item.TemplateId,
+                        EmberCrpg.Simulation.Inventory.WorldItemCatalog.WornIronSwordTemplateId, System.StringComparison.Ordinal))
+                {
+                    _lastCombatLine = "The chest is empty — you already took its sword.";
+                    return _lastCombatLine;
+                }
+
+            var sword = EmberCrpg.Simulation.Inventory.WorldItemCatalog.CreateWornIronSword();
+            if (!inventory.TryAdd(sword))
+            {
+                _lastCombatLine = "Your pack is full — the sword stays in the chest.";
+                return _lastCombatLine;
+            }
+
+            var current = EquippedWeapon();
+            bool equip = current == null || current.DamageBonus < sword.DamageBonus;
+            if (equip)
+                _world.PlayerEquipment.Equip(EmberCrpg.Domain.Inventory.EquipmentSlot.Weapon, sword.Id);
+            _lastCombatLine = equip
+                ? $"You take the {sword.DisplayName} (+{sword.AccuracyBonus} acc, +{sword.DamageBonus} dmg) and equip it."
+                : $"You take the {sword.DisplayName} (+{sword.AccuracyBonus} acc, +{sword.DamageBonus} dmg).";
+            UnityEngine.Debug.Log("[Loot] " + _lastCombatLine);
+            return _lastCombatLine;
+        }
+
+        /// <summary>F16-DoD: the swing-log difference — same dice seed family, bare hands vs the chest
+        /// sword, 12 swings each against the first living outlaw; the damage sums must tell the story.</summary>
+        public string ProofWeaponSwingDiff()
+        {
+            var player = _world?.Actors?.FirstByRole(ActorRole.Player);
+            if (player == null) return "LOOP-PROOF: no player for the weapon diff.";
+            ActorRecord dummy = null;
+            foreach (var a in _world.Actors.Records)
+                if (a != null && a.Role == ActorRole.Enemy && a.IsAlive) { dummy = a; break; }
+            if (dummy == null) return "LOOP-PROOF: no living enemy for the weapon diff.";
+            dummy.MoveTo(new GridPosition(player.Position.X + 1, player.Position.Y));
+
+            int SwingSum()
+            {
+                // Immortal dummy, 20 swings: the per-strike RNG serial can't be seed-paired across the
+                // two phases, so only sample size makes the comparison fair (6 swings once read 22 vs
+                // 20 — pure dice noise; expectation is ~24 bare vs ~34 armed per 6).
+                int sum = 0;
+                for (int i = 0; i < 20; i++)
+                {
+                    dummy.ApplyVitals(new EmberCrpg.Domain.Actors.ActorVitals(
+                        dummy.Vitals.Health.Refill(), dummy.Vitals.Fatigue.Refill(), dummy.Vitals.Mana.Refill()));
+                    int before = dummy.Vitals.Health.Current;
+                    TryMeleeStrike(dummy.Name, 6);
+                    sum += before - dummy.Vitals.Health.Current;
+                }
+                return sum;
+            }
+
+            var hand = _world.PlayerEquipment.GetEquippedItemId(EmberCrpg.Domain.Inventory.EquipmentSlot.Weapon);
+            _world.PlayerEquipment.Unequip(EmberCrpg.Domain.Inventory.EquipmentSlot.Weapon);
+            int bare = SwingSum();
+            if (!hand.IsEmpty)
+                _world.PlayerEquipment.Equip(EmberCrpg.Domain.Inventory.EquipmentSlot.Weapon, hand);
+            int armed = SwingSum();
+            return $"LOOP-PROOF: F16 weapon diff — 20 bare swings dealt {bare}, 20 armed swings dealt {armed} " +
+                   $"(weapon={EquippedWeapon()?.DisplayName ?? "none"}).";
+        }
+
         /// <summary>F10-DoD: bind the CURRENT settlement's haunter (an Outlaw homed HERE — street outlaws
         /// elsewhere don't qualify) so the dungeon leg fights the chamber guard, not a random bandit.</summary>
         public string ProofBindDungeonHaunter()

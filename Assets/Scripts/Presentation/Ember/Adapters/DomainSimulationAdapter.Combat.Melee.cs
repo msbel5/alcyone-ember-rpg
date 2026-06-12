@@ -18,6 +18,40 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 {
     public sealed partial class DomainSimulationAdapter
     {
+        /// <summary>F16: the player's equipped main-hand weapon, or null for bare hands. Reads the
+        /// persisted PlayerEquipment slot and resolves the item instance from the backpack.</summary>
+        private EmberCrpg.Domain.Inventory.InventoryItem EquippedWeapon()
+        {
+            var equipment = _world?.PlayerEquipment;
+            var inventory = _world?.PlayerInventory;
+            if (equipment == null || inventory == null) return null;
+            var itemId = equipment.GetEquippedItemId(EmberCrpg.Domain.Inventory.EquipmentSlot.Weapon);
+            return itemId.IsEmpty ? null : inventory.FindById(itemId);
+        }
+
+        /// <summary>F16: switch the equipped weapon to a backpack item by template id — frees the slot
+        /// first, then routes through the canonical EquipmentService so all refusal rules stay in one
+        /// place. Logged honestly either way.</summary>
+        public bool TryEquip(string templateId)
+        {
+            var inventory = _world?.PlayerInventory;
+            if (inventory == null || string.IsNullOrEmpty(templateId)) return false;
+            foreach (var item in inventory.Items)
+            {
+                if (item == null || !item.IsEquipment) continue;
+                if (!string.Equals(item.TemplateId, templateId, System.StringComparison.Ordinal)) continue;
+                _world.PlayerEquipment.Unequip(item.EquipmentSlot); // switching is the player intent
+                var result = new EmberCrpg.Simulation.Inventory.EquipmentService()
+                    .TryEquip(inventory, _world.PlayerEquipment, item.Id);
+                LogCombat(result.Success
+                    ? $"{item.DisplayName} equipped (+{item.AccuracyBonus} acc, +{item.DamageBonus} dmg)."
+                    : result.Message);
+                return result.Success;
+            }
+            LogCombat("Nothing like that in the pack to equip.");
+            return false;
+        }
+
         // "Attack nearest" resolver: closest non-player actor to the player within maxRange tiles (Chebyshev
         // distance), deterministic tie-break by ascending actor id so the choice is reproducible. Null if none.
         private ActorRecord NearestStrikeTarget(int maxRange)
@@ -127,8 +161,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var resolver = new EmberCrpg.Simulation.Combat.CombatActionResolver(
                 new EmberCrpg.Simulation.Combat.CombatHitRollService(),
                 new EmberCrpg.Simulation.Combat.CombatDamageService());
+            // F16: the equipped weapon's bonuses finally enter the dice (bare hands = 0/0).
+            var weapon = EquippedWeapon();
             var outcome = resolver.Resolve(meleeAction, attacker, target, damageBandWidth: rawDamage / 2,
-                rng: rng, now: _world.Time, siteId: siteId, events: _world.Events);
+                rng: rng, now: _world.Time, siteId: siteId, events: _world.Events,
+                attackerAccuracyBonus: weapon?.AccuracyBonus ?? 0,
+                attackerDamageBonus: weapon?.DamageBonus ?? 0);
             LogCombat(outcome.Hit
                 ? $"You strike {target.Name} for {outcome.Damage}."
                 : $"You miss {target.Name}.");

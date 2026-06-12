@@ -529,6 +529,8 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             if (deathAdapter != null)
             {
                 Debug.Log(deathAdapter.ProofDieAndRespawn());
+                // F16-DoD: the swing-log difference — bare hands vs the equipped weapon (Ash Rat duel).
+                Debug.Log(deathAdapter.ProofWeaponSwingDiff());
                 var respawnUi = FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
                 respawnUi?.ProofCloseScreens(); // the death modal may have opened mid-leg; respawn already ran
                 yield return new WaitForSecondsRealtime(0.5f);
@@ -779,6 +781,26 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                             yield return null;
                             yield return new WaitForSecondsRealtime(0.4f); // flash decays, corpse pose holds
                             CaptureToPng(Path.Combine(_outputDir, "look_dungeon_felled.png"));
+
+                            // F16-DoD: open the chest (driver can't press E), log the sword grant, and
+                            // capture the hinged-open lid from beside the chest.
+                            var chestView = FindFirstObjectByType<EmberCrpg.Presentation.Ember.WorldDirector.RuntimeChestView>();
+                            if (chestView != null)
+                            {
+                                Debug.Log("[Proof] chest: " + chestView.ProofOpen());
+                                // Frame the chest from inside the chamber, slightly above, lid in view.
+                                rig4.transform.position = interior.transform.TransformPoint(new Vector3(0f, 1.5f, -19.3f));
+                                rig4.transform.rotation = Quaternion.LookRotation(
+                                    chestView.transform.position + Vector3.up * 0.45f - rig4.transform.position);
+                                yield return new WaitForSecondsRealtime(0.5f);
+                                yield return new WaitForEndOfFrame();
+                                CaptureToPng(Path.Combine(_outputDir, "look_dungeon_chest.png"));
+                                yield return new WaitForSecondsRealtime(0.4f); // capture separation
+                            }
+                            else
+                            {
+                                Debug.Log("[Proof] BROKEN — no RuntimeChestView found at the delve.");
+                            }
                         }
                         else
                         {

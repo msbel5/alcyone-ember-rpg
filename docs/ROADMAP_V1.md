@@ -29,10 +29,14 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   ölüm kapısı yeniden kurulur). Kanıt: "fell in 8 enemy swings, purse 313->251 (-20%), hp=62/62,
   +8h" + looptest_respawn.png (plaza + FULL barlar) + EditMode toll/refill/8h/çifte-ölüm testi.
   Yan kazanım: aynı-kare ikinci CaptureScreenshot öncekini yutar — proof'lara kare ayracı kondu.
-- [ ] **F16 Ekipman etkisi**: envanterdeki silah/zırh statları vuruş zarına gerçekten girer
-  (silah=baseDamage+acc bonus, zırh=armor; ekipman slotu: el+gövde). Başlangıç kiti + zindan
-  sandığından 1 tier üstü silah düşer (chest loot tablosu).
-  **DoD:** EditMode testi (silahlı vs silahsız TTK farkı) + sandıktan alınan silahla swing log farkı.
+- [x] **F16 Ekipman etkisi** ✅ 2026-06-12: silah bonusları ZARA GİRİYOR (CombatActionResolver
+  +accBonus/+dmgBonus; EquippedWeapon → TryMeleeStrike); başlangıç bıçağı artık EKİPLİ doğuyor
+  (Sprint 1'den beri çantada atıl yatıyordu); zindan sandığı E ile açılıyor (RuntimeChestView,
+  kapak menteşeli + creak) ve tier-üstü Worn Iron Sword (+8/+5) verip oto-ekipliyor (dünya başına
+  1, şablon korumalı); adapter TryEquip kanonik EquipmentService'e delege. Kanıt: "20 bare=83,
+  20 armed=103" + "You take the Worn Iron Sword... and equip it" + EditMode 60-tohum eşli zar
+  testi (10/10). Dürüst sınır: sandık-açık durumu save'e yazılmıyor (F22); gövde/zırh slotu
+  içerik geldiğinde (F29 sonrası) işlenecek; karanlık oda kompozisyonu F33 cila borcu.
 - [ ] **F17 XP/Seviye**: kill+quest XP → seviye → +acc/+dodge/+HP seçim ekranı (3 kart). Level
   HUD'da zaten var; gerçek beslensin.
   **DoD:** encounter sonrası XP satırı + level-up modal karesi + stat artışı save'de kalıcı.
@@ -125,4 +129,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F16 <<<
+>>> CURRENT: F17 <<<

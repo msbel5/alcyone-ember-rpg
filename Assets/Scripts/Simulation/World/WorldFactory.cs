@@ -77,7 +77,11 @@ namespace EmberCrpg.Simulation.World
                 WorldSpellCatalog.FlameBoltTemplateId,
                 WorldSpellCatalog.MendingTouchTemplateId,
             };
-            world.PlayerInventory.TryAdd(WorldItemCatalog.CreateAshTrainingBlade());
+            var startingBlade = WorldItemCatalog.CreateAshTrainingBlade();
+            world.PlayerInventory.TryAdd(startingBlade);
+            // F16: the starting kit comes EQUIPPED — its +5 acc/+2 dmg finally enter the dice (the
+            // blade sat inert in the backpack since Sprint 1). PlayerEquipment persists via the mapper.
+            world.PlayerEquipment.Equip(EquipmentSlot.Weapon, startingBlade.Id);
             world.MerchantInventory = new InventoryState(32);
             world.MerchantInventory.TryAdd(WorldItemCatalog.CreateGateWrit());
             world.PlayerGold = 240;

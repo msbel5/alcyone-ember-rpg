@@ -8,7 +8,10 @@ using EmberCrpg.Domain.Quest;
 using EmberCrpg.Domain.Worldgen;
 using EmberCrpg.Presentation.Ember.Adapters;
 using EmberCrpg.Presentation.Ember.UI;
+using EmberCrpg.Domain.Combat;
+using EmberCrpg.Simulation.Inventory;
 using EmberCrpg.Simulation.Quest;
+using EmberCrpg.Simulation.Rng;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
@@ -201,6 +204,56 @@ namespace EmberCrpg.Tests.EditMode.Presentation
                 new VitalStat(0, player.Vitals.Health.Max), player.Vitals.Fatigue, player.Vitals.Mana));
             Assert.That(adapter.RespawnAfterDeath(), Does.Contain("awaken").IgnoreCase);
             Assert.That(world.PlayerGold, Is.EqualTo(154), "second toll: 192 - 38");
+        }
+
+        // F16 ("ekipman zara girsin"): same seed, same dice — the equipped weapon's bonuses must change
+        // the outcome. The starting blade now ships EQUIPPED; the chest sword tier-ups and auto-equips.
+        [Test]
+        public void Equipment_BonusesEnterTheDice_AndChestSwordTiersUp()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "survival", "crossroads", 7u);
+            var player = world.Actors.FirstByRole(ActorRole.Player);
+
+            // Starting kit equipped by default (the blade sat inert in the backpack since Sprint 1).
+            var weaponId = world.PlayerEquipment.GetEquippedItemId(EquipmentSlot.Weapon);
+            Assert.That(weaponId.IsEmpty, Is.False, "the starting blade must come equipped");
+            Assert.That(world.PlayerInventory.FindById(weaponId).TemplateId,
+                Is.EqualTo(WorldItemCatalog.AshTrainingBladeTemplateId));
+
+            // Same seed, same target: armed damage must exceed bare damage (acc+5/dmg+2 vs 0/0).
+            var resolver = new EmberCrpg.Simulation.Combat.CombatActionResolver(
+                new EmberCrpg.Simulation.Combat.CombatHitRollService(),
+                new EmberCrpg.Simulation.Combat.CombatDamageService());
+            var action = new CombatActionDef(new CombatActionId("melee_swing"), 0, "h", "d", "a");
+            var loadout = new WorldActorLoadoutFactory();
+            var dummyA = loadout.Create(new ActorId(9001), "Dummy A", ActorRole.Enemy, new GridPosition(1, 1));
+            var dummyB = loadout.Create(new ActorId(9002), "Dummy B", ActorRole.Enemy, new GridPosition(1, 2));
+            int bare = 0, armed = 0;
+            for (uint seed = 1; seed <= 60; seed++)
+            {
+                int beforeA = dummyA.Vitals.Health.Current;
+                resolver.Resolve(action, player, dummyA, 3, new XorShiftRng(seed), world.Time,
+                    new SiteId(1UL), world.Events);
+                bare += beforeA - dummyA.Vitals.Health.Current;
+                int beforeB = dummyB.Vitals.Health.Current;
+                resolver.Resolve(action, player, dummyB, 3, new XorShiftRng(seed), world.Time,
+                    new SiteId(1UL), world.Events, attackerAccuracyBonus: 5, attackerDamageBonus: 2);
+                armed += beforeB - dummyB.Vitals.Health.Current;
+                // keep the dummies alive so every seed contributes
+                dummyA.ApplyVitals(new ActorVitals(dummyA.Vitals.Health.Refill(), dummyA.Vitals.Fatigue, dummyA.Vitals.Mana));
+                dummyB.ApplyVitals(new ActorVitals(dummyB.Vitals.Health.Refill(), dummyB.Vitals.Fatigue, dummyB.Vitals.Mana));
+            }
+            Assert.That(armed, Is.GreaterThan(bare), "weapon bonuses must raise total damage over 60 seeded swings");
+
+            // Chest loot: grants the tier-up sword once, auto-equips it, and refuses a second grab.
+            var line = adapter.LootDungeonChest();
+            Assert.That(line, Does.Contain("Worn Iron Sword").And.Contain("equip"));
+            var newWeaponId = world.PlayerEquipment.GetEquippedItemId(EquipmentSlot.Weapon);
+            Assert.That(world.PlayerInventory.FindById(newWeaponId).TemplateId,
+                Is.EqualTo(WorldItemCatalog.WornIronSwordTemplateId), "the better sword auto-equips");
+            Assert.That(adapter.LootDungeonChest(), Does.Contain("empty"), "the chest yields exactly one sword");
         }
 
         private static int Count(EmberCrpg.Domain.Inventory.InventoryState inventory, string templateId)

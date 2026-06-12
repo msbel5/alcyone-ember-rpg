@@ -18,9 +18,14 @@ namespace EmberCrpg.Tests.EditMode.Inventory
         [Test]
         public void TryEquip_WeaponInInventory_EquipsByStableItemId()
         {
+            // CONTRACT CHANGE (F16): the starting blade now ships EQUIPPED — its bonuses finally enter
+            // the dice. The equip path itself is still covered: unequip first, then re-equip succeeds.
             var world = new WorldFactory().Create(1337);
             var weapon = world.PlayerInventory.FindFirstEquipment(EquipmentSlot.Weapon);
+            Assert.That(world.PlayerEquipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(weapon.Id),
+                "the starting kit comes equipped");
 
+            world.PlayerEquipment.Unequip(EquipmentSlot.Weapon);
             var result = new EquipmentService().TryEquip(world.PlayerInventory, world.PlayerEquipment, weapon.Id);
 
             Assert.That(result.Success, Is.True);

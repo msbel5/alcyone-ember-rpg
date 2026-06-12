@@ -13,14 +13,16 @@ namespace EmberCrpg.Tests.EditMode.Presentation
     public sealed class InventoryEquipmentFormatterTests
     {
         [Test]
-        public void FormatInspect_ShowsInventoryItemAndEmptyWeaponSlot()
+        public void FormatInspect_ShowsInventoryItemAndEquippedStartingBlade()
         {
+            // CONTRACT CHANGE (F16): the starting blade ships EQUIPPED, so a fresh world's weapon slot
+            // is no longer empty — the inspect line names the blade instead of "none".
             var world = new WorldFactory().Create(1337);
 
             var text = InventoryEquipmentFormatter.FormatInspect(world);
 
             Assert.That(text, Does.Contain("Ash Training Blade"));
-            Assert.That(text, Does.Contain("Weapon: none"));
+            Assert.That(text, Does.Not.Contain("Weapon: none"));
         }
 
         [Test]

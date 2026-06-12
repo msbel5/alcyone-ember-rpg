@@ -149,6 +149,14 @@ Proof: "fell in 8 enemy swings, purse 313->251 (-20%), hp=62/62, +8h" + a live p
 with full bars. (Also fixed: ProofAdvanceHours lost its first hour to a stale tick index; same-frame
 double CaptureScreenshot swallowed the earlier capture.)
 
+F16 equipment SHIPPED: weapon bonuses finally enter the dice (the starting Ash Training Blade sat
+inert in the backpack since Sprint 1 — it now spawns EQUIPPED and its +5 acc/+2 dmg apply to every
+swing), and the delve chest OPENS with E: it yields the tier-up Worn Iron Sword (+8 acc/+5 dmg),
+auto-equips it when it beats your hand, and creaks its hinged lid back. One sword per world.
+Proof: "20 bare swings dealt 83, 20 armed swings dealt 103" + the chest grant line + a 60-paired-seed
+EditMode test. Honest limits: chest-opened state isn't save-persisted yet (F22); body/armor slot
+arrives with armor content (F29).
+
 Known limits added in v0.3 (honest): steep hillsides can still clip a dungeon-barrow corner; footstep
 surface detection is name-based (built "Floor" slabs vs terrain); per-step audio variation rotates 4
 pre-rendered variants (+pitch jitter) instead of re-rendering the dip cascade per step; melody voices are
