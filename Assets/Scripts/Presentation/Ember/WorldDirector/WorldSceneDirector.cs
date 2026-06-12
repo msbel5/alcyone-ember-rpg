@@ -145,6 +145,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             RuntimeLightingRig.Apply(root.transform, homeTile.Biome);
 
             var spawn = new Vector3(layout.PlayerSpawnX, 0.2f, layout.PlayerSpawnZ);
+            RuntimePlayerSpawn.Record(spawn); // F15: the death-screen awaken teleports the rig back here
             RuntimePlayerRig.Build(spawn, Quaternion.Euler(0f, layout.PlayerFacingDeg, 0f));
 
             // F3/audio v1: procedural minimum sound set — wind ambience, motion footsteps, encounter sting.

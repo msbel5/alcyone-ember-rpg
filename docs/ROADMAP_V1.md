@@ -23,9 +23,12 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   (PlayerCombatPosition — park halindeki aktör değil); vuruşta 0.2s billboard atılması; düşman glide
   2.4m/s. Kanıt: "[Proof] F14 chase: a=9.4m b=5.4m closed=4.0m" + chase_a/b kareleri (sandık→koridor)
   + EditMode HostileAi testi + proof'lar artık otomatik kapanıyor (Application.Quit kökü).
-- [ ] **F15 Ölüm + yeniden doğuş döngüsü**: oyuncu ölünce death screen → "Awaken at the last
-  settlement" (altının %20'si kayıp, HP/FAT/MP tam, dünya saati +8h). Save'siz oyunda da çalışır.
-  **DoD:** looptest'e ölüm legi (haunter'a AFK yenil) → respawn satırı + HUD canlı karesi.
+- [x] **F15 Ölüm + yeniden doğuş döngüsü** ✅ 2026-06-12: RespawnAfterDeath (altın %20 kesinti,
+  vitals Refill, saat +8h SAAT-SAAT — ProofAdvanceHours stale-tick no-op kökü de düzeltildi, aktör
+  plazaya); DeathView'a birincil "AWAKEN" butonu + controller AwakenAction (rig spawn'a döner,
+  ölüm kapısı yeniden kurulur). Kanıt: "fell in 8 enemy swings, purse 313->251 (-20%), hp=62/62,
+  +8h" + looptest_respawn.png (plaza + FULL barlar) + EditMode toll/refill/8h/çifte-ölüm testi.
+  Yan kazanım: aynı-kare ikinci CaptureScreenshot öncekini yutar — proof'lara kare ayracı kondu.
 - [ ] **F16 Ekipman etkisi**: envanterdeki silah/zırh statları vuruş zarına gerçekten girer
   (silah=baseDamage+acc bonus, zırh=armor; ekipman slotu: el+gövde). Başlangıç kiti + zindan
   sandığından 1 tier üstü silah düşer (chest loot tablosu).
@@ -122,4 +125,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F15 <<<
+>>> CURRENT: F16 <<<

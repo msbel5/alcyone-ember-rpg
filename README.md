@@ -142,6 +142,13 @@ range) now measures from the LIVE first-person body instead of the parked determ
 swings lunge the billboard 0.2s. Proof players now quit automatically when a proof run ends.
 Proof: "[Proof] F14 chase: a=9.4m b=5.4m closed=4.0m" + consecutive chase frames (chest → corridor).
 
+F15 death+respawn SHIPPED: dying is a toll, not a wall — the death screen's primary "AWAKEN AT THE
+LAST SETTLEMENT" action takes 20% of your gold, refills all vitals, walks the world clock forward 8
+hours (hour-by-hour so cadences fire), and returns the body to the plaza. Works without a save file.
+Proof: "fell in 8 enemy swings, purse 313->251 (-20%), hp=62/62, +8h" + a live post-respawn HUD frame
+with full bars. (Also fixed: ProofAdvanceHours lost its first hour to a stale tick index; same-frame
+double CaptureScreenshot swallowed the earlier capture.)
+
 Known limits added in v0.3 (honest): steep hillsides can still clip a dungeon-barrow corner; footstep
 surface detection is name-based (built "Floor" slabs vs terrain); per-step audio variation rotates 4
 pre-rendered variants (+pitch jitter) instead of re-rendering the dip cascade per step; melody voices are

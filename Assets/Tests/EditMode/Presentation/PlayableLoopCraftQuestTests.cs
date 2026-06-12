@@ -169,6 +169,40 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(combat.EnemyName, Does.StartWith("Haunter of").Or.StartWith("Stalker of"));
         }
 
+        // F15 ("ölüm bir duvar değil, bedel"): respawn 20% altın keser, canları doldurur, saati tam
+        // 8 saat yürütür (saat saat — tek tick-sıçraması cadence atlatır) ve gövdeyi plazaya taşır.
+        [Test]
+        public void RespawnAfterDeath_TollsGold_RefillsVitals_AdvancesEightHours()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "survival", "crossroads", 7u);
+
+            var player = world.Actors.FirstByRole(ActorRole.Player);
+            world.PlayerGold = 240;
+            long minutesBefore = world.Time.TotalMinutes;
+            player.ApplyVitals(new ActorVitals(
+                new VitalStat(0, player.Vitals.Health.Max),
+                new VitalStat(3, player.Vitals.Fatigue.Max),
+                new VitalStat(1, player.Vitals.Mana.Max)));
+            Assert.That(player.IsAlive, Is.False, "setup: the player must be dead");
+
+            var line = adapter.RespawnAfterDeath();
+
+            Assert.That(world.PlayerGold, Is.EqualTo(192), "20% of 240 = 48 gold toll");
+            Assert.That(player.Vitals.Health.Current, Is.EqualTo(player.Vitals.Health.Max));
+            Assert.That(player.Vitals.Fatigue.Current, Is.EqualTo(player.Vitals.Fatigue.Max));
+            Assert.That(player.Vitals.Mana.Current, Is.EqualTo(player.Vitals.Mana.Max));
+            // ≥8h, possibly one cadence-step over (the stepper lands on tick boundaries; never under).
+            Assert.That(world.Time.TotalMinutes - minutesBefore, Is.InRange(8 * 60, 8 * 60 + 59), "8 hours pass");
+            Assert.That(line, Does.Contain("awaken").IgnoreCase);
+            // Dying twice must work too: the gate re-arms and the toll applies again.
+            player.ApplyVitals(new ActorVitals(
+                new VitalStat(0, player.Vitals.Health.Max), player.Vitals.Fatigue, player.Vitals.Mana));
+            Assert.That(adapter.RespawnAfterDeath(), Does.Contain("awaken").IgnoreCase);
+            Assert.That(world.PlayerGold, Is.EqualTo(154), "second toll: 192 - 38");
+        }
+
         private static int Count(EmberCrpg.Domain.Inventory.InventoryState inventory, string templateId)
         {
             var total = 0;

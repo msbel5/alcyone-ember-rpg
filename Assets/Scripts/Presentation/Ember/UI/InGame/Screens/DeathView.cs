@@ -11,7 +11,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
     {
         private readonly VisualElement _overlay;
 
-        public DeathView(VisualElement stageCanvas, Action onClose, Action onLoadLastSave = null, Action onMainMenu = null)
+        public DeathView(VisualElement stageCanvas, Action onClose, Action onLoadLastSave = null, Action onMainMenu = null,
+            Action onAwaken = null)
         {
             _overlay = new VisualElement();
             _overlay.style.position = Position.Absolute;
@@ -50,6 +51,27 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             wrap.Add(p2);
 
             var actions = Row();
+
+            // F15 ölüm+respawn: the PRIMARY path — no save needed; the adapter pays the 20% gold toll,
+            // refills vitals, advances the clock 8h, and the body wakes at the settlement plaza.
+            if (onAwaken != null)
+            {
+                var awaken = new Button(() => onAwaken.Invoke()) { text = "AWAKEN AT THE LAST SETTLEMENT" };
+                ResetButton(awaken);
+                awaken.style.height = 46;
+                awaken.style.paddingLeft = 32;
+                awaken.style.paddingRight = 32;
+                awaken.style.backgroundColor = Health;
+                awaken.style.color = Ink;
+                awaken.style.fontSize = 13;
+                awaken.style.letterSpacing = 1.2f;
+                awaken.style.unityFontStyleAndWeight = FontStyle.Bold;
+                ApplyFont(awaken, Sans);
+                Radius(awaken, 10);
+                awaken.style.marginRight = 14;
+                actions.Add(awaken);
+            }
+
             var load = new Button(() => onLoadLastSave?.Invoke()) { text = "LOAD LAST SAVE" };
             ResetButton(load);
             load.style.height = 46;

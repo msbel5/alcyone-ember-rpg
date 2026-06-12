@@ -522,6 +522,23 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             yield return new WaitForSecondsRealtime(0.4f);
             Debug.Log(adapter.ProofRunTradeLeg());
             Debug.Log(adapter.ProofQuestSnapshot());
+            // F15-DoD: lose to an outlaw AFK, awaken at the plaza — the toll line + a LIVE HUD frame
+            // (full vitals + the "You awaken..." event line) prove the loop has no dead-end.
+            var deathAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+            if (deathAdapter != null)
+            {
+                Debug.Log(deathAdapter.ProofDieAndRespawn());
+                var respawnUi = FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
+                respawnUi?.ProofCloseScreens(); // the death modal may have opened mid-leg; respawn already ran
+                yield return new WaitForSecondsRealtime(0.5f);
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, "looptest_respawn.png"));
+                // ScreenCapture.CaptureScreenshot is ASYNC and a same-frame second request REPLACES the
+                // pending one — the final capture below ate this frame until a frame of separation existed.
+                yield return new WaitForSecondsRealtime(0.4f);
+            }
+
             Debug.Log("LOOP-PROOF: full loop complete — explore→quest→fight→loot→trade all settled.");
             CaptureToPng(Path.Combine(_outputDir, "looptest_final.png"));
         }

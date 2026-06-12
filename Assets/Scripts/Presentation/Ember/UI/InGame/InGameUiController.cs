@@ -225,6 +225,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             }
 
             // F13: dying in live combat must land somewhere honest — the death screen, not a frozen HUD.
+            // F15: being alive re-arms the gate (adapter-side respawns — proofs — bypass the UI button).
+            if (d.HpMax > 0 && d.Hp > 0)
+                _deathScreenShown = false;
             if (d.HpMax > 0 && d.Hp <= 0 && !_deathScreenShown)
             {
                 _deathScreenShown = true;
@@ -261,6 +264,27 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             if (row.DistanceTiles <= 0)
                 return "QUEST " + row.TargetName + " · nearby";
             return "QUEST " + row.TargetName + " · " + row.DistanceTiles + row.Unit + " · " + row.Direction; // "m" local, "tiles" overland
+        }
+
+        // F15 ölüm+respawn: the adapter pays the toll (20% gold, +8h, vitals refill, actor to plaza);
+        // this side returns the BODY — rig teleports to the recorded realize spawn — and re-arms the
+        // death gate so a later death can open the screen again.
+        private void AwakenAction()
+        {
+            if (EmberDomainAdapterLocator.Current
+                    is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter rt)
+                Debug.Log("[InGameUI] " + rt.RespawnAfterDeath());
+
+            var rig = GameObject.Find("PlayerRig");
+            if (rig != null)
+            {
+                var cc = rig.GetComponent<CharacterController>();
+                if (cc != null) cc.enabled = false;
+                rig.transform.position = EmberCrpg.Presentation.Ember.WorldDirector.RuntimePlayerSpawn.Position;
+                if (cc != null) cc.enabled = true;
+            }
+            _deathScreenShown = false;
+            CloseScreen();
         }
 
         private static string BuildDelveLine(QuestGuidanceRow row)
@@ -350,7 +374,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     new LevelUpView(c, CloseScreen, ReadLevelUpState(), TodoConfirmLevelUpAction);
                     break;
                 case "death":
-                    new DeathView(c, CloseScreen, TodoLoadLastSaveAction, TodoMainMenuAction);
+                    new DeathView(c, CloseScreen, TodoLoadLastSaveAction, TodoMainMenuAction, AwakenAction);
                     break;
                 case "savegame":
                     RefreshLiveSaveLoad();

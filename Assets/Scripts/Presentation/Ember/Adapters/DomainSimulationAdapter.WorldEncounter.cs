@@ -85,8 +85,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// </summary>
         public void ProofAdvanceHours(int hours)
         {
-            int ticksPerHour = EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay / 24;
-            for (int h = 0; h < hours; h++)
+            int ticksPerHour = System.Math.Max(1, EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay / 24);
+            // Steps stay ≤1h so hourly/daily cadences fire (shipcheck6 finding) — but the loop now
+            // measures REAL time moved: a stale _tick made the first step a silent no-op (the respawn
+            // test caught +7h where the contract says +8h).
+            long target = _world.Time.TotalMinutes + hours * 60L;
+            int guard = 0;
+            while (_world.Time.TotalMinutes < target && guard++ < (hours * 4) + 8)
                 AdvanceTick(_tick + ticksPerHour);
         }
 
@@ -265,6 +270,85 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 : $"{enemy.Name} misses you.";
             // F14 attack feel: the striking billboard lunges (the view consumes this stamp).
             EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseEnemyStrike(enemy.Id.Value);
+        }
+
+        /// <summary>
+        /// F15 ÖLÜM+RESPAWN: dying is a toll, not a wall — 20% of the purse pays for your care, vitals
+        /// refill, the world clock walks forward 8 HOURS (hour-by-hour: a single tick-jump skips hourly
+        /// cadences — the banked shipcheck-6 gotcha), the encounter unbinds, and the body wakes at the
+        /// CURRENT settlement's plaza. Works without a save file by design (roadmap F15).
+        /// </summary>
+        public string RespawnAfterDeath()
+        {
+            var player = _world?.Actors?.FirstByRole(ActorRole.Player);
+            if (player == null) return "No player to awaken.";
+            if (player.IsAlive) return "You are not dead.";
+
+            int lost = _world.PlayerGold / 5;
+            _world.PlayerGold -= lost;
+            player.ApplyVitals(new EmberCrpg.Domain.Actors.ActorVitals(
+                player.Vitals.Health.Refill(), player.Vitals.Fatigue.Refill(), player.Vitals.Mana.Refill()));
+            _worldEncounterId = default;
+            _worldEncounterLootGranted = false;
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeBattleMirror.Active = false;
+            ProofAdvanceHours(8);
+
+            var here = CurrentSettlementOrStart;
+            player.MoveTo(CenterOfSite(SettlementSiteId(here)));
+            string settlementName = "the last settlement";
+            var map = _world.Overland;
+            if (map != null)
+                for (int i = 0; i < map.Settlements.Count; i++)
+                    if (map.Settlements[i].Id.Equals(here)) { settlementName = map.Settlements[i].Name; break; }
+
+            _lastCombatLine = $"You awaken at {settlementName}. {lost} gold paid for your care; 8 hours pass.";
+            UnityEngine.Debug.Log("[Respawn] " + _lastCombatLine);
+            return _lastCombatLine;
+        }
+
+        /// <summary>F15-DoD: lose to the bound enemy ON PURPOSE (AFK duel — the enemy is placed adjacent
+        /// so its real strike cadence connects), then respawn and report the full toll honestly.</summary>
+        public string ProofDieAndRespawn()
+        {
+            // The encounter leg may have ALREADY felled the first outlaw — duel the first LIVING one.
+            EmberCrpg.Domain.Worldgen.NpcSeedRecord outlawSeed = null;
+            ActorRecord outlaw = null;
+            if (_world?.NpcSeeds != null && _world.Actors != null)
+                foreach (var seed in _world.NpcSeeds)
+                {
+                    if (seed == null || seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw) continue;
+                    var candidateId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
+                    if (_world.Actors.TryGet(candidateId, out var candidate) && candidate != null && candidate.IsAlive)
+                    {
+                        outlawSeed = seed;
+                        outlaw = candidate;
+                        break;
+                    }
+                }
+            if (outlaw == null) return "LOOP-PROOF: no living outlaw actor for the death leg.";
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            if (player == null) return "LOOP-PROOF: no player.";
+
+            TryBeginWorldEncounter(outlaw, outlawSeed);
+            outlaw.MoveTo(new GridPosition(player.Position.X + 1, player.Position.Y)); // the duel is adjacent
+            int goldBefore = _world.PlayerGold;
+            long minutesBefore = _world.Time.TotalMinutes;
+
+            float t = 100000f;
+            int swings = 0;
+            while (player.IsAlive && swings < 200)
+            {
+                TickWorldEncounter(t);
+                t += 2.5f;
+                swings++;
+            }
+            if (player.IsAlive)
+                return $"LOOP-PROOF: BROKEN — player survived {swings} enemy strikes (balance drifted?).";
+
+            string awaken = RespawnAfterDeath();
+            long hoursPassed = (_world.Time.TotalMinutes - minutesBefore) / 60;
+            return $"LOOP-PROOF: death+respawn — fell in {swings} enemy swings, purse {goldBefore}->{_world.PlayerGold} " +
+                   $"(-20%), hp={player.Vitals.Health.Current}/{player.Vitals.Health.Max}, +{hoursPassed}h. '{awaken}'";
         }
 
         /// <summary>F10-DoD: bind the CURRENT settlement's haunter (an Outlaw homed HERE — street outlaws
