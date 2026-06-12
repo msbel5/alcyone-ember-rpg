@@ -671,7 +671,40 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 Debug.Log("[Proof] clock advanced 15h — capturing the night street for the curfew contrast.");
                 yield return new WaitForSecondsRealtime(2.6f); // curfew views poll at 2s
                 CaptureToPng(Path.Combine(_outputDir, "look_night.png"));
+                yield return new WaitForSecondsRealtime(0.4f); // async capture lands before the next leg moves
                 if (cc3 != null) cc3.enabled = true;
+            }
+
+            // F23-DoD: daylight CRIME — an aimed strike at a civilian posts a bounty; the WATCH hunts
+            // on sight (TickHostileAi). Two snapshots + a frame of the closing guard.
+            if (rig != null && nightAdapter != null)
+            {
+                nightAdapter.ProofAdvanceHours(9); // 23:00 → 08:00 — the aggro frame deserves daylight
+                Debug.Log("[Proof] F23 " + nightAdapter.ProofCrimeAndWatchLeg());
+                // The crime may have SUMMONED brand-new watch actors — materialise their billboards
+                // now (the streaming re-scan is movement-gated and the rig stands still here).
+                FindFirstObjectByType<EmberCrpg.Presentation.Ember.Views.EmberGeneratedActorSpawner>()?.SpawnMissingNearbyActors();
+                yield return new WaitForSecondsRealtime(3.2f); // the watch closes ~7 cells at 1/0.45s
+                var watchSnap = nightAdapter.ProofWatchSnapshot();
+                Debug.Log($"[Proof] F23 watch B: {watchSnap} (DoD: distance shrinks vs watch A).");
+                var fpsC = rig.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
+                if (fpsC != null) fpsC.enabled = false;
+                string watchName = watchSnap.Split('|')[0];
+                foreach (var view in FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None))
+                {
+                    if (view.name != watchName) continue;
+                    rig.transform.rotation = Quaternion.LookRotation(
+                        view.transform.position + Vector3.up * 0.9f - rig.transform.position);
+                    break;
+                }
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, "look_guard_aggro.png"));
+                yield return new WaitForSecondsRealtime(0.4f); // capture separation
+                if (fpsC != null)
+                {
+                    fpsC.enabled = true;
+                    fpsC.SyncYaw(rig.transform.eulerAngles.y);
+                }
             }
 
             // F10-DoD: travel to the nearest DELVE, walk the corridor into the chamber, and eye-proof the

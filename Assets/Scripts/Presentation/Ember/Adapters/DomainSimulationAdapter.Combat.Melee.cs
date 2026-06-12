@@ -67,6 +67,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             foreach (var a in _world.Actors.Records)
             {
                 if (a == null || a.Role == ActorRole.Player) continue;
+                // F23: auto-target only ever picks ENEMIES — a mashed attack key must never commit
+                // an accidental crime. Assault stays possible, but only by an AIMED (named) swing.
+                if (a.Role != ActorRole.Enemy || !a.IsAlive) continue;
                 int d = System.Math.Max(System.Math.Abs(a.Position.X - from.X),
                                         System.Math.Abs(a.Position.Y - from.Y));
                 if (d > maxRange) continue;
@@ -98,6 +101,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 target = _world.Actors.Records.FirstOrDefault(a => string.Equals(a.Name, targetActorName, System.StringComparison.Ordinal));
                 if (target == null) { LogCombat($"No target: {targetActorName}"); return false; }
+            }
+
+            // F23 CRIME: raising a blade against anyone who is not an ENEMY is assault — the watch
+            // posts a bounty and (TickHostileAi) guards hunt on sight. The swing itself is the crime,
+            // hit or miss.
+            if (target.IsAlive && target.Role != ActorRole.Enemy && target.Role != ActorRole.Player)
+            {
+                _world.PlayerBountyGold += 40;
+                _world.PlayerReputation -= 2;
+                LogCombat($"CRIME! You struck at {target.Name} — the watch hunts you (bounty {_world.PlayerBountyGold}g).");
+                UnityEngine.Debug.Log($"[Crime] civilian assaulted: bounty={_world.PlayerBountyGold}g rep={_world.PlayerReputation}.");
+                EnsureWatchOfficers(); // not every settlement rolls Guard seeds — crime SUMMONS the watch
             }
             // Codex audit (sixth pass A-P0 #4): previously bypassed the
             // CombatActionResolver chain entirely (auto-hit, no armor / dodge /

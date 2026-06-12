@@ -207,7 +207,20 @@ eye-verified distinct palettes; "[Proof] F19 delve census: 3 dungeon(s)" + three
 EditMode sweep test pins reachability of all three + the proof-seed trio mapping to ≥2 archetypes.
 Honest PARTIAL: music does not vary by archetype yet (DAY/NIGHT/BATTLE slots are archetype-agnostic).
 
-### v0.6 "Görev Makinesi" — in progress (F21 SHIPPED)
+### v0.6 "Görev Makinesi" — SHIPPED (shipcheck 9/9 PASS, perf 11.6ms avg; tag v0.6.0-quest-machine)
+
+F23 reputation + crime SHIPPED: an AIMED strike at a civilian is a CRIME — the watch posts a 40g
+bounty, your reputation drops 2, and guards HUNT you through the same chase AI the outlaws use
+(auto-target can never commit an accidental crime: the attack-nearest key only ever picks enemies).
+Not every settlement rolls Guard seeds, so crime SUMMONS the watch — two officers materialize at the
+plaza edge (the dungeon-dweller synthesis pattern: deterministic ids, idempotent, corpses persist)
+and close in. Finished contracts build your name (+1 rep each); at rep ≥5 the market basis drops 10%.
+The HUD top bar carries both: "Rep ±N · BOUNTY Ng". Reputation and bounty persist through saves.
+Proof (Reports/proof-f23b): "[Crime] civilian assaulted: bounty=40g rep=-2" → "the watch arrives:
++2 officers" → watch telemetry 8 → 4 cells closing + look_guard_aggro.png (two officers on top of
+the player in daylight). EditMode: crime/bounty/watch-closes test + rep-discount price test (21/21).
+Honest open edges: no bounty pay-off/surrender flow yet (the bounty stands until death or F31);
+guards still fight the schedule rubber-band while chasing (net closure stays positive).
 
 F21 quest generator SHIPPED: endless DFU-style work, minted deterministically. Four templates —
 FETCH (bring cargo to the giver), KILL (hunt a named outlaw), DELIVER (carry cargo to another

@@ -9,6 +9,65 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // Synthetic haunter NpcIds live FAR above worldgen's sequential ids (a planet seeds ~750) so the
         // two id spaces can never collide; the offset is also what makes EnsureDungeonHaunters idempotent.
         private const ulong HaunterNpcIdBase = 9_000_000UL;
+        // F23: the WATCH's synthetic band — clear of the haunter band (9_000_000 + settlement*16 + slot
+        // tops out far below 9_500_000 for real settlement counts).
+        private const ulong WatchNpcIdBase = 9_500_000UL;
+
+        /// <summary>F23: crime summons the WATCH. Not every settlement rolls Guard seeds in worldgen,
+        /// but "muhafız saldırır" must hold EVERYWHERE — so the first crime in a town synthesizes two
+        /// watch officers at the plaza edge (same presentation-side pattern as the dungeon dwellers:
+        /// deterministic ids, idempotent, corpses persist, ride the normal spawn/sync/combat paths).
+        /// They hunt through TickHostileAi while a bounty stands.</summary>
+        public int EnsureWatchOfficers()
+        {
+            var here = CurrentSettlementOrStart;
+            var map = _world?.Overland;
+            if (map == null || _world.Actors == null || _world.NpcSeeds == null) return 0;
+
+            string settlementName = null;
+            for (int i = 0; i < map.Settlements.Count; i++)
+                if (map.Settlements[i].Id.Equals(here)) { settlementName = map.Settlements[i].Name; break; }
+            if (string.IsNullOrEmpty(settlementName)) return 0;
+
+            var faction = _world.NpcSeeds.Count > 0 ? _world.NpcSeeds[0].Faction : new FactionId(1UL);
+            var origin = BillboardOrigin();
+            int created = 0;
+            for (int slot = 0; slot < 2; slot++)
+            {
+                var npcId = new NpcId(WatchNpcIdBase + (here.Value * 4UL) + (ulong)slot);
+                var actorId = new ActorId(GeneratedNpcActorOffset + npcId.Value);
+                if (_world.Actors.Contains(actorId)) continue; // alive or corpse — never duplicate
+
+                bool seedExists = false;
+                for (int i = 0; i < _world.NpcSeeds.Count; i++)
+                    if (_world.NpcSeeds[i] != null && _world.NpcSeeds[i].Id.Equals(npcId)) { seedExists = true; break; }
+                if (!seedExists)
+                    _world.NpcSeeds.Add(new NpcSeedRecord(
+                        npcId, here, faction, $"Watch of {settlementName} {(slot == 0 ? "I" : "II")}", 970, NpcRole.Guard));
+
+                var grid = new GridPosition(
+                    origin.X + (slot == 0 ? 9 : -8),
+                    origin.Y + (slot == 0 ? 7 : -6));
+                _world.Actors.Add(new ActorRecord(
+                    actorId,
+                    $"Watch of {settlementName} {(slot == 0 ? "I" : "II")}",
+                    ToActorRole(NpcRole.Guard),
+                    StatsFor(NpcRole.Guard),
+                    VitalsFor(NpcRole.Guard),
+                    grid,
+                    accuracy: 45, // worldgen guard baseline
+                    dodge: 30,
+                    armor: 12,
+                    baseDamage: 4,
+                    topicIds: new[] { "rumors", "work" },
+                    home: grid,
+                    dayAnchor: grid));
+                created++;
+            }
+            if (created > 0)
+                UnityEngine.Debug.Log($"[Crime] the watch arrives: +{created} officers at {settlementName}.");
+            return created;
+        }
 
         /// <summary>
         /// F10 ("savaşamadım" — the F2 haunters debt): the CURRENT settlement, when it is a Dungeon, gets

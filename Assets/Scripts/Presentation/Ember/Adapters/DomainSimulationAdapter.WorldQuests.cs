@@ -113,6 +113,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             quest.Completed = true;
             _world.PlayerGold += quest.RewardGold;
             GrantXp(60, "quest");
+            _world.PlayerReputation += 1; // F23: finished work builds a name
+            UnityEngine.Debug.Log($"[Rep] +1 (contract) → {_world.PlayerReputation}.");
             _lastCombatLine = $"Contract complete: {quest.Title} — +{quest.RewardGold} gold.";
             UnityEngine.Debug.Log($"[QuestGen] completed #{quest.Id.Value}: {quest.Title} — +{quest.RewardGold} gold (purse {_world.PlayerGold}).");
             return _lastCombatLine;
@@ -146,6 +148,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             state.SetCompleted(success: true);
             _world.PlayerGold += goldReward;
             GrantXp(60, "quest"); // F17: finished work teaches more than the kill itself
+            _world.PlayerReputation += 1; // F23: finished work builds a name
+            UnityEngine.Debug.Log($"[Rep] +1 (world quest) → {_world.PlayerReputation}.");
             _lastCombatLine = $"{label}: +{goldReward} gold.";
             UnityEngine.Debug.Log($"[Quest] {label} — quest complete, +{goldReward} gold (purse {_world.PlayerGold}).");
         }

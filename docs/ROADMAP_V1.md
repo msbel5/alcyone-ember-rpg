@@ -113,9 +113,25 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   + kapalı kontrat + bounty-tamam/pilgrimage-açık → save→load → digest byte-aynı + alan eşitlikleri.
   Looptest regresyonu: seed artık dünya store'undan, F21 fetch legi uçtan uca yeşil. Kapılar:
   fallback 1459/1459, EditMode 19/19, Build Success.
-- [ ] **F23 İtibar + suç**: sivile vurmak = suç → muhafız saldırır + kelle parası; görev tamamlama
+- [x] **F23 İtibar + suç**: sivile vurmak = suç → muhafız saldırır + kelle parası; görev tamamlama
   +itibar, itibar yüksekse fiyatlar %10 iner (ekonomi köprüsü hazır).
   **DoD:** sivile vur→muhafız agro karesi; itibar satırı HUD/character ekranında.
+  **KANIT (lookaround, Reports/proof-f23b):** "[Crime] civilian assaulted: bounty=40g rep=-2" →
+  "[Crime] the watch arrives: +2 officers" → devriye telemetrisi watch A: 8 → watch B: 4 hücre +
+  look_guard_aggro.png (iki devriye oyuncunun üstünde, gündüz plaza). PlayerReputation/PlayerBountyGold
+  3-katman kalıcı; HUD üst barı "Rep ±N · BOUNTY Ng" segmentleri. Fiyat köprüsü: rep ≥5 →
+  basis %10 iner (ApplyReputationDiscount, canlı pazar basis'inin üstünde; EditMode testi).
+  **Tasarım kararları:** (1) oto-hedef ("attack nearest") artık YALNIZ düşman seçer — tuş basışı
+  kaza-suç İŞLEYEMEZ; suç yalnız nişanlı/isimli vuruşla. (2) Her yerleşim Guard seed'i yuvarlamıyor —
+  suç DEVRİYEYİ ÇAĞIRIR (F10 haunter deseni: sentetik id bandı 9.5M, idempotent, ceset kalıcı,
+  TickHostileAi bounty>0 iken Guard'ları da avcı yapar). DÜRÜST AÇIK: kelle parasını ödeme/teslim
+  olma akışı yok (bounty kalıcı — F31 ana görev dönemine aday); devriye kovalarken ScheduleSystem
+  lastik-bandı Guard'larda hâlâ var (net kapanış yine pozitif; Enemy-pinned muafiyeti Guard'a
+  genişletilmedi).
+
+> **v0.6 KAPANIŞ KANITI:** SHIPCHECK VERDICT: PASS (9 sections, 0 exceptions) — perf avg=11,6ms
+> worst=404ms (v0.5'teki 15,4ms endişesi ortam çıktı; bütçe 16'nın rahat içinde).
+> Tag: v0.6.0-quest-machine.
 
 ## v0.7 "YAŞAYAN EVREN" — gökyüzü, hava, iç mekânlar
 
@@ -180,4 +196,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F23 <<<
+>>> CURRENT: F24 <<<

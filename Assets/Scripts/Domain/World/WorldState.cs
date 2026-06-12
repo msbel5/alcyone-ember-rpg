@@ -145,6 +145,10 @@ namespace EmberCrpg.Domain.World
         // QuestId.Value because the kernel QuestStore stays catalog-only (the F2 lesson).
         public List<EmberCrpg.Domain.Quest.WorldQuestRecord> WorldContracts = new List<EmberCrpg.Domain.Quest.WorldQuestRecord>();
         public Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState> WorldQuestStates = new Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState>();
+        // F23: reputation (+1 per finished contract, −2 per crime; ≥5 buys a 10% market discount)
+        // and the watch's BOUNTY on the player's head (>0 = guards hunt on sight).
+        public int PlayerReputation;
+        public int PlayerBountyGold;
         public List<string> PlayerKnownSpellIds = new List<string>();
         public List<RoomPickup> Pickups = new List<RoomPickup>();
         public List<DungeonRoomState> DungeonRoomStates = new List<DungeonRoomState>();
@@ -209,6 +213,8 @@ namespace EmberCrpg.Domain.World
             PlayerXp = other.PlayerXp;
             WorldContracts = other.WorldContracts;
             WorldQuestStates = other.WorldQuestStates;
+            PlayerReputation = other.PlayerReputation;
+            PlayerBountyGold = other.PlayerBountyGold;
             PlayerKnownSpellIds = other.PlayerKnownSpellIds;
             Pickups = other.Pickups;
             DungeonRoomStates = other.DungeonRoomStates;

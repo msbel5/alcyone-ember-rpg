@@ -67,6 +67,8 @@ public DungeonRoomSaveData[] dungeonRooms;
         public InventorySaveData merchantInventory;
         public int playerLevel;
         public int playerXp;
+        public int playerReputation; // F23
+        public int playerBountyGold; // F23
         public string[] playerKnownSpellIds;
         public int playerGold;
         public int merchantGold;

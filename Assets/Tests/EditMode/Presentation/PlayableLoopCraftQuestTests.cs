@@ -129,6 +129,67 @@ namespace EmberCrpg.Tests.EditMode.Presentation
                 "v0.5 worlds guarantee three delves where the map affords them");
         }
 
+        // F23: an aimed strike at a civilian is a CRIME — bounty posted, reputation drops, and the
+        // WATCH starts hunting through the same chase AI the outlaws use.
+        [Test]
+        public void Crime_StrikingCivilian_PostsBounty_AndWatchCloses()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "wanderer", "crossroads", null);
+
+            var leg = adapter.ProofCrimeAndWatchLeg();
+            StringAssert.Contains("bounty=40", leg);
+            Assert.That(world.PlayerBountyGold, Is.EqualTo(40));
+            Assert.That(world.PlayerReputation, Is.EqualTo(-2));
+
+            string watchName = adapter.ProofWatchSnapshot().Split('|')[0];
+            Assert.That(watchName, Is.Not.EqualTo("none"), "crime must summon a watch when none exists");
+
+            // Headless travel can leave the billboard origin and the site centre apart — re-post the
+            // officer a known 8 cells from the player (the chase test's technique), then watch it close.
+            var player = world.Actors.FirstByRole(ActorRole.Player);
+            ActorRecord officer = null;
+            foreach (var a in world.Actors.Records)
+                if (a != null && a.IsAlive && string.Equals(a.Name, watchName, System.StringComparison.Ordinal))
+                { officer = a; break; }
+            Assert.That(officer, Is.Not.Null);
+            officer.MoveTo(new GridPosition(player.Position.X + 8, player.Position.Y));
+
+            int before = int.Parse(adapter.ProofWatchSnapshot().Split('|')[1]);
+            Assert.That(before, Is.EqualTo(8));
+            adapter.TickHostileAi(100f);
+            adapter.TickHostileAi(100.5f);
+            adapter.TickHostileAi(101.0f);
+            int after = int.Parse(adapter.ProofWatchSnapshot().Split('|')[1]);
+            Assert.That(after, Is.LessThan(before), "the watch must CLOSE on the criminal while a bounty stands");
+        }
+
+        // F23: a good name (rep ≥ 5) buys 10% off the same basis the live market uses.
+        [Test]
+        public void Reputation_AtFivePlus_DropsBuyPrices()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "wanderer", "crossroads", null);
+
+            int PriceOf(string templateId)
+            {
+                var rows = adapter.ReadTradeState().MerchantItems;
+                for (int i = 0; i < rows.Count; i++)
+                    if (rows[i].TemplateId == templateId) return rows[i].UnitPrice;
+                return -1;
+            }
+
+            int basePrice = PriceOf("ale");
+            Assert.That(basePrice, Is.GreaterThan(0), "the market must stock ale");
+            world.PlayerReputation = 5;
+            int discounted = PriceOf("ale");
+            Assert.That(discounted, Is.LessThanOrEqualTo(basePrice));
+            if (basePrice >= 3)
+                Assert.That(discounted, Is.LessThan(basePrice), "rep 5 must visibly drop a 3g+ price");
+        }
+
         // F20: the delve key is a REAL inventory item — picked up once, consumed by the boss door's
         // lock, and gone afterwards (the second consume must refuse).
         [Test]

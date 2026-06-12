@@ -30,6 +30,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     var tile = ResolvePlayerOverlandTile();
                     where += $"   •   Tile {tile.X},{tile.Y}";
                 }
+                // F23: standing and trouble, both on the bar — rep (when it moved) and the watch's bounty.
+                if (_world != null && _world.PlayerReputation != 0)
+                    where += $"   •   Rep {_world.PlayerReputation:+0;-0}";
+                if (_world != null && _world.PlayerBountyGold > 0)
+                    where += $"   •   BOUNTY {_world.PlayerBountyGold}g";
                 if (profile == null)
                     return _hudTextCache = $"Tick {_tick:0000}   Day {day:000}{where}";
                 // Population is the world the HISTORY simulated (sum of surviving settlement populations),

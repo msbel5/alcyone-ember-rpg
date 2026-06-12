@@ -224,7 +224,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             for (int i = 0; i < _world.NpcSeeds.Count; i++)
             {
                 var seed = _world.NpcSeeds[i];
-                if (seed == null || seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw || !seed.Home.Equals(here))
+                if (seed == null || !seed.Home.Equals(here))
+                    continue;
+                // F23: outlaws always hunt; GUARDS hunt only while a bounty stands on the player.
+                bool hunts = seed.Role == EmberCrpg.Domain.Worldgen.NpcRole.Outlaw
+                    || (seed.Role == EmberCrpg.Domain.Worldgen.NpcRole.Guard && _world.PlayerBountyGold > 0);
+                if (!hunts)
                     continue;
                 var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
                 if (!_world.Actors.TryGet(actorId, out var hostile) || hostile == null || !hostile.IsAlive)
@@ -529,6 +534,66 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 if (map.Settlements[i].Kind == EmberCrpg.Domain.Overland.SettlementKind.Dungeon)
                     names.Add(map.Settlements[i].Name);
             return names;
+        }
+
+        /// <summary>F23-DoD proof: commit a daylight crime — an AIMED strike at the nearest living
+        /// CIVILIAN (never an enemy or the watch itself) — then report the bounty and the nearest
+        /// guard so the driver can watch the watch close in.</summary>
+        public string ProofCrimeAndWatchLeg()
+        {
+            var here = CurrentSettlementOrStart;
+            if (_world?.NpcSeeds == null || _world.Actors == null) return "LOOP-PROOF: no world for the crime leg.";
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            if (player == null) return "LOOP-PROOF: no player for the crime leg.";
+            var from = PlayerCombatPosition(player);
+
+            ActorRecord victim = null;
+            int victimDist = int.MaxValue;
+            for (int i = 0; i < _world.NpcSeeds.Count; i++)
+            {
+                var seed = _world.NpcSeeds[i];
+                if (seed == null || !seed.Home.Equals(here)) continue;
+                if (seed.Role == EmberCrpg.Domain.Worldgen.NpcRole.Outlaw
+                    || seed.Role == EmberCrpg.Domain.Worldgen.NpcRole.Guard) continue;
+                var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
+                if (!_world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive) continue;
+                int dist = Chebyshev(from, actor.Position);
+                if (dist >= victimDist) continue;
+                victim = actor;
+                victimDist = dist;
+            }
+            if (victim == null) return "LOOP-PROOF: no civilian here — crime leg skipped.";
+
+            TryMeleeStrike(victim.Name, 20); // the aimed swing IS the crime, hit or miss
+            var watch = ProofWatchSnapshot();
+            return $"LOOP-PROOF crime: struck at {victim.Name}, bounty={_world.PlayerBountyGold}g " +
+                   $"rep={_world.PlayerReputation}, watch A: {watch}.";
+        }
+
+        /// <summary>F23 telemetry: "guardName|chebDistance" of the nearest living guard homed here.</summary>
+        public string ProofWatchSnapshot()
+        {
+            var here = CurrentSettlementOrStart;
+            if (_world?.NpcSeeds == null || _world.Actors == null) return "none|-1";
+            var player = _world.Actors.FirstByRole(ActorRole.Player);
+            if (player == null) return "none|-1";
+            var from = PlayerCombatPosition(player);
+
+            ActorRecord guard = null;
+            int guardDist = int.MaxValue;
+            for (int i = 0; i < _world.NpcSeeds.Count; i++)
+            {
+                var seed = _world.NpcSeeds[i];
+                if (seed == null || seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Guard || !seed.Home.Equals(here))
+                    continue;
+                var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
+                if (!_world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive) continue;
+                int dist = Chebyshev(from, actor.Position);
+                if (dist >= guardDist) continue;
+                guard = actor;
+                guardDist = dist;
+            }
+            return guard == null ? "none|-1" : $"{guard.Name}|{guardDist}";
         }
 
         /// <summary>F18-DoD: bind the delve's WARDEN (the boss — "Warden of X") for the boss leg.</summary>

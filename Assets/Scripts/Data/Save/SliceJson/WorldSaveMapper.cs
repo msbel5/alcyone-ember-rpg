@@ -89,6 +89,8 @@ inventory = ToInventoryData(world.PlayerInventory),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
                 playerLevel = world.PlayerLevel,
                 playerXp = world.PlayerXp,
+                playerReputation = world.PlayerReputation,
+                playerBountyGold = world.PlayerBountyGold,
                 playerKnownSpellIds = (world.PlayerKnownSpellIds ?? new List<string>()).ToArray(),
                 playerGold = world.PlayerGold,
                 merchantGold = world.MerchantGold,
@@ -173,6 +175,8 @@ world.Items = ToItemStore(data.itemRecords);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory?.Capacity ?? 0);
             world.PlayerLevel = data.playerLevel > 0 ? data.playerLevel : Math.Max(1, world.PlayerLevel);
             world.PlayerXp = data.playerXp;
+            world.PlayerReputation = data.playerReputation;
+            world.PlayerBountyGold = data.playerBountyGold;
             world.PlayerKnownSpellIds = data.playerKnownSpellIds != null && data.playerKnownSpellIds.Length > 0
                 ? new List<string>(data.playerKnownSpellIds)
                 : world.PlayerKnownSpellIds ?? new List<string>();

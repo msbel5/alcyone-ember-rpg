@@ -33,7 +33,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 return new TradeActionResult(false, "That item has no trade value yet.");
 
             var pre = _world?.Actors?.FirstByRole(ActorRole.Player)?.Stats.Pre ?? 50;
-            int basis = LivePriceOr(meta.BasePrice, templateId);
+            int basis = ApplyReputationDiscount(LivePriceOr(meta.BasePrice, templateId));
             TradeOperationResult result = request.Kind == TradeActionKind.Buy
                 ? _tradeService.TryBuy(_world, templateId, _tradeService.ComputeBuyPrice(basis, pre))
                 : _tradeService.TrySell(_world, templateId, _tradeService.ComputeSellPrice(basis, pre));
@@ -54,7 +54,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var item = inventory.Items[i];
                 if (item == null) continue;
                 var meta = ResolveTradeMeta(item.TemplateId, item.DisplayName);
-                int basis = LivePriceOr(meta.BasePrice, item.TemplateId);
+                int basis = ApplyReputationDiscount(LivePriceOr(meta.BasePrice, item.TemplateId));
                 int price = isSellSide
                     ? _tradeService.ComputeSellPrice(basis, pre)
                     : _tradeService.ComputeBuyPrice(basis, pre);
@@ -70,6 +70,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // F2/live economy: the sim's PriceSystem writes per-site prices into WorldState.Prices daily. When
         // the home site lists the item, that LIVE market price replaces the static content base price; an
         // unlisted item keeps the base (the ledger returns 0 for unknown tags — safe fallback).
+        // F23: a good name moves prices — reputation ≥5 buys 10% off the basis (floor 1 gold).
+        // The economy bridge promised in the roadmap: rep feeds the SAME basis the live market uses.
+        private int ApplyReputationDiscount(int price)
+        {
+            return (_world?.PlayerReputation ?? 0) >= 5 ? Math.Max(1, price * 90 / 100) : price;
+        }
+
         private int LivePriceOr(int basePrice, string templateId)
         {
             var ledger = _world?.Prices;
