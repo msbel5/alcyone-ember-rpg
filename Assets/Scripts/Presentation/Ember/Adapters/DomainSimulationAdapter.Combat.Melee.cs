@@ -118,6 +118,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // Defensive: events log is required by CombatActionResolver.
                 target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Damage(rawDamage)));
                 LogCombat($"You strike {target.Name} for {rawDamage}.");
+                EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseHit(target.Id.Value);
                 return true;
             }
             var resolver = new EmberCrpg.Simulation.Combat.CombatActionResolver(
@@ -128,6 +129,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             LogCombat(outcome.Hit
                 ? $"You strike {target.Name} for {outcome.Damage}."
                 : $"You miss {target.Name}.");
+            // F10 hit feel: the world billboard flashes red on a landed strike (feed fans out to views).
+            if (outcome.Hit)
+                EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseHit(target.Id.Value);
             return outcome.Hit;
         }
 

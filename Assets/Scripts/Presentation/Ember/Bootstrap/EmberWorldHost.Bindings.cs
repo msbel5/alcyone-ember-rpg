@@ -60,6 +60,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         IReadOnlyList<JournalChapterRow> IJournalSource.GetChapters() => (_adapter as IJournalSource)?.GetChapters() ?? System.Array.Empty<JournalChapterRow>();
         int IJournalSource.GetCurrentChapter() => (_adapter as IJournalSource)?.GetCurrentChapter() ?? 0;
         QuestGuidanceRow IQuestGuidanceSource.ReadQuestGuidance() => (_adapter as IQuestGuidanceSource)?.ReadQuestGuidance() ?? QuestGuidanceRow.None;
+        QuestGuidanceRow IQuestGuidanceSource.ReadDelveGuidance() => (_adapter as IQuestGuidanceSource)?.ReadDelveGuidance() ?? QuestGuidanceRow.None;
         TradeLedgerState ITradeSource.ReadTradeState() => (_adapter as ITradeSource)?.ReadTradeState() ?? new TradeLedgerState("Quartermaster", "Current Holding", 0, 0, System.Array.Empty<TradeItemRow>(), System.Array.Empty<TradeItemRow>());
         TradeActionResult ITradeCommandSink.ExecuteTrade(TradeActionRequest request) => (_adapter as ITradeCommandSink)?.ExecuteTrade(request) ?? new TradeActionResult(false, "Trade commands are unavailable.");
         CraftingLedgerState ICraftingSource.ReadCraftingState() => (_adapter as ICraftingSource)?.ReadCraftingState() ?? new CraftingLedgerState("No Workstation", System.Array.Empty<CraftingRecipeRow>());

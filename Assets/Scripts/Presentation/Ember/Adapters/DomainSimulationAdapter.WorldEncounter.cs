@@ -180,6 +180,88 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return "LOOP-PROOF: encounter bound for the BATTLE-music transition window.";
         }
 
+        private float _nextEnemyStrikeAt;
+
+        /// <summary>
+        /// F13 REAL-TIME COMBAT ("savaş ekranında pause olmamalı"): the bound enemy fights BACK on its
+        /// own ~2.4s cadence while alive and in reach — Daggerfall/DOOM feel, no modal, no pause. The HUD
+        /// pump calls this every unpaused frame with unscaled time; the same CombatActionResolver dice as
+        /// the player's swing keep it honest (accuracy vs dodge, armor mitigation, event-logged).
+        /// </summary>
+        public void TickWorldEncounter(float unscaledNow)
+        {
+            var enemy = WorldEncounterEnemy();
+            if (enemy == null || !enemy.IsAlive || _world?.Events == null) return;
+            if (unscaledNow < _nextEnemyStrikeAt) return;
+            _nextEnemyStrikeAt = unscaledNow + 2.4f;
+
+            var player = _world.Actors?.FirstByRole(ActorRole.Player);
+            if (player == null || !player.IsAlive) return;
+            if (Chebyshev(player.Position, enemy.Position) > 6)
+            {
+                _lastCombatLine = $"{enemy.Name} stalks closer...";
+                return;
+            }
+
+            var action = new EmberCrpg.Domain.Combat.CombatActionDef(
+                id: new EmberCrpg.Domain.Combat.CombatActionId("enemy_swing"),
+                staminaCost: 0,
+                hitFormulaKey: "accuracy_vs_dodge",
+                damageFormulaKey: "base_minus_armor",
+                animationTag: "enemy_swing");
+            _meleeStrikeSerial++; // shares the player's strike serial so same-tick rolls stay distinct
+            uint timeSeed = (uint)(_world.Time.TotalMinutes & 0xFFFFFFFFL);
+            uint eventSeed = (uint)((_world.Events.Events?.Count ?? 0) & 0xFFFFFFFFL);
+            var rng = new EmberCrpg.Simulation.Rng.XorShiftRng(
+                (timeSeed * 2654435761u) ^ (eventSeed * 1597334677u) ^ (_meleeStrikeSerial * 0x9E3779B9u) ^ 0x5EEDBEEFu);
+            var resolver = new EmberCrpg.Simulation.Combat.CombatActionResolver(
+                new EmberCrpg.Simulation.Combat.CombatHitRollService(),
+                new EmberCrpg.Simulation.Combat.CombatDamageService());
+            var outcome = resolver.Resolve(action, enemy, player,
+                damageBandWidth: System.Math.Max(1, enemy.BaseDamage / 2),
+                rng: rng, now: _world.Time, siteId: ResolveCombatSiteId(enemy, player), events: _world.Events);
+            _lastCombatLine = outcome.Hit
+                ? $"{enemy.Name} hits you for {outcome.Damage}!"
+                : $"{enemy.Name} misses you.";
+        }
+
+        /// <summary>F10-DoD: bind the CURRENT settlement's haunter (an Outlaw homed HERE — street outlaws
+        /// elsewhere don't qualify) so the dungeon leg fights the chamber guard, not a random bandit.</summary>
+        public string ProofBindDungeonHaunter()
+        {
+            var here = CurrentSettlementOrStart;
+            if (_world?.NpcSeeds == null || _world.Actors == null) return string.Empty;
+            for (int i = 0; i < _world.NpcSeeds.Count; i++)
+            {
+                var seed = _world.NpcSeeds[i];
+                if (seed == null || seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw || !seed.Home.Equals(here))
+                    continue;
+                var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
+                if (!_world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive)
+                    continue;
+                TryBeginWorldEncounter(actor, seed);
+                ReadCombatScreenState(); // publish the battle mirror
+                return actor.Name;
+            }
+            return string.Empty;
+        }
+
+        /// <summary>F10-DoD: resolve the bound encounter to the end (same dice as a player mashing attack)
+        /// so SettleWorldEncounterIfOver fires the felled feed and the corpse pose is capturable.</summary>
+        public string ProofFinishBoundEncounter()
+        {
+            var enemy = WorldEncounterEnemy();
+            if (enemy == null) return "LOOP-PROOF: no bound enemy to finish.";
+            int swings = 0;
+            while (enemy.IsAlive && swings < 250)
+            {
+                TryMeleeStrike(enemy.Name, 20);
+                swings++;
+                ReadCombatScreenState(); // per-read settle, mirrors the real combat-screen cadence
+            }
+            return $"LOOP-PROOF: haunter '{enemy.Name}' felled={!enemy.IsAlive} in {swings} swings.";
+        }
+
         public string ProofRunEncounterLeg()
         {
             var outlawSeed = _world?.NpcSeeds?.FirstOrDefault(n => n != null && n.Role == EmberCrpg.Domain.Worldgen.NpcRole.Outlaw);
@@ -236,6 +318,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (_world != null) _world.PlayerGold += spoils;
             _lastCombatLine = $"{worldEnemy.Name} falls. You take {spoils} gold in spoils.";
             _worldEncounterId = default;
+            // F10 death feel: the world billboard lies down instead of standing through its own death.
+            EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseFelled(worldEnemy.Id.Value);
             UnityEngine.Debug.Log($"[Encounter] '{worldEnemy.Name}' felled — {spoils} gold looted, encounter closed.");
             CompleteWorldQuest(OutlawBountyQuestId, 50, "Bounty fulfilled"); // the KILL quest rides any outlaw victory
         }

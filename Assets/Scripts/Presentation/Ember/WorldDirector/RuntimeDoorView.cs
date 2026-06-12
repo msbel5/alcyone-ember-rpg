@@ -39,7 +39,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     if (want != _open)
                     {
                         _open = want;
-                        RuntimeAudioDirector.PlayUiClick(); // v1 latch sound; a real creak rides SFX v2 (F8)
+                        // F11 ("kapı sesi tiz zil gibiydi" root fix): the v1 latch literally played the
+                        // 1320Hz UI click. Doors now creak — EKS stick-slip clip, door-origin dedup.
+                        RuntimeAudioDirector.PlayDoorCreak(transform.position);
                     }
                 }
             }

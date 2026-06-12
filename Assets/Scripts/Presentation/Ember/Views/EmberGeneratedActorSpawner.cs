@@ -147,7 +147,16 @@ namespace EmberCrpg.Presentation.Ember.Views
             renderer.sprite = ResolvePlaceholderSprite(candidate);
             renderer.sortingOrder = 10;
             FitBillboardToPlayableHeight(billboard.transform, renderer, _billboardTargetHeight);
-            billboard.AddComponent<CameraFacingBillboard>();
+            var facing = billboard.AddComponent<CameraFacingBillboard>();
+
+            // F10 hit feel: every spawned actor can flash on a landed strike and fall flat on death.
+            root.AddComponent<ActorCombatFeedbackView>().Bind(candidate.Id, renderer, facing);
+
+            // F10 ("savaşamadım"): hostiles must READ hostile from across the street — a red diamond
+            // floats over outlaw/bandit billboards (root-parented, unscaled; faces the camera itself).
+            if (spriteRole.IndexOf("outlaw", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || spriteRole.IndexOf("bandit", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                AddHostileMarker(root.transform);
 
             // ActorView on the root, stamped with the stable id so the host's id-keyed PushWorldViews
             // sync drives this view (SOUL-03 movement). BindDomainActorId is the runtime-safe equivalent
@@ -163,6 +172,9 @@ namespace EmberCrpg.Presentation.Ember.Views
             // only — never written back to the sim.
             actorView.EnableWander(2.2f);
             root.AddComponent<GeneratedNpcAccessibilityGuard>();
+            // F10: the sync plane is y=0 — ground the view on what it actually stands on (terrain or a
+            // built floor) so hillside NPCs and the floated dungeon chamber's haunters stay visible.
+            root.AddComponent<BillboardGroundingView>();
 
             // Dialog: author the stable id on an EmberInteractable too (3-arg overload built for runtime
             // spawners) so the interact raycaster prefers the id-keyed GetDialogSource(ActorId) path and
@@ -179,6 +191,26 @@ namespace EmberCrpg.Presentation.Ember.Views
 
             _spawnedIds.Add(candidate.Id);
             return true;
+        }
+
+        // F10 hostility marker: a small red diamond (rotated quad) hovering over the head. Geometry +
+        // unlit-solid material per the banked rule (runtime alpha-clip materials strip in player builds);
+        // its collider is destroyed so it can never eat the interact raycast meant for the actor.
+        private static void AddHostileMarker(Transform actorRoot)
+        {
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            quad.name = "HostileMarker";
+            quad.transform.SetParent(actorRoot, worldPositionStays: false);
+            quad.transform.localPosition = new Vector3(0f, 2.45f, 0f);
+            quad.transform.localScale = new Vector3(0.30f, 0.30f, 0.30f);
+            quad.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            var collider = quad.GetComponent<Collider>();
+            if (collider != null) Object.Destroy(collider);
+            var markerRenderer = quad.GetComponent<MeshRenderer>();
+            if (markerRenderer != null)
+                markerRenderer.sharedMaterial = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeMaterialPalette.Solid(
+                    new Color(0.85f, 0.12f, 0.10f));
+            quad.AddComponent<CameraFacingBillboard>();
         }
 
         // Collect ids carried by every ActorView already in the scene (authored or spawned). Mirrors how

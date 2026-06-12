@@ -147,7 +147,10 @@ namespace EmberCrpg.Presentation.Ember.Camera
 
             Vector3 motion = _currentMoveVelocity;
             motion.y = _verticalVelocity;
-            _controller.Move(motion * Time.deltaTime);
+            // Proof teleports disable the CharacterController; Move on a disabled controller logs a
+            // warning per frame (595× in one lookaround) and does nothing — skip honestly instead.
+            if (_controller.enabled)
+                _controller.Move(motion * Time.deltaTime);
             
             // FOV Kick logic
             if (_cam != null)

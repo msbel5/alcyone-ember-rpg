@@ -41,9 +41,10 @@ namespace EmberCrpg.Tests.EditMode.Combat
         }
 
         // ----- CombatHitRollService -----
-        // CONTRACT CHANGE (full-loop proof finding): the raw accuracy-dodge difference made dodge>=accuracy
-        // a PERMANENT 0% — a fresh player literally could not hit an outlaw. The service now clamps the
-        // chance to [5,95]: every swing stays a gamble (5% graze floor, 5% whiff ceiling).
+        // CONTRACT CHANGE v2 (v0.3 playtest "nadiren vuruyorum", 104 swings/kill): the raw accuracy-dodge
+        // difference pinned a fresh player to the old 5% floor against any dodgy enemy. The service now
+        // rolls a Daggerfall-style curve — 50 + accuracy - dodge, clamped to [15,95] — so evenly matched
+        // fighters land ~half their swings and mismatches shift the odds without erasing them.
         [Test]
         public void Hit_HighChance_CapsAt95_SoMissesStayPossible()
         {
@@ -58,16 +59,27 @@ namespace EmberCrpg.Tests.EditMode.Combat
         }
 
         [Test]
-        public void Hit_LowChance_FloorsAt5_SoHitsStayPossible()
+        public void Hit_LowChance_FloorsAt15_SoHitsStayPossible()
         {
+            // 5 acc vs 80 dodge: 50 + 5 - 80 = -25 → floored to 15.
             int hits = 0, misses = 0;
             for (uint seed = 1; seed <= 400; seed++)
             {
-                if (new CombatHitRollService().Roll(5, 50, new XorShiftRng(seed))) hits++;
+                if (new CombatHitRollService().Roll(5, 80, new XorShiftRng(seed))) hits++;
                 else misses++;
             }
-            Assert.That(misses, Is.GreaterThan(300), "a ~5% chance should miss most swings");
-            Assert.That(hits, Is.GreaterThan(0), "the 5 floor must keep a graze possible");
+            Assert.That(misses, Is.GreaterThan(280), "a ~15% chance should miss most swings");
+            Assert.That(hits, Is.GreaterThan(0), "the 15 floor must keep a graze possible");
+        }
+
+        [Test]
+        public void Hit_EvenMatch_LandsNearHalf()
+        {
+            // Equal accuracy and dodge → 50% — the heart of the Daggerfall-style curve.
+            int hits = 0;
+            for (uint seed = 1; seed <= 400; seed++)
+                if (new CombatHitRollService().Roll(30, 30, new XorShiftRng(seed))) hits++;
+            Assert.That(hits, Is.InRange(140, 260), "an even match should land roughly half its swings");
         }
 
         [Test]

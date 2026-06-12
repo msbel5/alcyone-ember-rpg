@@ -61,6 +61,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return new QuestGuidanceRow(true, title, line, actor.Name, distance, direction, unit);
         }
 
+        // F9: the delve row is its own HUD line now — quest state no longer gates dungeon discovery.
+        public QuestGuidanceRow ReadDelveGuidance() => NearestDungeonRow();
+
         // F5/dungeon discovery ("dungeon bulamadım"): when the forge errand is complete or has no giver,
         // the compass row guides the EXPLORER — nearest Dungeon-kind settlement by overland tiles.
         private QuestGuidanceRow NearestDungeonRow()

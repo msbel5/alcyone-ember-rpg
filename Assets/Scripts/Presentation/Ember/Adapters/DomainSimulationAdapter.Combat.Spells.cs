@@ -58,6 +58,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // no hostile target exists, fall back to the caster so single-
             // target effects still resolve.
             var requestedTarget = SelectSpellTarget(spell, player);
+            if (requestedTarget == null)
+            {
+                // Hostile spell with no enemy in range — refuse honestly instead of torching the caster.
+                LogCombat($"{spell.DisplayName ?? spell.TemplateId}: no target in range.");
+                return false;
+            }
 
             var executionService = new EmberCrpg.Simulation.Magic.SpellExecutionService(
                 new EmberCrpg.Simulation.Magic.SpellCastingService(_ => spell),
@@ -79,6 +85,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 ResolveCombatSiteId(player, requestedTarget),
                 $"slice_spell_cast id:{spell.TemplateId} mana:{executed.ManaSpent}"));
             LogCombat(executed.Message);
+            // F10/F13 hit feel: a landed hostile spell flashes the target billboard like a melee hit.
+            if (!requestedTarget.Id.Equals(player.Id))
+                EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseHit(requestedTarget.Id.Value);
             return true;
         }
 

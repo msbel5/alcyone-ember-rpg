@@ -31,6 +31,20 @@ namespace EmberCrpg.Presentation.Ember.Forge
             _cts = new CancellationTokenSource();
 
             var modelRoot = ResolveModelDirectory();
+
+            // PROOF-RUN ISOLATION (--ember-forge-off): the SDXL portrait forge shares the GPU with the
+            // game — during proof captures it inflated the 16ms-budget probe to 24.7ms avg / 537ms worst
+            // and starved a lookaround for ~20 minutes. Proofs measure the GAME; the forge has its own
+            // tests. Redirecting the model root to a non-existent folder rides the EXISTING offline
+            // degrade path: serialized-cache hits still load, new generation returns placeholders fast.
+            foreach (var arg in System.Environment.GetCommandLineArgs())
+                if (string.Equals(arg, "--ember-forge-off", System.StringComparison.Ordinal))
+                {
+                    modelRoot = Path.Combine(Application.temporaryCachePath, "forge-disabled-proof");
+                    Debug.Log("[Forge] ONNX generation DISABLED for this run (--ember-forge-off) — cache-only.");
+                    break;
+                }
+
             _nativeLlm = new NativeLlmClient(modelRoot, fallback: null);
 
             var realForge = EmberForgeFactory.BuildForge(modelRoot, out _onnxForge, out _forgeInitFailure);

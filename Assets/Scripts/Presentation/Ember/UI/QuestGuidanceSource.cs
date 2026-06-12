@@ -34,6 +34,10 @@ namespace EmberCrpg.Presentation.Ember.UI
     public interface IQuestGuidanceSource
     {
         QuestGuidanceRow ReadQuestGuidance();
+
+        /// <summary>F9 ("zindanı bulamadım"): the nearest-delve row is ALWAYS available, independent of
+        /// quest state — a fresh game used to hide it behind forge-quest completion.</summary>
+        QuestGuidanceRow ReadDelveGuidance();
     }
 
     public interface IQuestGuidanceTracker

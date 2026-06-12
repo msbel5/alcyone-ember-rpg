@@ -50,6 +50,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private CombatView _activeCombat;
         private bool _oraclePending;
         private bool _wasOpen;
+        private bool _deathScreenShown; // F13: live combat can kill — route to the death screen exactly once
 
         /// <summary>True while this controller is active — the legacy EmberWorldHost key handlers (M / Tab / K /
         /// R) yield to it so the redesigned screens own input instead of opening the old uGUI panels.</summary>
@@ -179,12 +180,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 }
             }
 
-            // F2/encounters: the adapter signals "an outlaw drew steel" — open the combat screen on the spot.
+            // F13 REAL-TIME COMBAT ("savaş ekranında pause olmamalı"): an outlaw drawing steel no longer
+            // opens the paused modal — the HUD grows an enemy panel, the BATTLE music slot flips, and the
+            // fight runs LIVE in the world (F swings, 1-5 casts). CombatView survives only as a screens page.
             if (EmberCrpg.Presentation.Ember.Adapters.WorldEncounterSignal.Consume())
-            {
-                OpenScreen("combat");
-                Debug.Log("[InGameUI] world encounter signal consumed — combat screen opened.");
-            }
+                Debug.Log("[InGameUI] world encounter signal consumed — LIVE combat engaged (no modal, no pause).");
 
             if (_activeCombat != null && _host is ICombatScreenSource combatScreen)
                 _activeCombat.Refresh(combatScreen.ReadCombatScreenState());
@@ -197,6 +197,33 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 d.Hp = s.Health; d.HpMax = s.HealthMax;
                 d.Fatigue = s.Stamina; d.FatigueMax = s.StaminaMax;
                 d.Mana = s.Mana; d.ManaMax = s.ManaMax;
+            }
+
+            // F13 live-encounter pump: the combat read settles spoils + publishes the battle mirror, the
+            // HUD shows the enemy panel, and the enemy swings BACK on its own clock while unpaused.
+            if (_host is ICombatScreenSource liveCombat)
+            {
+                var cs = liveCombat.ReadCombatScreenState();
+                // Battle-mirror gate: ReadCombatScreenState falls back to the authored slice enemy
+                // ("Ash Rat") via room equality — without the gate the HUD panel would be PERMANENT in
+                // generated worlds. The mirror is true only while a real WORLD encounter is bound.
+                if (cs.HasEncounter && EmberCrpg.Presentation.Ember.WorldDirector.RuntimeBattleMirror.Active)
+                {
+                    d.EnemyName = cs.EnemyName;
+                    d.EnemyHp = cs.EnemyHealth;
+                    d.EnemyHpMax = cs.EnemyHealthMax;
+                    d.EventLine = cs.LastEventLine;
+                    if (!open && EmberDomainAdapterLocator.Current
+                            is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter rtAdapter)
+                        rtAdapter.TickWorldEncounter(Time.unscaledTime);
+                }
+            }
+
+            // F13: dying in live combat must land somewhere honest — the death screen, not a frozen HUD.
+            if (d.HpMax > 0 && d.Hp <= 0 && !_deathScreenShown)
+            {
+                _deathScreenShown = true;
+                OpenScreen("death");
             }
             if (_host is ISpellBarSource spells)
                 d.SpellSlots = spells.GetSlots();
@@ -213,6 +240,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     if (worldOptions.ShowQuestCompass)
                         d.CompassLine = BuildCompassLine(row);
                 }
+
+                // F9: the delve pointer is ALWAYS on — quest progress no longer hides the dungeon.
+                // Skip only when the quest row already points at the same delve (post-forge fallback).
+                var delve = guidance.ReadDelveGuidance();
+                if (delve.HasTarget && !(row.HasTarget && row.TargetName == delve.TargetName))
+                    d.DelveLine = BuildDelveLine(delve);
             }
 
             _hud.Refresh(in d);
@@ -223,6 +256,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             if (row.DistanceTiles <= 0)
                 return "QUEST " + row.TargetName + " · nearby";
             return "QUEST " + row.TargetName + " · " + row.DistanceTiles + row.Unit + " · " + row.Direction; // "m" local, "tiles" overland
+        }
+
+        private static string BuildDelveLine(QuestGuidanceRow row)
+        {
+            if (row.DistanceTiles <= 0)
+                return "DELVE " + row.TargetName + " · here";
+            return "DELVE " + row.TargetName + " · " + row.DistanceTiles + row.Unit + " · " + row.Direction + " · M to travel";
         }
 
         // Every in-game screen, opened by id. One modal at a time: CloseScreen() drops any open IgModal overlay

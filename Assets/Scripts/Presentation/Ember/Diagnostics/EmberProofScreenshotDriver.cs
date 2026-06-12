@@ -338,7 +338,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 Debug.Log(sections[sections.Count - 1]);
             }
 
-            yield return new WaitForSecondsRealtime(3.0f);
+            yield return WaitForBootToSettle();
             EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
                 new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
             SceneManager.LoadScene(EmberScenes.GeneratedWorld);
@@ -393,6 +393,36 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             string chain = adapter.ProofEconomyChain();
             Section("economy-chain", chain.Contains("OK"), chain); // "OK" and "DORMANT-OK" both pass
 
+            // F11-DoD audio-forge: PNGs are silent, so the gate is numeric — every clip forges
+            // exception-free with sane durations, and the footstep spectrum reads THUD (centroid
+            // below ~1200Hz), not the 1320Hz bell the playtest complained about.
+            bool audioOk = false;
+            string audioDetail = "forge threw";
+            try
+            {
+                EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioForge.EnsureForged();
+                var dirtData = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioSynth.RenderFootstepDirt(0xD117u);
+                var stoneData = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioSynth.RenderFootstepStone(0x5709u);
+                float dirtCentroid = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioSynth.CentroidHz(dirtData);
+                float stoneCentroid = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioSynth.CentroidHz(stoneData);
+                var dirt = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioForge.FootstepDirt;
+                var stone = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioForge.FootstepStone;
+                var creak = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioForge.DoorCreak;
+                var hitClip = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioForge.Hit;
+                audioOk = dirt != null && dirt.Length == 4 && stone != null && stone.Length == 4
+                    && dirt[0] != null && dirt[0].length > 0.08f
+                    && creak != null && creak.length > 0.6f
+                    && hitClip != null && hitClip.length > 0.1f
+                    && dirtCentroid < 1200f && stoneCentroid < 1600f;
+                audioDetail = $"footsteps=8 dirtCentroid={dirtCentroid:0}Hz stoneCentroid={stoneCentroid:0}Hz " +
+                              $"creak={creak.length:0.00}s hit={hitClip.length:0.00}s";
+            }
+            catch (System.Exception e)
+            {
+                audioDetail = "forge threw: " + e.Message;
+            }
+            Section("audio-forge", audioOk, audioDetail);
+
             var igui = UnityEngine.Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
             if (igui != null)
             {
@@ -414,7 +444,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         // live-priced trade. Every leg prints a LOOP-PROOF line for the playtest log.
         private IEnumerator RunLoopProof()
         {
-            yield return new WaitForSecondsRealtime(3.0f); // boot settles on MainMenu first
+            yield return WaitForBootToSettle();
             EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
                 new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
             SceneManager.LoadScene(EmberScenes.GeneratedWorld);
@@ -449,9 +479,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         // doorway, step INSIDE and pan the room — the agent inspects the captures by eye afterwards.
         private IEnumerator RunLookAround()
         {
-            // Let the boot flow land on MainMenu FIRST — loading GeneratedWorld during boot gets stomped by
-            // the boot sequence's own MainMenu navigation (all six captures came back as the main menu).
-            yield return new WaitForSecondsRealtime(3.0f);
+            yield return WaitForBootToSettle();
 
             EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
                 new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
@@ -460,6 +488,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
             var rig = GameObject.Find("PlayerRig");
             Vector3 spawnPos = rig != null ? rig.transform.position : Vector3.zero;
+            // EVIDENCE (rt-look): all six ring frames were byte-identical — EmberFirstPersonController
+            // rewrites rig yaw from its cached _yawDegrees every frame, stomping scripted aims. This is a
+            // scripted camera session with no player input: disable the controller for the whole tour.
+            var ringFps = rig != null
+                ? rig.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>()
+                : null;
+            if (ringFps != null) ringFps.enabled = false;
             for (int i = 0; i < 6; i++)
             {
                 if (rig != null) rig.transform.rotation = Quaternion.Euler(0f, i * 60f, 0f);
@@ -520,6 +555,19 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 if (cc2 != null) cc2.enabled = true;
             }
 
+            // F9-DoD: open the world map and capture it — the dungeon pin (▼ red, always labeled) and the
+            // HUD delve line are eye-checked from this frame.
+            var mapUi = FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
+            if (mapUi != null)
+            {
+                mapUi.ProofOpenScreen("worldmap");
+                yield return new WaitForSecondsRealtime(0.6f);
+                yield return new WaitForEndOfFrame(); // modal exists only after the UI Toolkit pass
+                CaptureToPng(Path.Combine(_outputDir, "look_map.png"));
+                mapUi.ProofCloseScreens();
+                yield return new WaitForSecondsRealtime(0.25f);
+            }
+
             // F6-DoD: jump the clock to ~23:00 (game starts 08:00), return to the SAME spawn spot, and
             // capture the street again — citizens must be gone (curfew), guards/outlaws may remain.
             var nightAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
@@ -535,6 +583,112 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield return new WaitForSecondsRealtime(2.6f); // curfew views poll at 2s
                 CaptureToPng(Path.Combine(_outputDir, "look_night.png"));
                 if (cc3 != null) cc3.enabled = true;
+            }
+
+            // F10-DoD: travel to the nearest DELVE, walk the corridor into the chamber, and eye-proof the
+            // haunters guarding the chest, the red hit flash, and the corpse pose after the kill.
+            if (nightAdapter != null)
+            {
+                var delveRow = nightAdapter.ReadDelveGuidance();
+                if (delveRow.HasTarget && nightAdapter.TryTravelToSettlement(delveRow.TargetName, out _))
+                {
+                    EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
+                        EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
+                    SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+                    yield return new WaitForSecondsRealtime(4.0f);
+
+                    var rig4 = GameObject.Find("PlayerRig");
+                    var interior = GameObject.Find("DungeonInterior");
+                    Debug.Log($"[Proof] delve leg: at '{delveRow.TargetName}', rig={(rig4 != null)} interior={(interior != null)}.");
+                    if (rig4 != null && interior != null)
+                    {
+                        var cc4 = rig4.GetComponent<CharacterController>();
+                        if (cc4 != null) cc4.enabled = false;
+                        // EVIDENCE (look7): "rig aimed ... rot=(0,0,0)" — EmberFirstPersonController
+                        // rewrites rig yaw from its cached _yawDegrees EVERY frame, stomping proof aims;
+                        // both chamber captures faced the same wall while the haunters stood 6m away.
+                        var fps4 = rig4.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
+                        if (fps4 != null) fps4.enabled = false;
+                        // Stand at the chamber mouth (corridor end), then AIM the camera at the nearest
+                        // haunter view — the first runs proved the haunters stand 5-7m away while a fixed
+                        // axis guess captured a wall corner instead.
+                        rig4.transform.position = interior.transform.TransformPoint(new Vector3(0f, 1.0f, -14.2f));
+                        rig4.transform.rotation = Quaternion.LookRotation(interior.transform.TransformDirection(Vector3.back));
+                        yield return new WaitForSecondsRealtime(1.0f);
+
+                        // Positional evidence + camera lock: the haunters must STAND in the chamber, not
+                        // merely exist as data (first run: encounter bound while billboards sat unseen).
+                        Transform nearestHaunter = null;
+                        foreach (var view in FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None))
+                        {
+                            if (!view.name.StartsWith("Haunter") && !view.name.StartsWith("Stalker")) continue;
+                            var sr = view.GetComponentInChildren<SpriteRenderer>(true);
+                            Debug.Log($"[Proof] haunter view '{view.name}' at {view.transform.position} " +
+                                      $"(rig at {rig4.transform.position}, dist={Vector3.Distance(view.transform.position, rig4.transform.position):0.0}m) " +
+                                      $"srOn={(sr != null && sr.enabled)} sprite={(sr != null && sr.sprite != null ? sr.sprite.name : "NULL")} " +
+                                      $"size={(sr != null ? sr.bounds.size.ToString() : "-")} color={(sr != null ? sr.color.ToString() : "-")}");
+                            if (nearestHaunter == null
+                                || (view.transform.position - rig4.transform.position).sqrMagnitude
+                                   < (nearestHaunter.position - rig4.transform.position).sqrMagnitude)
+                                nearestHaunter = view.transform;
+                        }
+                        if (nearestHaunter != null)
+                        {
+                            var aim = nearestHaunter.position + Vector3.up * 0.9f - rig4.transform.position;
+                            if (aim.sqrMagnitude > 0.01f)
+                                rig4.transform.rotation = Quaternion.LookRotation(aim);
+                            yield return new WaitForSecondsRealtime(0.4f);
+                            Debug.Log($"[Proof] rig aimed at haunter: fwd={rig4.transform.forward} rot={rig4.transform.rotation.eulerAngles}");
+                        }
+                        CaptureToPng(Path.Combine(_outputDir, "look_dungeon_chamber.png"));
+
+                        // Decisive layout evidence: a top-down frame of the whole interior — terrain
+                        // pokes, wall layout, chest, and both haunters in ONE capture (no axis guessing).
+                        var center = interior.transform.TransformPoint(new Vector3(0f, 0f, -18.5f));
+                        rig4.transform.position = center + Vector3.up * 16f;
+                        rig4.transform.rotation = Quaternion.LookRotation(Vector3.down, interior.transform.forward);
+                        yield return new WaitForSecondsRealtime(0.4f);
+                        CaptureToPng(Path.Combine(_outputDir, "look_dungeon_topdown.png"));
+                        rig4.transform.position = interior.transform.TransformPoint(new Vector3(0f, 1.0f, -14.2f));
+                        if (nearestHaunter != null)
+                            rig4.transform.rotation = Quaternion.LookRotation(nearestHaunter.position + Vector3.up * 0.9f - rig4.transform.position);
+                        yield return new WaitForSecondsRealtime(0.3f);
+
+                        string haunterName = nightAdapter.ProofBindDungeonHaunter();
+                        if (!string.IsNullOrEmpty(haunterName))
+                        {
+                            // Swing until the FIRST landed hit, then capture inside the 0.15s flash window
+                            // (one frame for the view to see the stamp, then the frame edge for the PNG).
+                            int swings = 0;
+                            bool hit = false;
+                            while (swings < 250 && !(hit = nightAdapter.TryMeleeStrike(haunterName, 20)))
+                                swings++;
+                            yield return null;
+                            yield return new WaitForEndOfFrame();
+                            CaptureToPng(Path.Combine(_outputDir, "look_dungeon_hitflash.png"));
+                            Debug.Log($"[Proof] haunter strike: hit={hit} after {swings + 1} swings (flash frame captured).");
+
+                            Debug.Log(nightAdapter.ProofFinishBoundEncounter());
+                            yield return null;
+                            yield return new WaitForSecondsRealtime(0.4f); // flash decays, corpse pose holds
+                            CaptureToPng(Path.Combine(_outputDir, "look_dungeon_felled.png"));
+                        }
+                        else
+                        {
+                            Debug.Log("[Proof] BROKEN — no haunter bound at the delve (expected 2 chamber outlaws).");
+                        }
+                        if (fps4 != null)
+                        {
+                            fps4.enabled = true;
+                            fps4.SyncYaw(rig4.transform.eulerAngles.y); // hand the cached yaw the proof's final aim
+                        }
+                        if (cc4 != null) cc4.enabled = true;
+                    }
+                }
+                else
+                {
+                    Debug.Log("[Proof] delve leg skipped — no delve target or travel refused.");
+                }
             }
         }
 
@@ -1206,6 +1360,18 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 if (string.Equals(args[i], "--ember-proof-screenshots", StringComparison.Ordinal))
                     return Path.GetFullPath(args[i + 1]);
             return Path.Combine(Application.persistentDataPath, "proof-screenshots");
+        }
+
+        // BOOT-RACE FIX (shipcheck "world-enter: no adapter"): the boot flow navigates Boot→MainMenu on
+        // its own schedule; a FIXED pre-wait raced it — when boot timing shifted (forge-off made it
+        // slower to settle), the boot's MainMenu navigation STOMPED our GeneratedWorld load. Wait until
+        // the MainMenu is actually the active scene (it cannot stomp after that), then a short grace.
+        private static IEnumerator WaitForBootToSettle()
+        {
+            float deadline = Time.unscaledTime + 30f;
+            while (SceneManager.GetActiveScene().name != EmberScenes.MainMenu && Time.unscaledTime < deadline)
+                yield return null;
+            yield return new WaitForSecondsRealtime(0.8f);
         }
 
         private static bool HasArg(string arg)

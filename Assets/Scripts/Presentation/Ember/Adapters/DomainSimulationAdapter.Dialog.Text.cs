@@ -91,10 +91,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return new[] { row[slot], row[(slot + 1) % 4], row[(slot + 2) % 4] };
         }
 
-        // A REAL rumor: a recent world event retold (only if its Reason reads as a sentence), or the
-        // nearest delve revealed with distance + bearing.
+        // A REAL rumor. F9 ("zindanı bulamadım"): the delve reveal now rides EVERY rumor roll — the old
+        // coin-flip halved the DFU 35% map-reveal to ~17% effective. The dungeon name is SHOUTED so it
+        // sticks; a world-event retelling rides along when one reads as a sentence.
         private string ComposeRumor(uint h)
         {
+            string eventLine = null;
             if ((h & 1) == 0)
             {
                 var events = _world.Events?.Events;
@@ -102,13 +104,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 {
                     var e = events[events.Count - 1 - (int)(h % (uint)System.Math.Min(8, events.Count))];
                     if (e != null && !string.IsNullOrWhiteSpace(e.Reason) && e.Reason.Contains(" "))
-                        return "They say " + char.ToLowerInvariant(e.Reason[0]) + e.Reason.Substring(1).TrimEnd('.') + ".";
+                        eventLine = "They say " + char.ToLowerInvariant(e.Reason[0]) + e.Reason.Substring(1).TrimEnd('.') + ".";
                 }
             }
+
             var row = NearestDungeonRow();
-            return row.HasTarget
-                ? "And mind yourself — dark things stir at " + row.TargetName + ", " + row.DistanceTiles + " tiles " + row.Direction + "."
-                : null;
+            if (!row.HasTarget) return eventLine;
+            string delve = "And mind yourself — dark things stir at " + row.TargetName.ToUpperInvariant()
+                + ", " + row.DistanceTiles + " tiles " + row.Direction + ".";
+            return eventLine == null ? delve : eventLine + " " + delve;
         }
 
         // BUG-DIALOG-BRAND: WorldProfile.Style is an INTERNAL codename enum (e.g. "LowFantasy").

@@ -46,8 +46,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     StatsFor(npc.Role),
                     VitalsFor(npc.Role),
                     home,
-                    accuracy: npc.Role == NpcRole.Guard || npc.Role == NpcRole.Outlaw ? 55 : 35,
-                    dodge: npc.Role == NpcRole.Outlaw ? 55 : 30,
+                    // v0.3 rebalance for the 50-base hit curve: vs the fresh player (acc 18 / dodge 12)
+                    // an outlaw is hit ~48% (50+18-20) and lands ~68% (50+30-12) — dangerous, not a wall.
+                    // The old 55/55 pinned the player to the hit floor ("nadiren vuruyorum").
+                    accuracy: npc.Role == NpcRole.Guard ? 45 : npc.Role == NpcRole.Outlaw ? 30 : 35,
+                    dodge: npc.Role == NpcRole.Outlaw ? 20 : 30,
                     armor: npc.Role == NpcRole.Guard ? 12 : 4,
                     baseDamage: npc.Role == NpcRole.Outlaw ? 10 : 4,
                     topicIds: new[] { "rumors", "work", "trade" },

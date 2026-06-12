@@ -18,11 +18,13 @@ namespace EmberCrpg.Simulation.Combat
             // outcome — authoring tools that diffed a save's combat log
             // could see noise. Roll first, decide after.
             var roll = rng.RollPercent();
-            var chance = attackerAccuracy - defenderDodge;
-            // LOOP-PROOF finding (looptest3): the raw difference made any pairing with dodge >= accuracy a
-            // PERMANENT 0% — a fresh player literally could not hit an outlaw (60/60 misses in the full-loop
-            // proof). Classic floor/ceiling keeps every swing a gamble: 5% graze floor, 95% whiff ceiling.
-            if (chance < 5) chance = 5;
+            // v0.3 PLAYTEST ("nadiren vuruyorum", 104 swings per kill): the raw accuracy-dodge difference
+            // pinned a fresh player to the 5% floor against any dodgy enemy — statistically unplayable.
+            // Daggerfall's curve is BASE 50% shifted by the stat diff: evenly matched fighters land half
+            // their swings, mismatches shift the odds without erasing them. Floor 15 keeps weak attackers
+            // dangerous, ceiling 95 keeps misses possible. (Supersedes the looptest3 5% graze floor.)
+            var chance = 50 + attackerAccuracy - defenderDodge;
+            if (chance < 15) chance = 15;
             else if (chance > 95) chance = 95;
             return roll <= chance;
         }

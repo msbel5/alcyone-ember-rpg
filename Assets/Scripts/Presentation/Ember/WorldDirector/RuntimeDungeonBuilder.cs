@@ -17,28 +17,55 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             root.transform.localPosition = new Vector3(Mathf.Cos(rad) * distance, 0f, Mathf.Sin(rad) * distance);
             root.transform.localRotation = Quaternion.Euler(0f, -angleDeg + 90f, 0f); // +Z runs from mouth into the hill
 
-            var rock = RuntimeMaterialPalette.Solid(new Color(0.14f, 0.13f, 0.12f));
-            var floor = RuntimeMaterialPalette.Solid(new Color(0.10f, 0.09f, 0.09f));
+            // HILLSIDE CONFORM (v0.3 eye-proof finding): the interior used to sit at y=0 while the real
+            // terrain rose THROUGH it — the chamber read as a grass-filled void. Sample the ground along
+            // the corridor axis and float the whole barrow on the highest point; a ramp walks the player
+            // up at the mouth, and wall slabs skirt below the floor so no gap shows. Residual limit
+            // (honest): on very steep hillsides the terrain can still clip a corner.
+            float crest = 0f;
+            for (float z = 2f; z >= -25f; z -= 3f)
+                crest = Mathf.Max(crest, SampleGroundY(root.transform.TransformPoint(new Vector3(0f, 0f, z))));
+            var rootPos = root.transform.position;
+            root.transform.position = new Vector3(rootPos.x, crest + 0.05f, rootPos.z);
 
-            // Corridor: 3m wide, 12m deep, walled + roofed, starting just behind the mouth.
-            Slab(root.transform, "CorrWallL", new Vector3(-1.7f, 1.4f, -7f), new Vector3(0.4f, 2.8f, 12f), rock);
-            Slab(root.transform, "CorrWallR", new Vector3(1.7f, 1.4f, -7f), new Vector3(0.4f, 2.8f, 12f), rock);
+            var rock = RuntimeMaterialPalette.Solid(new Color(0.20f, 0.18f, 0.17f));
+            var floor = RuntimeMaterialPalette.Solid(new Color(0.14f, 0.13f, 0.12f));
+
+            // Mouth ramp: from the terrain up onto the floated floor (walkable, ≤ ~35°).
+            float mouthGround = SampleGroundY(root.transform.TransformPoint(new Vector3(0f, 0f, 1.5f)));
+            float rise = root.transform.position.y - mouthGround;
+            if (rise > 0.25f)
+            {
+                float run = Mathf.Max(rise * 1.6f, 2.2f);
+                var ramp = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                ramp.name = "MouthRamp";
+                ramp.transform.SetParent(root.transform, worldPositionStays: false);
+                ramp.transform.localPosition = new Vector3(0f, -rise * 0.5f, run * 0.5f + 0.2f);
+                ramp.transform.localScale = new Vector3(3.4f, 0.25f, Mathf.Sqrt(run * run + rise * rise) + 0.6f);
+                ramp.transform.localRotation = Quaternion.Euler(-Mathf.Atan2(rise, run) * Mathf.Rad2Deg, 0f, 0f);
+                ramp.GetComponent<MeshRenderer>().sharedMaterial = floor;
+            }
+
+            // Corridor: 3m wide, 12m deep, walled + roofed; walls skirt 1m below the floor.
+            Slab(root.transform, "CorrWallL", new Vector3(-1.7f, 0.9f, -7f), new Vector3(0.4f, 3.8f, 12f), rock);
+            Slab(root.transform, "CorrWallR", new Vector3(1.7f, 0.9f, -7f), new Vector3(0.4f, 3.8f, 12f), rock);
             Slab(root.transform, "CorrRoof", new Vector3(0f, 2.9f, -7f), new Vector3(3.8f, 0.3f, 12f), rock);
             Slab(root.transform, "CorrFloor", new Vector3(0f, 0.05f, -7f), new Vector3(3.4f, 0.1f, 12f), floor);
 
-            // Chamber: 11×11, roofed, at the corridor's end.
+            // Chamber: 11×11, roofed, at the corridor's end (walls carry the same below-floor skirt).
             var c = new Vector3(0f, 0f, -18.5f);
-            Slab(root.transform, "ChamberN", c + new Vector3(0f, 1.9f, -5.5f), new Vector3(11f, 3.8f, 0.5f), rock);
-            Slab(root.transform, "ChamberW", c + new Vector3(-5.5f, 1.9f, 0f), new Vector3(0.5f, 3.8f, 11f), rock);
-            Slab(root.transform, "ChamberE", c + new Vector3(5.5f, 1.9f, 0f), new Vector3(0.5f, 3.8f, 11f), rock);
-            Slab(root.transform, "ChamberS_L", c + new Vector3(-3.4f, 1.9f, 5.5f), new Vector3(4.2f, 3.8f, 0.5f), rock);
-            Slab(root.transform, "ChamberS_R", c + new Vector3(3.4f, 1.9f, 5.5f), new Vector3(4.2f, 3.8f, 0.5f), rock);
+            Slab(root.transform, "ChamberN", c + new Vector3(0f, 0.9f, -5.5f), new Vector3(11f, 5.8f, 0.5f), rock);
+            Slab(root.transform, "ChamberW", c + new Vector3(-5.5f, 0.9f, 0f), new Vector3(0.5f, 5.8f, 11f), rock);
+            Slab(root.transform, "ChamberE", c + new Vector3(5.5f, 0.9f, 0f), new Vector3(0.5f, 5.8f, 11f), rock);
+            Slab(root.transform, "ChamberS_L", c + new Vector3(-3.4f, 0.9f, 5.5f), new Vector3(4.2f, 5.8f, 0.5f), rock);
+            Slab(root.transform, "ChamberS_R", c + new Vector3(3.4f, 0.9f, 5.5f), new Vector3(4.2f, 5.8f, 0.5f), rock);
             Slab(root.transform, "ChamberRoof", c + new Vector3(0f, 3.9f, 0f), new Vector3(11.5f, 0.3f, 11.5f), rock);
             Slab(root.transform, "ChamberFloor", c + new Vector3(0f, 0.05f, 0f), new Vector3(10.5f, 0.1f, 10.5f), floor);
 
-            // Two torches (corridor mid + chamber) — warm flicker-coloured points, no shadows (cheap).
-            Torch(root.transform, new Vector3(0f, 2.2f, -7f), 7f);
-            Torch(root.transform, c + new Vector3(0f, 2.6f, 0f), 12f);
+            // Torches (corridor mid + chamber) — bright enough to read on dark rock (eye-proof: the
+            // chamber was pitch black), each with a small self-lit flame cube so the source shows.
+            Torch(root.transform, new Vector3(0f, 2.2f, -7f), 9f);
+            Torch(root.transform, c + new Vector3(0f, 2.6f, 0f), 14f);
 
             // Loot chest against the chamber's back wall: body, lid, gold band.
             var chest = new Vector3(0f, 0f, -22.5f);
@@ -51,6 +78,15 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return root;
         }
 
+        // Ground height under a world point: ray from high above against all colliders (terrain tiles are
+        // built BEFORE the dungeon in Realize, so the cast is reliable at call time).
+        private static float SampleGroundY(Vector3 world)
+        {
+            return Physics.Raycast(world + Vector3.up * 90f, Vector3.down, out var hit, 220f)
+                ? hit.point.y
+                : 0f;
+        }
+
         private static void Torch(Transform parent, Vector3 localPosition, float range)
         {
             var go = new GameObject("Torch");
@@ -59,9 +95,19 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var light = go.AddComponent<Light>();
             light.type = LightType.Point;
             light.color = new Color(1f, 0.62f, 0.30f);
-            light.intensity = 1.6f;
+            light.intensity = 3.4f;
             light.range = range;
             light.shadows = LightShadows.None;
+
+            // The flame itself: a small cube lit by its own point light reads as the glowing source.
+            var flame = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            flame.name = "Flame";
+            flame.transform.SetParent(go.transform, worldPositionStays: false);
+            flame.transform.localPosition = Vector3.zero;
+            flame.transform.localScale = new Vector3(0.14f, 0.22f, 0.14f);
+            Object.Destroy(flame.GetComponent<Collider>());
+            flame.GetComponent<MeshRenderer>().sharedMaterial =
+                RuntimeMaterialPalette.Solid(new Color(1f, 0.78f, 0.38f));
         }
 
         private static void Slab(Transform parent, string name, Vector3 localPosition, Vector3 size, Material material)

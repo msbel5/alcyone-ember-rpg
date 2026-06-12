@@ -301,22 +301,29 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             pin.style.height = 0;
             mapFrame.Add(pin);
 
-            float size = loc.IsCurrent ? 20f : (isSelected ? 16f : 12f);
+            // F9 ("zindanı bulamadım"): dungeon pins must read at a glance — bigger, full-strength red,
+            // and ALWAYS labeled with the ▼ glyph (other pins only label when current/selected).
+            bool isDungeon = loc.Kind == SettlementKind.Dungeon;
+            float size = loc.IsCurrent ? 20f : (isSelected ? 16f : (isDungeon ? 16f : 12f));
             var dot = new VisualElement();
             dot.style.position = Position.Absolute;
             dot.style.left = -size * 0.5f;
             dot.style.top = -size * 0.5f;
             dot.style.width = size;
             dot.style.height = size;
-            dot.style.backgroundColor = loc.IsCurrent ? Gold : Alpha(LocationColor(loc.Kind), 0.56f);
-            Border(dot, loc.IsCurrent ? Amber : LocationColor(loc.Kind), loc.IsCurrent ? 2 : 1);
+            dot.style.backgroundColor = loc.IsCurrent ? Gold : Alpha(LocationColor(loc.Kind), isDungeon ? 0.88f : 0.56f);
+            Border(dot, loc.IsCurrent ? Amber : LocationColor(loc.Kind), loc.IsCurrent || isDungeon ? 2 : 1);
             Radius(dot, 999);
             pin.Add(dot);
 
-            if (!loc.IsCurrent && !isSelected)
+            if (!loc.IsCurrent && !isSelected && !isDungeon)
                 return;
 
-            var label = Text(loc.Name, Sans, 10, loc.IsCurrent ? Gold : Parch, FontStyle.Bold);
+            var label = Text(
+                isDungeon && !loc.IsCurrent ? "▼ " + loc.Name : loc.Name,
+                Sans, 10,
+                loc.IsCurrent ? Gold : (isDungeon ? LocationColor(SettlementKind.Dungeon) : Parch),
+                FontStyle.Bold);
             label.style.position = Position.Absolute;
             label.style.top = (size * 0.5f) + 4f;
             label.style.left = -90;
@@ -516,6 +523,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             if (a == null) return 1;
             if (b == null) return -1;
             if (a.IsCurrent != b.IsCurrent) return a.IsCurrent ? -1 : 1;
+            // F9: dungeons surface right after the current settlement so the list answers
+            // "where can I delve?" without scrolling the whole atlas.
+            bool ad = a.Kind == SettlementKind.Dungeon, bd = b.Kind == SettlementKind.Dungeon;
+            if (ad != bd) return ad ? -1 : 1;
             return string.CompareOrdinal(a.Name, b.Name);
         }
 

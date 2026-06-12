@@ -84,8 +84,10 @@ pack + soak: 10 fast-travels, exception & memory watch — current verdict: PASS
 
 - ~88 settlements ship by default (every viable planet site founded); denser worlds need flavor-preserving
   site-pool growth — open design question.
-- A fresh player vs an outlaw sits at the 5% hit floor: progression/equipment accuracy growth is the next
-  balance item. The bounty/pilgrimage quests have no compass guidance lines yet.
+- FIXED in v0.3: the hit roll is now a Daggerfall-style 50-base curve (50 + accuracy - dodge, clamp
+  [15,95]) and outlaws were rebalanced (acc 30 / dodge 20) — a fresh player lands ~48% of swings.
+  Progression/equipment accuracy growth remains the next balance item. The bounty/pilgrimage quests
+  have no compass guidance lines yet.
 - World quests (bounty/pilgrimage) are not yet persisted in saves; the forge quest and the whole world state
   round-trip byte-identically (digest-verified).
 - Swimming is an underwater tint (no drowning); dungeon interiors await their encounter haunters' billboards.
@@ -101,3 +103,37 @@ loading screen. Shipcheck: 8 sections, PASS.
 Known limits added in v0.2 (honest): TTS voice-over is DESIGNED but not wired (forge-cache pattern ready;
 needs a local piper/kokoro install) - greetings stay text. Work-pose icons and needs-driven errand walks
 are the next staging slice. Sky stays bright right after big proof-clock jumps.
+
+### v0.3 "Find, Fight, Hear" additions
+
+Discoverability: an ALWAYS-ON red `DELVE <name> - N tiles - direction` HUD line (quest-independent; the
+old compass hid the dungeon behind forge-quest completion), a worldgen invariant guaranteeing every world
+at least one Dungeon settlement (temperate planets used to roll zero - the real "I can't find the dungeon"
+root), big red always-labeled dungeon map pins sorted to the top of the atlas list, and full-strength
+delve rumors (the 50% coin-flip that halved the DFU 35% reveal is gone; the dungeon name is SHOUTED).
+Combat is REAL-TIME now (Daggerfall/DOOM feel): engaging a hostile no longer opens a paused modal — the
+HUD grows an enemy name+HP panel, BATTLE music starts, F swings and 1-5 casts live in the world, and the
+enemy strikes back on its own ~2.4s clock through the same resolver dice. The hit roll moved to a
+50-base curve (50+acc-dodge, clamp [15,95]; outlaws rebalanced to acc 30/dodge 20) so a fresh player
+lands ~48% of swings instead of the old 5% floor. Hostile spells REFUSE to cast with no enemy in range
+(they used to fall back to the caster — the "spell drains my own HP" bug), and the spell vfx is a
+camera-facing glowing bolt + light instead of an edge-on line. Every delve chamber is guarded by two
+Outlaw "haunters" (E to fight, chest behind them; corpses stay down through save/travel), street
+hostiles wear a red marker diamond, landed strikes flash the billboard red + a modal thud, and felled
+enemies fall flat. The dungeon interior now conforms to the
+hillside (crest-floated floor, mouth ramp, brighter torches with visible flames) and all NPC billboards
+ground themselves on what they stand on. Audio v2 (research-backed recipes, see
+`memory/procedural-audio-recipes.md`): GRF two-peak footstep exciters driving PhISM dirt grains and
+6-mode modal stone rings (material = decay times), Crackdown-2 dip-cascade variants, an EKS stick-slip
+door creak replacing the 1320Hz UI-click "bell", and two-layer music (i-VI-III-VII pad+bass bed under a
+rule-constrained pentatonic melody + noise percussion) per DAY/NIGHT/BATTLE slot; the 6×16s music render
+moved to a worker thread + a process-wide clip cache after shipchecks caught a 14s main-thread freeze and
+a per-reload reforge (perf FAIL avg 175ms → avg 11.9ms PASS). Proof runs take `--ember-forge-off` so the
+SDXL portrait forge stops fighting the GPU mid-measurement. Shipcheck: 9 sections, VERDICT PASS
+(world-enter, quest-seed, encounter-loot 13 swings, economy, perf 11.9ms avg, soak 10 hops 0 exceptions,
+economy-chain, audio-forge, modal-capture).
+
+Known limits added in v0.3 (honest): steep hillsides can still clip a dungeon-barrow corner; footstep
+surface detection is name-based (built "Floor" slabs vs terrain); per-step audio variation rotates 4
+pre-rendered variants (+pitch jitter) instead of re-rendering the dip cascade per step; melody voices are
+sine-family (no wavetable timbres yet).

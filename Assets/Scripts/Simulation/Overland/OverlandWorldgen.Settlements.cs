@@ -34,7 +34,29 @@ namespace EmberCrpg.Simulation.Overland
                 placements.Add(new OverlandSettlement(record.Id, kind, new GridPosition(record.TileX, record.TileY), record.Name, TemplatePackTag(kind)));
             }
 
+            EnsureAtLeastOneDungeon(placements);
             return placements;
+        }
+
+        // DISCOVERABILITY INVARIANT (v0.3 F9 "zindanı bulamadım" root): Dungeon kind only emerges from
+        // SMALL settlements in Mountain/Ash/Swamp biomes, so a temperate planet can legitimately roll
+        // ZERO delves — the delve compass, the map legend, and every rumor then point at nothing. Every
+        // world guarantees at least one: deterministically, the LAST small placement becomes the delve.
+        private static void EnsureAtLeastOneDungeon(List<OverlandSettlement> placements)
+        {
+            for (int i = 0; i < placements.Count; i++)
+                if (placements[i].Kind == SettlementKind.Dungeon)
+                    return;
+
+            for (int i = placements.Count - 1; i >= 0; i--)
+            {
+                var p = placements[i];
+                if (p.Kind == SettlementKind.City || p.Kind == SettlementKind.Town)
+                    continue; // never demote a population centre into a delve
+                placements[i] = new OverlandSettlement(
+                    p.Id, SettlementKind.Dungeon, p.TilePosition, p.Name, TemplatePackTag(SettlementKind.Dungeon));
+                return;
+            }
         }
 
         private static int StableKindRoll(SettlementId id)

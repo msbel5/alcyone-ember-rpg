@@ -109,6 +109,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             foreach (var actor in _world.Actors.Records)
             {
                 if (actor == null || actor.Role == ActorRole.Player) continue;
+                // F10: the dead don't respawn standing — a felled haunter/outlaw stays a corpse (its
+                // record blocks re-creation; its billboard never re-materializes on travel/reload).
+                if (!actor.IsAlive) continue;
                 var seed = ResolveNpcForActor(actor);
                 if (seed != null && !seed.Home.Equals(here)) continue;
                 list.Add(new SpawnableActor(

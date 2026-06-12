@@ -8,28 +8,39 @@ namespace EmberCrpg.Presentation.Ember.Combat
     public sealed class EmberPlayerSpellCaster : MonoBehaviour
     {
         private Transform _eye;
-        private LineRenderer _line;
+        private Transform _bolt;
+        private Material _boltMaterial;
+        private Light _boltLight;
 
         private void Awake()
         {
             _eye = transform.Find("EyeCamera");
-            
-            var go = new GameObject("SpellRipple", typeof(LineRenderer));
-            go.transform.SetParent(transform, false);
-            _line = go.GetComponent<LineRenderer>();
-            _line.startWidth = 0.05f;
-            _line.endWidth = 0.5f;
-            _line.positionCount = 2;
-            _line.enabled = false;
-            // Build-safe shader resolution. Passing a null shader to new Material() yields the
-            // magenta InternalErrorShader the instant this ripple is enabled on a spell cast
-            // (the "magenta after ~1 minute" in combat). Sprites/Default is in Always-Included,
-            // but fall back to URP shaders so a null can never reach the material.
-            var rippleShader = Shader.Find("Sprites/Default")
-                               ?? Shader.Find("Universal Render Pipeline/Particles/Unlit")
-                               ?? Shader.Find("Universal Render Pipeline/Unlit");
-            _line.material = new Material(rippleShader);
-            _line.material.color = new Color(0.2f, 0.6f, 1f, 0.8f);
+
+            // PLAYTEST FIX ("büyü çok ince bir çizgi/çapraz görünüyor"): the old vfx was a LineRenderer
+            // fired along the view axis — edge-on it reads as a hair-thin cross. The bolt is now a
+            // CAMERA-FACING glowing quad + its own point light, so it reads as a fireball from any angle.
+            var bolt = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            bolt.name = "SpellBolt";
+            var boltCollider = bolt.GetComponent<Collider>();
+            if (boltCollider != null) Destroy(boltCollider);
+            // Build-safe shader resolution (the old "magenta after ~1 minute" lesson): Sprites/Default is
+            // Always-Included; URP fallbacks keep a null shader from ever reaching the material.
+            var boltShader = Shader.Find("Sprites/Default")
+                             ?? Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                             ?? Shader.Find("Universal Render Pipeline/Unlit");
+            _boltMaterial = new Material(boltShader);
+            _boltMaterial.color = new Color(1f, 0.62f, 0.25f, 0.95f);
+            bolt.GetComponent<MeshRenderer>().sharedMaterial = _boltMaterial;
+            bolt.transform.localScale = Vector3.one * 0.35f;
+            bolt.AddComponent<EmberCrpg.Presentation.Ember.Views.CameraFacingBillboard>();
+            _boltLight = bolt.AddComponent<Light>();
+            _boltLight.type = LightType.Point;
+            _boltLight.color = new Color(1f, 0.55f, 0.2f);
+            _boltLight.intensity = 2.4f;
+            _boltLight.range = 6f;
+            _boltLight.shadows = LightShadows.None;
+            _bolt = bolt.transform;
+            bolt.SetActive(false);
         }
 
         private void Update()
@@ -69,37 +80,34 @@ namespace EmberCrpg.Presentation.Ember.Combat
             // mana / no caster / slot out of range). Do NOT overwrite that
             // with a fake "You cast ..." success — leave the refusal text
             // visible so the player understands the cast did not fire.
-            adapter.TryCastSpell(slotIndex);
+            // The bolt flies only when the cast actually FIRED — a refused cast (no target in range,
+            // insufficient mana) keeps its refusal text and shows nothing, instead of lying visually.
+            bool castFired = adapter.TryCastSpell(slotIndex);
 
-            if (_eye != null)
+            if (castFired && _eye != null)
             {
                 StopAllCoroutines();
-                StartCoroutine(ShowRipple());
+                StartCoroutine(FlyBolt());
             }
         }
 
-        private IEnumerator ShowRipple()
+        private IEnumerator FlyBolt()
         {
-            _line.enabled = true;
-            float duration = 0.3f;
+            _bolt.gameObject.SetActive(true);
+            Vector3 from = _eye.position + _eye.forward * 0.6f - _eye.up * 0.15f;
+            Vector3 to = from + _eye.forward * 8f; // matches FLAME BOLT's 8-tile reach
+            const float duration = 0.28f;
             float elapsed = 0f;
-
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / duration;
-                
-                _line.SetPosition(0, _eye.position + _eye.forward * 0.5f);
-                _line.SetPosition(1, _eye.position + _eye.forward * (0.5f + t * 5f));
-                
-                var color = _line.material.color;
-                color.a = 1f - t;
-                _line.material.color = color;
-                
+                float t = Mathf.Clamp01(elapsed / duration);
+                _bolt.position = Vector3.Lerp(from, to, t);
+                _boltLight.intensity = 2.4f * (1f - t * 0.6f);
+                var c = _boltMaterial.color; c.a = 0.95f * (1f - t * 0.4f); _boltMaterial.color = c;
                 yield return null;
             }
-
-            _line.enabled = false;
+            _bolt.gameObject.SetActive(false);
         }
     }
 }

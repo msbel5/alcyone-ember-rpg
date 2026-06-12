@@ -88,6 +88,41 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(((IJournalSource)adapter).GetChapters()[0].Entries[0].Status, Is.EqualTo(JournalEntryStatus.Completed));
         }
 
+        // F9 ("zindanı bulamadım"): the delve pointer must exist on a FRESH seeded world and must stay
+        // visible while the forge quest is still active — v0.2 hid it behind quest completion.
+        [Test]
+        public void DelveGuidance_AvailableOnFreshWorld_AndIndependentOfQuestState()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "survival", "crossroads", 7u);
+
+            var fresh = ((IQuestGuidanceSource)adapter).ReadDelveGuidance();
+            Assert.That(fresh.HasTarget, Is.True, "fresh world must already point at a delve");
+            Assert.That(fresh.Title, Is.EqualTo("Delve Lead"));
+            Assert.That(fresh.TargetName, Is.Not.Empty);
+
+            world.Quests.Add(QuestCatalog.ForgeIronIngotId, new QuestState(1, world.Time));
+            var during = ((IQuestGuidanceSource)adapter).ReadDelveGuidance();
+            Assert.That(during.HasTarget, Is.True, "active forge quest must not hide the delve pointer");
+            Assert.That(during.TargetName, Is.EqualTo(fresh.TargetName));
+        }
+
+        // F9 root-cause guard: the EXACT world the proof harness (and a default New Game) seeds — answer
+        // tuple (grim, wanderer, crossroads), derived seed — must contain a Dungeon settlement. Dungeon
+        // kind only rolls from small Mountain/Ash/Swamp placements, so a temperate planet shipped ZERO
+        // delves until the EnsureAtLeastOneDungeon worldgen invariant; this pins that invariant.
+        [Test]
+        public void DelveGuidance_DefaultNewGameWorld_AlwaysHasADungeon()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "wanderer", "crossroads", null);
+
+            var row = ((IQuestGuidanceSource)adapter).ReadDelveGuidance();
+            Assert.That(row.HasTarget, Is.True, "every generated world must contain at least one delve");
+        }
+
         private static int Count(EmberCrpg.Domain.Inventory.InventoryState inventory, string templateId)
         {
             var total = 0;

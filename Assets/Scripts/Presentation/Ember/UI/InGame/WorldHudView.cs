@@ -12,6 +12,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         public string Location;     // "Day 3 · Dusk · Ashton Crossroads"
         public string EventLine;    // most recent world-event / narration line
         public string CompassLine;  // optional quest/navigation target
+        public string DelveLine;    // F9: always-on nearest-dungeon pointer (quest-independent)
+        public string EnemyName;    // F13 live combat: bound enemy (empty = no encounter)
+        public int EnemyHp, EnemyHpMax;
         public int Gold, Level;
         public string ClassName;
         public int Hp, HpMax, Fatigue, FatigueMax, Mana, ManaMax;
@@ -29,7 +32,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         public Action<string> OnOpenScreen;   // "inventory" / "character" / "worldmap" / "journal" / "colony"
         public Action OnConsulDm;
 
-        private readonly Label _location, _gold, _level, _eventLine, _compassLine;
+        private readonly Label _location, _gold, _level, _eventLine, _compassLine, _delveLine, _enemyName;
+        private readonly VisualElement _enemyPanel, _enemyBarFill;
         private readonly VitalBar _hp, _fat, _mp;
         private readonly List<Label> _spellLabels = new List<Label>();
 
@@ -67,6 +71,34 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             _compassStrip.style.letterSpacing = 2f;
             canvas.Add(_compassStrip);
 
+            // ── ENEMY PANEL (F13 live combat — Daggerfall-style, no pause): name + red HP bar, top-right
+            // under the top bar; visible only while an encounter is bound. ──
+            _enemyPanel = new VisualElement();
+            _enemyPanel.pickingMode = PickingMode.Ignore;
+            _enemyPanel.style.position = Position.Absolute;
+            _enemyPanel.style.right = 16; _enemyPanel.style.top = 56;
+            _enemyPanel.style.paddingLeft = 12; _enemyPanel.style.paddingRight = 12;
+            _enemyPanel.style.paddingTop = 8; _enemyPanel.style.paddingBottom = 10;
+            _enemyPanel.style.backgroundColor = Alpha(VoidWarm, 0.78f);
+            Border(_enemyPanel, Health, 1);
+            Radius(_enemyPanel, 10);
+            _enemyPanel.style.display = DisplayStyle.None;
+            _enemyName = Text("", Sans, 12, Health, FontStyle.Bold);
+            _enemyName.style.letterSpacing = 0.6f;
+            _enemyName.style.marginBottom = 5;
+            _enemyPanel.Add(_enemyName);
+            var enemyBar = new VisualElement();
+            enemyBar.style.width = 190; enemyBar.style.height = 9;
+            enemyBar.style.backgroundColor = PA(0.14f);
+            Radius(enemyBar, 4);
+            _enemyBarFill = new VisualElement();
+            _enemyBarFill.style.height = Length.Percent(100);
+            _enemyBarFill.style.backgroundColor = Health;
+            Radius(_enemyBarFill, 4);
+            enemyBar.Add(_enemyBarFill);
+            _enemyPanel.Add(enemyBar);
+            canvas.Add(_enemyPanel);
+
             // ── BOTTOM HUD (height 90) ──
             var bottom = Row();
             bottom.pickingMode = PickingMode.Ignore;
@@ -81,6 +113,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             _compassLine.style.marginBottom = 4;
             _compassLine.style.display = DisplayStyle.None;
             eventWrap.Add(_compassLine);
+            // F9 ("zindanı bulamadım"): a second, ALWAYS-ON pointer row — nearest dungeon, quest-independent.
+            _delveLine = Text("", Sans, 11, Health, FontStyle.Bold);
+            _delveLine.style.letterSpacing = 0.8f;
+            _delveLine.style.marginBottom = 4;
+            _delveLine.style.display = DisplayStyle.None;
+            eventWrap.Add(_delveLine);
             _eventLine = Text("", Serif, 13, PA(0.60f), FontStyle.Italic);
             _eventLine.style.whiteSpace = WhiteSpace.Normal;
             eventWrap.Add(_eventLine);
@@ -194,6 +232,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             if (!string.IsNullOrEmpty(d.Location)) _location.text = d.Location;
             _compassLine.text = d.CompassLine ?? string.Empty;
             _compassLine.style.display = string.IsNullOrEmpty(d.CompassLine) ? DisplayStyle.None : DisplayStyle.Flex;
+            _delveLine.text = d.DelveLine ?? string.Empty;
+            _delveLine.style.display = string.IsNullOrEmpty(d.DelveLine) ? DisplayStyle.None : DisplayStyle.Flex;
+            bool inCombat = !string.IsNullOrEmpty(d.EnemyName);
+            _enemyPanel.style.display = inCombat ? DisplayStyle.Flex : DisplayStyle.None;
+            if (inCombat)
+            {
+                _enemyName.text = "⚔ " + d.EnemyName + "  " + d.EnemyHp + "/" + d.EnemyHpMax;
+                _enemyBarFill.style.width = Length.Percent(d.EnemyHpMax > 0 ? Mathf.Clamp01(d.EnemyHp / (float)d.EnemyHpMax) * 100f : 0f);
+            }
             _eventLine.text = d.EventLine ?? string.Empty;
             _gold.text = "⊙ " + d.Gold + " gp";
             _level.text = "Lv " + d.Level + (string.IsNullOrEmpty(d.ClassName) ? "" : " " + d.ClassName);

@@ -109,7 +109,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 }
             }
 
-            return best ?? player;
+            // PLAYTEST BUG ("büyü kullanırsam kendi canım gidiyor"): hostile spells used to fall back to
+            // the CASTER when no enemy was in range — FLAME BOLT then burned the player for its own 8
+            // damage. Friendly spells still self-target (healing yourself is correct); hostile spells
+            // return null and the cast is refused upstream, mana untouched.
+            if (best == null && wantsFriendly) return player;
+            return best;
         }
 
         private static GridPosition CenterOf(SiteRecord site)
