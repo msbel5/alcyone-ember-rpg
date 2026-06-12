@@ -256,6 +256,39 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(adapter.LootDungeonChest(), Does.Contain("empty"), "the chest yields exactly one sword");
         }
 
+        // F17 ("seviye kazanılsın"): the level screen is XP-GATED now (it allowed infinite levels);
+        // a kill (+40) plus its bounty (+60) buys exactly one level, and the spend persists.
+        [Test]
+        public void XpGate_KillPlusBountyBuysExactlyOneLevel_AndPersists()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "survival", "crossroads", 7u);
+            Assert.That(world.PlayerXp, Is.EqualTo(0));
+
+            var gated = ((ILevelUpCommandSink)adapter).ApplyLevelUp(new LevelUpSelection(5, 0, 0, 0, 0, 0, null));
+            Assert.That(gated.Success, Is.False, "no XP yet — the gate must refuse");
+            Assert.That(gated.Message, Does.Contain("experience"));
+
+            // The real loop: encounter leg fells an outlaw (+40) and fulfils the bounty (+60).
+            var leg = adapter.ProofRunEncounterLeg();
+            Assert.That(leg, Does.Contain("felled=True"));
+            Assert.That(world.PlayerXp, Is.EqualTo(100), "kill 40 + quest 60 = exactly one level's worth");
+
+            var applied = ((ILevelUpCommandSink)adapter).ApplyLevelUp(new LevelUpSelection(5, 0, 0, 0, 0, 0, null));
+            Assert.That(applied.Success, Is.True, applied.Message);
+            Assert.That(world.PlayerLevel, Is.EqualTo(2));
+            Assert.That(world.PlayerXp, Is.EqualTo(0), "the level spend consumes the earned XP");
+
+            // Persistence: XP and level survive the save mapper roundtrip.
+            world.PlayerXp = 30;
+            var data = EmberCrpg.Data.Save.WorldSaveMapper.ToData(world);
+            var restored = EmberCrpg.Data.Save.WorldSaveMapper.ToWorld(
+                data, new WorldFactory().Create(roomSeed: 17));
+            Assert.That(restored.PlayerXp, Is.EqualTo(30));
+            Assert.That(restored.PlayerLevel, Is.EqualTo(2));
+        }
+
         private static int Count(EmberCrpg.Domain.Inventory.InventoryState inventory, string templateId)
         {
             var total = 0;

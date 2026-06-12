@@ -51,6 +51,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private bool _oraclePending;
         private bool _wasOpen;
         private bool _deathScreenShown; // F13: live combat can kill — route to the death screen exactly once
+        private bool _levelUpPrompted;  // F17: open the level-up screen once per XP-threshold crossing
 
         /// <summary>True while this controller is active — the legacy EmberWorldHost key handlers (M / Tab / K /
         /// R) yield to it so the redesigned screens own input instead of opening the old uGUI panels.</summary>
@@ -221,6 +222,24 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                     if (!open && EmberDomainAdapterLocator.Current
                             is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter rtAdapter)
                         rtAdapter.TickWorldEncounter(Time.unscaledTime);
+                }
+            }
+
+            // F17: crossing the XP threshold opens the level-up screen ONCE per crossing (the gate
+            // re-arms after the level is spent and readiness drops below the next threshold).
+            if (!open && EmberDomainAdapterLocator.Current
+                    is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter xpAdapter)
+            {
+                bool ready = xpAdapter.LevelUpReady;
+                if (ready && !_levelUpPrompted)
+                {
+                    _levelUpPrompted = true;
+                    OpenScreen("levelup");
+                    Debug.Log("[InGameUI] XP threshold crossed — level-up screen opened.");
+                }
+                else if (!ready)
+                {
+                    _levelUpPrompted = false;
                 }
             }
 

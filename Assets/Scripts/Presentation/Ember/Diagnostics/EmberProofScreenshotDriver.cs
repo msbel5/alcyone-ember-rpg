@@ -520,6 +520,20 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             Debug.Log(adapter.ProofRunEncounterLeg());
             yield return new WaitForSecondsRealtime(2.6f); // settle read cleared the mirror → back to DAY/NIGHT
             yield return new WaitForSecondsRealtime(0.4f);
+
+            // F17-DoD: kill (+40 XP) + bounty (+60 XP) crossed the 100-XP threshold — the controller
+            // auto-opens the level-up screen; capture it, then close to continue the loop.
+            var xpUi = FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>();
+            if (xpUi != null)
+            {
+                yield return new WaitForSecondsRealtime(0.5f); // give the HUD pump a frame to open it
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, "looptest_levelup.png"));
+                yield return new WaitForSecondsRealtime(0.4f); // capture separation
+                xpUi.ProofCloseScreens();
+                yield return new WaitForSecondsRealtime(0.3f);
+            }
+
             Debug.Log(adapter.ProofRunTradeLeg());
             Debug.Log(adapter.ProofQuestSnapshot());
             // F15-DoD: lose to an outlaw AFK, awaken at the plaza — the toll line + a LIVE HUD frame

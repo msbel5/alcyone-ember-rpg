@@ -188,6 +188,21 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private float _nextEnemyStrikeAt;
         private float _nextHostileAiAt;
 
+        /// <summary>F17 XP: kills (+40) and world-quest completions (+60) feed the level gate. The
+        /// HUD pump watches <see cref="LevelUpReady"/> and opens the level-up screen once per crossing.</summary>
+        private void GrantXp(int amount, string reason)
+        {
+            if (_world == null || amount <= 0) return;
+            _world.PlayerXp += amount;
+            int need = EmberCrpg.Simulation.World.PlayerLevelUpService.XpForNextLevel(_world.PlayerLevel);
+            string status = _world.PlayerXp >= need ? " — LEVEL UP READY" : string.Empty;
+            UnityEngine.Debug.Log($"[XP] +{amount} ({reason}) {_world.PlayerXp}/{need}{status}");
+        }
+
+        public bool LevelUpReady =>
+            _world != null && _world.PlayerXp
+                >= EmberCrpg.Simulation.World.PlayerLevelUpService.XpForNextLevel(_world.PlayerLevel);
+
         /// <summary>
         /// F14 ENEMY MOVEMENT ("düşman kovalasın"): hostiles that SEE the player (12 cells ≈ 12m) give
         /// chase — one grid cell per 0.45s ≈ 2.2 m/s, the DFU street speed — and STOP adjacent (≤2
@@ -517,6 +532,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _worldEncounterLootGranted = true;
             const int spoils = 25;
             if (_world != null) _world.PlayerGold += spoils;
+            GrantXp(40, "kill"); // F17: a felled foe teaches (40 + quest 60 = exactly one level)
             _lastCombatLine = $"{worldEnemy.Name} falls. You take {spoils} gold in spoils.";
             _worldEncounterId = default;
             // F10 death feel: the world billboard lies down instead of standing through its own death.

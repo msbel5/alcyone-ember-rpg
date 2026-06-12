@@ -136,6 +136,8 @@ namespace EmberCrpg.Domain.World
         public EquipmentState PlayerEquipment = new EquipmentState();
         public InventoryState MerchantInventory;
         public int PlayerLevel = 1;
+        // F17: kill/quest experience; gates the level-up screen (PlayerLevelUpService.XpForNextLevel).
+        public int PlayerXp;
         public List<string> PlayerKnownSpellIds = new List<string>();
         public List<RoomPickup> Pickups = new List<RoomPickup>();
         public List<DungeonRoomState> DungeonRoomStates = new List<DungeonRoomState>();
@@ -197,6 +199,7 @@ namespace EmberCrpg.Domain.World
             PlayerEquipment = other.PlayerEquipment;
             MerchantInventory = other.MerchantInventory;
             PlayerLevel = other.PlayerLevel;
+            PlayerXp = other.PlayerXp;
             PlayerKnownSpellIds = other.PlayerKnownSpellIds;
             Pickups = other.Pickups;
             DungeonRoomStates = other.DungeonRoomStates;

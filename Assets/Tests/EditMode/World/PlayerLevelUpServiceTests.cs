@@ -12,6 +12,8 @@ namespace EmberCrpg.Tests.EditMode.World
         public void TryApply_RaisesLevel_UpdatesStats_AndLearnsSpell()
         {
             var world = new WorldFactory().Create(77);
+            // CONTRACT CHANGE (F17): leveling is XP-GATED now — fund the level first.
+            world.PlayerXp = EmberCrpg.Simulation.World.PlayerLevelUpService.XpForNextLevel(world.PlayerLevel);
             var player = world.Actors.FirstByRole(ActorRole.Player);
 
             var success = new PlayerLevelUpService().TryApply(

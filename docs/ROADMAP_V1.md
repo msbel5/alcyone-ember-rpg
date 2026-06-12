@@ -37,9 +37,12 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   20 armed=103" + "You take the Worn Iron Sword... and equip it" + EditMode 60-tohum eşli zar
   testi (10/10). Dürüst sınır: sandık-açık durumu save'e yazılmıyor (F22); gövde/zırh slotu
   içerik geldiğinde (F29 sonrası) işlenecek; karanlık oda kompozisyonu F33 cila borcu.
-- [ ] **F17 XP/Seviye**: kill+quest XP → seviye → +acc/+dodge/+HP seçim ekranı (3 kart). Level
-  HUD'da zaten var; gerçek beslensin.
-  **DoD:** encounter sonrası XP satırı + level-up modal karesi + stat artışı save'de kalıcı.
+- [x] **F17 XP/Seviye** ✅ 2026-06-12: PlayerXp persisted alanı (3-katman desen + reflection guard);
+  kill +40 / world-quest +60 XP; seviye N→N+1 = N*100 XP; PlayerLevelUpService XP-kapılı (sonsuz
+  seviye bug'ı kapandı) ve harcıyor; eşik aşılınca level-up ekranı OTOMATİK açılıyor (mevcut 5-puan
+  6-stat + büyü seçimi makinesi zaten gerçekti). Kanıt: "[XP] +40 (kill) 40/100", "+60 (quest)
+  100/100 — LEVEL UP READY" + looptest_levelup.png (Warden L1→2 modalı otomatik) + EditMode
+  kapı/harcama/roundtrip testi. Not: 3-kart yerine mevcut 6-stat ekranı kullanıldı (daha zengin).
 
 ## v0.5 "ZİNDAN ÇAĞI" — tek oda değil, gerçek delve
 
@@ -129,4 +132,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F17 <<<
+>>> CURRENT: F18 <<<

@@ -133,7 +133,7 @@ SDXL portrait forge stops fighting the GPU mid-measurement. Shipcheck: 9 section
 (world-enter, quest-seed, encounter-loot 13 swings, economy, perf 11.9ms avg, soak 10 hops 0 exceptions,
 economy-chain, audio-forge, modal-capture).
 
-### v0.4 "Combat Depth" (in progress — roadmap: docs/ROADMAP_V1.md)
+### v0.4 "Combat Depth" — SHIPPED (roadmap: docs/ROADMAP_V1.md; shipcheck 9/9 PASS, perf 11.9ms avg)
 
 F14 enemy movement SHIPPED: hostiles that see the player (12m) give CHASE at ~2.2 m/s, stop adjacent
 and fight, and reaching aggro range auto-binds the encounter — walking into a delve chamber starts the
@@ -156,6 +156,13 @@ auto-equips it when it beats your hand, and creaks its hinged lid back. One swor
 Proof: "20 bare swings dealt 83, 20 armed swings dealt 103" + the chest grant line + a 60-paired-seed
 EditMode test. Honest limits: chest-opened state isn't save-persisted yet (F22); body/armor slot
 arrives with armor content (F29).
+
+F17 XP/levels SHIPPED: kills grant +40 XP, world-quest completions +60; level N→N+1 costs N×100, and
+crossing the threshold AUTO-OPENS the level-up screen (5 points across 6 stats + a new spell — the
+machine was already real; it just allowed infinite levels with no XP gate). The spend consumes the
+earned XP; PlayerXp persists through saves (3-layer pattern, reflection-guard tested).
+Proof: "[XP] +40 (kill) 40/100" → "+60 (quest) 100/100 — LEVEL UP READY" + the auto-opened
+"LEVEL UP! Warden Level 1→2" modal frame + EditMode gate/spend/roundtrip test.
 
 Known limits added in v0.3 (honest): steep hillsides can still clip a dungeon-barrow corner; footstep
 surface detection is name-based (built "Floor" slabs vs terrain); per-step audio variation rotates 4

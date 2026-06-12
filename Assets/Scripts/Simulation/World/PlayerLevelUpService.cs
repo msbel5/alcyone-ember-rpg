@@ -33,6 +33,9 @@ namespace EmberCrpg.Simulation.World
     {
         public const int PointsPerLevel = 5;
 
+        /// <summary>F17: the XP price of the NEXT level — level N -> N+1 costs N*100 (kill=40, quest=60).</summary>
+        public static int XpForNextLevel(int currentLevel) => System.Math.Max(1, currentLevel) * 100;
+
         public bool TryApply(WorldState world, PlayerLevelUpChoice choice, out string message)
         {
             if (world == null)
@@ -51,6 +54,14 @@ namespace EmberCrpg.Simulation.World
             if (choice.TotalPoints != PointsPerLevel)
             {
                 message = "Spend exactly " + PointsPerLevel + " points before confirming.";
+                return false;
+            }
+
+            // F17 XP GATE: leveling is EARNED — the screen used to allow infinite level-ups.
+            int xpCost = XpForNextLevel(world.PlayerLevel);
+            if (world.PlayerXp < xpCost)
+            {
+                message = "Not enough experience: " + world.PlayerXp + "/" + xpCost + " XP.";
                 return false;
             }
 
@@ -78,6 +89,7 @@ namespace EmberCrpg.Simulation.World
                 return false;
             }
 
+            world.PlayerXp -= xpCost; // spend the earned XP (leftover rolls toward the next level)
             world.PlayerLevel = Math.Max(1, world.PlayerLevel + 1);
             world.PlayerKnownSpellIds ??= new List<string>();
 

@@ -34,6 +34,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             state.MarkTaskTriggered(0);
             state.SetCompleted(success: true);
             _world.PlayerGold += goldReward;
+            GrantXp(60, "quest"); // F17: finished work teaches more than the kill itself
             _lastCombatLine = $"{label}: +{goldReward} gold.";
             UnityEngine.Debug.Log($"[Quest] {label} — quest complete, +{goldReward} gold (purse {_world.PlayerGold}).");
         }
