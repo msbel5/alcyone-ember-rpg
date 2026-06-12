@@ -147,9 +147,20 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   yıldızlar = golden-angle yarımkürede 140 unlit küp (Sprites/Default — billboard'lar garantiliyor),
   ay = üretilmiş 64px yumuşak-disk sprite, kubbe kamerayı takip eder. Şafak gülü ≠ alacakaranlık
   amberi (sabah/akşam ayrımlı lerp).
-- [ ] **F25 Hava durumu**: yağmur/sis/kar (biyom+mevsim deterministik); yağmur partikül + ses
+- [x] **F25 Hava durumu**: yağmur/sis/kar (biyom+mevsim deterministik); yağmur partikül + ses
   (PhISM hazır), sis fog yoğunluğu, kar terrain tint. Müzik yağmurda yumuşak varyanta düşer.
   **DoD:** 3 hava durumu karesi + "[Weather]" log satırları + yağmur sesi forge metriği.
+  **KANIT (lookaround, Reports/proof-f25d):** weather_rain (gri gök + beyaz yağmur çizgileri) /
+  weather_snow (soluk gök + süzülen taneler) / weather_fog (gri-lavanta pus, kısık ışık) — üçü
+  göz-doğrulamalı FARKLI. "[Weather] day=N season=S biome=B → kind" günlük deterministik seçim
+  (1. gün Plains doğal yağmur yuvarladı) + "[AudioForge] rain_loop: len=4,00s rms=0,042
+  centroid=1147Hz" (PhISM-vari: lowpass bed + damla tıkları, döngü kaynak rig'de).
+  **İKİ PROOF-CAUGHT BULGU:** (1) URP fog shader varyantları player build'de strip — okunabilir
+  atmosfer SkyController'a taşındı (FogFactor: gök grileşir + güneş/ambient kısılır); (2)
+  ParticleSystem player build'de HİÇBİR modda render etmiyor — yağış, yıldız-kubbesi deseniyle
+  manuel 130-küp havuzu (Sprites/Default; kamerayı takip eden 30×30 kolon, deterministik dağılım).
+  DÜRÜST PARTIAL: müzik yağmur varyantı bağlanmadı (slotlar hava-agnostik); kar terrain tint yerine
+  haze + taneler (splat repaint v2).
 - [ ] **F26 İşlevsel iç mekânlar**: taverna (uyu→saat atla+HP yenile, 5 altın), tapınak (şifa),
   dükkân (trade ekranı tezgâhtan açılır). Kapıdan girince interior realize (mevcut shell furnish
   genişler), NPC içeride masada.
@@ -205,4 +216,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F25 <<<
+>>> CURRENT: F26 <<<

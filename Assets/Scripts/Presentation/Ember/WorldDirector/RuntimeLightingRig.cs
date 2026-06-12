@@ -29,6 +29,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // Sky: a procedural skybox + a day/night cycle driven by the sim clock, so the sky is no longer
             // black and the game's days/nights are visible. The controller drives the sun + ambient each frame.
             sun.AddComponent<SkyController>().Bind(light);
+            // F25: per-day deterministic weather (rain/fog/snow particles + fog + rain hiss) by biome+season.
+            sun.AddComponent<RuntimeWeatherController>().Bind(biome);
         }
     }
 }

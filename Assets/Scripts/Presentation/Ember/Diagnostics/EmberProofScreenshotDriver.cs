@@ -735,6 +735,32 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 }
             }
 
+            // F25-DoD: three weather frames + [Weather] logs — forced via the proof hook at noon so
+            // particles/fog read in daylight (the deterministic per-day pick is exercised by play).
+            if (rig != null && nightAdapter != null)
+            {
+                nightAdapter.ProofAdvanceHours(12); // midnight → noon
+                var fpsW = rig.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
+                if (fpsW != null) fpsW.enabled = false;
+                string[] weatherKinds = { "rain", "fog", "snow" };
+                foreach (var kind in weatherKinds)
+                {
+                    EmberCrpg.Presentation.Ember.WorldDirector.RuntimeWeatherController.ProofForce(kind);
+                    rig.transform.rotation = Quaternion.Euler(-8f, 150f, 0f);
+                    yield return new WaitForSecondsRealtime(1.6f); // particles fill the volume
+                    yield return new WaitForEndOfFrame();
+                    CaptureToPng(Path.Combine(_outputDir, $"weather_{kind}.png"));
+                    yield return new WaitForSecondsRealtime(0.4f); // async capture separation
+                }
+                EmberCrpg.Presentation.Ember.WorldDirector.RuntimeWeatherController.ProofForce(null);
+                yield return null;
+                if (fpsW != null)
+                {
+                    fpsW.enabled = true;
+                    fpsW.SyncYaw(rig.transform.eulerAngles.y);
+                }
+            }
+
             // F10-DoD: travel to the nearest DELVE, walk the corridor into the chamber, and eye-proof the
             // haunters guarding the chest, the red hit flash, and the corpse pose after the kill.
             if (nightAdapter != null)

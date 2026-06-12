@@ -61,20 +61,25 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             float twilight = 1f - Mathf.Abs(daylight - 0.5f) * 2f;
             bool morning = dayFraction < 0.5f;
 
+            // F25: weather haze — URP fog variants strip from builds, so the READABLE atmosphere is
+            // here: the sky greys toward the haze and the sun/ambient dim with it.
+            float haze = Mathf.Clamp01(RuntimeWeatherMirror.FogFactor);
+
             if (_sun != null)
             {
                 float sunPitch = (dayFraction * 360f) - 90f;
                 _sun.transform.rotation = Quaternion.Euler(sunPitch, 150f, 0f);
-                _sun.intensity = Mathf.Lerp(0.04f, 1.15f, daylight);
+                _sun.intensity = Mathf.Lerp(0.04f, 1.15f, daylight) * (1f - 0.55f * haze);
             }
 
-            RenderSettings.ambientLight = _baseAmbient * Mathf.Lerp(0.20f, 1f, daylight);
+            RenderSettings.ambientLight = _baseAmbient * Mathf.Lerp(0.20f, 1f, daylight) * (1f - 0.22f * haze);
 
             if (_camera == null) ResolveCamera();
             if (_camera != null)
             {
                 Color sky = Color.Lerp(NightSky, DaySky, daylight);
                 sky = Color.Lerp(sky, morning ? DawnSky : DuskSky, twilight * (morning ? 0.5f : 0.62f));
+                sky = Color.Lerp(sky, new Color(0.55f, 0.57f, 0.61f) * Mathf.Max(0.25f, daylight), haze);
                 _camera.backgroundColor = sky;
 
                 EnsureCelestials();

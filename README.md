@@ -266,3 +266,17 @@ old TickIndex re-derivation drifted after clock jumps (respawn +8h, travel days)
 skies bright; that bug is dead, pinned by an EditMode truth test across a 16-hour jump.
 Proof (Reports/proof-f24b): four frames at 06/12/18/24 — dawn-rose, clear blue, amber dusk, and a
 star field with the moon in frame — all visually distinct; logs carry the truth minutes per frame.
+
+F25 weather SHIPPED: deterministic per-day weather from biome + season + world day — RAIN (white
+streaks falling around the camera + a PhISM-flavoured rain loop: lowpassed shower bed under droplet
+ticks, forged with the honest metric "rain_loop: len=4.00s rms=0.042 centroid=1147Hz"), FOG (a
+grey-lavender haze that dims the sun and greys the sky), SNOW (drifting white flakes under a pale
+sky). Two proof-caught build truths shaped the design: URP fog shader variants STRIP from player
+builds (so the readable atmosphere lives in the sky colour + sun dimming via a FogFactor the
+SkyController consumes), and ParticleSystem renders NOTHING in players regardless of mode/material
+(so precipitation is a manual 130-cube pool on the star-dome's proven unlit sprite path, recycling
+through a 30×30m column that follows the camera). Day 1 of the proof world naturally rolled rain —
+the deterministic pick is exercised by play, and the proof driver can force any kind.
+Proof (Reports/proof-f25d): three visually distinct frames + "[Weather] day=N season=S biome=B →
+kind" lines + the rain-loop forge metric. Honest PARTIALs: music does not soften in rain yet;
+snow tints the air (haze + flakes), not the terrain splats.

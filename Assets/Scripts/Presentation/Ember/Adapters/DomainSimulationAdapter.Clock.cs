@@ -62,6 +62,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // after clock jumps (respawn +8h, travel days) and left bright skies at midnight.
             EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.MinutesOfDay =
                 (int)(_world.Time.TotalMinutes % EmberCrpg.Domain.Core.GameTime.MinutesPerDay);
+            // F25: the deterministic weather pick keys on the world day.
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.WorldDay =
+                (int)(_world.Time.TotalMinutes / EmberCrpg.Domain.Core.GameTime.MinutesPerDay) + 1;
 
             // F1/CARAVANS: how many caravans are AT the home site right now — the plaza trade cart shows
             // itself only while one is in town, so the daily CaravanSystem becomes watchable.

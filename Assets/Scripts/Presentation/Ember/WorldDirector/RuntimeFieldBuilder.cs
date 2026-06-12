@@ -18,6 +18,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         /// Defaults to 08:00, the WorldFactory start, so a pre-tick frame still looks like morning.</summary>
         public static int MinutesOfDay { get; set; } = 8 * 60;
 
+        /// <summary>F25: 1-based world day, published per tick — the deterministic weather pick keys on it.</summary>
+        public static int WorldDay { get; set; } = 1;
+
         public static int PlantCount { get; private set; }
 
         /// <summary>0 = seed, 1 = sprout, 2 = ripe (dominant stage among the home site's plants).</summary>

@@ -10,7 +10,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     /// </summary>
     public static class RuntimeAudioForge
     {
-        public static AudioClip Wind, Sting, Click, DoorCreak, Hit;
+        public static AudioClip Wind, Sting, Click, DoorCreak, Hit, Rain;
         // F11 footsteps v2: 4 pre-rendered VARIANTS per surface (each coloured by its own random
         // dip-cascade — the Crackdown 2 recipe); the director rotates them + the pool adds pitch jitter.
         public static AudioClip[] FootstepDirt, FootstepStone;
@@ -28,11 +28,42 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             DoorCreak = ForgeMetered("door_creak", RuntimeAudioSynth.RenderDoorCreak(0xC4EA7u));
             Hit = ForgeMetered("hit_impact", RuntimeAudioSynth.RenderHitImpact(0x1417u));
             Wind = Synth("forge_wind", 3.0f, (t, rng) => (rng() * 2f - 1f) * 0.16f, smooth: 24);
+            Rain = ForgeMetered("rain_loop", RenderRain(0xA17EBu)); // F25: hiss bed + droplet ticks
             Sting = Synth("forge_sting", 0.45f, (t, rng) =>
                 Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(660f, 110f, t) * t) * Mathf.Pow(1f - t, 2f) * 0.6f, smooth: 0);
             Click = Synth("forge_click", 0.05f, (t, rng) =>
                 Mathf.Sin(2f * Mathf.PI * 1320f * t) * Mathf.Pow(1f - t, 4f) * 0.5f, smooth: 0);
             Debug.Log("[Audio] forged v2 foley set (8 footsteps, creak, hit) + wind/sting/click.");
+        }
+
+        // F25: PhISM-flavoured rain — a lowpassed noise bed (the body of the shower) under sparse
+        // bright droplet ticks (short decaying sine pops). A 4s loop; the metric log is the DoD proof.
+        private static float[] RenderRain(uint seed)
+        {
+            int count = (int)(RuntimeAudioSynth.Rate * 4f);
+            var data = new float[count];
+            uint s = seed == 0 ? 1u : seed;
+            float Next() { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return (s & 0xFFFFFF) / (float)0x1000000; }
+
+            for (int i = 0; i < count; i++)
+                data[i] = (Next() * 2f - 1f) * 0.22f;
+            for (int pass = 0; pass < 6; pass++) // soften the noise into a shower bed
+                for (int i = 1; i < count; i++)
+                    data[i] = (data[i] + data[i - 1]) * 0.5f;
+
+            for (int drop = 0; drop < 260; drop++)
+            {
+                int at = (int)(Next() * (count - 300));
+                float freq = 2000f + Next() * 1400f;
+                float amp = (0.10f + Next() * 0.16f) * 0.45f;
+                for (int j = 0; j < 240; j++)
+                {
+                    float tt = j / 240f;
+                    data[at + j] += Mathf.Sin(2f * Mathf.PI * freq * (j / (float)RuntimeAudioSynth.Rate))
+                                    * amp * Mathf.Pow(1f - tt, 3f);
+                }
+            }
+            return data;
         }
 
         // F11-DoD: PNG proofs are silent — the honest audible evidence is numeric. Every forged clip
@@ -141,6 +172,27 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (self == null) return;
             int origin = 100 + (Mathf.RoundToInt(doorWorldPos.x) * 73856093 ^ Mathf.RoundToInt(doorWorldPos.z) * 19349663) % 1000;
             self.PlayAt(origin, RuntimeAudioForge.DoorCreak, 0.8f, priority: 2, doorWorldPos);
+        }
+
+        private AudioSource _rain;
+
+        /// <summary>F25: the rain hiss loop — on while it rains, off otherwise (lazy looping source).</summary>
+        public static void SetRainLoop(bool on)
+        {
+            RuntimeAudioForge.EnsureForged();
+            var rig = GameObject.Find("PlayerRig");
+            var self = rig != null ? rig.GetComponent<RuntimeAudioDirector>() : null;
+            if (self == null) return;
+            if (self._rain == null)
+            {
+                self._rain = self.gameObject.AddComponent<AudioSource>();
+                self._rain.loop = true;
+                self._rain.playOnAwake = false;
+                self._rain.clip = RuntimeAudioForge.Rain;
+                self._rain.volume = 0.55f;
+            }
+            if (on && !self._rain.isPlaying) { self._rain.Play(); Debug.Log("[Weather] rain loop ON."); }
+            else if (!on && self._rain.isPlaying) { self._rain.Stop(); Debug.Log("[Weather] rain loop OFF."); }
         }
 
         public static void PlayUiClick()
