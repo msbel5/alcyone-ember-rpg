@@ -232,10 +232,24 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   Eski koruma: chase 6.1m kapama, boss bağlama, loot satırı bestiary adlarıyla yeşil (0 BROKEN).
   DÜRÜST PARTIAL: silüetler bloklu-piksel (forge-ON SDXL sprite'ları F30+ kanıtında); kurt/hayalet
   ayrı kare almadı (trio karesi + spawn logları kapsıyor).
-- [ ] **F30 Ses v3**: biyom ambiyansı (kuş/rüzgâr/gece cırcır), yağmur/kar katmanı, savaş müziği
+- [x] **F30 Ses v3**: biyom ambiyansı (kuş/rüzgâr/gece cırcır), yağmur/kar katmanı, savaş müziği
   yoğunluk katmanı (şef odasında +perküsyon), 2 yeni zemin (kar/çakıl). TTS: piper varsa selamlama
   seslendir (yoksa dürüst PARTIAL kalır).
   **DoD:** audio-forge bölümü genişler (yeni klip metrikleri); kulak onayı kullanıcıdan.
+  **KANIT (lookaround logları):** YENİ KLİP METRİKLERİ — "biome_birds: len=6,00s rms=0,038
+  centroid=299Hz" + "biome_crickets: 673Hz" + footstep_snow_0..3 (636-856Hz, yumuşak crunch) +
+  footstep_gravel_0..3 (400-611Hz, çakıl takırtısı) + "boss_percussion: len=3,48s rms=0,092"
+  (138bpm kick+snare, 2 bar). CANLI DAVRANIŞ: "[Audio] biome layer=birds (hour=8/12/13)" ↔
+  "crickets (hour=23/0)" ↔ "none (indoors)" geçişleri; "[Music] rain hush ON (0.30->0.18)"/off
+  (F25 borcu kapandı — müzik yağmurda geri çekilir); "[Music] boss layer ON (+percussion)" →
+  Warden penceresi (BossActive aynası CombatScreen'den) → "off". Zemin seçimi 4'lü: delve slabları
+  (Corr/Chamber/Room) çakıl, iç mekân taş, kar havası kar, açık arazi toprak.
+  DÜRÜST PARTIAL: kulak onayı KULLANICIDAN bekleniyor (metrikler + log kanıt; ben dinleyemem);
+  "footsteps surface=" log'u gerçek yürüyüş ister (proof ışınlanır — klipler + eşleme kodu var,
+  yürüme kanıtı kullanıcı playtest'inde); TTS piper kurulu değil → seslendirme yok (dürüst eksik).
+
+> **v0.8 KAPANIŞ KANITI:** SHIPCHECK VERDICT: PASS (9 sections, 0 exceptions) — perf avg=12,7ms
+> worst=440ms (bütçe 16). Tag: v0.8.0-spell-and-beast.
 
 ## v0.9 "CİLA + İSKELET HİKÂYE" — v1.0 provası
 
@@ -271,4 +285,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F30 <<<
+>>> CURRENT: F31 <<<

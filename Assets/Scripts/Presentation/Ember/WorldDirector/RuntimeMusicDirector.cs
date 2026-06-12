@@ -6,6 +6,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     public static class RuntimeBattleMirror
     {
         public static bool Active { get; set; }
+        // F30: true while the bound enemy is the delve's Warden — the BATTLE slot gains percussion.
+        public static bool BossActive { get; set; }
     }
 
     /// <summary>
@@ -94,6 +96,26 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 2f;
 
+            // F30 RAIN HUSH (the F25 honest debt): music sits back while it rains — the shower bed
+            // owns the foreground. Volume only; the slot machinery is untouched.
+            bool raining = RuntimeWeatherMirror.Raining;
+            if (raining != _rainHushOn)
+            {
+                _rainHushOn = raining;
+                _source.volume = raining ? 0.18f : 0.30f;
+                Debug.Log($"[Music] rain hush {(raining ? "ON (0.30->0.18)" : "off (0.18->0.30)")}.");
+            }
+
+            // F30 BOSS LAYER: the Warden fight stacks a driving percussion loop over the BATTLE bed.
+            bool bossLayer = RuntimeBattleMirror.Active && RuntimeBattleMirror.BossActive;
+            if (bossLayer != _bossLayerOn)
+            {
+                _bossLayerOn = bossLayer;
+                EnsureBossPercSource();
+                if (bossLayer) _bossPerc.Play(); else _bossPerc.Stop();
+                Debug.Log($"[Music] boss layer {(bossLayer ? "ON (+percussion)" : "off")}.");
+            }
+
             int hour = RuntimeFieldMirror.HourOfDay;
             int slot = RuntimeBattleMirror.Active ? 2 : (hour >= 22 || hour < 6 ? 1 : 0);
             int variant = (hour / 24) % 2; // effectively day-based once HourOfDay carries day info; v1: variant by parity of day-hour bucket
@@ -103,6 +125,28 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             _source.clip = _slots[slot, variant];
             _source.Play();
             Debug.Log($"[Music] slot={(slot == 0 ? "DAY" : slot == 1 ? "NIGHT" : "BATTLE")} variant={variant} (hour={hour}).");
+        }
+
+        private bool _rainHushOn;
+        private bool _bossLayerOn;
+        private AudioSource _bossPerc;
+        private static AudioClip s_bossPercClip;
+
+        // F30: the boss percussion loop — forged once per process (same cache rule as the slots).
+        private void EnsureBossPercSource()
+        {
+            if (_bossPerc != null) return;
+            if (s_bossPercClip == null)
+            {
+                var data = RuntimeAudioSynth.RenderBossPercussion(0xB055u);
+                Debug.Log($"[AudioForge] boss_percussion: len={data.Length / (float)RuntimeAudioSynth.Rate:0.00}s " +
+                          $"rms={RuntimeAudioSynth.Rms(data):0.000} centroid={RuntimeAudioSynth.CentroidHz(data):0}Hz");
+                s_bossPercClip = RuntimeAudioSynth.ToClip("boss_percussion", data);
+            }
+            _bossPerc = gameObject.AddComponent<AudioSource>();
+            _bossPerc.clip = s_bossPercClip;
+            _bossPerc.loop = true;
+            _bossPerc.volume = 0.22f;
         }
 
         // ── F11 MUSIC v2: the proven minimal "sounds like music" architecture (Genesis Noir two-layer

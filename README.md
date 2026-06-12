@@ -300,7 +300,7 @@ inside" + three interior frames tinted by their sign light. EditMode: sleep gold
 temple heal tests. Honest PARTIALs: the host is seated by MoveTo (the daily schedule may walk them
 out over hours — persistent re-homing is v2); interior frame composition favors wall corners (F33).
 
-### v0.8 "Büyü + Bestiary" — in progress
+### v0.8 "Büyü + Bestiary" — SHIPPED (shipcheck 9/9 PASS, perf 12.7ms avg; tag v0.8.0-spell-and-beast)
 
 F28 spell school SHIPPED: the school is EIGHT — three damage types (Flame Bolt / Frost Lance /
 Spark Arc), a shield (Ember Ward), a heal (Mending Touch), a light (Lantern Glow), a haste
@@ -341,3 +341,19 @@ with the forge on the library sprite wins. EditMode: catalog completeness, rotat
 apex picks, name round-trips (fallback 1470/1470). Honest PARTIALs: silhouettes are blocky pixel
 stand-ins until a forge-on pass bakes real sprites; wolf/ghost appear via logs + trio frame, no
 solo frames.
+
+F30 audio v3 SHIPPED: the world found its background voice. A biome layer rides over the wind --
+sparse bright bird chirps through the day, 16Hz-gated cricket pulse trains at night, silence under
+a roof ("[Audio] biome layer=birds/crickets/none" transitions logged). Music finally respects the
+rain (the F25 debt): the slot bed ducks 0.30->0.18 while the shower plays and returns when it
+clears. The Warden fight stacks a forged 138bpm percussion loop (kick drop 95->55Hz on quarters,
+noise snare off-beats) over the BATTLE bed -- "[Music] boss layer ON (+percussion)" proven in the
+boss window. Two new grounds join dirt and stone: snow (soft lowpassed crunch, no modal ring) and
+gravel (4-6 jittered micro stone ticks), picked by a 4-way ground rule (delve slabs = gravel,
+interiors = stone, snow sky = snow, open terrain = dirt). All ten new clips carry forge metrics
+in the log. Honest PARTIALs: EAR approval awaits the user (metrics and logs are the machine-side
+proof); the surface-change log needs real walking (proofs teleport); piper TTS is not installed,
+so greetings stay text-only.
+
+v0.8 CLOSURE: SHIPCHECK VERDICT PASS -- 9 sections, 0 exceptions, perf avg 12.7ms / worst 440ms
+(budget 16ms). Tagged v0.8.0-spell-and-beast.

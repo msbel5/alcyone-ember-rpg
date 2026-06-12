@@ -1079,6 +1079,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                             if (!string.IsNullOrEmpty(wardenName))
                             {
                                 Debug.Log($"[Proof] F18 boss bound: {wardenName}.");
+                                // F30: hold the bound-boss window open across the music director's
+                                // 2s poll — the BATTLE slot + "+percussion" boss layer must LOG.
+                                yield return new WaitForSecondsRealtime(2.6f);
                                 Debug.Log(nightAdapter.ProofFinishBoundEncounter());
                                 yield return null;
                                 delveUi?.ProofCloseScreens(); // boss XP may cross a level — clear the auto-modal

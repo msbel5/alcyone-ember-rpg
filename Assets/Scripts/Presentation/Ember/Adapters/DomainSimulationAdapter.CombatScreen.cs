@@ -17,6 +17,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // F8/music: the BATTLE slot follows the live world encounter.
             EmberCrpg.Presentation.Ember.WorldDirector.RuntimeBattleMirror.Active =
                 worldEnemy != null && worldEnemy.IsAlive;
+            // F30: the BOSS fight carries extra weight — the music director lays a percussion
+            // loop over the BATTLE slot while the bound enemy is the delve's Warden.
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeBattleMirror.BossActive =
+                worldEnemy != null && worldEnemy.IsAlive && worldEnemy.Name != null
+                && worldEnemy.Name.StartsWith("Warden of", System.StringComparison.Ordinal);
             var enemy = worldEnemy ?? _world.Actors?.FirstByRole(ActorRole.Enemy);
             bool hasEncounter = player != null
                 && enemy != null

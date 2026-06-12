@@ -215,6 +215,135 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return data;
         }
 
+        // ── F30 SES v3: biome ambience layers + two new grounds + the boss percussion layer ──
+
+        /// <summary>Day biome layer: sparse bright chirp pairs over silence — a 6s loop. Chirps are
+        /// short downward FM sweeps (2.4-3.6kHz) deterministically scattered through the window.</summary>
+        public static float[] RenderBirdChirps(uint seed)
+        {
+            const float seconds = 6f;
+            int count = (int)(seconds * Rate);
+            var data = new float[count];
+            var rng = Rng(seed);
+            for (int c = 0; c < 9; c++)
+            {
+                float start = rng() * (seconds - 0.2f);
+                float f0 = 2400f + rng() * 1200f;
+                float dur = 0.06f + rng() * 0.07f;
+                int s0 = (int)(start * Rate), n = (int)(dur * Rate);
+                for (int i = 0; i < n && s0 + i < count; i++)
+                {
+                    float t = i / (float)Rate;
+                    float env = Mathf.Sin(Mathf.PI * i / (float)n); // smooth in-out
+                    float f = f0 * (1f - 0.25f * (i / (float)n));   // slight down-chirp
+                    data[s0 + i] += Mathf.Sin(2f * Mathf.PI * f * t) * env * 0.5f;
+                }
+            }
+            Normalize(data, 0.35f);
+            return data;
+        }
+
+        /// <summary>Night biome layer: cricket pulse trains — 4.4kHz ticks gated at ~16Hz inside
+        /// chirp windows with silence between. A 6s loop.</summary>
+        public static float[] RenderCrickets(uint seed)
+        {
+            const float seconds = 6f;
+            int count = (int)(seconds * Rate);
+            var data = new float[count];
+            var rng = Rng(seed);
+            for (int w = 0; w < 6; w++)
+            {
+                float start = rng() * (seconds - 0.8f);
+                float dur = 0.5f + rng() * 0.3f;
+                int s0 = (int)(start * Rate), n = (int)(dur * Rate);
+                for (int i = 0; i < n && s0 + i < count; i++)
+                {
+                    float t = i / (float)Rate;
+                    float gate = Mathf.Sin(2f * Mathf.PI * 16f * t) > 0.6f ? 1f : 0f; // 16Hz pulse train
+                    data[s0 + i] += Mathf.Sin(2f * Mathf.PI * 4400f * t) * gate * 0.30f
+                        * Mathf.Sin(Mathf.PI * i / (float)n);
+                }
+            }
+            Normalize(data, 0.3f);
+            return data;
+        }
+
+        /// <summary>Snow ground: a soft compressing crunch — lowpassed noise, squashy two-stage
+        /// decay, no modal ring (powder, not stone).</summary>
+        public static float[] RenderFootstepSnow(uint seed)
+        {
+            const float seconds = 0.18f;
+            int count = (int)(seconds * Rate);
+            var data = new float[count];
+            var rng = Rng(seed);
+            var lp = new Svf(); lp.Set(700f + rng() * 200f, 0.9f);
+            for (int i = 0; i < count; i++)
+            {
+                float t = i / (float)Rate;
+                float env = Mathf.Exp(-t * 26f) + 0.45f * Mathf.Exp(-(t - 0.07f) * (t - 0.07f) * 2200f);
+                lp.Tick((rng() * 2f - 1f) * env);
+                data[i] = lp.Lp * 1.2f;
+            }
+            Normalize(data, 0.5f);
+            return data;
+        }
+
+        /// <summary>Gravel ground: a rattle of 4-6 micro stone ticks jittered through the step.</summary>
+        public static float[] RenderFootstepGravel(uint seed)
+        {
+            const float seconds = 0.18f;
+            int count = (int)(seconds * Rate);
+            var data = new float[count];
+            var rng = Rng(seed);
+            int ticks = 4 + (int)(rng() * 3f);
+            for (int k = 0; k < ticks; k++)
+            {
+                float at = rng() * 0.12f;
+                float f = 900f + rng() * 1400f;
+                int s0 = (int)(at * Rate);
+                for (int i = 0; i < 260 && s0 + i < count; i++)
+                {
+                    float t = i / (float)Rate;
+                    data[s0 + i] += Mathf.Sin(2f * Mathf.PI * f * t) * Mathf.Exp(-t * 240f) * (0.5f + rng() * 0.1f);
+                }
+            }
+            Normalize(data, 0.55f);
+            return data;
+        }
+
+        /// <summary>F30 boss layer: a 2-bar driving percussion loop (~138bpm) — kick thump (sine
+        /// drop 95→55Hz) on the quarters, noise snare on the off-beats. Loops over the BATTLE bed.</summary>
+        public static float[] RenderBossPercussion(uint seed)
+        {
+            const float bpm = 138f;
+            float beat = 60f / bpm;
+            float seconds = beat * 8f; // 2 bars of 4
+            int count = (int)(seconds * Rate);
+            var data = new float[count];
+            var rng = Rng(seed);
+            for (int b = 0; b < 8; b++)
+            {
+                int s0 = (int)(b * beat * Rate);
+                for (int i = 0; i < (int)(0.12f * Rate) && s0 + i < count; i++)
+                {
+                    float t = i / (float)Rate;
+                    float f = Mathf.Lerp(95f, 55f, t / 0.12f);
+                    data[s0 + i] += Mathf.Sin(2f * Mathf.PI * f * t) * Mathf.Exp(-t * 30f) * 0.9f;
+                }
+                if ((b & 1) == 1)
+                {
+                    int sn = s0 + (int)(beat * 0.5f * Rate);
+                    for (int i = 0; i < (int)(0.07f * Rate) && sn + i < count; i++)
+                    {
+                        float t = i / (float)Rate;
+                        data[sn + i] += (rng() * 2f - 1f) * Mathf.Exp(-t * 60f) * 0.5f;
+                    }
+                }
+            }
+            Normalize(data, 0.6f);
+            return data;
+        }
+
         // Crackdown 2 per-variant colour: ~10 dip (cut) filters at random log-spaced centres. Rendered
         // into each VARIANT offline; runtime rotation + pitch jitter completes the per-step variation.
         private static void ApplyDipCascade(float[] data, uint seed)

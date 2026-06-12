@@ -11,6 +11,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     public static class RuntimeAudioForge
     {
         public static AudioClip Wind, Sting, Click, DoorCreak, Hit, Rain;
+        // F30 SES v3: biome ambience layers (day birds / night crickets) + two new grounds.
+        public static AudioClip BirdLoop, CricketLoop;
+        public static AudioClip[] FootstepSnow, FootstepGravel;
         // F11 footsteps v2: 4 pre-rendered VARIANTS per surface (each coloured by its own random
         // dip-cascade — the Crackdown 2 recipe); the director rotates them + the pool adds pitch jitter.
         public static AudioClip[] FootstepDirt, FootstepStone;
@@ -30,11 +33,18 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (FootstepDirt != null) return;
             FootstepDirt = new AudioClip[4];
             FootstepStone = new AudioClip[4];
+            FootstepSnow = new AudioClip[4];
+            FootstepGravel = new AudioClip[4];
             for (uint k = 0; k < 4; k++)
             {
                 FootstepDirt[k] = ForgeMetered("footstep_dirt_" + k, RuntimeAudioSynth.RenderFootstepDirt(0xD117u + k * 7919u));
                 FootstepStone[k] = ForgeMetered("footstep_stone_" + k, RuntimeAudioSynth.RenderFootstepStone(0x5709u + k * 7919u));
+                // F30: two new grounds — snow crunch (powder, no ring) and gravel rattle.
+                FootstepSnow[k] = ForgeMetered("footstep_snow_" + k, RuntimeAudioSynth.RenderFootstepSnow(0x5A0Bu + k * 7919u));
+                FootstepGravel[k] = ForgeMetered("footstep_gravel_" + k, RuntimeAudioSynth.RenderFootstepGravel(0x96A5u + k * 7919u));
             }
+            BirdLoop = ForgeMetered("biome_birds", RuntimeAudioSynth.RenderBirdChirps(0xB19Du));
+            CricketLoop = ForgeMetered("biome_crickets", RuntimeAudioSynth.RenderCrickets(0xC91Cu));
             DoorCreak = ForgeMetered("door_creak", RuntimeAudioSynth.RenderDoorCreak(0xC4EA7u));
             Hit = ForgeMetered("hit_impact", RuntimeAudioSynth.RenderHitImpact(0x1417u));
             _hitVariants = new System.Collections.Generic.Dictionary<string, AudioClip>
@@ -182,6 +192,32 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return false;
         }
 
+        // F30: FOUR grounds — the delve's slabs ("CorrFloor"/"ChamberFloor"/"RoomFloor") rattle as
+        // GRAVEL, other built floors ring the stone bank, open terrain crunches as SNOW while the
+        // sky says so, and everything else stays dirt. Logged once per change.
+        private string _groundKind = "dirt";
+        private string GroundKind()
+        {
+            string kind = "dirt";
+            if (Physics.Raycast(transform.position + Vector3.up * 0.3f, Vector3.down, out var hitInfo, 1.8f)
+                && hitInfo.collider != null && hitInfo.collider.name.Contains("Floor"))
+            {
+                var n = hitInfo.collider.name;
+                kind = (n.StartsWith("Corr") || n.StartsWith("Chamber") || n.StartsWith("Room"))
+                    ? "gravel" : "stone";
+            }
+            else if (RuntimeWeatherMirror.Kind == "snow")
+            {
+                kind = "snow";
+            }
+            if (kind != _groundKind)
+            {
+                _groundKind = kind;
+                Debug.Log($"[Audio] footsteps surface={kind}");
+            }
+            return kind;
+        }
+
         /// <summary>F11 door v2 ("kapı sesi tiz zil gibiydi" root fix): doors creak — the EKS stick-slip
         /// clip on the channel pool with the door as origin (dedup: a re-trigger replaces, never stacks).
         /// The old wiring literally played the 1320Hz UI click.</summary>
@@ -241,12 +277,45 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             _ambience.loop = true;
             _ambience.volume = 0.35f;
             _ambience.Play();
+            // F30: the biome layer rides OVER the wind — birds by day, crickets by night,
+            // silent under a roof (built floor = interior/delve).
+            _biome = gameObject.AddComponent<AudioSource>();
+            _biome.loop = true;
+            _biome.volume = 0.12f;
             _lastPos = transform.position;
             Debug.Log("[Audio] rig attached — ambience playing, footsteps armed.");
         }
 
+        private AudioSource _biome;
+        private string _biomeLayer = "none";
+        private float _nextBiomePoll;
+
+        // F30: pick the biome layer from the world clock + the roof over your head.
+        private void TickBiomeLayer()
+        {
+            if (Time.unscaledTime < _nextBiomePoll) return;
+            _nextBiomePoll = Time.unscaledTime + 2f;
+            int hour = RuntimeFieldMirror.HourOfDay;
+            bool indoors = IsOnBuiltFloor();
+            string layer = indoors ? "none" : (hour >= 20 || hour < 6 ? "crickets" : "birds");
+            if (layer == _biomeLayer) return;
+            _biomeLayer = layer;
+            if (layer == "none")
+            {
+                _biome.Stop();
+            }
+            else
+            {
+                _biome.clip = layer == "birds" ? RuntimeAudioForge.BirdLoop : RuntimeAudioForge.CricketLoop;
+                _biome.Play();
+            }
+            Debug.Log($"[Audio] biome layer={layer} (hour={hour}, indoors={indoors}).");
+        }
+
         private void Update()
         {
+            TickBiomeLayer(); // F30: birds by day, crickets by night, silence under a roof
+
             // Footsteps from REAL horizontal motion (grounded), not key state.
             var pos = transform.position;
             var delta = pos - _lastPos;
@@ -259,9 +328,13 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 if (_stepClock >= 0.45f)
                 {
                     _stepClock = 0f;
-                    // F11 surface pick: a downward ray names the ground — built floors (interiors,
-                    // dungeon corridor/chamber) ring the MODAL stone bank, open terrain the PhISM dirt.
-                    var pool = IsOnBuiltFloor() ? RuntimeAudioForge.FootstepStone : RuntimeAudioForge.FootstepDirt;
+                    // F11 surface pick → F30 four grounds: the ray names the slab (delve = gravel,
+                    // interior = stone) and the sky names the powder (snow weather) — else dirt.
+                    var ground = GroundKind();
+                    var pool = ground == "gravel" ? RuntimeAudioForge.FootstepGravel
+                        : ground == "stone" ? RuntimeAudioForge.FootstepStone
+                        : ground == "snow" ? RuntimeAudioForge.FootstepSnow
+                        : RuntimeAudioForge.FootstepDirt;
                     _stepVariant = (_stepVariant + 1) % pool.Length;
                     PlayAt(originId: 1, pool[_stepVariant], 0.8f, priority: 1, transform.position);
                 }
