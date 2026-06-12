@@ -540,6 +540,8 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             // F21-DoD: a generated FETCH contract closed end to end — accept, buy the cargo through
             // the live economy, turn in. Three [QuestGen] lines + one LOOP-PROOF summary.
             Debug.Log(adapter.ProofRunGeneratedQuestLeg());
+            // F26-DoD: the tavern sleep flow — hp refilled, 5 gold paid, +8 hours, one honest line.
+            Debug.Log(adapter.ProofTavernSleepLeg());
             // F15-DoD: lose to an outlaw AFK, awaken at the plaza — the toll line + a LIVE HUD frame
             // (full vitals + the "You awaken..." event line) prove the loop has no dead-end.
             var deathAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
@@ -758,6 +760,38 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 {
                     fpsW.enabled = true;
                     fpsW.SyncYaw(rig.transform.eulerAngles.y);
+                }
+            }
+
+            // F26-DoD: three interior frames — tavern (host + hearth), temple, shop (sign-lit shells).
+            if (rig != null && nightAdapter != null)
+            {
+                var fpsI = rig.GetComponent<EmberCrpg.Presentation.Ember.Camera.EmberFirstPersonController>();
+                if (fpsI != null) fpsI.enabled = false;
+                var interiorSpots = new[]
+                {
+                    EmberCrpg.Presentation.Ember.WorldDirector.RuntimeInteriorInfo.TavernWorld,
+                    EmberCrpg.Presentation.Ember.WorldDirector.RuntimeInteriorInfo.TempleWorld,
+                    EmberCrpg.Presentation.Ember.WorldDirector.RuntimeInteriorInfo.ShopWorld,
+                };
+                string[] interiorNames = { "look_tavern", "look_temple", "look_shop" };
+                for (int s = 0; s < 3; s++)
+                {
+                    if (interiorSpots[s] == Vector3.zero) { Debug.Log($"[Proof] F26 {interiorNames[s]} skipped — no anchor."); continue; }
+                    // Small shells: a tight offset from the centre stays clear of walls/furniture;
+                    // the diagonal aim crosses the room (hearth corner + any seated host).
+                    rig.transform.position = interiorSpots[s] + new Vector3(0.85f, 1.15f, 0.85f);
+                    rig.transform.rotation = Quaternion.LookRotation(
+                        interiorSpots[s] + new Vector3(-1.5f, 0.7f, -1.5f) - rig.transform.position);
+                    yield return new WaitForSecondsRealtime(0.7f);
+                    yield return new WaitForEndOfFrame();
+                    CaptureToPng(Path.Combine(_outputDir, interiorNames[s] + ".png"));
+                    yield return new WaitForSecondsRealtime(0.4f); // async capture separation
+                }
+                if (fpsI != null)
+                {
+                    fpsI.enabled = true;
+                    fpsI.SyncYaw(rig.transform.eulerAngles.y);
                 }
             }
 

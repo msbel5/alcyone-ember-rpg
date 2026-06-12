@@ -129,6 +129,44 @@ namespace EmberCrpg.Tests.EditMode.Presentation
                 "v0.5 worlds guarantee three delves where the map affords them");
         }
 
+        // F26: the tavern sells sleep — 5 gold buys a full refill and 8 hours; an empty purse buys
+        // nothing. The temple mends health for 8 gold.
+        [Test]
+        public void Tavern_SleepRefillsVitals_ForFiveGold_AndEightHours()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "wanderer", "crossroads", null);
+            var player = world.Actors.FirstByRole(ActorRole.Player);
+            adapter.TakePlayerDamage(15);
+            int goldBefore = world.PlayerGold;
+            long minutesBefore = world.Time.TotalMinutes;
+
+            StringAssert.Contains("sleep 8 hours", adapter.TrySleepAtTavern());
+            Assert.That(world.PlayerGold, Is.EqualTo(goldBefore - 5));
+            Assert.That(player.Vitals.Health.Current, Is.EqualTo(player.Vitals.Health.Max));
+            Assert.That((world.Time.TotalMinutes - minutesBefore) / 60, Is.InRange(8, 9));
+
+            world.PlayerGold = 3;
+            StringAssert.Contains("purse is too light", adapter.TrySleepAtTavern());
+        }
+
+        [Test]
+        public void Temple_HealsHealth_ForEightGold()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "wanderer", "crossroads", null);
+            var player = world.Actors.FirstByRole(ActorRole.Player);
+
+            StringAssert.Contains("already whole", adapter.TryTempleHeal());
+            adapter.TakePlayerDamage(15);
+            int goldBefore = world.PlayerGold;
+            StringAssert.Contains("mend your wounds", adapter.TryTempleHeal());
+            Assert.That(world.PlayerGold, Is.EqualTo(goldBefore - 8));
+            Assert.That(player.Vitals.Health.Current, Is.EqualTo(player.Vitals.Health.Max));
+        }
+
         // F24: the sky's time source is world-time TRUTH — after a clock JUMP the per-tick mirror
         // must agree with world.Time exactly (the tick re-derivation drifted and lit midnight skies).
         [Test]

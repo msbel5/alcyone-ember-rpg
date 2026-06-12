@@ -161,10 +161,20 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   manuel 130-küp havuzu (Sprites/Default; kamerayı takip eden 30×30 kolon, deterministik dağılım).
   DÜRÜST PARTIAL: müzik yağmur varyantı bağlanmadı (slotlar hava-agnostik); kar terrain tint yerine
   haze + taneler (splat repaint v2).
-- [ ] **F26 İşlevsel iç mekânlar**: taverna (uyu→saat atla+HP yenile, 5 altın), tapınak (şifa),
+- [x] **F26 İşlevsel iç mekânlar**: taverna (uyu→saat atla+HP yenile, 5 altın), tapınak (şifa),
   dükkân (trade ekranı tezgâhtan açılır). Kapıdan girince interior realize (mevcut shell furnish
   genişler), NPC içeride masada.
   **DoD:** taverna uyuma akışı looptest'te; 3 iç mekân karesi.
+  **KANIT (Reports/proof-f26a+b):** looptest "LOOP-PROOF tavern-sleep: hp 39->62/62, purse 349->344,
+  +8h" (refill + 5 altın + saat-saat ilerleme — respawn'ın cadence-güvenli yolu) · "[Tavern] host
+  seated inside: Skevouth Thyashilm" (Innkeeper/Merchant içeri oturtulur) · 3 iç kare (rol-işaret
+  ışığı tonlarıyla: amber taverna / beyaz tapınak / yeşil dükkân). İlk 3 bina işlevsel: parlayan
+  işaret küpü + ışık; E-tetikli görünümler (chest-view ailesi): TrySleepAtTavern (5g) /
+  TryTempleHeal (8g, yalnız HP) / dükkân tezgâhı ScreenRequestSignal ile trade ekranını açar
+  (tek-bayrak-tek-tüketici). EditMode: uyku (altın kapısı+refill+8h) + şifa testleri.
+  DÜRÜST PARTIAL: host pinleme MoveTo'yla (takvim saatler içinde dışarı yürütebilir — kalıcı
+  re-home ActorStore replace v2); iç kare kompozisyonu duvar-köşe ağırlıklı (F33 çerçeve cilası);
+  "kapıdan girince realize" mevcut furnish'in üstünde (ayrı interior scene yok — şimdilik tasarım).
 - [ ] **F27 NPC ihtiyaç koşuları**: işe gidiş/eve dönüş zaten var; öğlen taverna yemeği + work-pose
   ikonu (çekiç/çapa billboard üstü mini quad) eklenir.
   **DoD:** öğlen tavernada ≥2 NPC karesi; pose ikonları karede.
@@ -216,4 +226,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F26 <<<
+>>> CURRENT: F27 <<<

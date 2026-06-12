@@ -280,3 +280,13 @@ the deterministic pick is exercised by play, and the proof driver can force any 
 Proof (Reports/proof-f25d): three visually distinct frames + "[Weather] day=N season=S biome=B →
 kind" lines + the rain-loop forge metric. Honest PARTIALs: music does not soften in rain yet;
 snow tints the air (haze + flakes), not the terrain splats.
+
+F26 functional interiors SHIPPED: the first three shells of every settlement now WORK. The TAVERN
+(amber sign-glow) sells sleep — E inside, 5 gold, vitals refill and the clock walks 8 hours forward
+hour-by-hour; the settlement's innkeeper (or a merchant) is seated inside. The TEMPLE (white glow)
+mends your health for 8 gold. The SHOP (green glow) opens the live trade screen from its counter
+(a one-flag screen-request signal to the UI). Each role reads from the street by its glowing sign.
+Proof: looptest "LOOP-PROOF tavern-sleep: hp 39->62/62, purse 349->344, +8h" + "[Tavern] host seated
+inside" + three interior frames tinted by their sign light. EditMode: sleep gold-gate/refill/+8h and
+temple heal tests. Honest PARTIALs: the host is seated by MoveTo (the daily schedule may walk them
+out over hours — persistent re-homing is v2); interior frame composition favors wall corners (F33).

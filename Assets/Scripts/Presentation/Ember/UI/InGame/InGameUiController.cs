@@ -209,6 +209,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 // the pursuit is VISIBLE at full speed (views otherwise jump only on the tick cadence).
                 if (_host is EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost chaseHost)
                     chaseHost.ProjectWorldViewsNow();
+                // F26: world props (the shop counter) can request a screen — one flag, one consumer.
+                var requestedScreen = EmberCrpg.Presentation.Ember.WorldDirector.ScreenRequestSignal.Consume();
+                if (!string.IsNullOrEmpty(requestedScreen))
+                    OpenScreen(requestedScreen);
             }
 
             // F13 live-encounter pump: the combat read settles spoils + publishes the battle mirror, the

@@ -536,6 +536,94 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return names;
         }
 
+        /// <summary>F26 TAVERN: sleep 8 hours for 5 gold — vitals refill, the clock walks hour-by-hour
+        /// (the same cadence-safe advance the respawn uses).</summary>
+        public string TrySleepAtTavern()
+        {
+            var player = _world?.Actors?.FirstByRole(ActorRole.Player);
+            if (player == null || !player.IsAlive) return "No one to put to bed.";
+            if (_world.PlayerGold < 5)
+            {
+                _lastCombatLine = "A bed costs 5 gold — your purse is too light.";
+                return _lastCombatLine;
+            }
+            _world.PlayerGold -= 5;
+            player.ApplyVitals(new EmberCrpg.Domain.Actors.ActorVitals(
+                player.Vitals.Health.Refill(), player.Vitals.Fatigue.Refill(), player.Vitals.Mana.Refill()));
+            ProofAdvanceHours(8);
+            _lastCombatLine = $"You sleep 8 hours at the tavern — vitals restored (-5g, purse {_world.PlayerGold}).";
+            UnityEngine.Debug.Log("[Tavern] " + _lastCombatLine);
+            return _lastCombatLine;
+        }
+
+        /// <summary>F26 TEMPLE: the clergy mend wounds for 8 gold — health only; rest is the tavern's trade.</summary>
+        public string TryTempleHeal()
+        {
+            var player = _world?.Actors?.FirstByRole(ActorRole.Player);
+            if (player == null || !player.IsAlive) return "No one to heal.";
+            if (player.Vitals.Health.Current >= player.Vitals.Health.Max)
+            {
+                _lastCombatLine = "You are already whole.";
+                return _lastCombatLine;
+            }
+            if (_world.PlayerGold < 8)
+            {
+                _lastCombatLine = "The temple asks 8 gold for its blessing.";
+                return _lastCombatLine;
+            }
+            _world.PlayerGold -= 8;
+            player.ApplyVitals(new EmberCrpg.Domain.Actors.ActorVitals(
+                player.Vitals.Health.Refill(), player.Vitals.Fatigue, player.Vitals.Mana));
+            _lastCombatLine = $"The clergy mend your wounds (-8g, purse {_world.PlayerGold}).";
+            UnityEngine.Debug.Log("[Temple] " + _lastCombatLine);
+            return _lastCombatLine;
+        }
+
+        /// <summary>F26: seat the settlement's Innkeeper (else a Merchant) inside the tavern. MoveTo
+        /// only — the daily schedule may walk them out over hours (persistent re-homing is v2).</summary>
+        public string PinHostInsideTavern(UnityEngine.Vector3 tavernWorld)
+        {
+            var here = CurrentSettlementOrStart;
+            if (_world?.NpcSeeds == null || _world.Actors == null) return "no world";
+            ActorRecord host = null;
+            for (int pass = 0; pass < 2 && host == null; pass++)
+            {
+                var wanted = pass == 0
+                    ? EmberCrpg.Domain.Worldgen.NpcRole.Innkeeper
+                    : EmberCrpg.Domain.Worldgen.NpcRole.Merchant;
+                for (int i = 0; i < _world.NpcSeeds.Count; i++)
+                {
+                    var seed = _world.NpcSeeds[i];
+                    if (seed == null || seed.Role != wanted || !seed.Home.Equals(here)) continue;
+                    var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
+                    if (_world.Actors.TryGet(actorId, out var actor) && actor != null && actor.IsAlive)
+                    { host = actor; break; }
+                }
+            }
+            if (host == null) return "no host NPC here";
+            var origin = BillboardOrigin();
+            host.MoveTo(new GridPosition(
+                origin.X + UnityEngine.Mathf.RoundToInt(tavernWorld.x),
+                origin.Y + UnityEngine.Mathf.RoundToInt(tavernWorld.z)));
+            UnityEngine.Debug.Log($"[Tavern] host seated inside: {host.Name}.");
+            return host.Name;
+        }
+
+        /// <summary>F26-DoD proof: the tavern sleep flow as one honest transcript line.</summary>
+        public string ProofTavernSleepLeg()
+        {
+            var player = _world?.Actors?.FirstByRole(ActorRole.Player);
+            if (player == null) return "LOOP-PROOF: no player for the tavern leg.";
+            TakePlayerDamage(12); // arrive tired and hurt so the refill is observable
+            int goldBefore = _world.PlayerGold;
+            int hpBefore = player.Vitals.Health.Current;
+            long minutesBefore = _world.Time.TotalMinutes;
+            string line = TrySleepAtTavern();
+            long hoursPassed = (_world.Time.TotalMinutes - minutesBefore) / 60;
+            return $"LOOP-PROOF tavern-sleep: hp {hpBefore}->{player.Vitals.Health.Current}/{player.Vitals.Health.Max}, " +
+                   $"purse {goldBefore}->{_world.PlayerGold}, +{hoursPassed}h — {line}";
+        }
+
         /// <summary>F23-DoD proof: commit a daylight crime — an AIMED strike at the nearest living
         /// CIVILIAN (never an enemy or the watch itself) — then report the bounty and the nearest
         /// guard so the driver can watch the watch close in.</summary>

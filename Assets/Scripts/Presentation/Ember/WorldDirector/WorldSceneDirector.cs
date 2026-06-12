@@ -77,8 +77,24 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             streamerGo.transform.SetParent(root.transform, worldPositionStays: false);
             streamerGo.AddComponent<TerrainStreamer>().Initialize(seed, homeTile.Biome, geoSampler);
 
+            // F26: the first three shells become FUNCTIONAL — tavern (sleep), temple (heal),
+            // shop (trade counter). A glowing sign cube keys each from the street.
+            var functionalWorld = new Vector3[3];
             for (int i = 0; i < layout.Buildings.Count; i++)
-                RuntimeBuildingBuilder.Build(root.transform, layout.Buildings[i]);
+            {
+                var building = RuntimeBuildingBuilder.Build(root.transform, layout.Buildings[i]);
+                if (building == null || i >= 3) continue;
+                functionalWorld[i] = building.transform.position;
+                AttachFunctionalRole(building, i);
+            }
+            if (layout.Buildings.Count >= 3)
+            {
+                RuntimeInteriorInfo.Record(functionalWorld[0], functionalWorld[1], functionalWorld[2]);
+                var hostAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                    as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+                hostAdapter?.PinHostInsideTavern(functionalWorld[0]);
+                Debug.Log("[WorldDirector] functional interiors: tavern/temple/shop on buildings 0/1/2.");
+            }
             Debug.Log($"[WorldDirector] {layout.Buildings.Count} buildings built");
 
             // MINES (content phase): the planet's ore layer reaches the ground — a rich IronOre/Coal tile
@@ -105,6 +121,32 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 int plots = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(pop) / 9f), 2, 12);
                 RuntimeFieldBuilder.BuildBelt(root.transform, layout.GroundRadius + 10f, (seed % 360u) + 137f, plots);
                 Debug.Log($"[WorldDirector] fields={plots} plots for pop={pop} ({kind}) — farm belt at the town edge.");
+            }
+
+            // F26: a glowing sign cube above the shell keys the role from the street; the matching
+            // trigger view (E inside, chest-view family) does the actual work.
+            static void AttachFunctionalRole(GameObject building, int roleIndex)
+            {
+                var signColor = roleIndex == 0 ? new Color(1.0f, 0.72f, 0.25f)   // tavern amber
+                    : roleIndex == 1 ? new Color(0.92f, 0.94f, 1.0f)             // temple white
+                    : new Color(0.35f, 0.85f, 0.40f);                            // shop green
+                var sign = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                sign.name = roleIndex == 0 ? "TavernSign" : roleIndex == 1 ? "TempleSign" : "ShopSign";
+                Object.Destroy(sign.GetComponent<Collider>());
+                sign.transform.SetParent(building.transform, worldPositionStays: false);
+                sign.transform.localPosition = new Vector3(0f, 4.6f, 0f);
+                sign.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+                sign.GetComponent<MeshRenderer>().sharedMaterial = RuntimeMaterialPalette.Solid(signColor);
+                var glow = sign.AddComponent<Light>();
+                glow.type = LightType.Point;
+                glow.color = signColor;
+                glow.range = 7f;
+                glow.intensity = 1.6f;
+                glow.shadows = LightShadows.None;
+
+                if (roleIndex == 0) building.AddComponent<RuntimeTavernView>();
+                else if (roleIndex == 1) building.AddComponent<RuntimeTempleView>();
+                else building.AddComponent<RuntimeShopCounterView>();
             }
 
             // DUNGEON MOUTH: a Dungeon "settlement" is a delve, not a hamlet — realize a big dark cave mouth
