@@ -400,6 +400,26 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             var inventory = _world?.PlayerInventory;
             if (inventory == null) return "No pack to carry loot.";
+
+            // F31 ACT 1: a delve chest carries its INSCRIPTION piece — BEFORE the sword dedup's
+            // early return, or every delve after the first reads "empty" and never yields its
+            // piece (the proof caught exactly that). One piece per delve; the state machine
+            // refuses duplicates and post-act-1 claims on its own.
+            var hereForQuest = CurrentSettlementOrStart;
+            var questMap = _world?.Overland;
+            if (questMap != null && _world.MainQuest != null)
+                for (int i = 0; i < questMap.Settlements.Count; i++)
+                    if (questMap.Settlements[i].Id.Equals(hereForQuest))
+                    {
+                        if (questMap.Settlements[i].Kind == EmberCrpg.Domain.Overland.SettlementKind.Dungeon
+                            && _world.MainQuest.TryFindInscription(hereForQuest.Value, out var inscriptionLine))
+                        {
+                            _world.LastNarrative = inscriptionLine;
+                            UnityEngine.Debug.Log($"[MainQuest] inscription: {inscriptionLine} (act={_world.MainQuest.Act})");
+                        }
+                        break;
+                    }
+
             foreach (var item in inventory.Items)
                 if (item != null && string.Equals(item.TemplateId,
                         EmberCrpg.Simulation.Inventory.WorldItemCatalog.WornIronSwordTemplateId, System.StringComparison.Ordinal))
@@ -908,6 +928,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             EmberCrpg.Presentation.Ember.WorldDirector.WorldCombatFeedbackFeed.RaiseFelled(worldEnemy.Id.Value);
             UnityEngine.Debug.Log($"[Encounter] '{worldEnemy.Name}' felled — {spoils} gold looted, encounter closed.");
             CompleteWorldQuest(OutlawBountyQuestId, 50, "Bounty fulfilled"); // the KILL quest rides any outlaw victory
+
+            // F31 ACT 3: the FINAL delve's Warden closes the spine — the finale overlay rises.
+            if (worldEnemy.Name != null
+                && worldEnemy.Name.StartsWith("Warden of", System.StringComparison.Ordinal)
+                && _world?.MainQuest != null
+                && _world.MainQuest.TryFellFinalWarden(CurrentSettlementOrStart.Value, out var finaleLine))
+            {
+                _world.LastNarrative = finaleLine;
+                EmberCrpg.Presentation.Ember.WorldDirector.RuntimeMainQuestMirror.FinaleRequested = true;
+                UnityEngine.Debug.Log($"[MainQuest] FINAL: {finaleLine}");
+            }
         }
     }
 }

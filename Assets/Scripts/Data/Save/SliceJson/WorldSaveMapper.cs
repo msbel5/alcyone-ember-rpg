@@ -91,6 +91,10 @@ inventory = ToInventoryData(world.PlayerInventory),
                 playerXp = world.PlayerXp,
                 playerReputation = world.PlayerReputation,
                 playerBountyGold = world.PlayerBountyGold,
+                mainQuestAct = world.MainQuest?.Act ?? 1,
+                mainQuestRequiredInscriptions = world.MainQuest?.RequiredInscriptions ?? 3,
+                mainQuestFinalDelveId = world.MainQuest?.FinalDelveId ?? 0UL,
+                mainQuestClaimedDelveIds = (world.MainQuest?.ClaimedDelveIds ?? new List<ulong>()).ToArray(),
                 playerKnownSpellIds = (world.PlayerKnownSpellIds ?? new List<string>()).ToArray(),
                 playerGold = world.PlayerGold,
                 merchantGold = world.MerchantGold,
@@ -177,6 +181,16 @@ world.Items = ToItemStore(data.itemRecords);
             world.PlayerXp = data.playerXp;
             world.PlayerReputation = data.playerReputation;
             world.PlayerBountyGold = data.playerBountyGold;
+            // F31: the main-quest spine — act 0 in old saves means "never configured": keep defaults.
+            world.MainQuest = new EmberCrpg.Domain.Quest.MainQuestState
+            {
+                Act = data.mainQuestAct > 0 ? data.mainQuestAct : 1,
+                RequiredInscriptions = data.mainQuestRequiredInscriptions > 0 ? data.mainQuestRequiredInscriptions : 3,
+                FinalDelveId = data.mainQuestFinalDelveId,
+                ClaimedDelveIds = data.mainQuestClaimedDelveIds != null
+                    ? new List<ulong>(data.mainQuestClaimedDelveIds)
+                    : new List<ulong>(),
+            };
             world.PlayerKnownSpellIds = data.playerKnownSpellIds != null && data.playerKnownSpellIds.Length > 0
                 ? new List<string>(data.playerKnownSpellIds)
                 : world.PlayerKnownSpellIds ?? new List<string>();

@@ -69,6 +69,11 @@ public DungeonRoomSaveData[] dungeonRooms;
         public int playerXp;
         public int playerReputation; // F23
         public int playerBountyGold; // F23
+        // F31: the three-act main-quest spine.
+        public int mainQuestAct;
+        public int mainQuestRequiredInscriptions;
+        public ulong mainQuestFinalDelveId;
+        public ulong[] mainQuestClaimedDelveIds;
         public string[] playerKnownSpellIds;
         public int playerGold;
         public int merchantGold;

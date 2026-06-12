@@ -78,6 +78,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 $"regions={generated.Regions.Count} settlements={generated.Settlements.Count} " +
                 $"npcs={generated.Npcs.Count} pop={generated.TotalPopulation:N0} " +
                 $"history={generated.History.Count} startingRegion={StartingRegion} startingSettlement={StartingSettlement} startingFaction={StartingFaction}");
+
+            // F31: arm the three-act main-quest spine (intro narrative + final delve pin).
+            ConfigureMainQuest();
         }
 
         public void ApplyCharacterCreation(string playerName, string classId, string birthsignId)

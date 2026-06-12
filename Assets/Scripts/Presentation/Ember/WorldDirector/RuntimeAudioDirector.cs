@@ -181,6 +181,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // F28: signature-spell consumer rides the same rig (lantern orb + recall snap).
             if (playerRig.GetComponent<RuntimeSpellFxView>() == null)
                 playerRig.AddComponent<RuntimeSpellFxView>();
+            // F31: the finale overlay consumer (the main quest's final screen + credits).
+            if (playerRig.GetComponent<RuntimeFinaleView>() == null)
+                playerRig.AddComponent<RuntimeFinaleView>();
         }
 
         // Built floors are named slabs ("Floor", "CorrFloor", "ChamberFloor"); raw terrain is a Terrain

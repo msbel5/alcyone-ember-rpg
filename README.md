@@ -357,3 +357,23 @@ so greetings stay text-only.
 
 v0.8 CLOSURE: SHIPCHECK VERDICT PASS -- 9 sections, 0 exceptions, perf avg 12.7ms / worst 440ms
 (budget 16ms). Tagged v0.8.0-spell-and-beast.
+
+### v0.9 "Cila + İskelet Hikâye" — in progress
+
+F31 main quest spine SHIPPED: the game has a beginning, a middle and an END. Three acts -- gather
+the ancient inscription pieces from the delves (one per delve; the requirement adapts to worlds
+with fewer than three), carry the joined inscription to the capital's sage, then descend the
+FINAL delve (pinned deterministically at world seed) and fell its Warden. The intro lands in the
+journal at New Game; completion raises a runtime-built finale overlay -- the EMBER title, the
+closing lines, and credits. The spine is a pure-Domain state machine that REFUSES out-of-order
+progress (no sage before the pieces, no finale before the sage, one piece per delve), persisted
+through the standard three-layer save path.
+Proof (--ember-mainquest, validation-output/proof-f31): one end-to-end run -- intro armed (3
+pieces, final delve pinned) -> three delve chests yield 1/3, 2/3, "whole" -> the sage at the
+capital -> the final Warden falls -> "act=4 complete=True" + the finale frame eye-checked.
+The proof caught two real bugs on the way: the inscription hook sat BEHIND the chest's sword-dedup
+early return (delves 2-3 read "empty" and never yielded), and the 64pt title was silently clipped
+by its 60px text rect. EditMode: act gating, per-delve uniqueness, small-world adaptation,
+invariant healing (fallback 1474/1474). Honest PARTIALs: the intro is journal text (no dedicated
+intro screen yet -- F32); the sage consult is the adapter path (live E-key sage dialog lands with
+F32's UI pass); the finale overlay has no restart flow.

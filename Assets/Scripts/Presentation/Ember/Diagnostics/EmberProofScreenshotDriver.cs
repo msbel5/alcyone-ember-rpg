@@ -66,6 +66,14 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-mainquest"))
+            {
+                yield return RunMainQuest();
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
+                yield break;
+            }
+
             if (HasArg("--ember-lookaround"))
             {
                 yield return RunLookAround();
@@ -568,6 +576,84 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         // SELF-PLAYTEST ("playtestleri sen yapar mısın... çevrene bakıp inceleyebilirsin"): enter the real
         // generated world, pan a full 360° at spawn, then walk to the nearest building, look through the
         // doorway, step INSIDE and pan the room — the agent inspects the captures by eye afterwards.
+        // F31-DoD (--ember-mainquest): the THREE-ACT SPINE end to end through production paths —
+        // Act 1: travel each delve and open its chest (the inscription piece rides the loot grant);
+        // Act 2: travel the capital and consult the sage; Act 3: travel the FINAL delve, fell its
+        // Warden, and capture the finale overlay. Every transition logs "[MainQuest] ...".
+        private IEnumerator RunMainQuest()
+        {
+            yield return WaitForBootToSettle();
+
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(4.0f);
+
+            var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+            if (adapter == null)
+            {
+                Debug.Log("[Proof] MAINQUEST BROKEN — no domain adapter.");
+                yield break;
+            }
+            Debug.Log("[Proof] " + adapter.ProofMainQuestSnapshot());
+
+            // ACT 1 — each delve's chest yields its inscription piece (the spine caps the count).
+            var delveNames = adapter.ProofListDelveNames();
+            Debug.Log($"[Proof] mainquest act 1: {delveNames.Count} delve(s) to sweep.");
+            for (int d = 0; d < delveNames.Count; d++)
+            {
+                if (!adapter.TryTravelToSettlement(delveNames[d], out _)) continue;
+                EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
+                    EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
+                SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+                yield return new WaitForSecondsRealtime(1.5f);
+                FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>()?.ProofCloseScreens();
+                var chest = FindFirstObjectByType<EmberCrpg.Presentation.Ember.WorldDirector.RuntimeChestView>();
+                if (chest != null) Debug.Log("[Proof] mainquest chest: " + chest.ProofOpen());
+                else Debug.Log($"[Proof] MAINQUEST BROKEN — no chest at '{delveNames[d]}'.");
+                Debug.Log("[Proof] " + adapter.ProofMainQuestSnapshot());
+            }
+
+            // ACT 2 — the capital's sage reads the joined inscription.
+            string capital = adapter.CapitalSettlementName();
+            if (!string.IsNullOrEmpty(capital) && adapter.TryTravelToSettlement(capital, out _))
+            {
+                EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
+                    EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
+                SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+                yield return new WaitForSecondsRealtime(1.5f);
+                Debug.Log($"[Proof] mainquest act 2: at the capital '{capital}'.");
+            }
+            Debug.Log("[Proof] " + adapter.ProofConsultSage());
+
+            // ACT 3 — the FINAL delve's Warden.
+            string finalDelve = adapter.FinalDelveName();
+            if (string.IsNullOrEmpty(finalDelve) || !adapter.TryTravelToSettlement(finalDelve, out _))
+            {
+                Debug.Log("[Proof] MAINQUEST BROKEN — final delve travel refused.");
+                yield break;
+            }
+            EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
+                EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(1.5f);
+            FindFirstObjectByType<EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController>()?.ProofCloseScreens();
+            string warden = adapter.ProofBindDelveWarden();
+            if (string.IsNullOrEmpty(warden))
+            {
+                Debug.Log("[Proof] MAINQUEST BROKEN — no Warden at the final delve.");
+                yield break;
+            }
+            Debug.Log("[Proof] mainquest act 3: boss bound — " + warden);
+            Debug.Log(adapter.ProofFinishBoundEncounter());
+            yield return new WaitForSecondsRealtime(1.0f); // the finale view polls the mirror and raises
+            Debug.Log("[Proof] " + adapter.ProofMainQuestSnapshot());
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "mainquest_final.png"));
+            yield return new WaitForSecondsRealtime(0.4f); // async capture separation
+        }
+
         private IEnumerator RunLookAround()
         {
             yield return WaitForBootToSettle();

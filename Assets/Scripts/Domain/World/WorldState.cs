@@ -73,6 +73,8 @@ namespace EmberCrpg.Domain.World
         {
             WorldContracts ??= new List<EmberCrpg.Domain.Quest.WorldQuestRecord>();
             WorldQuestStates ??= new Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState>();
+            MainQuest ??= new EmberCrpg.Domain.Quest.MainQuestState();
+            MainQuest.EnsureInvariants();
             Actors ??= new ActorStore();
             Items ??= new ItemStore();
             Sites ??= new SiteStore();
@@ -145,6 +147,9 @@ namespace EmberCrpg.Domain.World
         // QuestId.Value because the kernel QuestStore stays catalog-only (the F2 lesson).
         public List<EmberCrpg.Domain.Quest.WorldQuestRecord> WorldContracts = new List<EmberCrpg.Domain.Quest.WorldQuestRecord>();
         public Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState> WorldQuestStates = new Dictionary<ulong, EmberCrpg.Domain.Quest.QuestState>();
+        // F31: the three-act MAIN QUEST spine (inscriptions → sage → final Warden) — world-root
+        // state like the contracts, save-mapped, configured once at seed.
+        public EmberCrpg.Domain.Quest.MainQuestState MainQuest = new EmberCrpg.Domain.Quest.MainQuestState();
         // F23: reputation (+1 per finished contract, −2 per crime; ≥5 buys a 10% market discount)
         // and the watch's BOUNTY on the player's head (>0 = guards hunt on sight).
         public int PlayerReputation;
@@ -216,6 +221,7 @@ namespace EmberCrpg.Domain.World
             PlayerXp = other.PlayerXp;
             WorldContracts = other.WorldContracts;
             WorldQuestStates = other.WorldQuestStates;
+            MainQuest = other.MainQuest;
             PlayerReputation = other.PlayerReputation;
             PlayerBountyGold = other.PlayerBountyGold;
             TavernCell = other.TavernCell;

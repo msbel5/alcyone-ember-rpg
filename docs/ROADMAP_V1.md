@@ -253,9 +253,23 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
 
 ## v0.9 "CİLA + İSKELET HİKÂYE" — v1.0 provası
 
-- [ ] **F31 Ana görev iskeleti**: 3 perde (delve'lerde 3 parça eski yazıt → başkent bilgesi →
+- [x] **F31 Ana görev iskeleti**: 3 perde (delve'lerde 3 parça eski yazıt → başkent bilgesi →
   final zindanı şef'i). Intro metni New Game'de, final ekranı + credits.
   **DoD:** playthrough proof'u 3 perdeyi uçtan uca koşar (yeni --ember-mainquest legi).
+  **KANIT (--ember-mainquest, validation-output/proof-f31):** üç perde UÇTAN UCA tek koşuda —
+  "[MainQuest] intro: three acts armed — pieces=3, finalDelve='Vhiriorothcross'" → 3 delve gezisi,
+  her sandık parçasını verdi (1/3 → 2/3 → "The inscription is whole (3/3)" → act=2) → başkent
+  'Graimyrou'da bilge (act=3) → final Warden devrildi → "act=4 complete=True" + finale overlay
+  (mainquest_final.png: E M B E R başlığı + kapanış satırları + CREDITS — göz-onaylı).
+  MainQuestState saf Domain durum makinesi (sıra-dışı çağrılar REDDEDER; delve başına tek parça;
+  küçük dünyada gereksinim min(3, delveCount)'a uyarlanır) + 3-katman kalıcılık (WorldState +
+  EnsureInvariants/CopyFrom + WorldSaveMapper) + EditMode testleri (fallback 1474/1474).
+  PROOF-YAKALADI: yazıt kancası ilk turda kılıç-dedup erken return'ünün ARKASINDAYDI — 2./3.
+  sandık "boş" deyip parça vermiyordu; kanca metodun başına alındı. İkinci tur: 64pt başlık 60px
+  rect'te Unity Text tarafından kırpılıyordu — overflow açıldı.
+  DÜRÜST PARTIAL: intro JOURNAL narrative'inde (ayrı intro ekranı yok — F32 UI cilası); bilge
+  danışması proof/dialog-üstü adapter yolu (canlı E-tuşu sage diyaloğu entegrasyonu F32);
+  final ekranında ESC/yeniden-başlat akışı yok (overlay kalıcı — koşu biter).
 - [ ] **F32 UI/UX cilası**: ayarlar menüsü (ses seviyeleri, mouse hassasiyeti, çözünürlük),
   keybind listesi ekranı, TODO aksiyon yollarının temizliği (Codex listesi), ölü buton kalmaz.
   **DoD:** ig-tour tüm ekran kareleri + "not yet available" grep'i sıfır döner.
@@ -285,4 +299,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F31 <<<
+>>> CURRENT: F32 <<<
