@@ -829,6 +829,20 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                             // frame (the corpse pose rendered as the boss room otherwise).
                             yield return new WaitForSecondsRealtime(0.4f);
 
+                            // F20-DoD: the path down to the Warden — step ON the crushing plate (8 dmg,
+                            // audible, logged), take the key from its pedestal, let the boss door's lock
+                            // CONSUME it. Flow lines: [Trap] → [Key] → [Door].
+                            rig4.transform.position = DelveLayout.TrapWorld + Vector3.up * 1.0f;
+                            yield return new WaitForSecondsRealtime(1.0f); // the plate polls and fires
+                            yield return new WaitForEndOfFrame();
+                            CaptureToPng(Path.Combine(_outputDir, "look_dungeon_trap.png"));
+                            yield return new WaitForSecondsRealtime(0.4f); // capture separation
+                            rig4.transform.position = DelveLayout.KeyWorld + Vector3.up * 1.0f;
+                            yield return new WaitForSecondsRealtime(1.0f); // pickup polls
+                            rig4.transform.position = DelveLayout.BossDoorWorld + Vector3.up * 1.0f;
+                            yield return new WaitForSecondsRealtime(1.6f); // the lock consumes the key, the slab grinds
+                            delveUi?.ProofCloseScreens();
+
                             // F18-DoD BOSS LEG: descend to the boss room, frame the Warden, bind it, fell
                             // it ("looptest şefe kadar iner"), then open the hoard for the loot line.
                             rig4.transform.position = DelveLayout.BossRoomWorld + Vector3.up * 1.0f;

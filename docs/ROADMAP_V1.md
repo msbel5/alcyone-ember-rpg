@@ -72,9 +72,21 @@ haunterlar, delve pusulası, prosedürel ses v2, shipcheck 9/9 PASS. Kalan yol: 
   verdi — realize seed'leri yapısal olarak 3'e bölünüyor; murmur-finalizer hash sonra seçim (proof-caught
   bias, DungeonArchetypeTests sweep + proof-seed çeşitlilik testi). DÜRÜST PARTIAL: müzik varyantı henüz
   arketipe bağlı değil (DAY/NIGHT/BATTLE slotları arketip-agnostik; v0.5 kapanışına aday iş).
-- [ ] **F20 Tuzak + kilit**: ezici plaka tuzağı (görünür, 8 dmg, sesli) + kilitli şef kapısı
+- [x] **F20 Tuzak + kilit**: ezici plaka tuzağı (görünür, 8 dmg, sesli) + kilitli şef kapısı
   (anahtar rastgele ara odada). Kapı/anahtar HUD event satırına yazar.
   **DoD:** looptest anahtar→kapı→şef akış satırları + tuzak hasar logu.
+  **KANIT (lookaround delve legi, Reports/proof-f20a):** akış sırayla — "[Trap] crushing plate fired:
+  8 damage." (HP 8 düşüşü trap karesinde HUD'da) → "[Key] You take the Tarnished Key" → "[Door] The
+  Tarnished Key turns — the boss door grinds open." → Warden bound. Tuzak: şef-yolu koridorunda
+  pas-kızılı plaka (basınca çöker, mekanizma sesi, LogCombat HUD satırı). Anahtar: GERÇEK envanter
+  item'ı (ItemId 3003, kilit TÜKETIR — EditMode roundtrip testi: al→tekrar-alma-reddi→tüket→ikinci
+  tüketim reddi). Kapı: boss konektöründe kilitli slab, anahtar varsa 1.2s'de yukarı kayar; anahtarsız
+  yaklaşımda tek-seferlik "Locked." satırı (4.2m'de yeniden kurulur).
+
+> **v0.5 KAPANIŞ KANITI:** SHIPCHECK VERDICT: PASS (9 sections, 0 exceptions) — perf avg=15,4ms
+> worst=736ms (bütçe 16; ilk koşuda tek 96s kare = editör-kapanış churn'ü, tekrar koşuda yok).
+> Tag: v0.5.0-dungeon-age. DİKKAT (v0.6'ya not): perf marjı daraldı (v0.4 11,9 → 15,4 avg) —
+> şüpheli: per-frame ProjectWorldViewsNow içindeki TryReadWorksite job-board taraması; profille.
 
 ## v0.6 "GÖREV MAKİNESİ" — DFU tarzı sonsuz iş
 
@@ -151,4 +163,4 @@ F24 (gökyüzü), F31 (ana görev). Bunlar 2 oturuma bölünebilir → gerçekç
 4. Commit + push (kapılar yeşilken); rapor tablosu: madde|kanıt|commit.
 5. Oturumda zaman kaldıysa SONRAKİ faza başla; kalmadıysa kalanı alt-kutulara böl ve dürüst bırak.
 
->>> CURRENT: F20 <<<
+>>> CURRENT: F21 <<<

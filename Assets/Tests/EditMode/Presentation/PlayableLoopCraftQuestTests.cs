@@ -129,6 +129,22 @@ namespace EmberCrpg.Tests.EditMode.Presentation
                 "v0.5 worlds guarantee three delves where the map affords them");
         }
 
+        // F20: the delve key is a REAL inventory item — picked up once, consumed by the boss door's
+        // lock, and gone afterwards (the second consume must refuse).
+        [Test]
+        public void DelveKey_PickupUnlocksOnce_AndIsConsumed()
+        {
+            var world = new WorldFactory().Create(roomSeed: 17);
+            var adapter = new DomainSimulationAdapter(world);
+            adapter.SeedWorld("grim", "wanderer", "crossroads", null);
+
+            Assert.That(adapter.TryConsumeDelveKey(), Is.False, "no key in the pack yet");
+            StringAssert.Contains("Tarnished Key", adapter.PickUpDelveKey());
+            StringAssert.Contains("already carry", adapter.PickUpDelveKey());
+            Assert.That(adapter.TryConsumeDelveKey(), Is.True, "the lock consumes the key");
+            Assert.That(adapter.TryConsumeDelveKey(), Is.False, "the key is gone after the door");
+        }
+
         // F14 ("düşman kovalasın"): a hostile that SEES the player closes one grid cell per AI cadence
         // and AUTO-BINDS the encounter at aggro range — combat starts because you got close, not E.
         [Test]

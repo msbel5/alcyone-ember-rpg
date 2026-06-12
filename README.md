@@ -169,7 +169,7 @@ surface detection is name-based (built "Floor" slabs vs terrain); per-step audio
 pre-rendered variants (+pitch jitter) instead of re-rendering the dip cascade per step; melody voices are
 sine-family (no wavetable timbres yet).
 
-### v0.5 "Zindan Çağı" — in progress (F18 SHIPPED)
+### v0.5 "Zindan Çağı" — SHIPPED (shipcheck 9/9 PASS, perf 15.4ms avg; tag v0.5.0-dungeon-age)
 
 F18 multi-room delve SHIPPED: the single barrow chamber grew into the real thing — the domain's
 deterministic MultiRoomDungeonGenerator (5-10 rooms + mid-wall doors, seeded per settlement) is now
@@ -206,3 +206,13 @@ Proof (Reports/proof-f19d): travel to all 3 delves of the proof world, one inter
 eye-verified distinct palettes; "[Proof] F19 delve census: 3 dungeon(s)" + three "archetype=" lines;
 EditMode sweep test pins reachability of all three + the proof-seed trio mapping to ≥2 archetypes.
 Honest PARTIAL: music does not vary by archetype yet (DAY/NIGHT/BATTLE slots are archetype-agnostic).
+
+F20 traps + locks SHIPPED: the way down to the Warden now fights back. A rust-red CRUSHING PLATE
+sits mid-corridor on the boss path — step on it and it gives way underfoot: 8 damage, the mechanism
+groans, the HUD combat line tells you what bit you. The boss connector carries a LOCKED DOOR whose
+key — the Tarnished Key, a real inventory item — waits on a pedestal in a deterministic middle room;
+the lock CONSUMES the key (pick another delve's key later, same pack slot), and without it the door
+says so once per approach. Proof (Reports/proof-f20a): "[Trap] crushing plate fired: 8 damage." (HP
+drop visible in the trap frame) → "[Key] You take the Tarnished Key" → "[Door] The Tarnished Key
+turns — the boss door grinds open." → Warden bound. EditMode roundtrip: pickup → duplicate-pickup
+refused → consume → second consume refused.

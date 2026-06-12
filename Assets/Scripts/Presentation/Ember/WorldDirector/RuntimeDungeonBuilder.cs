@@ -134,6 +134,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             }
 
             // Corridor connectors across the lattice gaps (one per door).
+            // F20: the connector touching the BOSS room gets the LOCKED DOOR; the first other
+            // connector gets the crushing-plate TRAP (visible, on the floor, mid-passage).
+            Vector3 trapLocal = Vector3.zero, bossDoorLocal = Vector3.zero;
+            bool trapPlaced = false, bossDoorPlaced = false;
             foreach (var door in layout.Doors)
             {
                 var a = layout.FindRoom(door.FromRoomId);
@@ -159,7 +163,68 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     Slab(root.transform, $"C{door.Id}WallN", mid + new Vector3(0f, 0.9f, -(DoorGap * 0.5f + 0.2f)), new Vector3(span, WallHeight, 0.4f), rock);
                     Slab(root.transform, $"C{door.Id}WallS", mid + new Vector3(0f, 0.9f, DoorGap * 0.5f + 0.2f), new Vector3(span, WallHeight, 0.4f), rock);
                 }
+
+                bool touchesBoss = door.FromRoomId == bossRoomId || door.ToRoomId == bossRoomId;
+                if (touchesBoss && !bossDoorPlaced)
+                {
+                    bossDoorPlaced = true;
+                    bossDoorLocal = mid;
+                    var doorSlab = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    doorSlab.name = "BossDoor";
+                    doorSlab.transform.SetParent(root.transform, worldPositionStays: false);
+                    doorSlab.transform.localPosition = mid + new Vector3(0f, 1.35f, 0f);
+                    doorSlab.transform.localScale = deeper
+                        ? new Vector3(DoorGap + 0.5f, 2.7f, 0.35f)  // block the Z passage
+                        : new Vector3(0.35f, 2.7f, DoorGap + 0.5f); // block the X passage
+                    doorSlab.GetComponent<MeshRenderer>().sharedMaterial =
+                        RuntimeMaterialPalette.Solid(new Color(0.30f, 0.28f, 0.24f));
+                    doorSlab.AddComponent<RuntimeLockedDoorView>();
+                }
+                else if (!trapPlaced)
+                {
+                    trapPlaced = true;
+                    trapLocal = mid;
+                    var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    plate.name = "CrushingPlate";
+                    plate.transform.SetParent(root.transform, worldPositionStays: false);
+                    plate.transform.localPosition = mid + new Vector3(0f, 0.13f, 0f);
+                    plate.transform.localScale = new Vector3(1.5f, 0.07f, 1.5f);
+                    plate.GetComponent<MeshRenderer>().sharedMaterial =
+                        RuntimeMaterialPalette.Solid(new Color(0.45f, 0.14f, 0.10f)); // rust-blood metal reads DANGER
+                    plate.AddComponent<RuntimeTrapView>();
+                }
             }
+            if (!trapPlaced) // degenerate two-room graphs: the entry hall carries the plate
+            {
+                trapLocal = new Vector3(0f, 0f, entryMidZ);
+                var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                plate.name = "CrushingPlate";
+                plate.transform.SetParent(root.transform, worldPositionStays: false);
+                plate.transform.localPosition = trapLocal + new Vector3(0f, 0.13f, 0f);
+                plate.transform.localScale = new Vector3(1.5f, 0.07f, 1.5f);
+                plate.GetComponent<MeshRenderer>().sharedMaterial =
+                    RuntimeMaterialPalette.Solid(new Color(0.45f, 0.14f, 0.10f));
+                plate.AddComponent<RuntimeTrapView>();
+            }
+
+            // F20 KEY: a pedestal in a deterministic MIDDLE room (never start, never boss).
+            var keyEligible = new List<EmberCrpg.Domain.World.DungeonRoom>();
+            foreach (var room in rooms)
+                if (room.Id != layout.StartRoomId && room.Id != bossRoomId)
+                    keyEligible.Add(room);
+            var keyRoom = keyEligible.Count > 0
+                ? keyEligible[(int)(spotHash % (uint)keyEligible.Count)]
+                : layout.FindRoom(layout.StartRoomId);
+            var keyC = CellCenter(keyRoom);
+            var keyLocal = keyC + new Vector3(-keyRoom.Width * 0.25f, 0f, -keyRoom.Height * 0.25f);
+            var pedestal = new GameObject("KeyPedestal");
+            pedestal.transform.SetParent(root.transform, worldPositionStays: false);
+            pedestal.transform.localPosition = keyLocal;
+            Slab(pedestal.transform, "PedestalBase", new Vector3(0f, 0.25f, 0f), new Vector3(0.4f, 0.5f, 0.4f),
+                RuntimeMaterialPalette.Solid(new Color(0.30f, 0.30f, 0.33f)));
+            Slab(pedestal.transform, "KeyGlint", new Vector3(0f, 0.62f, 0f), new Vector3(0.2f, 0.1f, 0.34f),
+                RuntimeMaterialPalette.Solid(new Color(0.88f, 0.74f, 0.28f))); // tarnished gold catches the torch
+            pedestal.AddComponent<RuntimeKeyView>();
 
             // BOSS room: the big chest at the back + the boss spot beside it.
             var bossRoom = layout.FindRoom(bossRoomId);
@@ -202,7 +267,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 footprintCenter,
                 extent,
                 dwellerSpots,
-                root.transform.TransformPoint(chestLocal + new Vector3(1.8f, 0f, 1.2f)));
+                root.transform.TransformPoint(chestLocal + new Vector3(1.8f, 0f, 1.2f)),
+                root.transform.TransformPoint(trapLocal),
+                pedestal.transform.position,
+                root.transform.TransformPoint(bossDoorLocal));
 
             Debug.Log($"[WorldDirector] multi-room delve realized: archetype={archetype.Name} rooms={rooms.Count} " +
                       $"doors={layout.Doors.Count} dwellerSpots={dwellerSpots.Count} bossRoom=R{bossRoomId} seed={dungeonSeed}.");

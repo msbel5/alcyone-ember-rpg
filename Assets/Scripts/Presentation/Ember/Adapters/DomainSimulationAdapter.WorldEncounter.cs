@@ -483,6 +483,41 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return sb.ToString();
         }
 
+        /// <summary>F20: pick up the delve key. One in the pack at a time — the boss door's lock
+        /// consumes it, so the id stays reusable across delves.</summary>
+        public string PickUpDelveKey()
+        {
+            var inventory = _world?.PlayerInventory;
+            if (inventory == null) return "No pack for the key.";
+            foreach (var item in inventory.Items)
+                if (item != null && string.Equals(item.TemplateId,
+                        EmberCrpg.Simulation.Inventory.WorldItemCatalog.TarnishedKeyTemplateId, System.StringComparison.Ordinal))
+                {
+                    _lastCombatLine = "You already carry the tarnished key.";
+                    return _lastCombatLine;
+                }
+            _lastCombatLine = inventory.TryAdd(EmberCrpg.Simulation.Inventory.WorldItemCatalog.CreateTarnishedKey())
+                ? "You take the Tarnished Key — somewhere below, a lock waits."
+                : "Your pack is full — the key stays on its pedestal.";
+            UnityEngine.Debug.Log("[Key] " + _lastCombatLine);
+            return _lastCombatLine;
+        }
+
+        /// <summary>F20: the boss door's lock — consumes the key when the pack holds one.</summary>
+        public bool TryConsumeDelveKey()
+        {
+            var inventory = _world?.PlayerInventory;
+            if (inventory == null) return false;
+            bool unlocked = inventory.TryRemove(
+                EmberCrpg.Simulation.Inventory.WorldItemCatalog.TarnishedKeyTemplateId, 1);
+            if (unlocked)
+            {
+                _lastCombatLine = "The Tarnished Key turns — the boss door grinds open.";
+                UnityEngine.Debug.Log("[Door] " + _lastCombatLine);
+            }
+            return unlocked;
+        }
+
         /// <summary>F19 proof: every Dungeon-kind settlement name in map order — the variety leg
         /// travels down this list (worlds may roll as few as one delve; that is honest output).</summary>
         public System.Collections.Generic.List<string> ProofListDelveNames()

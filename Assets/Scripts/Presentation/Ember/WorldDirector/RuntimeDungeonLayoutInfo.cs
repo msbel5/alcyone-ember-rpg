@@ -17,10 +17,15 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         public static float FootprintExtentMeters { get; private set; }
         public static readonly List<Vector3> DwellerSpots = new List<Vector3>();
         public static Vector3 BossSpot { get; private set; }
+        // F20: trap plate, key pedestal and the locked boss door (proof anchors).
+        public static Vector3 TrapWorld { get; private set; }
+        public static Vector3 KeyWorld { get; private set; }
+        public static Vector3 BossDoorWorld { get; private set; }
 
         public static void Record(
             int roomCount, Vector3 entry, Vector3 startRoom, Vector3 bossRoom, Vector3 chest,
-            Vector3 footprintCenter, float footprintExtent, List<Vector3> dwellerSpots, Vector3 bossSpot)
+            Vector3 footprintCenter, float footprintExtent, List<Vector3> dwellerSpots, Vector3 bossSpot,
+            Vector3 trap, Vector3 key, Vector3 bossDoor)
         {
             RoomCount = roomCount;
             EntryWorld = entry;
@@ -32,6 +37,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             DwellerSpots.Clear();
             if (dwellerSpots != null) DwellerSpots.AddRange(dwellerSpots);
             BossSpot = bossSpot;
+            TrapWorld = trap;
+            KeyWorld = key;
+            BossDoorWorld = bossDoor;
         }
     }
 }

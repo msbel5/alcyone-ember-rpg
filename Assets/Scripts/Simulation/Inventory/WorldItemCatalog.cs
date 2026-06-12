@@ -37,5 +37,14 @@ namespace EmberCrpg.Simulation.Inventory
         {
             return new InventoryItem(new ItemId(3002), WornIronSwordTemplateId, "Worn Iron Sword", 1, EquipmentSlot.Weapon, 8, 5);
         }
+
+        public const string TarnishedKeyTemplateId = "tarnished_delve_key";
+
+        /// <summary>F20: the delve key — found in a middle room, CONSUMED by the boss door's lock.
+        /// One in the pack at a time; the id is reusable because the lock removes the item.</summary>
+        public static InventoryItem CreateTarnishedKey()
+        {
+            return new InventoryItem(new ItemId(3003), TarnishedKeyTemplateId, "Tarnished Key", 1);
+        }
     }
 }
