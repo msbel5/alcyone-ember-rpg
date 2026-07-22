@@ -69,9 +69,11 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "Hourly:10:econ.jobs",
                 "Hourly:15:quest.tick",
                 "Hourly:30:living.needs",
+                "Hourly:35:living.consumption", // CAN SUYU H1: needs come back DOWN (eat/sleep)
                 "Daily:10:world.caravans",
                 "Daily:20:econ.plantgrowth",
                 "Daily:25:world.harvest", // v0.2 F7: same-day grow→harvest→price chain (shipcheck FLAT finding)
+                "Daily:27:econ.shortage_response", // CAN SUYU H1+H3: shortage → planting job (first cascade)
                 "Daily:30:econ.prices",
                 "Daily:40:politics.faction_decay",
             }));

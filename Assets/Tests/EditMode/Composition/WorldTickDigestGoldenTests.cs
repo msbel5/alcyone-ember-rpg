@@ -16,7 +16,11 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // Re-baselined 2026-06-11 for v0.2 F7 HarvestStep (daily grow→harvest→price chain — ripe crops now
         // yield into stockpiles and replant; the shipcheck economy-chain FLAT finding drove it). Determinism
         // held: the same-seed double advance produced identical digests in the capturing run.
-        private const string BaselineHash = "88be0d13a986d56dfc7c8e259e20e0cf63e2a412cf1da6405434e3106afb9b56";
+        // CAN SUYU H1 re-baseline: the world legitimately behaves differently now — actors EAT
+        // from stockpiles, SLEEP at night, and shortages post planting jobs. Same-seed
+        // determinism is separately pinned (Advance_IsDeterministic...); this hash only asserts
+        // "no accidental drift SINCE the consumption loop landed".
+        private const string BaselineHash = "ca3a12f8fde05ad13a601b0e1f4f7c70e678cab015923a1b1b85fc110e485cbc";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

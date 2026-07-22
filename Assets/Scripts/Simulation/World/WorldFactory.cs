@@ -129,8 +129,20 @@ namespace EmberCrpg.Simulation.World
             furnaceStock.Add("iron", 8);
             var stallStock = new StockpileComponent(new SiteId(5));
             stallStock.Add("coin", 100);
+            // CAN SUYU H1: the LARDER — a settlement starts with a food store and working fields,
+            // or the consumption loop starves before the first harvest. This seeding used to live
+            // presentation-side (HydrateSites) — world content belongs to the world factory.
+            stallStock.Add("wheat", 150);
             world.Stockpiles.Add(furnaceStock);
             world.Stockpiles.Add(stallStock);
+            for (ulong plot = 1; plot <= 3; plot++)
+            {
+                var plotId = new WorldComponentId(9000 + plot);
+                world.Plants.Add(plotId, new PlantComponent(
+                    plotId, new SiteId(5),
+                    new GridPosition(6 + (int)plot, 4), "wheat",
+                    new PlantStageId("seed"), 0));
+            }
             world.Prices.SetPrice(new SiteId(1), "iron", 10);
 
             var route = new TradeRouteDef(new TradeRouteId(1), new SiteId(1), new SiteId(5), "iron", 2, 2);

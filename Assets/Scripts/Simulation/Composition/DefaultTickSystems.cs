@@ -46,9 +46,11 @@ namespace EmberCrpg.Simulation.Composition
                 new QuestStep(new QuestSystem()),
                 new ScheduleStep(schedule),
                 new NeedsStep(needs),
+                new ConsumptionStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
                 new CaravanStep(caravans),
                 new PlantGrowthStep(plantGrowth, seasonCalendar, plantSpecies),
                 new HarvestStep(),
+                new ShortageResponseStep(), // CAN SUYU H1+H3: shortage → planting job (first cascade)
                 new PriceStepSystem(priceUpdate),
                 new FactionDecayStep(factionDecay, Normalize(factionDecayConfig)),
             });
@@ -228,6 +230,38 @@ namespace EmberCrpg.Simulation.Composition
             public override void Run(in TickContext context)
             {
                 _questSystem.Tick(context.World);
+            }
+        }
+
+        // CAN SUYU H1: the consumption half of the needs loop — hungry actors eat from real
+        // stockpiles, tired actors sleep at night. Order 35: right after NeedsStep raises them.
+        private sealed class ConsumptionStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.Living.NeedConsumptionSystem _consumption =
+                new EmberCrpg.Simulation.Living.NeedConsumptionSystem();
+
+            public ConsumptionStep() : base("living.consumption", TickCadence.Hourly, 35) { }
+
+            public override void Run(in TickContext context)
+            {
+                var world = context.World;
+                int hour = (int)((world.Time.TotalMinutes / 60) % 24);
+                _consumption.Tick(world, hour);
+            }
+        }
+
+        // CAN SUYU H1+H3: shortage detector sweep + the planting-job response. Order 27 sits
+        // between harvest (25) and prices (30) so the sweep sees post-harvest truth.
+        private sealed class ShortageResponseStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.World.ShortageResponseSystem _response =
+                new EmberCrpg.Simulation.World.ShortageResponseSystem();
+
+            public ShortageResponseStep() : base("econ.shortage_response", TickCadence.Daily, 27) { }
+
+            public override void Run(in TickContext context)
+            {
+                _response.Tick(context.World);
             }
         }
 
