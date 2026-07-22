@@ -64,10 +64,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             {
                 case BiomeKind.Plains:   return "env_seasonfarm";
                 case BiomeKind.Forest:   return "env_colonyneeds"; // mossier plate than the plains
-                case BiomeKind.Coast:    return "env_trademarket";
+                case BiomeKind.Coast:    return "env_seasonfarm"; // trademarket's square grid read as a MISSING-TEXTURE checker at distance
                 case BiomeKind.Mountain: return "env_combatdungeon";
                 case BiomeKind.Swamp:    return "env_ritualhall";
-                case BiomeKind.Desert:   return "env_trademarket";
+                case BiomeKind.Desert:   return "env_seasonfarm"; // biome tint (dune) differentiates; see the checker note above
                 case BiomeKind.Tundra:   return "env_oracleshrine";
                 case BiomeKind.Ash:      return "env_combatdungeon";
                 default:                 return "env_colonyneeds";
