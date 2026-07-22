@@ -50,8 +50,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var archetype = RuntimeDungeonArchetype.For(dungeonSeed);
             // F29: the bestiary reads the archetype from the layout info (single-writer rule).
             RuntimeDungeonLayoutInfo.RecordArchetype(archetype.Name);
-            var rock = RuntimeMaterialPalette.Solid(archetype.Rock);
-            var floor = RuntimeMaterialPalette.Solid(archetype.Floor);
+            // SATILABILIRLIK: flat Solid() walls read as an unfinished blockout. The shipped
+            // wall_* core textures carry the painted stonework; the archetype colour survives
+            // as the tint, so delve families keep their identity. Textured() falls back to the
+            // old flat tint when the texture is missing — never worse than before.
+            var rock = RuntimeMaterialPalette.Textured("wall_combatdungeon", archetype.Rock, tiling: 0.5f);
+            var floor = RuntimeMaterialPalette.Textured("wall_ritualhall", archetype.Floor, tiling: 0.5f);
 
             // Mouth ramp up onto the floated floor (same recipe as the barrow).
             float mouthGround = SampleGroundY(root.transform.TransformPoint(new Vector3(0f, 0f, 1.5f)));

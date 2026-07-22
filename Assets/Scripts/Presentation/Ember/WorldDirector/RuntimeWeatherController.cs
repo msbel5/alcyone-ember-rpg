@@ -99,7 +99,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             switch (kind)
             {
                 case "rain":
-                    ConfigurePool(new Vector3(0.05f, 2.4f, 0.05f), new Color(0.70f, 0.78f, 0.92f), 24f);
+                    // SATILABILIRLIK: 2.4m opaque cubes read as glowing BEACONS, not rain. Real rain
+                    // streaks are short, thin, and translucent (Sprites/Default is alpha-blended).
+                    ConfigurePool(new Vector3(0.025f, 0.55f, 0.025f), new Color(0.62f, 0.70f, 0.85f, 0.45f), 26f);
                     RuntimeWeatherMirror.FogFactor = 0.62f; // a rain sky IS dark — the haze must read
                     RenderSettings.fog = true;
                     RenderSettings.fogMode = FogMode.Exponential;
@@ -108,7 +110,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     RuntimeAudioDirector.SetRainLoop(true);
                     break;
                 case "snow":
-                    ConfigurePool(new Vector3(0.22f, 0.22f, 0.22f), new Color(0.97f, 0.98f, 1f), 1.8f);
+                    ConfigurePool(new Vector3(0.14f, 0.14f, 0.14f), new Color(0.97f, 0.98f, 1f, 0.85f), 1.6f);
                     RuntimeWeatherMirror.FogFactor = 0.55f;
                     RenderSettings.fog = true;
                     RenderSettings.fogMode = FogMode.Exponential;
