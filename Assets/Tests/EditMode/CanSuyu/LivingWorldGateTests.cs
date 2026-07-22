@@ -183,6 +183,34 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
         }
 
         [Test]
+        public void Gate7_SeedDivergence_DifferentSeedsLiveDifferentLives()
+        {
+            // H5: determinism must be per-world, not one canned show replayed under every
+            // seed. Three seeds run 31 days; their census vectors (stock, meals, events,
+            // reputation matrix, chronicle) must be pairwise DIFFERENT.
+            string Census(int seed)
+            {
+                var world = BuildWorld(seed);
+                var composer = new WorldTickComposer();
+                AdvanceDays(world, composer, 31);
+                int stock = world.Stockpiles.Sum(p => p?.Count ?? 0);
+                int meals = world.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
+                var reps = string.Join(",", world.Factions.ReputationRows
+                    .Select(r => $"{r.A.Value}-{r.B.Value}:{r.Reputation.Value}"));
+                var chronicle = string.Join(",", world.Events.Events
+                    .Where(e => e.Kind == WorldEventKind.ChronicleEvent).Select(e => e.Reason));
+                return $"stock:{stock} meals:{meals} events:{world.Events.Count} reps:{reps} chronicle:{chronicle}";
+            }
+
+            var a = Census(4242);
+            var b = Census(9999);
+            var c = Census(1717);
+            Assert.That(a, Is.Not.EqualTo(b), "seeds 4242 and 9999 lived IDENTICAL lives — seed is cosmetic");
+            Assert.That(b, Is.Not.EqualTo(c), "seeds 9999 and 1717 lived IDENTICAL lives — seed is cosmetic");
+            Assert.That(a, Is.Not.EqualTo(c), "seeds 4242 and 1717 lived IDENTICAL lives — seed is cosmetic");
+        }
+
+        [Test]
         public void Gate3_UnscriptedEventRate_TheWorldActsWithoutAPlayer()
         {
             var world = BuildWorld(1717);

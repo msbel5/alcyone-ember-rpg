@@ -635,6 +635,17 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             float nextHeartbeat = Time.unscaledTime + 60f;
             Debug.Log($"[Marathon] soak armed: {minutes:0}min, seed=0xF34F34, memStart={memStart / 1048576}MB.");
 
+            // Forge-on boots spend 60s+ in ONNX before the adapter registers — WAIT for it
+            // (bounded) instead of declaring the world broken 4s after the scene load.
+            bool aborted = false;
+            float adapterDeadline = Time.unscaledTime + 120f;
+            while (EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                       is not EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter)
+            {
+                if (Time.unscaledTime > adapterDeadline) break;
+                yield return new WaitForSecondsRealtime(1f);
+            }
+
             while (Time.unscaledTime < endAt)
             {
                 var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
@@ -642,6 +653,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 if (adapter == null)
                 {
                     Debug.Log("[Marathon] BROKEN — adapter lost; aborting soak.");
+                    aborted = true;
                     break;
                 }
 
@@ -695,7 +707,10 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             if (memEnd > memPeak) memPeak = memEnd;
             // Flat-curve rule: the end may not DOUBLE the start — scene churn fragments, a leak climbs.
             bool flat = memEnd < memStart * 2;
-            bool pass = exceptions == 0 && flat;
+            // Honesty rule: a soak that lost its world or did NOTHING cannot PASS — an aborted
+            // run once reported PASS with actions=0 (the exact Potemkin pattern the V2
+            // contract exists to kill).
+            bool pass = exceptions == 0 && flat && !aborted && actions > 0;
             Debug.Log($"[Marathon] VERDICT: {(pass ? "PASS" : "FAIL")} — {minutes:0}min soak, " +
                       $"actions={actions} (travel={travels} fight={fights} trade={trades} clock={hours}), " +
                       $"exceptions={exceptions}, mem {memStart / 1048576}MB -> {memEnd / 1048576}MB " +
