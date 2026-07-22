@@ -190,6 +190,45 @@ namespace EmberCrpg.Tests.EditMode.Living
                 "street outlaws (home != dayAnchor) keep the F6 curfew commute");
         }
 
+        [Test]
+        public void ChooseTarget_SeatOrdinals0Through24_DistinctCellsAllWithinEatReach()
+        {
+            // Review-mandated pin: the personal-seat fan-out is what keeps the lunch crowd from
+            // stacking (Gate8); every ordinal must own a DISTINCT cell inside eating reach.
+            var actor = IdleActor(new GridPosition(0, 0));
+            actor.ApplyNeeds(actor.Needs.WithHunger(new NeedValue(100)));
+            var table = new GridPosition(10, 10);
+
+            var seats = new System.Collections.Generic.HashSet<GridPosition>();
+            int worstReach = 0;
+            for (int ordinal = 0; ordinal < 25; ordinal++)
+            {
+                var seat = ScheduleSystem.ChooseTarget(actor, WorkHour, table, ordinal);
+                seats.Add(seat);
+                int reach = System.Math.Max(System.Math.Abs(seat.X - table.X), System.Math.Abs(seat.Y - table.Y));
+                if (reach > worstReach) worstReach = reach;
+            }
+
+            Assert.That(seats.Count, Is.EqualTo(25), "no two ordinals may share a seat");
+            Assert.That(worstReach, Is.LessThanOrEqualTo(NeedConsumptionSystem.EatReachCells),
+                "every seat must stay within eating reach of the table");
+        }
+
+        [Test]
+        public void Advance_TwoFoodSpots_HungryActorWalksTowardTheNearest()
+        {
+            var actors = new ActorStore();
+            var actor = IdleActor(new GridPosition(0, 0));
+            actor.ApplyNeeds(actor.Needs.WithHunger(new NeedValue(100)));
+            actors.Add(actor);
+
+            new ScheduleSystem().Advance(actors, WorkHour,
+                new[] { new GridPosition(3, 0), new GridPosition(40, 40) });
+
+            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 0)),
+                "the step must head to the NEAR larder, not the far one");
+        }
+
         private static ActorRecord AssignedActor(GridPosition position)
         {
             var actor = Record(position);

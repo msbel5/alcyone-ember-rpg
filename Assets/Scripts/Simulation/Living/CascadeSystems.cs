@@ -124,8 +124,12 @@ namespace EmberCrpg.Simulation.Living
             int recorded = 0;
 
             // Stateless scan of the LAST HOUR only (hourly cadence → each event seen once).
+            // REVIEW FIX (O(history) growth): the full-log rescan cost grows without bound
+            // (~50k events in a 6-minute live run). Window scans are depth-capped — 4096 covers
+            // any real hour plus catchup interleaving; per-hour volume is ~500 in production.
             var events = world.Events.Events;
-            for (int i = events.Count - 1; i >= 0; i--)
+            int scanFloor = System.Math.Max(0, events.Count - 4096);
+            for (int i = events.Count - 1; i >= scanFloor; i--)
             {
                 var evt = events[i];
                 if (evt.Tick.TotalMinutes <= windowStart || evt.Tick.TotalMinutes > stamp.TotalMinutes) continue;
@@ -158,7 +162,7 @@ namespace EmberCrpg.Simulation.Living
                         {
                             bool alreadyReported = false;
                             foreach (var known in witnessMemory.Events)
-                                if (known.EventType == "reported_attack" && known.SubjectId.Equals(attacker.Id))
+                                if (known.EventType == "reported_attack" && known.ActorSeen.Equals(attacker.Id))
                                 { alreadyReported = true; break; }
                             if (!alreadyReported)
                             {

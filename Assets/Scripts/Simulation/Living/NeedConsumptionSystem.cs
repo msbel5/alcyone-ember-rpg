@@ -43,6 +43,8 @@ namespace EmberCrpg.Simulation.Living
                 if (actor.Needs.Hunger.Value >= HungerEatThreshold && TryEat(world, actor, stamp))
                     meals++;
 
+                // Sleep is intentionally UNLOGGED: a per-actor event every night hour would
+                // spam the log (the NeedsStep summary lesson); Gate1 pins the effect instead.
                 if (night && actor.Needs.Fatigue.Value > 0)
                 {
                     var rested = actor.Needs.WithFatigue(
@@ -74,6 +76,22 @@ namespace EmberCrpg.Simulation.Living
             return true;
         }
 
+        /// <summary>Single source of site-centre truth — was duplicated four times (review fix).</summary>
+        public static bool TryGetSiteCentre(WorldState world, EmberCrpg.Domain.Core.SiteId siteId, out GridPosition centre)
+        {
+            centre = default;
+            if (world?.Sites?.Records == null) return false;
+            foreach (var site in world.Sites.Records)
+                if (site != null && site.Id.Equals(siteId))
+                {
+                    centre = new GridPosition(
+                        (site.MinBound.X + site.MaxBound.X) / 2,
+                        (site.MinBound.Y + site.MaxBound.Y) / 2);
+                    return true;
+                }
+            return false;
+        }
+
         private static bool WithinReach(WorldState world, ActorRecord actor, StockpileComponent pile)
         {
             if (world.Sites?.Records == null) return true; // siteless worlds (bare tests) stay permissive
@@ -89,8 +107,6 @@ namespace EmberCrpg.Simulation.Living
             return true; // pile without a site record: no geometry to enforce
         }
 
-        /// <summary>H2: the communal food spot — the first food-holding pile's site centre. The
-        /// tick publishes this to the utility selector as the walk target.</summary>
         /// <summary>All food-holding piles' site centres. Multi-settlement worlds have MANY
         /// larders — routing everyone to the globally-first pile marched whole towns across the
         /// map. Presentation's ScheduleStep feeds this list; actors pick their nearest.</summary>

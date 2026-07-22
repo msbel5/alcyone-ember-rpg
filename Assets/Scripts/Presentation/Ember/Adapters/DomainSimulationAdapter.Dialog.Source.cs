@@ -47,6 +47,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
         }
 
+        // REVIEW FIX (stale-reply race): _conversationSerial only changes per CONVERSATION, so
+        // two requests in one conversation both passed the guard and the SLOWER inference won,
+        // overwriting the newer answer and lying with the thinking flag. Each request now takes
+        // a serial; only the LATEST may publish its line or clear the indicator.
+        private int _dialogRequestSerial;
+
         // CAN SUYU V2.1: the memory the NPC carries into the LLM prompt. Same canonical
         // source Gate9 proves (NpcMemoryLlmEnvelope.RecallLines) - witnessed attacks, past
         // conversations, trades: all of it reaches the tongue.

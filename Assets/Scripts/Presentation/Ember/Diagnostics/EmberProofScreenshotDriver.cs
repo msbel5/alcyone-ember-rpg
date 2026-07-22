@@ -638,12 +638,21 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 rig.transform.position = new Vector3(0f, 1.8f, 12f); // plaza edge, building ring starts ~14m
                 rig.transform.rotation = Quaternion.LookRotation(new Vector3(0f, 0f, -1f));
                 if (cc != null) cc.enabled = true;
+                // The FPS controller rewrites rotation every frame from mouse state — the pan
+                // below can only own the camera if the controller is off for the shoot.
+                foreach (var behaviour in rig.GetComponentsInChildren<MonoBehaviour>())
+                    if (behaviour != null && behaviour.GetType().Name == "EmberFirstPersonController")
+                        behaviour.enabled = false;
             }
 
             const int frames = 30;
             for (int i = 0; i < frames; i++)
             {
                 yield return new WaitForSecondsRealtime(10f);
+                // Slow 360° pan (12°/frame): a fixed gaze missed the plaza traffic entirely —
+                // the pan guarantees the crowd, the buildings, and the horizon all enter frame.
+                if (rig != null)
+                    rig.transform.rotation = Quaternion.Euler(0f, 180f + i * 12f, 0f);
                 yield return new WaitForEndOfFrame();
                 CaptureToPng(Path.Combine(_outputDir, $"lapse_{i:000}.png"));
             }

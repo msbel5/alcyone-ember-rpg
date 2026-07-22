@@ -25,6 +25,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             _isDialogThinking = true;
             int gen = _conversationSerial;
+            int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
 
             var request = new LlmRequest(
@@ -42,6 +43,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _mainThreadApply.Enqueue(() =>
             {
                 if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
+                if (req != _dialogRequestSerial) return;  // a newer REQUEST superseded this — drop the stale reply
                 // BUG-DIALOG-EMPTY: same whitespace guard as the greeting path — never overwrite the
                 // deterministic topic answer with an empty/whitespace inference result.
                 // BUG-DIALOG-TURNLEAK: also strip echoed chat-turn scaffolding; only a non-empty cleaned
@@ -63,6 +65,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             _isDialogThinking = true;
             int gen = _conversationSerial;
+            int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
             ulong seed = 1469598103934665603UL;
             foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
@@ -81,6 +84,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _mainThreadApply.Enqueue(() =>
             {
                 if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
+                if (req != _dialogRequestSerial) return;  // a newer REQUEST superseded this — drop the stale reply
                 UnityEngine.Debug.Log($"[NpcTopic-adhoc] actor={actorName} topic={topicId} " +
                     $"llm-len={(response?.Text?.Length ?? -1)} used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
                 // BUG-DIALOG-TURNLEAK: strip echoed chat-turn scaffolding; only a non-empty cleaned line

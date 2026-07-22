@@ -25,6 +25,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             _isDialogThinking = true;
             int gen = _conversationSerial;
+            int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var request = new LlmRequest(
                 "npc_greeting",
                 "npc:" + npc.Id.Value,
@@ -44,6 +45,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _mainThreadApply.Enqueue(() =>
             {
                 if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
+                if (req != _dialogRequestSerial) return;  // a newer REQUEST superseded this — drop the stale reply
                 // DIAG (LLM-not-firing): surface exactly what the native model returned so a runtime
                 // log reveals whether inference is empty (len<=0 -> llama.cpp produced no tokens) or
                 // working. Remove once the local LLM is confirmed generating in-game.
@@ -72,6 +74,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             _isDialogThinking = true;
             int gen = _conversationSerial;
+            int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             // Stable per-name seed (string.GetHashCode is process-randomised, so fold the chars via FNV).
             ulong seed = 1469598103934665603UL;
             foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
@@ -90,6 +93,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _mainThreadApply.Enqueue(() =>
             {
                 if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
+                if (req != _dialogRequestSerial) return;  // a newer REQUEST superseded this — drop the stale reply
                 UnityEngine.Debug.Log($"[NpcGreeting-adhoc] actor={actorName} llm-len={(response?.Text?.Length ?? -1)} " +
                     $"used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
                 // BUG-DIALOG-TURNLEAK: strip echoed chat-turn scaffolding; only a non-empty cleaned line

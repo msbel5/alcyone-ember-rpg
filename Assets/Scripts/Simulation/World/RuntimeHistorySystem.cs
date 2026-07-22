@@ -15,6 +15,12 @@ namespace EmberCrpg.Simulation.World
     /// <summary>Daily: event→relation drift + a monthly seeded chronicle event.</summary>
     public sealed class RuntimeHistorySystem
     {
+        // The three relation axes runtime history steers. Presentation's faction hydration
+        // guarantees these tags exist — sharing the constants kills the magic-string drift risk.
+        public const string LawTag = "law";
+        public const string CraftTag = "craft";
+        public const string TradeTag = "trade";
+
         public const int GuardRenownDelta = 1;
         public const int ShortageTensionDelta = -1;
         public const int FestivalBondDelta = 4;
@@ -31,9 +37,9 @@ namespace EmberCrpg.Simulation.World
         {
             if (world?.Factions == null || world.Events == null || stamp.TotalMinutes <= 0)
                 return;
-            var law = FindByTag(world, "law");
-            var craft = FindByTag(world, "craft");
-            var trade = FindByTag(world, "trade");
+            var law = FindByTag(world, LawTag);
+            var craft = FindByTag(world, CraftTag);
+            var trade = FindByTag(world, TradeTag);
             if (law == null || craft == null || trade == null)
                 return;
 
@@ -45,8 +51,11 @@ namespace EmberCrpg.Simulation.World
         {
             long dayStart = stamp.TotalMinutes - GameTime.MinutesPerDay;
             int guardResponses = 0, shortages = 0;
+            // Depth-capped for the same O(history) reason as the witness scan (see
+            // CascadeSystems) — 8192 covers a full production day plus catchup bursts.
             var events = world.Events.Events;
-            for (int i = events.Count - 1; i >= 0; i--)
+            int scanFloor = System.Math.Max(0, events.Count - 8192);
+            for (int i = events.Count - 1; i >= scanFloor; i--)
             {
                 var evt = events[i];
                 if (evt.Tick.TotalMinutes <= dayStart || evt.Tick.TotalMinutes > stamp.TotalMinutes) continue;

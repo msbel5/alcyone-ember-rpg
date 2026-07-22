@@ -171,6 +171,9 @@ namespace EmberCrpg.Simulation.Composition
                     }
                     catch (KeyNotFoundException)
                     {
+                        // Intentionally silent: content packs may claim jobs whose recipes land in
+                        // a later authoring pass. The claim stays queued and resolves once the
+                        // recipe registers; per-tick events here would spam the log hourly.
                         continue;
                     }
 
@@ -308,7 +311,7 @@ namespace EmberCrpg.Simulation.Composition
                 EmberCrpg.Domain.Core.ActorId anchor = default;
                 foreach (var actor in world.Actors.Records)
                 {
-                    if (actor == null) continue;
+                    if (actor == null || !actor.IsAlive) continue; // corpses do not hunger (review fix)
                     if (ticked == 0) anchor = actor.Id; // deterministic representative for the summary event
                     actor.ApplyNeeds(_needs.TickNeeds(actor.Needs));
                     _needs.RecomputeMood(actor);
@@ -387,6 +390,11 @@ namespace EmberCrpg.Simulation.Composition
                     }
 
                     pile.Add(p.SpeciesId, 2); // a ripe plot yields two units
+                    // Review fix: harvest mutated stock with ZERO audit trail — PlantHarvested
+                    // existed but was never emitted from this step.
+                    world.Events?.Append(new EmberCrpg.Domain.World.WorldEvent(
+                        context.Stamp, EmberCrpg.Domain.World.WorldEventKind.PlantHarvested,
+                        default, p.SiteId, $"harvested species:{p.SpeciesId} qty:2"));
                     world.Plants.Replace(p.Id, new EmberCrpg.Domain.Process.PlantComponent(
                         p.Id, p.SiteId, p.Position, p.SpeciesId,
                         new EmberCrpg.Domain.Process.PlantStageId("seed"), 0)); // replant

@@ -51,7 +51,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private bool TryBeginWorldEncounter(ActorRecord actor, EmberCrpg.Domain.Worldgen.NpcSeedRecord npc)
         {
             if (actor == null || !actor.IsAlive) return false;
-            if (npc == null || npc.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw) return false;
+            // REVIEW FIX: a bounty-hunting guard could chase but never BIND (only outlaws were
+            // accepted), leaving the watch standing beside a criminal forever. With a standing
+            // bounty the guard binds as a real combat opponent — the bounty finally has teeth.
+            bool bountyGuard = npc != null && npc.Role == EmberCrpg.Domain.Worldgen.NpcRole.Guard
+                && _world != null && _world.PlayerBountyGold > 0;
+            if (npc == null || (npc.Role != EmberCrpg.Domain.Worldgen.NpcRole.Outlaw && !bountyGuard)) return false;
 
             _worldEncounterId = actor.Id;
             _worldEncounterLootGranted = false;
@@ -261,7 +266,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // INITIATE inside the safe radius, matching the genre rule (Daggerfall towns
                 // are safe; danger begins in the wilds). Lair dwellers (pinned) still defend
                 // their delve, and a player-started fight binds normally via TryInteract.
-                if (!pinned && Chebyshev(target, BillboardOrigin()) <= 30)
+                // (Review fix: guards are EXEMPT — settlements are safe FROM outlaws, not from
+                // the watch; the F23 bounty hunt must keep working exactly where crimes happen.)
+                if (!pinned && seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Guard
+                    && Chebyshev(target, BillboardOrigin()) <= 30)
                     continue;
 
                 int dx = System.Math.Sign(target.X - hostile.Position.X);

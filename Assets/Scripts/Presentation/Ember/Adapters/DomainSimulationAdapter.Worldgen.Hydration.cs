@@ -89,7 +89,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // OYNANABILIRLIK: RuntimeHistorySystem steers relations along the law/craft/trade
             // axes; generated factions carry no such tags, which silently killed runtime history
             // in production. Guarantee the axes by tagging the first three generated factions.
-            string[] axisTags = { "craft", "trade", "law" };
+            string[] axisTags =
+            {
+                EmberCrpg.Simulation.World.RuntimeHistorySystem.CraftTag,
+                EmberCrpg.Simulation.World.RuntimeHistorySystem.TradeTag,
+                EmberCrpg.Simulation.World.RuntimeHistorySystem.LawTag,
+            };
             for (int i = 0; i < generated.Factions.Count; i++)
             {
                 var faction = generated.Factions[i];
