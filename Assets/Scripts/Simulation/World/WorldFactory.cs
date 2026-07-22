@@ -150,6 +150,39 @@ namespace EmberCrpg.Simulation.World
             world.Caravans.Add(new CaravanInstance(new CaravanId(1), route.Id, route.OriginSiteId, 0, 0, CaravanState.EnRoute));
         }
 
+        /// <summary>DF KALIBRASYONU: the authored 5-actor slice cannot carry Dwarf Fortress
+        /// gate thresholds (3 civilians = no crowd, no witness pool, no visible economy). This
+        /// seeds a deterministic village cast - villagers with homes south of the site row and
+        /// day anchors spread across it, a second watchman, and a roaming hunter that commutes
+        /// into town (unpinned - predation with witnesses in the plaza, not in a far dungeon).
+        /// Gates call this; production worldgen has its own population (SOUL-04).</summary>
+        public static void SeedVillagers(WorldState world, int villagers = 9)
+        {
+            if (world?.Actors == null) return;
+            var loadout = new WorldActorLoadoutFactory();
+            string[] names =
+            {
+                "Miller Besk", "Weaver Sanna", "Smith Corvo", "Herbalist Fenn", "Carter Jole",
+                "Baker Ede", "Mason Torv", "Fisher Lysa", "Tanner Brik", "Chandler Wex",
+                "Cooper Anz", "Scribe Ollo",
+            };
+            for (int i = 0; i < villagers && i < names.Length; i++)
+            {
+                var home = new GridPosition(1 + i * 2, 5);
+                var anchor = new GridPosition(1 + i * 2, 1); // unique per villager — Gate8 forbids stacked idlers
+                world.Actors.Add(loadout
+                    .Create(new ActorId(100UL + (ulong)i), names[i], ActorRole.Talker, home)
+                    .WithHomeAndAnchor(home, anchor));
+            }
+
+            world.Actors.Add(loadout
+                .Create(new ActorId(150), "Watchman Serel", ActorRole.Guard, new GridPosition(10, 1))
+                .WithHomeAndAnchor(new GridPosition(10, 4), new GridPosition(12, 1)));
+            world.Actors.Add(loadout
+                .Create(new ActorId(151), "Gaunt Hound", ActorRole.Enemy, new GridPosition(20, 6))
+                .WithHomeAndAnchor(new GridPosition(20, 6), new GridPosition(18, 1)));
+        }
+
         private static void AddSite(WorldState world, ulong id, SiteKind kind, string name, int minX, int minY, int maxX, int maxY)
         {
             world.Sites.Add(new SiteRecord(new SiteId(id), kind, name, new GridPosition(minX, minY), new GridPosition(maxX, maxY)));

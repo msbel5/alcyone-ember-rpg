@@ -47,6 +47,33 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return _world.Topics?.Select(t => t.Id).ToList() ?? new List<string>();
         }
 
+        // CAN SUYU V2.1: the memory the NPC carries into the LLM prompt. Same canonical
+        // source Gate9 proves (NpcMemoryLlmEnvelope.RecallLines) - witnessed attacks, past
+        // conversations, trades: all of it reaches the tongue.
+        private List<string> RecallDialogMemory(ulong npcId)
+            => EmberCrpg.Simulation.AiDm.NpcMemoryLlmEnvelope.RecallLines(_world, new ActorId(npcId), 8);
+
+        private List<string> RecallDialogMemoryByName(string actorName)
+        {
+            var actor = string.IsNullOrEmpty(actorName) ? null : _world?.Actors?.Records?.FirstOrDefault(
+                a => a != null && string.Equals(a.Name, actorName, System.StringComparison.Ordinal));
+            return actor == null
+                ? new List<string>()
+                : EmberCrpg.Simulation.AiDm.NpcMemoryLlmEnvelope.RecallLines(_world, actor.Id, 8);
+        }
+
+        // V2.1: conversations are EXPERIENCES - they write real memory the next reply recalls.
+        private void RecordConversationMemory(ActorRecord actor, string topicId)
+        {
+            if (actor == null || _world == null || string.IsNullOrEmpty(topicId)) return;
+            _world.NpcMemory ??= new EmberCrpg.Domain.Memory.NpcMemoryStore();
+            var memory = _world.NpcMemory.GetOrCreate(actor.Id);
+            memory.MarkDialogueSeen(topicId);
+            var player = _world.Actors?.Records?.FirstOrDefault(a => a != null && a.Role == ActorRole.Player);
+            memory.RecordEvent(new EmberCrpg.Domain.Memory.InteractionEvent(
+                _world.Time, "player_asked", player?.Id ?? default, topicId, string.Empty, 0, actor.Position));
+        }
+
         public void SelectTopic(string topicId)
         {
             // Audit (Phase 12 production wire, 2026-05-27): previously only set a
@@ -80,6 +107,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     actor.Id,
                     default,
                     $"topic_selected id:{topicId}"));
+                RecordConversationMemory(actor, topicId);
             }
 
             // Live LLM topic answer (Phase 12 production wire). Authored scene actors have no
@@ -108,6 +136,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 return;
 
             var topicId = "free_text:" + trimmed;
+            {
+                ActorRecord freeTextActor = null;
+                if (_conversation != null && !_conversation.ActorId.IsEmpty)
+                    _world.Actors.TryGet(_conversation.ActorId, out freeTextActor);
+                freeTextActor ??= _world.Actors.Records.FirstOrDefault(
+                    a => a != null && string.Equals(a.Name, _activeDialogActor, System.StringComparison.Ordinal));
+                RecordConversationMemory(freeTextActor, topicId);
+            }
             var floor = string.IsNullOrWhiteSpace(_activeDialogActor)
                 ? $"Someone considers your question: \"{trimmed}\"."
                 : $"{_activeDialogActor} considers your question: \"{trimmed}\".";

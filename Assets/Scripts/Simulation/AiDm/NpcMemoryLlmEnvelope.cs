@@ -30,6 +30,18 @@ namespace EmberCrpg.Simulation.AiDm
                 recent);
         }
 
+        /// <summary>The memory the NPC brings to its tongue: last N interaction events as
+        /// prompt turns. THE canonical dialogue-context source - the live dialog path and the
+        /// Gate9 proof both call this, so memory reaching the prompt is a tested invariant.</summary>
+        public static System.Collections.Generic.List<string> RecallLines(WorldState world, ActorId actorId, int count)
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            if (world?.NpcMemory != null && !actorId.IsEmpty
+                && world.NpcMemory.TryGet(actorId, out var memory))
+                lines.AddRange(new MemoryRecallService().LastN(memory, count));
+            return lines;
+        }
+
         public static void RecordAcceptedBark(WorldState world, NpcId npcId, GameTime now, string summary)
         {
             if (world == null || npcId.IsEmpty || string.IsNullOrWhiteSpace(summary))

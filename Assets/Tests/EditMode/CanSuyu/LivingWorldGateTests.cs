@@ -20,7 +20,10 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
 
         private static WorldState BuildWorld(int seed)
         {
+            // DF KALIBRASYONU: gates run against a real village cast (12 civilians, 2 guards,
+            // 2 hunters), not the 3-civilian slice — thresholds below are sized for it.
             var world = new WorldFactory().Create(seed);
+            WorldFactory.SeedVillagers(world);
             world.EnsureInvariants();
             return world;
         }
@@ -37,7 +40,7 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
         {
             var world = BuildWorld(4242);
             var composer = new WorldTickComposer();
-            int stockStart = world.Stockpiles.Sum(p => p?.Count ?? 0);
+            int stockStart = world.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
 
             AdvanceDays(world, composer, 5);
 
@@ -50,13 +53,14 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
 
             // The old ratchet drove EVERYONE to 100/100 within two days. Consumption must hold
             // the colony below the job-refusal wall after five full days.
-            Assert.That(avgHunger, Is.LessThan(80), $"avg hunger {avgHunger} — the colony is starving; consumption is not closing the loop");
-            Assert.That(avgFatigue, Is.LessThan(80), $"avg fatigue {avgFatigue} — nobody sleeps");
+            Assert.That(avgHunger, Is.LessThan(70), $"avg hunger {avgHunger} — the village is starving; consumption is not closing the loop");
+            Assert.That(avgFatigue, Is.LessThan(75), $"avg fatigue {avgFatigue} — nobody sleeps");
 
             // Stocks must MOVE — production adds, meals subtract. A dead economy sits still.
             int meals = world.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
-            Assert.That(meals, Is.GreaterThan(0), "no meals were eaten in five days — the circuit is open");
-            int stockEnd = world.Stockpiles.Sum(p => p?.Count ?? 0);
+            Assert.That(meals, Is.GreaterThanOrEqualTo(civilians.Count * 3),
+                $"only {meals} meals for {civilians.Count} villagers over five days — the table is theatre, not sustenance");
+            int stockEnd = world.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
             Assert.That(stockEnd, Is.Not.EqualTo(stockStart), "total stock is frozen — no flow");
         }
 
@@ -78,8 +82,8 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
             AdvanceDays(perturbed, composerB, 3);
 
             // The trajectories must DIVERGE: total stock, meals eaten, or job completions differ.
-            int stockA = control.Stockpiles.Sum(p => p?.Count ?? 0);
-            int stockB = perturbed.Stockpiles.Sum(p => p?.Count ?? 0);
+            int stockA = control.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
+            int stockB = perturbed.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
             int mealsA = control.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
             int mealsB = perturbed.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
             int jobsA = control.Events.Events.Count(e => e.Kind == WorldEventKind.JobCompleted);
@@ -120,7 +124,7 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
                 if (now > max) max = now;
             }
 
-            Assert.That(max - min, Is.GreaterThanOrEqualTo(2),
+            Assert.That(max - min, Is.GreaterThanOrEqualTo(5),
                 $"no gathering wave at the larder over two days (min={min}, max={max}) — " +
                 "hunger is not moving anyone to the table and back");
         }
@@ -143,11 +147,15 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
                 && attacker != null && attacker.Role == ActorRole.Enemy);
             Assert.That(npcAttack, Is.True, "no NPC-vs-NPC attack in two days — predation still lives on the render pump");
 
-            bool witnessed = events.Any(e => e.Kind == WorldEventKind.WitnessRecorded);
-            bool remembered = world.NpcMemory.Memories.Any(m =>
+            int witnessed = events.Count(e => e.Kind == WorldEventKind.WitnessRecorded);
+            int remembered = world.NpcMemory.Memories.Count(m =>
                 m.Events.Any(ev => ev.EventType == "witnessed_attack"));
-            Assert.That(witnessed && remembered, Is.True,
-                $"the attack caused nothing (witnessed={witnessed}, memoryWritten={remembered}) — no cascade, no stories");
+            Assert.That(witnessed >= 2 && remembered >= 2, Is.True,
+                $"a village square attack seen by fewer than two people (events={witnessed}, memories={remembered}) — the crowd is scenery");
+
+            // Depth 3: the watch must ANSWER — attack → witness → guard response, all in the log.
+            Assert.That(events.Any(e => e.Kind == WorldEventKind.GuardResponded), Is.True,
+                "no GuardResponded in two days — attacks are seen but never answered; the cascade dies at depth 2");
         }
 
         [Test]
@@ -193,7 +201,7 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
                 var world = BuildWorld(seed);
                 var composer = new WorldTickComposer();
                 AdvanceDays(world, composer, 31);
-                int stock = world.Stockpiles.Sum(p => p?.Count ?? 0);
+                int stock = world.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
                 int meals = world.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
                 var reps = string.Join(",", world.Factions.ReputationRows
                     .Select(r => $"{r.A.Value}-{r.B.Value}:{r.Reputation.Value}"));
@@ -236,6 +244,28 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
         }
 
         [Test]
+        public void Gate9_MemoryReachesTheTongue_WitnessedEventsEnterTheDialoguePrompt()
+        {
+            // The user's core demand: NPCs talk via LLM AND their memories feed the words.
+            // After two cascade days, a witness's dialogue context — built by the SAME
+            // NpcMemoryLlmEnvelope.RecallLines the live dialog path calls — must contain the
+            // witnessed attack. Memory that never reaches the tongue is dead data (the V1 sin).
+            var world = BuildWorld(4242);
+            var composer = new WorldTickComposer();
+            AdvanceDays(world, composer, 2);
+
+            var witnessId = world.NpcMemory.Memories
+                .Where(m => m.Events.Any(ev => ev.EventType == "witnessed_attack"))
+                .Select(m => m.ActorId)
+                .FirstOrDefault();
+            Assert.That(witnessId.IsEmpty, Is.False, "no witness memory exists to recall — Gate5 should have caught this");
+
+            var recall = EmberCrpg.Simulation.AiDm.NpcMemoryLlmEnvelope.RecallLines(world, witnessId, 8);
+            Assert.That(recall.Any(line => line.Contains("witnessed_attack")), Is.True,
+                "the witness SAW the attack but their dialogue context is silent about it — memory never reaches the tongue");
+        }
+
+        [Test]
         public void Gate3_UnscriptedEventRate_TheWorldActsWithoutAPlayer()
         {
             var world = BuildWorld(1717);
@@ -256,12 +286,20 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
                     || e.Kind == WorldEventKind.JobCompleted
                     || e.Kind == WorldEventKind.PlantStageAdvanced
                     || e.Kind == WorldEventKind.PlantHarvested
-                    || e.Kind == WorldEventKind.PriceChanged)
+                    || e.Kind == WorldEventKind.PriceChanged
+                    || e.Kind == WorldEventKind.CombatResolved
+                    || e.Kind == WorldEventKind.GuardResponded
+                    || e.Kind == WorldEventKind.WitnessRecorded
+                    || e.Kind == WorldEventKind.FactionReputationChanged
+                    || e.Kind == WorldEventKind.TradeCompleted
+                    || e.Kind == WorldEventKind.CaravanArrived
+                    || e.Kind == WorldEventKind.PlantPlanted
+                    || e.Kind == WorldEventKind.ChronicleEvent)
                     systemEvents++;
             }
             double perDay = systemEvents / 3.0;
-            Assert.That(perDay, Is.GreaterThanOrEqualTo(5.0),
-                $"only {perDay:0.0} unscripted events/day — the world idles unless a script pokes it");
+            Assert.That(perDay, Is.GreaterThanOrEqualTo(60.0),
+                $"only {perDay:0.0} unscripted events/day — a Dwarf Fortress town HUMS; this one idles");
         }
     }
 }

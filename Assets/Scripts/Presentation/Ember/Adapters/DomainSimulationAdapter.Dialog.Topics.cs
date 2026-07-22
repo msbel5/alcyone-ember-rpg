@@ -33,8 +33,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 180,
                 npc.Id.Value,
-                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
-                new List<string>());
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests. The conversation log below is what you personally remember - witnessed events, past talks, trades - use it when it bears on the question.",
+                RecallDialogMemory(npc.Id.Value));
 
             // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and
             // applied on the deterministic main-thread tick (not on the await's resumption thread).
@@ -75,7 +75,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 180,
                 seed,
                 $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
-                new List<string>());
+                RecallDialogMemoryByName(actorName));
 
             var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
             _mainThreadApply.Enqueue(() =>

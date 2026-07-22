@@ -31,8 +31,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 100,
                 npc.Id.Value,
-                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. Greet the player character briefly in character.",
-                new List<string>()
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. Greet the player character briefly in character. The conversation log below is what you personally remember (witnessed events, past talks); let it colour your greeting when relevant.",
+                RecallDialogMemory(npc.Id.Value)
             );
 
             // EMB-007: only the blocking LLM call runs off the main thread. The shared-state
@@ -83,7 +83,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 100,
                 seed,
                 $"You are {actorName}, a character in a {StyleDescriptor()} world. Greet the player character briefly, in character.",
-                new List<string>()
+                RecallDialogMemoryByName(actorName)
             );
 
             var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
