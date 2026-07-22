@@ -20,7 +20,10 @@ namespace EmberCrpg.Tests.EditMode.Composition
         private static readonly SiteId Site = new SiteId(910UL);
         private static readonly ActorId Requester = new ActorId(999UL);
 
-        private static int MiddayTick => TickToDayHour(ProofDayOffset, 12);
+        // CAN SUYU H2: the workday sample moves to MID-MORNING (10:00). At noon a living town
+        // is (correctly) drifting to the table; post-breakfast/pre-crossover is when a FED town
+        // is provably at work. The rhythm contract is unchanged — the sampling hour respects needs.
+        private static int MiddayTick => TickToDayHour(ProofDayOffset, 10);
         private static int NightTick => TickToDayHour(ProofDayOffset, 22);
 
         [Test]
@@ -73,6 +76,13 @@ namespace EmberCrpg.Tests.EditMode.Composition
             AddNpc(world, 6UL, "Guard Fenn", NpcRole.Guard, new GridPosition(9, 2), new GridPosition(6, 2));
             AddNpc(world, 7UL, "Scholar Gari", NpcRole.Scholar, new GridPosition(9, 4), new GridPosition(6, 4));
             AddNpc(world, 8UL, "Priest Hale", NpcRole.Priest, new GridPosition(9, 6), new GridPosition(6, 5));
+
+            // CAN SUYU H2: a LIVING town needs a larder — without one, need-driven actors
+            // correctly stay home starving and the rhythm premise dissolves. No site record
+            // → the reach check stays permissive; the meal is the point here, not geometry.
+            var larder = new StockpileComponent(Site);
+            larder.Add("wheat", 400);
+            world.Stockpiles.Add(larder);
 
             return world;
         }

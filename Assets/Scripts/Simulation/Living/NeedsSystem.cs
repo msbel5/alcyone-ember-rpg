@@ -14,14 +14,18 @@ namespace EmberCrpg.Simulation.Living
     /// <summary>Deterministically advances actor needs and recomputes mood.</summary>
     public sealed class NeedsSystem
     {
-        public const int HungerIncreasePerTick = 20;
-        public const int FatigueIncreasePerTick = 15;
+        // CAN SUYU H2 re-balance: the old rates (+20/+15/+10 per HOUR) belonged to the ratchet
+        // era when nothing ever recovered — under a real day cycle they exhausted everyone by
+        // noon. New rates scale to a 24h life: hunger spans ~2 meals/day (0→100 in ~12.5h),
+        // fatigue spans a 16h waking day, thirst rides the meal's drink.
+        public const int HungerIncreasePerTick = 8;
+        public const int FatigueIncreasePerTick = 6;
         // Codex audit (eighth pass A-P1): Thirst is part of ActorNeeds and
         // ActorNeeds.WithThirst exists, but TickNeeds never advanced it —
         // thirst pressure stayed at its initial value forever. Sized between
         // hunger (20) and fatigue (15) so the survival-loop ordering remains
         // hunger > thirst > fatigue.
-        public const int ThirstIncreasePerTick = 10;
+        public const int ThirstIncreasePerTick = 5;
 
         private readonly NeedMoodEvaluator _moodEvaluator;
 

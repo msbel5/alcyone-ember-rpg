@@ -3,15 +3,15 @@ using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 
 // Design note:
-// ScheduleSystem (SOUL-03) is the first LIVING mover that reads ActorScheduleState.
-// Pure Domain/Simulation: no Unity, no I/O, fully deterministic. It picks one
-// per-hour destination for each living actor: assigned worksites during work hours,
-// day anchors for idle daytime actors, and home outside work hours. It does not
-// pathfind around obstacles, claim/complete jobs, tick recipes, mutate needs, or emit
-// EventLog rows — those belong to JobAssignmentSystem and the per-tick composer.
+// ScheduleSystem (SOUL-03 → CAN SUYU H2) is the living mover. V1 was a clock-anchor router with
+// a HARDCODED 12:00-13:59 lunch window — choreography, not behavior (the audit's canonical
+// example). H2 replaces it with a UTILITY SELECTOR: each hour every civilian scores its options
+// (eat / rest / work / idle) from its OWN needs and the clock, and walks toward the winner. The
+// midday tavern crowd is no longer routed — it EMERGES, because hunger rises through the morning
+// until eating outbids work. Pure Domain/Simulation: deterministic, no Unity, no I/O.
 namespace EmberCrpg.Simulation.Living
 {
-    /// <summary>Steps living actors one tile toward their current daily-rhythm target.</summary>
+    /// <summary>Steps living actors one tile toward the behavior their needs currently choose.</summary>
     public sealed class ScheduleSystem
     {
         /// <summary>First game-hour (inclusive) of the working day.</summary>
@@ -20,24 +20,21 @@ namespace EmberCrpg.Simulation.Living
         /// <summary>End game-hour (exclusive) of the working day.</summary>
         public const int WorkEndHour = 20;
 
-        /// <summary>F27: the midday meal — 12:00-13:59. Civilians route to the communal lunch spot
-        /// (the tavern, when the realize step has published one).</summary>
-        public const int LunchStartHour = 12;
-        public const int LunchEndHour = 14;
+        // Utility weights: work is a steady pull (55); eating wins once hunger climbs past it
+        // (the +20/h ratchet crosses 55 around midday when fed at dawn); resting wins in the
+        // evening as fatigue + the night bonus overtake everything.
+        public const int WorkScore = 55;
+        public const int IdleScore = 35;
+        public const int NightRestBonus = 25;
 
-        /// <summary>
-        /// Advances one game-hour of schedule movement. Assigned actors route to their worksite
-        /// during work hours, idle daytime actors route to their day anchor, and all living actors
-        /// route home outside work hours.
-        /// </summary>
         public void Advance(ActorStore actors, GameTime time)
         {
-            Advance(actors, time, lunchSpot: null);
+            Advance(actors, time, foodSpot: null);
         }
 
-        /// <summary>F27 overload: when the realize step published a communal LUNCH SPOT (the tavern),
-        /// civilians route there over the midday window instead of their work/anchor target.</summary>
-        public void Advance(ActorStore actors, GameTime time, GridPosition? lunchSpot)
+        /// <summary>H2 overload: the world's communal FOOD SPOT (the tavern / market stall where
+        /// the stockpile lives). No window — hunger decides when anyone goes.</summary>
+        public void Advance(ActorStore actors, GameTime time, GridPosition? foodSpot)
         {
             if (actors == null)
                 return;
@@ -49,28 +46,15 @@ namespace EmberCrpg.Simulation.Living
 
                 // F18 lair guards: a pinned Enemy (home == dayAnchor, the F10 dungeon-dweller contract)
                 // has no daily rhythm — its only mover is the hostile-pursuit AI. Stepping it back home
-                // every tick rubber-bands an active chase (proof: 1.8m closed instead of ~5.7m over
-                // 2.6s). Commuting enemies (street outlaws, home != dayAnchor) keep the F6 curfew walk.
+                // every tick rubber-bands an active chase (proof: 1.8m closed instead of ~5.7m over 2.6s).
                 if (actor.Role == ActorRole.Enemy && actor.Home.Equals(actor.DayAnchor))
                     continue;
 
-                // F27: midday — civilians (never enemies or the watch) head for the lunch spot.
-                var target = lunchSpot.HasValue && IsLunchHour(time)
-                             && actor.Role != ActorRole.Enemy && actor.Role != ActorRole.Guard
-                    ? lunchSpot.Value
-                    : ResolveTarget(actor, time);
-
+                var target = ChooseTarget(actor, time, foodSpot);
                 var next = StepToward(actor.Position, target);
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
             }
-        }
-
-        /// <summary>True within the midday meal window (12:00-13:59).</summary>
-        public static bool IsLunchHour(GameTime time)
-        {
-            var hour = time.Hour;
-            return hour >= LunchStartHour && hour < LunchEndHour;
         }
 
         /// <summary>True when the supplied timestamp falls within the working day.</summary>
@@ -80,11 +64,36 @@ namespace EmberCrpg.Simulation.Living
             return hour >= WorkStartHour && hour < WorkEndHour;
         }
 
-        private static GridPosition ResolveTarget(ActorRecord actor, GameTime time)
+        /// <summary>H2 UTILITY CORE: the highest-scoring behavior wins; needs drive the score.
+        /// Public so tests can pin the decision table without simulating movement.</summary>
+        public static GridPosition ChooseTarget(ActorRecord actor, GameTime time, GridPosition? foodSpot)
         {
-            if (!IsWorkHour(time))
-                return actor.Home;
+            bool workHour = IsWorkHour(time);
 
+            // The watch holds its post (guards eat off-shift — an honest simplification, logged
+            // in ROADMAP_V2), and enemies keep the curfew commute: classic routing for both.
+            if (actor.Role == ActorRole.Guard || actor.Role == ActorRole.Enemy)
+                return ClassicTarget(actor, workHour);
+
+            int eat = foodSpot.HasValue ? actor.Needs.Hunger.Value : -1;
+            int rest = actor.Needs.Fatigue.Value + (workHour ? 0 : NightRestBonus);
+            int work = workHour && !actor.ScheduleState.IsIdle ? WorkScore : 0;
+            int idle = workHour ? IdleScore : 0;
+
+            // Deterministic tie order: eat > rest > work > idle (the hungrier impulse wins ties).
+            if (eat >= rest && eat >= work && eat >= idle && foodSpot.HasValue)
+                return foodSpot.Value;
+            if (rest >= work && rest >= idle)
+                return actor.Home;
+            if (work >= idle)
+                return actor.ScheduleState.TargetWorksitePosition;
+            return actor.DayAnchor;
+        }
+
+        private static GridPosition ClassicTarget(ActorRecord actor, bool workHour)
+        {
+            if (!workHour)
+                return actor.Home;
             var schedule = actor.ScheduleState;
             return schedule.IsIdle ? actor.DayAnchor : schedule.TargetWorksitePosition;
         }

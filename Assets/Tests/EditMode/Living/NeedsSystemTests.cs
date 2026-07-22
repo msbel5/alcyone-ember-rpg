@@ -17,11 +17,10 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             var ticked = new NeedsSystem().TickNeeds(needs);
 
-            Assert.That(ticked.Hunger.Value, Is.EqualTo(30));
-            Assert.That(ticked.Fatigue.Value, Is.EqualTo(35));
-            // Codex audit (eighth pass A-P1): Thirst now ticks at
-            // ThirstIncreasePerTick=10 instead of staying frozen.
-            Assert.That(ticked.Thirst.Value, Is.EqualTo(40));
+            // CAN SUYU H2 rates: +8 hunger / +6 fatigue / +5 thirst per hour (24h-cycle scale).
+            Assert.That(ticked.Hunger.Value, Is.EqualTo(18));
+            Assert.That(ticked.Fatigue.Value, Is.EqualTo(26));
+            Assert.That(ticked.Thirst.Value, Is.EqualTo(35));
         }
 
         [Test]
@@ -31,11 +30,10 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             var ticked = new NeedsSystem().TickNeeds(needs, ticks: 5);
 
-            Assert.That(ticked.Hunger, Is.EqualTo(NeedValue.Critical));
-            Assert.That(ticked.Fatigue, Is.EqualTo(NeedValue.Critical));
-            // Codex audit (eighth pass A-P1): 40 + (10 * 5) = 90, still below
-            // Max=100 so this exercises the non-clamp branch for thirst.
-            Assert.That(ticked.Thirst.Value, Is.EqualTo(90));
+            Assert.That(ticked.Hunger, Is.EqualTo(NeedValue.Critical));   // 90 + 8*5 clamps at 100
+            Assert.That(ticked.Fatigue, Is.EqualTo(NeedValue.Critical));  // 95 + 6*5 clamps at 100
+            // 40 + (5 * 5) = 65, still below Max=100 — the non-clamp branch for thirst.
+            Assert.That(ticked.Thirst.Value, Is.EqualTo(65));
         }
 
         [Test]

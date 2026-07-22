@@ -38,13 +38,11 @@ namespace EmberCrpg.Tests.EditMode.Living
                 $"actor:{actor.Id.Value}",
                 "ticks:2",
                 $"time:{GameTime.MinutesPerDay}",
-                "hunger:0->40",
-                "fatigue:0->30",
-                // Codex audit (eighth pass A-P1): thirst now ticks at
-                // ThirstIncreasePerTick=10, so 2 ticks moves Thirst 0->20
-                // and the mood drops by (40+30+20)/3 = 30 instead of 23.
-                "thirst:0->20",
-                "mood:20",
+                "hunger:0->16",
+                "fatigue:0->12",
+                // CAN SUYU H2 rates: 2 ticks = +16/+12/+10; mood 50-(16+12+10)/3 = 38.
+                "thirst:0->10",
+                "mood:38",
             }));
         }
 

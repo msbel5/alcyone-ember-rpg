@@ -213,7 +213,13 @@ namespace EmberCrpg.Simulation.Composition
             public override void Run(in TickContext context)
             {
                 if (context.World.Actors != null)
-                    _schedule.Advance(context.World.Actors, context.Stamp, context.World.TavernCell);
+                {
+                    // H2: the food spot is WHERE THE FOOD IS — the realized tavern when published,
+                    // else the first food-holding stockpile's site centre. No window anywhere.
+                    var foodSpot = context.World.TavernCell
+                        ?? EmberCrpg.Simulation.Living.NeedConsumptionSystem.FoodSpot(context.World);
+                    _schedule.Advance(context.World.Actors, context.Stamp, foodSpot);
+                }
             }
         }
 

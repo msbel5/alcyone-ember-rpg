@@ -13,7 +13,8 @@ namespace EmberCrpg.Simulation.Living
     /// <summary>Hourly consumption: eat from stockpiles when hungry, sleep at night when tired.</summary>
     public sealed class NeedConsumptionSystem
     {
-        public const int HungerEatThreshold = 60;
+        public const int HungerEatThreshold = 55; // aligned with the H2 utility crossover (WorkScore)
+        public const int EatReachCells = 2;       // H2: you eat AT the table — walk all the way
         public const int MealHungerFloor = 5;    // eat to satiation, not by a fixed bite
         public const int MealThirstRecovery = 40; // the meal includes a drink (no water sim yet)
         public const int NightSleepFatigueRecovery = 40;
@@ -52,6 +53,9 @@ namespace EmberCrpg.Simulation.Living
         {
             var pile = FindFoodPile(world, out var foodTag);
             if (pile == null) return false;
+            // H2: eating happens AT the larder — the utility selector walks you there first.
+            // This is what turns "numbers drift" into a VISIBLE walk-eat-return rhythm.
+            if (!WithinReach(world, actor, pile)) return false;
 
             pile.Remove(foodTag, 1);
             var fed = actor.Needs
@@ -63,6 +67,35 @@ namespace EmberCrpg.Simulation.Living
                 world.Time, WorldEventKind.NeedChanged, actor.Id, pile.SiteId,
                 $"meal_eaten item:{foodTag} hunger:{fed.Hunger.Value}"));
             return true;
+        }
+
+        private static bool WithinReach(WorldState world, ActorRecord actor, StockpileComponent pile)
+        {
+            if (world.Sites?.Records == null) return true; // siteless worlds (bare tests) stay permissive
+            foreach (var site in world.Sites.Records)
+            {
+                if (site == null || !site.Id.Equals(pile.SiteId)) continue;
+                int cx = (site.MinBound.X + site.MaxBound.X) / 2;
+                int cy = (site.MinBound.Y + site.MaxBound.Y) / 2;
+                int dx = System.Math.Abs(actor.Position.X - cx);
+                int dy = System.Math.Abs(actor.Position.Y - cy);
+                return System.Math.Max(dx, dy) <= EatReachCells;
+            }
+            return true; // pile without a site record: no geometry to enforce
+        }
+
+        /// <summary>H2: the communal food spot — the first food-holding pile's site centre. The
+        /// tick publishes this to the utility selector as the walk target.</summary>
+        public static GridPosition? FoodSpot(WorldState world)
+        {
+            var pile = FindFoodPile(world, out _);
+            if (pile == null || world.Sites?.Records == null) return null;
+            foreach (var site in world.Sites.Records)
+                if (site != null && site.Id.Equals(pile.SiteId))
+                    return new GridPosition(
+                        (site.MinBound.X + site.MaxBound.X) / 2,
+                        (site.MinBound.Y + site.MaxBound.Y) / 2);
+            return null;
         }
 
         // Food = whatever the fields grow (plant species tags own the harvest stock). Nearest-pile
@@ -87,7 +120,8 @@ namespace EmberCrpg.Simulation.Living
 
         private static List<string> FoodTags(WorldState world)
         {
-            var tags = new List<string>();
+            // "wheat" is the staple even in plotless worlds; live species extend the menu.
+            var tags = new List<string> { "wheat" };
             if (world.Plants == null) return tags;
             foreach (var row in world.Plants.Rows)
                 if (row.Value != null && !string.IsNullOrEmpty(row.Value.SpeciesId) && !tags.Contains(row.Value.SpeciesId))

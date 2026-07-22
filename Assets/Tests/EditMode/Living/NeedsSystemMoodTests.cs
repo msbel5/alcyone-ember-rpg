@@ -31,10 +31,11 @@ namespace EmberCrpg.Tests.EditMode.Living
             var log = new WorldEventLog();
             var system = new NeedsSystem();
 
-            system.TickActorNeeds(actor, log, new GameTime(0), ticks: 3);
+            // CAN SUYU H2 rates: ten unfed hours cross the refusal mood threshold.
+            system.TickActorNeeds(actor, log, new GameTime(0), ticks: 10);
 
-            Assert.That(actor.Needs.Hunger.Value, Is.EqualTo(60));
-            Assert.That(actor.Needs.Fatigue.Value, Is.EqualTo(45));
+            Assert.That(actor.Needs.Hunger.Value, Is.EqualTo(80)); // 10h x +8
+            Assert.That(actor.Needs.Fatigue.Value, Is.EqualTo(60)); // 10h x +6
             Assert.That(actor.Mood.IsLow, Is.True);
             Assert.That(actor.Mood.Value, Is.LessThanOrEqualTo(ActorMood.LowMoodThreshold));
         }

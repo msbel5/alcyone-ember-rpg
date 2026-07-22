@@ -39,7 +39,9 @@ namespace EmberCrpg.Tests.EditMode.Living
             var log = new WorldEventLog();
             var needsSystem = new NeedsSystem();
 
-            needsSystem.TickActorNeeds(actor, log, new GameTime(0), ticks: 3);
+            // CAN SUYU H2 rates (+8/+6/+5 per hour): ten unfed hours crosses the refusal
+            // wall (hunger 80, mood low) — the same starvation contract at the new pace.
+            needsSystem.TickActorNeeds(actor, log, new GameTime(0), ticks: 10);
 
             var assigner = new JobAssignmentSystem();
             var now = default(GameTime);

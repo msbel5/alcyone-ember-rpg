@@ -20,7 +20,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // from stockpiles, SLEEP at night, and shortages post planting jobs. Same-seed
         // determinism is separately pinned (Advance_IsDeterministic...); this hash only asserts
         // "no accidental drift SINCE the consumption loop landed".
-        private const string BaselineHash = "ca3a12f8fde05ad13a601b0e1f4f7c70e678cab015923a1b1b85fc110e485cbc";
+        private const string BaselineHash = "950929503e0db18917dfa7f3de72bba2e518241bc0bdfe141d66d0ae196f5bb4";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

@@ -101,34 +101,64 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(4, 2)));
         }
 
-        // F27: midday routes civilians to the LUNCH SPOT; the watch and enemies never join the meal,
-        // and the table empties back to the normal rhythm after 14:00.
+        // CAN SUYU H2: the lunch WINDOW is dead. Hunger itself sends people to the food spot —
+        // a hungry civilian walks there at ANY hour, a fed one never does (even at 12:30), and
+        // the watch holds its post regardless. The midday crowd is an EMERGENT consequence of
+        // the morning hunger ramp, not a routing rule.
         [Test]
-        public void Advance_LunchWindow_RoutesCiviliansToLunchSpot_ButNeverGuards()
+        public void Advance_HungerNotTheClock_SendsCiviliansToTheFoodSpot()
         {
-            var lunchSpot = new GridPosition(5, 0);
-            var noonMeal = new GameTime((12 * GameTime.MinutesPerHour) + 30); // 12:30
+            var foodSpot = new GridPosition(5, 0);
+            var midMorning = new GameTime(9 * GameTime.MinutesPerHour); // 09:00 — NOT lunch time
 
-            var actors = new ActorStore();
-            actors.Add(Record(new GridPosition(0, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9)));
+            var hungry = new ActorStore();
+            var hungryActor = Record(new GridPosition(0, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9));
+            hungryActor.ApplyNeeds(hungryActor.Needs.WithHunger(new NeedValue(70)));
+            hungry.Add(hungryActor);
             var system = new ScheduleSystem();
 
-            system.Advance(actors, noonMeal, lunchSpot);
-            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 0)),
-                "a civilian steps toward the tavern at midday");
+            system.Advance(hungry, midMorning, foodSpot);
+            Assert.That(hungry.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 0)),
+                "a HUNGRY civilian heads for the food at 09:00 — no window needed");
+
+            var fed = new ActorStore();
+            var fedActor = Record(new GridPosition(0, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9));
+            fedActor.ApplyNeeds(fedActor.Needs.WithHunger(new NeedValue(10)));
+            fed.Add(fedActor);
+            system.Advance(fed, new GameTime((12 * GameTime.MinutesPerHour) + 30), foodSpot);
+            Assert.That(fed.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 1)),
+                "a FED civilian ignores the tavern even at 12:30 — the clock does not route meals");
 
             var guards = new ActorStore();
-            guards.Add(Record(new GridPosition(0, 0), ActorRole.Guard)
-                .WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(0, 9)));
-            system.Advance(guards, noonMeal, lunchSpot);
+            var guard = Record(new GridPosition(0, 0), ActorRole.Guard)
+                .WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(0, 9));
+            guard.ApplyNeeds(guard.Needs.WithHunger(new NeedValue(90)));
+            guards.Add(guard);
+            system.Advance(guards, midMorning, foodSpot);
             Assert.That(guards.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(0, 1)),
-                "the watch keeps its post route — no lunch for the law");
+                "the watch keeps its post route even starving — guards eat off-shift");
+        }
 
-            var after = new ActorStore();
-            after.Add(Record(new GridPosition(5, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9)));
-            system.Advance(after, new GameTime(15 * GameTime.MinutesPerHour), lunchSpot);
-            Assert.That(after.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(6, 1)),
-                "after the meal the day anchor pulls again");
+        // CAN SUYU H2: the decision table itself — needs pick the behavior deterministically.
+        [Test]
+        public void ChooseTarget_UtilityTable_NeedsDriveTheChoice()
+        {
+            var foodSpot = new GridPosition(5, 0);
+            var home = new GridPosition(0, 0);
+            var anchor = new GridPosition(9, 9);
+            var day = new GameTime(9 * GameTime.MinutesPerHour);
+            var night = new GameTime(23 * GameTime.MinutesPerHour);
+
+            var actor = Record(new GridPosition(3, 3)).WithHomeAndAnchor(home, anchor);
+
+            actor.ApplyNeeds(ActorNeeds.Comfortable.WithHunger(new NeedValue(80)));
+            Assert.That(ScheduleSystem.ChooseTarget(actor, day, foodSpot), Is.EqualTo(foodSpot), "hunger wins the day");
+
+            actor.ApplyNeeds(ActorNeeds.Comfortable.WithFatigue(new NeedValue(90)));
+            Assert.That(ScheduleSystem.ChooseTarget(actor, night, foodSpot), Is.EqualTo(home), "exhaustion sends you home at night");
+
+            actor.ApplyNeeds(ActorNeeds.Comfortable);
+            Assert.That(ScheduleSystem.ChooseTarget(actor, day, foodSpot), Is.EqualTo(anchor), "a comfortable idle actor minds its day anchor");
         }
 
         [Test]

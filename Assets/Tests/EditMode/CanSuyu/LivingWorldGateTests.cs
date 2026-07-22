@@ -92,6 +92,40 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
         }
 
         [Test]
+        public void Gate4_EmergentGathering_TheMiddayCrowdHasNoWindowCode()
+        {
+            // H2's headline: the lunch WINDOW is deleted. The crowd at the food spot must now
+            // EMERGE from the morning hunger ramp. We sample occupancy near the larder at 09:00
+            // vs 14:00 — a fed morning town works; a hungry afternoon town converges to eat.
+            var world = BuildWorld(4242);
+            var composer = new WorldTickComposer();
+            var spot = EmberCrpg.Simulation.Living.NeedConsumptionSystem.FoodSpot(world);
+            Assert.That(spot.HasValue, Is.True, "the world has no larder to gather at");
+
+            int CountNear() => world.Actors.Records.Count(a =>
+                a != null && a.IsAlive && a.Role != ActorRole.Player && a.Role != ActorRole.Enemy
+                && System.Math.Max(System.Math.Abs(a.Position.X - spot.Value.X),
+                                   System.Math.Abs(a.Position.Y - spot.Value.Y)) <= 2);
+
+            // Sample occupancy near the larder EVERY HOUR for two days: a living town produces a
+            // WAVE (empty table → meal crowd → empty again); a frozen or window-routed town is
+            // flat or a square pulse pinned to authored hours. We assert the wave's amplitude.
+            int min = int.MaxValue, max = int.MinValue;
+            for (int hour = 1; hour <= 48; hour++)
+            {
+                for (int tick = (hour - 1) * 60 + 1; tick <= hour * 60; tick++)
+                    composer.Advance(world, tick);
+                int now = CountNear();
+                if (now < min) min = now;
+                if (now > max) max = now;
+            }
+
+            Assert.That(max - min, Is.GreaterThanOrEqualTo(2),
+                $"no gathering wave at the larder over two days (min={min}, max={max}) — " +
+                "hunger is not moving anyone to the table and back");
+        }
+
+        [Test]
         public void Gate3_UnscriptedEventRate_TheWorldActsWithoutAPlayer()
         {
             var world = BuildWorld(1717);
