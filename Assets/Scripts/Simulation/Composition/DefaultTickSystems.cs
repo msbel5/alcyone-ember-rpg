@@ -47,6 +47,8 @@ namespace EmberCrpg.Simulation.Composition
                 new ScheduleStep(schedule),
                 new NeedsStep(needs),
                 new ConsumptionStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
+                new PredationStep(),    // CAN SUYU H3: hunters hunt IN the simulation, NPC-vs-NPC
+                new WitnessStep(),      // CAN SUYU H3: attacks are seen, remembered, answered
                 new CaravanStep(caravans),
                 new PlantGrowthStep(plantGrowth, seasonCalendar, plantSpecies),
                 new HarvestStep(),
@@ -254,6 +256,24 @@ namespace EmberCrpg.Simulation.Composition
                 int hour = (int)((world.Time.TotalMinutes / 60) % 24);
                 _consumption.Tick(world, hour);
             }
+        }
+
+        // CAN SUYU H3: predation runs in the SIM (not the render pump) and hits NPCs.
+        private sealed class PredationStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.Living.PredationSystem _predation =
+                new EmberCrpg.Simulation.Living.PredationSystem();
+            public PredationStep() : base("living.predation", TickCadence.Hourly, 40) { }
+            public override void Run(in TickContext context) => _predation.Tick(context.World);
+        }
+
+        // CAN SUYU H3: witnesses write REAL memory and the watch converges.
+        private sealed class WitnessStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.Living.WitnessResponseSystem _witness =
+                new EmberCrpg.Simulation.Living.WitnessResponseSystem();
+            public WitnessStep() : base("living.witness", TickCadence.Hourly, 45) { }
+            public override void Run(in TickContext context) => _witness.Tick(context.World);
         }
 
         // CAN SUYU H1+H3: shortage detector sweep + the planting-job response. Order 27 sits

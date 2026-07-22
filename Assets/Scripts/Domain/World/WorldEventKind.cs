@@ -41,5 +41,9 @@ namespace EmberCrpg.Domain.World
         QuestStarted = 27,
         QuestTaskTriggered = 28,
         QuestCompleted = 29,
+        // CAN SUYU H3: the cascade links — an attack is SEEN (memory written) and ANSWERED
+        // (the watch converges). Event→event chains are what emergence is made of.
+        WitnessRecorded = 30,
+        GuardResponded = 31,
     }
 }

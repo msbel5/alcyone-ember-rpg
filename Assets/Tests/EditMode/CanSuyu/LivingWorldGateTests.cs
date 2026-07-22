@@ -126,6 +126,31 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
         }
 
         [Test]
+        public void Gate5_EventCascade_AnAttackIsSeenAndRemembered()
+        {
+            // H3: one event must CAUSE another, player absent. The factory world ships a street
+            // hunter (Ash Rat); over two headless days it must attack an NPC (link 1), and nearby
+            // civilians must WITNESS it — a WitnessRecorded event plus a REAL ActorMemory entry
+            // (link 2; NpcMemory's first runtime writes). Depth-2 chains are the seed of stories.
+            var world = BuildWorld(4242);
+            var composer = new WorldTickComposer();
+            AdvanceDays(world, composer, 2);
+
+            var events = world.Events.Events;
+            bool npcAttack = events.Any(e =>
+                e.Kind == WorldEventKind.CombatResolved
+                && world.Actors.TryGet(e.ActorId, out var attacker)
+                && attacker != null && attacker.Role == ActorRole.Enemy);
+            Assert.That(npcAttack, Is.True, "no NPC-vs-NPC attack in two days — predation still lives on the render pump");
+
+            bool witnessed = events.Any(e => e.Kind == WorldEventKind.WitnessRecorded);
+            bool remembered = world.NpcMemory.Memories.Any(m =>
+                m.Events.Any(ev => ev.EventType == "witnessed_attack"));
+            Assert.That(witnessed && remembered, Is.True,
+                $"the attack caused nothing (witnessed={witnessed}, memoryWritten={remembered}) — no cascade, no stories");
+        }
+
+        [Test]
         public void Gate3_UnscriptedEventRate_TheWorldActsWithoutAPlayer()
         {
             var world = BuildWorld(1717);

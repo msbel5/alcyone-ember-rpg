@@ -70,6 +70,8 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "Hourly:15:quest.tick",
                 "Hourly:30:living.needs",
                 "Hourly:35:living.consumption", // CAN SUYU H1: needs come back DOWN (eat/sleep)
+                "Hourly:40:living.predation",   // CAN SUYU H3: NPC-vs-NPC in the sim
+                "Hourly:45:living.witness",     // CAN SUYU H3: seen, remembered, answered
                 "Daily:10:world.caravans",
                 "Daily:20:econ.plantgrowth",
                 "Daily:25:world.harvest", // v0.2 F7: same-day grow→harvest→price chain (shipcheck FLAT finding)
