@@ -151,6 +151,38 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
         }
 
         [Test]
+        public void Gate6_RuntimeHistory_TheChronicleKeepsBeingWritten_AndDiffersBySeed()
+        {
+            // H4: worldgen history used to FREEZE at minute zero. Over 31 headless days each
+            // world must (a) log at least one chronicle event, (b) actually CHANGE at least one
+            // faction relation, and (c) two different seeds must write DIFFERENT histories.
+            string ChronicleOf(int seed)
+            {
+                var world = BuildWorld(seed);
+                var composer = new WorldTickComposer();
+                var before = world.Factions.ReputationRows
+                    .Select(r => $"{r.A.Value}-{r.B.Value}:{r.Reputation.Value}").ToArray();
+                AdvanceDays(world, composer, 31);
+
+                var chronicle = world.Events.Events
+                    .Where(e => e.Kind == WorldEventKind.ChronicleEvent)
+                    .Select(e => e.Reason).ToArray();
+                Assert.That(chronicle.Length, Is.GreaterThanOrEqualTo(1),
+                    $"seed {seed}: no chronicle event in 31 days — history froze again");
+
+                var after = world.Factions.ReputationRows
+                    .Select(r => $"{r.A.Value}-{r.B.Value}:{r.Reputation.Value}").ToArray();
+                Assert.That(after, Is.Not.EqualTo(before),
+                    $"seed {seed}: 31 days changed NO faction relation — diplomacy is fossilized");
+
+                return string.Join("|", chronicle) + "||" + string.Join("|", after);
+            }
+
+            Assert.That(ChronicleOf(4242), Is.Not.EqualTo(ChronicleOf(9999)),
+                "two seeds wrote IDENTICAL histories — the chronicle is not seed-driven");
+        }
+
+        [Test]
         public void Gate3_UnscriptedEventRate_TheWorldActsWithoutAPlayer()
         {
             var world = BuildWorld(1717);

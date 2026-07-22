@@ -20,7 +20,10 @@ namespace EmberCrpg.Simulation.Living
         public const int HuntRadius = 6;
         public const int StrikeReach = 2;
 
-        public int Tick(WorldState world)
+        public int Tick(WorldState world) => Tick(world, world?.Time ?? default);
+
+        // Catchup contract: dice and event stamps derive from the boundary stamp.
+        public int Tick(WorldState world, GameTime stamp)
         {
             if (world?.Actors == null || world.Events == null) return 0;
             int strikes = 0;
@@ -38,8 +41,8 @@ namespace EmberCrpg.Simulation.Living
                     a => a.Role == ActorRole.Guard);
                 if (guard != null)
                 {
-                    Strike(world, resolver, action, guard, hunter);
-                    world.Events.Append(new WorldEvent(world.Time, WorldEventKind.GuardResponded,
+                    Strike(world, resolver, action, guard, hunter, stamp);
+                    world.Events.Append(new WorldEvent(stamp, WorldEventKind.GuardResponded,
                         guard.Id, FallbackSite(world), $"guard_strikes_hunter target:{hunter.Id.Value}"));
                     strikes++;
                     if (!hunter.IsAlive) continue;
@@ -51,7 +54,7 @@ namespace EmberCrpg.Simulation.Living
 
                 if (Chebyshev(hunter.Position, prey.Position) <= StrikeReach)
                 {
-                    Strike(world, resolver, action, hunter, prey);
+                    Strike(world, resolver, action, hunter, prey, stamp);
                     strikes++;
                 }
                 else
@@ -65,15 +68,15 @@ namespace EmberCrpg.Simulation.Living
         }
 
         private static void Strike(WorldState world, CombatActionResolver resolver,
-            EmberCrpg.Domain.Combat.CombatActionDef action, ActorRecord attacker, ActorRecord target)
+            EmberCrpg.Domain.Combat.CombatActionDef action, ActorRecord attacker, ActorRecord target, GameTime stamp)
         {
-            // Deterministic dice: world clock + both ids — same world, same bites.
+            // Deterministic dice: boundary clock + both ids — same world, same bites.
             var rng = new XorShiftRng((uint)(
-                (world.Time.TotalMinutes * 2654435761L)
+                (stamp.TotalMinutes * 2654435761L)
                 ^ (long)(attacker.Id.Value * 97L) ^ (long)(target.Id.Value * 193L)) | 1u);
             resolver.Resolve(action, attacker, target,
                 damageBandWidth: System.Math.Max(1, attacker.BaseDamage / 2),
-                rng: rng, now: world.Time, siteId: FallbackSite(world), events: world.Events);
+                rng: rng, now: stamp, siteId: FallbackSite(world), events: world.Events);
         }
 
         internal static ActorRecord Nearest(WorldState world, GridPosition from, int radius,
@@ -109,10 +112,15 @@ namespace EmberCrpg.Simulation.Living
         public const int WitnessRadius = 8;
         public const int ResponseRadius = 12;
 
-        public int Tick(WorldState world)
+        public int Tick(WorldState world) => Tick(world, world?.Time ?? default);
+
+        // Catchup contract: the witness window derives from the boundary stamp, and the
+        // scan may NOT early-break — under multi-day catchup the log is not stamp-monotone
+        // (hourly crossings append before daily crossings back-fill earlier stamps).
+        public int Tick(WorldState world, GameTime stamp)
         {
             if (world?.Actors == null || world.Events == null || world.NpcMemory == null) return 0;
-            long windowStart = world.Time.TotalMinutes - 60;
+            long windowStart = stamp.TotalMinutes - 60;
             int recorded = 0;
 
             // Stateless scan of the LAST HOUR only (hourly cadence → each event seen once).
@@ -120,7 +128,7 @@ namespace EmberCrpg.Simulation.Living
             for (int i = events.Count - 1; i >= 0; i--)
             {
                 var evt = events[i];
-                if (evt.Tick.TotalMinutes <= windowStart) break;
+                if (evt.Tick.TotalMinutes <= windowStart || evt.Tick.TotalMinutes > stamp.TotalMinutes) continue;
                 if (evt.Kind != WorldEventKind.CombatResolved) continue;
                 if (!world.Actors.TryGet(evt.ActorId, out var attacker) || attacker == null) continue;
                 if (attacker.Role != ActorRole.Enemy) continue; // player brawls are the bounty system's beat
@@ -133,8 +141,8 @@ namespace EmberCrpg.Simulation.Living
                     if (PredationSystem.Chebyshev(witness.Position, attacker.Position) > WitnessRadius) continue;
 
                     world.NpcMemory.GetOrCreate(witness.Id).RecordEvent(new InteractionEvent(
-                        world.Time, "witnessed_attack", attacker.Id, "predation", string.Empty, 0, witness.Position));
-                    world.Events.Append(new WorldEvent(world.Time, WorldEventKind.WitnessRecorded,
+                        stamp, "witnessed_attack", attacker.Id, "predation", string.Empty, 0, witness.Position));
+                    world.Events.Append(new WorldEvent(stamp, WorldEventKind.WitnessRecorded,
                         witness.Id, evt.SiteId, $"witnessed attacker:{attacker.Id.Value}"));
                     recorded++;
                 }

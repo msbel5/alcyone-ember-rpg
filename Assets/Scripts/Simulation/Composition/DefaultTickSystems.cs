@@ -53,6 +53,7 @@ namespace EmberCrpg.Simulation.Composition
                 new PlantGrowthStep(plantGrowth, seasonCalendar, plantSpecies),
                 new HarvestStep(),
                 new ShortageResponseStep(), // CAN SUYU H1+H3: shortage → planting job (first cascade)
+                new RuntimeHistoryStep(),   // CAN SUYU H4: history keeps being written after worldgen
                 new PriceStepSystem(priceUpdate),
                 new FactionDecayStep(factionDecay, Normalize(factionDecayConfig)),
             });
@@ -253,8 +254,8 @@ namespace EmberCrpg.Simulation.Composition
             public override void Run(in TickContext context)
             {
                 var world = context.World;
-                int hour = (int)((world.Time.TotalMinutes / 60) % 24);
-                _consumption.Tick(world, hour);
+                int hour = (int)((context.Stamp.TotalMinutes / 60) % 24);
+                _consumption.Tick(world, hour, context.Stamp);
             }
         }
 
@@ -264,7 +265,7 @@ namespace EmberCrpg.Simulation.Composition
             private readonly EmberCrpg.Simulation.Living.PredationSystem _predation =
                 new EmberCrpg.Simulation.Living.PredationSystem();
             public PredationStep() : base("living.predation", TickCadence.Hourly, 40) { }
-            public override void Run(in TickContext context) => _predation.Tick(context.World);
+            public override void Run(in TickContext context) => _predation.Tick(context.World, context.Stamp);
         }
 
         // CAN SUYU H3: witnesses write REAL memory and the watch converges.
@@ -273,7 +274,7 @@ namespace EmberCrpg.Simulation.Composition
             private readonly EmberCrpg.Simulation.Living.WitnessResponseSystem _witness =
                 new EmberCrpg.Simulation.Living.WitnessResponseSystem();
             public WitnessStep() : base("living.witness", TickCadence.Hourly, 45) { }
-            public override void Run(in TickContext context) => _witness.Tick(context.World);
+            public override void Run(in TickContext context) => _witness.Tick(context.World, context.Stamp);
         }
 
         // CAN SUYU H1+H3: shortage detector sweep + the planting-job response. Order 27 sits
@@ -287,7 +288,7 @@ namespace EmberCrpg.Simulation.Composition
 
             public override void Run(in TickContext context)
             {
-                _response.Tick(context.World);
+                _response.Tick(context.World, context.Stamp);
             }
         }
 
@@ -432,6 +433,14 @@ namespace EmberCrpg.Simulation.Composition
                         isSnowing: false);
                 }
             }
+        }
+
+        // CAN SUYU H4: daily event→relation drift + monthly seeded chronicle.
+        private sealed class RuntimeHistoryStep : StepBase
+        {
+            private readonly RuntimeHistorySystem _history = new RuntimeHistorySystem();
+            public RuntimeHistoryStep() : base("world.runtime_history", TickCadence.Daily, 28) { }
+            public override void Run(in TickContext context) => _history.Tick(context.World, context.Stamp);
         }
 
         private sealed class PriceStepSystem : StepBase

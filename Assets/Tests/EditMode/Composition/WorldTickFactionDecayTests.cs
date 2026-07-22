@@ -40,7 +40,9 @@ namespace EmberCrpg.Tests.EditMode.Composition
 
             RunTicks(world, new WorldTickComposer(), WorldTickComposer.TicksPerGameDay);
 
-            Assert.That(world.Factions.GetReputation(row.A, row.B).Value, Is.EqualTo(row.Reputation.Value + 29));
+            // CAN SUYU H4 re-baseline: +30 delta, then the day boundary composes THREE writers -
+            // shortage drift (grain_tension -1, runtime history), then decay (-1). 42->41->40.
+            Assert.That(world.Factions.GetReputation(row.A, row.B).Value, Is.EqualTo(row.Reputation.Value + 28));
         }
 
         [Test]

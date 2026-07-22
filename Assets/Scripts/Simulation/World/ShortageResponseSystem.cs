@@ -21,12 +21,15 @@ namespace EmberCrpg.Simulation.World
         /// instance is shared across worlds in the registry — any instance state leaks between
         /// same-seed runs and breaks determinism (the golden caught exactly that). Everything is
         /// derived from the world: dedup via the pending-job guard, JobId from (site, day).</summary>
-        public int Tick(WorldState world)
+        public int Tick(WorldState world) => Tick(world, world?.Time ?? default);
+
+        // Catchup contract: day index and event stamps come from the boundary stamp.
+        public int Tick(WorldState world, GameTime stamp)
         {
             if (world?.Stockpiles == null || world.Events == null || world.Jobs == null) return 0;
 
             var tags = FoodTags(world);
-            ulong dayIndex = (ulong)(world.Time.TotalMinutes / 1440L);
+            ulong dayIndex = (ulong)(stamp.TotalMinutes / 1440L);
             int posted = 0;
             foreach (var pile in world.Stockpiles)
             {
@@ -37,7 +40,7 @@ namespace EmberCrpg.Simulation.World
                     if (HasPendingPlanting(world, pile.SiteId)) continue;
 
                     world.Events.Append(new WorldEvent(
-                        world.Time, WorldEventKind.ShortageDetected, default, pile.SiteId,
+                        stamp, WorldEventKind.ShortageDetected, default, pile.SiteId,
                         $"shortage item:{tag} stock:{pile.Get(tag)} threshold:{ShortageThreshold}"));
 
                     var jobId = new JobId(RestockJobIdBase + pile.SiteId.Value * 512UL + (dayIndex % 512UL));
@@ -50,7 +53,7 @@ namespace EmberCrpg.Simulation.World
                     world.Jobs.Add(job);
                     posted++;
                     world.Events.Append(new WorldEvent(
-                        world.Time, WorldEventKind.JobAssigned, default, pile.SiteId,
+                        stamp, WorldEventKind.JobAssigned, default, pile.SiteId,
                         "restock_job_posted reason:shortage"));
                 }
             }

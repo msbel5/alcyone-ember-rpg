@@ -45,5 +45,7 @@ namespace EmberCrpg.Domain.World
         // (the watch converges). Event→event chains are what emergence is made of.
         WitnessRecorded = 30,
         GuardResponded = 31,
+        // CAN SUYU H4: runtime history — the monthly chronicle keeps writing AFTER worldgen.
+        ChronicleEvent = 32,
     }
 }

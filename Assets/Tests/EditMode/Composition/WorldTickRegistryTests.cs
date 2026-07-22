@@ -76,6 +76,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "Daily:20:econ.plantgrowth",
                 "Daily:25:world.harvest", // v0.2 F7: same-day grow→harvest→price chain (shipcheck FLAT finding)
                 "Daily:27:econ.shortage_response", // CAN SUYU H1+H3: shortage → planting job (first cascade)
+                "Daily:28:world.runtime_history", // CAN SUYU H4: history keeps being written
                 "Daily:30:econ.prices",
                 "Daily:40:politics.faction_decay",
             }));

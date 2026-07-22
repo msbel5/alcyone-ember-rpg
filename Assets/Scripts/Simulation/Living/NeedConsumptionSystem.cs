@@ -24,7 +24,12 @@ namespace EmberCrpg.Simulation.Living
         private readonly NeedMoodEvaluator _moodEvaluator = new NeedMoodEvaluator();
 
         /// <summary>Runs once per game-hour. Returns meals eaten (proof metric).</summary>
-        public int Tick(WorldState world, int hourOfDay)
+        public int Tick(WorldState world, int hourOfDay) => Tick(world, hourOfDay, world?.Time ?? default);
+
+        // Catchup contract (Codex ninth-pass lesson): events are stamped at the cadence
+        // BOUNDARY, not at post-advance world.Time — day-by-day and multi-day jumps must
+        // write identical logs.
+        public int Tick(WorldState world, int hourOfDay, EmberCrpg.Domain.Core.GameTime stamp)
         {
             if (world?.Actors == null) return 0;
             int meals = 0;
@@ -35,7 +40,7 @@ namespace EmberCrpg.Simulation.Living
                 if (actor == null || !actor.IsAlive) continue;
                 if (actor.Role == ActorRole.Player || actor.Role == ActorRole.Enemy) continue;
 
-                if (actor.Needs.Hunger.Value >= HungerEatThreshold && TryEat(world, actor))
+                if (actor.Needs.Hunger.Value >= HungerEatThreshold && TryEat(world, actor, stamp))
                     meals++;
 
                 if (night && actor.Needs.Fatigue.Value > 0)
@@ -49,7 +54,7 @@ namespace EmberCrpg.Simulation.Living
             return meals;
         }
 
-        private bool TryEat(WorldState world, ActorRecord actor)
+        private bool TryEat(WorldState world, ActorRecord actor, EmberCrpg.Domain.Core.GameTime stamp)
         {
             var pile = FindFoodPile(world, out var foodTag);
             if (pile == null) return false;
@@ -64,7 +69,7 @@ namespace EmberCrpg.Simulation.Living
             actor.ApplyNeeds(fed);
             actor.ApplyMood(_moodEvaluator.Evaluate(fed));
             world.Events?.Append(new WorldEvent(
-                world.Time, WorldEventKind.NeedChanged, actor.Id, pile.SiteId,
+                stamp, WorldEventKind.NeedChanged, actor.Id, pile.SiteId,
                 $"meal_eaten item:{foodTag} hunger:{fed.Hunger.Value}"));
             return true;
         }
