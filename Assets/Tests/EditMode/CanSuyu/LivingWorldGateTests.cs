@@ -211,6 +211,31 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
         }
 
         [Test]
+        public void Gate8_PersonalSpace_TheCrowdGathersWithoutStacking()
+        {
+            // Visual-truth gate: converging on the food spot must FAN OUT over seats, not pile
+            // every actor onto one cell (the user watched billboards walk through each other).
+            // Sampled hourly over two days: no cell may ever hold more than two civilians.
+            var world = BuildWorld(4242);
+            var composer = new WorldTickComposer();
+
+            int worstStack = 0;
+            for (int hour = 1; hour <= 48; hour++)
+            {
+                for (int tick = (hour - 1) * 60 + 1; tick <= hour * 60; tick++)
+                    composer.Advance(world, tick);
+                int stack = world.Actors.Records
+                    .Where(a => a != null && a.IsAlive && a.Role != ActorRole.Player && a.Role != ActorRole.Enemy)
+                    .GroupBy(a => (a.Position.X, a.Position.Y))
+                    .Max(g => g.Count());
+                if (stack > worstStack) worstStack = stack;
+            }
+
+            Assert.That(worstStack, Is.LessThanOrEqualTo(2),
+                $"{worstStack} civilians stood on ONE cell — the crowd is a stack of cardboard, not a gathering");
+        }
+
+        [Test]
         public void Gate3_UnscriptedEventRate_TheWorldActsWithoutAPlayer()
         {
             var world = BuildWorld(1717);

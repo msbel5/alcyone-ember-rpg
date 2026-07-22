@@ -39,7 +39,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             var texture = LoadGeneratedTexture(generatedAssetId);
             if (texture == null) return Opaque(tint);
 
-            var mat = Opaque(Color.white);
+            // The palette slot's tint must SURVIVE texturing — discarding it here was why every
+            // building in town wore the identical wall ("binalar kotu"): timber/stone/clay/slate
+            // all rendered as the same white-lit tile. Lerp keeps the texture readable.
+            var mat = Opaque(Color.Lerp(Color.white, tint, 0.65f));
             if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", texture);
             if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", texture);
             mat.mainTexture = texture;

@@ -10139,3 +10139,2973 @@ MonoBehaviour:
     licenseStatus: 1
     humanApproved: 0
     notes: 
+  - stableId: characterbillboard-art-artisan-blacksmith
+    displayName: artisan variant (blacksmith)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: artisan
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_blacksmith.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_blacksmith.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-bandit-bandit_fixed
+    displayName: bandit variant (bandit_fixed)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: bandit
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_bandit_fixed.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_bandit_fixed.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-bandit-goblin_fixed
+    displayName: bandit variant (goblin_fixed)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: bandit
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_goblin_fixed.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_goblin_fixed.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-bandit-orc
+    displayName: bandit variant (orc)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: bandit
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_orc.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_orc.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-bard-bard
+    displayName: bard variant (bard)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: bard
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_bard.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_bard.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-beggar-beggar_fixed
+    displayName: beggar variant (beggar_fixed)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: beggar
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_beggar_fixed.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_beggar_fixed.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-blacksmith-blacksmith
+    displayName: blacksmith variant (blacksmith)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: blacksmith
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_blacksmith.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_blacksmith.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-guard-knight
+    displayName: guard variant (knight)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: guard
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_knight.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_knight.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-healer-healer
+    displayName: healer variant (healer)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: healer
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_healer.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_healer.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-healer-witch
+    displayName: healer variant (witch)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: healer
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_witch.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_witch.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-innkeeper-innkeeper
+    displayName: innkeeper variant (innkeeper)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: innkeeper
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_innkeeper.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_innkeeper.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-knight-knight
+    displayName: knight variant (knight)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: knight
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_knight.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_knight.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-mage-witch
+    displayName: mage variant (witch)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: mage
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_witch.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_witch.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-outlaw-thief
+    displayName: outlaw variant (thief)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: outlaw
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_thief.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_thief.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-outlaw-spy
+    displayName: outlaw variant (spy)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: outlaw
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_spy.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_spy.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-rogue-thief
+    displayName: rogue variant (thief)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: rogue
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_thief.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_thief.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-rogue-spy
+    displayName: rogue variant (spy)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: rogue
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_spy.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_spy.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-sage-sage
+    displayName: sage variant (sage)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: sage
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_sage.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_sage.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-scholar-sage
+    displayName: scholar variant (sage)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: scholar
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_sage.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_sage.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-monster_spider-spider
+    displayName: monster_spider variant (spider)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: monster_spider
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_spider.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_spider.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-monster_skeleton-skeleton
+    displayName: monster_skeleton variant (skeleton)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: monster_skeleton
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_skeleton.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_skeleton.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-monster_skeleton-necromancer
+    displayName: monster_skeleton variant (necromancer)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: monster_skeleton
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_necromancer.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_necromancer.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-monster_ghost-ghost
+    displayName: monster_ghost variant (ghost)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: monster_ghost
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_ghost.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_ghost.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-monster_bandit-bandit_fixed
+    displayName: monster_bandit variant (bandit_fixed)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: monster_bandit
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_bandit_fixed.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_bandit_fixed.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-monster_bandit-goblin_fixed
+    displayName: monster_bandit variant (goblin_fixed)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: monster_bandit
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_goblin_fixed.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_goblin_fixed.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-monster_bandit-orc
+    displayName: monster_bandit variant (orc)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: monster_bandit
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_orc.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_orc.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 
+  - stableId: characterbillboard-art-monster_wolf-beast_quadruped
+    displayName: monster_wolf variant (beast_quadruped)
+    kind: 0
+    key:
+      kind: 0
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: monster_wolf
+      material: 
+      tier: 
+      variantIndex: 0
+      styleVersion: v1
+      seed: 0
+      promptHash: 
+    tags: []
+    sourcePrompt: 
+    negativePrompt: 
+    seed: 0
+    modelName: 
+    modelLicense: 
+    toolchainNotes: seeded from hand-registered Assets/Art library (BillboardVarietySeeder)
+    importedAtUtc: 
+    relativeAssetPath: Assets/Generated/Core/art_beast_quadruped.png
+    previewPath: 
+    spritePath: Assets/Generated/Core/art_beast_quadruped.png
+    albedoPath: 
+    deLitAlbedoPath: 
+    normalPath: 
+    roughnessPath: 
+    metallicPath: 
+    ambientOcclusionPath: 
+    heightPath: 
+    maskMapPath: 
+    materialPath: 
+    prefabPath: 
+    sourceImagePath: 
+    generatedMeshPath: 
+    materialPaths: []
+    texturePaths: []
+    spriteJob:
+      jobId: 
+      stableAssetId: 
+      kind: 2
+      presetName: 
+      positivePrompt: 
+      negativePrompt: 
+      width: 512
+      height: 512
+      seed: 0
+      steps: 1
+      cfgScale: 0
+      sampler: 
+      scheduler: 
+      modelName: 
+      outputPngPath: 
+      outputJsonPath: 
+      expectedAlphaPngPath: 
+      sourceRecordStableId: 
+      rawGeneratedPngPath: 
+      mattePngPath: 
+      croppedSpritePath: 
+      toolLicenseNotes: 
+      status: 0
+      validationWarnings: []
+    meshJob:
+      jobId: 
+      stableAssetId: 
+      kind: 9
+      archetype: 
+      biome: 
+      culture: 
+      faction: 
+      role: 
+      material: 
+      tier: 
+      styleVersion: v1
+      seed: 0
+      sourceImagePath: 
+      prompt: 
+      negativePrompt: 
+      externalToolName: 
+      externalToolLicenseNotes: 
+      outputMeshPath: 
+      outputTextureFolder: 
+      expectedPrefabPath: 
+      status: 0
+    validationWarnings: []
+    tileSizeMeters: 1
+    pixelsPerMeter: 512
+    isTileable: 0
+    deLit: 0
+    pbrGenerated: 0
+    colliderType: 0
+    triangleCount: 0
+    vertexCount: 0
+    subMeshCount: 0
+    materialCount: 0
+    hasUVs: 0
+    hasNormals: 0
+    hasTangents: 0
+    hasReadableMesh: 0
+    hasCollider: 0
+    hasLod: 0
+    scaleMeters: 1
+    pivotMode: 0
+    licenseStatus: 0
+    humanApproved: 0
+    notes: 

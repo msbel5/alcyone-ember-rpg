@@ -39,6 +39,7 @@ namespace EmberCrpg.Simulation.Living
             if (actors == null)
                 return;
 
+            int seatOrdinal = 0;
             foreach (var actor in actors.Records)
             {
                 if (actor == null || !actor.IsAlive)
@@ -50,7 +51,10 @@ namespace EmberCrpg.Simulation.Living
                 if (actor.Role == ActorRole.Enemy && actor.Home.Equals(actor.DayAnchor))
                     continue;
 
-                var target = ChooseTarget(actor, time, foodSpot);
+                // PERSONAL SPACE: each civilian owns a stable seat ordinal (insertion order,
+                // deterministic) so shared destinations fan out over distinct cells instead of
+                // stacking every billboard on one tile ("birbirlerinin uzerinden yuruyorlar").
+                var target = ChooseTarget(actor, time, foodSpot, seatOrdinal++);
                 var next = StepToward(actor.Position, target);
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
@@ -67,6 +71,9 @@ namespace EmberCrpg.Simulation.Living
         /// <summary>H2 UTILITY CORE: the highest-scoring behavior wins; needs drive the score.
         /// Public so tests can pin the decision table without simulating movement.</summary>
         public static GridPosition ChooseTarget(ActorRecord actor, GameTime time, GridPosition? foodSpot)
+            => ChooseTarget(actor, time, foodSpot, 0);
+
+        public static GridPosition ChooseTarget(ActorRecord actor, GameTime time, GridPosition? foodSpot, int seatOrdinal)
         {
             bool workHour = IsWorkHour(time);
 
@@ -82,7 +89,7 @@ namespace EmberCrpg.Simulation.Living
 
             // Deterministic tie order: eat > rest > work > idle (the hungrier impulse wins ties).
             if (eat >= rest && eat >= work && eat >= idle && foodSpot.HasValue)
-                return foodSpot.Value;
+                return Seat(foodSpot.Value, seatOrdinal);
             if (rest >= work && rest >= idle)
                 return actor.Home;
             if (work >= idle)
@@ -96,6 +103,22 @@ namespace EmberCrpg.Simulation.Living
                 return actor.Home;
             var schedule = actor.ScheduleState;
             return schedule.IsIdle ? actor.DayAnchor : schedule.TargetWorksitePosition;
+        }
+
+        // The 25 seats of the communal table: a Chebyshev spiral over the 5x5 block centred on
+        // the food spot. Every cell stays within EatReachCells (2) of the site centre, so eating
+        // works from every seat -- but no two ordinals share a cell, so no two diners share one.
+        private static readonly (int dx, int dy)[] SeatOffsets =
+        {
+            (0, 0), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1),
+            (2, 0), (2, 1), (2, 2), (1, 2), (0, 2), (-1, 2), (-2, 2), (-2, 1), (-2, 0),
+            (-2, -1), (-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2), (2, -1),
+        };
+
+        private static GridPosition Seat(GridPosition table, int seatOrdinal)
+        {
+            var (dx, dy) = SeatOffsets[((seatOrdinal % SeatOffsets.Length) + SeatOffsets.Length) % SeatOffsets.Length];
+            return new GridPosition(table.X + dx, table.Y + dy);
         }
 
         // Deterministic one-tile move toward the target on the integer grid. Each axis advances by at
