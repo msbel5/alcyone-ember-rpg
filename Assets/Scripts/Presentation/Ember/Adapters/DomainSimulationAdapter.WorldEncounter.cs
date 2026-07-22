@@ -634,6 +634,28 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         }
 
         /// <summary>F27-DoD proof: how many civilians sit within 6 cells of the lunch spot right now.</summary>
+        /// <summary>OYNANABILIRLIK proof surface: counts the living-world's fingerprints in the
+        /// PRODUCTION world's event log. The marathon prints this so live runs carry evidence
+        /// that meals/witnesses/reports/chronicle happen in the world the player actually plays.</summary>
+        public string ProofLivingCensus()
+        {
+            if (_world?.Events == null) return "no world";
+            int meals = 0, witnessed = 0, reported = 0, guard = 0, chronicle = 0, shortage = 0;
+            foreach (var e in _world.Events.Events)
+            {
+                if (e == null) continue;
+                if (e.Kind == EmberCrpg.Domain.World.WorldEventKind.NeedChanged && e.Reason != null && e.Reason.StartsWith("meal_eaten", System.StringComparison.Ordinal)) meals++;
+                else if (e.Kind == EmberCrpg.Domain.World.WorldEventKind.WitnessRecorded) { if (e.Reason != null && e.Reason.StartsWith("reported", System.StringComparison.Ordinal)) reported++; else witnessed++; }
+                else if (e.Kind == EmberCrpg.Domain.World.WorldEventKind.GuardResponded) guard++;
+                else if (e.Kind == EmberCrpg.Domain.World.WorldEventKind.ChronicleEvent) chronicle++;
+                else if (e.Kind == EmberCrpg.Domain.World.WorldEventKind.ShortageDetected) shortage++;
+            }
+            int actors = 0;
+            if (_world.Actors?.Records != null)
+                foreach (var a in _world.Actors.Records) if (a != null && a.IsAlive) actors++;
+            return $"meals={meals} witnessed={witnessed} reported={reported} guardResponses={guard} chronicle={chronicle} shortages={shortage} aliveActors={actors} totalEvents={_world.Events.Count}";
+        }
+
         public string ProofLunchCensus()
         {
             if (_world?.TavernCell == null || _world.Actors == null) return "LUNCH: no tavern cell published.";

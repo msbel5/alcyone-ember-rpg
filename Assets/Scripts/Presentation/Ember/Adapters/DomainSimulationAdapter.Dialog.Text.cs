@@ -96,23 +96,70 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // sticks; a world-event retelling rides along when one reads as a sentence.
         private string ComposeRumor(uint h)
         {
+            // OYNANABILIRLIK: rumors used to quote the raw log verbatim ("They say actor_stepped
+            // from:12,4...") — the living world spoke in debug strings. Now the last 32 events are
+            // filtered to STORY-worthy kinds and narrated as sentences; the pick stays hash-deterministic.
             string eventLine = null;
             if ((h & 1) == 0)
             {
                 var events = _world.Events?.Events;
                 if (events != null && events.Count > 0)
                 {
-                    var e = events[events.Count - 1 - (int)(h % (uint)System.Math.Min(8, events.Count))];
-                    if (e != null && !string.IsNullOrWhiteSpace(e.Reason) && e.Reason.Contains(" "))
-                        eventLine = "They say " + char.ToLowerInvariant(e.Reason[0]) + e.Reason.Substring(1).TrimEnd('.') + ".";
+                    var narratable = new List<string>();
+                    for (int i = events.Count - 1; i >= 0 && i >= events.Count - 32; i--)
+                    {
+                        var line = NarrateEvent(events[i]);
+                        if (line != null) narratable.Add(line);
+                    }
+                    if (narratable.Count > 0)
+                        eventLine = narratable[(int)(h % (uint)narratable.Count)];
                 }
             }
 
             var row = NearestDungeonRow();
+            // (NarrateEvent below maps event kinds to spoken lines.)
             if (!row.HasTarget) return eventLine;
             string delve = "And mind yourself — dark things stir at " + row.TargetName.ToUpperInvariant()
                 + ", " + row.DistanceTiles + " tiles " + row.Direction + ".";
             return eventLine == null ? delve : eventLine + " " + delve;
+        }
+
+        private static string NarrateEvent(WorldEvent e)
+        {
+            if (e == null) return null;
+            switch (e.Kind)
+            {
+                case WorldEventKind.NeedChanged:
+                    return e.Reason != null && e.Reason.StartsWith("meal_eaten", System.StringComparison.Ordinal)
+                        ? "The tavern table has been busy of late — folk are eating well."
+                        : null;
+                case WorldEventKind.WitnessRecorded:
+                    return "Someone was set upon in the open street — people SAW it happen.";
+                case WorldEventKind.GuardResponded:
+                    return "The watch crossed steel with a prowler; there is blood on the cobbles.";
+                case WorldEventKind.ShortageDetected:
+                    return "Grain runs thin — the fields are being planted in a hurry.";
+                case WorldEventKind.CaravanArrived:
+                    return "A caravan rolled in off the trade road, wheels heavy.";
+                case WorldEventKind.PriceChanged:
+                    return "Market prices have shifted again; the merchants are muttering.";
+                case WorldEventKind.FactionReputationChanged:
+                    return "Word is the guilds' tempers have turned — friendships strain and mend.";
+                case WorldEventKind.CombatResolved:
+                    return "Blood was spilled not far from here, they say.";
+                case WorldEventKind.PlantHarvested:
+                    return "The harvest came in from the fields.";
+                case WorldEventKind.ChronicleEvent:
+                    if (e.Reason != null && e.Reason.Contains("festival"))
+                        return "The festival is still on everyone's lips.";
+                    if (e.Reason != null && e.Reason.Contains("caravan_surge"))
+                        return "A grain caravan came through — the larders are full for once.";
+                    if (e.Reason != null && e.Reason.Contains("border_dispute"))
+                        return "The law and the merchants are at each other's throats again.";
+                    return "The chroniclers wrote a new page this month, so folk whisper.";
+                default:
+                    return null;
+            }
         }
 
         // BUG-DIALOG-BRAND: WorldProfile.Style is an INTERNAL codename enum (e.g. "LowFantasy").

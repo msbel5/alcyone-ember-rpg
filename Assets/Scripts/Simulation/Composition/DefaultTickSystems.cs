@@ -217,11 +217,10 @@ namespace EmberCrpg.Simulation.Composition
             {
                 if (context.World.Actors != null)
                 {
-                    // H2: the food spot is WHERE THE FOOD IS — the realized tavern when published,
-                    // else the first food-holding stockpile's site centre. No window anywhere.
-                    var foodSpot = context.World.TavernCell
-                        ?? EmberCrpg.Simulation.Living.NeedConsumptionSystem.FoodSpot(context.World);
-                    _schedule.Advance(context.World.Actors, context.Stamp, foodSpot);
+                    // OYNANABILIRLIK: every settlement's larder is a food spot; each actor walks
+                    // to their NEAREST. (TavernCell routing predates real larders — retired.)
+                    var foodSpots = EmberCrpg.Simulation.Living.NeedConsumptionSystem.FoodSpots(context.World);
+                    _schedule.Advance(context.World.Actors, context.Stamp, foodSpots);
                 }
             }
         }

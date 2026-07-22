@@ -35,12 +35,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     where += $"   •   Rep {_world.PlayerReputation:+0;-0}";
                 if (_world != null && _world.PlayerBountyGold > 0)
                     where += $"   •   BOUNTY {_world.PlayerBountyGold}g";
+                var clockText = _world != null
+                    ? $"   {_world.Time.Hour:00}:{_world.Time.Minute:00}"
+                    : string.Empty;
                 if (profile == null)
-                    return _hudTextCache = $"Tick {_tick:0000}   Day {day:000}{where}";
+                    return _hudTextCache = $"Tick {_tick:0000}   Day {day:000}{clockText}{where}";
                 // Population is the world the HISTORY simulated (sum of surviving settlement populations),
                 // not the static TargetPopulation knob, so the number reflects centuries of growth/decline.
                 var population = GeneratedWorld != null ? GeneratedWorld.TotalPopulation : profile.TargetPopulation;
-                return _hudTextCache = $"Tick {_tick:0000}   Day {day:000}   {Spaced(profile.Style)} / {Spaced(profile.Genre)}   Pop {population:N0}{where}";
+                return _hudTextCache = $"Tick {_tick:0000}   Day {day:000}{clockText}   {Spaced(profile.Style)} / {Spaced(profile.Genre)}   Pop {population:N0}{where}";
             }
         }
 

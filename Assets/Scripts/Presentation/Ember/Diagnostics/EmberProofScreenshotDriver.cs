@@ -711,6 +711,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             // run once reported PASS with actions=0 (the exact Potemkin pattern the V2
             // contract exists to kill).
             bool pass = exceptions == 0 && flat && !aborted && actions > 0;
+            var livingAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+            Debug.Log($"[Marathon] LIVING: {(livingAdapter != null ? livingAdapter.ProofLivingCensus() : "adapter gone")}");
             Debug.Log($"[Marathon] VERDICT: {(pass ? "PASS" : "FAIL")} — {minutes:0}min soak, " +
                       $"actions={actions} (travel={travels} fight={fights} trade={trades} clock={hours}), " +
                       $"exceptions={exceptions}, mem {memStart / 1048576}MB -> {memEnd / 1048576}MB " +

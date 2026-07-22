@@ -56,7 +56,7 @@ namespace EmberCrpg.Simulation.Living
 
         private bool TryEat(WorldState world, ActorRecord actor, EmberCrpg.Domain.Core.GameTime stamp)
         {
-            var pile = FindFoodPile(world, out var foodTag);
+            var pile = FindNearestFoodPile(world, actor.Position, out var foodTag);
             if (pile == null) return false;
             // H2: eating happens AT the larder — the utility selector walks you there first.
             // This is what turns "numbers drift" into a VISIBLE walk-eat-return rhythm.
@@ -91,6 +91,33 @@ namespace EmberCrpg.Simulation.Living
 
         /// <summary>H2: the communal food spot — the first food-holding pile's site centre. The
         /// tick publishes this to the utility selector as the walk target.</summary>
+        /// <summary>All food-holding piles' site centres. Multi-settlement worlds have MANY
+        /// larders — routing everyone to the globally-first pile marched whole towns across the
+        /// map. Presentation's ScheduleStep feeds this list; actors pick their nearest.</summary>
+        public static List<GridPosition> FoodSpots(WorldState world)
+        {
+            var spots = new List<GridPosition>();
+            if (world?.Stockpiles == null || world.Sites?.Records == null) return spots;
+            var species = FoodTags(world);
+            foreach (var pile in world.Stockpiles)
+            {
+                if (pile == null) continue;
+                bool hasFood = false;
+                foreach (var tag in species)
+                    if (pile.Get(tag) > 0) { hasFood = true; break; }
+                if (!hasFood) continue;
+                foreach (var site in world.Sites.Records)
+                    if (site != null && site.Id.Equals(pile.SiteId))
+                    {
+                        spots.Add(new GridPosition(
+                            (site.MinBound.X + site.MaxBound.X) / 2,
+                            (site.MinBound.Y + site.MaxBound.Y) / 2));
+                        break;
+                    }
+            }
+            return spots;
+        }
+
         public static GridPosition? FoodSpot(WorldState world)
         {
             var pile = FindFoodPile(world, out _);
@@ -105,6 +132,38 @@ namespace EmberCrpg.Simulation.Living
 
         // Food = whatever the fields grow (plant species tags own the harvest stock). Nearest-pile
         // routing lands with H2's decision layer; the aggregate flow is what H1 must close.
+        private static StockpileComponent FindNearestFoodPile(WorldState world, GridPosition from, out string foodTag)
+        {
+            foodTag = null;
+            if (world.Stockpiles == null) return null;
+            var species = FoodTags(world);
+            StockpileComponent best = null;
+            string bestTag = null;
+            long bestDist = long.MaxValue;
+            foreach (var pile in world.Stockpiles)
+            {
+                if (pile == null) continue;
+                string tag = null;
+                foreach (var candidate in species)
+                    if (pile.Get(candidate) > 0) { tag = candidate; break; }
+                if (tag == null) continue;
+
+                long dist = 0; // site-less piles sort FIRST (bare test worlds stay permissive)
+                if (world.Sites?.Records != null)
+                    foreach (var site in world.Sites.Records)
+                        if (site != null && site.Id.Equals(pile.SiteId))
+                        {
+                            int cx = (site.MinBound.X + site.MaxBound.X) / 2;
+                            int cy = (site.MinBound.Y + site.MaxBound.Y) / 2;
+                            dist = System.Math.Max(System.Math.Abs(from.X - cx), System.Math.Abs(from.Y - cy));
+                            break;
+                        }
+                if (dist < bestDist) { bestDist = dist; best = pile; bestTag = tag; }
+            }
+            foodTag = bestTag;
+            return best;
+        }
+
         private static StockpileComponent FindFoodPile(WorldState world, out string foodTag)
         {
             foodTag = null;

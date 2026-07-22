@@ -30,6 +30,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // therefore always produce the same world, which is what makes
             // "share your seed" a viable replay feature down the line.
             uint seed = worldSeed ?? FoldSeed(mood, calling, startLocation);
+            // OYNANABILIRLIK: the runtime chronicle (RuntimeHistorySystem) seeds from RoomSeed;
+            // the bootstrap's constant roomSeed:1 made every world's history identical.
+            _world.RoomSeed = unchecked((int)seed);
             var style = ParseStyle(mood);
             var genre = ParseGenre(mood, calling, startLocation);
             var preferredSize = ParsePreferredSettlementSize(startLocation);

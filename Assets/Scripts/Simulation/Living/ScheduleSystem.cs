@@ -36,6 +36,15 @@ namespace EmberCrpg.Simulation.Living
         /// the stockpile lives). No window — hunger decides when anyone goes.</summary>
         public void Advance(ActorStore actors, GameTime time, GridPosition? foodSpot)
         {
+            Advance(actors, time, foodSpot.HasValue
+                ? new[] { foodSpot.Value }
+                : System.Array.Empty<GridPosition>());
+        }
+
+        /// <summary>Multi-larder overload: each actor walks to their NEAREST food spot — one
+        /// town's lunch crowd no longer marches to another town's table.</summary>
+        public void Advance(ActorStore actors, GameTime time, System.Collections.Generic.IReadOnlyList<GridPosition> foodSpots)
+        {
             if (actors == null)
                 return;
 
@@ -54,7 +63,7 @@ namespace EmberCrpg.Simulation.Living
                 // PERSONAL SPACE: each civilian owns a stable seat ordinal (insertion order,
                 // deterministic) so shared destinations fan out over distinct cells instead of
                 // stacking every billboard on one tile ("birbirlerinin uzerinden yuruyorlar").
-                var target = ChooseTarget(actor, time, foodSpot, seatOrdinal++);
+                var target = ChooseTarget(actor, time, NearestSpot(foodSpots, actor.Position), seatOrdinal++);
                 var next = StepToward(actor.Position, target);
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
@@ -103,6 +112,19 @@ namespace EmberCrpg.Simulation.Living
                 return actor.Home;
             var schedule = actor.ScheduleState;
             return schedule.IsIdle ? actor.DayAnchor : schedule.TargetWorksitePosition;
+        }
+
+        private static GridPosition? NearestSpot(System.Collections.Generic.IReadOnlyList<GridPosition> spots, GridPosition from)
+        {
+            if (spots == null || spots.Count == 0) return null;
+            GridPosition best = spots[0];
+            long bestDist = long.MaxValue;
+            for (int i = 0; i < spots.Count; i++)
+            {
+                long d = System.Math.Max(System.Math.Abs(from.X - spots[i].X), System.Math.Abs(from.Y - spots[i].Y));
+                if (d < bestDist) { bestDist = d; best = spots[i]; }
+            }
+            return best;
         }
 
         // The 25 seats of the communal table: a Chebyshev spiral over the 5x5 block centred on

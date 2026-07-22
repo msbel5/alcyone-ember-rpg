@@ -71,6 +71,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // and align with the building ring (8-24 m), instead of clumping inside a 2-6 m dot at the centre.
                 int radius = settlement.Size == SettlementSize.Capital ? 28 : settlement.Size == SettlementSize.City ? 24 : settlement.Size == SettlementSize.Town ? 18 : 14;
                 _world.Sites.Add(new SiteRecord(id, SiteKind.Settlement, settlement.Name, new GridPosition(x, y), new GridPosition(x + radius, y + radius)));
+
+                // OYNANABILIRLIK: every settlement eats. Without a local larder the consumption
+                // loop was invisible in play — the only wheat pile sat at a far-off anchor site,
+                // so no generated town's civilians could ever reach a meal.
+                var larder = new StockpileComponent(id);
+                larder.Add("wheat", 150);
+                _world.Stockpiles.Add(larder);
             }
 
             SeedStartingProductionSites();
@@ -79,8 +86,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private void HydrateFactions(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
         {
             _world.Factions = new FactionStore();
-            foreach (var faction in generated.Factions)
+            // OYNANABILIRLIK: RuntimeHistorySystem steers relations along the law/craft/trade
+            // axes; generated factions carry no such tags, which silently killed runtime history
+            // in production. Guarantee the axes by tagging the first three generated factions.
+            string[] axisTags = { "craft", "trade", "law" };
+            for (int i = 0; i < generated.Factions.Count; i++)
+            {
+                var faction = generated.Factions[i];
+                if (i < axisTags.Length && !faction.HasTag(axisTags[i]))
+                    faction = new FactionRecord(faction.Id, faction.Name,
+                        faction.Tags.Concat(new[] { axisTags[i] }));
                 _world.Factions.Add(faction);
+            }
 
             foreach (var relation in generated.FactionRelations)
                 _world.Factions.WithReputation(relation.FactionA, relation.FactionB, relation.Reputation);

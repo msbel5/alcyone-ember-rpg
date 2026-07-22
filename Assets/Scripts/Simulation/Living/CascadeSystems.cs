@@ -140,11 +140,41 @@ namespace EmberCrpg.Simulation.Living
                     if (witness.Id.Equals(evt.ActorId)) continue;
                     if (PredationSystem.Chebyshev(witness.Position, attacker.Position) > WitnessRadius) continue;
 
-                    world.NpcMemory.GetOrCreate(witness.Id).RecordEvent(new InteractionEvent(
+                    var witnessMemory = world.NpcMemory.GetOrCreate(witness.Id);
+                    witnessMemory.RecordEvent(new InteractionEvent(
                         stamp, "witnessed_attack", attacker.Id, "predation", string.Empty, 0, witness.Position));
                     world.Events.Append(new WorldEvent(stamp, WorldEventKind.WitnessRecorded,
                         witness.Id, evt.SiteId, $"witnessed attacker:{attacker.Id.Value}"));
                     recorded++;
+
+                    // DEPTH 4 — the report: a witness RUNS to the watch. Beside a guard they file
+                    // the report (memory + event, once per attacker per witness); otherwise they
+                    // step toward the nearest guard instead of milling in shock.
+                    var nearGuard = PredationSystem.Nearest(world, witness.Position, 16,
+                        a => a.Role == ActorRole.Guard);
+                    if (nearGuard != null)
+                    {
+                        if (PredationSystem.Chebyshev(witness.Position, nearGuard.Position) <= 2)
+                        {
+                            bool alreadyReported = false;
+                            foreach (var known in witnessMemory.Events)
+                                if (known.EventType == "reported_attack" && known.SubjectId.Equals(attacker.Id))
+                                { alreadyReported = true; break; }
+                            if (!alreadyReported)
+                            {
+                                witnessMemory.RecordEvent(new InteractionEvent(
+                                    stamp, "reported_attack", attacker.Id, "watch_report", string.Empty, 0, witness.Position));
+                                world.Events.Append(new WorldEvent(stamp, WorldEventKind.WitnessRecorded,
+                                    witness.Id, evt.SiteId, $"reported attacker:{attacker.Id.Value} guard:{nearGuard.Id.Value}"));
+                            }
+                        }
+                        else
+                        {
+                            witness.MoveTo(new GridPosition(
+                                witness.Position.X + System.Math.Sign(nearGuard.Position.X - witness.Position.X),
+                                witness.Position.Y + System.Math.Sign(nearGuard.Position.Y - witness.Position.Y)));
+                        }
+                    }
                 }
 
                 // The watch converges: guards in earshot walk a tile toward the trouble.
