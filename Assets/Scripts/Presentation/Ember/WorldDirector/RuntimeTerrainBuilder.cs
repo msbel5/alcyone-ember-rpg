@@ -286,7 +286,17 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
             var texture = RuntimeMaterialPalette.LoadGeneratedTexture(RuntimeMaterialPalette.GroundTextureId(biome))
                           ?? SolidTexture(RuntimeMaterialPalette.GroundColor(biome));
-            var layer = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(14f, 14f) };
+            var tint = RuntimeMaterialPalette.GroundColor(biome);
+            var layer = new TerrainLayer
+            {
+                diffuseTexture = texture,
+                tileSize = new Vector2(14f, 14f),
+                // Biomes SHARE recycled textures; the albedo remap carries the biome tint so
+                // plains/forest/tundra stop rendering literally identical ground.
+                diffuseRemapMin = Vector4.zero,
+                diffuseRemapMax = new Vector4(
+                    Mathf.Lerp(1f, tint.r, 0.55f), Mathf.Lerp(1f, tint.g, 0.55f), Mathf.Lerp(1f, tint.b, 0.55f), 1f),
+            };
 
             // The terrain shader is force-included at build time (Windows64BuildMenu.EnsureRuntimeShadersIncluded),
             // but fall back robustly so the ground is NEVER the magenta "missing shader" colour.

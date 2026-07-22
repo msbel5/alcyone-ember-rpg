@@ -312,9 +312,19 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         // built BEFORE the dungeon in Realize, so the cast is reliable at call time).
         private static float SampleGroundY(Vector3 world)
         {
-            return Physics.Raycast(world + Vector3.up * 90f, Vector3.down, out var hit, 220f)
-                ? hit.point.y
-                : 0f;
+            // TAVAN-SPAWN FIX: the plain raycast hit BUILDING/MINE ROOFS on the settlement ring,
+            // inflating the crest and floating the whole interior metres above the plaza. Prefer
+            // terrain hits; fall back to the LOWEST hit (never a roof) when no terrain is found.
+            var hits = Physics.RaycastAll(world + Vector3.up * 90f, Vector3.down, 220f);
+            if (hits == null || hits.Length == 0) return 0f;
+            float lowest = float.MaxValue;
+            foreach (var hit in hits)
+            {
+                if (hit.collider is TerrainCollider || hit.collider.name.StartsWith("TerrainTile", System.StringComparison.Ordinal))
+                    return hit.point.y;
+                if (hit.point.y < lowest) lowest = hit.point.y;
+            }
+            return lowest == float.MaxValue ? 0f : lowest;
         }
 
         private static void Torch(Transform parent, Vector3 localPosition, float range, Color color, float intensity)

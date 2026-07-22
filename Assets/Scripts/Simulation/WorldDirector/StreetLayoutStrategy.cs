@@ -24,7 +24,7 @@ namespace EmberCrpg.Simulation.WorldDirector
             bool city = context.Kind == EmberCrpg.Domain.Overland.SettlementKind.City;
             int avenues = city ? 4 + rng.NextInt(2) : 3 + rng.NextInt(2);        // city 4-5, town 3-4
             int parcelsPerSide = city ? 4 + rng.NextInt(3) : 3 + rng.NextInt(2); // depth along each avenue
-            float heightBoost = city ? 2.5f : 1.0f;
+            float heightBoost = city ? 3.2f : 1.0f; // cities read TALLER from the gate
             int dominantMaterial = rng.NextInt(4); // town material identity (timber town vs stone town)
 
             var buildings = new List<BuildingPlacement>(avenues * parcelsPerSide * 2);

@@ -90,6 +90,22 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield break;
             }
 
+            if (HasArg("--ember-timelapse"))
+            {
+                yield return RunTimelapse();
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
+                yield break;
+            }
+
+            if (HasArg("--ember-agentcheck"))
+            {
+                yield return RunAgentCheck();
+                Debug.Log("[Proof] run complete — quitting player.");
+                Application.Quit();
+                yield break;
+            }
+
             if (HasArg("--ember-lookaround"))
             {
                 yield return RunLookAround();
@@ -597,6 +613,138 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         // counted via the log callback, memory is sampled every minute, and the closing line is
         // the verdict: 0 exceptions and a non-climbing memory curve, or it FAILS loudly.
         // "--ember-marathon-minutes N" shortens the soak for iteration runs (the DoD run is 30).
+        // KARE-KARE CANLILIK ("gercekten oynuyorlar mi yasayan dunya oluyor mu"): a fixed
+        // plaza camera captures a frame every 10 real seconds (= 12 game minutes). Reviewing
+        // the sequence shows whether NPCs actually commute, gather to eat, and disperse —
+        // the video-review the stills could not give.
+        private IEnumerator RunTimelapse()
+        {
+            yield return WaitForBootToSettle();
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(4.0f);
+            float bootDeadline = Time.unscaledTime + 120f;
+            while (!(EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                     is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter)
+                   && Time.unscaledTime < bootDeadline)
+                yield return new WaitForSecondsRealtime(1f);
+
+            var rig = GameObject.Find("PlayerRig");
+            if (rig != null)
+            {
+                var cc = rig.GetComponent<CharacterController>();
+                if (cc != null) cc.enabled = false;
+                rig.transform.position = new Vector3(0f, 1.8f, 12f); // plaza edge, building ring starts ~14m
+                rig.transform.rotation = Quaternion.LookRotation(new Vector3(0f, 0f, -1f));
+                if (cc != null) cc.enabled = true;
+            }
+
+            const int frames = 30;
+            for (int i = 0; i < frames; i++)
+            {
+                yield return new WaitForSecondsRealtime(10f);
+                yield return new WaitForEndOfFrame();
+                CaptureToPng(Path.Combine(_outputDir, $"lapse_{i:000}.png"));
+            }
+            Debug.Log($"[Timelapse] {frames} frames / 10s apart (~6 game hours) — review the sequence.");
+        }
+
+        // AGENT CHECK ("dm le kendin konusmaya cevap almayi denedin mi?"): exercises the DM
+        // oracle, a real NPC conversation (greeting + topic + free text, with the async LLM
+        // replacement), and the inventory read — logging every answer for review.
+        private IEnumerator RunAgentCheck()
+        {
+            yield return WaitForBootToSettle();
+            EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent.Pending =
+                new EmberCrpg.Presentation.Ember.UI.EmberWorldGenIntent("grim", "wanderer", "crossroads");
+            SceneManager.LoadScene(EmberScenes.GeneratedWorld);
+            yield return new WaitForSecondsRealtime(4.0f);
+            float bootDeadline = Time.unscaledTime + 150f;
+            EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter adapter = null;
+            while (adapter == null && Time.unscaledTime < bootDeadline)
+            {
+                adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                    as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+                if (adapter == null) yield return new WaitForSecondsRealtime(1f);
+            }
+            if (adapter == null) { Debug.Log("[AgentCheck] FAIL — adapter never arrived."); yield break; }
+            EmberCrpg.Presentation.Ember.Adapters.IDomainSimulationAdapter commands = adapter;
+
+            // 1) DM oracle — ask, then poll for the resolved (LLM or deterministic) prophecy.
+            var oracle = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.ConsultFateOracle;
+            string[] questions =
+            {
+                "Will the harvest hold through winter?",
+                "Who watches me from the treeline?",
+            };
+            foreach (var q in questions)
+            {
+                var immediate = oracle.ConsultFate(q);
+                Debug.Log($"[AgentCheck] DM asked: \"{q}\" — immediate: {immediate}");
+                string resolved = null;
+                float dmDeadline = Time.unscaledTime + 90f;
+                while (resolved == null && Time.unscaledTime < dmDeadline)
+                {
+                    yield return new WaitForSecondsRealtime(1f);
+                    resolved = oracle.TryConsumeResolvedFate();
+                }
+                Debug.Log($"[AgentCheck] DM answer: {(resolved ?? "TIMEOUT (90s) — no resolved fate")}");
+            }
+
+            // 2) A real NPC conversation.
+            EmberCrpg.Presentation.Ember.Adapters.SpawnableActor civilian = default;
+            bool found = false;
+            foreach (var a in commands.GetSpawnableActors())
+                if (!string.IsNullOrEmpty(a.SpriteRole)
+                    && a.SpriteRole.StartsWith("npc_", System.StringComparison.Ordinal)
+                    && a.SpriteRole != "npc_bandit")
+                { civilian = a; found = true; break; }
+            if (!found)
+            {
+                Debug.Log("[AgentCheck] no civilian available for dialogue.");
+            }
+            else
+            {
+                Debug.Log($"[AgentCheck] talking to {civilian.Name} ({civilian.SpriteRole})");
+                var src = commands.GetDialogSource(new EmberCrpg.Domain.Core.ActorId(civilian.Id));
+                yield return WaitDialog(src, 75f);
+                Debug.Log($"[AgentCheck] greeting: {src.GetCurrentLine()}");
+                var topics = src.GetTopics();
+                if (topics != null && topics.Count > 0)
+                {
+                    src.SelectTopic(topics[0]);
+                    yield return WaitDialog(src, 75f);
+                    Debug.Log($"[AgentCheck] topic \"{topics[0]}\" answer: {src.GetCurrentLine()}");
+                }
+                src.AskFreeText("What have you seen in the streets lately?");
+                yield return WaitDialog(src, 75f);
+                Debug.Log($"[AgentCheck] free-text answer: {src.GetCurrentLine()}");
+            }
+
+            // 3) Inventory management surface.
+            var slots = adapter.InventorySlots;
+            int filled = 0;
+            var summary = new System.Text.StringBuilder();
+            for (int i = 0; i < slots.Count; i++)
+                if (slots[i].Count > 0)
+                {
+                    filled++;
+                    summary.Append(slots[i].IconName).Append(" x").Append(slots[i].Count).Append("; ");
+                }
+            Debug.Log($"[AgentCheck] inventory: {filled}/{slots.Count} slots filled — {summary}");
+            Debug.Log("[AgentCheck] COMPLETE");
+        }
+
+        private static IEnumerator WaitDialog(EmberCrpg.Presentation.Ember.Adapters.IDialogSource src, float seconds)
+        {
+            // The async LLM flips IsThinking on a frame AFTER the call — give it a beat first.
+            yield return new WaitForSecondsRealtime(1.5f);
+            float deadline = Time.unscaledTime + seconds;
+            while (src.IsThinking && Time.unscaledTime < deadline)
+                yield return new WaitForSecondsRealtime(0.5f);
+        }
+
         private IEnumerator RunMarathon()
         {
             yield return WaitForBootToSettle();

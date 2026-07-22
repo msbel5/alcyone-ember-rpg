@@ -256,6 +256,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     continue;
                 }
 
+                // TOWN SAFETY (timelapse finding: an IDLE player died at the plaza within
+                // ~3 game hours): settlements are guarded ground — roaming hostiles do not
+                // INITIATE inside the safe radius, matching the genre rule (Daggerfall towns
+                // are safe; danger begins in the wilds). Lair dwellers (pinned) still defend
+                // their delve, and a player-started fight binds normally via TryInteract.
+                if (!pinned && Chebyshev(target, BillboardOrigin()) <= 30)
+                    continue;
+
                 int dx = System.Math.Sign(target.X - hostile.Position.X);
                 int dy = System.Math.Sign(target.Y - hostile.Position.Y);
                 hostile.MoveTo(new GridPosition(hostile.Position.X + dx, hostile.Position.Y + dy));

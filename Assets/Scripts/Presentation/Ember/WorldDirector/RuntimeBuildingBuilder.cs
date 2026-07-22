@@ -45,7 +45,15 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // light, so stepping through the door enters a ROOM instead of a roofless pen. Everything is
             // seeded from the placement coordinates — the same town always furnishes identically.
             AddSlab(root.transform, "Roof", new Vector3(0f, placement.Height + 0.06f, 0f),
-                new Vector3(placement.SizeX + 0.5f, 0.12f, placement.SizeZ + 0.5f), RuntimeMaterialPalette.Solid(new Color(0.23f, 0.19f, 0.16f)));
+                new Vector3(placement.SizeX + 0.5f, 0.12f, placement.SizeZ + 0.5f),
+                RuntimeMaterialPalette.Textured(RuntimeMaterialPalette.RoofTextureId(placement.MaterialIndex),
+                    new Color(0.55f, 0.48f, 0.40f), tiling: 1.5f));
+            // Ridge step: a second, smaller slab breaks the flat-box silhouette into a stepped
+            // roof — the cheapest read of "someone built this" the skyline can buy.
+            AddSlab(root.transform, "RoofRidge", new Vector3(0f, placement.Height + 0.42f, 0f),
+                new Vector3(placement.SizeX * 0.55f, 0.6f, placement.SizeZ * 0.55f),
+                RuntimeMaterialPalette.Textured(RuntimeMaterialPalette.RoofTextureId(placement.MaterialIndex),
+                    new Color(0.50f, 0.44f, 0.37f), tiling: 1.0f));
             AddSlab(root.transform, "Floor", new Vector3(0f, 0.03f, 0f),
                 new Vector3(placement.SizeX - WallThickness, 0.06f, placement.SizeZ - WallThickness), RuntimeMaterialPalette.Solid(new Color(0.42f, 0.30f, 0.18f)));
             Furnish(root.transform, placement, entrance);

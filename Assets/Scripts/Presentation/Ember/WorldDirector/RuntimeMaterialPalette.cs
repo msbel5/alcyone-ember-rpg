@@ -63,7 +63,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             switch (biome)
             {
                 case BiomeKind.Plains:   return "env_seasonfarm";
-                case BiomeKind.Forest:   return "env_seasonfarm";
+                case BiomeKind.Forest:   return "env_colonyneeds"; // mossier plate than the plains
                 case BiomeKind.Coast:    return "env_trademarket";
                 case BiomeKind.Mountain: return "env_combatdungeon";
                 case BiomeKind.Swamp:    return "env_ritualhall";
@@ -87,6 +87,19 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         }
 
         // Best-fit generated wall texture for an abstract palette slot (reuses the wall_* assets).
+        // Roof family follows the wall palette slot: timber towns thatch, stone towns slate.
+        private static readonly string[] RoofTextureIds =
+        {
+            "roof_thatch", "roof_slate", "roof_clay_tile", "roof_timber",
+        };
+
+        public static string RoofTextureId(int materialIndex)
+        {
+            int i = materialIndex % RoofTextureIds.Length;
+            if (i < 0) i += RoofTextureIds.Length;
+            return RoofTextureIds[i];
+        }
+
         public static string WallTextureId(int materialIndex)
         {
             int i = materialIndex % WallTextureIds.Length;

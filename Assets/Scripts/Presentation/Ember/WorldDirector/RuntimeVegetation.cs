@@ -78,8 +78,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
             Box(tree.transform, new Vector3(0f, 1.3f, 0f), new Vector3(0.32f, 2.6f, 0.32f), 0f, _trunkMat);
             var canopy = ((seed >> 14) & 1) == 0 ? _canopyMat : _canopyMat2; // two greens break uniformity
-            Box(tree.transform, new Vector3(0f, 3.2f, 0f), new Vector3(2.7f, 2.2f, 2.7f), 0f, canopy);
-            Box(tree.transform, new Vector3(0f, 4.3f, 0f), new Vector3(1.9f, 1.7f, 1.9f), 35f, canopy);
+            // Conifer silhouette: three shrinking, alternately-rotated tiers read as a stylized
+            // pine from every angle — the two fat cubes read as floating crates.
+            Box(tree.transform, new Vector3(0f, 2.9f, 0f), new Vector3(2.6f, 1.5f, 2.6f), 45f, canopy);
+            Box(tree.transform, new Vector3(0f, 3.9f, 0f), new Vector3(1.9f, 1.3f, 1.9f), 0f, canopy);
+            Box(tree.transform, new Vector3(0f, 4.8f, 0f), new Vector3(1.1f, 1.2f, 1.1f), 45f, canopy);
         }
 
         private static void Box(Transform parent, Vector3 pos, Vector3 size, float yaw, Material mat)

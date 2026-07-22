@@ -182,9 +182,26 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // same colours, crossing a border changes them. Faction-level refinement is the queued v2.
             BuildRegionBanner(root.transform, homeTile.RegionId.Value);
 
+            // Paved plaza: the spawn circle was bare ground pretending to be a square. A flat
+            // stone disc marks the town heart every layout already keeps clear.
+            var plaza = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            plaza.name = "PlazaFloor";
+            Object.Destroy(plaza.GetComponent<Collider>());
+            plaza.transform.SetParent(root.transform, worldPositionStays: false);
+            plaza.transform.localPosition = new Vector3(0f, 0.04f, 0f);
+            plaza.transform.localScale = new Vector3(14f, 0.02f, 14f);
+            plaza.GetComponent<MeshRenderer>().sharedMaterial =
+                RuntimeMaterialPalette.Textured("wall_showroomoverview", new Color(0.52f, 0.50f, 0.47f), tiling: 3f);
+
             RuntimeLightingRig.Apply(root.transform, homeTile.Biome);
 
             var spawn = new Vector3(layout.PlayerSpawnX, 0.2f, layout.PlayerSpawnZ);
+            // TAVAN-SPAWN FIX ("zindanlarin tavaninda goruyorum kendimi"): the fixed (0,0.2,0)
+            // spawn sits INSIDE the crest-floated dungeon interior; CharacterController
+            // depenetration ejected the player onto the ROOF stack. Spawn at the recorded mouth
+            // instead — always on the entry floor, facing the corridor.
+            if (kind == SettlementKind.Dungeon && RuntimeDungeonLayoutInfo.RoomCount > 0)
+                spawn = RuntimeDungeonLayoutInfo.EntryWorld + Vector3.up * 0.4f;
             RuntimePlayerSpawn.Record(spawn); // F15: the death-screen awaken teleports the rig back here
             RuntimePlayerRig.Build(spawn, Quaternion.Euler(0f, layout.PlayerFacingDeg, 0f));
 
