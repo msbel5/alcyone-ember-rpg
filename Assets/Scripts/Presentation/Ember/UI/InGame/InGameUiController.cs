@@ -154,6 +154,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             {
                 var line = _activeDialogSource.GetCurrentLine();
                 _activeDialog.SetCurrentLine(line);
+                if (_activeDialogSource.IsThinking)
+                    _activeDialog.UpdateLatestLoading(line); // M3a: the bubble streams too
                 // PLAYTEST FIX ("tts yok"): finished lines are spoken; the service dedupes on
                 // text so the per-frame poll costs one string compare while nothing changes.
                 if (!_activeDialogSource.IsThinking)

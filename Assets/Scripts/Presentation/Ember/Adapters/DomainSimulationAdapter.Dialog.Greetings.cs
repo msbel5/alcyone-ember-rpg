@@ -24,6 +24,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (router == null) return;
 
             _isDialogThinking = true;
+            _streamingPartialLine = string.Empty; // M3a: never leak the previous answer's stream
             int gen = _conversationSerial;
             int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var request = new LlmRequest(
@@ -40,7 +41,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // mutations are applied AFTER the await, which resumes on Unity's main-thread
             // SynchronizationContext — previously _currentDialogLine / _isDialogThinking were
             // written from the worker thread, racing the main-thread dialog reader.
-            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
+            // M3a: partials arrive on the WORKER thread - marshal through the apply queue and
+            // re-check the serials so a superseded request can never paint the screen.
+            System.Action<string> onPartial = partialText => _mainThreadApply.Enqueue(() =>
+            {
+                if (gen != _conversationSerial || req != _dialogRequestSerial) return;
+                _streamingPartialLine = TrimStreamPartial(partialText);
+            });
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request, onPartial));
             // DET-02: apply the result on the main-thread tick, not on the await's resumption thread.
             _mainThreadApply.Enqueue(() =>
             {
@@ -73,6 +81,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (router == null || string.IsNullOrEmpty(actorName)) return;
 
             _isDialogThinking = true;
+            _streamingPartialLine = string.Empty; // M3a: never leak the previous answer's stream
             int gen = _conversationSerial;
             int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             // Stable per-name seed (string.GetHashCode is process-randomised, so fold the chars via FNV).
@@ -89,7 +98,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 RecallDialogMemoryByName(actorName)
             );
 
-            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
+            // M3a: partials arrive on the WORKER thread - marshal through the apply queue and
+            // re-check the serials so a superseded request can never paint the screen.
+            System.Action<string> onPartial = partialText => _mainThreadApply.Enqueue(() =>
+            {
+                if (gen != _conversationSerial || req != _dialogRequestSerial) return;
+                _streamingPartialLine = TrimStreamPartial(partialText);
+            });
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request, onPartial));
             _mainThreadApply.Enqueue(() =>
             {
                 if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply

@@ -135,7 +135,14 @@ namespace EmberCrpg.Infrastructure.AiDm
             return SyncTaskBridge.Run(() => CompleteAsync(request, CancellationToken.None));
         }
 
-        public async Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken)
+        /// <summary>M3a streaming: same completion, but the ACCUMULATED text is pushed through
+        /// onPartial after every decoded token - the UI can show the answer as it forms.</summary>
+        public LlmResponse Complete(LlmRequest request, Action<string> onPartial)
+        {
+            return SyncTaskBridge.Run(() => CompleteAsync(request, CancellationToken.None, onPartial));
+        }
+
+        public async Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken, Action<string> onPartial = null)
         {
 #if USE_LLAMASHARP
             if (!_isInitialised)
@@ -186,6 +193,7 @@ namespace EmberCrpg.Infrastructure.AiDm
                             while (await enumerator.MoveNextAsync().AsTask().ConfigureAwait(false))
                             {
                                 resultText += enumerator.Current;
+                                onPartial?.Invoke(resultText); // M3a: worker thread - receiver must marshal
                             }
                         }
                         finally

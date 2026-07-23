@@ -52,10 +52,13 @@ namespace EmberCrpg.Presentation.Ember.Forge
             _refiningForge = RuntimeSingleFigureForgeFactory.WrapNpcBillboards(_serializedForge, modelRoot);
             _activeForge = _refiningForge;
 
-            ILlmRouter router = new LlmRoutingService(
+            var routingService = new LlmRoutingService(
                 req => _nativeLlm.Complete(req),
                 cloud: null,
                 cloudKind: LlmProviderKind.Mock);
+            // M3a: dialogue streams tokens as they decode instead of waiting for the last one.
+            routingService.LocalStreaming = (req, onPartial) => _nativeLlm.Complete(req, onPartial);
+            ILlmRouter router = routingService;
 
             ForgeLocator.Register(_activeForge, _nativeLlm, router);
             _ = DetectAsync(_cts.Token);

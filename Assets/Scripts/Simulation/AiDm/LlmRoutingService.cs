@@ -5,6 +5,9 @@ namespace EmberCrpg.Simulation.AiDm
 {
     public delegate LlmResponse LlmDispatch(LlmRequest request);
 
+    /// <summary>M3a: a local provider that can push accumulated text while generating.</summary>
+    public delegate LlmResponse LlmStreamingDispatch(LlmRequest request, System.Action<string> onPartial);
+
     /// <summary>
     /// Routes an LLM request to the local provider first; falls back to cloud
     /// when local returns null/empty. Phase 12 Atom 5.
@@ -31,6 +34,28 @@ namespace EmberCrpg.Simulation.AiDm
             _local = local;
             _cloud = cloud;
             _cloudKind = cloudKind.IsEmpty ? LlmProviderKind.CloudAnthropic : cloudKind;
+        }
+
+        /// <summary>M3a: install the streaming path after construction (Presentation wires it).</summary>
+        public LlmStreamingDispatch LocalStreaming { get; set; }
+
+        /// <summary>M3a streaming completion: local-with-stream first, plain routing as fallback.
+        /// onPartial fires on a WORKER thread with the accumulated text so far.</summary>
+        public LlmResponse Complete(LlmRequest request, System.Action<string> onPartial, out LlmProviderKind chosen)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (LocalStreaming != null && onPartial != null)
+            {
+                LlmResponse response = null;
+                try { response = LocalStreaming(request, onPartial); }
+                catch (Exception) { response = null; } // fall through to the plain chain
+                if (response != null && HasUsefulPayload(response))
+                {
+                    chosen = LlmProviderKind.LocalQwen;
+                    return response;
+                }
+            }
+            return Complete(request, out chosen);
         }
 
         public LlmResponse Complete(LlmRequest request, out LlmProviderKind chosen)

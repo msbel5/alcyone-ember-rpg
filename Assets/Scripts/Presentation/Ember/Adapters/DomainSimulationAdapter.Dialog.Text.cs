@@ -254,6 +254,23 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 || lower.Contains("llamasharp) not enabled");
         }
 
+        // M3a: streaming twin - routes through the streaming overload when the router has one.
+        private static LlmResponse CompleteLlmOrEmpty(
+            EmberCrpg.Simulation.AiDm.ILlmRouter router, LlmRequest request, System.Action<string> onPartial)
+        {
+            try
+            {
+                if (onPartial != null && router is EmberCrpg.Simulation.AiDm.LlmRoutingService streamingRouter)
+                    return streamingRouter.Complete(request, onPartial, out _);
+                return router.Complete(request, out _);
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogWarning("[DialogLLM] provider failed; keeping deterministic line. " + ex.GetType().Name + ": " + ex.Message);
+                return new LlmResponse(string.Empty, null, 0);
+            }
+        }
+
         private static LlmResponse CompleteLlmOrEmpty(EmberCrpg.Simulation.AiDm.ILlmRouter router, LlmRequest request)
         {
             try { return router.Complete(request, out _); }

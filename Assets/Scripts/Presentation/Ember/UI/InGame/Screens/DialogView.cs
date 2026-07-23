@@ -188,6 +188,20 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 _lineLabel.text = text;
         }
 
+        /// <summary>M3a: pour the growing streamed answer into the newest loading bubble.</summary>
+        public void UpdateLatestLoading(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            for (int i = _threadEntries.Count - 1; i >= 0; i--)
+            {
+                if (_threadEntries[i].Loading)
+                {
+                    _threadEntries[i].SetAnswer(text, true); // keeps the loading styling until resolve
+                    return;
+                }
+            }
+        }
+
         public void SetPortrait(Sprite sprite)
         {
             if (sprite == null || _portraitBox == null)

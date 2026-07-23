@@ -24,6 +24,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (router == null) return;
 
             _isDialogThinking = true;
+            _streamingPartialLine = string.Empty; // M3a: never leak the previous answer's stream
             int gen = _conversationSerial;
             int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
@@ -40,7 +41,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and
             // applied on the deterministic main-thread tick (not on the await's resumption thread).
-            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
+            // M3a: partials arrive on the WORKER thread - marshal through the apply queue and
+            // re-check the serials so a superseded request can never paint the screen.
+            System.Action<string> onPartial = partialText => _mainThreadApply.Enqueue(() =>
+            {
+                if (gen != _conversationSerial || req != _dialogRequestSerial) return;
+                _streamingPartialLine = TrimStreamPartial(partialText);
+            });
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request, onPartial));
             _mainThreadApply.Enqueue(() =>
             {
                 if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply
@@ -65,6 +73,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (router == null || string.IsNullOrEmpty(actorName)) return;
 
             _isDialogThinking = true;
+            _streamingPartialLine = string.Empty; // M3a: never leak the previous answer's stream
             int gen = _conversationSerial;
             int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
@@ -82,7 +91,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
                 RecallDialogMemoryByName(actorName));
 
-            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request));
+            // M3a: partials arrive on the WORKER thread - marshal through the apply queue and
+            // re-check the serials so a superseded request can never paint the screen.
+            System.Action<string> onPartial = partialText => _mainThreadApply.Enqueue(() =>
+            {
+                if (gen != _conversationSerial || req != _dialogRequestSerial) return;
+                _streamingPartialLine = TrimStreamPartial(partialText);
+            });
+            var response = await Task.Run(() => CompleteLlmOrEmpty(router, request, onPartial));
             _mainThreadApply.Enqueue(() =>
             {
                 if (gen != _conversationSerial) return;   // a newer conversation superseded this — drop the stale reply

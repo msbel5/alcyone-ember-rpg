@@ -25,7 +25,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public string GetCurrentLine()
         {
             if (_isDialogThinking)
+            {
+                // M3a: once tokens start flowing the placeholder yields to the LIVE text.
+                if (!string.IsNullOrWhiteSpace(_streamingPartialLine))
+                    return _streamingPartialLine + " …";
                 return string.IsNullOrEmpty(_activeDialogActor) ? "Thinking…" : _activeDialogActor + " thinks…";
+            }
             // BUG-DIALOG-EMPTY: final guarantee — the dialog panel renders this string verbatim into a
             // label, so it must NEVER be null/empty/whitespace. BeginConversation/SelectTopic always
             // set a deterministic line, but guard here too so no future caller (or a read before any
@@ -94,6 +99,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 if (known.EventType == "met_player" && known.Timestamp.TotalMinutes < _world.Time.TotalMinutes)
                     return $" You have spoken with this traveller before — their name is {known.SubjectId}; greet them as an acquaintance, never introduce yourself again.";
             return string.Empty;
+        }
+
+        // M3a: a mid-stream partial is USER-VISIBLE - cut at anti-prompt echoes before they flash.
+        private static string TrimStreamPartial(string partial)
+        {
+            if (string.IsNullOrEmpty(partial)) return string.Empty;
+            int cut = partial.IndexOf("User:", System.StringComparison.Ordinal);
+            int cutMemory = partial.IndexOf("Memory", System.StringComparison.Ordinal);
+            if (cutMemory >= 0 && (cut < 0 || cutMemory < cut)) cut = cutMemory;
+            if (cut >= 0) partial = partial.Substring(0, cut);
+            return partial.TrimStart();
         }
 
         // M2: a companion SPEAKS like one — the persona suffix reframes the LLM voice, and

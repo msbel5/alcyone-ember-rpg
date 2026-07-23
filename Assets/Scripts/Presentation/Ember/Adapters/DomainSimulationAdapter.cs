@@ -42,6 +42,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _pendingFate = string.Empty;
         private bool _isFateThinking;
         private bool _isDialogThinking;
+        /// <summary>M3a: the growing streamed answer, shown by GetCurrentLine while thinking.</summary>
+        private string _streamingPartialLine;
         // DLG-01: set true when an id-keyed GetDialogSource lookup misses, so the
         // read methods surface an explicit "no one here" state instead of silently
         // dropping the player into the shared global _world.Topics menu. Reset on
