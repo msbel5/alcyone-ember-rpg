@@ -223,12 +223,70 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         }
 
         private static TerrainLayer _dirtLayer;
+        // Deterministic 2-octave value-noise ground with per-biome palette + sparse speckle
+        // highlights (blades/flowers/frost). 256px, tiled at 9m — nature at a glance, zero assets.
+        private static readonly Dictionary<BiomeKind, Texture2D> NatureCache = new Dictionary<BiomeKind, Texture2D>();
+
+        public static Texture2D NatureTexture(BiomeKind biome) // public: the settlement ground plane shares it
+        {
+            if (NatureCache.TryGetValue(biome, out var cached)) return cached;
+            (Color dark, Color light, Color speckle) = biome switch
+            {
+                BiomeKind.Forest => (new Color(0.06f, 0.15f, 0.06f), new Color(0.13f, 0.24f, 0.09f), new Color(0.22f, 0.34f, 0.13f)),
+                BiomeKind.Coast  => (new Color(0.55f, 0.48f, 0.33f), new Color(0.72f, 0.64f, 0.45f), new Color(0.30f, 0.42f, 0.20f)),
+                BiomeKind.Desert => (new Color(0.62f, 0.50f, 0.30f), new Color(0.78f, 0.66f, 0.42f), new Color(0.54f, 0.42f, 0.26f)),
+                BiomeKind.Tundra => (new Color(0.52f, 0.56f, 0.55f), new Color(0.72f, 0.76f, 0.74f), new Color(0.86f, 0.90f, 0.92f)),
+                BiomeKind.Swamp  => (new Color(0.14f, 0.20f, 0.12f), new Color(0.24f, 0.30f, 0.16f), new Color(0.34f, 0.38f, 0.22f)),
+                _                => (new Color(0.10f, 0.20f, 0.07f), new Color(0.20f, 0.33f, 0.12f), new Color(0.33f, 0.46f, 0.16f)), // plains grass
+            };
+
+            const int size = 256;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: true)
+            { wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Bilinear };
+            var pixels = new Color32[size * size];
+            uint seedBase = (uint)(1000 + (int)biome);
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                // Three octaves: MACRO (64px ≈ 2.3m) survives mip-averaging at distance —
+                // without it the ground collapsed to a flat pale wash past ~15m (R1 finding).
+                float n = 0.45f * LatticeNoise(x, y, 64, seedBase ^ 0x51ED270Bu)
+                        + 0.40f * LatticeNoise(x, y, 16, seedBase)
+                        + 0.15f * LatticeNoise(x, y, 4, seedBase ^ 0x9E3779B9u);
+                n = Mathf.Clamp01((n - 0.5f) * 1.6f + 0.5f); // contrast push — mips flatten, we pre-sharpen
+                var color = Color.Lerp(dark, light, n);
+                uint h = Hash((uint)x * 374761393u ^ (uint)y * 668265263u ^ seedBase);
+                if ((h & 63u) == 0u) color = speckle; // sparse blades/flowers/frost
+                pixels[y * size + x] = color;
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(updateMipmaps: true, makeNoLongerReadable: true);
+            NatureCache[biome] = texture;
+            return texture;
+        }
+
+        private static float LatticeNoise(int x, int y, int cell, uint seed)
+        {
+            int gx = x / cell, gy = y / cell;
+            float fx = (x % cell) / (float)cell, fy = (y % cell) / (float)cell;
+            int wrap = 256 / cell;
+            float V(int cx, int cy) => (Hash((uint)(((cx % wrap + wrap) % wrap) * 2246822519L
+                ^ ((cy % wrap + wrap) % wrap) * 3266489917L) ^ seed) & 0xFFFF) / 65536f;
+            float top = Mathf.Lerp(V(gx, gy), V(gx + 1, gy), fx);
+            float bottom = Mathf.Lerp(V(gx, gy + 1), V(gx + 1, gy + 1), fx);
+            return Mathf.Lerp(top, bottom, fy);
+        }
+
+        private static uint Hash(uint value)
+        {
+            unchecked { value = (value ^ (value >> 15)) * 2654435761u; return value ^ (value >> 13); }
+        }
+
         private static TerrainLayer DirtLayer()
         {
             if (_dirtLayer != null) return _dirtLayer;
-            var texture = RuntimeMaterialPalette.LoadGeneratedTexture("ground_dirt")
-                          ?? SolidTexture(new Color(0.42f, 0.33f, 0.22f)); // earthy meadow-break tone
-            _dirtLayer = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(14f, 14f) };
+            var texture = NatureTexture(BiomeKind.Desert); // earthy noise doubles as the meadow-break dirt
+            _dirtLayer = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(9f, 9f) };
             return _dirtLayer;
         }
 
@@ -284,18 +342,28 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         {
             if (BiomeCache.TryGetValue(biome, out var cached)) return cached;
 
-            var texture = RuntimeMaterialPalette.LoadGeneratedTexture(RuntimeMaterialPalette.GroundTextureId(biome))
-                          ?? SolidTexture(RuntimeMaterialPalette.GroundColor(biome));
+            // 10/10 R1: outdoor biomes wear PROCEDURAL NATURE, not recycled interior floor
+            // plates — the env_* cobbles read as bathroom tile across whole landscapes (the
+            // buyer-score's single loudest complaint). Rock biomes keep their stony plates.
+            bool rocky = biome == BiomeKind.Mountain || biome == BiomeKind.Ash;
+            var texture = rocky
+                ? (RuntimeMaterialPalette.LoadGeneratedTexture(RuntimeMaterialPalette.GroundTextureId(biome))
+                   ?? SolidTexture(RuntimeMaterialPalette.GroundColor(biome)))
+                : NatureTexture(biome);
             var tint = RuntimeMaterialPalette.GroundColor(biome);
             var layer = new TerrainLayer
             {
                 diffuseTexture = texture,
-                tileSize = new Vector2(14f, 14f),
-                // Biomes SHARE recycled textures; the albedo remap carries the biome tint so
-                // plains/forest/tundra stop rendering literally identical ground.
+                tileSize = new Vector2(rocky ? 14f : 9f, rocky ? 14f : 9f),
                 diffuseRemapMin = Vector4.zero,
-                diffuseRemapMax = new Vector4(
-                    Mathf.Lerp(1f, tint.r, 0.55f), Mathf.Lerp(1f, tint.g, 0.55f), Mathf.Lerp(1f, tint.b, 0.55f), 1f),
+                // Nature textures carry their own palette — remap only the rocky plates.
+                // CALIBRATION (colour-probe verdict): this terrain pipeline renders albedo
+                // ~2.5-3x brighter than authored — pure blue probed as pastel lavender. The
+                // remap pre-divides inside the shader so nature reads at its painted darkness.
+                diffuseRemapMax = rocky
+                    ? new Vector4(
+                        Mathf.Lerp(1f, tint.r, 0.55f), Mathf.Lerp(1f, tint.g, 0.55f), Mathf.Lerp(1f, tint.b, 0.55f), 1f)
+                    : new Vector4(0.38f, 0.38f, 0.38f, 1f),
             };
 
             // The terrain shader is force-included at build time (Windows64BuildMenu.EnsureRuntimeShadersIncluded),

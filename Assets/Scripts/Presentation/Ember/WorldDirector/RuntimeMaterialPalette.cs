@@ -125,7 +125,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // playtests — with no runtime reflection probes the specular term is black, and under grim
             // ambient a dark albedo carries almost no visible light. Brighter base + modest smoothness +
             // a faint emission floor make water unmistakably WATER in every lighting mood.
-            var color = new Color(0.18f, 0.45f, 0.65f, 1f);
+            // 10/10 R1 final root cause: THIS bright emissive sheet was the 'pale mint field'
+            // strangling every coastal-town shot — four ground-texture fixes couldn't touch it
+            // because it was never ground. Dark calm sea reads as WATER against grass islands.
+            var color = new Color(0.09f, 0.20f, 0.30f, 1f);
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
             // BULLETPROOF COLOR PATH: building textures provably render in the player, so carry the blue in
@@ -133,7 +136,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // cannot collapse to black the way a colour-only material did in two playtests.
             var tex = new Texture2D(4, 4, TextureFormat.RGBA32, mipChain: false);
             var px = new Color32[16];
-            for (int i = 0; i < px.Length; i++) px[i] = new Color32(46, 115, 166, 255);
+            for (int i = 0; i < px.Length; i++) px[i] = new Color32(24, 52, 78, 255);
             tex.SetPixels32(px);
             tex.Apply(updateMipmaps: false, makeNoLongerReadable: true);
             if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
@@ -142,7 +145,8 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (mat.HasProperty("_EmissionColor"))
             {
                 mat.EnableKeyword("_EMISSION");
-                mat.SetColor("_EmissionColor", new Color(0.04f, 0.12f, 0.20f, 1f));
+                // Barely-there floor: enough to never render BLACK at night, no daytime glow.
+                mat.SetColor("_EmissionColor", new Color(0.010f, 0.025f, 0.045f, 1f));
             }
             // DOUBLE-SIDED: the sheet is a single plane — one-sided it vanishes when the player walks below
             // the waterline (the shore bowl is walkable), and the shadowed bowl under it read as a growing

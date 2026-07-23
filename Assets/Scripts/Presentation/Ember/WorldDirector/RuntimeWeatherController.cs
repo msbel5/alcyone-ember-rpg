@@ -88,6 +88,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
         private void Apply(string kind, int day)
         {
+            // Proof lever: '--ember-weather clear|rain|snow|fog' pins the weather so visual
+            // reviews can judge the ground/sky WITHOUT the roll's atmosphere on top.
+            var cli = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < cli.Length - 1; i++)
+                if (cli[i] == "--ember-weather") { kind = cli[i + 1]; break; }
+
             RuntimeWeatherMirror.Kind = kind;
             int season = ((Mathf.Max(1, day) - 1) / 90) % 4;
             Debug.Log($"[Weather] day={day} season={season} biome={_biome} → {kind}.");

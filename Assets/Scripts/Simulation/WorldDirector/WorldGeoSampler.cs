@@ -36,7 +36,10 @@ namespace EmberCrpg.Simulation.WorldDirector
         private const double DetailAmpMeters = 12d;     // local rolling-hill noise on top of the coarse field
         private const double FlatRadiusMeters = 60d;    // settlement pad stays exactly at home ground level
         private const double FlattenRampMeters = 220d;
-        private const double BeachBandMeters = 4d;
+        // 10/10 R1 root cause: 4m of beach band painted ~40% pale sand across every
+        // flattened settlement pad (~2.5m above sea) — the mint ring in every town shot.
+        // 1.5m keeps sand where a beach actually is: the last stride before the water.
+        private const double BeachBandMeters = 1.5d;
         private const double ShoreStartMeters = 300d;   // local shore begins past the pad flatten (60+220)
         private const double ShoreRampMeters = 260d;    // full waterline by ~560m — inside the streamed bubble
         private const double ShoreDepthMeters = 8d;     // a real seabed below the local waterline
