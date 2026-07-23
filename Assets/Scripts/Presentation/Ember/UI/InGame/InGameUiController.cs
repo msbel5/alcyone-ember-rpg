@@ -229,7 +229,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 d.Hp = s.Health; d.HpMax = s.HealthMax;
                 d.Fatigue = s.Stamina; d.FatigueMax = s.StaminaMax;
                 d.Mana = s.Mana; d.ManaMax = s.ManaMax;
+                // BUYER FEEL ("dovus hissi"): ANY hp drop - melee counter, encounter strike,
+                // hazard - flashes the red edge vignette. HP delta is the one honest trigger
+                // that catches every damage source without a per-source hook.
+                if (_lastHpSeen > 0 && s.Health < _lastHpSeen) ShowHurtFlash();
+                _lastHpSeen = s.Health;
             }
+            UpdateHurtFlash();
 
             // F14 hostile AI pump: outlaws in sight give chase every unpaused frame (throttled inside).
             if (!open && EmberDomainAdapterLocator.Current
@@ -1301,6 +1307,39 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private bool _timeSkipRunning;
         private bool _speechCheckDone;
+        private VisualElement _hurtFlash;
+        private float _hurtFlashUntil;
+        private int _lastHpSeen = -1;
+
+        // BUYER FEEL: a red EDGE vignette - border only, the centre stays clear, 0.35s fade.
+        private void ShowHurtFlash()
+        {
+            if (_hurtFlash == null)
+            {
+                var canvas = _stage?.Canvas;
+                if (canvas == null) return;
+                _hurtFlash = new VisualElement();
+                _hurtFlash.style.position = Position.Absolute;
+                _hurtFlash.style.left = 0; _hurtFlash.style.top = 0;
+                _hurtFlash.style.right = 0; _hurtFlash.style.bottom = 0;
+                _hurtFlash.pickingMode = PickingMode.Ignore;
+                var red = new Color(0.78f, 0.09f, 0.06f, 1f);
+                _hurtFlash.style.borderLeftWidth = 22; _hurtFlash.style.borderRightWidth = 22;
+                _hurtFlash.style.borderTopWidth = 22; _hurtFlash.style.borderBottomWidth = 22;
+                _hurtFlash.style.borderLeftColor = red; _hurtFlash.style.borderRightColor = red;
+                _hurtFlash.style.borderTopColor = red; _hurtFlash.style.borderBottomColor = red;
+                canvas.Add(_hurtFlash);
+            }
+            _hurtFlash.style.opacity = 0.85f;
+            _hurtFlashUntil = Time.unscaledTime + 0.35f;
+        }
+
+        private void UpdateHurtFlash()
+        {
+            if (_hurtFlash == null) return;
+            float remain = _hurtFlashUntil - Time.unscaledTime;
+            _hurtFlash.style.opacity = Mathf.Clamp01(remain / 0.35f) * 0.85f;
+        }
 
         // PLAYTEST ("wait tusu da rest tusu da olmali"): T waits an hour, H sleeps until dawn.
         // Same hour-stepped sim advance as fast travel, so the world (schedules, needs, weather,
