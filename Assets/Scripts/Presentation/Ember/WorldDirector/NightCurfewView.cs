@@ -22,6 +22,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         private Vector3 _uprightLocalPos;
         private float _nextPoll;
         private bool _asleep;
+        private bool _sleepingFromSim;
+
+        /// <summary>Fed per tick by ActorView from ActorViewState.Sleeping.</summary>
+        public void SetSleeping(bool sleeping) => _sleepingFromSim = sleeping;
 
         private void Update()
         {
@@ -38,8 +42,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 _uprightLocalPos = _sprite.transform.localPosition;
             }
 
-            int hour = RuntimeFieldMirror.HourOfDay;
-            bool sleep = !Prowler && (hour >= 22 || hour < 6);
+            // PLAYTEST FIX ("kimse eve gidip uyumuyor"): the sim now TELLS us when the actor
+            // has arrived home for the night (ActorViewState.Sleeping via ActorView) - the hour
+            // poll alone made whole streets lie down mid-commute where 22:00 caught them.
+            bool sleep = !Prowler && _sleepingFromSim;
             if (sleep == _asleep) return;
             _asleep = sleep;
             if (_actorView != null) _actorView.ExternalPoseOverride = sleep; // stops the bob/lean writers

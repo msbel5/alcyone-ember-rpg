@@ -182,3 +182,31 @@ TOPLAM ALICI PUANI: 4/10 -> hedef 10/10. Kural: puan iddiası KANITLA (kare/vide
 
 Ritüel V1 ile aynı (fallback→build→proof→commit), tek fark: kanıt = kapı testleri + log akışı;
 kare destekleyici, asla tek başına yeterli değil. Token-tasarruf modu: kısa rapor, toplu işlem.
+
+
+## V3.M3+ — Etkileşim & Üretim Mimarisi (2026-07-23 playtest kararları)
+
+**Karar: Unity objesi = YAML text'tir ama LLM'e YAML ürettirmek YANLIŞ katmandır.**
+Prefab YAML'ı GUID/fileID dolu serilestirmedir; semantik değildir. Doğru katman bu repo'nun
+zaten yaptığıdır: kompakt deterministik VERİ (layout grammar, arketip, palet) + onu sahneye
+çeviren BUILDER kodu (WorldSceneDirector/RuntimeBuildingBuilder). "Unity objesi üreten model" =
+grammar'a yeni kural + builder'a yeni dal yazan kod ajanı. Daggerfall'un RMB/RDB blok yaklaşımı.
+
+- **M3a Streaming LLM**: ILlmRouter'a IAsyncEnumerable yüzeyi; NativeLlmClient zaten token
+  akıtıyor, sadece drain ediyor. Cümle sınırında UI'ya bas; sanitize akış-sonu. "think" süresi
+  ilk cümle süresine iner (~1-2 sn).
+- **M3b Yerel TTS (SAPI yerine)**: Piper/Kokoro ONNX (forge zaten ONNX çalıştırıyor; 8GB 3070
+  CPU'da bile yeter). Ses imzası = NPC id'den deterministik (speaker embed + pitch/rate);
+  aynı NPC hep aynı ses. Oyuncu sesi karakter yaratma cevaplarından türetilir (portre gibi).
+  Streaming ile cümle-cümle okur.
+- **M4 Paper-doll billboard**: zırh/kıyafet değişiminde forge'a KOMPLE yeni sprite ÜRETTİRME;
+  katmanlı kompozit (taban poz + ekipman overlay, aynı poz şablonu) ya da palet-swap tint.
+  Forge yalnız YENİ arketip/benzersiz eşya için. Portre kimliği sabit seed'le korunur.
+- **M5 Eşya görselleri**: yerde silah/makas = billboard flat (Daggerfall'un yaptığı); forge
+  item PNG'leri zaten var. Küp değil.
+- **M5b Kahraman prop'lar için image-to-3D**: TRELLIS / Hunyuan3D-2 / SF3D-TripoSR sınıfı
+  modeller glb üretir, glTFast runtime import; kuyu/heykel/araba gibi tekil "hero" nesneler
+  için ön-pişirilmiş kütüphane (runtime üretim DEĞİL). Binalar grammar'da kalır.
+- **M6 Görünür etkileşim**: pozisyonlu her sim olayının sunum yankısı olmalı - hasat aktörü
+  tarlada "harvesting" fiiliyle görünmeli, ürün küçülmesi aktör bitişikken tetiklenmeli.
+  (Gece eve yürü + evde yat: 2026-07-23'te kapandı.)

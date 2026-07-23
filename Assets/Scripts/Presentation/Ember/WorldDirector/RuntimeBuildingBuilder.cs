@@ -12,6 +12,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     {
         private const float WallThickness = 0.25f;
         private const float DoorWidth = 1.6f;
+        private const float DoorHeight = 2.2f;
 
         public static GameObject Build(Transform parent, BuildingPlacement placement)
         {
@@ -81,7 +82,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         private static void AddDoor(Transform root, BuildingPlacement placement, DoorSide entrance)
         {
             float halfX = placement.SizeX / 2f, halfZ = placement.SizeZ / 2f;
-            const float doorH = 2.2f;
+            const float doorH = DoorHeight;
 
             // Hinge sits at the gap's edge on the entrance wall; the panel swings INTO the room.
             Vector3 hingePos; float yaw;
@@ -113,19 +114,26 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         private static void AddWindows(Transform root, BuildingPlacement placement, DoorSide entrance)
         {
             float halfX = placement.SizeX / 2f, halfZ = placement.SizeZ / 2f;
-            var glass = RuntimeMaterialPalette.Solid(new Color(0.30f, 0.40f, 0.55f)); // dusk-lit pane
+            // PLAYTEST FIX ("pencereler de yok"): a lone dusk pane vanished against the wall
+            // texture. A dark timber FRAME behind a brighter pane finally reads as a window.
+            var glass = RuntimeMaterialPalette.Solid(new Color(0.55f, 0.68f, 0.82f));
+            var frame = RuntimeMaterialPalette.Solid(new Color(0.24f, 0.17f, 0.10f));
             bool entranceOnX = entrance == DoorSide.North || entrance == DoorSide.South;
 
             // One window per SIDE wall (perpendicular to the door), proud of the wall by 3cm so it reads.
             if (entranceOnX)
             {
-                AddSlab(root, "WindowE", new Vector3(halfX + 0.03f, 1.5f, 0f), new Vector3(0.06f, 1.0f, 0.9f), glass);
-                AddSlab(root, "WindowW", new Vector3(-halfX - 0.03f, 1.5f, 0f), new Vector3(0.06f, 1.0f, 0.9f), glass);
+                AddSlab(root, "WindowFrameE", new Vector3(halfX + 0.02f, 1.5f, 0f), new Vector3(0.05f, 1.25f, 1.15f), frame);
+                AddSlab(root, "WindowE", new Vector3(halfX + 0.05f, 1.5f, 0f), new Vector3(0.05f, 1.0f, 0.9f), glass);
+                AddSlab(root, "WindowFrameW", new Vector3(-halfX - 0.02f, 1.5f, 0f), new Vector3(0.05f, 1.25f, 1.15f), frame);
+                AddSlab(root, "WindowW", new Vector3(-halfX - 0.05f, 1.5f, 0f), new Vector3(0.05f, 1.0f, 0.9f), glass);
             }
             else
             {
-                AddSlab(root, "WindowN", new Vector3(0f, 1.5f, halfZ + 0.03f), new Vector3(0.9f, 1.0f, 0.06f), glass);
-                AddSlab(root, "WindowS", new Vector3(0f, 1.5f, -halfZ - 0.03f), new Vector3(0.9f, 1.0f, 0.06f), glass);
+                AddSlab(root, "WindowFrameN", new Vector3(0f, 1.5f, halfZ + 0.02f), new Vector3(1.15f, 1.25f, 0.05f), frame);
+                AddSlab(root, "WindowN", new Vector3(0f, 1.5f, halfZ + 0.05f), new Vector3(0.9f, 1.0f, 0.05f), glass);
+                AddSlab(root, "WindowFrameS", new Vector3(0f, 1.5f, -halfZ - 0.02f), new Vector3(1.15f, 1.25f, 0.05f), frame);
+                AddSlab(root, "WindowS", new Vector3(0f, 1.5f, -halfZ - 0.05f), new Vector3(0.9f, 1.0f, 0.05f), glass);
             }
         }
 
@@ -230,6 +238,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             float offset = (DoorWidth + segmentWidth) / 2f;
             AddWall(parent, new Vector3(-offset, height / 2f, z), new Vector3(segmentWidth, height, WallThickness), material);
             AddWall(parent, new Vector3(offset, height / 2f, z), new Vector3(segmentWidth, height, WallThickness), material);
+            // PLAYTEST FIX ("kapinin ust tarafi acik"): a LINTEL closes the gap above the door -
+            // the entrance is a doorway now, not a floor-to-roof slot in the facade.
+            float lintelH = height - DoorHeight;
+            if (lintelH > 0.05f)
+                AddWall(parent, new Vector3(0f, DoorHeight + lintelH / 2f, z), new Vector3(DoorWidth, lintelH, WallThickness), material);
         }
 
         private static void AddWallZ(
@@ -250,6 +263,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             float offset = (DoorWidth + segmentDepth) / 2f;
             AddWall(parent, new Vector3(x, height / 2f, -offset), new Vector3(WallThickness, height, segmentDepth), material);
             AddWall(parent, new Vector3(x, height / 2f, offset), new Vector3(WallThickness, height, segmentDepth), material);
+            float lintelH = height - DoorHeight; // same lintel as AddWallX - see the facade fix note
+            if (lintelH > 0.05f)
+                AddWall(parent, new Vector3(x, DoorHeight + lintelH / 2f, 0f), new Vector3(WallThickness, lintelH, DoorWidth), material);
         }
 
         private static void AddWall(Transform parent, Vector3 localPosition, Vector3 size, Material material)

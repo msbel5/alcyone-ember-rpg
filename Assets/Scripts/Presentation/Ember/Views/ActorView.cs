@@ -128,12 +128,15 @@ namespace EmberCrpg.Presentation.Ember.Views
             if (!_activityLabelProbed)
             {
                 _activityLabel = GetComponent<NpcActivityLabelView>(); // optional - civilians only
+                _curfew = GetComponent<EmberCrpg.Presentation.Ember.WorldDirector.NightCurfewView>();
                 _activityLabelProbed = true;
             }
             _activityLabel?.SetActivity(state.Activity);
+            _curfew?.SetSleeping(state.Sleeping);
         }
 
         private NpcActivityLabelView _activityLabel;
+        private EmberCrpg.Presentation.Ember.WorldDirector.NightCurfewView _curfew;
         private bool _activityLabelProbed;
 
         /// <summary>
@@ -266,12 +269,16 @@ namespace EmberCrpg.Presentation.Ember.Views
         public readonly bool Visible;
         /// <summary>PLAYTEST FIX ("ne yaptigi anlasilmiyor"): one readable verb per actor.</summary>
         public readonly string Activity;
-        public ActorViewState(Vector3 worldPosition, Quaternion worldRotation, bool visible, string activity = null)
+        /// <summary>PLAYTEST FIX ("kimse eve gidip uyumuyor"): true only when the actor has
+        /// ARRIVED at its home cell at night - the lying pose waits for the commute to end.</summary>
+        public readonly bool Sleeping;
+        public ActorViewState(Vector3 worldPosition, Quaternion worldRotation, bool visible, string activity = null, bool sleeping = false)
         {
             WorldPosition = worldPosition;
             WorldRotation = worldRotation;
             Visible = visible;
             Activity = activity;
+            Sleeping = sleeping;
         }
     }
 }

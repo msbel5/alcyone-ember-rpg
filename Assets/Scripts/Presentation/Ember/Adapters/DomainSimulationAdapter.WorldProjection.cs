@@ -89,7 +89,20 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 new UnityEngine.Vector3(actor.Position.X - origin.X, 0f, actor.Position.Y - origin.Y),
                 UnityEngine.Quaternion.identity,
                 visible: true,
-                activity: DescribeActivity(actor));
+                activity: DescribeActivity(actor),
+                sleeping: IsAsleepAtHome(actor));
+        }
+
+        // PLAYTEST FIX ("kimse eve gidip uyumuyor"): the lying pose belongs to the BED, not the
+        // street - an actor sleeps only once the night commute has actually reached its home cell.
+        private bool IsAsleepAtHome(ActorRecord actor)
+        {
+            if (actor.Role == ActorRole.Guard || actor.Role == ActorRole.Enemy) return false;
+            int hour = (int)((_world.Time.TotalMinutes / 60) % 24);
+            if (hour < 22 && hour >= 6) return false;
+            int dx = System.Math.Abs(actor.Position.X - actor.Home.X);
+            int dy = System.Math.Abs(actor.Position.Y - actor.Home.Y);
+            return System.Math.Max(dx, dy) <= 1;
         }
 
         // PLAYTEST FIX ("npclerin ne yaptigi anlasilmiyor"): a floating one-word verb per actor.
@@ -100,7 +113,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (actor.Role == ActorRole.Guard) return "on watch";
             if (actor.Role == ActorRole.Enemy) return "hunting";
             if (hour >= 12 && hour < 14) return "eating";
-            if (hour < 6 || hour >= 20) return "resting";
+            if (hour < 6 || hour >= 22) return IsAsleepAtHome(actor) ? "sleeping" : "heading home";
+            if (hour >= 20) return "winding down";
             return actor.ScheduleState.IsIdle ? "idling" : "working";
         }
 
