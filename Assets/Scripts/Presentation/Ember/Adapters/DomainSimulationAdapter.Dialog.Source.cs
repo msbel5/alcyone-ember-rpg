@@ -22,6 +22,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // Mami: _isDialogThinking surfaces a "thinking …" placeholder while
         // the NPC LLM (or DM ConsultFate) is still generating, so the panel
         // never shows a stale or empty line during background inference.
+        /// <summary>M3b: actor id when we have one; FNV of the name for authored speakers.</summary>
+        public ulong VoiceKey
+            => !_activeDialogActorId.IsEmpty
+                ? _activeDialogActorId.Value
+                : EmberCrpg.Simulation.AiDm.NpcVoiceSignatureService.VoiceKeyFor(_activeDialogActor);
+
         public string GetCurrentLine()
         {
             if (_isDialogThinking)

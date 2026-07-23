@@ -11,6 +11,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     /// </summary>
     public interface IDialogSource
     {
+        /// <summary>M3b: stable key binding this conversation's speaker to a voice signature.</summary>
+        ulong VoiceKey => 0UL;
+
         string GetCurrentLine();
         IReadOnlyList<string> GetTopics();
         void SelectTopic(string topicId);
