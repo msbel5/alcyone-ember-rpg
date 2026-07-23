@@ -39,7 +39,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var restored = _saveService.LoadFromJson(json);
             if (restored == null) return;
 
+            // PLAYTEST FIX ("olunce load edince M calismiyor"): saves do not persist the
+            // overland map, and the loader maps data onto a FRESH factory world — CopyFrom
+            // then clobbered the live session's overland with null, killing the world map
+            // after every death->load. The session's overland survives the restore.
+            var liveOverland = _world.Overland;
             _world.CopyFrom(restored);
+            if (_world.Overland == null && liveOverland != null)
+                _world.Overland = liveOverland;
 
             // EMB-013: the reflection copy above mirrors fields verbatim, so a corrupt/partial save
             // could leave a store or list null and crash the next tick. Re-establish the non-null
