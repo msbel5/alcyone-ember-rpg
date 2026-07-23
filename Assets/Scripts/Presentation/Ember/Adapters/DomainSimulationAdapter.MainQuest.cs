@@ -4,6 +4,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 {
     public sealed partial class DomainSimulationAdapter
     {
+        // PLAYTEST FIX ("baslangic hikayesi yok"): the intro narrative existed only in a log
+        // line. A NEW GAME raises this flag; the in-game UI shows the story overlay ONCE.
+        public static bool JustCreatedWorld;
+        public static string OpeningHook = string.Empty;
+
         /// <summary>F31: configure the three-act spine at world seed — the FINAL delve is the
         /// LAST Dungeon in the overland list (deterministic per seed), the piece requirement
         /// adapts to the world's delve count, and the intro lands in the journal narrative.</summary>
@@ -22,10 +27,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 finalName = map.Settlements[i].Name;
             }
             _world.MainQuest.Configure(delveCount, finalId);
+            JustCreatedWorld = true; // PLAYTEST: the intro overlay consumes this once
             _world.LastNarrative =
                 "The ember under the world has a name, and the old stones remember it. Gather the " +
                 $"inscription pieces from the delves ({_world.MainQuest.RequiredInscriptions}), carry them " +
                 "to the capital's sage, and face what wards the final dark.";
+            OpeningHook = _world.LastNarrative;
             UnityEngine.Debug.Log(
                 $"[MainQuest] intro: three acts armed — pieces={_world.MainQuest.RequiredInscriptions}, " +
                 $"finalDelve='{finalName}' (id={finalId}), delves={delveCount}.");

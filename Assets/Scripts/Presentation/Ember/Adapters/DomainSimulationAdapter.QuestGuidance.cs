@@ -230,7 +230,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             var range = distance <= 0 ? "nearby" : distance + unit + " " + direction;
             if (state == null)
-                return actorName + " has forge work (" + range + "). Press E nearby, then ask about forge work.";
+                return actorName + " keeps the forge and has work for willing hands (" + range + "). Stand close and press E to speak.";
             if (state.IsTaskTriggered(0))
                 return "Return the iron ingot to " + actorName + " (" + range + ").";
             return "Craft one iron ingot, then return to " + actorName + " (" + range + ").";

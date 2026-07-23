@@ -113,6 +113,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private void Update()
         {
+            // PLAYTEST FIX ("baslangic hikayesi yok"): a fresh world opens on its STORY, once.
+            if (EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter.JustCreatedWorld)
+            {
+                EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter.JustCreatedWorld = false;
+                ShowOpeningStory(EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter.OpeningHook);
+            }
+
             if (_hud == null) return;
             _stage?.Fit();
             HandleScreenInput();
@@ -1182,6 +1189,43 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             // travel ended in a black screen + "overland unavailable").
             EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(EmberDomainAdapterLocator.Current);
             UnityEngine.SceneManagement.SceneManager.LoadScene(EmberCrpg.Presentation.Ember.EmberScenes.GeneratedWorld);
+        }
+
+        private void ShowOpeningStory(string narrative)
+        {
+            var overlay = new VisualElement();
+            overlay.style.position = Position.Absolute;
+            overlay.style.left = 0; overlay.style.top = 0; overlay.style.right = 0; overlay.style.bottom = 0;
+            overlay.style.backgroundColor = new Color(0.05f, 0.04f, 0.04f, 0.96f);
+            overlay.style.justifyContent = Justify.Center;
+            overlay.style.alignItems = Align.Center;
+
+            var title = new Label("THE EMBER WAKES");
+            title.style.fontSize = 34;
+            title.style.color = new Color(0.85f, 0.72f, 0.45f);
+            overlay.Add(title);
+
+            var story = new Label(string.IsNullOrWhiteSpace(narrative)
+                ? "The world remembers what burned beneath it. Walk, ask, and listen — the road knows your name before you do."
+                : narrative);
+            story.style.fontSize = 18;
+            story.style.color = new Color(0.82f, 0.79f, 0.74f);
+            story.style.maxWidth = 640;
+            story.style.whiteSpace = WhiteSpace.Normal; // PLAYTEST: long lines WRAP, never truncate
+            story.style.marginTop = 16;
+            overlay.Add(story);
+
+            var hint = new Label("Talk with E · World map with M · The Consul (DM) answers any question");
+            hint.style.fontSize = 14;
+            hint.style.color = new Color(0.62f, 0.60f, 0.55f);
+            hint.style.marginTop = 14;
+            overlay.Add(hint);
+
+            var begin = new Button(() => overlay.RemoveFromHierarchy()) { text = "BEGIN" };
+            begin.style.marginTop = 22;
+            begin.style.fontSize = 18;
+            overlay.Add(begin);
+            _stage?.Canvas?.Add(overlay); // same canvas the travel overlay rides
         }
 
         private void BuildTravelOverlay(out Label dayLabel)
