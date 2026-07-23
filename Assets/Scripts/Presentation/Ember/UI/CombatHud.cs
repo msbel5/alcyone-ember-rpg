@@ -171,10 +171,15 @@ return text;
     {
         public readonly string Name;
         public readonly int Mig, Agi, End, Mnd, Ins, Pre;
+        // PLAYTEST FIX: class/level/XP were mock-only on the sheet; now they ride along live.
+        public readonly string ClassName;
+        public readonly int Level, Xp, XpNext;
         public readonly bool HasData;
-        public PlayerSheetState(string name, int mig, int agi, int end, int mnd, int ins, int pre)
+        public PlayerSheetState(string name, int mig, int agi, int end, int mnd, int ins, int pre,
+            string className = "", int level = 0, int xp = 0, int xpNext = 0)
         {
             Name = name; Mig = mig; Agi = agi; End = end; Mnd = mnd; Ins = ins; Pre = pre; HasData = true;
+            ClassName = className; Level = level; Xp = xp; XpNext = xpNext;
         }
     }
 

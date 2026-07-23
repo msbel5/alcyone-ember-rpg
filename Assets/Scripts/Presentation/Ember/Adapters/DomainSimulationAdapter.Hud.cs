@@ -89,7 +89,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var player = _world.Actors?.FirstByRole(ActorRole.Player);
                 if (player == null) return default;   // HasData = false → CharacterView keeps its mock defaults
                 var s = player.Stats;
-                return new PlayerSheetState(player.Name, s.Mig, s.Agi, s.End, s.Mnd, s.Ins, s.Pre);
+                return new PlayerSheetState(player.Name, s.Mig, s.Agi, s.End, s.Mnd, s.Ins, s.Pre,
+                    _world.PlayerClassName, _world.PlayerLevel, _world.PlayerXp,
+                    EmberCrpg.Simulation.World.PlayerLevelUpService.XpForNextLevel(_world.PlayerLevel));
             }
         }
 

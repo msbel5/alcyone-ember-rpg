@@ -142,6 +142,8 @@ namespace EmberCrpg.Domain.World
         public int PlayerLevel = 1;
         // F17: kill/quest experience; gates the level-up screen (PlayerLevelUpService.XpForNextLevel).
         public int PlayerXp;
+        /// <summary>Chosen class display name; empty until character creation applies one.</summary>
+        public string PlayerClassName = string.Empty;
         // F22: world quests PERSIST — generated contracts (F21) + the fixed bounty/pilgrimage pair's
         // runtime states live on the world root (the adapter-local stores died here). Keyed by raw
         // QuestId.Value because the kernel QuestStore stays catalog-only (the F2 lesson).
@@ -223,6 +225,7 @@ namespace EmberCrpg.Domain.World
             MerchantInventory = other.MerchantInventory;
             PlayerLevel = other.PlayerLevel;
             PlayerXp = other.PlayerXp;
+            PlayerClassName = other.PlayerClassName;
             WorldContracts = other.WorldContracts;
             WorldQuestStates = other.WorldQuestStates;
             MainQuest = other.MainQuest;

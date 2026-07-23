@@ -32,7 +32,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 "npc_topic_answer",
                 "npc:" + npc.Id.Value + ":topic:" + topicId,
                 null,
-                180,
+                96, // PLAYTEST FIX ("uzun sure think diyor"): 1-2 sentences need ~60 tokens; 180 doubled the wait
+
                 npc.Id.Value,
                 $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests. The conversation log below is what you personally remember - witnessed events, past talks, trades - use it when it bears on the question." + CompanionPersonaSuffix(npc.Id.Value) + AcquaintanceSuffix(npc.Id.Value),
                 RecallDialogMemory(npc.Id.Value));
@@ -75,7 +76,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 "npc_topic_answer",
                 "npc:" + actorName + ":topic:" + topicId,
                 null,
-                180,
+                96, // PLAYTEST FIX ("uzun sure think diyor"): 1-2 sentences need ~60 tokens; 180 doubled the wait
+
                 seed,
                 $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
                 RecallDialogMemoryByName(actorName));

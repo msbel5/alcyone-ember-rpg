@@ -106,16 +106,19 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 stats,
                 vitals,
                 player.Position,
-                accuracy: player.Accuracy,
-                dodge: player.Dodge,
-                armor: player.Armor,
-                baseDamage: player.BaseDamage,
+                // PLAYTEST FIX ("siniflar anlamli degil"): combat numbers now come FROM the class
+                // stats instead of copying the role defaults every class shared.
+                accuracy: EmberCrpg.Simulation.World.ClassCombatProfileService.DeriveAccuracy(stats),
+                dodge: EmberCrpg.Simulation.World.ClassCombatProfileService.DeriveDodge(stats),
+                armor: EmberCrpg.Simulation.World.ClassCombatProfileService.DeriveArmor(stats),
+                baseDamage: EmberCrpg.Simulation.World.ClassCombatProfileService.DeriveBaseDamage(stats),
                 topicIds: player.TopicIds,
                 jobPreferences: player.JobPreferences,
                 scheduleState: player.ScheduleState,
                 needs: player.Needs,
                 mood: player.Mood,
                 memory: player.Memory);
+            _world.PlayerClassName = klass.Name; // persists through saves; the character sheet reads it back
             _world.ReplaceActorView(ActorRole.Player, replacement);
             _lastCombatLine = $"{replacement.Name} begins as {klass.Name} under {sign.Name}.";
         }

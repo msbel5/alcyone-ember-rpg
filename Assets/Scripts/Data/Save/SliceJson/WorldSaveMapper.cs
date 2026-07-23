@@ -89,6 +89,7 @@ inventory = ToInventoryData(world.PlayerInventory),
                 merchantInventory = ToInventoryData(world.MerchantInventory),
                 playerLevel = world.PlayerLevel,
                 playerXp = world.PlayerXp,
+                playerClassName = world.PlayerClassName,
                 playerReputation = world.PlayerReputation,
                 playerBountyGold = world.PlayerBountyGold,
                 companionIds = world.CompanionIds?.ToArray() ?? System.Array.Empty<ulong>(),
@@ -180,6 +181,7 @@ world.Items = ToItemStore(data.itemRecords);
             world.MerchantInventory = ToInventoryState(data.merchantInventory, world.MerchantInventory?.Capacity ?? 0);
             world.PlayerLevel = data.playerLevel > 0 ? data.playerLevel : Math.Max(1, world.PlayerLevel);
             world.PlayerXp = data.playerXp;
+            world.PlayerClassName = data.playerClassName ?? world.PlayerClassName; // pre-class saves keep whatever they had
             world.PlayerReputation = data.playerReputation;
             world.PlayerBountyGold = data.playerBountyGold;
             world.CompanionIds = data.companionIds != null

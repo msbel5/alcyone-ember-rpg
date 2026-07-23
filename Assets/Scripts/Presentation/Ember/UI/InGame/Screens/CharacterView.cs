@@ -232,7 +232,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 pane.Add(row);
             }
 
-            var btn = new Button(() => onOpenScreen?.Invoke("levelup")) { text = "LEVEL UP!" };
+            // PLAYTEST FIX (F17 feel): the button names its XP price and refuses until earned,
+            // instead of letting the player discover the gate after spending five points.
+            bool xpReady = IgMockData.Player.Xp >= IgMockData.Player.XpNext;
+            var btn = new Button(() => onOpenScreen?.Invoke("levelup"))
+            { text = xpReady ? "LEVEL UP!" : $"LEVEL UP ({IgMockData.Player.Xp}/{IgMockData.Player.XpNext} XP)" };
+            btn.SetEnabled(xpReady);
             ResetButton(btn);
             btn.style.marginTop = 14;
             btn.style.height = 36;

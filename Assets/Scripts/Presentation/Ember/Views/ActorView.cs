@@ -122,7 +122,16 @@ namespace EmberCrpg.Presentation.Ember.Views
         {
             _target = state;
             _hasTarget = true;
+            if (!_activityLabelProbed)
+            {
+                _activityLabel = GetComponent<NpcActivityLabelView>(); // optional - civilians only
+                _activityLabelProbed = true;
+            }
+            _activityLabel?.SetActivity(state.Activity);
         }
+
+        private NpcActivityLabelView _activityLabel;
+        private bool _activityLabelProbed;
 
         /// <summary>
         /// Turn on cosmetic idle wander for a generated NPC billboard (called by EmberGeneratedActorSpawner).
@@ -246,11 +255,14 @@ namespace EmberCrpg.Presentation.Ember.Views
         public readonly Vector3 WorldPosition;
         public readonly Quaternion WorldRotation;
         public readonly bool Visible;
-        public ActorViewState(Vector3 worldPosition, Quaternion worldRotation, bool visible)
+        /// <summary>PLAYTEST FIX ("ne yaptigi anlasilmiyor"): one readable verb per actor.</summary>
+        public readonly string Activity;
+        public ActorViewState(Vector3 worldPosition, Quaternion worldRotation, bool visible, string activity = null)
         {
             WorldPosition = worldPosition;
             WorldRotation = worldRotation;
             Visible = visible;
+            Activity = activity;
         }
     }
 }

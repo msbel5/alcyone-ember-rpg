@@ -154,6 +154,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             {
                 var line = _activeDialogSource.GetCurrentLine();
                 _activeDialog.SetCurrentLine(line);
+                // PLAYTEST FIX ("tts yok"): finished lines are spoken; the service dedupes on
+                // text so the per-frame poll costs one string compare while nothing changes.
+                if (!_activeDialogSource.IsThinking)
+                    EmberCrpg.Presentation.Ember.Audio.WindowsSpeechService.Speak(line);
                 if (_activeDialog.HasPendingResponse && !_activeDialogSource.IsThinking)
                     _activeDialog.ResolveLatestResponse(line);
                 if (!_activeDialog.HasPortrait && !string.IsNullOrEmpty(_activeDialogPortrait) && _host is ISpriteByName sprites)
@@ -534,6 +538,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             IgMockData.Player = mock with
             {
                 Name = string.IsNullOrWhiteSpace(sheet.Name) ? mock.Name : sheet.Name,
+                ClassName = string.IsNullOrEmpty(sheet.ClassName) ? mock.ClassName : sheet.ClassName,
+                Level = sheet.Level > 0 ? sheet.Level : mock.Level,
+                Xp = sheet.XpNext > 0 ? sheet.Xp : mock.Xp,
+                XpNext = sheet.XpNext > 0 ? sheet.XpNext : mock.XpNext,
                 Hp = hp, HpMax = hpMax, Fatigue = ft, FatigueMax = ftMax, Mana = mp, ManaMax = mpMax,
                 Stats = new[]
                 {

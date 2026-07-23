@@ -88,7 +88,20 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return new ActorViewState(
                 new UnityEngine.Vector3(actor.Position.X - origin.X, 0f, actor.Position.Y - origin.Y),
                 UnityEngine.Quaternion.identity,
-                visible: true);
+                visible: true,
+                activity: DescribeActivity(actor));
+        }
+
+        // PLAYTEST FIX ("npclerin ne yaptigi anlasilmiyor"): a floating one-word verb per actor.
+        // Windows MUST match ScheduleSystem (work 6-20, lunch 12-14) so the word tells the truth.
+        private string DescribeActivity(ActorRecord actor)
+        {
+            int hour = (int)((_world.Time.TotalMinutes / 60) % 24);
+            if (actor.Role == ActorRole.Guard) return "on watch";
+            if (actor.Role == ActorRole.Enemy) return "hunting";
+            if (hour >= 12 && hour < 14) return "eating";
+            if (hour < 6 || hour >= 20) return "resting";
+            return actor.ScheduleState.IsIdle ? "idling" : "working";
         }
 
         // SOUL-04 (spawn-from-worldgen): hand the host a flat, Domain-free list of candidate

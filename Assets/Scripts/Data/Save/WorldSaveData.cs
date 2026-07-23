@@ -67,6 +67,7 @@ public DungeonRoomSaveData[] dungeonRooms;
         public InventorySaveData merchantInventory;
         public int playerLevel;
         public int playerXp;
+        public string playerClassName;
         public int playerReputation; // F23
         public int playerBountyGold; // F23
         public ulong[] companionIds; // V3 YOLDAŞ: the party survives save/load

@@ -153,8 +153,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             int count = (int)(seconds * Rate);
             var data = new float[count];
             var rng = Rng(seed);
-            int period = (int)(Rate / 86f); // ~86Hz fundamental groan
-            var line = new float[period];
+            // PLAYTEST FIX ("kapi gicirtisi gitar sesi gibi"): the old loop rang ONE stable
+            // period at 0.987 sustain - which IS the plucked-string algorithm. A hinge creak is
+            // friction: the groan pitch WANDERS on every slip, the resonance dies fast, and dry
+            // scraping noise rides on top of the resonant tail.
+            int period = (int)(Rate / 86f);
+            var line = new float[(int)(Rate / 55f) + 2]; // sized for the lowest wander pitch
             float damp = 0f;
             int next = 0;
             float burstGain = 0f;
@@ -162,21 +166,23 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             for (int i = 0; i < count; i++)
             {
                 float t = i / (float)Rate;
-                if (i >= next) // stick-slip: bursts cluster while the door moves, sparser at the end
+                if (i >= next) // stick-slip: each slip re-seats the hinge at a NEW groan pitch
                 {
                     burstGain = 0.7f + rng() * 0.5f;
+                    period = (int)(Rate / (62f + rng() * 74f)); // 62-136 Hz wandering fundamental
+                    if (idx >= period) idx = 0;
                     next = i + (int)(Rate * (0.05f + rng() * 0.11f + t * 0.07f));
                 }
-                float excite = (rng() * 2f - 1f) * burstGain * Mathf.Exp(-((i % Mathf.Max(1, next - i + 1)) / (float)Rate) * 30f);
-                burstGain *= 0.9994f;
-                // KS loop: read, damp (one-pole y[n]=(1-p)x+p·y), write back with sustain.
+                float noise = rng() * 2f - 1f;
+                float excite = noise * burstGain;
+                burstGain *= 0.9985f;
                 float read = line[idx];
-                damp = 0.62f * read + 0.38f * damp;
-                float fed = damp * 0.987f + excite * 0.35f;
+                damp = 0.55f * read + 0.45f * damp;
+                float fed = damp * 0.955f + excite * 0.4f; // short ring: a resonance, not a string
                 line[idx] = fed;
                 idx = (idx + 1) % period;
                 float fade = t < 1.0f ? 1f : 1f - (t - 1.0f) / 0.25f;
-                data[i] = fed * fade;
+                data[i] = (fed * 0.8f + noise * burstGain * 0.25f) * fade; // dry friction on top
             }
             Normalize(data, 0.42f);
             return data;

@@ -189,6 +189,7 @@ namespace EmberCrpg.Presentation.Ember.Views
                     || spriteRole.IndexOf("blacksmith", System.StringComparison.OrdinalIgnoreCase) >= 0
                     || spriteRole.IndexOf("artisan", System.StringComparison.OrdinalIgnoreCase) >= 0;
                 root.AddComponent<NpcPoseIconView>().Bind(workerRole);
+                root.AddComponent<NpcActivityLabelView>().Bind(); // PLAYTEST FIX: says what they are doing
             }
             root.AddComponent<GeneratedNpcAccessibilityGuard>();
             // F10: the sync plane is y=0 — ground the view on what it actually stands on (terrain or a
