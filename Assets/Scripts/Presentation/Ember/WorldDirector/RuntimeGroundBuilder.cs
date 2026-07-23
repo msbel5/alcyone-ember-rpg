@@ -26,8 +26,24 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (renderer != null)
             {
                 float tiling = Mathf.Max(6f, groundRadius / 5f); // repeat the floor texture across the plane
-                renderer.sharedMaterial = RuntimeMaterialPalette.Textured(
-                    RuntimeMaterialPalette.GroundTextureId(biome), RuntimeMaterialPalette.GroundColor(biome), tiling);
+                // 10/10 R1: outdoor biomes share the terrain's procedural nature texture at
+                // full colour (interior floor plates read as tile); rocky biomes keep stone.
+                bool rocky = biome == BiomeKind.Mountain || biome == BiomeKind.Ash;
+                if (rocky)
+                {
+                    renderer.sharedMaterial = RuntimeMaterialPalette.Textured(
+                        RuntimeMaterialPalette.GroundTextureId(biome), RuntimeMaterialPalette.GroundColor(biome), tiling);
+                }
+                else
+                {
+                    var mat = RuntimeMaterialPalette.Opaque(Color.white);
+                    var nature = RuntimeTerrainBuilder.NatureTexture(biome);
+                    if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", nature);
+                    if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", nature);
+                    mat.mainTexture = nature;
+                    mat.mainTextureScale = new Vector2(tiling, tiling);
+                    renderer.sharedMaterial = mat;
+                }
             }
 
             BuildBoundary(parent, groundRadius);
