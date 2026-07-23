@@ -77,6 +77,18 @@ namespace EmberCrpg.Simulation.Living
             resolver.Resolve(action, attacker, target,
                 damageBandWidth: System.Math.Max(1, attacker.BaseDamage / 2),
                 rng: rng, now: stamp, siteId: FallbackSite(world), events: world.Events);
+
+            // PLAYTEST FIX ("vardigimda kimse yoktu"): predation MAULS civilians, it does not
+            // erase settlements — 58 travel days of lethal strikes had depopulated whole towns.
+            // A civilian dropped to 0 survives at 1 HP, marked mauled (NeedRecovery heals them);
+            // hunters and guards keep killing EACH OTHER — predator population still self-caps.
+            if (!target.IsAlive && target.Role != ActorRole.Enemy && target.Role != ActorRole.Guard)
+            {
+                target.ApplyVitals(new ActorVitals(
+                    new VitalStat(1, target.Vitals.Health.Max), target.Vitals.Fatigue, target.Vitals.Mana));
+                world.Events?.Append(new WorldEvent(stamp, WorldEventKind.NeedChanged, target.Id,
+                    FallbackSite(world), $"mauled_survives by:{attacker.Id.Value}"));
+            }
         }
 
         internal static ActorRecord Nearest(WorldState world, GridPosition from, int radius,

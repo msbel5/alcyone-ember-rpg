@@ -58,6 +58,28 @@ namespace EmberCrpg.Tests.EditMode.Living
         }
 
         [Test]
+        public void PredationTick_CivilianCanNeverDieOfPredation_OnlyMauled()
+        {
+            // PLAYTEST FIX ('vardigimda kimse yoktu'): 58 travel days of predation depopulated
+            // whole towns. Wolves maul; they do not erase settlements. 24 hours of a strong
+            // hunter vs a 2-HP civilian must leave the civilian ALIVE with mauled marks.
+            var world = World();
+            world.Actors.Add(Actor(1, "Hound", ActorRole.Enemy, new GridPosition(5, 5)));
+            var prey = Actor(2, "Frail", ActorRole.Talker, new GridPosition(6, 5));
+            prey.ApplyVitals(new ActorVitals(
+                new VitalStat(2, 30), prey.Vitals.Fatigue, prey.Vitals.Mana));
+            world.Actors.Add(prey);
+
+            var system = new PredationSystem();
+            for (int hour = 1; hour <= 24; hour++)
+                system.Tick(world, new GameTime(hour * 60));
+
+            Assert.That(prey.IsAlive, Is.True, "predation must maul, never kill, a civilian");
+            Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.CombatResolved), Is.True,
+                "strikes must actually have landed for this test to mean anything");
+        }
+
+        [Test]
         public void PredationTick_GuardInReach_StrikesTheHunterFirst()
         {
             var world = World();

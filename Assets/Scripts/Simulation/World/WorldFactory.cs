@@ -132,7 +132,7 @@ namespace EmberCrpg.Simulation.World
             // CAN SUYU H1: the LARDER — a settlement starts with a food store and working fields,
             // or the consumption loop starves before the first harvest. This seeding used to live
             // presentation-side (HydrateSites) — world content belongs to the world factory.
-            stallStock.Add("wheat", 150);
+            stallStock.Add("wheat", 320) /* PLAYTEST maul-survivors eat too: 13 mouths x 5 gate days */;
             world.Stockpiles.Add(furnaceStock);
             world.Stockpiles.Add(stallStock);
             for (ulong plot = 1; plot <= 3; plot++)

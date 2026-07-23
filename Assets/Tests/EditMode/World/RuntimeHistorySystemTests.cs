@@ -55,6 +55,26 @@ namespace EmberCrpg.Tests.EditMode.World
         }
 
         [Test]
+        public void Tick_MonthEnd_DepletedSettlementReceivesMigrants()
+        {
+            // PLAYTEST FIX: towns must REFILL — month's end brings migrants to any settlement
+            // whose living civilians fell below the floor.
+            var world = World(4242);
+            var lone = new EmberCrpg.Simulation.World.WorldActorLoadoutFactory()
+                .Create(new EmberCrpg.Domain.Core.ActorId(50), "Last One",
+                    EmberCrpg.Domain.Actors.ActorRole.Talker, new GridPosition(2, 2));
+            world.Actors.Add(lone);
+            int before = world.Actors.Records.Count(a => a != null && a.IsAlive);
+
+            new RuntimeHistorySystem().Tick(world, Day(30));
+
+            int after = world.Actors.Records.Count(a => a != null && a.IsAlive);
+            Assert.That(after, Is.GreaterThan(before), "no migrants arrived at a nearly-empty town");
+            Assert.That(world.Events.Events.Any(e =>
+                e.Kind == WorldEventKind.ActorSpawned && e.Reason.StartsWith("migrant_arrived")), Is.True);
+        }
+
+        [Test]
         public void Tick_GuardRespondedYesterday_RaisesTheWatchStanding()
         {
             var world = World(4242);

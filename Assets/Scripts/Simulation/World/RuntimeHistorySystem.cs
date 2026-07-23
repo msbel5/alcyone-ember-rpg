@@ -1,3 +1,4 @@
+using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Rng;
@@ -114,6 +115,55 @@ namespace EmberCrpg.Simulation.World
 
             world.Events.Append(new WorldEvent(stamp, WorldEventKind.ChronicleEvent,
                 default, site, $"chronicle:{entry} intensity:{intensity} day:{dayIndex}"));
+
+            ArriveMigrants(world, stamp, dayIndex, rng);
+        }
+
+        // PLAYTEST FIX ("vardigimda kimse yoktu"): month's end refills bled-out settlements —
+        // any settlement site holding fewer than MigrantFloor living civilians receives up to
+        // MigrantsPerMonth newcomers at deterministic homes inside its bounds. ActorSpawned
+        // gets its first runtime emitter; the chronicle rng keeps worlds divergent.
+        public const int MigrantFloor = 4;
+        public const int MigrantsPerMonth = 2;
+
+        private static readonly string[] MigrantNames =
+            { "Rill", "Oswic", "Petra", "Halvard", "Ines", "Corm", "Sable", "Yudo" };
+
+        private static void ArriveMigrants(WorldState world, GameTime stamp, long dayIndex, XorShiftRng rng)
+        {
+            if (world.Sites?.Records == null || world.Actors == null) return;
+            var loadout = new WorldActorLoadoutFactory();
+            foreach (var site in world.Sites.Records)
+            {
+                if (site == null || site.Kind != SiteKind.Settlement) continue;
+                int living = 0;
+                foreach (var actor in world.Actors.Records)
+                    if (actor != null && actor.IsAlive
+                        && actor.Role != ActorRole.Player && actor.Role != ActorRole.Enemy
+                        && actor.Home.X >= site.MinBound.X && actor.Home.X <= site.MaxBound.X
+                        && actor.Home.Y >= site.MinBound.Y && actor.Home.Y <= site.MaxBound.Y)
+                        living++;
+                if (living >= MigrantFloor) continue;
+
+                int arriving = System.Math.Min(MigrantsPerMonth, MigrantFloor - living);
+                for (int k = 0; k < arriving; k++)
+                {
+                    ulong id = 400_000_000UL
+                        + ((ulong)site.Id.Value * 4096UL) + ((ulong)(dayIndex % 512) * 8UL) + (ulong)k;
+                    if (world.Actors.Contains(new EmberCrpg.Domain.Core.ActorId(id))) continue;
+                    int width = System.Math.Max(1, site.MaxBound.X - site.MinBound.X);
+                    int height = System.Math.Max(1, site.MaxBound.Y - site.MinBound.Y);
+                    var home = new EmberCrpg.Domain.Actors.GridPosition(
+                        site.MinBound.X + rng.NextInt(width), site.MinBound.Y + rng.NextInt(height));
+                    var name = MigrantNames[rng.NextInt(MigrantNames.Length)] + " of the Road";
+                    world.Actors.Add(loadout
+                        .Create(new EmberCrpg.Domain.Core.ActorId(id), name, ActorRole.Talker, home)
+                        .WithHomeAndAnchor(home, home));
+                    world.Events.Append(new WorldEvent(stamp, WorldEventKind.ActorSpawned,
+                        new EmberCrpg.Domain.Core.ActorId(id), site.Id,
+                        $"migrant_arrived name:{name} site:{site.Id.Value}"));
+                }
+            }
         }
 
         private static FactionRecord FindByTag(WorldState world, string tag)
