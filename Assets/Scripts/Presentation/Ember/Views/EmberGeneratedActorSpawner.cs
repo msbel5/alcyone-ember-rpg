@@ -155,8 +155,14 @@ namespace EmberCrpg.Presentation.Ember.Views
                 BestiaryBillboardSpriteFactory.TargetHeightFor(spriteRole, _billboardTargetHeight));
             var facing = billboard.AddComponent<CameraFacingBillboard>();
 
+            // PAPER-DOLL v1: deterministic cloth tint per actor - same art, different cast.
+            // Applied BEFORE the feedback Bind so the flash/corpse restore keeps the tint.
+            var tint = EmberCrpg.Simulation.AiDm.NpcVariantTintService.TintFor(candidate.Id);
+            renderer.color = new Color(tint.R, tint.G, tint.B, renderer.color.a);
+
             // F10 hit feel: every spawned actor can flash on a landed strike and fall flat on death.
             root.AddComponent<ActorCombatFeedbackView>().Bind(candidate.Id, renderer, facing);
+            BillboardGearMarkView.TryAttach(root, spriteRole); // paper-doll v1: role-true gear mark
             root.AddComponent<NpcEventEchoView>().Bind(candidate.Id); // M6: real events float up
             // F33: the two-frame walk — mirror-swap gait while the root glides.
             root.AddComponent<BillboardWalkAnimView>().Bind(renderer);

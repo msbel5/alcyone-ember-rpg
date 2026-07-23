@@ -30,6 +30,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
 
             int asked = NextAskCount("id:" + npc.Id.Value + "|" + topicId);
+            SpeakPlayerQuestion(topicLabel); // M3b.3: you ask out loud, in your own voice
             var request = new LlmRequest(
                 "npc_topic_answer",
                 "npc:" + npc.Id.Value + ":topic:" + topicId,
@@ -79,6 +80,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
             int asked = NextAskCount("name:" + actorName + "|" + topicId);
+            SpeakPlayerQuestion(topicLabel); // M3b.3: you ask out loud, in your own voice
             ulong seed = 1469598103934665603UL;
             foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
             foreach (var ch in topicId ?? string.Empty) { seed ^= ch; seed *= 1099511628211UL; }

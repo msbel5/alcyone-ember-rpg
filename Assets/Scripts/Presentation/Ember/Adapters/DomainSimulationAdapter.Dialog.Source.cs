@@ -107,6 +107,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return string.Empty;
         }
 
+        // M3b.3: YOUR voice - derived from creation (name + class) like a forge portrait -
+        // reads the question you clicked or typed; the NPC answers in theirs.
+        private void SpeakPlayerQuestion(string questionText)
+        {
+            if (string.IsNullOrWhiteSpace(questionText)) return;
+            var player = EmberCrpg.Simulation.Living.CompanionService.FindPlayer(_world);
+            if (player == null) return;
+            EmberCrpg.Presentation.Ember.Audio.SpeechDirector.FeedFinal(
+                EmberCrpg.Simulation.AiDm.PlayerVoiceService.PlayerVoiceKey(player.Name, _world.PlayerClassName),
+                questionText);
+        }
+
         // PLAYTEST FIX: deterministic seeds made every repeat of a question word-identical.
         private int NextAskCount(string askKey)
         {
