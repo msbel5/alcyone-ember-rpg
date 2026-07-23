@@ -67,6 +67,68 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     new Vector3(0.45f, 1.3f, 0.45f),
                     RuntimeMaterialPalette.Solid(new Color(0.34f, 0.30f, 0.28f)));
             }
+            // BUYER FIX ("her ev ayni kutu"): deterministic SILHOUETTE variety from the same
+            // placement seed - a second storey, an L-wing, or a door awning. Same grammar
+            // language, three new words; the skyline stops repeating.
+            uint varRoll = unchecked(((uint)(placement.OriginX * 4f) * 2654435761u)
+                ^ ((uint)(placement.OriginZ * 4f) * 40503u)) | 1u;
+            float varPick = (varRoll % 100u) / 100f;
+            if (varPick < 0.30f && placement.SizeX > 4f && placement.SizeZ > 4f)
+            {
+                // Second storey: a set-back upper box + its own roof slab.
+                AddSlab(root.transform, "UpperStorey",
+                    new Vector3(0f, placement.Height + 0.9f, 0f),
+                    new Vector3(placement.SizeX * 0.78f, 1.8f, placement.SizeZ * 0.78f), material);
+                AddSlab(root.transform, "UpperRoof",
+                    new Vector3(0f, placement.Height + 1.86f, 0f),
+                    new Vector3(placement.SizeX * 0.86f, 0.12f, placement.SizeZ * 0.86f),
+                    RuntimeMaterialPalette.Textured(RuntimeMaterialPalette.RoofTextureId(placement.MaterialIndex),
+                        new Color(0.52f, 0.46f, 0.38f), tiling: 1.2f));
+            }
+            else if (varPick < 0.55f)
+            {
+                // L-wing: a lower side annex on the lateral axis (never blocks the entrance wall).
+                bool entranceOnXAxis = entrance == DoorSide.North || entrance == DoorSide.South;
+                float side = ((varRoll >> 4) & 1u) == 0u ? 1f : -1f;
+                var wingOffset = entranceOnXAxis
+                    ? new Vector3(side * (placement.SizeX * 0.62f), 0f, 0f)
+                    : new Vector3(0f, 0f, side * (placement.SizeZ * 0.62f));
+                float wingH = placement.Height * 0.62f;
+                AddSlab(root.transform, "Wing",
+                    wingOffset + new Vector3(0f, wingH / 2f, 0f),
+                    new Vector3(placement.SizeX * 0.52f, wingH, placement.SizeZ * 0.52f), material);
+                AddSlab(root.transform, "WingRoof",
+                    wingOffset + new Vector3(0f, wingH + 0.06f, 0f),
+                    new Vector3(placement.SizeX * 0.58f, 0.12f, placement.SizeZ * 0.58f),
+                    RuntimeMaterialPalette.Textured(RuntimeMaterialPalette.RoofTextureId(placement.MaterialIndex),
+                        new Color(0.50f, 0.44f, 0.37f), tiling: 1.0f));
+            }
+            else if (varPick < 0.75f)
+            {
+                // Door awning: a small wood shelf on two posts over the entrance.
+                float halfXa = placement.SizeX / 2f, halfZa = placement.SizeZ / 2f;
+                Vector3 doorOut;
+                switch (entrance)
+                {
+                    case DoorSide.North: doorOut = new Vector3(0f, 0f, halfZa); break;
+                    case DoorSide.South: doorOut = new Vector3(0f, 0f, -halfZa); break;
+                    case DoorSide.East: doorOut = new Vector3(halfXa, 0f, 0f); break;
+                    default: doorOut = new Vector3(-halfXa, 0f, 0f); break;
+                }
+                var outward = doorOut.normalized;
+                var lateral = new Vector3(outward.z, 0f, -outward.x);
+                var awningWood = RuntimeMaterialPalette.Solid(new Color(0.36f, 0.26f, 0.15f));
+                AddSlab(root.transform, "Awning",
+                    doorOut + outward * 0.55f + new Vector3(0f, DoorHeight + 0.18f, 0f),
+                    new Vector3(Mathf.Abs(lateral.x) * 2.2f + Mathf.Abs(outward.x) * 1.1f, 0.08f,
+                                Mathf.Abs(lateral.z) * 2.2f + Mathf.Abs(outward.z) * 1.1f), awningWood);
+                for (int postSide = -1; postSide <= 1; postSide += 2)
+                    AddSlab(root.transform, "AwningPost" + postSide,
+                        doorOut + outward * 1.0f + lateral * (postSide * 0.95f)
+                            + new Vector3(0f, (DoorHeight + 0.14f) / 2f, 0f),
+                        new Vector3(0.10f, DoorHeight + 0.14f, 0.10f), awningWood);
+            }
+
             AddSlab(root.transform, "Floor", new Vector3(0f, 0.03f, 0f),
                 new Vector3(placement.SizeX - WallThickness, 0.06f, placement.SizeZ - WallThickness), RuntimeMaterialPalette.Solid(new Color(0.42f, 0.30f, 0.18f)));
             Furnish(root.transform, placement, entrance);
