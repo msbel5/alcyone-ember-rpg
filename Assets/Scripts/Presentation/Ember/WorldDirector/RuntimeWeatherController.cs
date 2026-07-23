@@ -110,8 +110,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     ConfigurePool(new Vector3(0.025f, 0.55f, 0.025f), new Color(0.62f, 0.70f, 0.85f, 0.45f), 26f);
                     RuntimeWeatherMirror.FogFactor = 0.62f; // a rain sky IS dark — the haze must read
                     RenderSettings.fog = true;
-                    RenderSettings.fogMode = FogMode.Exponential;
-                    RenderSettings.fogDensity = 0.010f;
+                    // R2 (live-editor probe): exp 0.010 hit 93% fog at 260m - the 'pale field'.
+                    RenderSettings.fogMode = FogMode.Linear;
+                    RenderSettings.fogStartDistance = 110f;
+                    RenderSettings.fogEndDistance = 390f;
                     RenderSettings.fogColor = new Color(0.42f, 0.46f, 0.52f);
                     RuntimeAudioDirector.SetRainLoop(true);
                     break;
@@ -119,8 +121,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     ConfigurePool(new Vector3(0.14f, 0.14f, 0.14f), new Color(0.97f, 0.98f, 1f, 0.85f), 1.6f);
                     RuntimeWeatherMirror.FogFactor = 0.55f;
                     RenderSettings.fog = true;
-                    RenderSettings.fogMode = FogMode.Exponential;
-                    RenderSettings.fogDensity = 0.012f;
+                    RenderSettings.fogMode = FogMode.Linear;
+                    RenderSettings.fogStartDistance = 90f;
+                    RenderSettings.fogEndDistance = 350f;
                     RenderSettings.fogColor = new Color(0.80f, 0.82f, 0.87f);
                     RuntimeAudioDirector.SetRainLoop(false);
                     break;
@@ -128,8 +131,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     SetPoolActive(false);
                     RuntimeWeatherMirror.FogFactor = 0.85f;
                     RenderSettings.fog = true;
-                    RenderSettings.fogMode = FogMode.Exponential;
-                    RenderSettings.fogDensity = 0.024f;
+                    RenderSettings.fogMode = FogMode.Linear;
+                    RenderSettings.fogStartDistance = 40f;
+                    RenderSettings.fogEndDistance = 240f;
                     RenderSettings.fogColor = new Color(0.58f, 0.60f, 0.64f);
                     RuntimeAudioDirector.SetRainLoop(false);
                     break;

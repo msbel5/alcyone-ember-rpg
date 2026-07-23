@@ -13,7 +13,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         public static void Apply(Transform parent, BiomeKind biome)
         {
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = RuntimeMaterialPalette.GroundColor(biome) * 1.25f;
+            // R2 (live-editor probe): raw biome ground colour as FLAT ambient washed the whole
+            // scene mint-green. Keep a 35% biome mood over a neutral base - shader-independent,
+            // so this lever works in stripped-fog player builds as well.
+            RenderSettings.ambientLight = Color.Lerp(
+                new Color(0.44f, 0.44f, 0.46f),
+                RuntimeMaterialPalette.GroundColor(biome), 0.35f) * 1.15f;
             RenderSettings.ambientIntensity = 1f;
             RenderSettings.fog = false;
 

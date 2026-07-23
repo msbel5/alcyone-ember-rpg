@@ -68,6 +68,7 @@ namespace EmberCrpg.Presentation.Ember.Interaction
                     if (EmberInput.Interact)
                     {
                         OpenDialog(interactable, hit.point);
+                        return;
                     }
                 }
                 else if (portal != null)
@@ -75,9 +76,40 @@ namespace EmberCrpg.Presentation.Ember.Interaction
                     if (EmberInput.Interact)
                     {
                         portal.Activate();
+                        return;
                     }
                 }
             }
+
+            // BUYER FIX (Daggerfall rule): a pixel-perfect crosshair is not the price of a
+            // conversation. E with no exact hit soft-locks the NEAREST interactable within
+            // reach that sits in front of the player (60-degree cone).
+            if (EmberInput.Interact)
+            {
+                var soft = FindNearestInFront();
+                if (soft != null) OpenDialog(soft, soft.transform.position);
+            }
+        }
+
+        private EmberInteractable FindNearestInFront()
+        {
+            var candidates = Physics.OverlapSphere(_eye.position, _interactDistance, ~(1 << 2));
+            EmberInteractable best = null;
+            float bestDist = float.MaxValue;
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                var interactable = candidates[i].GetComponentInParent<EmberInteractable>();
+                if (interactable == null) continue;
+                var to = interactable.transform.position - _eye.position;
+                to.y = 0f;
+                float dist = to.magnitude;
+                if (dist < 0.01f || dist >= bestDist) continue;
+                var flatForward = _eye.forward; flatForward.y = 0f;
+                if (Vector3.Angle(flatForward, to) > 60f) continue; // behind or far off-axis: not intended
+                best = interactable;
+                bestDist = dist;
+            }
+            return best;
         }
 
         private void UpdateDofFocus()

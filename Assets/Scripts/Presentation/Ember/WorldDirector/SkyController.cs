@@ -79,7 +79,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             {
                 Color sky = Color.Lerp(NightSky, DaySky, daylight);
                 sky = Color.Lerp(sky, morning ? DawnSky : DuskSky, twilight * (morning ? 0.5f : 0.62f));
-                sky = Color.Lerp(sky, new Color(0.55f, 0.57f, 0.61f) * Mathf.Max(0.25f, daylight), haze);
+                sky = Color.Lerp(sky, new Color(0.45f, 0.48f, 0.54f) * Mathf.Max(0.25f, daylight), haze); // R2: haze no longer bleaches the sky
                 _camera.backgroundColor = sky;
 
                 EnsureCelestials();
