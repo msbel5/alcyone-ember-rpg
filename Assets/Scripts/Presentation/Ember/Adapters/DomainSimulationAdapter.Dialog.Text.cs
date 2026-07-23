@@ -35,6 +35,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // 35% map-reveal made conversational).
             if (npc == null)
             {
+                // PLAYTEST FIX: AUTHORED actors (no worldgen seed) exited here with a topic
+                // answer before any acquaintance check — the second meeting sounded identical.
+                var authored = _world?.Actors?.Records?.FirstOrDefault(
+                    a => a != null && string.Equals(a.Name, actorName, System.StringComparison.Ordinal));
+                if (authored != null && _world.NpcMemory != null
+                    && _world.NpcMemory.TryGet(authored.Id, out var authoredMemory))
+                    foreach (var known in authoredMemory.Events)
+                        if (known.EventType == "met_player" && known.Timestamp.TotalMinutes < _world.Time.TotalMinutes)
+                            return string.Format("{0} again — I remember you. Ask, and I will answer.",
+                                string.IsNullOrWhiteSpace(known.SubjectId) ? "Traveller" : known.SubjectId);
+
                 if (topics != null)
                     foreach (var t in topics)
                         if (t != null && !string.IsNullOrWhiteSpace(t.Answer))
@@ -51,6 +62,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             uint h = unchecked(((uint)npc.Id.Value * 2654435761u) ^ ((uint)day * 40503u) ^ 0x9E37u);
             string town = ResolveStartingSettlementName() ?? "this holding";
             string line = string.Format(pool[h % (uint)pool.Length], actorName, town);
+
+            // PLAYTEST FIX ("benimle tanistigini hatirlamiyor"): the deterministic layer ALSO
+            // greets acquaintances by NAME — with a slow or offline LLM this is the line the
+            // player actually reads, and it must not sound like a stranger twice.
+            if (_world?.NpcMemory != null && _world.NpcMemory.TryGet(new ActorId(npc.Id.Value), out var greetMemory))
+                foreach (var known in greetMemory.Events)
+                    if (known.EventType == "met_player" && known.Timestamp.TotalMinutes < _world.Time.TotalMinutes)
+                    {
+                        string[] againPool =
+                        {
+                            "{0} again! The road keeps bringing you back.",
+                            "Well met once more, {0}.",
+                            "Back so soon, {0}? {1} keeps its faces.",
+                            "{0}! I remember you.",
+                        };
+                        line = string.Format(againPool[h % (uint)againPool.Length],
+                            string.IsNullOrWhiteSpace(known.SubjectId) ? "traveller" : known.SubjectId, town);
+                        break;
+                    }
 
             if (((h >> 8) % 100) < 35)
             {

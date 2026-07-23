@@ -71,7 +71,12 @@ namespace EmberCrpg.Simulation.Memory
             for (int i = start; i < ordered.Count; i++)
             {
                 var row = ordered[i];
-                result[i - start] = $"{row.Timestamp.TotalMinutes}:{row.EventType}:{row.SubjectId}:{row.ItemTemplateId}:{row.Amount}";
+                // PLAYTEST FIX: raw "1234:type:9:..." lines gave the LLM nothing to weave.
+                // Readable memory sentences (EventType token retained — Gate9 pins it).
+                long dayNumber = (row.Timestamp.TotalMinutes / 1440L) + 1L;
+                result[i - start] = $"day {dayNumber}: {row.EventType}" +
+                    (string.IsNullOrEmpty(row.SubjectId) ? string.Empty : $" — {row.SubjectId}") +
+                    (row.ActorSeen.IsEmpty ? string.Empty : $" (actor #{row.ActorSeen.Value})");
             }
             return result;
         }

@@ -30,6 +30,10 @@ namespace EmberCrpg.Presentation.Ember.Views
                 {
                     var t = hits[i].transform;
                     if (t == null || t.IsChildOf(transform)) continue;
+                    // PLAYTEST FIX ("iki NPC cakisinca biri digerinin ustune cikti"): a NEIGHBOUR
+                    // actor's interact hitbox counted as ground — two converging NPCs laddered up
+                    // each other. Actors are never ground.
+                    if (t.GetComponent<EmberCrpg.Presentation.Ember.Interaction.EmberInteractable>() != null) continue;
                     string n = t.name;
                     if (n.Contains("Roof") || n.Contains("Canopy") || n.Contains("canopy")) continue;
                     if (hits[i].point.y > best) best = hits[i].point.y;

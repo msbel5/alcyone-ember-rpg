@@ -94,6 +94,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _activeDialogActor = actorName ?? string.Empty;
             _currentPortrait = ResolveConversationPortraitKey(npc, _activeDialogActor);
 
+            // PLAYTEST FIX ("benimle tanistigini hatirlamiyor"): the FIRST conversation writes a
+            // met_player memory carrying the player's NAME — from then on this NPC greets an
+            // acquaintance, not a stranger (the prompt suffix reads it back).
+            if (!actorId.IsEmpty && _world?.Actors != null && _world.Actors.TryGet(actorId, out var talker) && talker != null)
+            {
+                _world.NpcMemory ??= new EmberCrpg.Domain.Memory.NpcMemoryStore();
+                var talkerMemory = _world.NpcMemory.GetOrCreate(actorId);
+                bool alreadyMet = false;
+                foreach (var known in talkerMemory.Events)
+                    if (known.EventType == "met_player") { alreadyMet = true; break; }
+                if (!alreadyMet)
+                {
+                    var playerRecord = EmberCrpg.Simulation.Living.CompanionService.FindPlayer(_world);
+                    talkerMemory.RecordEvent(new EmberCrpg.Domain.Memory.InteractionEvent(
+                        _world.Time, "met_player", playerRecord?.Id ?? default,
+                        playerRecord?.Name ?? "the traveller", string.Empty, 0, talker.Position));
+                }
+            }
+
             if (npc != null)
             {
                 var perActorTopics = AddQuestInteractionTopics(

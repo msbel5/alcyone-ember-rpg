@@ -1162,12 +1162,19 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private System.Collections.IEnumerator TravelRoutine(DomainSimulationAdapter adapter, int days)
         {
             BuildTravelOverlay(out var dayLabel);
+            // PLAYTEST FIX ("fast travel yavas suruyor"): four sim-days per frame — a 58-day
+            // crossing settles in ~15 frames instead of a minute of heavy single-day frames.
             for (int d = 1; d <= days; d++)
             {
                 dayLabel.text = $"On the road — day {d} of {days}";
                 adapter.AdvanceTravelDay();
-                yield return null; // a frame per day keeps the overlay alive and the editor responsive
+                if (d % 4 == 0 || d == days)
+                    yield return null;
             }
+
+            // PLAYTEST FIX ("auto save yok"): arriving anywhere is a checkpoint.
+            var saver = UnityEngine.Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.Save.EmberSaveService>();
+            if (saver != null) { saver.Save(); Debug.Log("[Travel] arrival autosave written."); }
 
             Debug.Log($"[Travel] arrival after {days} ticked days — re-realizing the world at the destination.");
             // Carry the LIVE world across the reload: the old host's OnDestroy clears the locator mid-load,

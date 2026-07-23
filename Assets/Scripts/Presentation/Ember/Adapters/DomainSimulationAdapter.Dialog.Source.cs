@@ -84,6 +84,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 _world.Time, "player_asked", player?.Id ?? default, topicId, string.Empty, 0, actor.Position));
         }
 
+        // PLAYTEST FIX: the LLM is TOLD it knows this traveller — name included — so replies
+        // stop being stranger-generic ("hep adini soyleyip generic cevaplar").
+        internal string AcquaintanceSuffix(ulong npcId)
+        {
+            if (_world?.NpcMemory == null || !_world.NpcMemory.TryGet(new ActorId(npcId), out var memory))
+                return string.Empty;
+            foreach (var known in memory.Events)
+                if (known.EventType == "met_player" && known.Timestamp.TotalMinutes < _world.Time.TotalMinutes)
+                    return $" You have spoken with this traveller before — their name is {known.SubjectId}; greet them as an acquaintance, never introduce yourself again.";
+            return string.Empty;
+        }
+
         // M2: a companion SPEAKS like one — the persona suffix reframes the LLM voice, and
         // the recalled shared memories (already in the prompt turns) gain their meaning.
         internal string CompanionPersonaSuffix(ulong npcId)

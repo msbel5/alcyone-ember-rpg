@@ -733,6 +733,13 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 // V3 YOLDAŞ: recruit the very civilian we talked to, then let the sim tick a
                 // few real seconds and read the census — companions=1 is the follow-through.
                 adapter.ProofMovePlayerBeside(civilian.Id); // reach rule stays honest; the proof walks
+                // PLAYTEST VERIFY: end and RESTART the conversation — the second greeting must
+                // treat us as an acquaintance (met_player memory), not a stranger.
+                src.EndConversation();
+                src = commands.GetDialogSource(new EmberCrpg.Domain.Core.ActorId(civilian.Id));
+                yield return WaitDialog(src, 75f);
+                Debug.Log($"[AgentCheck] SECOND-meeting greeting: {src.GetCurrentLine()}");
+
                 src.SelectTopic("companion_join: Travel with me");
                 Debug.Log($"[AgentCheck] recruit reply: {src.GetCurrentLine()}");
                 yield return new WaitForSecondsRealtime(8f);
