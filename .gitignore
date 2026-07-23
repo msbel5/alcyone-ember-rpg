@@ -149,3 +149,5 @@ Assets/StreamingAssets/Models/matte.meta
 # Codex sandbox validation redirects
 .validation-appdata/
 .validation-dotnet-home/
+Assets/StreamingAssets/Models/tts/
+Assets/StreamingAssets/Models/tts.meta

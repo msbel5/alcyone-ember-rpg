@@ -114,6 +114,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private void Update()
         {
             // PLAYTEST FIX ("baslangic hikayesi yok"): a fresh world opens on its STORY, once.
+            // M3b.2 proof surface: --ember-speech-check speaks one line through the FULL
+            // routed stack (piper-or-SAPI) at world start so headless runs can assert wavs.
+            if (!_speechCheckDone && System.Environment.CommandLine.Contains("--ember-speech-check"))
+            {
+                _speechCheckDone = true;
+                EmberCrpg.Presentation.Ember.Audio.SpeechDirector.FeedFinal(42UL,
+                    "The ember wakes, and the town speaks with many voices.");
+            }
+
             // Any key also turns the first page. MUST be the new Input System —
             // legacy UnityEngine.Input throws here (project is InputSystem-only) and one
             // throw at the top of Update() kills every feature below it, every frame.
@@ -1291,6 +1300,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         }
 
         private bool _timeSkipRunning;
+        private bool _speechCheckDone;
 
         // PLAYTEST ("wait tusu da rest tusu da olmali"): T waits an hour, H sleeps until dawn.
         // Same hour-stepped sim advance as fast travel, so the world (schedules, needs, weather,

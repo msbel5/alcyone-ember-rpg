@@ -25,7 +25,7 @@ namespace EmberCrpg.Presentation.Ember.Audio
             RetargetIfNeeded(voiceKey);
             var sentences = EmberCrpg.Simulation.AiDm.SpeechSentenceChunker.Drain(text, ref _spokenChars);
             foreach (var sentence in sentences)
-                WindowsSpeechService.SpeakChunk(sentence, SignatureFor(voiceKey), purgeFirst: false);
+                SpeakRouted(sentence, voiceKey, purgeFirst: false);
         }
 
         public static void FeedFinal(ulong voiceKey, string finalLine)
@@ -40,7 +40,25 @@ namespace EmberCrpg.Presentation.Ember.Audio
             var remainder = finalLine.Substring(Math.Min(_spokenChars, finalLine.Length)).Trim();
             _spokenChars = finalLine.Length;
             if (remainder.Length > 1)
-                WindowsSpeechService.SpeakChunk(remainder, SignatureFor(voiceKey), purgeFirst: _spokenChars == remainder.Length);
+                SpeakRouted(remainder, voiceKey, purgeFirst: _spokenChars == remainder.Length);
+        }
+
+        // M3b.2: neural first - 904 LibriTTS speakers via piper; SAPI keeps duty when the
+        // voice model is not shipped or the process dies. Same signature maths either way.
+        private static void SpeakRouted(string text, ulong voiceKey, bool purgeFirst)
+        {
+            if (PiperSpeechSynth.Available)
+            {
+                var neural = EmberCrpg.Simulation.AiDm.NpcVoiceSignatureService.SignatureFor(
+                    voiceKey, PiperSpeechSynth.NumSpeakers);
+                if (purgeFirst) SpeechPlaybackHost.Flush();
+                if (PiperSpeechSynth.TrySpeak(text, neural.VoiceIndex, out var wavPath))
+                {
+                    SpeechPlaybackHost.Enqueue(wavPath, 1f + neural.PitchOffset * 0.015f);
+                    return;
+                }
+            }
+            WindowsSpeechService.SpeakChunk(text, SignatureFor(voiceKey), purgeFirst);
         }
 
         private static EmberCrpg.Simulation.AiDm.NpcVoiceSignature SignatureFor(ulong voiceKey)
@@ -54,6 +72,7 @@ namespace EmberCrpg.Presentation.Ember.Audio
             _spokenChars = 0;
             _lastFinal = null;
             WindowsSpeechService.StopSpeaking(); // a new speaker never finishes the old one's line
+            SpeechPlaybackHost.Flush();
         }
 
         private static string StripDisplaySuffix(string line)
