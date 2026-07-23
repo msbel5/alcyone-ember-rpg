@@ -91,6 +91,7 @@ inventory = ToInventoryData(world.PlayerInventory),
                 playerXp = world.PlayerXp,
                 playerReputation = world.PlayerReputation,
                 playerBountyGold = world.PlayerBountyGold,
+                companionIds = world.CompanionIds?.ToArray() ?? System.Array.Empty<ulong>(),
                 mainQuestAct = world.MainQuest?.Act ?? 1,
                 mainQuestRequiredInscriptions = world.MainQuest?.RequiredInscriptions ?? 3,
                 mainQuestFinalDelveId = world.MainQuest?.FinalDelveId ?? 0UL,
@@ -181,6 +182,9 @@ world.Items = ToItemStore(data.itemRecords);
             world.PlayerXp = data.playerXp;
             world.PlayerReputation = data.playerReputation;
             world.PlayerBountyGold = data.playerBountyGold;
+            world.CompanionIds = data.companionIds != null
+                ? new System.Collections.Generic.List<ulong>(data.companionIds)
+                : new System.Collections.Generic.List<ulong>(); // V3: the party survives save/load
             // F31: the main-quest spine — act 0 in old saves means "never configured": keep defaults.
             world.MainQuest = new EmberCrpg.Domain.Quest.MainQuestState
             {

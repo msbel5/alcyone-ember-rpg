@@ -35,6 +35,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     where += $"   •   Rep {_world.PlayerReputation:+0;-0}";
                 if (_world != null && _world.PlayerBountyGold > 0)
                     where += $"   •   BOUNTY {_world.PlayerBountyGold}g";
+                // V3: the party rides in the top bar — recruited names, comma-joined.
+                if (_world?.CompanionIds != null && _world.CompanionIds.Count > 0)
+                {
+                    var names = new System.Collections.Generic.List<string>();
+                    foreach (var id in _world.CompanionIds)
+                        if (_world.Actors.TryGet(new EmberCrpg.Domain.Core.ActorId(id), out var c) && c != null)
+                            names.Add(c.Name);
+                    if (names.Count > 0) where += $"   •   PARTY {string.Join(", ", names)}";
+                }
                 var clockText = _world != null
                     ? $"   {_world.Time.Hour:00}:{_world.Time.Minute:00}"
                     : string.Empty;

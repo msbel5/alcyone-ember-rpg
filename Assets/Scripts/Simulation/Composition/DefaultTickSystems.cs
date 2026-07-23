@@ -45,9 +45,11 @@ namespace EmberCrpg.Simulation.Composition
                 new JobAssignmentStep(jobAssignment),
                 new QuestStep(new QuestSystem()),
                 new ScheduleStep(schedule),
+                new CompanionFollowStep(), // V3: companions heel-follow the player, sim-side
                 new NeedsStep(needs),
                 new ConsumptionStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
                 new PredationStep(),    // CAN SUYU H3: hunters hunt IN the simulation, NPC-vs-NPC
+                new CompanionGuardStep(), // V3: companions strike hostiles beside the player
                 new WitnessStep(),      // CAN SUYU H3: attacks are seen, remembered, answered
                 new CaravanStep(caravans),
                 new PlantGrowthStep(plantGrowth, seasonCalendar, plantSpecies),
@@ -259,6 +261,23 @@ namespace EmberCrpg.Simulation.Composition
                 int hour = (int)((context.Stamp.TotalMinutes / 60) % 24);
                 _consumption.Tick(world, hour, context.Stamp);
             }
+        }
+
+        // V3 YOLDAŞ: per-tick heel-follow — order 21 runs AFTER living.schedule (20) so the
+        // follow step owns a lagging companion's tile for the tick (no schedule/follow jitter).
+        private sealed class CompanionFollowStep : StepBase
+        {
+            private readonly CompanionSystem _companions = new CompanionSystem();
+            public CompanionFollowStep() : base("living.companion_follow", TickCadence.PerTick, 21) { }
+            public override void Run(in TickContext context) => _companions.TickFollow(context.World);
+        }
+
+        // V3 YOLDAŞ: hourly guard strike with predation's deterministic dice.
+        private sealed class CompanionGuardStep : StepBase
+        {
+            private readonly CompanionSystem _companions = new CompanionSystem();
+            public CompanionGuardStep() : base("living.companion_guard", TickCadence.Hourly, 42) { }
+            public override void Run(in TickContext context) => _companions.TickGuard(context.World, context.Stamp);
         }
 
         // CAN SUYU H3: predation runs in the SIM (not the render pump) and hits NPCs.

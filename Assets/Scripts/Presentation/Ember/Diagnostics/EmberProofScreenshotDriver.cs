@@ -729,6 +729,14 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 src.AskFreeText("What have you seen in the streets lately?");
                 yield return WaitDialog(src, 75f);
                 Debug.Log($"[AgentCheck] free-text answer: {src.GetCurrentLine()}");
+
+                // V3 YOLDAŞ: recruit the very civilian we talked to, then let the sim tick a
+                // few real seconds and read the census — companions=1 is the follow-through.
+                adapter.ProofMovePlayerBeside(civilian.Id); // reach rule stays honest; the proof walks
+                src.SelectTopic("companion_join: Travel with me");
+                Debug.Log($"[AgentCheck] recruit reply: {src.GetCurrentLine()}");
+                yield return new WaitForSecondsRealtime(8f);
+                Debug.Log($"[AgentCheck] census after recruit: {adapter.ProofLivingCensus()}");
             }
 
             // 3) Inventory management surface.

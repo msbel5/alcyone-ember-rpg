@@ -163,6 +163,10 @@ namespace EmberCrpg.Domain.World
         public List<DungeonDoorState> DungeonDoorStates = new List<DungeonDoorState>();
         public List<AskAboutTopic> Topics = new List<AskAboutTopic>();
         public NpcMemoryStore NpcMemory = new NpcMemoryStore();
+
+        // V3 YOLDAŞ: recruited companion actor ids. Membership only — the actors themselves
+        // stay in Actors with their roles, sprites, and memories intact.
+        public List<ulong> CompanionIds = new List<ulong>();
         public SpellCooldownState PlayerSpellCooldowns = new SpellCooldownState();
         public ShieldBuffState PlayerShieldBuffs = new ShieldBuffState();
         public bool DoorOpen;
@@ -231,6 +235,7 @@ namespace EmberCrpg.Domain.World
             DungeonDoorStates = other.DungeonDoorStates;
             Topics = other.Topics;
             NpcMemory = other.NpcMemory;
+            CompanionIds = other.CompanionIds;
             PlayerSpellCooldowns = other.PlayerSpellCooldowns;
             PlayerShieldBuffs = other.PlayerShieldBuffs;
             DoorOpen = other.DoorOpen;

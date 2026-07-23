@@ -39,7 +39,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IReadOnlyList<string> GetTopics()
         {
             if (_conversation != null && _conversation.Topics.Count > 0)
-                return _conversation.Topics.Select(t => t.Id).ToList();
+            {
+                var topics = _conversation.Topics.Select(t => t.Id).ToList();
+                AppendCompanionTopics(topics);
+                return topics;
+            }
             // DLG-01: when an id-keyed lookup missed, do NOT leak the global world topics — the
             // player is looking at "no one"; an empty topic list is the honest answer.
             if (_suppressGlobalTopicFallback)
@@ -80,6 +84,40 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 _world.Time, "player_asked", player?.Id ?? default, topicId, string.Empty, 0, actor.Position));
         }
 
+        // V3 YOLDAŞ: recruiting happens IN conversation — a civilian you are talking to can
+        // be asked to travel with you; a companion can be released. Topic ids double as the
+        // player-facing labels (the panel renders topic ids verbatim).
+        private const string CompanionJoinTopic = "companion_join: Travel with me";
+        private const string CompanionLeaveTopic = "companion_leave: Part ways";
+
+        private void AppendCompanionTopics(List<string> topics)
+        {
+            if (_conversation == null || _conversation.ActorId.IsEmpty) return;
+            if (!_world.Actors.TryGet(_conversation.ActorId, out var actor) || actor == null) return;
+            if (actor.Role == ActorRole.Enemy || actor.Role == ActorRole.Player) return;
+            if (EmberCrpg.Simulation.Living.CompanionService.IsCompanion(_world, actor.Id))
+                topics.Add(CompanionLeaveTopic);
+            else if (_world.CompanionIds.Count < EmberCrpg.Simulation.Living.CompanionService.MaxCompanions)
+                topics.Add(CompanionJoinTopic);
+        }
+
+        private bool TryHandleCompanionTopic(string topicId)
+        {
+            if (topicId != CompanionJoinTopic && topicId != CompanionLeaveTopic) return false;
+            if (_conversation == null || _conversation.ActorId.IsEmpty) return true;
+            if (!_world.Actors.TryGet(_conversation.ActorId, out var actor) || actor == null) return true;
+
+            if (topicId == CompanionJoinTopic)
+                _currentDialogLine = EmberCrpg.Simulation.Living.CompanionService.TryRecruit(_world, actor.Id)
+                    ? $"{actor.Name} shoulders their pack. \"Lead on, then.\""
+                    : $"{actor.Name} shakes their head. \"Not now — you are too far, or your company is full.\"";
+            else
+                _currentDialogLine = EmberCrpg.Simulation.Living.CompanionService.TryDismiss(_world, actor.Id)
+                    ? $"{actor.Name} nods slowly. \"It was a good road. Find me if you need me.\""
+                    : $"{actor.Name} looks puzzled — they were not travelling with you.";
+            return true;
+        }
+
         public void SelectTopic(string topicId)
         {
             // Audit (Phase 12 production wire, 2026-05-27): previously only set a
@@ -90,6 +128,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // ForgeLocator.LlmRouter. The async path replaces _currentDialogLine
             // on success; _isDialogThinking gates the "thinking…" indicator.
             if (string.IsNullOrEmpty(topicId)) return;
+            if (TryHandleCompanionTopic(topicId)) return;
             if (TryHandleQuestInteractionTopic(topicId)) return;
 
             // EMB-045: answer from THIS actor's topic set first; only fall back to the world list. An

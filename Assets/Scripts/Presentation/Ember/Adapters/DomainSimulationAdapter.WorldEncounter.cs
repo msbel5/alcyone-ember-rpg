@@ -653,6 +653,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// <summary>OYNANABILIRLIK proof surface: counts the living-world's fingerprints in the
         /// PRODUCTION world's event log. The marathon prints this so live runs carry evidence
         /// that meals/witnesses/reports/chronicle happen in the world the player actually plays.</summary>
+        /// <summary>Proof-only: stand the SIM player beside an actor so reach-gated flows
+        /// (companion recruiting) can be exercised headlessly. Real play reaches actors by
+        /// walking; proofs jump. Never called outside the diagnostics driver.</summary>
+        public bool ProofMovePlayerBeside(ulong actorId)
+        {
+            var player = EmberCrpg.Simulation.Living.CompanionService.FindPlayer(_world);
+            if (player == null || !_world.Actors.TryGet(new EmberCrpg.Domain.Core.ActorId(actorId), out var target) || target == null)
+                return false;
+            player.MoveTo(new EmberCrpg.Domain.Actors.GridPosition(target.Position.X + 1, target.Position.Y));
+            return true;
+        }
+
         public string ProofLivingCensus()
         {
             if (_world?.Events == null) return "no world";
@@ -669,7 +681,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             int actors = 0;
             if (_world.Actors?.Records != null)
                 foreach (var a in _world.Actors.Records) if (a != null && a.IsAlive) actors++;
-            return $"meals={meals} witnessed={witnessed} reported={reported} guardResponses={guard} chronicle={chronicle} shortages={shortage} aliveActors={actors} totalEvents={_world.Events.Count}";
+            return $"meals={meals} witnessed={witnessed} reported={reported} guardResponses={guard} chronicle={chronicle} shortages={shortage} aliveActors={actors} companions={_world.CompanionIds?.Count ?? 0} totalEvents={_world.Events.Count}";
         }
 
         public string ProofLunchCensus()

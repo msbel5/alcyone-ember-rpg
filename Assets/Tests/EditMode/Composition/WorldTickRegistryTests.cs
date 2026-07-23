@@ -66,11 +66,13 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "PerTick:10:core.time",
                 "PerTick:20:core.magic",
                 "PerTick:20:living.schedule",
+                "PerTick:21:living.companion_follow", // V3: heel-follow after schedule
                 "Hourly:10:econ.jobs",
                 "Hourly:15:quest.tick",
                 "Hourly:30:living.needs",
                 "Hourly:35:living.consumption", // CAN SUYU H1: needs come back DOWN (eat/sleep)
                 "Hourly:40:living.predation",   // CAN SUYU H3: NPC-vs-NPC in the sim
+                "Hourly:42:living.companion_guard", // V3: companions strike beside the player
                 "Hourly:45:living.witness",     // CAN SUYU H3: seen, remembered, answered
                 "Daily:10:world.caravans",
                 "Daily:20:econ.plantgrowth",

@@ -69,6 +69,7 @@ public DungeonRoomSaveData[] dungeonRooms;
         public int playerXp;
         public int playerReputation; // F23
         public int playerBountyGold; // F23
+        public ulong[] companionIds; // V3 YOLDAŞ: the party survives save/load
         // F31: the three-act main-quest spine.
         public int mainQuestAct;
         public int mainQuestRequiredInscriptions;
