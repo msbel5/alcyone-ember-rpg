@@ -107,6 +107,22 @@ namespace EmberCrpg.Tests.EditMode.Living
         }
 
         [Test]
+        public void TickFollow_CompanionDied_LeavesThePartyWithAFallenEvent()
+        {
+            // M2: death is a story beat, not a silent list entry — the party shrinks and the
+            // log carries the loss.
+            var world = World(out _, out var friend);
+            CompanionService.TryRecruit(world, friend.Id);
+            friend.ApplyVitals(new ActorVitals(
+                new VitalStat(0, friend.Vitals.Health.Max), friend.Vitals.Fatigue, friend.Vitals.Mana));
+
+            new CompanionSystem().TickFollow(world);
+
+            Assert.That(world.CompanionIds, Is.Empty, "the fallen leave the roster");
+            Assert.That(world.Events.Events.Any(e => e.Reason.StartsWith("companion_fell")), Is.True);
+        }
+
+        [Test]
         public void TryDismiss_Companion_LeavesAndEmitsEvent()
         {
             var world = World(out _, out var friend);

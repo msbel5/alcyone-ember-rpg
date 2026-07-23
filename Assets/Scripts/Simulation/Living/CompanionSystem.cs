@@ -72,6 +72,20 @@ namespace EmberCrpg.Simulation.Living
             if (player == null || world.CompanionIds == null || world.CompanionIds.Count == 0) return 0;
 
             int moved = 0;
+            // M2: the fallen leave the roster LOUDLY — death is a story beat. Reverse walk so
+            // removal is safe mid-iteration.
+            for (int i = world.CompanionIds.Count - 1; i >= 0; i--)
+            {
+                if (world.Actors.TryGet(new ActorId(world.CompanionIds[i]), out var member)
+                    && member != null && member.IsAlive)
+                    continue;
+                var fallenId = world.CompanionIds[i];
+                world.CompanionIds.RemoveAt(i);
+                world.Actors.TryGet(new ActorId(fallenId), out var fallen);
+                world.Events?.Append(new WorldEvent(world.Time, WorldEventKind.ActorTalked,
+                    new ActorId(fallenId), default, $"companion_fell name:{fallen?.Name ?? "?"}"));
+            }
+
             foreach (var id in world.CompanionIds)
             {
                 if (!world.Actors.TryGet(new ActorId(id), out var companion) || companion == null || !companion.IsAlive)

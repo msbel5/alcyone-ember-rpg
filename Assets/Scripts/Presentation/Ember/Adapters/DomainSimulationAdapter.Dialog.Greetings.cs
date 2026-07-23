@@ -32,7 +32,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 100,
                 npc.Id.Value,
-                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. Greet the player character briefly in character. The conversation log below is what you personally remember (witnessed events, past talks); let it colour your greeting when relevant.",
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. Greet the player character briefly in character. The conversation log below is what you personally remember (witnessed events, past talks); let it colour your greeting when relevant." + CompanionPersonaSuffix(npc.Id.Value),
                 RecallDialogMemory(npc.Id.Value)
             );
 

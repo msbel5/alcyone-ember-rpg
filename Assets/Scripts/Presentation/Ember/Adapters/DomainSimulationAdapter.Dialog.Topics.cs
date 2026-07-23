@@ -34,7 +34,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 180,
                 npc.Id.Value,
-                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests. The conversation log below is what you personally remember - witnessed events, past talks, trades - use it when it bears on the question.",
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests. The conversation log below is what you personally remember - witnessed events, past talks, trades - use it when it bears on the question." + CompanionPersonaSuffix(npc.Id.Value),
                 RecallDialogMemory(npc.Id.Value));
 
             // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and

@@ -266,6 +266,30 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
         }
 
         [Test]
+        public void Gate10_CompanionLoyalty_ThePartyHoldsThroughAFullDay()
+        {
+            // V3: a recruited companion must still be AT HEEL after a full simulated day of
+            // hunger, schedules, and predation — membership that only survives quiet worlds
+            // is theatre.
+            var world = BuildWorld(4242);
+            var composer = new WorldTickComposer();
+            var player = EmberCrpg.Simulation.Living.CompanionService.FindPlayer(world);
+            var friend = world.Actors.Records.First(a =>
+                a != null && a.IsAlive && a.Role == ActorRole.Talker);
+            friend.MoveTo(new GridPosition(player.Position.X + 1, player.Position.Y));
+            Assert.That(EmberCrpg.Simulation.Living.CompanionService.TryRecruit(world, friend.Id), Is.True);
+
+            AdvanceDays(world, composer, 1);
+
+            Assert.That(world.CompanionIds, Does.Contain(friend.Id.Value), "the party dissolved overnight");
+            int distance = System.Math.Max(
+                System.Math.Abs(friend.Position.X - player.Position.X),
+                System.Math.Abs(friend.Position.Y - player.Position.Y));
+            Assert.That(distance, Is.LessThanOrEqualTo(2),
+                $"the companion drifted {distance} cells from the player — follow lost to the schedule");
+        }
+
+        [Test]
         public void Gate3_UnscriptedEventRate_TheWorldActsWithoutAPlayer()
         {
             var world = BuildWorld(1717);

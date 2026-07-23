@@ -84,6 +84,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 _world.Time, "player_asked", player?.Id ?? default, topicId, string.Empty, 0, actor.Position));
         }
 
+        // M2: a companion SPEAKS like one — the persona suffix reframes the LLM voice, and
+        // the recalled shared memories (already in the prompt turns) gain their meaning.
+        internal string CompanionPersonaSuffix(ulong npcId)
+            => EmberCrpg.Simulation.Living.CompanionService.IsCompanion(_world, new ActorId(npcId))
+                ? " You are travelling WITH the player as their trusted companion — speak with the familiarity of the shared road."
+                : string.Empty;
+
         // V3 YOLDAŞ: recruiting happens IN conversation — a civilian you are talking to can
         // be asked to travel with you; a companion can be released. Topic ids double as the
         // player-facing labels (the panel renders topic ids verbatim).
