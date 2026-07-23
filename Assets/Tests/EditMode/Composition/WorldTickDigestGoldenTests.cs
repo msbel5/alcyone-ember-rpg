@@ -20,7 +20,10 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // from stockpiles, SLEEP at night, and shortages post planting jobs. Same-seed
         // determinism is separately pinned (Advance_IsDeterministic...); this hash only asserts
         // "no accidental drift SINCE the consumption loop landed".
-        private const string BaselineHash = "247ddd254c601d5c538027c0f0c37199c9a378ad2ad096af3ee76274dd528619";
+        // Re-baselined 2026-07-23 for M6 harvest-needs-hands: HarvestStep now requires a
+        // living civilian within reach and stamps the picker's ActorId into PlantHarvested -
+        // the event stream (and so the digest) legitimately changed.
+        private const string BaselineHash = "e56cb7636d31f6f2d6499ca799fef39c4110f9a3da003a75e89a2c1ebb9e4712";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

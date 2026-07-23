@@ -396,6 +396,12 @@ namespace EmberCrpg.Simulation.Composition
 
                 foreach (var p in ripe)
                 {
+                    // M6 ("kimse gelip toplamiyor"): no hands near = the plot WAITS ripe.
+                    // Villagers pass their fields daily (planting jobs, homes by the belt),
+                    // so yields shift by hours, not lost - and the event now names the picker.
+                    var hands = EmberCrpg.Simulation.Process.HarvestHandsService.FindHarvester(world, p);
+                    if (hands == null) continue;
+
                     EmberCrpg.Domain.Process.StockpileComponent pile = null;
                     for (int i = 0; i < world.Stockpiles.Count; i++)
                     {
@@ -413,7 +419,7 @@ namespace EmberCrpg.Simulation.Composition
                     // existed but was never emitted from this step.
                     world.Events?.Append(new EmberCrpg.Domain.World.WorldEvent(
                         context.Stamp, EmberCrpg.Domain.World.WorldEventKind.PlantHarvested,
-                        default, p.SiteId, $"harvested species:{p.SpeciesId} qty:2"));
+                        hands.Id, p.SiteId, $"harvested species:{p.SpeciesId} qty:2 by:{hands.Id.Value}"));
                     world.Plants.Replace(p.Id, new EmberCrpg.Domain.Process.PlantComponent(
                         p.Id, p.SiteId, p.Position, p.SpeciesId,
                         new EmberCrpg.Domain.Process.PlantStageId("seed"), 0)); // replant

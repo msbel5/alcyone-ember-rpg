@@ -8,6 +8,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             DrainMainThreadApply(); // DET-02: apply queued off-thread LLM results on the main thread
             _tick = tickIndex;
             _tickComposer.Advance(_world, tickIndex);
+            PublishEventEchoes();
             PublishFieldMirror();
         }
 
@@ -32,6 +33,50 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // F1/CROPS: publish the home site's REAL PlantGrowth stage census to the field mirror each tick —
         // the realized farm plot's stalks read it and rise from seed to ripe as sim days pass. Cheap scan
         // (a handful of plant components); dominant stage keeps the visual stable.
+        private int _echoCursor = -1;
+
+        // M6: every NEW world event that names actors becomes a floating echo. Cursor starts at
+        // the CURRENT end so loading a 10k-event save replays nothing; per-tick scan is capped.
+        private void PublishEventEchoes()
+        {
+            var events = _world?.Events?.Events;
+            if (events == null) return;
+            if (_echoCursor < 0 || _echoCursor > events.Count) { _echoCursor = events.Count; return; }
+            int start = events.Count - _echoCursor > 256 ? events.Count - 256 : _echoCursor;
+            for (int i = start; i < events.Count; i++)
+            {
+                var evt = events[i];
+                ulong subject = evt.ActorId.Value;
+                switch (evt.Kind)
+                {
+                    case EmberCrpg.Domain.World.WorldEventKind.WitnessRecorded:
+                        bool isReport = evt.Reason != null && evt.Reason.StartsWith("reported", System.StringComparison.Ordinal);
+                        if (subject != 0UL)
+                            EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.Raise(
+                                subject, isReport
+                                    ? EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.KindReport
+                                    : EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.KindWitness);
+                        break;
+                    case EmberCrpg.Domain.World.WorldEventKind.GuardResponded:
+                        if (subject != 0UL)
+                            EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.Raise(
+                                subject, EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.KindGuard);
+                        break;
+                    case EmberCrpg.Domain.World.WorldEventKind.PlantHarvested:
+                        if (subject != 0UL)
+                            EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.Raise(
+                                subject, EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.KindHarvest);
+                        break;
+                    case EmberCrpg.Domain.World.WorldEventKind.ActorTalked:
+                        if (subject != 0UL)
+                            EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.Raise(
+                                subject, EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.KindTalk);
+                        break;
+                }
+            }
+            _echoCursor = events.Count;
+        }
+
         private void PublishFieldMirror()
         {
             var plants = _world?.Plants;

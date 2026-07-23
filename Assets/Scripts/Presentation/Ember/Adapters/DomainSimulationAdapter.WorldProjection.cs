@@ -124,6 +124,19 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
             if (hour < 6 || hour >= 22) return IsAsleepAtHome(actor) ? "sleeping" : "heading home";
             if (hour >= 20) return "winding down";
+            // M6: standing at the crop belt reads as FARM WORK - and "harvesting" when it is ripe.
+            if (_world.Plants != null)
+            {
+                foreach (var plantRow in _world.Plants.Rows)
+                {
+                    var plant = plantRow.Value;
+                    if (plant == null) continue;
+                    int fdx = System.Math.Abs(actor.Position.X - plant.Position.X);
+                    int fdy = System.Math.Abs(actor.Position.Y - plant.Position.Y);
+                    if (System.Math.Max(fdx, fdy) <= EmberCrpg.Simulation.Process.HarvestHandsService.ReachCells)
+                        return plant.StageId.Value == "ripe" ? "harvesting" : "tending the field";
+                }
+            }
             return actor.ScheduleState.IsIdle ? "about town" : "working";
         }
 
