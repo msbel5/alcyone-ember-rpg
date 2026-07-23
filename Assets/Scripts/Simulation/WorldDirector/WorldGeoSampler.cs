@@ -126,6 +126,22 @@ namespace EmberCrpg.Simulation.WorldDirector
                     _shoreDirX = east;  // +X = east
                     _shoreDirZ = north; // +Z = north (WorldSpaceProjection: tileY shrinks northward)
                     _shoreWaterY = (shoreWater - _homeElev) * HeightScaleMeters;
+
+                    // R2 RECONCILIATION (the pale-field endgame): when the SHORE waterline sits
+                    // ABOVE the pad (+10.9m in the live log), the sampler painted seabed the
+                    // presentation's no-basin cap (8m) refused to flood — pale sand, no sea, on
+                    // every frame. A port is built ABOVE its waterline: hoist the pad over the
+                    // SHORE water too (same freeboard contract as the home-cell hoist), so shore
+                    // water renders below town level like every real harbour.
+                    double shoreFreeboard = 2.5d / HeightScaleMeters;
+                    if (shoreWater + shoreFreeboard > _homeElev)
+                    {
+                        _homeElev = shoreWater + shoreFreeboard;
+                        SeaLevelMeters = (_surface.SeaLevel - _homeElev) * HeightScaleMeters;
+                        _shoreWaterY = (shoreWater - _homeElev) * HeightScaleMeters; // now ~-2.5m
+                        Diagnostics.EmberLog.For("GeoSampler").Warn(
+                            $"pad hoisted above SHORE waterline (shore was above home) — shore now {_shoreWaterY:0.0}m rel.");
+                    }
                 }
             }
             else
@@ -178,6 +194,18 @@ namespace EmberCrpg.Simulation.WorldDirector
 
             if (_suppressHighLocalWater && waterY > SeaLevelMeters)
                 waterY = SeaLevelMeters; // phantom-water world: only true sea level counts locally
+
+            // R2 FIX (tile-general phantom clamp): the home-cell-only suppression missed IDW
+            // blends that claim a lake a FEW tiles out (+10.9m above home in the live log) —
+            // presentation skipped the sheet (no basin), the sampler still painted SEABED
+            // sand under it: the pale field. A hoisted pad guarantees no basin wall inside
+            // the local realization, so ANY water claim above home+4m is a blend artifact —
+            // collapse it to true sea level and the zone reads as dry grassland.
+            // ...EXCEPT the sanctioned shore-water lift: coastal towns get deliberately
+            // reachable water (walkable-shore contract, test-pinned). The clamp only kills
+            // claims ABOVE both the +4m sanity line and the designed shore level.
+            if (waterY > System.Math.Max(4d, double.IsNaN(_shoreWaterY) ? double.NegativeInfinity : _shoreWaterY))
+                waterY = SeaLevelMeters;
 
             double aboveWater = meters - waterY;
             // R2 ROOT CAUSE (unified theory of the pale field): 'below water => sand=1' painted

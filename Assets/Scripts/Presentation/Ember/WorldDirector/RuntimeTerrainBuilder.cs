@@ -245,7 +245,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 BiomeKind.Forest => (new Color(0.06f, 0.15f, 0.06f), new Color(0.13f, 0.24f, 0.09f), new Color(0.22f, 0.34f, 0.13f)),
                 BiomeKind.Coast  => (new Color(0.55f, 0.48f, 0.33f), new Color(0.72f, 0.64f, 0.45f), new Color(0.30f, 0.42f, 0.20f)),
                 BiomeKind.Desert => (new Color(0.62f, 0.50f, 0.30f), new Color(0.78f, 0.66f, 0.42f), new Color(0.54f, 0.42f, 0.26f)),
-                BiomeKind.Tundra => (new Color(0.52f, 0.56f, 0.55f), new Color(0.72f, 0.76f, 0.74f), new Color(0.86f, 0.90f, 0.92f)),
+                BiomeKind.Tundra => (new Color(0.24f, 0.28f, 0.26f), new Color(0.38f, 0.43f, 0.39f), new Color(0.62f, 0.68f, 0.70f)),
+                // ^ R2 CASE CLOSED: the session-long 'pale mint field' was THIS palette — the
+                // start town borders TUNDRA tiles, and near-white frost + green ambient = mint.
+                // Twelve render/geology probes chased the wrong layer; the pixel matched the
+                // palette all along. Muted cold-steppe keeps frost speckles for the sparkle.
                 BiomeKind.Swamp  => (new Color(0.14f, 0.20f, 0.12f), new Color(0.24f, 0.30f, 0.16f), new Color(0.34f, 0.38f, 0.22f)),
                 _                => (new Color(0.10f, 0.20f, 0.07f), new Color(0.20f, 0.33f, 0.12f), new Color(0.33f, 0.46f, 0.16f)), // plains grass
             };

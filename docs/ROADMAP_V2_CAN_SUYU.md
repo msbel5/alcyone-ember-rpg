@@ -71,7 +71,13 @@ TOPLAM ALICI PUANI: 4/10 -> hedef 10/10. Kural: puan iddiası KANITLA (kare/vide
 - [x] R1: prosedürel doğa zemini (3-oktav biyom paletli gürültü, terrain katmanı + kasaba
   plakası); kum bandı 4m→1.5m (kasaba pedini kum boyuyordu); deniz malzemesi koyu/emisyonsuz;
   --ember-weather kanıt kolu. Ağaç çizgisi çevresinde doku artık okunuyor.
-- [ ] R2 (AÇIK — RAFİNE TEŞHİS, 12 sonda sonrası): soluk alan = KUMLU DENİZ TABANI, su
+- [ ] R2 (AÇIK — 16 sonda; SON DURUM 06:40): Soluk alan TÜM düzeltmelerden sağ çıktı.
+  KANITLI gerçekler: mavi-albedo sondasında alan MAVİYE DÖNDÜ (NatureTexture tüketicisi);
+  kırmızı-plaka sondası (doğrulanmış) plakayı AKLADI; sis/ambient A/B kareleri, basemap,
+  smoothness, remap, kubbe, tundra-recolor etkisiz. Kıyı hoist'i uygulandı (log: shore
+  -2.5m) ve sky-water atlamaları sıfırlandı — alan yine soluk. SONRAKI ARAÇ: Unity Frame
+  Debugger / editör oturumu (pikselin renderer+materyalini isimle verir) — sonda YASAK.
+  (Eski teşhis satırı arşiv): soluk alan = KUMLU DENİZ TABANI, su
   düzlemi YOK. Örnekleyici kasaba çevresini deniz sayıyor (aboveWater<0 → IsWater, sand=1,
   test-pinli semantik) ama o karolarda deniz düzlemi çizilmiyor. Aklananlar: sis, ambient,
   basemap, smoothness, remap, kubbe. SORU: pre.WaterY o karolarda neden NaN / su neden
