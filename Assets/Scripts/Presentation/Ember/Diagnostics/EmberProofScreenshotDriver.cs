@@ -1080,6 +1080,25 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 CaptureToPng(Path.Combine(_outputDir, $"look_{i * 60:000}.png"));
             }
 
+            // R2 DIAGNOSIS (in-run A/B): name the albedo-independent whitening in ONE build —
+            // log the live render state, then toggle the two suspects and capture each.
+            Debug.Log($"[R2] fog={RenderSettings.fog} mode={RenderSettings.fogMode} density={RenderSettings.fogDensity:0.0000} " +
+                      $"fogColor={RenderSettings.fogColor} ambientMode={RenderSettings.ambientMode} " +
+                      $"ambientLight={RenderSettings.ambientLight} ambientIntensity={RenderSettings.ambientIntensity:0.00} " +
+                      $"weatherFogFactor={EmberCrpg.Presentation.Ember.WorldDirector.RuntimeWeatherMirror.FogFactor:0.00} " +
+                      $"kind={EmberCrpg.Presentation.Ember.WorldDirector.RuntimeWeatherMirror.Kind}");
+            if (rig != null) rig.transform.rotation = Quaternion.Euler(0f, 60f, 0f); // the classic pale-field aim
+            bool abFog = RenderSettings.fog;
+            var abAmbient = RenderSettings.ambientLight;
+            RenderSettings.fog = false;
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "ab_fog_off.png"));
+            RenderSettings.ambientLight = new Color(0.30f, 0.30f, 0.30f);
+            yield return new WaitForEndOfFrame();
+            CaptureToPng(Path.Combine(_outputDir, "ab_ambient_grey.png"));
+            RenderSettings.fog = abFog;
+            RenderSettings.ambientLight = abAmbient;
+
             // F3-DoD perf probe: average + worst frame over a 90-frame window in live gameplay.
             float sum = 0f, worst = 0f;
             for (int i = 0; i < 90; i++)

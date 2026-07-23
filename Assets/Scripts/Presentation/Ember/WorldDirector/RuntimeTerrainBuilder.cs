@@ -46,6 +46,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             data.SetAlphamaps(0, 0, FullCoverAlpha());
 
             var go = Terrain.CreateTerrainGameObject(data); // also adds a TerrainCollider
+            // R2 probe/fix: force SPLAT rendering at all distances. The default 1000m basemap
+            // path bakes a base map via a hidden blit shader that player builds can strip —
+            // a corrupt/white basemap is the leading suspect for the albedo-independent
+            // whitening (fog and ambient both acquitted by in-run A/B frames).
+            go.GetComponent<Terrain>().basemapDistance = 20000f;
             go.name = $"TerrainTile_{tileX}_{tileZ}";
             go.transform.SetParent(parent, worldPositionStays: false);
             go.transform.localPosition = new Vector3(tileX * tileSize, 0f, tileZ * tileSize);
@@ -97,6 +102,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             data.SetAlphamaps(0, 0, pre.Alpha);
 
             var go = Terrain.CreateTerrainGameObject(data); // also adds a TerrainCollider
+            // R2 probe/fix: force SPLAT rendering at all distances. The default 1000m basemap
+            // path bakes a base map via a hidden blit shader that player builds can strip —
+            // a corrupt/white basemap is the leading suspect for the albedo-independent
+            // whitening (fog and ambient both acquitted by in-run A/B frames).
+            go.GetComponent<Terrain>().basemapDistance = 20000f;
             go.name = $"TerrainTile_{tileX}_{tileZ}";
             go.transform.SetParent(parent, worldPositionStays: false);
             go.transform.localPosition = new Vector3(tileX * tileSize, GeoYMin, tileZ * tileSize);
@@ -286,7 +296,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         {
             if (_dirtLayer != null) return _dirtLayer;
             var texture = NatureTexture(BiomeKind.Desert); // earthy noise doubles as the meadow-break dirt
-            _dirtLayer = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(9f, 9f) };
+            _dirtLayer = new TerrainLayer { diffuseTexture = texture, tileSize = new Vector2(9f, 9f), smoothness = 0f, metallic = 0f };
             return _dirtLayer;
         }
 
@@ -355,6 +365,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             {
                 diffuseTexture = texture,
                 tileSize = new Vector2(rocky ? 14f : 9f, rocky ? 14f : 9f),
+                // R2 ROOT CAUSE: TerrainLayer's DEFAULT smoothness (0.5) turns flat ground into
+                // a grazing-angle SKY MIRROR — the albedo-independent pale wash that survived
+                // fog/ambient/basemap acquittals. Ground is matte. Full stop.
+                smoothness = 0f,
+                metallic = 0f,
                 diffuseRemapMin = Vector4.zero,
                 // Nature textures carry their own palette — remap only the rocky plates.
                 // CALIBRATION (colour-probe verdict): this terrain pipeline renders albedo

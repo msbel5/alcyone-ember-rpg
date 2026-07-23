@@ -180,6 +180,14 @@ namespace EmberCrpg.Simulation.WorldDirector
                 waterY = SeaLevelMeters; // phantom-water world: only true sea level counts locally
 
             double aboveWater = meters - waterY;
+            // R2 ROOT CAUSE (unified theory of the pale field): 'below water => sand=1' painted
+            // 100% pale sand across ENTIRE below-sea-level inland basins whose water planes the
+            // no-water-above-home guard culls — the mint wash six render-side acquittals could
+            // not touch, because it was ALBEDO all along. A beach is the +/-band AROUND the
+            // waterline; deep-below-sea dry land is just land.
+// Test-pinned semantics: below the waterline is SEABED and seabed reads as sand.
+            // (The R2 pale-field is NOT a sand bug — see roadmap: the sampler calls the town
+            // surroundings SEA, but no water plane renders there. The missing SEA is the bug.)
             double sand = aboveWater <= 0d ? 1d : Clamp01(1d - (aboveWater / BeachBandMeters));
             return new GeoSample(meters, aboveWater < 0d, sand, waterY);
         }

@@ -71,7 +71,12 @@ TOPLAM ALICI PUANI: 4/10 -> hedef 10/10. Kural: puan iddiası KANITLA (kare/vide
 - [x] R1: prosedürel doğa zemini (3-oktav biyom paletli gürültü, terrain katmanı + kasaba
   plakası); kum bandı 4m→1.5m (kasaba pedini kum boyuyordu); deniz malzemesi koyu/emisyonsuz;
   --ember-weather kanıt kolu. Ağaç çizgisi çevresinde doku artık okunuyor.
-- [ ] R2 (AÇIK — tanı kanıtlı): MESAFE BEYAZLAMASI. Renk-sonda deneyi: saf mavi albedo pastel
+- [ ] R2 (AÇIK — RAFİNE TEŞHİS, 12 sonda sonrası): soluk alan = KUMLU DENİZ TABANI, su
+  düzlemi YOK. Örnekleyici kasaba çevresini deniz sayıyor (aboveWater<0 → IsWater, sand=1,
+  test-pinli semantik) ama o karolarda deniz düzlemi çizilmiyor. Aklananlar: sis, ambient,
+  basemap, smoothness, remap, kubbe. SORU: pre.WaterY o karolarda neden NaN / su neden
+  atlanıyor (MaxLocalWaterAboveHome guard'ı? tile su tespiti?). Su çizilirse koyu deniz
+  kumu örter ve sahne düzelir. ESKİ MESAFE-BEYAZLAMASI teşhisi geçersiz. Renk-sonda deneyi: saf mavi albedo pastel
   lavanta çizildi → parlama albedodan BAĞIMSIZ ~%55 beyaz katkı; diffuseRemap kolu etkisiz.
   Şüpheli: sis-kapalıyken bile aktif bir atmosfer/karışım katmanı (SkyController FogFactor
   tüketimi?). Yöntem: editörde canlı frame-debugger/materyal sorgusu — kör build döngüsü DEĞİL.
