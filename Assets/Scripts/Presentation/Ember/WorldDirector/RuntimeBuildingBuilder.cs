@@ -54,6 +54,18 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 new Vector3(placement.SizeX * 0.55f, 0.6f, placement.SizeZ * 0.55f),
                 RuntimeMaterialPalette.Textured(RuntimeMaterialPalette.RoofTextureId(placement.MaterialIndex),
                     new Color(0.50f, 0.44f, 0.37f), tiling: 1.0f));
+            // Chimney: a deterministic rooftop stack (seeded from the placement, same trick as
+            // the furnishings) — half the houses smoke-ready, and the skyline stops repeating.
+            uint chimneyRoll = unchecked(((uint)(placement.OriginX * 8f) * 73856093u)
+                ^ ((uint)(placement.OriginZ * 8f) * 19349663u)) | 1u;
+            if ((chimneyRoll & 3u) != 0u) // ~3 in 4 buildings
+            {
+                float cx = (placement.SizeX * 0.28f) * (((chimneyRoll >> 3) & 1u) == 0u ? 1f : -1f);
+                AddSlab(root.transform, "Chimney",
+                    new Vector3(cx, placement.Height + 0.95f, placement.SizeZ * 0.18f),
+                    new Vector3(0.45f, 1.3f, 0.45f),
+                    RuntimeMaterialPalette.Solid(new Color(0.34f, 0.30f, 0.28f)));
+            }
             AddSlab(root.transform, "Floor", new Vector3(0f, 0.03f, 0f),
                 new Vector3(placement.SizeX - WallThickness, 0.06f, placement.SizeZ - WallThickness), RuntimeMaterialPalette.Solid(new Color(0.42f, 0.30f, 0.18f)));
             Furnish(root.transform, placement, entrance);

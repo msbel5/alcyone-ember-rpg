@@ -202,13 +202,19 @@ namespace EmberCrpg.Presentation.Ember.Views
                     _walkTimer = 0f;
                     if (_renderer != null) _renderer.flipX = !_renderer.flipX;
                 }
-                _billboard.localPosition = _billboardBaseLocalPos;
+                // Stride: a fast vertical bob + a small lean make the flat painting WALK
+                // instead of glide — the cheapest animation a billboard can buy ("billboard
+                // yürüme animasyonu" backlog item; sprite sheets are the future upgrade path).
+                float strideBob = Mathf.Abs(Mathf.Sin(Time.time * 9f)) * 0.07f;
+                _billboard.localPosition = _billboardBaseLocalPos + new Vector3(0f, strideBob, 0f);
+                _billboard.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 9f) * 2.5f);
             }
             else
             {
                 // Idle float
                 float floatOffset = Mathf.Sin(Time.time * _idleFloatFrequency) * _idleFloatAmplitude;
                 _billboard.localPosition = _billboardBaseLocalPos + new Vector3(0f, floatOffset, 0f);
+                _billboard.localRotation = Quaternion.identity; // no lean at rest
                 _walkTimer = 0f;
             }
 
