@@ -83,6 +83,8 @@ namespace EmberCrpg.Presentation.Ember.Views
         private void Fall()
         {
             _fallen = true;
+            var view = GetComponent<ActorView>();
+            if (view != null) view.ExternalPoseOverride = true; // the corpse owns its transform now
             if (_billboardFacing != null) _billboardFacing.enabled = false;
             var board = _sprite != null ? _sprite.transform : transform;
             board.localRotation = Quaternion.Euler(90f, 0f, 0f); // face-up on the floor

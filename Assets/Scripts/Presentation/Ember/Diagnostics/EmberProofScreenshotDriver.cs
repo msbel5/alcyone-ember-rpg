@@ -630,6 +630,10 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                    && Time.unscaledTime < bootDeadline)
                 yield return new WaitForSecondsRealtime(1f);
 
+            // The opening-story page dims every frame if left up - press BEGIN like a player.
+            yield return new WaitForSecondsRealtime(2f);
+            EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController.ActiveOpeningDismiss?.Invoke();
+
             var rig = GameObject.Find("PlayerRig");
             if (rig != null)
             {
@@ -645,7 +649,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                         behaviour.enabled = false;
             }
 
-            const int frames = 30;
+            // 90 frames x 10s = 18 game hours: the strip now crosses 22:00 so the night
+            // curfew (visible lying sleepers, walkable streets) is reviewable, not assumed.
+            const int frames = 90;
             for (int i = 0; i < frames; i++)
             {
                 yield return new WaitForSecondsRealtime(10f);
@@ -656,7 +662,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield return new WaitForEndOfFrame();
                 CaptureToPng(Path.Combine(_outputDir, $"lapse_{i:000}.png"));
             }
-            Debug.Log($"[Timelapse] {frames} frames / 10s apart (~6 game hours) — review the sequence.");
+            Debug.Log($"[Timelapse] {frames} frames / 10s apart (~18 game hours incl. night) — review the sequence.");
         }
 
         // AGENT CHECK ("dm le kendin konusmaya cevap almayi denedin mi?"): exercises the DM

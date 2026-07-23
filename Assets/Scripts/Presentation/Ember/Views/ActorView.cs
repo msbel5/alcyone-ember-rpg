@@ -118,6 +118,9 @@ namespace EmberCrpg.Presentation.Ember.Views
             _lastPosition = transform.position;
         }
 
+        /// <summary>While true, an external pose (sleep/death) owns the billboard transform.</summary>
+        public bool ExternalPoseOverride;
+
         public void SetTarget(ActorViewState state)
         {
             _target = state;
@@ -202,7 +205,13 @@ namespace EmberCrpg.Presentation.Ember.Views
             float speed = Time.deltaTime > 0 ? (transform.position - _lastPosition).magnitude / Time.deltaTime : 0f;
             _lastPosition = transform.position;
 
-            if (speed > 0.05f)
+            if (ExternalPoseOverride)
+            {
+                // An external pose (night sleep, death) owns the billboard transform this frame -
+                // the bob/lean writers below would stand a sleeper back up (LIVE-caught: the
+                // curfew's lying pose was overwritten every frame and nobody ever lay down).
+            }
+            else if (speed > 0.05f)
             {
                 // Walk cycle: 2-frame ping-pong via flipX
                 _walkTimer += Time.deltaTime;

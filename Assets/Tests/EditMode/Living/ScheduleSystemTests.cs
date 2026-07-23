@@ -190,6 +190,23 @@ namespace EmberCrpg.Tests.EditMode.Living
                 "street outlaws (home != dayAnchor) keep the F6 curfew commute");
         }
 
+        // PLAYTEST pin ("herkes town merkezinde"): under the eat threshold the table cannot feed
+        // you, so the schedule must not park sub-threshold civilians at the food spot — day or night.
+        [Test]
+        public void ChooseTarget_PeckishBelowEatThreshold_NeverTargetsTheFoodSpot()
+        {
+            var foodSpot = new GridPosition(5, 0);
+            var home = new GridPosition(0, 0);
+            var anchor = new GridPosition(9, 9);
+            var actor = Record(new GridPosition(3, 3)).WithHomeAndAnchor(home, anchor);
+
+            actor.ApplyNeeds(ActorNeeds.Comfortable.WithHunger(new NeedValue(40)));
+            Assert.That(ScheduleSystem.ChooseTarget(actor, new GameTime(23 * GameTime.MinutesPerHour), foodSpot),
+                Is.EqualTo(home), "peckish at night still sleeps at home");
+            Assert.That(ScheduleSystem.ChooseTarget(actor, new GameTime(9 * GameTime.MinutesPerHour), foodSpot),
+                Is.EqualTo(anchor), "peckish by day minds its anchor instead of standing at a table it cannot use");
+        }
+
         [Test]
         public void ChooseTarget_SeatOrdinals0Through24_DistinctCellsAllWithinEatReach()
         {

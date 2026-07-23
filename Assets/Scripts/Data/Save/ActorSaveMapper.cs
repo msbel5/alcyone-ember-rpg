@@ -31,6 +31,11 @@ namespace EmberCrpg.Data.Save
                 role = (int)actor.Role,
                 positionX = actor.Position.X,
                 positionY = actor.Position.Y,
+                hasHomeAnchor = true,
+                homeX = actor.Home.X,
+                homeY = actor.Home.Y,
+                dayAnchorX = actor.DayAnchor.X,
+                dayAnchorY = actor.DayAnchor.Y,
                 mig = actor.Stats.Mig,
                 agi = actor.Stats.Agi,
                 end = actor.Stats.End,
@@ -137,7 +142,9 @@ namespace EmberCrpg.Data.Save
                     : ActorScheduleState.Assigned(new JobId((ulong)save.currentJobId), new SiteId((ulong)save.targetSiteId), new GridPosition(save.targetWorksitePositionX, save.targetWorksitePositionY))),
                 needs: needs,
                 mood: mood,
-                memory: memory);
+                memory: memory,
+                home: save.hasHomeAnchor ? new GridPosition(save.homeX, save.homeY) : (GridPosition?)null,
+                dayAnchor: save.hasHomeAnchor ? new GridPosition(save.dayAnchorX, save.dayAnchorY) : (GridPosition?)null);
 
             record.ReplaceAskedTopics(asked);
 

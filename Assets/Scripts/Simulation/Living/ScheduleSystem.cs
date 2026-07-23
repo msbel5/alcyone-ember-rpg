@@ -91,7 +91,13 @@ namespace EmberCrpg.Simulation.Living
             if (actor.Role == ActorRole.Guard || actor.Role == ActorRole.Enemy)
                 return ClassicTarget(actor, workHour);
 
-            int eat = foodSpot.HasValue ? actor.Needs.Hunger.Value : -1;
+            // PLAYTEST FIX ("herkes town merkezinde"): below HungerEatThreshold the table CANNOT
+            // feed you (TryEat refuses), yet sub-threshold hunger still outbid idle/rest and parked
+            // whole towns at the centre food spot, standing hungry-but-not-hungry-enough. The food
+            // spot only pulls when the meal will actually happen.
+            int eat = foodSpot.HasValue && actor.Needs.Hunger.Value >= NeedConsumptionSystem.HungerEatThreshold
+                ? actor.Needs.Hunger.Value
+                : -1;
             int rest = actor.Needs.Fatigue.Value + (workHour ? 0 : NightRestBonus);
             int work = workHour && !actor.ScheduleState.IsIdle ? WorkScore : 0;
             int idle = workHour ? IdleScore : 0;

@@ -75,6 +75,14 @@ namespace EmberCrpg.Data.Save
         public int role;
         public int positionX;
         public int positionY;
+        // PLAYTEST FIX: Home/DayAnchor were dropped by the mapper — a night save collapsed every
+        // villager's Home onto the sleeping pile. hasHomeAnchor=false on old saves keeps the old
+        // (position-default) behavior for them.
+        public bool hasHomeAnchor;
+        public int homeX;
+        public int homeY;
+        public int dayAnchorX;
+        public int dayAnchorY;
         public int mig;
         public int agi;
         public int end;
