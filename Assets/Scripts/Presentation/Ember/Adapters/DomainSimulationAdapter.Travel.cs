@@ -79,6 +79,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public void AdvanceTravelDay()
             => AdvanceTick(_tick + EmberCrpg.Simulation.Composition.WorldTickComposer.TicksPerGameDay);
 
+        /// <summary>PLAYTEST ("wait tusu"): Daggerfall-style wait - hour-stepped via the same
+        /// loop the proof harness trusts, so hourly/daily cadences fire (shipcheck-6 rule).</summary>
+        public void WaitHours(int hours) => ProofAdvanceHours(hours);
+
+        /// <summary>Hours the H (rest) key will sleep to reach the next dawn.</summary>
+        public int RestHoursUntilDawn()
+            => EmberCrpg.Simulation.World.PlayerRestService.HoursUntilDawn(_world?.Time.TotalMinutes ?? 0L);
+
+        /// <summary>PLAYTEST ("rest tusu"): apply sleep recovery to the player after N slept hours.</summary>
+        public void ApplyRest(int hoursSlept)
+        {
+            if (_world?.Actors == null
+                || !_world.Actors.TryFirstByRole(EmberCrpg.Domain.Actors.ActorRole.Player, out var player)
+                || player == null)
+                return;
+            player.ApplyVitals(EmberCrpg.Simulation.World.PlayerRestService.RestedVitals(player.Vitals, hoursSlept));
+            UnityEngine.Debug.Log($"[Rest] player slept {hoursSlept}h - vitals mended.");
+        }
+
         /// <summary>
         /// Legacy SYNC travel (proof drivers + non-coroutine callers): begin + tick the days inline, capped
         /// at 14 so a headless caller can't stall for minutes. The game UI uses the chunked path above.

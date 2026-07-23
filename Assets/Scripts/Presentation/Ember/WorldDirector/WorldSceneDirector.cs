@@ -193,6 +193,35 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             plaza.GetComponent<MeshRenderer>().sharedMaterial =
                 RuntimeMaterialPalette.Textured("wall_showroomoverview", new Color(0.52f, 0.50f, 0.47f), tiling: 3f);
 
+            // PLAYTEST ("ortada masa gormuyorum, hic esya renderimiz yok"): the communal food
+            // spot is a REAL table now - long top on two trestles, benches both sides, and a
+            // stone well off-centre. Same flat-shaded primitive language as the buildings;
+            // deterministic, zero assets. NPС seat cells ring this table at +/-1..2 m.
+            static void PlazaProp(Transform parent, string propName, Vector3 pos, Vector3 size, Material mat)
+            {
+                var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                box.name = propName;
+                box.transform.SetParent(parent, worldPositionStays: false);
+                box.transform.localPosition = pos;
+                box.transform.localScale = size;
+                box.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            }
+            var plazaWood = RuntimeMaterialPalette.Solid(new Color(0.40f, 0.29f, 0.17f));
+            var plazaWoodDark = RuntimeMaterialPalette.Solid(new Color(0.30f, 0.21f, 0.12f));
+            var plazaStone = RuntimeMaterialPalette.Solid(new Color(0.47f, 0.46f, 0.43f));
+            PlazaProp(root.transform, "TableTop", new Vector3(0f, 0.78f, 0f), new Vector3(3.0f, 0.10f, 1.1f), plazaWood);
+            PlazaProp(root.transform, "TableTrestleA", new Vector3(-1.2f, 0.38f, 0f), new Vector3(0.18f, 0.76f, 0.9f), plazaWoodDark);
+            PlazaProp(root.transform, "TableTrestleB", new Vector3(1.2f, 0.38f, 0f), new Vector3(0.18f, 0.76f, 0.9f), plazaWoodDark);
+            PlazaProp(root.transform, "BenchNorth", new Vector3(0f, 0.24f, 1.05f), new Vector3(2.6f, 0.45f, 0.34f), plazaWoodDark);
+            PlazaProp(root.transform, "BenchSouth", new Vector3(0f, 0.24f, -1.05f), new Vector3(2.6f, 0.45f, 0.34f), plazaWoodDark);
+            var wellRing = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            wellRing.name = "WellRing";
+            wellRing.transform.SetParent(root.transform, worldPositionStays: false);
+            wellRing.transform.localPosition = new Vector3(4.6f, 0.45f, 3.8f);
+            wellRing.transform.localScale = new Vector3(1.4f, 0.45f, 1.4f);
+            wellRing.GetComponent<MeshRenderer>().sharedMaterial = plazaStone;
+            PlazaProp(root.transform, "WellPost", new Vector3(4.6f, 1.45f, 3.8f), new Vector3(0.12f, 1.2f, 0.12f), plazaWoodDark);
+
             RuntimeLightingRig.Apply(root.transform, homeTile.Biome);
 
             var spawn = new Vector3(layout.PlayerSpawnX, 0.2f, layout.PlayerSpawnZ);

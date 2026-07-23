@@ -1183,7 +1183,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         private System.Collections.IEnumerator TravelRoutine(DomainSimulationAdapter adapter, int days)
         {
-            BuildTravelOverlay(out var dayLabel);
+            BuildTravelOverlay("Fast Travel", out var dayLabel);
             // PLAYTEST FIX ("fast travel yavas suruyor"): four sim-days per frame — a 58-day
             // crossing settles in ~15 frames instead of a minute of heavy single-day frames.
             for (int d = 1; d <= days; d++)
@@ -1234,7 +1234,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             story.style.marginTop = 16;
             overlay.Add(story);
 
-            var hint = new Label("Talk with E · World map with M · The Consul (DM) answers any question");
+            var hint = new Label("Talk with E · Map M · Wait T · Rest H · The Consul (DM) answers any question");
             hint.style.fontSize = 14;
             hint.style.color = new Color(0.62f, 0.60f, 0.55f);
             hint.style.marginTop = 14;
@@ -1262,7 +1262,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             _stage?.Canvas?.Add(overlay); // same canvas the travel overlay rides
         }
 
-        private void BuildTravelOverlay(out Label dayLabel)
+        private VisualElement BuildTravelOverlay(string title, out Label dayLabel)
         {
             var overlay = new VisualElement();
             overlay.style.position = Position.Absolute;
@@ -1271,18 +1271,57 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             overlay.style.justifyContent = Justify.Center;
             overlay.style.alignItems = Align.Center;
 
-            var title = new Label("Fast Travel");
-            title.style.fontSize = 30;
-            title.style.color = new Color(0.85f, 0.72f, 0.45f);
-            overlay.Add(title);
+            var titleLabel = new Label(title);
+            titleLabel.style.fontSize = 30;
+            titleLabel.style.color = new Color(0.85f, 0.72f, 0.45f);
+            overlay.Add(titleLabel);
 
-            dayLabel = new Label("Setting out...");
+            dayLabel = new Label("...");
             dayLabel.style.fontSize = 18;
             dayLabel.style.color = new Color(0.78f, 0.75f, 0.70f);
             dayLabel.style.marginTop = 10;
             overlay.Add(dayLabel);
 
-            _stage.Canvas.Add(overlay); // the scene reload tears it down with the canvas
+            _stage.Canvas.Add(overlay); // travel: the scene reload tears it down; wait/rest removes it itself
+            return overlay;
+        }
+
+        private bool _timeSkipRunning;
+
+        // PLAYTEST ("wait tusu da rest tusu da olmali"): T waits an hour, H sleeps until dawn.
+        // Same hour-stepped sim advance as fast travel, so the world (schedules, needs, weather,
+        // cadences) truly lives through the skipped time - nothing is teleported.
+        private void BeginTimeSkip(bool rest)
+        {
+            if (_timeSkipRunning || _activeDialog != null) return;
+            var adapter = EmberDomainAdapterLocator.Current as DomainSimulationAdapter;
+            if (adapter == null) return;
+            StartCoroutine(TimeSkipRoutine(adapter, rest));
+        }
+
+        private System.Collections.IEnumerator TimeSkipRoutine(DomainSimulationAdapter adapter, bool rest)
+        {
+            _timeSkipRunning = true;
+            int hours = rest ? adapter.RestHoursUntilDawn() : 1;
+            var overlay = BuildTravelOverlay(rest ? "Rest" : "Wait", out var label);
+            for (int h = 1; h <= hours; h++)
+            {
+                label.text = rest ? $"You sleep - hour {h} of {hours}" : "An hour passes...";
+                adapter.WaitHours(1);
+                yield return null;
+            }
+            if (rest)
+            {
+                adapter.ApplyRest(hours);
+                label.text = "Day breaks. You feel mended.";
+                yield return new WaitForSeconds(0.9f);
+            }
+            else
+            {
+                yield return new WaitForSeconds(0.4f);
+            }
+            overlay.RemoveFromHierarchy();
+            _timeSkipRunning = false;
         }
         private void TodoConsulAskAction(string prompt) => LogTodoAndClose("consult fate: " + prompt);
         private void TodoCombatAction(string actionId)
@@ -1379,6 +1418,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             else if (EmberInput.KeyDown(KeyCode.J)) OpenScreen("journal");
             else if (EmberInput.KeyDown(KeyCode.K)) OpenScreen("colony");
             else if (EmberInput.KeyDown(KeyCode.R)) OpenScreen("consul");
+            else if (EmberInput.KeyDown(KeyCode.T)) BeginTimeSkip(rest: false); // PLAYTEST: wait an hour
+            else if (EmberInput.KeyDown(KeyCode.H)) BeginTimeSkip(rest: true);  // PLAYTEST: sleep to dawn
         }
 
         // True when a TextField (or its inner text input) holds focus — suppresses screen hotkeys while typing.
