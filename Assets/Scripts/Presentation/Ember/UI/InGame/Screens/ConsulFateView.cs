@@ -101,6 +101,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 if (_threadEntries[i].Loading)
                 {
                     _threadEntries[i].SetAnswer(answer, false);
+                    // PLAYTEST FIX ("oracle da konusmuyor"): the DM has a voice of its own -
+                    // fixed key 7 keeps it the same oracle voice every session.
+                    EmberCrpg.Presentation.Ember.Audio.SpeechDirector.FeedFinal(7UL, answer);
                     ScrollThreadTo(_threadEntries[i].Root);
                     return;
                 }

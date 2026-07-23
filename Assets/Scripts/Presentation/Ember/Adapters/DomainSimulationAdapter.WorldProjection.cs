@@ -112,10 +112,19 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             int hour = (int)((_world.Time.TotalMinutes / 60) % 24);
             if (actor.Role == ActorRole.Guard) return "on watch";
             if (actor.Role == ActorRole.Enemy) return "hunting";
-            if (hour >= 12 && hour < 14) return "eating";
+            // PLAYTEST FIX ("hepsinin ustunde eating yaziyor, kimse masaya oturmuyor"): the verb
+            // must tell the TRUTH - 'eating' only AT the plaza table, walkers say where they go.
+            if (hour >= 12 && hour < 14)
+            {
+                var plaza = BillboardOrigin();
+                int pdx = System.Math.Abs(actor.Position.X - plaza.X);
+                int pdy = System.Math.Abs(actor.Position.Y - plaza.Y);
+                if (System.Math.Max(pdx, pdy) <= 3) return "eating";
+                if (actor.Needs.Hunger.Value >= 55) return "to the tavern";
+            }
             if (hour < 6 || hour >= 22) return IsAsleepAtHome(actor) ? "sleeping" : "heading home";
             if (hour >= 20) return "winding down";
-            return actor.ScheduleState.IsIdle ? "idling" : "working";
+            return actor.ScheduleState.IsIdle ? "about town" : "working";
         }
 
         // SOUL-04 (spawn-from-worldgen): hand the host a flat, Domain-free list of candidate

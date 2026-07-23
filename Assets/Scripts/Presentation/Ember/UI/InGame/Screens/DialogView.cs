@@ -149,7 +149,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             bottom.style.borderTopWidth = 1;
             bottom.style.borderTopColor = Alpha(Ink, 0.10f);
             bottom.style.paddingTop = 10;
-            bottom.Add(Text(hasTopics ? "ESC · 1–4 topics · or type freely" : "ESC · Close", Sans, 11, Alpha(Ink, 0.38f)));
+            bottom.Add(Text(hasTopics ? "ESC · topics by number · TYPE to ask or ANSWER — they remember what you tell them" : "ESC · Close", Sans, 11, Alpha(Ink, 0.38f)));
 
             var actions = Row();
             actions.style.alignItems = Align.Center;
@@ -379,7 +379,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             Radius(ask, 8);
             row.Add(ask);
 
-            var hint = Text("Ask " + ((npcName ?? "them").Split(' ')[0]) + " anything…", Serif, 12, Alpha(Ink, 0.36f), FontStyle.Italic);
+            var hint = Text("Ask or answer " + ((npcName ?? "them").Split(' ')[0]) + " — type freely…", Serif, 12, Alpha(Ink, 0.36f), FontStyle.Italic);
             hint.style.position = Position.Absolute;
             hint.style.left = 16;
             hint.style.top = 10;

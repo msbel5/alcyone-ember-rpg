@@ -107,6 +107,27 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return string.Empty;
         }
 
+        // PLAYTEST FIX: deterministic seeds made every repeat of a question word-identical.
+        private int NextAskCount(string askKey)
+        {
+            _topicAskCounts.TryGetValue(askKey, out var asked);
+            _topicAskCounts[askKey] = asked + 1;
+            return asked;
+        }
+
+        private static string RepeatAskSuffix(int askedBefore)
+            => askedBefore <= 0
+                ? string.Empty
+                : " You have answered this exact question before - vary the phrasing and add one NEW detail this time.";
+
+        // PLAYTEST FIX ("ismimizi soruyor ama bilmiyor"): the model is told who it talks to,
+        // so a typed 'I am X' lands on ground it already shares with the simulation.
+        internal string PlayerContextSuffix()
+        {
+            var player = EmberCrpg.Simulation.Living.CompanionService.FindPlayer(_world);
+            return player == null ? string.Empty : $" The player character's name is {player.Name}.";
+        }
+
         // M3a: a mid-stream partial is USER-VISIBLE - cut at anti-prompt echoes before they flash.
         private static string TrimStreamPartial(string partial)
         {

@@ -42,6 +42,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private string _pendingFate = string.Empty;
         private bool _isFateThinking;
         private bool _isDialogThinking;
+        /// <summary>PLAYTEST FIX ("3 kere sordum, 3unde ayni cumle"): per-conversation ask
+        /// counter folded into the seed + prompt so repeats rephrase and add a new detail.</summary>
+        private readonly System.Collections.Generic.Dictionary<string, int> _topicAskCounts
+            = new System.Collections.Generic.Dictionary<string, int>();
         /// <summary>M3a: the growing streamed answer, shown by GetCurrentLine while thinking.</summary>
         private string _streamingPartialLine;
         // DLG-01: set true when an id-keyed GetDialogSource lookup misses, so the

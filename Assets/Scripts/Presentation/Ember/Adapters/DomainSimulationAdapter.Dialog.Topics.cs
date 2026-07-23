@@ -29,14 +29,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
 
+            int asked = NextAskCount("id:" + npc.Id.Value + "|" + topicId);
             var request = new LlmRequest(
                 "npc_topic_answer",
                 "npc:" + npc.Id.Value + ":topic:" + topicId,
                 null,
                 180, // PLAYTEST REVERT ("96da sadece considers your question diyor"): quality beats latency; STREAMING is the real latency fix
 
-                npc.Id.Value,
-                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests. The conversation log below is what you personally remember - witnessed events, past talks, trades - use it when it bears on the question." + CompanionPersonaSuffix(npc.Id.Value) + AcquaintanceSuffix(npc.Id.Value),
+                npc.Id.Value + ((ulong)asked * 0x9E3779B97F4A7C15UL),
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests. The conversation log below is what you personally remember - witnessed events, past talks, trades - use it when it bears on the question." + CompanionPersonaSuffix(npc.Id.Value) + AcquaintanceSuffix(npc.Id.Value) + PlayerContextSuffix() + RepeatAskSuffix(asked),
                 RecallDialogMemory(npc.Id.Value));
 
             // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and
@@ -77,9 +78,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             int gen = _conversationSerial;
             int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
+            int asked = NextAskCount("name:" + actorName + "|" + topicId);
             ulong seed = 1469598103934665603UL;
             foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
             foreach (var ch in topicId ?? string.Empty) { seed ^= ch; seed *= 1099511628211UL; }
+            seed += (ulong)asked * 2654435761UL; // repeats deserve fresh dice
 
             var request = new LlmRequest(
                 "npc_topic_answer",
@@ -88,7 +91,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 180, // PLAYTEST REVERT ("96da sadece considers your question diyor"): quality beats latency; STREAMING is the real latency fix
 
                 seed,
-                $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests.",
+                $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests." + PlayerContextSuffix() + RepeatAskSuffix(asked),
                 RecallDialogMemoryByName(actorName));
 
             // M3a: partials arrive on the WORKER thread - marshal through the apply queue and

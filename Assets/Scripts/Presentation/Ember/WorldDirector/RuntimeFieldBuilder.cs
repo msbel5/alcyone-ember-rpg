@@ -47,20 +47,32 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         private float _nextPoll;
         private int _shownStage = -1;
 
+        private float _targetHeight = -1f;
+
         private void Update()
         {
-            if (Time.unscaledTime < _nextPoll) return;
-            _nextPoll = Time.unscaledTime + 2f;
-            int stage = RuntimeFieldMirror.StageIndex;
-            if (stage == _shownStage) return;
-            _shownStage = stage;
-
-            float h = StageHeights[stage];
-            transform.localScale = new Vector3(0.22f, h, 0.22f);
-            var pos = transform.localPosition;
-            transform.localPosition = new Vector3(pos.x, h / 2f, pos.z);
-            var renderer = GetComponent<MeshRenderer>();
-            if (renderer != null) renderer.sharedMaterial = RuntimeMaterialPalette.Solid(StageColors[stage]);
+            if (Time.unscaledTime >= _nextPoll)
+            {
+                _nextPoll = Time.unscaledTime + 2f;
+                int stage = RuntimeFieldMirror.StageIndex;
+                if (stage != _shownStage)
+                {
+                    _shownStage = stage;
+                    _targetHeight = StageHeights[stage];
+                    var renderer = GetComponent<MeshRenderer>();
+                    if (renderer != null) renderer.sharedMaterial = RuntimeMaterialPalette.Solid(StageColors[stage]);
+                }
+            }
+            // PLAYTEST FIX ("ekinler birden yok oluyor"): stalks GROW and WANE over seconds
+            // instead of popping - the eye reads a harvest, not a glitch. (The walking harvester
+            // that triggers it is roadmap M6.)
+            if (_targetHeight > 0f && !Mathf.Approximately(transform.localScale.y, _targetHeight))
+            {
+                float h = Mathf.MoveTowards(transform.localScale.y, _targetHeight, Time.deltaTime * 0.18f);
+                transform.localScale = new Vector3(0.22f, h, 0.22f);
+                var pos = transform.localPosition;
+                transform.localPosition = new Vector3(pos.x, h / 2f, pos.z);
+            }
         }
     }
 

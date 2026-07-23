@@ -658,6 +658,9 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
                 // the latest line made the deterministic chronicle look out of order and hid the genesis lines.
                 var scroll = new ScrollView(ScrollViewMode.Vertical);
                 scroll.style.flexGrow = 1; scroll.style.minHeight = 0; scroll.style.maxHeight = 400;
+                // PLAYTEST FIX ("en son satir yarim kesilmis"): the last chronicle entry sat flush
+                // against the clip rect - breathing room so the final line reads whole.
+                scroll.contentContainer.style.paddingBottom = 30;
                 scroll.style.width = Length.Percent(100); scroll.style.maxWidth = 640; scroll.style.alignSelf = Align.Center;
                 var card = new VisualElement();
                 card.style.backgroundColor = CardBg; Border(card, PA(0.14f), 1); Radius(card, 12);

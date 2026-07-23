@@ -116,24 +116,33 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             float halfX = placement.SizeX / 2f, halfZ = placement.SizeZ / 2f;
             // PLAYTEST FIX ("pencereler de yok"): a lone dusk pane vanished against the wall
             // texture. A dark timber FRAME behind a brighter pane finally reads as a window.
-            var glass = RuntimeMaterialPalette.Solid(new Color(0.55f, 0.68f, 0.82f));
+            var glass = RuntimeMaterialPalette.Solid(new Color(0.72f, 0.82f, 0.92f));
             var frame = RuntimeMaterialPalette.Solid(new Color(0.24f, 0.17f, 0.10f));
             bool entranceOnX = entrance == DoorSide.North || entrance == DoorSide.South;
 
             // One window per SIDE wall (perpendicular to the door), proud of the wall by 3cm so it reads.
+            // PLAYTEST FIX v3 ("pencereler yine yok"): every doorless wall gets one - the two
+            // SIDE walls and the BACK wall - and the panes grew and brightened until they read
+            // from the street, framed in dark timber so they cannot melt into the wall texture.
+            void Window(string tag, Vector3 at, bool alongX)
+            {
+                var frameSize = alongX ? new Vector3(1.5f, 1.4f, 0.05f) : new Vector3(0.05f, 1.4f, 1.5f);
+                var paneSize = alongX ? new Vector3(1.2f, 1.1f, 0.05f) : new Vector3(0.05f, 1.1f, 1.2f);
+                var outward = alongX ? new Vector3(0f, 0f, Mathf.Sign(at.z) * 0.03f) : new Vector3(Mathf.Sign(at.x) * 0.03f, 0f, 0f);
+                AddSlab(root, "WindowFrame" + tag, at + outward, frameSize, frame);
+                AddSlab(root, "Window" + tag, at + outward * 2f, paneSize, glass);
+            }
             if (entranceOnX)
             {
-                AddSlab(root, "WindowFrameE", new Vector3(halfX + 0.02f, 1.5f, 0f), new Vector3(0.05f, 1.25f, 1.15f), frame);
-                AddSlab(root, "WindowE", new Vector3(halfX + 0.05f, 1.5f, 0f), new Vector3(0.05f, 1.0f, 0.9f), glass);
-                AddSlab(root, "WindowFrameW", new Vector3(-halfX - 0.02f, 1.5f, 0f), new Vector3(0.05f, 1.25f, 1.15f), frame);
-                AddSlab(root, "WindowW", new Vector3(-halfX - 0.05f, 1.5f, 0f), new Vector3(0.05f, 1.0f, 0.9f), glass);
+                Window("E", new Vector3(halfX, 1.55f, 0f), alongX: false);
+                Window("W", new Vector3(-halfX, 1.55f, 0f), alongX: false);
+                Window("Back", new Vector3(0f, 1.55f, entrance == DoorSide.North ? -halfZ : halfZ), alongX: true);
             }
             else
             {
-                AddSlab(root, "WindowFrameN", new Vector3(0f, 1.5f, halfZ + 0.02f), new Vector3(1.15f, 1.25f, 0.05f), frame);
-                AddSlab(root, "WindowN", new Vector3(0f, 1.5f, halfZ + 0.05f), new Vector3(0.9f, 1.0f, 0.05f), glass);
-                AddSlab(root, "WindowFrameS", new Vector3(0f, 1.5f, -halfZ - 0.02f), new Vector3(1.15f, 1.25f, 0.05f), frame);
-                AddSlab(root, "WindowS", new Vector3(0f, 1.5f, -halfZ - 0.05f), new Vector3(0.9f, 1.0f, 0.05f), glass);
+                Window("N", new Vector3(0f, 1.55f, halfZ), alongX: true);
+                Window("S", new Vector3(0f, 1.55f, -halfZ), alongX: true);
+                Window("Back", new Vector3(entrance == DoorSide.East ? -halfX : halfX, 1.55f, 0f), alongX: false);
             }
         }
 
@@ -163,18 +172,34 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             float lateralHalf = ((Mathf.Abs(back.x) > 0.5f ? placement.SizeZ : placement.SizeX) / 2f) - 0.9f;
             if (backDepth <= 0.4f || lateralHalf <= 0.4f) return; // tiny shed: leave it bare
 
-            int pieces = 2 + (int)(Hash01(ref seed) * 3f); // 2..4
-            for (int i = 0; i < pieces; i++)
+            // PLAYTEST FIX ("iki kup, bazen ust uste"): pieces claim DISTINCT lateral slots
+            // along the back wall (no overlap possible) and each kind has a readable SHAPE -
+            // a bed is a frame with a blanket, a table stands on a leg, a crate is a crate.
+            var woodDark = RuntimeMaterialPalette.Solid(new Color(0.36f, 0.26f, 0.15f));
+            var blanket = RuntimeMaterialPalette.Solid(new Color(0.55f, 0.20f, 0.18f));
+            float[] slots = { -0.66f, 0f, 0.66f };
+            int firstSlot = (int)(Hash01(ref seed) * 3f) % 3;
+            int pieces = 2 + (int)(Hash01(ref seed) * 2f); // 2..3, one per slot
+            for (int i = 0; i < pieces && i < slots.Length; i++)
             {
-                float lateral = ((Hash01(ref seed) * 2f) - 1f) * lateralHalf;
-                float depth = backDepth - (Hash01(ref seed) * 0.8f);
+                float lateral = slots[(firstSlot + i) % slots.Length] * lateralHalf;
+                float depth = backDepth - 0.15f;
                 var pos = (back * depth) + (side * lateral);
                 int kind = (int)(Hash01(ref seed) * 3f);
                 switch (kind)
                 {
-                    case 0: AddSlab(root, "Bed", pos + new Vector3(0f, 0.25f, 0f), new Vector3(0.9f, 0.5f, 1.8f), cloth); break;
-                    case 1: AddSlab(root, "Table", pos + new Vector3(0f, 0.4f, 0f), new Vector3(1.2f, 0.8f, 0.8f), wood); break;
-                    default: AddSlab(root, "Crate", pos + new Vector3(0f, 0.35f, 0f), new Vector3(0.7f, 0.7f, 0.7f), wood); break;
+                    case 0:
+                        AddSlab(root, "BedFrame", pos + new Vector3(0f, 0.18f, 0f), new Vector3(0.95f, 0.36f, 1.8f), woodDark);
+                        AddSlab(root, "BedBlanket", pos + new Vector3(0f, 0.42f, back.z * -0.25f + back.x * -0.25f), new Vector3(0.88f, 0.14f, 1.2f), blanket);
+                        break;
+                    case 1:
+                        AddSlab(root, "TableTop", pos + new Vector3(0f, 0.72f, 0f), new Vector3(1.15f, 0.10f, 0.75f), wood);
+                        AddSlab(root, "TableLeg", pos + new Vector3(0f, 0.34f, 0f), new Vector3(0.16f, 0.68f, 0.16f), woodDark);
+                        break;
+                    default:
+                        AddSlab(root, "Crate", pos + new Vector3(0f, 0.33f, 0f), new Vector3(0.66f, 0.66f, 0.66f), wood);
+                        AddSlab(root, "CrateLid", pos + new Vector3(0f, 0.69f, 0f), new Vector3(0.72f, 0.06f, 0.72f), woodDark);
+                        break;
                 }
             }
             Debug.Log($"[Building] furnished {pieces} pieces at ({placement.OriginX:0.#},{placement.OriginZ:0.#})");

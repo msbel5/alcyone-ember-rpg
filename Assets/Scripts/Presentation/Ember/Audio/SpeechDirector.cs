@@ -16,6 +16,7 @@ namespace EmberCrpg.Presentation.Ember.Audio
         private static ulong _currentKey;
         private static int _spokenChars;
         private static string _lastFinal;
+        private static string _streamPrefix = string.Empty;
 
         public static void FeedPartial(ulong voiceKey, string displayLine)
         {
@@ -23,6 +24,14 @@ namespace EmberCrpg.Presentation.Ember.Audio
             var text = StripDisplaySuffix(displayLine);
             if (IsPlaceholder(text)) return;
             RetargetIfNeeded(voiceKey);
+            // LIVE BUG ("ilk cumleyi seslendirmedi"): a SECOND question to the SAME speaker kept
+            // the previous answer's spoken-offset, so the new answer's first sentence fell below
+            // it and was never voiced. A shrinking or diverging stream = a new answer: reset.
+            bool newStream = text.Length < _spokenChars
+                || (_streamPrefix.Length > 0
+                    && !text.StartsWith(_streamPrefix, StringComparison.Ordinal));
+            if (newStream) { _spokenChars = 0; _streamPrefix = string.Empty; }
+            if (_streamPrefix.Length == 0 && text.Length >= 12) _streamPrefix = text.Substring(0, 12);
             var sentences = EmberCrpg.Simulation.AiDm.SpeechSentenceChunker.Drain(text, ref _spokenChars);
             foreach (var sentence in sentences)
                 SpeakRouted(sentence, voiceKey, purgeFirst: false);
@@ -39,6 +48,7 @@ namespace EmberCrpg.Presentation.Ember.Audio
             if (_spokenChars > finalLine.Length) { _spokenChars = 0; }
             var remainder = finalLine.Substring(Math.Min(_spokenChars, finalLine.Length)).Trim();
             _spokenChars = finalLine.Length;
+            _streamPrefix = string.Empty; // the next stream re-anchors itself
             if (remainder.Length > 1)
                 SpeakRouted(remainder, voiceKey, purgeFirst: _spokenChars == remainder.Length);
         }
