@@ -188,6 +188,30 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return data;
         }
 
+        /// <summary>Melee swing (buyer feel): a short AIR CUT — noise through a lowpass whose
+        /// cutoff sweeps up then back (400→2400→900 Hz) under a hann hump. No tone, no ring.</summary>
+        public static float[] RenderSwingWhoosh(uint seed)
+        {
+            const float seconds = 0.26f;
+            int count = (int)(seconds * Rate);
+            var data = new float[count];
+            var rng = Rng(seed);
+            float lp = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                float t = i / (float)count;
+                float env = Mathf.Sin(t * Mathf.PI);
+                float sweep = t < 0.55f
+                    ? Mathf.Lerp(400f, 2400f, t / 0.55f)
+                    : Mathf.Lerp(2400f, 900f, (t - 0.55f) / 0.45f);
+                float alpha = Mathf.Clamp01(sweep / (sweep + Rate / (2f * Mathf.PI)));
+                lp += alpha * ((rng() * 2f - 1f) - lp);
+                data[i] = lp * env * env;
+            }
+            Normalize(data, 0.30f);
+            return data;
+        }
+
         /// <summary>Combat hit: a dull modal thud (low modes, fast decays) + lowpassed noise burst —
         /// the F10 flash's audible twin.</summary>
         public static float[] RenderHitImpact(uint seed)

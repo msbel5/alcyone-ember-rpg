@@ -10,7 +10,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     /// </summary>
     public static class RuntimeAudioForge
     {
-        public static AudioClip Wind, Sting, Click, DoorCreak, Hit, Rain;
+        public static AudioClip Wind, Sting, Click, DoorCreak, Hit, Rain, Swing;
         // F30 SES v3: biome ambience layers (day birds / night crickets) + two new grounds.
         public static AudioClip BirdLoop, CricketLoop;
         public static AudioClip[] FootstepSnow, FootstepGravel;
@@ -47,6 +47,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             CricketLoop = ForgeMetered("biome_crickets", RuntimeAudioSynth.RenderCrickets(0xC91Cu));
             DoorCreak = ForgeMetered("door_creak", RuntimeAudioSynth.RenderDoorCreak(0xC4EA7u));
             Hit = ForgeMetered("hit_impact", RuntimeAudioSynth.RenderHitImpact(0x1417u));
+            Swing = ForgeMetered("swing_whoosh", RuntimeAudioSynth.RenderSwingWhoosh(0x51117u));
             _hitVariants = new System.Collections.Generic.Dictionary<string, AudioClip>
             {
                 ["flesh"] = Hit,
@@ -261,6 +262,16 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             }
             if (on && !self._rain.isPlaying) { self._rain.Play(); Debug.Log("[Weather] rain loop ON."); }
             else if (!on && self._rain.isPlaying) { self._rain.Stop(); Debug.Log("[Weather] rain loop OFF."); }
+        }
+
+        /// <summary>Buyer feel: the swing cuts air even on a MISS.</summary>
+        public static void PlaySwing(Vector3 atWorldPos)
+        {
+            RuntimeAudioForge.EnsureForged();
+            var rig = GameObject.Find("PlayerRig");
+            var self = rig != null ? rig.GetComponent<RuntimeAudioDirector>() : null;
+            if (self == null) return;
+            self.PlayAt(31, RuntimeAudioForge.Swing, 0.5f, priority: 3, atWorldPos);
         }
 
         public static void PlayUiClick()

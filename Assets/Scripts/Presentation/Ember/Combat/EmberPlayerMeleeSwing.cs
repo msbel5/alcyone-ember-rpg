@@ -28,6 +28,8 @@ namespace EmberCrpg.Presentation.Ember.Combat
         private IEnumerator SwingRoutine()
         {
             _isSwinging = true;
+            // BUYER FEEL: the cut is HEARD on the attempt, not only on a landed hit.
+            EmberCrpg.Presentation.Ember.WorldDirector.RuntimeAudioDirector.PlaySwing(_eye.position);
             
             // Camera roll effect
             float duration = 0.1f;
@@ -77,6 +79,7 @@ namespace EmberCrpg.Presentation.Ember.Combat
                     }
                     if (accepted)
                     {
+                        StartCoroutine(PunchFov()); // BUYER FEEL: a landed hit kicks the lens
                         sink.Apply(combatOptions.MeleeRawDamage);
                         if (adapter != null) adapter.TakePlayerDamage(combatOptions.MeleeCounterDamage);
                     }
@@ -84,6 +87,23 @@ namespace EmberCrpg.Presentation.Ember.Combat
             }
 
             _isSwinging = false;
+        }
+
+        // BUYER FEEL: -5 deg FOV for 0.14s on a landed strike - controller-independent impact.
+        private System.Collections.IEnumerator PunchFov()
+        {
+            var cam = _eye != null ? _eye.GetComponent<UnityEngine.Camera>() : null;
+            if (cam == null) yield break;
+            float baseFov = cam.fieldOfView;
+            float elapsed = 0f;
+            const float duration = 0.14f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                cam.fieldOfView = baseFov - Mathf.Sin(Mathf.Clamp01(elapsed / duration) * Mathf.PI) * 5f;
+                yield return null;
+            }
+            cam.fieldOfView = baseFov;
         }
     }
 }
