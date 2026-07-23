@@ -114,6 +114,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         private void Update()
         {
             // PLAYTEST FIX ("baslangic hikayesi yok"): a fresh world opens on its STORY, once.
+            // Any key also turns the first page. MUST be the new Input System —
+            // legacy UnityEngine.Input throws here (project is InputSystem-only) and one
+            // throw at the top of Update() kills every feature below it, every frame.
+            var openingKeyboard = UnityEngine.InputSystem.Keyboard.current;
+            if (ActiveOpeningDismiss != null && openingKeyboard != null && openingKeyboard.anyKey.wasPressedThisFrame)
+                ActiveOpeningDismiss();
+
             if (EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter.JustCreatedWorld)
             {
                 EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter.JustCreatedWorld = false;
@@ -1191,6 +1198,10 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             UnityEngine.SceneManagement.SceneManager.LoadScene(EmberCrpg.Presentation.Ember.EmberScenes.GeneratedWorld);
         }
 
+        // Proof drivers press BEGIN like a player would (playtest catch: the overlay sat
+        // unclicked across every scripted screenshot).
+        public static System.Action ActiveOpeningDismiss;
+
         private void ShowOpeningStory(string narrative)
         {
             var overlay = new VisualElement();
@@ -1221,7 +1232,22 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             hint.style.marginTop = 14;
             overlay.Add(hint);
 
-            var begin = new Button(() => overlay.RemoveFromHierarchy()) { text = "BEGIN" };
+            // LIVE-PLAYTEST FIX (Windows-MCP session): the FPS mouselook LOCKS the cursor to
+            // centre the moment the world loads — BEGIN was pixel-perfect yet unclickable.
+            // Free the cursor while the story is up; restore the lock on dismiss.
+            var priorLock = UnityEngine.Cursor.lockState;
+            bool priorVisible = UnityEngine.Cursor.visible;
+            UnityEngine.Cursor.lockState = UnityEngine.CursorLockMode.None;
+            UnityEngine.Cursor.visible = true;
+            System.Action dismiss = () =>
+            {
+                overlay.RemoveFromHierarchy();
+                ActiveOpeningDismiss = null;
+                UnityEngine.Cursor.lockState = priorLock;
+                UnityEngine.Cursor.visible = priorVisible;
+            };
+            ActiveOpeningDismiss = dismiss;
+            var begin = new Button(() => dismiss()) { text = "BEGIN" };
             begin.style.marginTop = 22;
             begin.style.fontSize = 18;
             overlay.Add(begin);

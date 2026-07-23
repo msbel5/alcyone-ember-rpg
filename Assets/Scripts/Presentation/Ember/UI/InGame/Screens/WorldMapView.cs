@@ -89,8 +89,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
             var player = new VisualElement();
             player.style.position = Position.Absolute;
-            player.style.left = Length.Percent(ToPercent(playerTile.X, map.Width));
-            player.style.top = Length.Percent(ToPercent(playerTile.Y, map.Height));
+            // PLAYTEST FIX ("markerlar dogru yerde degil"): the player ring was the ONLY pin
+            // using the linear tile percent while settlements anchor to the PlanetAtlas
+            // projection - the ring drifted off its own town. One map truth for everyone.
+            player.style.left = Length.Percent(AnchorXPercent(map, playerTile));
+            player.style.top = Length.Percent(AnchorYPercent(map, playerTile));
             player.style.translate = new Translate(new Length(-50, LengthUnit.Percent), new Length(-50, LengthUnit.Percent));
             player.style.width = 28;
             player.style.height = 28;
@@ -316,12 +319,15 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             Radius(dot, 999);
             pin.Add(dot);
 
-            if (!loc.IsCurrent && !isSelected && !isDungeon)
+            // PLAYTEST FIX ("map hala okunabilir degil"): cities and towns are ALWAYS named,
+            // and every label sits on a dark backing chip so terrain never swallows the text.
+            bool alwaysNamed = loc.Kind == SettlementKind.City || loc.Kind == SettlementKind.Town;
+            if (!loc.IsCurrent && !isSelected && !isDungeon && !alwaysNamed)
                 return;
 
             var label = Text(
                 isDungeon && !loc.IsCurrent ? "▼ " + loc.Name : loc.Name,
-                Sans, 10,
+                Sans, loc.IsCurrent || isSelected ? 12 : 11,
                 loc.IsCurrent ? Gold : (isDungeon ? LocationColor(SettlementKind.Dungeon) : Parch),
                 FontStyle.Bold);
             label.style.position = Position.Absolute;
@@ -330,6 +336,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             label.style.width = 180;
             label.style.unityTextAlign = TextAnchor.MiddleCenter;
             label.style.letterSpacing = 0.6f;
+            label.style.backgroundColor = new Color(0.05f, 0.04f, 0.03f, 0.72f); // backing chip
+            label.style.paddingLeft = 4; label.style.paddingRight = 4;
+            label.style.paddingTop = 1; label.style.paddingBottom = 1;
             pin.Add(label);
         }
 
