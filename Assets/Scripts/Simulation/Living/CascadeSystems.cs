@@ -198,13 +198,37 @@ namespace EmberCrpg.Simulation.Living
                 {
                     if (guard == null || !guard.IsAlive || guard.Role != ActorRole.Guard) continue;
                     int d = PredationSystem.Chebyshev(guard.Position, attacker.Position);
-                    if (d > ResponseRadius || d <= 1) continue;
+                    if (d > ResponseRadius) continue;
+                    // P0 pursuit: the report ARMS a chase the PerTick schedule will run - the
+                    // hourly nudge below alone lost 60:1 to the return-to-post writer.
+                    RegisterPursuit(world, guard.Id.Value, attacker.Id.Value, stamp);
+                    if (d <= 1) continue;
                     guard.MoveTo(new GridPosition(
                         guard.Position.X + System.Math.Sign(attacker.Position.X - guard.Position.X),
                         guard.Position.Y + System.Math.Sign(attacker.Position.Y - guard.Position.Y)));
                 }
             }
             return recorded;
+        }
+
+        /// <summary>Arm/refresh a chase: one active pursuit per guard, newest trouble wins.</summary>
+        private const long PursuitMinutes = 120;
+        private static void RegisterPursuit(WorldState world, ulong guardId, ulong targetId, GameTime stamp)
+        {
+            world.GuardPursuits ??= new System.Collections.Generic.List<PursuitRecord>();
+            foreach (var pursuit in world.GuardPursuits)
+                if (pursuit.GuardId == guardId)
+                {
+                    pursuit.TargetId = targetId;
+                    pursuit.UntilMinutes = stamp.TotalMinutes + PursuitMinutes;
+                    return;
+                }
+            world.GuardPursuits.Add(new PursuitRecord
+            {
+                GuardId = guardId,
+                TargetId = targetId,
+                UntilMinutes = stamp.TotalMinutes + PursuitMinutes,
+            });
         }
     }
 }

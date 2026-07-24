@@ -169,6 +169,8 @@ namespace EmberCrpg.Domain.World
         // V3 YOLDAŞ: recruited companion actor ids. Membership only — the actors themselves
         // stay in Actors with their roles, sprites, and memories intact.
         public List<ulong> CompanionIds = new List<ulong>();
+        /// <summary>P0 pursuit: active guard chases (guard -> quarry, with an expiry).</summary>
+        public List<PursuitRecord> GuardPursuits = new List<PursuitRecord>();
         public SpellCooldownState PlayerSpellCooldowns = new SpellCooldownState();
         public ShieldBuffState PlayerShieldBuffs = new ShieldBuffState();
         public bool DoorOpen;
@@ -239,6 +241,7 @@ namespace EmberCrpg.Domain.World
             Topics = other.Topics;
             NpcMemory = other.NpcMemory;
             CompanionIds = other.CompanionIds;
+            GuardPursuits = other.GuardPursuits;
             PlayerSpellCooldowns = other.PlayerSpellCooldowns;
             PlayerShieldBuffs = other.PlayerShieldBuffs;
             DoorOpen = other.DoorOpen;

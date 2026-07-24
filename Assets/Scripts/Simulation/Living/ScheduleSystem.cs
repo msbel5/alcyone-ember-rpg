@@ -44,6 +44,13 @@ namespace EmberCrpg.Simulation.Living
         /// <summary>Multi-larder overload: each actor walks to their NEAREST food spot — one
         /// town's lunch crowd no longer marches to another town's table.</summary>
         public void Advance(ActorStore actors, GameTime time, System.Collections.Generic.IReadOnlyList<GridPosition> foodSpots)
+            => Advance(actors, time, foodSpots, pursuits: null);
+
+        /// <summary>P0 pursuit overload: active guard chases (from WitnessResponse) outrank the
+        /// return-to-post routing at the SAME PerTick cadence - the chase can finally win.</summary>
+        public void Advance(ActorStore actors, GameTime time,
+            System.Collections.Generic.IReadOnlyList<GridPosition> foodSpots,
+            System.Collections.Generic.List<PursuitRecord> pursuits)
         {
             if (actors == null)
                 return;
@@ -63,11 +70,39 @@ namespace EmberCrpg.Simulation.Living
                 // PERSONAL SPACE: each civilian owns a stable seat ordinal (insertion order,
                 // deterministic) so shared destinations fan out over distinct cells instead of
                 // stacking every billboard on one tile ("birbirlerinin uzerinden yuruyorlar").
-                var target = ChooseTarget(actor, time, NearestSpot(foodSpots, actor.Position), seatOrdinal++);
+                GridPosition target;
+                if (actor.Role == ActorRole.Guard && TryResolvePursuit(pursuits, actors, actor, time, out var quarryCell))
+                    target = quarryCell; // the chase, at full tick speed
+                else
+                    target = ChooseTarget(actor, time, NearestSpot(foodSpots, actor.Position), seatOrdinal++);
                 var next = StepToward(actor.Position, target);
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
             }
+        }
+
+        /// <summary>Resolve this guard's active chase to the quarry's LIVE cell; prunes
+        /// expired / dead-quarry / lost (>40 cells) entries in place.</summary>
+        private static bool TryResolvePursuit(System.Collections.Generic.List<PursuitRecord> pursuits,
+            ActorStore actors, ActorRecord guard, GameTime time, out GridPosition target)
+        {
+            target = default;
+            if (pursuits == null) return false;
+            for (int i = pursuits.Count - 1; i >= 0; i--)
+            {
+                var pursuit = pursuits[i];
+                if (pursuit.GuardId != guard.Id.Value) continue;
+                if (time.TotalMinutes > pursuit.UntilMinutes) { pursuits.RemoveAt(i); return false; }
+                if (!actors.TryGet(new ActorId(pursuit.TargetId), out var quarry) || quarry == null || !quarry.IsAlive)
+                { pursuits.RemoveAt(i); return false; }
+                int dist = System.Math.Max(
+                    System.Math.Abs(guard.Position.X - quarry.Position.X),
+                    System.Math.Abs(guard.Position.Y - quarry.Position.Y));
+                if (dist > 40) { pursuits.RemoveAt(i); return false; } // lost them - back to post
+                target = quarry.Position;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>True when the supplied timestamp falls within the working day.</summary>

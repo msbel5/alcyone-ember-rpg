@@ -71,6 +71,10 @@ public DungeonRoomSaveData[] dungeonRooms;
         public int playerReputation; // F23
         public int playerBountyGold; // F23
         public ulong[] companionIds; // V3 YOLDAŞ: the party survives save/load
+        // P0 pursuit: parallel arrays - an active chase survives save/load.
+        public ulong[] pursuitGuardIds;
+        public ulong[] pursuitTargetIds;
+        public long[] pursuitUntilMinutes;
         // F31: the three-act main-quest spine.
         public int mainQuestAct;
         public int mainQuestRequiredInscriptions;

@@ -93,6 +93,9 @@ inventory = ToInventoryData(world.PlayerInventory),
                 playerReputation = world.PlayerReputation,
                 playerBountyGold = world.PlayerBountyGold,
                 companionIds = world.CompanionIds?.ToArray() ?? System.Array.Empty<ulong>(),
+                pursuitGuardIds = world.GuardPursuits?.ConvertAll(p => p.GuardId).ToArray() ?? System.Array.Empty<ulong>(),
+                pursuitTargetIds = world.GuardPursuits?.ConvertAll(p => p.TargetId).ToArray() ?? System.Array.Empty<ulong>(),
+                pursuitUntilMinutes = world.GuardPursuits?.ConvertAll(p => p.UntilMinutes).ToArray() ?? System.Array.Empty<long>(),
                 mainQuestAct = world.MainQuest?.Act ?? 1,
                 mainQuestRequiredInscriptions = world.MainQuest?.RequiredInscriptions ?? 3,
                 mainQuestFinalDelveId = world.MainQuest?.FinalDelveId ?? 0UL,
@@ -184,6 +187,16 @@ world.Items = ToItemStore(data.itemRecords);
             world.PlayerClassName = data.playerClassName ?? world.PlayerClassName; // pre-class saves keep whatever they had
             world.PlayerReputation = data.playerReputation;
             world.PlayerBountyGold = data.playerBountyGold;
+            world.GuardPursuits = new System.Collections.Generic.List<PursuitRecord>();
+            if (data.pursuitGuardIds != null && data.pursuitTargetIds != null && data.pursuitUntilMinutes != null)
+                for (int i = 0; i < data.pursuitGuardIds.Length
+                     && i < data.pursuitTargetIds.Length && i < data.pursuitUntilMinutes.Length; i++)
+                    world.GuardPursuits.Add(new PursuitRecord
+                    {
+                        GuardId = data.pursuitGuardIds[i],
+                        TargetId = data.pursuitTargetIds[i],
+                        UntilMinutes = data.pursuitUntilMinutes[i],
+                    });
             world.CompanionIds = data.companionIds != null
                 ? new System.Collections.Generic.List<ulong>(data.companionIds)
                 : new System.Collections.Generic.List<ulong>(); // V3: the party survives save/load

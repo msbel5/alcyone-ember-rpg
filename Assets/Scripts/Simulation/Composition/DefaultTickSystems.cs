@@ -225,7 +225,7 @@ namespace EmberCrpg.Simulation.Composition
                     // OYNANABILIRLIK: every settlement's larder is a food spot; each actor walks
                     // to their NEAREST. (TavernCell routing predates real larders — retired.)
                     var foodSpots = EmberCrpg.Simulation.Living.NeedConsumptionSystem.FoodSpots(context.World);
-                    _schedule.Advance(context.World.Actors, context.Stamp, foodSpots);
+                    _schedule.Advance(context.World.Actors, context.Stamp, foodSpots, context.World.GuardPursuits);
                 }
             }
         }
