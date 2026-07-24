@@ -48,6 +48,30 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (_world.Overland == null && liveOverland != null)
                 _world.Overland = liveOverland;
 
+            // B02 ('cold Continue loses the world'): saves never persist the overland map -
+            // it is a pure seed derivative. On a FRESH process liveOverland is null too, so
+            // rebuild through the EXACT SeedWorld pipeline. MUST be the planet path +
+            // Generate(GeneratedWorld, ...) overload: the uint overload takes the flat
+            // worldgen route and yields a DIFFERENT map for the same seed (B28 interlock).
+            if (_world.Overland == null && _world.WorldProfile != null)
+            {
+                var profile = _world.WorldProfile;
+                var parameters = EmberCrpg.Simulation.Worldgen.WorldgenParameters.For(profile.Style, profile.Genre);
+                var generated = EmberCrpg.Presentation.Ember.Worldgen.PlanetWorldService.GetOrGenerate(profile.Seed, parameters);
+                GeneratedWorld = generated;
+                StartingRegion = SelectStartingRegion(generated, profile.StartLocationKeyword);
+                StartingSettlement = SelectStartingSettlement(generated,
+                    ParsePreferredSettlementSize(profile.StartLocationKeyword), profile.StartLocationKeyword);
+                StartingFaction = SelectStartingFaction(generated, profile.PlayerCallingKeyword);
+                _billboardOriginResolved = false;
+                var geo = generated.Geography;
+                _world.Overland = EmberCrpg.Simulation.Overland.OverlandWorldgen.Generate(
+                    generated,
+                    new EmberCrpg.Domain.Overland.OverlandParameters(geo.Width, geo.Height));
+                UnityEngine.Debug.Log("[Load] B02 overland rebuilt from profile seed=" + profile.Seed
+                    + " settlements=" + (_world.Overland?.Settlements.Count ?? 0));
+            }
+
             // EMB-013: the reflection copy above mirrors fields verbatim, so a corrupt/partial save
             // could leave a store or list null and crash the next tick. Re-establish the non-null
             // collection/store invariants explicitly before anything reads the restored world.

@@ -107,6 +107,14 @@ namespace EmberCrpg.Domain.World
         public int StepsSinceDeparture { get; private set; }
         public CaravanState State { get; private set; }
 
+        /// <summary>B07 ('kervanlar tek atimlik'): re-arms an Idle caravan for its next run -
+        /// one delivery no longer kills the route forever.</summary>
+        public void Depart()
+        {
+            StepsSinceDeparture = 0;
+            State = CaravanState.Loading;
+        }
+
         /// <summary>Advances one route step. Does not validate route bounds; CaravanSystem owns that logic.</summary>
         public void AdvanceStep()
         {

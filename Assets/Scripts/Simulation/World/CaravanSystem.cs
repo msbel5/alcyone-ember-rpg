@@ -29,7 +29,11 @@ namespace EmberCrpg.Simulation.World
             foreach (var caravan in caravans)
             {
                 if (caravan == null) continue;
-                if (caravan.State.Equals(CaravanState.Idle)) continue;
+                if (caravan.State.Equals(CaravanState.Idle))
+                {
+                    caravan.Depart(); // B07: departs this tick, walks from the next
+                    continue;
+                }
                 if (caravan.State.Equals(CaravanState.Arrived)) continue;
 
                 var route = resolveRoute(caravan.RouteId);

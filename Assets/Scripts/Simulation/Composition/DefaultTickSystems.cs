@@ -164,6 +164,7 @@ namespace EmberCrpg.Simulation.Composition
                 if (world.PlayerInventory == null || world.Events == null)
                     return;
 
+                List<JobId> ghostJobs = null;
                 foreach (var request in world.Jobs.Requests)
                 {
                     if (!world.Jobs.IsClaimed(request.Id))
@@ -176,9 +177,15 @@ namespace EmberCrpg.Simulation.Composition
                     }
                     catch (KeyNotFoundException)
                     {
-                        // Intentionally silent: content packs may claim jobs whose recipes land in
-                        // a later authoring pass. The claim stays queued and resolves once the
-                        // recipe registers; per-tick events here would spam the log hourly.
+                        // B05 ('ghost planting job froze the cascade'): an unresolvable recipe
+                        // stayed CLAIMED forever, and HasPendingPlanting then suppressed every
+                        // future shortage response for that site. Cancel it with a chronicle
+                        // trace (deterministic - no instance state); the daily cascade re-posts
+                        // until the real recipe registers (the W32 farm slice).
+                        (ghostJobs ??= new List<JobId>()).Add(request.Id);
+                        world.Events.Append(new WorldEvent(context.Stamp, WorldEventKind.ChronicleEvent,
+                            default, request.SiteId,
+                            $"job_dropped recipe:{request.RecipeId.Value} unregistered"));
                         continue;
                     }
 
@@ -191,6 +198,10 @@ namespace EmberCrpg.Simulation.Composition
                         request.Id,
                         out _);
                 }
+
+                if (ghostJobs != null)
+                    foreach (var ghost in ghostJobs)
+                        world.Jobs.Cancel(ghost);
 
                 var nextOutputItemId = NextInventoryItemId(world.PlayerInventory);
                 _jobAssignment.TickAssignedJobs(
@@ -534,8 +545,13 @@ namespace EmberCrpg.Simulation.Composition
                 foreach (var stockpile in world.Stockpiles)
                 {
                     if (stockpile == null) continue;
+                    // B08 ('fiyat kitlikta donuyor'): Entries drops zero-count items, so the
+                    // price froze at PEAK scarcity. Reprice the ledger's known pairs for this
+                    // site too - a drained item keeps walking up until stock returns.
+                    var repriced = new HashSet<string>();
                     foreach (var entry in stockpile.Entries)
                     {
+                        repriced.Add(entry.Key);
                         _priceUpdate.Recompute(
                             world.Prices,
                             stockpile,
@@ -546,6 +562,24 @@ namespace EmberCrpg.Simulation.Composition
                             context.Stamp,
                             world.Events);
                     }
+                    List<string> drained = null;
+                    foreach (var known in world.Prices.Entries)
+                    {
+                        if (!known.SiteId.Equals(stockpile.SiteId) || repriced.Contains(known.ItemTag))
+                            continue;
+                        (drained ??= new List<string>()).Add(known.ItemTag);
+                    }
+                    if (drained != null)
+                        foreach (var tag in drained)
+                            _priceUpdate.Recompute(
+                                world.Prices,
+                                stockpile,
+                                tag,
+                                LowStock,
+                                HighStock,
+                                PriceStep,
+                                context.Stamp,
+                                world.Events);
                 }
             }
         }
