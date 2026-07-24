@@ -193,9 +193,7 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             if (count >= full.Length) return full;
             // AUTOPSY FIX: the raw prefix stranded words ('Year -618 - Sko'). Cut at the last
             // completed ENTRY boundary instead - lines appear whole or not at all.
-            int boundary = full.LastIndexOf("
-
-", count, System.StringComparison.Ordinal);
+            int boundary = full.LastIndexOf("\n\n", count, System.StringComparison.Ordinal);
             return boundary > 0 ? full.Substring(0, boundary) : string.Empty;
         }
 
