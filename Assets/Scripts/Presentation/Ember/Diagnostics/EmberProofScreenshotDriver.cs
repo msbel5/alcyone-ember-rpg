@@ -768,7 +768,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 {
                     // Resolve EXACTLY like WorldViewProjector (id first, key fallback) - the
                     // first key-only draft compared same-named twins and reported phantom drift.
-                    EmberCrpg.Presentation.Ember.Adapters.ActorViewState simState;
+                    var simState = default(EmberCrpg.Presentation.Ember.Views.ActorViewState);
                     bool resolved = view.HasDomainActorId
                         ? commands.TryReadActor(view.DomainActorId, out simState)
                         : !string.IsNullOrEmpty(view.DomainActorKey)

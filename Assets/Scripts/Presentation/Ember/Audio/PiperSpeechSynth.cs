@@ -148,14 +148,16 @@ namespace EmberCrpg.Presentation.Ember.Audio
     public sealed class SpeechPlaybackHost : MonoBehaviour
     {
         private static SpeechPlaybackHost s_instance;
-        private readonly Queue<(string path, float pitch)> _queue = new Queue<(string, float)>();
+        private readonly Queue<(string path, float pitch, Transform anchor)> _queue =
+            new Queue<(string, float, Transform)>();
         private AudioSource _source;
         private float _nextPoll;
+        private Transform _currentAnchor;
 
-        public static void Enqueue(string wavPath, float pitch)
+        public static void Enqueue(string wavPath, float pitch, Transform anchor = null)
         {
             Ensure();
-            s_instance._queue.Enqueue((wavPath, pitch));
+            s_instance._queue.Enqueue((wavPath, pitch, anchor));
         }
 
         public static void Flush()
@@ -172,23 +174,37 @@ namespace EmberCrpg.Presentation.Ember.Audio
             DontDestroyOnLoad(go);
             s_instance = go.AddComponent<SpeechPlaybackHost>();
             s_instance._source = go.AddComponent<AudioSource>();
-            s_instance._source.spatialBlend = 0f; // narration channel; 3D voices come with M3b.3
+            s_instance._source.spatialBlend = 0f; // per-clip: 3D when the clip carries an anchor
+            s_instance._source.rolloffMode = AudioRolloffMode.Linear;
+            s_instance._source.minDistance = 2f;
+            s_instance._source.maxDistance = 18f;
+            s_instance._source.dopplerLevel = 0f;
         }
 
         private void Update()
         {
-            if (_source == null || _source.isPlaying || _queue.Count == 0) return;
+            if (_source == null) return;
+            if (_currentAnchor != null && _source.isPlaying)
+                transform.position = _currentAnchor.position; // the voice walks with the speaker
+            if (_source.isPlaying || _queue.Count == 0) return;
             if (Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 0.10f;
 
-            var (path, pitch) = _queue.Peek();
+            var (path, pitch, anchor) = _queue.Peek();
             var clip = TryLoadFinishedWav(path);
             if (clip == null) return; // piper still writing - retry on the next poll
             _queue.Dequeue();
+            // 'sesler konumsal olmali': NPC clips play FROM the speaker; anchorless clips
+            // (player voice, oracle, narration) reset to 2D - a stale blend must never leak.
+            _currentAnchor = anchor;
+            _source.spatialBlend = anchor != null ? 1f : 0f;
+            if (anchor != null) transform.position = anchor.position;
             _source.pitch = pitch;
             _source.clip = clip;
             _source.Play();
         }
+
+        internal static AudioClip TryLoadFinishedWavPublic(string path) => TryLoadFinishedWav(path);
 
         private static AudioClip TryLoadFinishedWav(string path)
         {

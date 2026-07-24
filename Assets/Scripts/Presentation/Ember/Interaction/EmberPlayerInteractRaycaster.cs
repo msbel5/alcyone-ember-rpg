@@ -150,7 +150,8 @@ namespace EmberCrpg.Presentation.Ember.Interaction
                                 _dof.active = true;
                             }
                             inGameUi.OpenNpcDialog(routedSource, target.DisplayName,
-                                (routedSource as IDialogSourcePortrait)?.GetPortraitName());
+                                (routedSource as IDialogSourcePortrait)?.GetPortraitName(),
+                                target.transform);
                             return;
                         }
                     }

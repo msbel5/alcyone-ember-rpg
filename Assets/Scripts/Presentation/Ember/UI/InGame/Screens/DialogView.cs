@@ -120,7 +120,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             top.Add(right);
 
             var hasTopics = topics != null && topics.Count > 0;
-            var topicsPane = new VisualElement();
+            _topicsPane = new VisualElement();
+            _onTopic = onTopic;
+            var topicsPane = _topicsPane;
             topicsPane.style.borderTopWidth = 1;
             topicsPane.style.borderTopColor = Alpha(Ink, 0.12f);
             topicsPane.style.paddingTop = 10;
@@ -324,6 +326,19 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             return button;
         }
 
+        private VisualElement _topicsPane;
+        private Action<string> _onTopic;
+
+        /// <summary>W31 ('ruhsuz'): the W23 state machine finally reaches the SCREEN - clicked
+        /// options pop, followup questions grow in, second meetings resume lived state.</summary>
+        public void SetTopics(System.Collections.Generic.IReadOnlyList<DialogTopicOption> topics)
+        {
+            if (_topicsPane == null || topics == null || topics.Count == 0) return;
+            _topicsPane.Clear();
+            for (int i = 0; i < topics.Count; i++)
+                _topicsPane.Add(BuildTopicButton(i + 1, topics[i], _onTopic));
+        }
+
         private VisualElement BuildFreeAskRow(string npcName, Action<string> onFreeAsk)
         {
             var row = Row();
@@ -355,14 +370,20 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
                 ApplyFont(input, Serif);
             }
 
+            // LIVE BUG ('enter ask tusuna basmiyor'): in edit mode the inner unity-text-input
+            // handles KeyDown at target phase and stops propagation (and blurs on Enter), so a
+            // bubble-phase handler never fires. Trickle-down runs FIRST; stopping propagation
+            // also cancels the engine's blur, so the caret stays for the next question.
             field.RegisterCallback<KeyDownEvent>(evt =>
             {
-                if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+                bool isEnter = evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter
+                    || evt.character == '\n' || evt.character == '\r';
+                if (!isEnter)
                     return;
 
-                SubmitFreeAsk(field, onFreeAsk);
                 evt.StopPropagation();
-            });
+                SubmitFreeAsk(field, onFreeAsk);
+            }, TrickleDown.TrickleDown);
             row.Add(field);
 
             var ask = new Button(() => SubmitFreeAsk(field, onFreeAsk)) { text = "ASK" };
@@ -408,6 +429,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             field.value = string.Empty;
             BeginQuestion(question);
             onFreeAsk(question);
+            field.schedule.Execute(() => field.Focus()); // ASK-button path also keeps the caret
         }
 
         private static Button BuildActionButton(string text, Color background, Color border, Action onClick)

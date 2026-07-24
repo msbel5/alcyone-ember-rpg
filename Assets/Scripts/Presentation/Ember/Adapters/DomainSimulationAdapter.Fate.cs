@@ -38,6 +38,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return "The oracle consults the fates...";
         }
 
+        /// <summary>W31: contextual next questions grown from the prophecy - consumed once.</summary>
+        public System.Collections.Generic.List<string> ConsumePendingFateFollowups()
+        {
+            var followups = _pendingFateFollowups;
+            _pendingFateFollowups = null;
+            return followups;
+        }
+
         public string TryConsumeResolvedFate()
         {
             if (!_fateReady) return null;
@@ -72,11 +80,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 "consult_fate",
                 "oracle_fate",
                 tools,
-                150,
+                180, // headroom for the FOLLOWUPS tail - same budget as the dialog paths
                 (ulong)_tick,
                 string.IsNullOrWhiteSpace(question)
-                    ? $"You are the Oracle of Ember. The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy reflecting this result for the player. The world is {StyleDescriptor()}."
-                    : $"You are the Oracle of Ember. The seeker asks: \"{question.Trim()}\". The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy that answers their question in light of this result. The world is {StyleDescriptor()}.",
+                    ? $"You are the Oracle of Ember. The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy reflecting this result for the player. The world is {StyleDescriptor()}." + FollowupsInstruction
+                    : $"You are the Oracle of Ember. The seeker asks: \"{question.Trim()}\". The dice have rolled a {bucket.Code} outcome ({roll}/100). Provide a brief, cryptic prophecy that answers their question in light of this result. The world is {StyleDescriptor()}." + FollowupsInstruction,
                 new List<string>()
             );
 
@@ -92,8 +100,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // its completion, and only adopt the cleaned line when it is non-empty — otherwise keep the
                 // deterministic prophecy.
                 var deterministicFate = $"THE FATES DECREE: {bucket.Code.ToUpper()} ({roll}/100)";
-                var oracleLine = SanitizeNpcLine(response?.Text);
-                _pendingFate = !string.IsNullOrEmpty(oracleLine) ? oracleLine : deterministicFate;
+                var split = SplitFollowups(SanitizeNpcLine(response?.Text));
+                _pendingFate = !string.IsNullOrEmpty(split.Body) ? split.Body : deterministicFate;
+                _pendingFateFollowups = split.Followups; // W31: the oracle grows its own next questions
 
                 // DET-03: the LLM's tool authority is REAL, not cosmetic. Route the model's ACTUAL
                 // response.ProposedToolCalls through the governed gate — LlmProposalValidator over the

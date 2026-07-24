@@ -40,6 +40,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // EMB-020/045: the one per-actor conversation model (current speaker + their role/faction topics).
         private ConversationState _conversation = ConversationState.None;
         private string _pendingFate = string.Empty;
+        private System.Collections.Generic.List<string> _pendingFateFollowups;
         private bool _isFateThinking;
         private bool _isDialogThinking;
         /// <summary>PLAYTEST FIX ("3 kere sordum, 3unde ayni cumle"): per-conversation ask

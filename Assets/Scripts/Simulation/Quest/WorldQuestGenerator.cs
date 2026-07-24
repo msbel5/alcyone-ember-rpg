@@ -20,7 +20,7 @@ namespace EmberCrpg.Simulation.Quest
         private static readonly string[] CargoTemplates = { "ale", "bread" };
 
         // Roles that hand out work (no guilds in v0.6 — people are the quest board).
-        private static bool GivesWork(NpcRole role)
+        public static bool GivesWork(NpcRole role)
         {
             switch (role)
             {

@@ -24,6 +24,8 @@ namespace EmberCrpg.Presentation.Ember.Views
             _clock = clock;
             _worldView = worldView;
             _actorViews = actorViews ?? System.Array.Empty<ActorView>();
+            _worksiteViews = worksiteViews ?? System.Array.Empty<WorksiteView>();
+            _eventLogHud = eventLogHud;
         }
 
         /// <summary>INVARIANT FIX ('drifted 21m, deterministic'): views spawned AFTER host boot
@@ -33,8 +35,6 @@ namespace EmberCrpg.Presentation.Ember.Views
         public void ReplaceActorViews(ActorView[] actorViews)
         {
             _actorViews = actorViews ?? System.Array.Empty<ActorView>();
-            _worksiteViews = worksiteViews ?? System.Array.Empty<WorksiteView>();
-            _eventLogHud = eventLogHud;
         }
 
         // Why: reuse the host's pre-existing world-to-scene projection without advancing simulation time.

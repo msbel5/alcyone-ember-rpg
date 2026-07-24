@@ -80,11 +80,56 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             HasPortrait = true;
         }
 
+        private VisualElement _prompts;
+        private Action<string> _onAsk;
+        private readonly List<(string Text, VisualElement Chip)> _promptChips = new List<(string, VisualElement)>();
+
+        private void AddPromptChip(string promptText)
+        {
+            if (_prompts == null || string.IsNullOrWhiteSpace(promptText)) return;
+            foreach (var known in _promptChips)
+                if (string.Equals(known.Text, promptText, StringComparison.Ordinal)) return;
+            if (_promptChips.Count >= 6) return;
+            var chip = new VisualElement();
+            chip.style.marginRight = 8;
+            chip.style.marginBottom = 8;
+            chip.style.paddingTop = 6;
+            chip.style.paddingBottom = 6;
+            chip.style.paddingLeft = 16;
+            chip.style.paddingRight = 16;
+            chip.style.backgroundColor = Alpha(Panel, 0.55f);
+            Border(chip, GA(0.20f), 1);
+            Radius(chip, 20);
+            chip.Add(Text(promptText, Serif, 13, GA(0.60f), FontStyle.Italic));
+            chip.AddManipulator(new Clickable(() => _onAsk?.Invoke(promptText)));
+            _prompts.Add(chip);
+            _promptChips.Add((promptText, chip));
+        }
+
+        /// <summary>The prophecy grows the next questions - same living loop as NPC dialog.</summary>
+        public void AbsorbSuggestions(List<string> followups)
+        {
+            if (followups == null) return;
+            foreach (var question in followups) AddPromptChip(question);
+        }
+
+        private void ConsumePromptChip(string question)
+        {
+            for (int i = 0; i < _promptChips.Count; i++)
+            {
+                if (!string.Equals(_promptChips[i].Text, question, StringComparison.Ordinal)) continue;
+                _promptChips[i].Chip.RemoveFromHierarchy();
+                _promptChips.RemoveAt(i);
+                return;
+            }
+        }
+
         public void BeginQuestion(string question)
         {
             if (string.IsNullOrWhiteSpace(question) || _thread == null)
                 return;
 
+            ConsumePromptChip(question.Trim()); // asked = consumed, typed or clicked alike
             var entry = BuildThreadPair(question.Trim(), "The Oracle contemplates…", true);
             _threadEntries.Add(entry);
             _thread.Add(entry.Root);
@@ -168,26 +213,14 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             _line.style.whiteSpace = WhiteSpace.Normal;
             pane.Add(_line);
 
-            var prompts = Row();
-            prompts.style.flexWrap = Wrap.Wrap;
+            // W31 ('oneriler kaybolmuyor'): chips are a LIVING set now - a clicked question is
+            // consumed in BeginQuestion, and the prophecy's followups grow new ones.
+            _prompts = Row();
+            _prompts.style.flexWrap = Wrap.Wrap;
+            _onAsk = onAsk;
             for (int i = 0; i < IgMockData.OraclePrompts.Length; i++)
-            {
-                var chip = new VisualElement();
-                chip.style.marginRight = 8;
-                chip.style.marginBottom = 8;
-                chip.style.paddingTop = 6;
-                chip.style.paddingBottom = 6;
-                chip.style.paddingLeft = 16;
-                chip.style.paddingRight = 16;
-                chip.style.backgroundColor = Alpha(Panel, 0.55f);
-                Border(chip, GA(0.20f), 1);
-                Radius(chip, 20);
-                var promptText = IgMockData.OraclePrompts[i];
-                chip.Add(Text(promptText, Serif, 13, GA(0.60f), FontStyle.Italic));
-                chip.AddManipulator(new Clickable(() => onAsk?.Invoke(promptText)));   // suggested question → real Oracle
-                prompts.Add(chip);
-            }
-            pane.Add(prompts);
+                AddPromptChip(IgMockData.OraclePrompts[i]);
+            pane.Add(_prompts);
 
             _thread = new ScrollView();
             _thread.style.flexGrow = 1;
@@ -222,14 +255,18 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
             }
             askRow.Add(field);
 
+            // LIVE BUG ('enter ask tusuna basmiyor'): same trickle-down interception as the
+            // NPC dialog input - see DialogView.BuildFreeAskRow for the full story.
             field.RegisterCallback<KeyDownEvent>(evt =>
             {
-                if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+                bool isEnter = evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter
+                    || evt.character == '\n' || evt.character == '\r';
+                if (!isEnter)
                     return;
 
-                SubmitAsk(field, onAsk);
                 evt.StopPropagation();
-            });
+                SubmitAsk(field, onAsk);
+            }, TrickleDown.TrickleDown);
 
             var ask = new Button(() => SubmitAsk(field, onAsk)) { text = "ASK" };
             ResetButton(ask);
@@ -272,6 +309,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
 
             field.value = string.Empty;
             onAsk(question);
+            field.schedule.Execute(() => field.Focus()); // ASK-button path also keeps the caret
         }
 
         private void ScrollThreadTo(VisualElement target)

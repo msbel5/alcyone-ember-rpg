@@ -70,8 +70,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                         break;
                     case EmberCrpg.Domain.World.WorldEventKind.ActorTalked:
                         if (subject != 0UL)
+                        {
                             EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.Raise(
                                 subject, EmberCrpg.Presentation.Ember.WorldDirector.NpcEventEchoFeed.KindTalk);
+                            // W31: the chat pictogram and the spatial mutter come from the SAME event
+                            EmberCrpg.Presentation.Ember.Audio.AmbientVoiceDirector.Offer(
+                                subject, EmberCrpg.Simulation.Living.RumorMillSystem.PickFor(
+                                    _world, subject, evt.SiteId, _world.Time));
+                        }
                         break;
                 }
             }

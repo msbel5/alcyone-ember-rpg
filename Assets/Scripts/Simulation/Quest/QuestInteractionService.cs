@@ -9,6 +9,7 @@ using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.Quest;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Domain.Worldgen;
+using EmberCrpg.Simulation.Inventory;
 
 namespace EmberCrpg.Simulation.Quest
 {
@@ -20,6 +21,10 @@ namespace EmberCrpg.Simulation.Quest
         private const string Fuel = "fuel";
         private const string IronIngot = "iron_ingot";
 
+        public const string SmithCommissionTopicId = "smith_commission";
+        public const int IngotsForSword = 2;
+        public const int CommissionGold = 15;
+
         public IReadOnlyList<AskAboutTopic> BuildTopics(WorldState world, ActorId actorId, NpcSeedRecord npc)
         {
             if (!IsForgeQuestGiver(world, actorId, npc))
@@ -27,7 +32,13 @@ namespace EmberCrpg.Simulation.Quest
 
             var state = TryGetForgeState(world);
             if (state != null && state.IsComplete)
-                return Array.Empty<AskAboutTopic>();
+                // W31 ('craft bile edemedim'): the smith no longer goes silent after the errand -
+                // the commission is the ingot's consumer and the forge's standing offer.
+                return new[]
+                {
+                    new AskAboutTopic(SmithCommissionTopicId, "forge a blade",
+                        $"{npc?.Name ?? "The smith"} will work {IngotsForSword} ingots into a blade for {CommissionGold} gold.")
+                };
 
             return new[]
             {
@@ -43,6 +54,8 @@ namespace EmberCrpg.Simulation.Quest
             out string line)
         {
             line = string.Empty;
+            if (string.Equals(topicId, SmithCommissionTopicId, StringComparison.Ordinal))
+                return TryHandleSmithCommission(world, actorId, npc, out line);
             if (!string.Equals(topicId, ForgeIronIngotTopicId, StringComparison.Ordinal))
                 return false;
             if (world == null || !IsForgeQuestGiver(world, actorId, npc))
@@ -72,6 +85,7 @@ namespace EmberCrpg.Simulation.Quest
             }
 
             state.SetCompleted(success: true);
+            world.PlayerGold += 10; // W31: the handshake finally PAYS - delivery was reward-less
             AppendQuestEvent(world, WorldEventKind.QuestCompleted, actorId, "quest_completed:Forge an Iron Ingot:success");
             line = $"{npc.Name} weighs the ingot, then wraps it in oiled cloth. \"Good. You can shape iron, and maybe more.\"";
             return true;
@@ -91,6 +105,64 @@ namespace EmberCrpg.Simulation.Quest
             }
 
             return false;
+        }
+
+        // W31 ('iron ingot aldim craft edemedim'): command-driven from dialog only - no
+        // per-tick system touches it, so determinism is untouched. Refunds on failure: the
+        // commission never half-happens.
+        private static bool TryHandleSmithCommission(WorldState world, ActorId actorId, NpcSeedRecord npc, out string line)
+        {
+            line = string.Empty;
+            if (world == null || !IsForgeQuestGiver(world, actorId, npc))
+                return false;
+            world.EnsureInvariants();
+            var name = npc?.Name ?? "The smith";
+            var inventory = world.PlayerInventory ?? (world.PlayerInventory = new InventoryState(10));
+            int held = CountStackable(inventory, IronIngot);
+            if (held < IngotsForSword)
+            {
+                line = $"{name} holds up two fingers. \"Two ingots make a blade. You carry {held}.\"";
+                return true;
+            }
+            if (world.PlayerGold < CommissionGold)
+            {
+                line = $"{name} names the price. \"{CommissionGold} gold for the labor. Iron is not skill.\"";
+                return true;
+            }
+            if (!inventory.TryRemoveStackable(IronIngot, IngotsForSword))
+            {
+                line = $"{name} frowns at your pack. \"Bring the ingots loose and sorted.\"";
+                return true;
+            }
+            world.PlayerGold -= CommissionGold;
+            var sword = WorldItemCatalog.CreateForgedIronSword(NextItemId(inventory));
+            if (!inventory.TryAdd(sword))
+            {
+                world.PlayerGold += CommissionGold;
+                EnsureInventoryContains(inventory, SeedItemId(actorId, 3UL), IronIngot, "Iron Ingot", IngotsForSword);
+                line = $"{name} shrugs. \"No room for a blade, no blade. Clear your pack.\"";
+                return true;
+            }
+            AppendQuestEvent(world, WorldEventKind.RecipeCompleted, actorId, "smith_commission:forged_iron_sword");
+            line = $"{name} quenches the blade and offers the grip. \"Forged iron. Treat it better than your pack.\"";
+            return true;
+        }
+
+        private static int CountStackable(InventoryState inventory, string templateId)
+        {
+            int count = 0;
+            foreach (var item in inventory.Items)
+                if (item != null && string.Equals(item.TemplateId, templateId, StringComparison.Ordinal))
+                    count += item.Quantity;
+            return count;
+        }
+
+        private static ItemId NextItemId(InventoryState inventory)
+        {
+            ulong max = 4000;
+            foreach (var item in inventory.Items)
+                if (item != null && item.Id.Value > max) max = item.Id.Value;
+            return new ItemId(max + 1);
         }
 
         private static bool TryStartForgeQuest(WorldState world, ActorId actorId, NpcSeedRecord npc, out string line)

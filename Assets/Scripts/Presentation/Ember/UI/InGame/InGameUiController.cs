@@ -60,11 +60,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
         /// <summary>True while a redesigned screen (a modal or the ☰ browser) is open — folded into
         /// EmberWorldHost.IsModalOpen() so FPS look/move stop, and the controller frees the cursor + pauses.</summary>
         public static bool AnyScreenOpen { get; private set; }
+        public static bool TypingFocused { get; private set; }
 
         private void OnEnable() => OwnsInput = true;
         private void OnDisable()
         {
-            OwnsInput = false; AnyScreenOpen = false;
+            OwnsInput = false; AnyScreenOpen = false; TypingFocused = false;
             if (Mathf.Approximately(Time.timeScale, 0f)) Time.timeScale = 1f;   // never leave the world paused
         }
 
@@ -146,6 +147,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             bool open = IsAnyOpen();
             bool conversationOpen = _activeDialog != null || _activeOracle != null;
             AnyScreenOpen = open;
+            TypingFocused = IsTextInputFocused();
             if (open != _wasOpen)
             {
                 _wasOpen = open;
@@ -163,6 +165,12 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             {
                 var line = _activeDialogSource.GetCurrentLine();
                 _activeDialog.SetCurrentLine(line);
+                var liveTopics = BuildDialogTopics(_activeDialogSource, out var topicsSig);
+                if (!string.Equals(topicsSig, _activeDialogTopicsSig, System.StringComparison.Ordinal))
+                {
+                    _activeDialogTopicsSig = topicsSig;
+                    _activeDialog.SetTopics(liveTopics); // consumed options pop, followups grow in
+                }
                 if (_activeDialogSource.IsThinking)
                     _activeDialog.UpdateLatestLoading(line); // M3a: the bubble streams too
                 // PLAYTEST FIX ("tts yok"): finished lines are spoken; the service dedupes on
@@ -208,6 +216,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 {
                     _activeOracle.SetOracleLine(resolved);
                     _activeOracle.ResolveLatestAnswer(resolved);
+                    if (EmberDomainAdapterLocator.Current is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter fateAdapter)
+                        _activeOracle.AbsorbSuggestions(fateAdapter.ConsumePendingFateFollowups());
                     _oraclePending = false;
                 }
             }
@@ -473,6 +483,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             if (_activeDialogSource != null)
             {
                 _activeDialogSource.EndConversation();
+                EmberCrpg.Presentation.Ember.Audio.SpeechDirector.StopConversationSpeech(); // 'cikinca konusmaya devam ediyor'
                 _activeDialogSource = null; _activeDialog = null; _activeDialogPortrait = null;
             }
             _activeCharacter = null; _activePlayerPortraitKey = null;
@@ -485,7 +496,8 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
 
         /// <summary>Open the redesigned NPC dialogue, driven by the REAL <see cref="IDialogSource"/> (greeting +
         /// topics + async LLM replies). The interact raycaster calls this instead of the legacy DialogBoxPanel.</summary>
-        public void OpenNpcDialog(IDialogSource src, string npcName, string portrait)
+        public void OpenNpcDialog(IDialogSource src, string npcName, string portrait,
+            UnityEngine.Transform speakerAnchor = null)
         {
             if (src == null || _stage == null) return;
             CloseScreen();   // ends any prior conversation + drops any open screen
@@ -493,14 +505,11 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             var c = _stage.Canvas;
             int before = c.childCount;
 
-            var topics = new List<DialogTopicOption>();
-            var ids = src.GetTopics();
-            if (ids != null)
-                foreach (var id in ids)
-                    topics.Add(new DialogTopicOption(id, HumanizeToken(id) ?? id));
+            var topics = BuildDialogTopics(src, out _activeDialogTopicsSig);
 
             _activeDialogSource = src;
             _activeDialogPortrait = portrait;
+            EmberCrpg.Presentation.Ember.Audio.SpeechDirector.SetSpeakerAnchor(src.VoiceKey, speakerAnchor);
             _activeDialog = new DialogView(
                 c, CloseScreen,
                 string.IsNullOrEmpty(npcName) ? "Stranger" : npcName,
@@ -517,6 +526,32 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
                 var sp = spriteLookup.GetSprite(portrait);
                 if (sp != null) _activeDialog.SetPortrait(sp);
             }
+        }
+
+        private string _activeDialogTopicsSig;
+
+        // W31 ('ruhsuz' + 'sabit sorular geri geldi'): labels become questions a person would
+        // SAY, and the list re-renders live so ConsumeOption pops and FOLLOWUPS growth actually
+        // reach the screen instead of dying inside the adapter memo.
+        private List<DialogTopicOption> BuildDialogTopics(IDialogSource src, out string signature)
+        {
+            var topics = new List<DialogTopicOption>();
+            var ids = src.GetTopics();
+            if (ids != null)
+                foreach (var id in ids)
+                    topics.Add(new DialogTopicOption(id, NaturalTopicLabel(id)));
+            signature = string.Join("\u0001", topics.ConvertAll(t => t.Id));
+            return topics;
+        }
+
+        private string NaturalTopicLabel(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return id;
+            if (id.Contains("?")) return id; // followups and "Any news?" are already questions
+            var natural = EmberCrpg.Simulation.AiDm.DialogStreamText.NaturalQuestion(id);
+            if (!string.Equals(natural, id, System.StringComparison.Ordinal)) return natural;
+            return EmberCrpg.Simulation.AiDm.DialogStreamText.NaturalQuestion(
+                "Ask about " + (HumanizeToken(id) ?? id));
         }
 
         private void ConsulDm() => OpenScreen("consul");
@@ -1474,6 +1509,7 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             else if (EmberInput.KeyDown(KeyCode.J)) OpenScreen("journal");
             else if (EmberInput.KeyDown(KeyCode.K)) OpenScreen("colony");
             else if (EmberInput.KeyDown(KeyCode.R)) OpenScreen("consul");
+            else if (EmberInput.KeyDown(KeyCode.B)) OpenScreen("crafting"); // W31: the forge screen gets a key
             else if (EmberInput.KeyDown(KeyCode.T)) BeginTimeSkip(rest: false); // PLAYTEST: wait an hour
             else if (EmberInput.KeyDown(KeyCode.H)) BeginTimeSkip(rest: true);  // PLAYTEST: sleep to dawn
         }

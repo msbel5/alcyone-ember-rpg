@@ -17,6 +17,27 @@ namespace EmberCrpg.Presentation.Ember.Audio
         private static int _spokenChars;
         private static string _lastFinal;
         private static string _streamPrefix = string.Empty;
+        private static ulong _anchorKey;
+        private static Transform _anchorTransform;
+
+        /// <summary>Positional voice: the conversation NPC (matched by voiceKey) speaks FROM its
+        /// billboard; every other key (player voice, oracle 7, narration) stays 2D by construction.</summary>
+        public static void SetSpeakerAnchor(ulong voiceKey, Transform anchor)
+        {
+            _anchorKey = voiceKey;
+            _anchorTransform = anchor;
+        }
+
+        /// <summary>LIVE BUG ('konusmadan cikinca tts durmuyor'): the conversation is OVER - cut
+        /// the whole queue (piper + SAPI) and reset stream state. RetargetIfNeeded keeps its
+        /// queue-on-retarget semantics; this fires only from the dialog close paths.</summary>
+        public static void StopConversationSpeech()
+        {
+            _currentKey = 0; _spokenChars = 0; _lastFinal = null; _streamPrefix = string.Empty;
+            _anchorKey = 0; _anchorTransform = null;
+            SpeechPlaybackHost.Flush();
+            WindowsSpeechService.StopSpeaking();
+        }
 
         public static void FeedPartial(ulong voiceKey, string displayLine)
         {
@@ -64,7 +85,8 @@ namespace EmberCrpg.Presentation.Ember.Audio
                 if (purgeFirst) SpeechPlaybackHost.Flush();
                 if (PiperSpeechSynth.TrySpeak(text, neural.VoiceIndex, out var wavPath))
                 {
-                    SpeechPlaybackHost.Enqueue(wavPath, 1f + neural.PitchOffset * 0.015f);
+                    SpeechPlaybackHost.Enqueue(wavPath, 1f + neural.PitchOffset * 0.015f,
+                        voiceKey == _anchorKey ? _anchorTransform : null);
                     return;
                 }
             }

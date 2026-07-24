@@ -19,6 +19,9 @@ namespace EmberCrpg.Presentation.Ember.Combat
 
         private void Update()
         {
+            // LIVE BUG ('f tusuna basarsam konustugum insana saldiriyor'): every sibling
+            // controller yields to the modal predicate - this one polled raw device state.
+            if (EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost.IsModalOpen()) return;
             if (EmberInput.MeleeSwing && !_isSwinging)
             {
                 StartCoroutine(SwingRoutine());

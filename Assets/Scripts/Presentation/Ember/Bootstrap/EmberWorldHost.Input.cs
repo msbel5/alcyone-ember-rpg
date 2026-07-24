@@ -24,6 +24,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
                 // in-flight async reply landed in the Oracle box). EndConversation also bumps the conversation
                 // serial, so that pending reply is discarded.
                 (_adapter as IDialogSource)?.EndConversation();
+                EmberCrpg.Presentation.Ember.Audio.SpeechDirector.StopConversationSpeech();
                 // Immediate placeholder line ("The oracle consults the fates…"); the real LLM prophecy
                 // resolves async and is swapped in below via TryConsumeResolvedFate (BUG-4).
                 _fateLine = _oracle.ConsultFate();
@@ -128,7 +129,8 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             // The new in-game UI (InGameUiController) is the canonical modal owner now: when any of its
             // 16 screens or the ☰ browser is open it pauses the world + frees the cursor, so FPS look/move
             // and the interact raycaster must yield to it exactly as they do for the legacy panels.
-            return WorldHostInputPolicy.IsModalOpen() || InGameUiController.AnyScreenOpen;
+            return WorldHostInputPolicy.IsModalOpen() || InGameUiController.AnyScreenOpen
+                || InGameUiController.TypingFocused; // typing swallows gameplay keys everywhere
         }
 
         private void HandleQuitInput()

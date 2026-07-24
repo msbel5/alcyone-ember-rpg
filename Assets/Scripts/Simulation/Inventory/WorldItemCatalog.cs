@@ -38,6 +38,15 @@ namespace EmberCrpg.Simulation.Inventory
             return new InventoryItem(new ItemId(3002), WornIronSwordTemplateId, "Worn Iron Sword", 1, EquipmentSlot.Weapon, 8, 5);
         }
 
+        public const string ForgedIronSwordTemplateId = "forged_iron_sword";
+
+        /// <summary>W31 smith commission: two ingots + coin become a blade one tier above the
+        /// chest sword. Caller mints the id (max+1) so repeat commissions never collide.</summary>
+        public static InventoryItem CreateForgedIronSword(ItemId id)
+        {
+            return new InventoryItem(id, ForgedIronSwordTemplateId, "Forged Iron Sword", 1, EquipmentSlot.Weapon, 10, 7);
+        }
+
         public const string TarnishedKeyTemplateId = "tarnished_delve_key";
 
         /// <summary>F20: the delve key — found in a middle room, CONSUMED by the boss door's lock.

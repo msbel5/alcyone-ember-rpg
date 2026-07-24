@@ -33,7 +33,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 null,
                 100,
                 npc.Id.Value,
-                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. Greet the player character briefly in character. The conversation log below is what you personally remember (witnessed events, past talks); let it colour your greeting when relevant." + CompanionPersonaSuffix(npc.Id.Value) + AcquaintanceSuffix(npc.Id.Value),
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. Greet the player character briefly in character. The conversation log below is what you personally remember (witnessed events, past talks); let it colour your greeting when relevant." + CompanionPersonaSuffix(DialogMemoryKey(npc.Id.Value)) + AcquaintanceSuffix(DialogMemoryKey(npc.Id.Value)),
                 RecallDialogMemory(npc.Id.Value)
             );
 
@@ -67,7 +67,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // cleaned line replaces the deterministic greeting.
                 var greeting = SanitizeNpcLine(response?.Text);
                 if (!string.IsNullOrEmpty(greeting))
+                {
                     _currentDialogLine = greeting;
+                    RecordNpcSaid(greeting); // W31: the very first line already enters memory
+                }
                 _isDialogThinking = false;
             });
         }
@@ -116,7 +119,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // replaces the deterministic greeting.
                 var greeting = SanitizeNpcLine(response?.Text);
                 if (!string.IsNullOrEmpty(greeting))
+                {
                     _currentDialogLine = greeting;
+                    RecordNpcSaid(greeting); // W31: the very first line already enters memory
+                }
                 _isDialogThinking = false;
             });
         }

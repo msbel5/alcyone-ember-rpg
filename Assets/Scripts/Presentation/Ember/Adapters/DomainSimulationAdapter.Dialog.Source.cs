@@ -87,8 +87,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // CAN SUYU V2.1: the memory the NPC carries into the LLM prompt. Same canonical
         // source Gate9 proves (NpcMemoryLlmEnvelope.RecallLines) - witnessed attacks, past
         // conversations, trades: all of it reaches the tongue.
+        // LIVE BUG ('hatirlamiyor', 'tek line hafizalari var'): memory rows are WRITTEN under
+        // the real ActorId (GeneratedNpcActorOffset + NpcId) but were READ under the bare NpcId -
+        // generated NPCs recalled an EMPTY bucket every conversation. Resolve the writers' id.
+        private ulong DialogMemoryKey(ulong npcId)
+            => !_activeDialogActorId.IsEmpty ? _activeDialogActorId.Value : GeneratedNpcActorOffset + npcId;
+
         private List<string> RecallDialogMemory(ulong npcId)
-            => EmberCrpg.Simulation.AiDm.NpcMemoryLlmEnvelope.RecallLines(_world, new ActorId(npcId), 8);
+            => EmberCrpg.Simulation.AiDm.NpcMemoryLlmEnvelope.RecallLines(
+                _world, new ActorId(DialogMemoryKey(npcId)), 8);
 
         private List<string> RecallDialogMemoryByName(string actorName)
         {

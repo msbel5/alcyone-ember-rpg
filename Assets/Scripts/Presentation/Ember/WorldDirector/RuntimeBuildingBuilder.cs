@@ -35,12 +35,33 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
             var entrance = ChooseEntranceSide(placement);
 
+            // W31 ('odalar arasinda kapi yok'): the silhouette roll is HOISTED above the walls so
+            // a winged house cuts a doorway through the shared wall AT BUILD TIME - the wing
+            // stops being a sealed decorative cube and becomes a reachable room.
+            uint varRoll = unchecked(((uint)(placement.OriginX * 4f) * 2654435761u)
+                ^ ((uint)(placement.OriginZ * 4f) * 40503u)) | 1u;
+            float varPick = (varRoll % 100u) / 100f;
+            bool entranceOnXAxisVar = entrance == DoorSide.North || entrance == DoorSide.South;
+            float wingSide = ((varRoll >> 4) & 1u) == 0u ? 1f : -1f;
+            // wing when: mid band, OR the storey band's footprint was too small (old fallthrough)
+            bool hasWing = (varPick >= 0.30f && varPick < 0.55f)
+                || (varPick < 0.30f && !(placement.SizeX > 4f && placement.SizeZ > 4f));
+            DoorSide wingDoor = hasWing
+                ? (entranceOnXAxisVar
+                    ? (wingSide > 0f ? DoorSide.East : DoorSide.West)
+                    : (wingSide > 0f ? DoorSide.North : DoorSide.South))
+                : entrance; // no wing: flag collapses to the entrance test below
+
             // North + south walls span X; east + west walls span Z. The entrance is a full-height gap facing
             // the settlement center so NPCs and the player can reach spawned actors before room interiors exist.
-            AddWallX(root.transform, halfZ, placement.SizeX, placement.Height, material, entrance == DoorSide.North);
-            AddWallX(root.transform, -halfZ, placement.SizeX, placement.Height, material, entrance == DoorSide.South);
-            AddWallZ(root.transform, halfX, placement.SizeZ, placement.Height, material, entrance == DoorSide.East);
-            AddWallZ(root.transform, -halfX, placement.SizeZ, placement.Height, material, entrance == DoorSide.West);
+            AddWallX(root.transform, halfZ, placement.SizeX, placement.Height, material,
+                entrance == DoorSide.North || (hasWing && wingDoor == DoorSide.North));
+            AddWallX(root.transform, -halfZ, placement.SizeX, placement.Height, material,
+                entrance == DoorSide.South || (hasWing && wingDoor == DoorSide.South));
+            AddWallZ(root.transform, halfX, placement.SizeZ, placement.Height, material,
+                entrance == DoorSide.East || (hasWing && wingDoor == DoorSide.East));
+            AddWallZ(root.transform, -halfX, placement.SizeZ, placement.Height, material,
+                entrance == DoorSide.West || (hasWing && wingDoor == DoorSide.West));
 
             // INTERIORS v1 (content phase): roof + wood floor + deterministic furniture + a warm hearth
             // light, so stepping through the door enters a ROOM instead of a roofless pen. Everything is
@@ -70,9 +91,6 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // BUYER FIX ("her ev ayni kutu"): deterministic SILHOUETTE variety from the same
             // placement seed - a second storey, an L-wing, or a door awning. Same grammar
             // language, three new words; the skyline stops repeating.
-            uint varRoll = unchecked(((uint)(placement.OriginX * 4f) * 2654435761u)
-                ^ ((uint)(placement.OriginZ * 4f) * 40503u)) | 1u;
-            float varPick = (varRoll % 100u) / 100f;
             if (varPick < 0.30f && placement.SizeX > 4f && placement.SizeZ > 4f)
             {
                 // Second storey: a set-back upper box + its own roof slab.
@@ -85,24 +103,43 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     RuntimeMaterialPalette.Textured(RuntimeMaterialPalette.RoofTextureId(placement.MaterialIndex),
                         new Color(0.52f, 0.46f, 0.38f), tiling: 1.2f));
             }
-            else if (varPick < 0.55f)
+            else if (hasWing)
             {
-                // L-wing: a lower side annex on the lateral axis (never blocks the entrance wall).
-                bool entranceOnXAxis = entrance == DoorSide.North || entrance == DoorSide.South;
-                float side = ((varRoll >> 4) & 1u) == 0u ? 1f : -1f;
-                // AUTOPSY FIX ('odalar arasinda kapi yok'): 0.62 pushed the SOLID wing through
-                // the side wall - it read as a sealed second room. 0.78 keeps it fully OUTSIDE
-                // as an annex; true interior partitions + doors are the P1 WallWithGap port.
-                var wingOffset = entranceOnXAxis
-                    ? new Vector3(side * (placement.SizeX * 0.78f), 0f, 0f)
-                    : new Vector3(0f, 0f, side * (placement.SizeZ * 0.78f));
-                float wingH = placement.Height * 0.62f;
-                AddSlab(root.transform, "Wing",
-                    wingOffset + new Vector3(0f, wingH / 2f, 0f),
-                    new Vector3(placement.SizeX * 0.52f, wingH, placement.SizeZ * 0.52f), material);
+                // L-wing v2 ('iki odali ev ama kapi yok'): a HOLLOW annex - floor, far wall, two
+                // side walls, roof - entered through the doorway the shared wall now carries.
+                // The old branch was one solid cube: a second room you could never enter.
+                bool alongX = entranceOnXAxisVar; // wing extends on the lateral axis
+                float axisSize = alongX ? placement.SizeX : placement.SizeZ;
+                float latSize = alongX ? placement.SizeZ : placement.SizeX;
+                float nearEdge = axisSize * 0.5f;
+                float farEdge = axisSize * 1.04f;
+                float axisCentre = wingSide * ((nearEdge + farEdge) / 2f);
+                float axisLen = farEdge - nearEdge;
+                float latSpan = latSize * 0.52f;
+                float wingH = Mathf.Max(placement.Height * 0.62f, 2.4f); // never shorter than the doorway
+                Vector3 AxisVec(float along, float lateral) => alongX
+                    ? new Vector3(along, 0f, lateral)
+                    : new Vector3(lateral, 0f, along);
+
+                AddSlab(root.transform, "WingFloor",
+                    AxisVec(axisCentre, 0f) + new Vector3(0f, 0.03f, 0f),
+                    alongX ? new Vector3(axisLen, 0.06f, latSpan) : new Vector3(latSpan, 0.06f, axisLen),
+                    RuntimeMaterialPalette.Solid(new Color(0.42f, 0.32f, 0.20f)));
+                AddWall(root.transform,
+                    AxisVec(wingSide * farEdge, 0f) + new Vector3(0f, wingH / 2f, 0f),
+                    alongX ? new Vector3(WallThickness, wingH, latSpan) : new Vector3(latSpan, wingH, WallThickness),
+                    material);
+                AddWall(root.transform,
+                    AxisVec(axisCentre, latSpan / 2f) + new Vector3(0f, wingH / 2f, 0f),
+                    alongX ? new Vector3(axisLen, wingH, WallThickness) : new Vector3(WallThickness, wingH, axisLen),
+                    material);
+                AddWall(root.transform,
+                    AxisVec(axisCentre, -latSpan / 2f) + new Vector3(0f, wingH / 2f, 0f),
+                    alongX ? new Vector3(axisLen, wingH, WallThickness) : new Vector3(WallThickness, wingH, axisLen),
+                    material);
                 AddSlab(root.transform, "WingRoof",
-                    wingOffset + new Vector3(0f, wingH + 0.06f, 0f),
-                    new Vector3(placement.SizeX * 0.58f, 0.12f, placement.SizeZ * 0.58f),
+                    AxisVec(axisCentre, 0f) + new Vector3(0f, wingH + 0.06f, 0f),
+                    alongX ? new Vector3(axisLen + 0.3f, 0.12f, latSpan + 0.3f) : new Vector3(latSpan + 0.3f, 0.12f, axisLen + 0.3f),
                     RuntimeMaterialPalette.Textured(RuntimeMaterialPalette.RoofTextureId(placement.MaterialIndex),
                         new Color(0.50f, 0.44f, 0.37f), tiling: 1.0f));
             }
@@ -137,7 +174,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // P1 (ARCHITECTURE_GAPS #5, WallWithGap port from the dungeon builder): a big
             // enough shell gets a REAL interior partition with a DOORWAY - two rooms you can
             // actually walk between, not a solid slab pretending to be one.
-            bool partitioned = placement.SizeX > 6f && placement.SizeZ > 6f;
+            // W31 DEAD-CODE AUTOPSY: generators emit 3.5-5.69m footprints, so the old >6f gate
+            // meant NO house in the game ever got its partition - the doorway code was correct
+            // and never ran. 4.8f puts two-room houses back in every town (~1 in 6).
+            bool partitioned = placement.SizeX > 4.8f && placement.SizeZ > 4.8f;
             if (partitioned)
             {
                 bool entranceOnXWall = entrance == DoorSide.North || entrance == DoorSide.South;
@@ -174,7 +214,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 }
             }
 
-            Furnish(root.transform, placement, entrance);
+            Furnish(root.transform, placement, entrance, partitioned);
             AddHearthLight(root.transform, placement);
 
             // F5/facades (DFU recipe): a real hinged door in the entrance gap (proximity-opened, −90° over
@@ -255,7 +295,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
         // Deterministic interior dressing: 2-4 pieces against the wall OPPOSITE the door (never blocking the
         // entrance), seeded from the building's position so re-realizing the town reproduces every room.
-        private static void Furnish(Transform root, BuildingPlacement placement, DoorSide entrance)
+        private static void Furnish(Transform root, BuildingPlacement placement, DoorSide entrance, bool partitioned)
         {
             // Seed from QUANTIZED ints — casting a negative float product straight to uint is undefined
             // behaviour in .NET (can collapse to 0), which would make every room identical or bare.
@@ -284,7 +324,9 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // a bed is a frame with a blanket, a table stands on a leg, a crate is a crate.
             var woodDark = RuntimeMaterialPalette.Solid(new Color(0.36f, 0.26f, 0.15f));
             var blanket = RuntimeMaterialPalette.Solid(new Color(0.55f, 0.20f, 0.18f));
-            float[] slots = { -0.66f, 0f, 0.66f };
+            // partitioned: the centre slot IS the doorway corridor - furniture stays out of it,
+            // and the shallow back room cannot host a 1.8m bed (demoted below).
+            float[] slots = partitioned ? new[] { -0.66f, 0.66f } : new[] { -0.66f, 0f, 0.66f };
             int firstSlot = (int)(Hash01(ref seed) * 3f) % 3;
             int pieces = 2 + (int)(Hash01(ref seed) * 2f); // 2..3, one per slot
             for (int i = 0; i < pieces && i < slots.Length; i++)
@@ -293,6 +335,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 float depth = backDepth - 0.15f;
                 var pos = (back * depth) + (side * lateral);
                 int kind = (int)(Hash01(ref seed) * 3f);
+                if (partitioned && kind == 0) kind = 2; // bed cannot fit the partitioned back room
                 switch (kind)
                 {
                     case 0:
