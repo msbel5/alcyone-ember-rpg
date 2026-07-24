@@ -531,6 +531,9 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame
             var trimmed = question == null ? string.Empty : question.Trim();
             if (string.IsNullOrEmpty(trimmed) || _oraclePending) return;
 
+            if (EmberDomainAdapterLocator.Current
+                    is EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter oracleVoiceAdapter)
+                oracleVoiceAdapter.SpeakPlayerQuestion(trimmed); // M3b.3: the DM hears YOU ask
             _activeOracle?.BeginQuestion(trimmed);
             _activeOracle?.SetOracleLine(oracle.ConsultFate(trimmed));
             _oraclePending = true;

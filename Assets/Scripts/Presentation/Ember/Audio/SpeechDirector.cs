@@ -81,8 +81,9 @@ namespace EmberCrpg.Presentation.Ember.Audio
             _currentKey = voiceKey;
             _spokenChars = 0;
             _lastFinal = null;
-            WindowsSpeechService.StopSpeaking(); // a new speaker never finishes the old one's line
-            SpeechPlaybackHost.Flush();
+            // LIVE BUG ('sectigimizi seslendirmedi', 'cumlenin ortasinda basladi'): flushing on
+            // speaker change cut the player's just-spoken question the moment the NPC stream
+            // began. Voices now QUEUE in conversation order; only a same-speaker replacement purges.
         }
 
         private static string StripDisplaySuffix(string line)

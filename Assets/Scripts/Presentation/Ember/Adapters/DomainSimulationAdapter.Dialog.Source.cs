@@ -109,14 +109,30 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         // M3b.3: YOUR voice - derived from creation (name + class) like a forge portrait -
         // reads the question you clicked or typed; the NPC answers in theirs.
-        private void SpeakPlayerQuestion(string questionText)
+        internal void SpeakPlayerQuestion(string questionText)
         {
             if (string.IsNullOrWhiteSpace(questionText)) return;
+            questionText = NaturalQuestion(questionText);
             var player = EmberCrpg.Simulation.Living.CompanionService.FindPlayer(_world);
             if (player == null) return;
             EmberCrpg.Presentation.Ember.Audio.SpeechDirector.FeedFinal(
                 EmberCrpg.Simulation.AiDm.PlayerVoiceService.PlayerVoiceKey(player.Name, _world.PlayerClassName),
                 questionText);
+        }
+
+        // TTS ('sadece gate diyor'): menu labels become sentences a person would actually say.
+        internal static string NaturalQuestion(string label)
+        {
+            if (string.IsNullOrWhiteSpace(label)) return label;
+            var trimmed = label.Trim();
+            if (trimmed.StartsWith("Ask about Companion", System.StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith("companion_join", System.StringComparison.OrdinalIgnoreCase))
+                return "Will you travel with me?";
+            if (trimmed.StartsWith("companion_leave", System.StringComparison.OrdinalIgnoreCase))
+                return "It is time we parted ways.";
+            if (trimmed.StartsWith("Ask about ", System.StringComparison.OrdinalIgnoreCase))
+                return "What can you tell me about " + trimmed.Substring(10).TrimEnd('.', '…') + "?";
+            return trimmed;
         }
 
         // PLAYTEST FIX: deterministic seeds made every repeat of a question word-identical.

@@ -137,7 +137,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                         return plant.StageId.Value == "ripe" ? "harvesting" : "tending the field";
                 }
             }
-            return actor.ScheduleState.IsIdle ? "about town" : "working";
+            // PLAYTEST ('hepsinin kafasinda about town'): an idle stroll is not information -
+            // no label at all. A verb appears only when it says something true and specific.
+            return actor.ScheduleState.IsIdle ? null : "working";
         }
 
         // SOUL-04 (spawn-from-worldgen): hand the host a flat, Domain-free list of candidate

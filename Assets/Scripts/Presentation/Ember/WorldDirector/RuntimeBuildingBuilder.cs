@@ -190,9 +190,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             {
                 var frameSize = alongX ? new Vector3(1.5f, 1.4f, 0.05f) : new Vector3(0.05f, 1.4f, 1.5f);
                 var paneSize = alongX ? new Vector3(1.2f, 1.1f, 0.05f) : new Vector3(0.05f, 1.1f, 1.2f);
-                var outward = alongX ? new Vector3(0f, 0f, Mathf.Sign(at.z) * 0.03f) : new Vector3(Mathf.Sign(at.x) * 0.03f, 0f, 0f);
+                // LIVE BUG (3x reported 'pencereler yok'): the 0.03 offset left the panes INSIDE
+                // the 0.25-thick wall. Clear the outer face (half-thickness 0.125) with margin.
+                var outward = alongX ? new Vector3(0f, 0f, Mathf.Sign(at.z) * 0.16f) : new Vector3(Mathf.Sign(at.x) * 0.16f, 0f, 0f);
                 AddSlab(root, "WindowFrame" + tag, at + outward, frameSize, frame);
-                AddSlab(root, "Window" + tag, at + outward * 2f, paneSize, glass);
+                AddSlab(root, "Window" + tag, at + outward * 1.25f, paneSize, glass);
             }
             if (entranceOnX)
             {

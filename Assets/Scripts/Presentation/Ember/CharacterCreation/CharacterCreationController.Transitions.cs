@@ -184,6 +184,10 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             if (_historySkipped) return full;
 
             float elapsed = Mathf.Max(0f, Time.realtimeSinceStartup - _historyRevealStartTime);
+            // PLAYTEST ('Year -618 - Sko' stranded mid-word): once the page unlocks, the FULL
+            // chronicle shows - the typewriter is a flourish, never a censor.
+            if (elapsed >= EmberRuntimeOptionsProvider.Current.CharacterCreation.HistoryUnlockSeconds)
+                return full;
             int count = VisibleHistoryCharacterCount(elapsed);
             if (count <= 0) return string.Empty;
             if (count >= full.Length) return full;
