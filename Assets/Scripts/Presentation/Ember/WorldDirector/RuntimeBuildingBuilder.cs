@@ -134,6 +134,46 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
 
             AddSlab(root.transform, "Floor", new Vector3(0f, 0.03f, 0f),
                 new Vector3(placement.SizeX - WallThickness, 0.06f, placement.SizeZ - WallThickness), RuntimeMaterialPalette.Solid(new Color(0.42f, 0.30f, 0.18f)));
+            // P1 (ARCHITECTURE_GAPS #5, WallWithGap port from the dungeon builder): a big
+            // enough shell gets a REAL interior partition with a DOORWAY - two rooms you can
+            // actually walk between, not a solid slab pretending to be one.
+            bool partitioned = placement.SizeX > 6f && placement.SizeZ > 6f;
+            if (partitioned)
+            {
+                bool entranceOnXWall = entrance == DoorSide.North || entrance == DoorSide.South;
+                const float innerDoorW = 1.2f;
+                const float innerDoorH = 2.0f;
+                if (entranceOnXWall)
+                {
+                    // Partition runs along X at 30% depth from the back wall.
+                    float pz = (entrance == DoorSide.North ? -1f : 1f) * (placement.SizeZ * 0.20f);
+                    float segW = (placement.SizeX - innerDoorW) / 2f;
+                    float off = (innerDoorW + segW) / 2f;
+                    AddWall(root.transform, new Vector3(-off, placement.Height / 2f, pz),
+                        new Vector3(segW, placement.Height, WallThickness), material);
+                    AddWall(root.transform, new Vector3(off, placement.Height / 2f, pz),
+                        new Vector3(segW, placement.Height, WallThickness), material);
+                    float lintel = placement.Height - innerDoorH;
+                    if (lintel > 0.05f)
+                        AddWall(root.transform, new Vector3(0f, innerDoorH + lintel / 2f, pz),
+                            new Vector3(innerDoorW, lintel, WallThickness), material);
+                }
+                else
+                {
+                    float px = (entrance == DoorSide.East ? -1f : 1f) * (placement.SizeX * 0.20f);
+                    float segD = (placement.SizeZ - innerDoorW) / 2f;
+                    float off = (innerDoorW + segD) / 2f;
+                    AddWall(root.transform, new Vector3(px, placement.Height / 2f, -off),
+                        new Vector3(WallThickness, placement.Height, segD), material);
+                    AddWall(root.transform, new Vector3(px, placement.Height / 2f, off),
+                        new Vector3(WallThickness, placement.Height, segD), material);
+                    float lintel = placement.Height - innerDoorH;
+                    if (lintel > 0.05f)
+                        AddWall(root.transform, new Vector3(px, innerDoorH + lintel / 2f, 0f),
+                            new Vector3(WallThickness, lintel, innerDoorW), material);
+                }
+            }
+
             Furnish(root.transform, placement, entrance);
             AddHearthLight(root.transform, placement);
 
