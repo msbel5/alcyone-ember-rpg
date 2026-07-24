@@ -76,8 +76,10 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             new CompanionSystem().TickFollow(world);
 
-            Assert.That(friend.Position, Is.EqualTo(new GridPosition(7, 5)),
-                "one Chebyshev step toward the player per tick");
+            // P0 re-pin: a companion lagging beyond heel+1 DOUBLE-steps - detours introduced by
+            // eat-on-arrival must never out-walk the heel contract (Gate10 pins the day-long hold).
+            Assert.That(friend.Position, Is.EqualTo(new GridPosition(8, 5)),
+                "a badly lagging companion closes two cells per tick");
         }
 
         [Test]

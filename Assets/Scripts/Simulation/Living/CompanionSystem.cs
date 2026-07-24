@@ -90,11 +90,16 @@ namespace EmberCrpg.Simulation.Living
             {
                 if (!world.Actors.TryGet(new ActorId(id), out var companion) || companion == null || !companion.IsAlive)
                     continue;
-                if (CompanionService.Chebyshev(companion.Position, player.Position) <= HeelCells)
+                int gap = CompanionService.Chebyshev(companion.Position, player.Position);
+                if (gap <= HeelCells)
                     continue; // at heel — no jitter
-                companion.MoveTo(new GridPosition(
-                    companion.Position.X + System.Math.Sign(player.Position.X - companion.Position.X),
-                    companion.Position.Y + System.Math.Sign(player.Position.Y - companion.Position.Y)));
+                // P0 re-pin: a badly lagging companion double-steps - the schedule/meal detours
+                // introduced by eat-on-arrival must never out-walk the heel contract.
+                int steps = gap > HeelCells + 1 ? 2 : 1;
+                for (int s = 0; s < steps && CompanionService.Chebyshev(companion.Position, player.Position) > HeelCells; s++)
+                    companion.MoveTo(new GridPosition(
+                        companion.Position.X + System.Math.Sign(player.Position.X - companion.Position.X),
+                        companion.Position.Y + System.Math.Sign(player.Position.Y - companion.Position.Y)));
                 moved++;
             }
             return moved;

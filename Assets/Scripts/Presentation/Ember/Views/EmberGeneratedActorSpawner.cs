@@ -189,7 +189,7 @@ namespace EmberCrpg.Presentation.Ember.Views
             // the ±2.2m mill made pursuers read drunk and ate ~1.5m of the measured chase closure.
             if (!hostileRole)
             {
-                actorView.EnableWander(2.2f);
+                actorView.EnableWander(0.8f); // P0: +/-2.2m repainted purposeful walks as drifting
                 // F27: pose pictograms — a hammer over workers in work hours, a mug over everyone
                 // at the midday meal (the schedule's lunch window).
                 bool workerRole = spriteRole.IndexOf("farmer", System.StringComparison.OrdinalIgnoreCase) >= 0

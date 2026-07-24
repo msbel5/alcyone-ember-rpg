@@ -67,6 +67,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "PerTick:20:core.magic",
                 "PerTick:20:living.schedule",
                 "PerTick:21:living.companion_follow", // V3: heel-follow after schedule
+                "PerTick:22:living.eatOnArrival", // P0: reaching the table IS the meal
                 "Hourly:10:econ.jobs",
                 "Hourly:15:quest.tick",
                 "Hourly:30:living.needs",

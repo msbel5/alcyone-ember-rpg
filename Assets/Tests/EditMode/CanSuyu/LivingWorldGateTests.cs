@@ -114,14 +114,20 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
             // Sample occupancy near the larder EVERY HOUR for two days: a living town produces a
             // WAVE (empty table → meal crowd → empty again); a frozen or window-routed town is
             // flat or a square pulse pinned to authored hours. We assert the wave's amplitude.
+            // P0 eat-on-arrival re-pin: meals resolve the tick a walker ARRIVES, so the crowd
+            // is a moving stream, not an hour-long standing pool - sample every 10 ticks or the
+            // hourly snapshot misses the (still emergent, still window-free) wave entirely.
             int min = int.MaxValue, max = int.MinValue;
             for (int hour = 1; hour <= 48; hour++)
             {
                 for (int tick = (hour - 1) * 60 + 1; tick <= hour * 60; tick++)
+                {
                     composer.Advance(world, tick);
-                int now = CountNear();
-                if (now < min) min = now;
-                if (now > max) max = now;
+                    if (tick % 10 != 0) continue;
+                    int now = CountNear();
+                    if (now < min) min = now;
+                    if (now > max) max = now;
+                }
             }
 
             Assert.That(max - min, Is.GreaterThanOrEqualTo(5),

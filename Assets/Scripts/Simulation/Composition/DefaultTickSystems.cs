@@ -47,6 +47,7 @@ namespace EmberCrpg.Simulation.Composition
                 new ScheduleStep(schedule),
                 new CompanionFollowStep(), // V3: companions heel-follow the player, sim-side
                 new NeedsStep(needs),
+                new EatOnArrivalStep(),
                 new ConsumptionStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
                 new PredationStep(),    // CAN SUYU H3: hunters hunt IN the simulation, NPC-vs-NPC
                 new CompanionGuardStep(), // V3: companions strike hostiles beside the player
@@ -244,6 +245,19 @@ namespace EmberCrpg.Simulation.Composition
             {
                 _questSystem.Tick(context.World);
             }
+        }
+
+        // P0 arrival meals: the walk-eat-return rhythm resolves the tick the walker ARRIVES -
+        // the hour-long standing crowd at the plaza table was the single biggest pile-up source.
+        private sealed class EatOnArrivalStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.Living.NeedConsumptionSystem _consumption =
+                new EmberCrpg.Simulation.Living.NeedConsumptionSystem();
+
+            public EatOnArrivalStep() : base("living.eatOnArrival", TickCadence.PerTick, 22) { }
+
+            public override void Run(in TickContext context)
+                => _consumption.TickArrivals(context.World, context.Stamp);
         }
 
         // CAN SUYU H1: the consumption half of the needs loop — hungry actors eat from real

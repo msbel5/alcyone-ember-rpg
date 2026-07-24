@@ -56,6 +56,23 @@ namespace EmberCrpg.Simulation.Living
             return meals;
         }
 
+        /// <summary>P0 (ARCHITECTURE_GAPS #1): PerTick arrival meals - a hungry civilian who has
+        /// REACHED a larder eats immediately instead of standing at the table up to a full game
+        /// hour waiting for the Hourly step. The Hourly step remains the metabolism half.</summary>
+        public int TickArrivals(WorldState world, EmberCrpg.Domain.Core.GameTime stamp)
+        {
+            if (world?.Actors == null) return 0;
+            int meals = 0;
+            foreach (var actor in world.Actors.Records)
+            {
+                if (actor == null || !actor.IsAlive) continue;
+                if (actor.Role == ActorRole.Player || actor.Role == ActorRole.Enemy) continue;
+                if (actor.Needs.Hunger.Value < HungerEatThreshold) continue; // cheap pre-filter
+                if (TryEat(world, actor, stamp)) meals++;
+            }
+            return meals;
+        }
+
         private bool TryEat(WorldState world, ActorRecord actor, EmberCrpg.Domain.Core.GameTime stamp)
         {
             var pile = FindNearestFoodPile(world, actor.Position, out var foodTag);
