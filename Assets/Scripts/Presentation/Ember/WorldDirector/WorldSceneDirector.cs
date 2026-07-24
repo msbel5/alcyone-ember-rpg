@@ -119,7 +119,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                     : kind == SettlementKind.Village ? 650
                     : kind == SettlementKind.Hamlet ? 200 : 350;
                 int plots = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(pop) / 9f), 2, 12);
-                RuntimeFieldBuilder.BuildBelt(root.transform, layout.GroundRadius + 10f, (seed % 360u) + 137f, plots);
+                // REFORM #1 (ARCHITECTURE_GAPS #4): the polar decor belt is RETIRED - crops render
+                // at the sim plants' projected cells via SimFieldView (id-keyed, per-plant stage).
+                var simFields = new GameObject("SimFields");
+                simFields.transform.SetParent(root.transform, worldPositionStays: false);
+                simFields.AddComponent<SimFieldView>();
                 Debug.Log($"[WorldDirector] fields={plots} plots for pop={pop} ({kind}) — farm belt at the town edge.");
             }
 

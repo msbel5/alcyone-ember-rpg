@@ -34,6 +34,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // the realized farm plot's stalks read it and rise from seed to ripe as sim days pass. Cheap scan
         // (a handful of plant components); dominant stage keeps the visual stable.
         private int _echoCursor = -1;
+        private ulong _lastPlantsHash;
 
         // M6: every NEW world event that names actors becomes a floating echo. Cursor starts at
         // the CURRENT end so loading a 10k-event save replays nothing; per-tick scan is capped.
@@ -83,11 +84,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (plants == null) return;
 
             var site = SettlementSiteId(CurrentSettlementOrStart);
+            var origin = BillboardOrigin();
             int seedCount = 0, sproutCount = 0, ripeCount = 0;
+            ulong plantsHash = 1469598103934665603UL;
+            var plantCells = new System.Collections.Generic.List<
+                EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.PlantCell>();
             foreach (var row in plants.Rows)
             {
                 var p = row.Value;
                 if (p == null || !p.SiteId.Equals(site)) continue;
+                int stageIdx = p.StageId.Value == "ripe" ? 2 : (p.StageId.Value == "sprout" ? 1 : 0);
+                if (plantCells.Count < 64)
+                    plantCells.Add(new EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.PlantCell
+                    {
+                        Id = p.Id.Value,
+                        LocalX = p.Position.X - origin.X,
+                        LocalZ = p.Position.Y - origin.Y,
+                        Stage = stageIdx,
+                    });
+                plantsHash = (plantsHash ^ (p.Id.Value + (ulong)stageIdx)) * 1099511628211UL;
                 switch (p.StageId.Value)
                 {
                     case "ripe": ripeCount++; break;
@@ -100,6 +115,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 : (sproutCount > 0 && sproutCount >= seedCount ? 1 : 0);
             EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.Publish(
                 seedCount + sproutCount + ripeCount, stage);
+            // REFORM #1: per-plant cells go out only when the composition actually changed.
+            if (plantsHash != _lastPlantsHash)
+            {
+                _lastPlantsHash = plantsHash;
+                EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.PublishPlants(plantCells.ToArray());
+            }
             // F6/night staging: the street empties after dark — curfew views read this hour.
             EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.HourOfDay =
                 (int)((_world.Time.TotalMinutes / EmberCrpg.Domain.Core.GameTime.MinutesPerHour) % 24);

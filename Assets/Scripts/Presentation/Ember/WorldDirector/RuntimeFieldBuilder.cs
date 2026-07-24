@@ -31,6 +31,17 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             PlantCount = plantCount;
             StageIndex = stageIndex < 0 ? 0 : (stageIndex > 2 ? 2 : stageIndex);
         }
+
+        /// <summary>REFORM #1 (one spatial authority): the CURRENT settlement plants as
+        /// sim-projected local cells - the visual field IS the sim field, no polar decor.</summary>
+        public struct PlantCell { public ulong Id; public int LocalX; public int LocalZ; public int Stage; }
+        public static PlantCell[] Plants { get; private set; } = System.Array.Empty<PlantCell>();
+        public static int PlantsStamp { get; private set; }
+        public static void PublishPlants(PlantCell[] plants)
+        {
+            Plants = plants ?? System.Array.Empty<PlantCell>();
+            PlantsStamp++;
+        }
     }
 
     /// <summary>Per-stalk view: rescales + recolours itself to the mirrored growth stage every few seconds.</summary>
@@ -47,6 +58,10 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         private float _nextPoll;
         private int _shownStage = -1;
 
+        /// <summary>REFORM #1: when a SimFieldView drives this stalk, ITS plant stage wins
+        /// over the settlement-dominant mirror value (-1 = legacy mirror mode).</summary>
+        public int ExternalStage = -1;
+
         private float _targetHeight = -1f;
 
         private void Update()
@@ -54,7 +69,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (Time.unscaledTime >= _nextPoll)
             {
                 _nextPoll = Time.unscaledTime + 2f;
-                int stage = RuntimeFieldMirror.StageIndex;
+                int stage = ExternalStage >= 0 ? ExternalStage : RuntimeFieldMirror.StageIndex;
                 if (stage != _shownStage)
                 {
                     _shownStage = stage;
@@ -124,4 +139,68 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             return root;
         }
     }
+
+    /// <summary>
+    /// REFORM #1 (ARCHITECTURE_GAPS #4): crops render AT the sim plants projected cells,
+    /// one stalk per PlantComponent, each wearing ITS OWN stage - the seed-angled polar
+    /// belt is retired. Plots appear/prune as the sim adds/removes plants.
+    /// </summary>
+    public sealed class SimFieldView : MonoBehaviour
+    {
+        private readonly System.Collections.Generic.Dictionary<ulong, CropStalkView> _stalks
+            = new System.Collections.Generic.Dictionary<ulong, CropStalkView>();
+        private readonly System.Collections.Generic.HashSet<ulong> _alive
+            = new System.Collections.Generic.HashSet<ulong>();
+        private int _seenStamp = -1;
+        private float _nextPoll;
+
+        private void Update()
+        {
+            if (Time.unscaledTime < _nextPoll) return;
+            _nextPoll = Time.unscaledTime + 1.5f;
+            if (RuntimeFieldMirror.PlantsStamp == _seenStamp) return;
+            _seenStamp = RuntimeFieldMirror.PlantsStamp;
+
+            _alive.Clear();
+            foreach (var cell in RuntimeFieldMirror.Plants)
+            {
+                _alive.Add(cell.Id);
+                if (!_stalks.TryGetValue(cell.Id, out var stalk) || stalk == null)
+                    _stalks[cell.Id] = stalk = BuildPlot(cell);
+                stalk.ExternalStage = cell.Stage;
+            }
+            var dead = new System.Collections.Generic.List<ulong>();
+            foreach (var kv in _stalks)
+                if (!_alive.Contains(kv.Key)) dead.Add(kv.Key);
+            foreach (var id in dead)
+            {
+                if (_stalks[id] != null) Destroy(_stalks[id].transform.parent.gameObject);
+                _stalks.Remove(id);
+            }
+        }
+
+        private CropStalkView BuildPlot(RuntimeFieldMirror.PlantCell cell)
+        {
+            var plot = new GameObject("SimPlot_" + cell.Id);
+            plot.transform.SetParent(transform, worldPositionStays: false);
+            plot.transform.localPosition = new Vector3(cell.LocalX, 0f, cell.LocalZ);
+
+            var soil = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            soil.name = "Soil";
+            Object.Destroy(soil.GetComponent<Collider>());
+            soil.transform.SetParent(plot.transform, worldPositionStays: false);
+            soil.transform.localPosition = new Vector3(0f, 0.04f, 0f);
+            soil.transform.localScale = new Vector3(2.4f, 0.08f, 1.8f);
+            soil.GetComponent<MeshRenderer>().sharedMaterial =
+                RuntimeMaterialPalette.Solid(new Color(0.30f, 0.21f, 0.13f));
+
+            var stalkGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            stalkGo.name = "CropStalk";
+            Object.Destroy(stalkGo.GetComponent<Collider>());
+            stalkGo.transform.SetParent(plot.transform, worldPositionStays: false);
+            stalkGo.transform.localPosition = new Vector3(0f, 0.1f, 0f);
+            return stalkGo.AddComponent<CropStalkView>();
+        }
+    }
 }
+
