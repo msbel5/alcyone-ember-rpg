@@ -756,6 +756,45 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                     Debug.LogError("[AgentCheck] FAIL: template parrots became options.");
                 Debug.Log($"[AgentCheck] live options: {beforeTopics}");
 
+                // REFORM #1 spatial invariants (LOUD in every agentcheck run):
+                // (i) every actor billboard sits on its sim projection (cosmetic wander budget);
+                // (ii) every window pane clears its wall's outer face (the 3x buried-pane bug).
+                int spatialFails = 0;
+                var viewsInScene = UnityEngine.Object.FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None);
+                foreach (var view in viewsInScene)
+                {
+                    if (string.IsNullOrEmpty(view.DomainActorKey)) continue;
+                    if (!commands.TryReadActor(view.DomainActorKey, out var simState)) continue;
+                    float drift = UnityEngine.Vector2.Distance(
+                        new UnityEngine.Vector2(view.transform.position.x, view.transform.position.z),
+                        new UnityEngine.Vector2(simState.WorldPosition.x, simState.WorldPosition.z));
+                    if (drift > 3.5f) // 0.8m wander + lerp headroom
+                    {
+                        spatialFails++;
+                        Debug.LogError($"[Invariant] actor '{view.name}' drifted {drift:0.0}m off its sim projection.");
+                    }
+                }
+                foreach (var pane in UnityEngine.Object.FindObjectsByType<UnityEngine.MeshRenderer>(FindObjectsSortMode.None))
+                {
+                    if (!pane.name.StartsWith("Window") || pane.name.Contains("Frame")) continue;
+                    var building = pane.transform.parent;
+                    if (building == null) continue;
+                    bool buried = true;
+                    foreach (UnityEngine.Transform sibling in building)
+                        if (sibling.name == "Wall" &&
+                            !sibling.GetComponent<UnityEngine.MeshRenderer>().bounds.Intersects(pane.bounds))
+                            buried = false; // clears at least one wall fully = it protrudes somewhere
+                    var local = pane.transform.localPosition;
+                    // simple protrusion check: the pane's centre must sit OUTSIDE the wall half-thickness
+                    if (UnityEngine.Mathf.Abs(UnityEngine.Mathf.Max(
+                            UnityEngine.Mathf.Abs(local.x), UnityEngine.Mathf.Abs(local.z))) < 0.13f)
+                    {
+                        spatialFails++;
+                        Debug.LogError($"[Invariant] pane '{pane.name}' centre inside the wall shell.");
+                    }
+                }
+                Debug.Log($"[Invariant] spatial checks done - fails={spatialFails}.");
+
                 src.SelectTopic("companion_join: Travel with me");
                 Debug.Log($"[AgentCheck] recruit reply: {src.GetCurrentLine()}");
                 yield return new WaitForSecondsRealtime(8f);

@@ -233,64 +233,49 @@ namespace EmberCrpg.Simulation.Composition
             TickCosts.Clear();
             var advanceWatch = System.Diagnostics.Stopwatch.StartNew();
 
-            // 1) Always advance game time and per-tick magic through the declarative registry.
-            foreach (var system in _tickRegistry.PerTick)
+            // REFORM #2 (cadence invariance - pinned by CadenceChunkingInvarianceTests): a
+            // ragged Advance REPLAYS the skipped ticks ONE BY ONE, interleaving hourly/daily
+            // boundaries exactly where they fall. A 40-tick jump and forty 1-tick calls now
+            // produce the IDENTICAL history: the sweep-count divergence the test caught came
+            // from per-tick movement being delta-batched while hourly systems read positions.
+            // Cost: O(delta) per-tick work - travel/wait pay real seconds for a real timeline.
+            for (int step = 0; step < delta; step++)
             {
-                SystemWatch.Restart();
-                system.Run(new TickContext(world, world.Time, delta));
-                Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
-            }
-
-            // 2) Hourly tick: NeedsSystem decays per-actor needs at its
-            // design rate. Codex audit (seventh pass A-P1 #1): previously the
-            // composer only advanced time, so colony needs never moved in a
-            // running game. Gate at TicksPerGameHour so the existing
-            // HungerIncreasePerTick=20 numbers stay calibrated.
-            // Codex ninth-pass A-P2 / G-P2: catch-up events must be stamped
-            // at the cadence-boundary timestamp, not at the post-advance
-            // time, so event-log replays show needs ticking at hour
-            // boundaries. We compute the number of boundary crossings up
-            // front, then iterate forward stamping each crossing at its
-            // exact minute. This is deterministically equivalent to the
-            // original modulus juggling but avoids the off-by-one when more
-            // than one boundary is crossed in a single Advance call.
-            _ticksSinceHourly += delta;
-            int hourlyCrossings = _ticksSinceHourly / TicksPerGameHour;
-            _ticksSinceHourly -= hourlyCrossings * TicksPerGameHour;
-            for (int i = 1; i <= hourlyCrossings; i++)
-            {
-                if (world.Actors == null || world.Events == null) continue;
-                // Boundary i was reached at world.Time - (totalRemaining) where
-                // totalRemaining = (hourlyCrossings - i)*hour + _ticksSinceHourly.
-                long stampMinutes = world.Time.TotalMinutes
-                                    - (long)_ticksSinceHourly
-                                    - ((long)hourlyCrossings - i) * TicksPerGameHour;
-                var stamp = new GameTime(stampMinutes < 0 ? 0 : stampMinutes);
-
-                foreach (var system in _tickRegistry.Hourly)
+                foreach (var system in _tickRegistry.PerTick)
                 {
                     SystemWatch.Restart();
-                    system.Run(new TickContext(world, stamp, delta));
+                    system.Run(new TickContext(world, world.Time, 1));
                     Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
                 }
-            }
 
-            _ticksSinceDaily += delta;
-            int dailyCrossings = _ticksSinceDaily / TicksPerGameDay;
-            _ticksSinceDaily -= dailyCrossings * TicksPerGameDay;
-            for (int i = 1; i <= dailyCrossings; i++)
-            {
-                if (world.Events == null) continue;
-                long stampMinutes = world.Time.TotalMinutes
-                                    - (long)_ticksSinceDaily
-                                    - ((long)dailyCrossings - i) * TicksPerGameDay;
-                var stamp = new GameTime(stampMinutes < 0 ? 0 : stampMinutes);
-
-                foreach (var system in _tickRegistry.Daily)
+                _ticksSinceHourly += 1;
+                if (_ticksSinceHourly >= TicksPerGameHour && world.Actors != null && world.Events != null)
                 {
-                    SystemWatch.Restart();
-                    system.Run(new TickContext(world, stamp, delta));
-                    Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
+                    _ticksSinceHourly -= TicksPerGameHour;
+                    // world.Time IS the boundary here - the time system advanced this very tick.
+                    foreach (var system in _tickRegistry.Hourly)
+                    {
+                        SystemWatch.Restart();
+                        system.Run(new TickContext(world, world.Time, 1));
+                        Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
+                    }
+                }
+                else if (_ticksSinceHourly >= TicksPerGameHour)
+                {
+                    _ticksSinceHourly -= TicksPerGameHour;
+                }
+
+                _ticksSinceDaily += 1;
+                if (_ticksSinceDaily >= TicksPerGameDay)
+                {
+                    _ticksSinceDaily -= TicksPerGameDay;
+                    if (world.Events != null)
+                        foreach (var system in _tickRegistry.Daily)
+                        {
+                            SystemWatch.Restart();
+                            system.Run(new TickContext(world, world.Time, 1));
+                            Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
+                        }
                 }
             }
 
