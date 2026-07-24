@@ -90,9 +90,12 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
                 // L-wing: a lower side annex on the lateral axis (never blocks the entrance wall).
                 bool entranceOnXAxis = entrance == DoorSide.North || entrance == DoorSide.South;
                 float side = ((varRoll >> 4) & 1u) == 0u ? 1f : -1f;
+                // AUTOPSY FIX ('odalar arasinda kapi yok'): 0.62 pushed the SOLID wing through
+                // the side wall - it read as a sealed second room. 0.78 keeps it fully OUTSIDE
+                // as an annex; true interior partitions + doors are the P1 WallWithGap port.
                 var wingOffset = entranceOnXAxis
-                    ? new Vector3(side * (placement.SizeX * 0.62f), 0f, 0f)
-                    : new Vector3(0f, 0f, side * (placement.SizeZ * 0.62f));
+                    ? new Vector3(side * (placement.SizeX * 0.78f), 0f, 0f)
+                    : new Vector3(0f, 0f, side * (placement.SizeZ * 0.78f));
                 float wingH = placement.Height * 0.62f;
                 AddSlab(root.transform, "Wing",
                     wingOffset + new Vector3(0f, wingH / 2f, 0f),

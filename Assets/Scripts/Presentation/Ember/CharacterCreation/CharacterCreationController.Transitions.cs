@@ -191,7 +191,12 @@ namespace EmberCrpg.Presentation.Ember.CharacterCreation
             int count = VisibleHistoryCharacterCount(elapsed);
             if (count <= 0) return string.Empty;
             if (count >= full.Length) return full;
-            return full.Substring(0, count);
+            // AUTOPSY FIX: the raw prefix stranded words ('Year -618 - Sko'). Cut at the last
+            // completed ENTRY boundary instead - lines appear whole or not at all.
+            int boundary = full.LastIndexOf("
+
+", count, System.StringComparison.Ordinal);
+            return boundary > 0 ? full.Substring(0, boundary) : string.Empty;
         }
 
         // "The World Awakens" (pre-dossier): build the history reveal from the REAL deterministic world the
