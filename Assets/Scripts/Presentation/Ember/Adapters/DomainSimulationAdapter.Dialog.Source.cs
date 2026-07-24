@@ -49,6 +49,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // to the world list only when no conversation is active.
         public IReadOnlyList<string> GetTopics()
         {
+            var live = ActiveOptions;
+            if (live != null)
+            {
+                var topics = new List<string>(live);
+                AppendCompanionTopics(topics);
+                return topics; // W23: consumed options are gone, followups have grown in
+            }
             if (_conversation != null && _conversation.Topics.Count > 0)
             {
                 var topics = _conversation.Topics.Select(t => t.Id).ToList();
@@ -118,6 +125,63 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             EmberCrpg.Presentation.Ember.Audio.SpeechDirector.FeedFinal(
                 EmberCrpg.Simulation.AiDm.PlayerVoiceService.PlayerVoiceKey(player.Name, _world.PlayerClassName),
                 questionText);
+        }
+
+        // W23 DIALOG STATE MACHINE v1 (GemRB DLG skeleton + LLM content): per-NPC LIVE option
+        // list - picked options are CONSUMED, the answer's FOLLOWUPS grow new ones, and the
+        // memo SURVIVES farewell so reopening resumes where you left off.
+        private readonly System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> _liveOptions
+            = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
+
+        private string ActiveMemoKey
+            => !_activeDialogActorId.IsEmpty ? "id:" + _activeDialogActorId.Value : "name:" + _activeDialogActor;
+
+        private System.Collections.Generic.List<string> ActiveOptions
+        {
+            get { _liveOptions.TryGetValue(ActiveMemoKey, out var options); return options; }
+        }
+
+        internal void EnsureLiveOptions(System.Collections.Generic.IEnumerable<string> seedTopicIds)
+        {
+            if (_liveOptions.ContainsKey(ActiveMemoKey)) return; // resume: keep the lived state
+            _liveOptions[ActiveMemoKey] = new System.Collections.Generic.List<string>(seedTopicIds
+                ?? System.Linq.Enumerable.Empty<string>());
+        }
+
+        private void ConsumeOption(string picked)
+        {
+            var options = ActiveOptions;
+            options?.RemoveAll(o => string.Equals(o, picked, System.StringComparison.Ordinal));
+        }
+
+        private void AbsorbFollowups(System.Collections.Generic.List<string> followups)
+        {
+            var options = ActiveOptions;
+            if (options == null || followups == null) return;
+            foreach (var question in followups)
+                if (!options.Contains(question) && options.Count < 6)
+                    options.Add(question);
+        }
+
+        internal const string FollowupsInstruction =
+            " End with one final line exactly like: FOLLOWUPS: first question | second question | third question" +
+            " - three short in-character questions the traveller might naturally ask you NEXT.";
+
+        /// <summary>Split "answer ... FOLLOWUPS: q1 | q2 | q3" into (answer, questions).</summary>
+        internal static (string Body, System.Collections.Generic.List<string> Followups) SplitFollowups(string answer)
+        {
+            var none = (answer, (System.Collections.Generic.List<string>)null);
+            if (string.IsNullOrEmpty(answer)) return none;
+            int at = answer.LastIndexOf("FOLLOWUPS:", System.StringComparison.OrdinalIgnoreCase);
+            if (at < 0) return none;
+            var body = answer.Substring(0, at).TrimEnd();
+            var list = new System.Collections.Generic.List<string>();
+            foreach (var raw in answer.Substring(at + 10).Split('|'))
+            {
+                var q = raw.Trim().TrimStart('-', '*', ' ').Trim();
+                if (q.Length > 4 && list.Count < 3) list.Add(q);
+            }
+            return (body.Length > 0 ? body : answer, list.Count > 0 ? list : null);
         }
 
         // TTS ('sadece gate diyor'): menu labels become sentences a person would actually say.
@@ -220,6 +284,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (string.IsNullOrEmpty(topicId)) return;
             if (TryHandleCompanionTopic(topicId)) return;
             if (TryHandleQuestInteractionTopic(topicId)) return;
+            ConsumeOption(topicId); // W23: a picked bubble pops
+
+            // W23: a grown FOLLOWUP is a QUESTION, not a catalog id - route it through the
+            // free-text path (same LLM, same memory) instead of pretending it is a topic.
+            bool isCatalogTopic = _conversation?.FindTopic(topicId) != null
+                || (_world.Topics?.Any(t => string.Equals(t.Id, topicId, System.StringComparison.Ordinal)) ?? false);
+            if (!isCatalogTopic && topicId.Contains("?"))
+            {
+                AskFreeText(topicId);
+                return;
+            }
 
             // EMB-045: answer from THIS actor's topic set first; only fall back to the world list. An
             // actor never answers for a topic they did not offer.

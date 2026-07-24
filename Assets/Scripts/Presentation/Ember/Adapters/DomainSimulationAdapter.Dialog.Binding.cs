@@ -93,6 +93,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _activeDialogNpcId = npcId;
             _activeDialogActor = actorName ?? string.Empty;
             _currentPortrait = ResolveConversationPortraitKey(npc, _activeDialogActor);
+            // W23: seed the live-option memo once; a RETURNING conversation keeps its lived
+            // state - consumed bubbles stay gone, grown followups stay offered.
+            EnsureLiveOptions(_conversation?.Topics?.Select(t => t.Id)
+                ?? System.Linq.Enumerable.Empty<string>());
 
             // PLAYTEST FIX ("benimle tanistigini hatirlamiyor"): the FIRST conversation writes a
             // met_player memory carrying the player's NAME — from then on this NPC greets an

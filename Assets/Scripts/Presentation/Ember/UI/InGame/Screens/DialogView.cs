@@ -301,11 +301,13 @@ namespace EmberCrpg.Presentation.Ember.UI.InGame.Screens
         {
             var button = new Button(() =>
             {
-                BeginQuestion("Ask about " + topic.Label);
+                BeginQuestion(topic.Label != null && topic.Label.Contains("?") ? topic.Label : "Ask about " + topic.Label);
                 onTopic?.Invoke(topic.Id);
             })
             {
-                text = index + ". Ask about " + topic.Label
+                text = topic.Label != null && topic.Label.Contains("?")
+                    ? index + ". " + topic.Label
+                    : index + ". Ask about " + topic.Label
             };
             ResetButton(button);
             button.style.width = Length.Percent(100);

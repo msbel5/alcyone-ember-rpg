@@ -38,7 +38,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 180, // PLAYTEST REVERT ("96da sadece considers your question diyor"): quality beats latency; STREAMING is the real latency fix
 
                 npc.Id.Value + ((ulong)asked * 0x9E3779B97F4A7C15UL),
-                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests. The conversation log below is what you personally remember - witnessed events, past talks, trades - use it when it bears on the question." + CompanionPersonaSuffix(npc.Id.Value) + AcquaintanceSuffix(npc.Id.Value) + PlayerContextSuffix() + RepeatAskSuffix(asked),
+                $"You are {npc.Name}, a {npc.Role} in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests. The conversation log below is what you personally remember - witnessed events, past talks, trades - use it when it bears on the question." + CompanionPersonaSuffix(npc.Id.Value) + AcquaintanceSuffix(npc.Id.Value) + PlayerContextSuffix() + RepeatAskSuffix(asked) + FollowupsInstruction,
                 RecallDialogMemory(npc.Id.Value));
 
             // EMB-007/DET-02: blocking LLM call off-thread; shared-state mutations are enqueued and
@@ -59,9 +59,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // deterministic topic answer with an empty/whitespace inference result.
                 // BUG-DIALOG-TURNLEAK: also strip echoed chat-turn scaffolding; only a non-empty cleaned
                 // line replaces the deterministic topic answer.
-                var answer = SanitizeNpcLine(response?.Text);
-                if (!string.IsNullOrEmpty(answer))
-                    _currentDialogLine = answer;
+                var split = SplitFollowups(SanitizeNpcLine(response?.Text));
+                if (!string.IsNullOrEmpty(split.Body))
+                    _currentDialogLine = split.Body;
+                AbsorbFollowups(split.Followups); // W23: the answer grows the next bubbles
                 _isDialogThinking = false;
             });
         }
@@ -93,7 +94,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 180, // PLAYTEST REVERT ("96da sadece considers your question diyor"): quality beats latency; STREAMING is the real latency fix
 
                 seed,
-                $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests." + PlayerContextSuffix() + RepeatAskSuffix(asked),
+                $"You are {actorName}, a character in a {StyleDescriptor()} world. The player asks you about \"{topicLabel}\". Answer briefly in character (1-2 sentences). Reference what you know; do not invent new quests." + PlayerContextSuffix() + RepeatAskSuffix(asked) + FollowupsInstruction,
                 RecallDialogMemoryByName(actorName));
 
             // M3a: partials arrive on the WORKER thread - marshal through the apply queue and
@@ -112,9 +113,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     $"llm-len={(response?.Text?.Length ?? -1)} used={(response != null && !string.IsNullOrWhiteSpace(response.Text))}");
                 // BUG-DIALOG-TURNLEAK: strip echoed chat-turn scaffolding; only a non-empty cleaned line
                 // replaces the deterministic topic answer.
-                var answer = SanitizeNpcLine(response?.Text);
-                if (!string.IsNullOrEmpty(answer))
-                    _currentDialogLine = answer;
+                var split = SplitFollowups(SanitizeNpcLine(response?.Text));
+                if (!string.IsNullOrEmpty(split.Body))
+                    _currentDialogLine = split.Body;
+                AbsorbFollowups(split.Followups); // W23: the answer grows the next bubbles
                 _isDialogThinking = false;
             });
         }
