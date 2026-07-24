@@ -48,7 +48,8 @@ namespace EmberCrpg.Simulation.Composition
                 new CompanionFollowStep(), // V3: companions heel-follow the player, sim-side
                 new NeedsStep(needs),
                 new EatOnArrivalStep(),
-                new ConsumptionStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
+                new ConsumptionStep(),
+                new AmbientLifeStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
                 new PredationStep(),    // CAN SUYU H3: hunters hunt IN the simulation, NPC-vs-NPC
                 new CompanionGuardStep(), // V3: companions strike hostiles beside the player
                 new WitnessStep(),      // CAN SUYU H3: attacks are seen, remembered, answered
@@ -258,6 +259,18 @@ namespace EmberCrpg.Simulation.Composition
 
             public override void Run(in TickContext context)
                 => _consumption.TickArrivals(context.World, context.Stamp);
+        }
+
+        // P1 ambient life: rats raid the larder, cats hunt the rats - cheap agents, real stock.
+        private sealed class AmbientLifeStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.Living.AmbientLifeSystem _life =
+                new EmberCrpg.Simulation.Living.AmbientLifeSystem();
+
+            public AmbientLifeStep() : base("living.ambient", TickCadence.Hourly, 50) { }
+
+            public override void Run(in TickContext context)
+                => _life.Tick(context.World, context.Stamp);
         }
 
         // CAN SUYU H1: the consumption half of the needs loop — hungry actors eat from real

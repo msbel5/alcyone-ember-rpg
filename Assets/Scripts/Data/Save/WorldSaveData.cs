@@ -75,6 +75,12 @@ public DungeonRoomSaveData[] dungeonRooms;
         public ulong[] pursuitGuardIds;
         public ulong[] pursuitTargetIds;
         public long[] pursuitUntilMinutes;
+        // P1 ambient life: parallel arrays.
+        public ulong[] critterIds;
+        public ulong[] critterSiteIds;
+        public int[] critterXs;
+        public int[] critterYs;
+        public string[] critterKinds;
         // F31: the three-act main-quest spine.
         public int mainQuestAct;
         public int mainQuestRequiredInscriptions;

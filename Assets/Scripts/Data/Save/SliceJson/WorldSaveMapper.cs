@@ -96,6 +96,11 @@ inventory = ToInventoryData(world.PlayerInventory),
                 pursuitGuardIds = world.GuardPursuits?.ConvertAll(p => p.GuardId).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitTargetIds = world.GuardPursuits?.ConvertAll(p => p.TargetId).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitUntilMinutes = world.GuardPursuits?.ConvertAll(p => p.UntilMinutes).ToArray() ?? System.Array.Empty<long>(),
+                critterIds = world.Critters?.ConvertAll(c => c.Id).ToArray() ?? System.Array.Empty<ulong>(),
+                critterSiteIds = world.Critters?.ConvertAll(c => c.SiteId.Value).ToArray() ?? System.Array.Empty<ulong>(),
+                critterXs = world.Critters?.ConvertAll(c => c.Cell.X).ToArray() ?? System.Array.Empty<int>(),
+                critterYs = world.Critters?.ConvertAll(c => c.Cell.Y).ToArray() ?? System.Array.Empty<int>(),
+                critterKinds = world.Critters?.ConvertAll(c => c.Kind).ToArray() ?? System.Array.Empty<string>(),
                 mainQuestAct = world.MainQuest?.Act ?? 1,
                 mainQuestRequiredInscriptions = world.MainQuest?.RequiredInscriptions ?? 3,
                 mainQuestFinalDelveId = world.MainQuest?.FinalDelveId ?? 0UL,
@@ -196,6 +201,16 @@ world.Items = ToItemStore(data.itemRecords);
                         GuardId = data.pursuitGuardIds[i],
                         TargetId = data.pursuitTargetIds[i],
                         UntilMinutes = data.pursuitUntilMinutes[i],
+                    });
+            world.Critters = new System.Collections.Generic.List<AmbientCritter>();
+            if (data.critterIds != null && data.critterKinds != null)
+                for (int i = 0; i < data.critterIds.Length && i < data.critterKinds.Length; i++)
+                    world.Critters.Add(new AmbientCritter
+                    {
+                        Id = data.critterIds[i],
+                        SiteId = new SiteId(data.critterSiteIds[i]),
+                        Cell = new GridPosition(data.critterXs[i], data.critterYs[i]),
+                        Kind = data.critterKinds[i],
                     });
             world.CompanionIds = data.companionIds != null
                 ? new System.Collections.Generic.List<ulong>(data.companionIds)

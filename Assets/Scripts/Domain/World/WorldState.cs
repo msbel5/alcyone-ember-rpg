@@ -171,6 +171,8 @@ namespace EmberCrpg.Domain.World
         public List<ulong> CompanionIds = new List<ulong>();
         /// <summary>P0 pursuit: active guard chases (guard -> quarry, with an expiry).</summary>
         public List<PursuitRecord> GuardPursuits = new List<PursuitRecord>();
+        /// <summary>P1 ambient life: rats and cats - cheap agents with real stock effects.</summary>
+        public List<AmbientCritter> Critters = new List<AmbientCritter>();
         public SpellCooldownState PlayerSpellCooldowns = new SpellCooldownState();
         public ShieldBuffState PlayerShieldBuffs = new ShieldBuffState();
         public bool DoorOpen;
@@ -242,6 +244,7 @@ namespace EmberCrpg.Domain.World
             NpcMemory = other.NpcMemory;
             CompanionIds = other.CompanionIds;
             GuardPursuits = other.GuardPursuits;
+            Critters = other.Critters;
             PlayerSpellCooldowns = other.PlayerSpellCooldowns;
             PlayerShieldBuffs = other.PlayerShieldBuffs;
             DoorOpen = other.DoorOpen;
