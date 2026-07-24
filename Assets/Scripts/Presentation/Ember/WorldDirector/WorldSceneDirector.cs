@@ -234,7 +234,11 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // depenetration ejected the player onto the ROOF stack. Spawn at the recorded mouth
             // instead — always on the entry floor, facing the corridor.
             if (kind == SettlementKind.Dungeon && RuntimeDungeonLayoutInfo.RoomCount > 0)
-                spawn = RuntimeDungeonLayoutInfo.EntryWorld + Vector3.up * 0.4f;
+                // LIVE BUG ('dungeona isinlandik ama disina'): EntryWorld is the proof-camera
+                // anchor JUST OUTSIDE the mouth (the interior digs -Z while this sits at +1.5),
+                // and the mine's solid Mound collider stands on the same spot. StartRoomWorld is
+                // the generator's entry-room centre - guaranteed clear, floor-level after crest.
+                spawn = RuntimeDungeonLayoutInfo.StartRoomWorld + Vector3.up * 0.4f;
             RuntimePlayerSpawn.Record(spawn); // F15: the death-screen awaken teleports the rig back here
             RuntimePlayerRig.Build(spawn, Quaternion.Euler(0f, layout.PlayerFacingDeg, 0f));
 

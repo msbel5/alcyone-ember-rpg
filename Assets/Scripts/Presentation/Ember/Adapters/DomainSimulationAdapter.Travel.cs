@@ -26,6 +26,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
         }
 
+        public ulong CurrentSettlementKey => CurrentSettlementOrStart.Value;
+
         public bool TryBeginTravelToSettlement(string settlementName, out int travelDays, out string message)
         {
             travelDays = 0;

@@ -64,6 +64,8 @@ namespace EmberCrpg.Presentation.Ember.Views
         private static readonly HashSet<string> LoggedSpriteResolutions = new HashSet<string>();
         private Sprite _fallbackSprite;
         private readonly HashSet<ulong> _spawnedIds = new HashSet<ulong>();
+        private readonly Dictionary<ulong, GameObject> _spawnedRoots = new Dictionary<ulong, GameObject>();
+        private ulong _spawnedForSettlement;
 
         /// <summary>
         /// Spawn a billboard for each nearby generated actor that has no authored ActorView. Returns the
@@ -78,6 +80,30 @@ namespace EmberCrpg.Presentation.Ember.Views
 
             var candidates = readModel.GetSpawnableActors();
             if (candidates == null || candidates.Count == 0) return 0;
+
+            // LIVE BUG ('npc ler koyden uzaklasmaya basliyorlar'): residency filters the SPAWN
+            // side only - after travel, billboards of the previous city stayed in the scene while
+            // the origin re-based, so their next projected target was kilometres out and they
+            // walked for the horizon. Sweep spawned views whose actors are no longer candidates,
+            // gated on the settlement key so same-site play (incl. F10 corpses) is untouched.
+            if (readModel.CurrentSettlementKey != _spawnedForSettlement)
+            {
+                if (_spawnedRoots.Count > 0)
+                {
+                    var candidateIds = new HashSet<ulong>();
+                    foreach (var c in candidates) candidateIds.Add(c.Id);
+                    var stale = new List<ulong>();
+                    foreach (var pair in _spawnedRoots)
+                        if (!candidateIds.Contains(pair.Key)) stale.Add(pair.Key);
+                    foreach (var staleId in stale)
+                    {
+                        if (_spawnedRoots[staleId] != null) Destroy(_spawnedRoots[staleId]);
+                        _spawnedRoots.Remove(staleId);
+                        _spawnedIds.Remove(staleId);
+                    }
+                }
+                _spawnedForSettlement = readModel.CurrentSettlementKey;
+            }
 
             // Ids that already have an authored (or previously-spawned) ActorView must not be duplicated.
             // FindObjectsByType is O(scene) but runs only on this one-shot spawn, not per frame.
@@ -217,6 +243,7 @@ namespace EmberCrpg.Presentation.Ember.Views
             hitBox.size = new Vector3(0.8f, 1.8f, 0.8f);
 
             _spawnedIds.Add(candidate.Id);
+            _spawnedRoots[candidate.Id] = root;
             return true;
         }
 

@@ -168,12 +168,13 @@ namespace EmberCrpg.Simulation.Living
             return best;
         }
 
-        // The 25 seats of the communal table: a Chebyshev spiral over the 5x5 block centred on
-        // the food spot. Every cell stays within EatReachCells (2) of the site centre, so eating
-        // works from every seat -- but no two ordinals share a cell, so no two diners share one.
+        // The 16 seats of the communal table: the Chebyshev RING-2 cells around the food spot.
+        // LIVE BUG ('masanin uzerine cikip eating'): the inner 3x3 is exactly where the plaza
+        // table + benches render (the food spot projects to world origin), so the sim never
+        // targets it - diners sit AROUND the furniture. Every ring cell is exactly
+        // EatReachCells (2) from the centre, so meals still succeed from every seat.
         private static readonly (int dx, int dy)[] SeatOffsets =
         {
-            (0, 0), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1),
             (2, 0), (2, 1), (2, 2), (1, 2), (0, 2), (-1, 2), (-2, 2), (-2, 1), (-2, 0),
             (-2, -1), (-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2), (2, -1),
         };

@@ -34,6 +34,7 @@ namespace EmberCrpg.Presentation.Ember.Views
             for (int i = 0; i < _actorViews.Length; i++)
             {
                 var actor = _actorViews[i];
+                if (actor == null) continue; // despawned on site change (Unity destroyed-== null)
                 ActorViewState state;
                 bool resolved = actor.HasDomainActorId
                     ? _worldView.TryReadActor(actor.DomainActorId, out state)

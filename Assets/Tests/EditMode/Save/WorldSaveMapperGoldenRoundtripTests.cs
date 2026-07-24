@@ -32,7 +32,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             { BornMinutes = 42, SiteId = new SiteId(1), Text = "golden tale" });
             world.RumorEventCursor = 3;
             world.SiteUnrest.Add(new SiteUnrestRecord
-            { SiteId = new SiteId(1), Unrest = 4, LastDecayDay = 2 });
+            { SiteId = new SiteId(1), Unrest = 4, LastDecayDay = 2, SweepCooldownUntilMinutes = 777 });
 
             var first = WorldSaveMapper.ToData(world);
             var back = WorldSaveMapper.ToWorld(first, new WorldFactory().Create(roomSeed: 7));

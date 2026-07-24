@@ -90,6 +90,7 @@ public DungeonRoomSaveData[] dungeonRooms;
         public ulong[] unrestSiteIds;
         public int[] unrestValues;
         public long[] unrestLastDecayDays;
+        public long[] unrestSweepCooldownUntilMinutes;
         // F31: the three-act main-quest spine.
         public int mainQuestAct;
         public int mainQuestRequiredInscriptions;

@@ -47,6 +47,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public bool TryReadActor(ActorId id, out ActorViewState state) { state = default; return false; }
         public bool TryReadWorksite(string siteName, out WorksiteViewState state) { state = default; return false; }
         public IReadOnlyList<SpawnableActor> GetSpawnableActors() => EmptyActors;
+        public ulong CurrentSettlementKey => 0UL;
 
         public void LogCombat(string message) { }
         public void TakePlayerDamage(int amount) { }

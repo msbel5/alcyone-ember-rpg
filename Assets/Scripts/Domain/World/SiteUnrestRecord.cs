@@ -7,5 +7,6 @@ namespace EmberCrpg.Domain.World
         public EmberCrpg.Domain.Core.SiteId SiteId;
         public int Unrest;
         public long LastDecayDay;
+        public long SweepCooldownUntilMinutes;
     }
 }

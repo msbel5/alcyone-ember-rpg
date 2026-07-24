@@ -108,6 +108,7 @@ inventory = ToInventoryData(world.PlayerInventory),
                 unrestSiteIds = world.SiteUnrest?.ConvertAll(u => u.SiteId.Value).ToArray() ?? System.Array.Empty<ulong>(),
                 unrestValues = world.SiteUnrest?.ConvertAll(u => u.Unrest).ToArray() ?? System.Array.Empty<int>(),
                 unrestLastDecayDays = world.SiteUnrest?.ConvertAll(u => u.LastDecayDay).ToArray() ?? System.Array.Empty<long>(),
+                unrestSweepCooldownUntilMinutes = world.SiteUnrest?.ConvertAll(u => u.SweepCooldownUntilMinutes).ToArray() ?? System.Array.Empty<long>(),
                 mainQuestAct = world.MainQuest?.Act ?? 1,
                 mainQuestRequiredInscriptions = world.MainQuest?.RequiredInscriptions ?? 3,
                 mainQuestFinalDelveId = world.MainQuest?.FinalDelveId ?? 0UL,
@@ -238,6 +239,9 @@ world.Items = ToItemStore(data.itemRecords);
                         Unrest = data.unrestValues[i],
                         LastDecayDay = data.unrestLastDecayDays != null && i < data.unrestLastDecayDays.Length
                             ? data.unrestLastDecayDays[i] : 0L,
+                        SweepCooldownUntilMinutes = data.unrestSweepCooldownUntilMinutes != null
+                            && i < data.unrestSweepCooldownUntilMinutes.Length
+                            ? data.unrestSweepCooldownUntilMinutes[i] : 0L,
                     });
             world.CompanionIds = data.companionIds != null
                 ? new System.Collections.Generic.List<ulong>(data.companionIds)

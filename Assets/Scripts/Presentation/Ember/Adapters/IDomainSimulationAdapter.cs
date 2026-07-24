@@ -88,6 +88,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         /// in deterministic order and NOT pre-cull. Placeholder adapters return an empty list.
         /// </summary>
         IReadOnlyList<SpawnableActor> GetSpawnableActors();
+
+        /// <summary>Stable key of the settlement the view layer is currently realized around.
+        /// Changes exactly when travel re-bases the billboard origin - the spawner uses it to
+        /// despawn billboards whose actors live in the PREVIOUS city (their positions would
+        /// otherwise project kilometres away and the views beeline for the horizon).</summary>
+        ulong CurrentSettlementKey { get; }
     }
 
     /// <summary>

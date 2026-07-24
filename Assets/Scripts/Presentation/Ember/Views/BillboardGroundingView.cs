@@ -36,6 +36,7 @@ namespace EmberCrpg.Presentation.Ember.Views
                     if (t.GetComponent<EmberCrpg.Presentation.Ember.Interaction.EmberInteractable>() != null) continue;
                     string n = t.name;
                     if (n.Contains("Roof") || n.Contains("Canopy") || n.Contains("canopy")) continue;
+                    if (n.Contains("Table") || n.Contains("Bench") || n.Contains("Trestle")) continue; // furniture is not ground
                     if (hits[i].point.y > best) best = hits[i].point.y;
                 }
                 if (best > float.MinValue)

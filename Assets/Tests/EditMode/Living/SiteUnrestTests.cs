@@ -58,6 +58,29 @@ namespace EmberCrpg.Tests.EditMode.Living
         }
 
         [Test]
+        public void ContinuousTrouble_SweepsOncePerDay_AndReArmsAfterTheCooldown()
+        {
+            var world = World();
+            var attacker = Actor(1, "Hound", ActorRole.Enemy, new GridPosition(5, 5));
+            world.Actors.Add(attacker);
+            world.Actors.Add(Actor(2, "Witness", ActorRole.Talker, new GridPosition(6, 5)));
+            world.Actors.Add(Actor(3, "Watch", ActorRole.Guard, new GridPosition(9, 5)));
+            world.Actors.Add(Actor(4, "Watch2", ActorRole.Guard, new GridPosition(11, 5)));
+
+            for (int hour = 1; hour <= 12; hour++) Report(world, attacker, hour);
+
+            int Sweeps() => world.Events.Events.Count(e =>
+                e.Kind == WorldEventKind.ChronicleEvent
+                && e.Reason != null && e.Reason.StartsWith("watch_sweep"));
+            Assert.That(Sweeps(), Is.EqualTo(1),
+                "a day of continuous trouble is ONE sweep, not a chronicle flood");
+
+            Report(world, attacker, 26); // past the one-day cooldown
+            Assert.That(Sweeps(), Is.EqualTo(2),
+                "the watch re-arms once the cooldown lapses");
+        }
+
+        [Test]
         public void Unrest_DecaysWithTheDays()
         {
             var world = World();

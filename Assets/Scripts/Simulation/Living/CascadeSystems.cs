@@ -217,6 +217,7 @@ namespace EmberCrpg.Simulation.Living
         /// the WHOLE watch of that settlement sweeps - every guard arms a pursuit at once, a
         /// chronicle line lands, and the ledger resets to a wary simmer.</summary>
         public const int SweepThreshold = 6;
+        public const long SweepCooldownMinutes = 1440; // one sweep per site per game day
         private static void RaiseUnrest(WorldState world, SiteId siteId, int amount, GameTime stamp, ulong attackerId)
         {
             if (siteId.IsEmpty) return;
@@ -237,6 +238,16 @@ namespace EmberCrpg.Simulation.Living
             }
             row.Unrest += amount;
             if (row.Unrest < SweepThreshold) return;
+
+            // TUNING ('sweep spam', 5510 marathon lines): per-guard raises re-cross the threshold
+            // within the hour. During the cooldown unrest holds just under the line - the town
+            // stays primed but the watch marches at most once per game day per site.
+            if (stamp.TotalMinutes < row.SweepCooldownUntilMinutes)
+            {
+                row.Unrest = SweepThreshold - 1;
+                return;
+            }
+            row.SweepCooldownUntilMinutes = stamp.TotalMinutes + SweepCooldownMinutes;
 
             row.Unrest = 2; // the sweep clears the air, not the memory
             int swept = 0;

@@ -152,7 +152,8 @@ namespace EmberCrpg.Tests.EditMode.Living
             var actor = Record(new GridPosition(3, 3)).WithHomeAndAnchor(home, anchor);
 
             actor.ApplyNeeds(ActorNeeds.Comfortable.WithHunger(new NeedValue(80)));
-            Assert.That(ScheduleSystem.ChooseTarget(actor, day, foodSpot), Is.EqualTo(foodSpot), "hunger wins the day");
+            Assert.That(ScheduleSystem.ChooseTarget(actor, day, foodSpot),
+                Is.EqualTo(new GridPosition(7, 0)), "hunger wins the day - to a ring seat, never the tabletop");
 
             actor.ApplyNeeds(ActorNeeds.Comfortable.WithFatigue(new NeedValue(90)));
             Assert.That(ScheduleSystem.ChooseTarget(actor, night, foodSpot), Is.EqualTo(home), "exhaustion sends you home at night");
@@ -208,27 +209,31 @@ namespace EmberCrpg.Tests.EditMode.Living
         }
 
         [Test]
-        public void ChooseTarget_SeatOrdinals0Through24_DistinctCellsAllWithinEatReach()
+        public void ChooseTarget_SeatOrdinals0Through15_DistinctRingSeats_NeverTheTabletop()
         {
-            // Review-mandated pin: the personal-seat fan-out is what keeps the lunch crowd from
-            // stacking (Gate8); every ordinal must own a DISTINCT cell inside eating reach.
+            // Review-mandated pin (Gate8) + W30: every ordinal owns a DISTINCT cell inside eating
+            // reach, and NO ordinal enters the inner 3x3 where the plaza furniture renders.
             var actor = IdleActor(new GridPosition(0, 0));
             actor.ApplyNeeds(actor.Needs.WithHunger(new NeedValue(100)));
             var table = new GridPosition(10, 10);
 
             var seats = new System.Collections.Generic.HashSet<GridPosition>();
             int worstReach = 0;
-            for (int ordinal = 0; ordinal < 25; ordinal++)
+            int nearestReach = int.MaxValue;
+            for (int ordinal = 0; ordinal < 16; ordinal++)
             {
                 var seat = ScheduleSystem.ChooseTarget(actor, WorkHour, table, ordinal);
                 seats.Add(seat);
                 int reach = System.Math.Max(System.Math.Abs(seat.X - table.X), System.Math.Abs(seat.Y - table.Y));
                 if (reach > worstReach) worstReach = reach;
+                if (reach < nearestReach) nearestReach = reach;
             }
 
-            Assert.That(seats.Count, Is.EqualTo(25), "no two ordinals may share a seat");
+            Assert.That(seats.Count, Is.EqualTo(16), "no two ordinals may share a seat");
             Assert.That(worstReach, Is.LessThanOrEqualTo(NeedConsumptionSystem.EatReachCells),
                 "every seat must stay within eating reach of the table");
+            Assert.That(nearestReach, Is.EqualTo(2),
+                "the inner 3x3 belongs to the table and benches - no diner stands ON the furniture");
         }
 
         [Test]
