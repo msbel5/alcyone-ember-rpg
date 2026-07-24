@@ -34,13 +34,18 @@ namespace EmberCrpg.Simulation.Living
             if (world?.Actors == null) return 0;
             int meals = 0;
             bool night = hourOfDay >= NightStartHour || hourOfDay < NightEndHour;
+            // TICKPERF ('Consumption 2s/day'): same per-call pile/centre cache as TickArrivals -
+            // the hourly path ran the actors x piles x sites scan per hungry actor too.
+            var hourlySpecies = FoodTags(world);
+            var hourlyCache = BuildFoodPileCache(world, hourlySpecies);
 
             foreach (var actor in world.Actors.Records)
             {
                 if (actor == null || !actor.IsAlive) continue;
                 if (actor.Role == ActorRole.Player || actor.Role == ActorRole.Enemy) continue;
 
-                if (actor.Needs.Hunger.Value >= HungerEatThreshold && TryEat(world, actor, stamp))
+                if (actor.Needs.Hunger.Value >= HungerEatThreshold && hourlyCache.Count > 0
+                    && TryEatCached(world, actor, stamp, hourlySpecies, hourlyCache))
                     meals++;
 
                 // Sleep is intentionally UNLOGGED: a per-actor event every night hour would
@@ -123,6 +128,24 @@ namespace EmberCrpg.Simulation.Living
         private bool TryEatCached(WorldState world, ActorRecord actor,
             EmberCrpg.Domain.Core.GameTime stamp, List<string> species, List<FoodPileEntry> cache)
         {
+            // FAIL-FAST ('travel 5-7s/day freeze'): most hungry actors are EN ROUTE, not at a
+            // table. The nearest candidate by pure distance lower-bounds the true nearest
+            // food-bearing pile (mid-tick drains only shrink the set), so a reach-failure
+            // costs zero tag lookups. Only diners actually at a table pay the full scan.
+            long nearestAny = long.MaxValue;
+            bool nearestAnyHasSite = false;
+            for (int i = 0; i < cache.Count; i++)
+            {
+                var probe = cache[i];
+                long d = probe.HasSite
+                    ? System.Math.Max(System.Math.Abs(actor.Position.X - probe.CentreX),
+                                      System.Math.Abs(actor.Position.Y - probe.CentreY))
+                    : 0L;
+                if (d < nearestAny) { nearestAny = d; nearestAnyHasSite = probe.HasSite; }
+            }
+            if (world.Sites?.Records != null && nearestAnyHasSite && nearestAny > EatReachCells)
+                return false;
+
             // Same selection as FindNearestFoodPile: nearest food-bearing pile by Chebyshev to
             // its site centre, siteless piles sort first (dist 0), strict '<' keeps first-wins
             // tie-breaks in stockpile order. Piles drained EARLIER THIS TICK re-verify via Get.

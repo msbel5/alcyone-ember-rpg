@@ -56,7 +56,15 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if ((live == null || live.Count == 0)
                 && _conversation != null && _conversation.Topics.Count > 0)
             {
-                _liveOptions[ActiveMemoKey] = live = _conversation.Topics.Select(t => t.Id).ToList();
+                // W32-pre ('hepsini sorunca ayni liste geri geldi'): the refill offers the
+                // UNSEEN remainder first; the full catalog returns only when truly exhausted.
+                var seenMemory = _world?.NpcMemory?.GetOrCreate(
+                    new ActorId(DialogMemoryKey(_conversation.NpcId.Value)));
+                var unseen = _conversation.Topics.Select(t => t.Id)
+                    .Where(id => seenMemory == null || !seenMemory.HasDialogueSeen(id)).ToList();
+                _liveOptions[ActiveMemoKey] = live = unseen.Count > 0
+                    ? unseen
+                    : _conversation.Topics.Select(t => t.Id).ToList();
             }
             if (live != null)
             {
@@ -168,6 +176,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             var options = ActiveOptions;
             options?.RemoveAll(o => string.Equals(o, picked, System.StringComparison.Ordinal));
+            // W32-pre: consumed = SEEN, so the exhaustion refill can skip it.
+            if (_world?.NpcMemory != null && !_activeDialogActorId.IsEmpty)
+                _world.NpcMemory.GetOrCreate(_activeDialogActorId).MarkDialogueSeen(picked);
         }
 
         private void AbsorbFollowups(System.Collections.Generic.List<string> followups)

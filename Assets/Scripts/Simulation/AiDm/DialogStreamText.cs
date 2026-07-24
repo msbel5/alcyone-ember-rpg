@@ -12,7 +12,8 @@ namespace EmberCrpg.Simulation.AiDm
     {
         public const string FollowupsInstruction =
             " End with one final line exactly like: FOLLOWUPS: first question | second question | third question" +
-            " - three short in-character questions the traveller might naturally ask you NEXT.";
+            " - three short in-character questions the traveller might naturally ask you NEXT;" +
+            " the FIRST must directly pick up what you just said.";
 
         /// <summary>Split "answer ... FOLLOWUPS: q1 | q2 | q3" into (answer, questions). The
         /// marker is honored WHEREVER it appears; an instruction-only reply yields an EMPTY

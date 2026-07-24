@@ -53,7 +53,10 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
         private void Update()
         {
             if (!_canvasGroup.interactable) return;
-            if (EmberInput.PauseDown || Input.GetKeyDown(KeyCode.Escape)) Close();
+            // B15 ('fast travel crash'): legacy Input.GetKeyDown threw EVERY FRAME in the
+            // InputSystem-only player - thousands of exceptions per session. PauseDown already
+            // reads Esc through the new input system.
+            if (EmberInput.PauseDown) Close();
         }
 
         // Why: back/Esc should return to the pause menu without unpausing the game.
