@@ -746,6 +746,16 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield return WaitDialog(src, 75f);
                 Debug.Log($"[AgentCheck] SECOND-meeting greeting: {src.GetCurrentLine()}");
 
+                // W28 proof hardening: the exact path that burned us - a WEAK model echoing the
+                // FOLLOWUPS instruction into the visible answer, and a memo that never seeded.
+                var beforeTopics = string.Join("|", src.GetTopics());
+                var shownAnswer = src.GetCurrentLine() ?? string.Empty;
+                if (shownAnswer.IndexOf("FOLLOWUPS", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    Debug.LogError("[AgentCheck] FAIL: instruction leaked into the shown line.");
+                if (beforeTopics.IndexOf("first question", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    Debug.LogError("[AgentCheck] FAIL: template parrots became options.");
+                Debug.Log($"[AgentCheck] live options: {beforeTopics}");
+
                 src.SelectTopic("companion_join: Travel with me");
                 Debug.Log($"[AgentCheck] recruit reply: {src.GetCurrentLine()}");
                 yield return new WaitForSecondsRealtime(8f);

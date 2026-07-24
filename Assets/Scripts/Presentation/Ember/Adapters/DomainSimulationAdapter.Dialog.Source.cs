@@ -50,6 +50,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public IReadOnlyList<string> GetTopics()
         {
             var live = ActiveOptions;
+            // LIVE BUG ('sadece any news cikiyor'): Begin seeded the memo BEFORE _conversation
+            // had topics - an empty seed forever. Seed lazily HERE, where topics provably exist;
+            // an all-consumed memo also refills (the well of questions never runs dry).
+            if ((live == null || live.Count == 0)
+                && _conversation != null && _conversation.Topics.Count > 0)
+            {
+                _liveOptions[ActiveMemoKey] = live = _conversation.Topics.Select(t => t.Id).ToList();
+            }
             if (live != null)
             {
                 var topics = new List<string>(live);
@@ -166,6 +174,19 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
         internal const string AnyNewsTopic = "Any news?";
 
+        // W28 ('hafizasina kaydediyor mu'): the NPC's OWN words become a memory row, so
+        // RecallDialogMemory replays BOTH sides of the last talks - continuity is stored,
+        // not implied. Snippets are capped; the recall prompt already truncates rows.
+        private void RecordNpcSaid(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line) || _activeDialogActorId.IsEmpty || _world?.NpcMemory == null) return;
+            var snippet = line.Length > 90 ? line.Substring(0, 90) : line;
+            var memory = _world.NpcMemory.GetOrCreate(_activeDialogActorId);
+            memory.RecordEvent(new EmberCrpg.Domain.Memory.InteractionEvent(
+                _world.Time, "npc_said", default, snippet, string.Empty, 0,
+                default(EmberCrpg.Domain.Actors.GridPosition)));
+        }
+
         private EmberCrpg.Domain.Core.SiteId FallbackSiteForDialog()
         {
             var sites = _world?.Sites?.Records;
@@ -180,21 +201,42 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             " End with one final line exactly like: FOLLOWUPS: first question | second question | third question" +
             " - three short in-character questions the traveller might naturally ask you NEXT.";
 
-        /// <summary>Split "answer ... FOLLOWUPS: q1 | q2 | q3" into (answer, questions).</summary>
+        /// <summary>Split "answer ... FOLLOWUPS: q1 | q2 | q3" into (answer, questions).
+        /// LIVE BUG hardening ('FOLLOWUPS ekranda, first question balon oldu'): a small local
+        /// model happily ECHOES the instruction. The marker is stripped WHEREVER it appears
+        /// (an instruction-only reply yields an EMPTY body so the deterministic line stays),
+        /// and followups are accepted only if they are real questions, not template parrots.</summary>
         internal static (string Body, System.Collections.Generic.List<string> Followups) SplitFollowups(string answer)
         {
             var none = (answer, (System.Collections.Generic.List<string>)null);
             if (string.IsNullOrEmpty(answer)) return none;
-            int at = answer.LastIndexOf("FOLLOWUPS:", System.StringComparison.OrdinalIgnoreCase);
+            int at = answer.IndexOf("FOLLOWUPS", System.StringComparison.OrdinalIgnoreCase);
             if (at < 0) return none;
-            var body = answer.Substring(0, at).TrimEnd();
+            var body = answer.Substring(0, at).TrimEnd().TrimEnd(':', '-');
+            var tail = answer.Substring(at);
+            int colon = tail.IndexOf(':');
             var list = new System.Collections.Generic.List<string>();
-            foreach (var raw in answer.Substring(at + 10).Split('|'))
+            if (colon >= 0)
             {
-                var q = raw.Trim().TrimStart('-', '*', ' ').Trim();
-                if (q.Length > 4 && list.Count < 3) list.Add(q);
+                foreach (var raw in tail.Substring(colon + 1).Split('|'))
+                {
+                    var q = raw.Trim().TrimStart('-', '*', ' ').Trim();
+                    if (IsRealFollowup(q) && list.Count < 3) list.Add(q);
+                }
             }
-            return (body.Length > 0 ? body : answer, list.Count > 0 ? list : null);
+            return (body, list.Count > 0 ? list : null); // empty body = keep the deterministic line
+        }
+
+        private static bool IsRealFollowup(string q)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 8 || q.Length > 110) return false;
+            if (!q.EndsWith("?", System.StringComparison.Ordinal)) return false;
+            var lower = q.ToLowerInvariant();
+            if (lower.Contains("first question") || lower.Contains("second question")
+                || lower.Contains("third question") || lower.Contains("in-character")
+                || lower.Contains("traveller might") || lower.Contains("followups"))
+                return false; // instruction parrots are not questions
+            return true;
         }
 
         // TTS ('sadece gate diyor'): menu labels become sentences a person would actually say.

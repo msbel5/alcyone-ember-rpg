@@ -61,7 +61,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // line replaces the deterministic topic answer.
                 var split = SplitFollowups(SanitizeNpcLine(response?.Text));
                 if (!string.IsNullOrEmpty(split.Body))
+                {
                     _currentDialogLine = split.Body;
+                    RecordNpcSaid(split.Body); // W28: what THEY said goes into THEIR memory too
+                }
                 AbsorbFollowups(split.Followups); // W23: the answer grows the next bubbles
                 _isDialogThinking = false;
             });
@@ -115,7 +118,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // replaces the deterministic topic answer.
                 var split = SplitFollowups(SanitizeNpcLine(response?.Text));
                 if (!string.IsNullOrEmpty(split.Body))
+                {
                     _currentDialogLine = split.Body;
+                    RecordNpcSaid(split.Body); // W28: what THEY said goes into THEIR memory too
+                }
                 AbsorbFollowups(split.Followups); // W23: the answer grows the next bubbles
                 _isDialogThinking = false;
             });
