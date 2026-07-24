@@ -51,6 +51,11 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
         /// Proof-measured: targets only refreshed on the ~0.83s tick made the pursuit read half-speed.</summary>
         public void ProjectWorldViewsNow() => _worldViewProjector?.Project();
 
+        /// <summary>Pull late-spawned ActorViews into the projector's sync set.</summary>
+        public void RescanActorViews()
+            => _worldViewProjector?.ReplaceActorViews(
+                Object.FindObjectsByType<ActorView>(FindObjectsInactive.Include, FindObjectsSortMode.None));
+
         public string GetHudText() => _hud.HudText;
         IReadOnlyList<JobQueueRow> IJobQueueSource.GetRows() => _worldView.JobQueueRows;
         IReadOnlyList<ColonyNeedsRow> IColonyNeedsSource.GetRows() => _worldView.ColonyNeedsRows;

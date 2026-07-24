@@ -63,14 +63,107 @@ namespace EmberCrpg.Simulation.Living
         {
             if (world?.Actors == null) return 0;
             int meals = 0;
+            // TICKPERF ('EatOnArrival 152s/day and tripling'): the old path ran, PER HUNGRY ACTOR
+            // PER TICK, a scan of every pile x every site plus a FoodTags allocation - actors x
+            // piles x sites work that grew with the starving crowd until one replayed travel day
+            // took minutes. Hoist the per-tick invariants ONCE: the species list and each
+            // food-bearing pile's site centre (in stockpile order, so nearest-selection ties
+            // break IDENTICALLY). Selection math is unchanged - the chunking-invariance and
+            // digest goldens prove the histories stay bit-identical.
+            var species = FoodTags(world);
+            var cache = BuildFoodPileCache(world, species);
+            if (cache.Count == 0) return 0;
             foreach (var actor in world.Actors.Records)
             {
                 if (actor == null || !actor.IsAlive) continue;
                 if (actor.Role == ActorRole.Player || actor.Role == ActorRole.Enemy) continue;
                 if (actor.Needs.Hunger.Value < HungerEatThreshold) continue; // cheap pre-filter
-                if (TryEat(world, actor, stamp)) meals++;
+                if (TryEatCached(world, actor, stamp, species, cache)) meals++;
             }
             return meals;
+        }
+
+        private readonly struct FoodPileEntry
+        {
+            public FoodPileEntry(StockpileComponent pile, int cx, int cy, bool hasSite)
+            { Pile = pile; CentreX = cx; CentreY = cy; HasSite = hasSite; }
+            public readonly StockpileComponent Pile;
+            public readonly int CentreX;
+            public readonly int CentreY;
+            public readonly bool HasSite;
+        }
+
+        private static List<FoodPileEntry> BuildFoodPileCache(WorldState world, List<string> species)
+        {
+            var cache = new List<FoodPileEntry>();
+            if (world.Stockpiles == null) return cache;
+            foreach (var pile in world.Stockpiles)
+            {
+                if (pile == null) continue;
+                bool hasFood = false;
+                foreach (var candidate in species)
+                    if (pile.Get(candidate) > 0) { hasFood = true; break; }
+                if (!hasFood) continue;
+                bool hasSite = false;
+                int cx = 0, cy = 0;
+                if (world.Sites?.Records != null)
+                    foreach (var site in world.Sites.Records)
+                        if (site != null && site.Id.Equals(pile.SiteId))
+                        {
+                            cx = (site.MinBound.X + site.MaxBound.X) / 2;
+                            cy = (site.MinBound.Y + site.MaxBound.Y) / 2;
+                            hasSite = true;
+                            break;
+                        }
+                cache.Add(new FoodPileEntry(pile, cx, cy, hasSite));
+            }
+            return cache;
+        }
+
+        private bool TryEatCached(WorldState world, ActorRecord actor,
+            EmberCrpg.Domain.Core.GameTime stamp, List<string> species, List<FoodPileEntry> cache)
+        {
+            // Same selection as FindNearestFoodPile: nearest food-bearing pile by Chebyshev to
+            // its site centre, siteless piles sort first (dist 0), strict '<' keeps first-wins
+            // tie-breaks in stockpile order. Piles drained EARLIER THIS TICK re-verify via Get.
+            StockpileComponent best = null;
+            string bestTag = null;
+            int bestCx = 0, bestCy = 0;
+            bool bestHasSite = false;
+            long bestDist = long.MaxValue;
+            for (int i = 0; i < cache.Count; i++)
+            {
+                var entry = cache[i];
+                string tag = null;
+                foreach (var candidate in species)
+                    if (entry.Pile.Get(candidate) > 0) { tag = candidate; break; }
+                if (tag == null) continue; // drained by an earlier diner this very tick
+                long dist = entry.HasSite
+                    ? System.Math.Max(System.Math.Abs(actor.Position.X - entry.CentreX),
+                                      System.Math.Abs(actor.Position.Y - entry.CentreY))
+                    : 0L;
+                if (dist < bestDist)
+                { bestDist = dist; best = entry.Pile; bestTag = tag; bestCx = entry.CentreX; bestCy = entry.CentreY; bestHasSite = entry.HasSite; }
+            }
+            if (best == null) return false;
+            // WithinReach, against the cached centre: permissive when the pile has no site row.
+            if (world.Sites?.Records != null && bestHasSite)
+            {
+                int dx = System.Math.Abs(actor.Position.X - bestCx);
+                int dy = System.Math.Abs(actor.Position.Y - bestCy);
+                if (System.Math.Max(dx, dy) > EatReachCells) return false;
+            }
+
+            best.Remove(bestTag, 1);
+            var fed = actor.Needs
+                .WithHunger(new NeedValue(MealHungerFloor))
+                .WithThirst(new NeedValue(actor.Needs.Thirst.Value - MealThirstRecovery));
+            actor.ApplyNeeds(fed);
+            actor.ApplyMood(_moodEvaluator.Evaluate(fed));
+            world.Events?.Append(new WorldEvent(
+                stamp, WorldEventKind.NeedChanged, actor.Id, best.SiteId,
+                $"meal_eaten item:{bestTag} hunger:{fed.Hunger.Value}"));
+            return true;
         }
 
         private bool TryEat(WorldState world, ActorRecord actor, EmberCrpg.Domain.Core.GameTime stamp)

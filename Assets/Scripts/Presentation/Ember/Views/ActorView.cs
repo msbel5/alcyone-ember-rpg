@@ -195,8 +195,13 @@ namespace EmberCrpg.Presentation.Ember.Views
             var t = Mathf.Clamp01(_interpolationSpeed * Time.deltaTime);
             if (_groundSpeed > 0f && (transform.position - targetPos).sqrMagnitude <= 25f)
                 // Mid-walk: glide at a constant ground speed so the per-tick 1-tile sim steps look continuous
-                // instead of stride-then-pause. Beyond 5 m (spawn/teleport) fall through to the snap below.
+                // instead of stride-then-pause.
                 transform.position = Vector3.MoveTowards(transform.position, targetPos, _groundSpeed * Time.deltaTime);
+            else if (_groundSpeed > 0f)
+                // INVARIANT FIX ('drifted 21m off its sim projection'): beyond 5 m means
+                // spawn/teleport/time-skip - the old Lerp here GLIDED across town for seconds
+                // and the reform #1 check rightly flagged the gap. Teleports snap.
+                transform.position = targetPos;
             else
                 transform.position = Vector3.Lerp(transform.position, targetPos, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, _target.WorldRotation, t);

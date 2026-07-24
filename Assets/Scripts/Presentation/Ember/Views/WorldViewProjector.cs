@@ -9,7 +9,7 @@ namespace EmberCrpg.Presentation.Ember.Views
     {
         private readonly IEmberSimulationClock _clock;
         private readonly IWorldViewReadModel _worldView;
-        private readonly ActorView[] _actorViews;
+        private ActorView[] _actorViews; // replaceable: late-spawned views must join the sync
         private readonly WorksiteView[] _worksiteViews;
         private readonly EventLogHudPanel _eventLogHud;
         private readonly WorldEventNarrator _eventNarrator = new WorldEventNarrator();
@@ -23,6 +23,15 @@ namespace EmberCrpg.Presentation.Ember.Views
         {
             _clock = clock;
             _worldView = worldView;
+            _actorViews = actorViews ?? System.Array.Empty<ActorView>();
+        }
+
+        /// <summary>INVARIANT FIX ('drifted 21m, deterministic'): views spawned AFTER host boot
+        /// (streaming spawner, post-travel refills) never joined this once-captured array - they
+        /// stood at their spawn anchor while their sim twins walked away. The host re-scans and
+        /// swaps the array in whenever the spawner reports new views.</summary>
+        public void ReplaceActorViews(ActorView[] actorViews)
+        {
             _actorViews = actorViews ?? System.Array.Empty<ActorView>();
             _worksiteViews = worksiteViews ?? System.Array.Empty<WorksiteView>();
             _eventLogHud = eventLogHud;

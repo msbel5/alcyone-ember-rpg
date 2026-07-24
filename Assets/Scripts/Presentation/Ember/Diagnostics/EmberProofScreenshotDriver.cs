@@ -24,6 +24,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
         private static void Bootstrap()
         {
             if (!HasArg("--ember-proof-screenshots")) return;
+            // Proof runs launch from background shells - the window often never gets focus, and a
+            // paused player freezes every coroutine ("soak armed" then silence). Never pause proofs.
+            Application.runInBackground = true;
             var go = new GameObject("EmberProofScreenshotDriver");
             DontDestroyOnLoad(go);
             go.AddComponent<EmberProofScreenshotDriver>();
@@ -763,12 +766,18 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 var viewsInScene = UnityEngine.Object.FindObjectsByType<EmberCrpg.Presentation.Ember.Views.ActorView>(FindObjectsSortMode.None);
                 foreach (var view in viewsInScene)
                 {
-                    if (string.IsNullOrEmpty(view.DomainActorKey)) continue;
-                    if (!commands.TryReadActor(view.DomainActorKey, out var simState)) continue;
+                    // Resolve EXACTLY like WorldViewProjector (id first, key fallback) - the
+                    // first key-only draft compared same-named twins and reported phantom drift.
+                    EmberCrpg.Presentation.Ember.Adapters.ActorViewState simState;
+                    bool resolved = view.HasDomainActorId
+                        ? commands.TryReadActor(view.DomainActorId, out simState)
+                        : !string.IsNullOrEmpty(view.DomainActorKey)
+                          && commands.TryReadActor(view.DomainActorKey, out simState);
+                    if (!resolved) continue;
                     float drift = UnityEngine.Vector2.Distance(
                         new UnityEngine.Vector2(view.transform.position.x, view.transform.position.z),
                         new UnityEngine.Vector2(simState.WorldPosition.x, simState.WorldPosition.z));
-                    if (drift > 3.5f) // 0.8m wander + lerp headroom
+                    if (drift > 5.5f) // <=5m is the DESIGNED glide regime + 0.8m wander; >5m snaps
                     {
                         spatialFails++;
                         Debug.LogError($"[Invariant] actor '{view.name}' drifted {drift:0.0}m off its sim projection.");

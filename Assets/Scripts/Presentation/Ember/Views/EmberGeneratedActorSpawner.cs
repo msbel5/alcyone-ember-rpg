@@ -138,6 +138,9 @@ namespace EmberCrpg.Presentation.Ember.Views
                 if (SpawnOne(pending[i], spawned))
                     spawned++;
             }
+            if (spawned > 0)
+                FindFirstObjectByType<EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost>()?
+                    .RescanActorViews(); // no-op at boot (projector not built yet - host re-scans itself there)
             return spawned;
         }
 

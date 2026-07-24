@@ -122,8 +122,11 @@ katmanında birikti.
 | P1 Ambient-yaşam (fare kileri GERÇEKTEN soyar, kedi avlar) | ✅ `df5f4d7a` | DF az-özel-durum dersi |
 | P1 RumorMill + kalıcı "Any news?" | ✅ `0534be54` | olay-akışı okuyucusu |
 | P2 Unrest defteri + kasaba SÜPÜRMESİ | ✅ W27 | DFU LegalRep-lite |
-| Reform CI invariantları (mekânsal + tek-yazar + golden) | ⏳ sıradaki büyük iş | üçünün kalıcılaştırılması |
-| P2 devamı: LOS konisi, sahiplik/hırsızlık | ⏳ | DFU Crimes tam modeli |
+| Reform CI invariantları (mekânsal + tek-yazar + golden) | ✅ W29 `1fd3cbb9` | kadans testi İLK koşuda composer bug'ı yakaladı → tick-replay |
+| W30 dört yara (delve içi, cross-site despawn, ring koltuk, sweep cooldown) | ✅ `8c16b572` | dördü de test-pinli |
+| W30e TickPerf: EatOnArrival kuadratik öldürüldü (aktör×stok×site → tick-önbellek) | ✅ | canlı-ölçek perf pini (800 aç sivil < 3sn/gün) |
+| Mekânsal invariant CANLI av #2: 3 NPC sim'i bina kabuğu İÇİNDEN yürüyor (AccessibilityGuard dışarı itiyor) | 🔴 açık borç | kök çözüm = sim bloke-hücre haritası (P2 devamı) |
+| P2 devamı: LOS konisi, sahiplik/hırsızlık, sim bloke-hücre haritası | ⏳ | DFU Crimes tam modeli |
 
 Ölçülen yan-kanıt: fare hırsızlığı testte kıtlık→ticaret→fraksiyon-itibar zincirini
 kendiliğinden tetikledi — sistemler gerçekten BAĞLI.
