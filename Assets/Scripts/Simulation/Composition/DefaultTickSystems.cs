@@ -49,7 +49,8 @@ namespace EmberCrpg.Simulation.Composition
                 new NeedsStep(needs),
                 new EatOnArrivalStep(),
                 new ConsumptionStep(),
-                new AmbientLifeStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
+                new AmbientLifeStep(),
+                new RumorStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
                 new PredationStep(),    // CAN SUYU H3: hunters hunt IN the simulation, NPC-vs-NPC
                 new CompanionGuardStep(), // V3: companions strike hostiles beside the player
                 new WitnessStep(),      // CAN SUYU H3: attacks are seen, remembered, answered
@@ -271,6 +272,18 @@ namespace EmberCrpg.Simulation.Composition
 
             public override void Run(in TickContext context)
                 => _life.Tick(context.World, context.Stamp);
+        }
+
+        // P1 RumorMill: new events become one-line town talk (Hourly:55, after ambient life).
+        private sealed class RumorStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.Living.RumorMillSystem _mill =
+                new EmberCrpg.Simulation.Living.RumorMillSystem();
+
+            public RumorStep() : base("living.rumors", TickCadence.Hourly, 55) { }
+
+            public override void Run(in TickContext context)
+                => _mill.Tick(context.World, context.Stamp);
         }
 
         // CAN SUYU H1: the consumption half of the needs loop — hungry actors eat from real

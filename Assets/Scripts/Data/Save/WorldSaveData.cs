@@ -81,6 +81,11 @@ public DungeonRoomSaveData[] dungeonRooms;
         public int[] critterXs;
         public int[] critterYs;
         public string[] critterKinds;
+        // P1 RumorMill.
+        public long[] rumorBornMinutes;
+        public ulong[] rumorSiteIds;
+        public string[] rumorTexts;
+        public int rumorEventCursor;
         // F31: the three-act main-quest spine.
         public int mainQuestAct;
         public int mainQuestRequiredInscriptions;

@@ -53,6 +53,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (live != null)
             {
                 var topics = new List<string>(live);
+                if (!topics.Contains(AnyNewsTopic)) topics.Insert(0, AnyNewsTopic); // W26: never consumed
                 AppendCompanionTopics(topics);
                 return topics; // W23: consumed options are gone, followups have grown in
             }
@@ -161,6 +162,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             foreach (var question in followups)
                 if (!options.Contains(question) && options.Count < 6)
                     options.Add(question);
+        }
+
+        internal const string AnyNewsTopic = "Any news?";
+
+        private EmberCrpg.Domain.Core.SiteId FallbackSiteForDialog()
+        {
+            var sites = _world?.Sites?.Records;
+            if (sites != null)
+                foreach (var site in sites)
+                    if (site != null && site.Kind == EmberCrpg.Domain.World.SiteKind.Settlement)
+                        return site.Id;
+            return default;
         }
 
         internal const string FollowupsInstruction =
@@ -284,6 +297,18 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             if (string.IsNullOrEmpty(topicId)) return;
             if (TryHandleCompanionTopic(topicId)) return;
             if (TryHandleQuestInteractionTopic(topicId)) return;
+
+            // W26: 'Any news?' answers from the RumorMill - instant, deterministic, site-local,
+            // and never consumed (there is always a next day's news).
+            if (string.Equals(topicId, AnyNewsTopic, System.StringComparison.Ordinal))
+            {
+                var rumor = EmberCrpg.Simulation.Living.RumorMillSystem.PickFor(
+                    _world, _activeDialogActorId.IsEmpty ? 7UL : _activeDialogActorId.Value,
+                    FallbackSiteForDialog(), _world.Time);
+                _currentDialogLine = rumor ?? "Quiet lately. Suspiciously quiet.";
+                SpeakPlayerQuestion("Any news?");
+                return;
+            }
             ConsumeOption(topicId); // W23: a picked bubble pops
 
             // W23: a grown FOLLOWUP is a QUESTION, not a catalog id - route it through the

@@ -76,6 +76,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "Hourly:42:living.companion_guard", // V3: companions strike beside the player
                 "Hourly:45:living.witness",     // CAN SUYU H3: seen, remembered, answered
                 "Hourly:50:living.ambient",     // P1: rats raid, cats hunt - cheap agents, real stock
+                "Hourly:55:living.rumors",      // P1: new events become one-line town talk
                 "Daily:10:world.caravans",
                 "Daily:20:econ.plantgrowth",
                 "Daily:25:world.harvest", // v0.2 F7: same-day grow→harvest→price chain (shipcheck FLAT finding)

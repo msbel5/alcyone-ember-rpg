@@ -101,6 +101,10 @@ inventory = ToInventoryData(world.PlayerInventory),
                 critterXs = world.Critters?.ConvertAll(c => c.Cell.X).ToArray() ?? System.Array.Empty<int>(),
                 critterYs = world.Critters?.ConvertAll(c => c.Cell.Y).ToArray() ?? System.Array.Empty<int>(),
                 critterKinds = world.Critters?.ConvertAll(c => c.Kind).ToArray() ?? System.Array.Empty<string>(),
+                rumorBornMinutes = world.Rumors?.ConvertAll(r => r.BornMinutes).ToArray() ?? System.Array.Empty<long>(),
+                rumorSiteIds = world.Rumors?.ConvertAll(r => r.SiteId.Value).ToArray() ?? System.Array.Empty<ulong>(),
+                rumorTexts = world.Rumors?.ConvertAll(r => r.Text).ToArray() ?? System.Array.Empty<string>(),
+                rumorEventCursor = world.RumorEventCursor,
                 mainQuestAct = world.MainQuest?.Act ?? 1,
                 mainQuestRequiredInscriptions = world.MainQuest?.RequiredInscriptions ?? 3,
                 mainQuestFinalDelveId = world.MainQuest?.FinalDelveId ?? 0UL,
@@ -212,6 +216,16 @@ world.Items = ToItemStore(data.itemRecords);
                         Cell = new GridPosition(data.critterXs[i], data.critterYs[i]),
                         Kind = data.critterKinds[i],
                     });
+            world.Rumors = new System.Collections.Generic.List<RumorEntry>();
+            if (data.rumorTexts != null)
+                for (int i = 0; i < data.rumorTexts.Length; i++)
+                    world.Rumors.Add(new RumorEntry
+                    {
+                        BornMinutes = data.rumorBornMinutes != null && i < data.rumorBornMinutes.Length ? data.rumorBornMinutes[i] : 0L,
+                        SiteId = new SiteId(data.rumorSiteIds != null && i < data.rumorSiteIds.Length ? data.rumorSiteIds[i] : 0UL),
+                        Text = data.rumorTexts[i],
+                    });
+            world.RumorEventCursor = data.rumorEventCursor;
             world.CompanionIds = data.companionIds != null
                 ? new System.Collections.Generic.List<ulong>(data.companionIds)
                 : new System.Collections.Generic.List<ulong>(); // V3: the party survives save/load

@@ -173,6 +173,10 @@ namespace EmberCrpg.Domain.World
         public List<PursuitRecord> GuardPursuits = new List<PursuitRecord>();
         /// <summary>P1 ambient life: rats and cats - cheap agents with real stock effects.</summary>
         public List<AmbientCritter> Critters = new List<AmbientCritter>();
+        /// <summary>P1 RumorMill: town talk distilled from real events (cap 32, 3-day life).</summary>
+        public List<RumorEntry> Rumors = new List<RumorEntry>();
+        /// <summary>RumorMill's event cursor - persists so loads never re-mill old news.</summary>
+        public int RumorEventCursor;
         public SpellCooldownState PlayerSpellCooldowns = new SpellCooldownState();
         public ShieldBuffState PlayerShieldBuffs = new ShieldBuffState();
         public bool DoorOpen;
@@ -245,6 +249,8 @@ namespace EmberCrpg.Domain.World
             CompanionIds = other.CompanionIds;
             GuardPursuits = other.GuardPursuits;
             Critters = other.Critters;
+            Rumors = other.Rumors;
+            RumorEventCursor = other.RumorEventCursor;
             PlayerSpellCooldowns = other.PlayerSpellCooldowns;
             PlayerShieldBuffs = other.PlayerShieldBuffs;
             DoorOpen = other.DoorOpen;
