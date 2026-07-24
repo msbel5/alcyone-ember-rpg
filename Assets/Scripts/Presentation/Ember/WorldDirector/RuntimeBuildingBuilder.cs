@@ -63,6 +63,14 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             AddWallZ(root.transform, -halfX, placement.SizeZ, placement.Height, material,
                 entrance == DoorSide.West || (hasWing && wingDoor == DoorSide.West));
 
+            // LIVE BUG ('kapi yukarda gorunuyor, bazen girilmiyor'): the shell sits at the
+            // terrain height of its CENTRE, so on a slope the doorway bottom can hang up to
+            // ~1m above the outside ground - more than the controller's step. A three-tier
+            // doorstep bridges the drop (each riser under the 0.3m step limit).
+            AddDoorstep(root.transform, entrance, halfX, halfZ, material);
+            if (hasWing && wingDoor != entrance)
+                AddDoorstep(root.transform, wingDoor, halfX, halfZ, material);
+
             // INTERIORS v1 (content phase): roof + wood floor + deterministic furniture + a warm hearth
             // light, so stepping through the door enters a ROOM instead of a roofless pen. Everything is
             // seeded from the placement coordinates — the same town always furnishes identically.
@@ -393,6 +401,30 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             if (Mathf.Abs(placement.OriginX) > Mathf.Abs(placement.OriginZ))
                 return placement.OriginX >= 0f ? DoorSide.West : DoorSide.East;
             return placement.OriginZ >= 0f ? DoorSide.South : DoorSide.North;
+        }
+
+        private static void AddDoorstep(Transform parent, DoorSide side, float halfX, float halfZ, Material material)
+        {
+            Vector3 outward;
+            switch (side)
+            {
+                case DoorSide.North: outward = new Vector3(0f, 0f, 1f); break;
+                case DoorSide.South: outward = new Vector3(0f, 0f, -1f); break;
+                case DoorSide.East: outward = new Vector3(1f, 0f, 0f); break;
+                default: outward = new Vector3(-1f, 0f, 0f); break;
+            }
+            float edge = Mathf.Abs(outward.z) > 0.5f ? halfZ : halfX;
+            var across = new Vector3(Mathf.Abs(outward.z), 0f, Mathf.Abs(outward.x));
+            // three tiers, tops at 0 / -0.3 / -0.6, marching outward from the sill
+            for (int tier = 0; tier < 3; tier++)
+            {
+                float top = -0.3f * tier;
+                var centre = outward * (edge + 0.18f + (0.42f * tier)) + new Vector3(0f, top - 0.45f, 0f);
+                var size = (across * (DoorWidth * 0.95f))
+                    + new Vector3(Mathf.Abs(outward.x), 0f, Mathf.Abs(outward.z)) * 0.5f
+                    + new Vector3(0f, 0.9f, 0f);
+                AddSlab(parent, "Doorstep" + tier, centre, size, material);
+            }
         }
 
         private static void AddWallX(
