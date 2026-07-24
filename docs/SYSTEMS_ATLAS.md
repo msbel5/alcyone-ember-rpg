@@ -116,12 +116,16 @@ katmanında birikti.
 |---|---|---|
 | P0 Guard pursuit (PursuitRecord, PerTick) | ✅ `15b35398` | #2'nin ilk uygulaması |
 | P0 Varışta-yemek + kozmetik kısma | ✅ `a56bdb82` | a-ailesi söküm |
-| P0 Tarla sim↔görsel birleşmesi | ⏳ sıradaki (W21) | #1'in ilk uygulaması |
-| P0 DialogStateMachine v1 (GemRB iskelet + LLM) | ⏳ W23 | #3 primitifiyle |
-| P1 İç bölme + kapılar (WallWithGap portu) | ⏳ | #1 invariant (ii) |
-| P1 Ambient-yaşam ajanları (vermin sınıfı) | ⏳ | DF az-özel-durum dersi |
-| P1 RumorMill (DFU) | ⏳ | olay akışı zaten var |
-| P2 LOS-konili suç/tanıklık + devriye + sahiplik | ⏳ | DFU Crimes modeli |
-| Reform CI invariantları (mekânsal + tek-yazar + golden) | ⏳ | üçünün kalıcılaştırılması |
+| P0 Tarla sim↔görsel birleşmesi (SimFieldView) | ✅ `0e44f00a` | #1'in ilk uygulaması |
+| P0 DialogStateMachine v1 (tüketilen balon + FOLLOWUPS + resume) | ✅ `966d184c` | GemRB iskeleti |
+| P1 İç bölme + kapılar (WallWithGap portu) | ✅ `79d9eaca` | #1 invariant (ii) yolunda |
+| P1 Ambient-yaşam (fare kileri GERÇEKTEN soyar, kedi avlar) | ✅ `df5f4d7a` | DF az-özel-durum dersi |
+| P1 RumorMill + kalıcı "Any news?" | ✅ `0534be54` | olay-akışı okuyucusu |
+| P2 Unrest defteri + kasaba SÜPÜRMESİ | ✅ W27 | DFU LegalRep-lite |
+| Reform CI invariantları (mekânsal + tek-yazar + golden) | ⏳ sıradaki büyük iş | üçünün kalıcılaştırılması |
+| P2 devamı: LOS konisi, sahiplik/hırsızlık | ⏳ | DFU Crimes tam modeli |
+
+Ölçülen yan-kanıt: fare hırsızlığı testte kıtlık→ticaret→fraksiyon-itibar zincirini
+kendiliğinden tetikledi — sistemler gerçekten BAĞLI.
 
 Bu dosya her teslimatta güncellenir; ham envanter dondurulmuş referanstır.

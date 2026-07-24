@@ -177,6 +177,8 @@ namespace EmberCrpg.Domain.World
         public List<RumorEntry> Rumors = new List<RumorEntry>();
         /// <summary>RumorMill's event cursor - persists so loads never re-mill old news.</summary>
         public int RumorEventCursor;
+        /// <summary>P2: per-settlement crime pressure - the sweep threshold lives on this.</summary>
+        public List<SiteUnrestRecord> SiteUnrest = new List<SiteUnrestRecord>();
         public SpellCooldownState PlayerSpellCooldowns = new SpellCooldownState();
         public ShieldBuffState PlayerShieldBuffs = new ShieldBuffState();
         public bool DoorOpen;
@@ -251,6 +253,7 @@ namespace EmberCrpg.Domain.World
             Critters = other.Critters;
             Rumors = other.Rumors;
             RumorEventCursor = other.RumorEventCursor;
+            SiteUnrest = other.SiteUnrest;
             PlayerSpellCooldowns = other.PlayerSpellCooldowns;
             PlayerShieldBuffs = other.PlayerShieldBuffs;
             DoorOpen = other.DoorOpen;

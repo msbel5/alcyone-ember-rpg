@@ -202,6 +202,8 @@ namespace EmberCrpg.Simulation.Living
                     // P0 pursuit: the report ARMS a chase the PerTick schedule will run - the
                     // hourly nudge below alone lost 60:1 to the return-to-post writer.
                     RegisterPursuit(world, guard.Id.Value, attacker.Id.Value, stamp);
+                    // P2: every armed response also weighs on the town's ledger.
+                    RaiseUnrest(world, evt.SiteId, 2, stamp, attacker.Id.Value);
                     if (d <= 1) continue;
                     guard.MoveTo(new GridPosition(
                         guard.Position.X + System.Math.Sign(attacker.Position.X - guard.Position.X),
@@ -209,6 +211,50 @@ namespace EmberCrpg.Simulation.Living
                 }
             }
             return recorded;
+        }
+
+        /// <summary>P2 (DFU LegalRep-lite): raise the site's crime pressure; past the threshold
+        /// the WHOLE watch of that settlement sweeps - every guard arms a pursuit at once, a
+        /// chronicle line lands, and the ledger resets to a wary simmer.</summary>
+        public const int SweepThreshold = 6;
+        private static void RaiseUnrest(WorldState world, SiteId siteId, int amount, GameTime stamp, ulong attackerId)
+        {
+            if (siteId.IsEmpty) return;
+            world.SiteUnrest ??= new System.Collections.Generic.List<SiteUnrestRecord>();
+            SiteUnrestRecord row = null;
+            foreach (var candidate in world.SiteUnrest)
+                if (candidate.SiteId.Equals(siteId)) { row = candidate; break; }
+            if (row == null)
+            {
+                row = new SiteUnrestRecord { SiteId = siteId };
+                world.SiteUnrest.Add(row);
+            }
+            long today = stamp.TotalMinutes / 1440L;
+            if (today > row.LastDecayDay)
+            {
+                row.Unrest = System.Math.Max(0, row.Unrest - (int)(today - row.LastDecayDay));
+                row.LastDecayDay = today;
+            }
+            row.Unrest += amount;
+            if (row.Unrest < SweepThreshold) return;
+
+            row.Unrest = 2; // the sweep clears the air, not the memory
+            int swept = 0;
+            SiteRecord siteRecord = null;
+            foreach (var site in world.Sites.Records)
+                if (site != null && site.Id.Equals(siteId)) { siteRecord = site; break; }
+            foreach (var guard in world.Actors.Records)
+            {
+                if (guard == null || !guard.IsAlive || guard.Role != ActorRole.Guard) continue;
+                if (siteRecord != null &&
+                    (guard.Position.X < siteRecord.MinBound.X - 4 || guard.Position.X > siteRecord.MaxBound.X + 4
+                     || guard.Position.Y < siteRecord.MinBound.Y - 4 || guard.Position.Y > siteRecord.MaxBound.Y + 4))
+                    continue;
+                RegisterPursuit(world, guard.Id.Value, attackerId, stamp);
+                swept++;
+            }
+            world.Events?.Append(new WorldEvent(stamp, WorldEventKind.ChronicleEvent,
+                default, siteId, $"watch_sweep guards:{swept} target:{attackerId}"));
         }
 
         /// <summary>Arm/refresh a chase: one active pursuit per guard, newest trouble wins.</summary>

@@ -105,6 +105,9 @@ inventory = ToInventoryData(world.PlayerInventory),
                 rumorSiteIds = world.Rumors?.ConvertAll(r => r.SiteId.Value).ToArray() ?? System.Array.Empty<ulong>(),
                 rumorTexts = world.Rumors?.ConvertAll(r => r.Text).ToArray() ?? System.Array.Empty<string>(),
                 rumorEventCursor = world.RumorEventCursor,
+                unrestSiteIds = world.SiteUnrest?.ConvertAll(u => u.SiteId.Value).ToArray() ?? System.Array.Empty<ulong>(),
+                unrestValues = world.SiteUnrest?.ConvertAll(u => u.Unrest).ToArray() ?? System.Array.Empty<int>(),
+                unrestLastDecayDays = world.SiteUnrest?.ConvertAll(u => u.LastDecayDay).ToArray() ?? System.Array.Empty<long>(),
                 mainQuestAct = world.MainQuest?.Act ?? 1,
                 mainQuestRequiredInscriptions = world.MainQuest?.RequiredInscriptions ?? 3,
                 mainQuestFinalDelveId = world.MainQuest?.FinalDelveId ?? 0UL,
@@ -226,6 +229,16 @@ world.Items = ToItemStore(data.itemRecords);
                         Text = data.rumorTexts[i],
                     });
             world.RumorEventCursor = data.rumorEventCursor;
+            world.SiteUnrest = new System.Collections.Generic.List<SiteUnrestRecord>();
+            if (data.unrestSiteIds != null && data.unrestValues != null)
+                for (int i = 0; i < data.unrestSiteIds.Length && i < data.unrestValues.Length; i++)
+                    world.SiteUnrest.Add(new SiteUnrestRecord
+                    {
+                        SiteId = new SiteId(data.unrestSiteIds[i]),
+                        Unrest = data.unrestValues[i],
+                        LastDecayDay = data.unrestLastDecayDays != null && i < data.unrestLastDecayDays.Length
+                            ? data.unrestLastDecayDays[i] : 0L,
+                    });
             world.CompanionIds = data.companionIds != null
                 ? new System.Collections.Generic.List<ulong>(data.companionIds)
                 : new System.Collections.Generic.List<ulong>(); // V3: the party survives save/load

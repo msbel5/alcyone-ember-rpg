@@ -86,6 +86,10 @@ public DungeonRoomSaveData[] dungeonRooms;
         public ulong[] rumorSiteIds;
         public string[] rumorTexts;
         public int rumorEventCursor;
+        // P2 unrest ledger.
+        public ulong[] unrestSiteIds;
+        public int[] unrestValues;
+        public long[] unrestLastDecayDays;
         // F31: the three-act main-quest spine.
         public int mainQuestAct;
         public int mainQuestRequiredInscriptions;
