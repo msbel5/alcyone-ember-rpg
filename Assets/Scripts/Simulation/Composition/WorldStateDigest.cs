@@ -47,6 +47,7 @@ namespace EmberCrpg.Simulation.Composition
             AppendCaravans(sb, world.Caravans);
             AppendSpellCooldowns(sb, world.PlayerSpellCooldowns);
             AppendShieldBuffs(sb, world.PlayerShieldBuffs);
+            AppendReservations(sb, world.Reservations);
             AppendEvents(sb, world.Events);
             AppendWorldQuests(sb, world);
 
@@ -96,6 +97,24 @@ namespace EmberCrpg.Simulation.Composition
                 AppendIntField(sb, actor.Needs.Fatigue.Value);
                 sb.Append('|');
                 AppendIntField(sb, actor.Needs.Thirst.Value);
+                // W32: mind fields — without them two worlds in different actions share a digest
+                // and replay/chunking-invariance stay blind to mind divergence.
+                sb.Append('|');
+                AppendIntField(sb, (int)actor.ActionState.CurrentIntent);
+                sb.Append('|');
+                AppendIntField(sb, (int)actor.ActionState.CurrentAction);
+                sb.Append('|');
+                AppendIntField(sb, (int)actor.ActionState.Phase);
+                sb.Append('|');
+                AppendUlongField(sb, actor.ActionState.TargetItemId.Value);
+                sb.Append('|');
+                AppendUlongField(sb, actor.ActionState.TargetSiteId.Value);
+                sb.Append('|');
+                AppendUlongField(sb, actor.ActionState.ReservationId.Value);
+                sb.Append('|');
+                AppendIntField(sb, actor.ActionState.ProgressTicks);
+                sb.Append('|');
+                AppendLongField(sb, actor.ActionState.StartedAtMinutes);
                 sb.Append('\n');
             }
         }
@@ -436,6 +455,35 @@ namespace EmberCrpg.Simulation.Composition
                     AppendLongField(sb, state.StartTick.TotalMinutes);
                     sb.Append('\n');
                 }
+            }
+        }
+
+        // W32 EAT: without the ledger two worlds mid-claim could share a digest and replay
+        // would diverge invisibly. Rows in insertion order (the saved order) + the id counter.
+        private static void AppendReservations(StringBuilder sb, ReservationLedger reservations)
+        {
+            AppendSectionHeader(sb, "RESERVATIONS");
+            var rows = reservations?.Rows;
+            AppendCount(sb, rows?.Count ?? 0);
+            sb.Append("rn|");
+            AppendUlongField(sb, reservations?.NextId ?? 1UL);
+            sb.Append('\n');
+            if (rows == null) return;
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                if (row == null) continue;
+                sb.Append("r|");
+                AppendUlongField(sb, row.Id);
+                sb.Append('|');
+                AppendUlongField(sb, row.SiteId);
+                sb.Append('|');
+                AppendStringField(sb, row.ItemTag);
+                sb.Append('|');
+                AppendUlongField(sb, row.ActorId);
+                sb.Append('|');
+                AppendLongField(sb, row.UntilMinutes);
+                sb.Append('\n');
             }
         }
 

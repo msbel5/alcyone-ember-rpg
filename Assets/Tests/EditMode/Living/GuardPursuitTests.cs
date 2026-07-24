@@ -62,7 +62,7 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             var schedule = new ScheduleSystem();
             for (int tick = 1; tick <= 7; tick++)
-                schedule.Advance(world.Actors, new GameTime(60 + tick), System.Array.Empty<GridPosition>(), world.GuardPursuits);
+                schedule.Advance(world.Actors, new GameTime(60 + tick), world.GuardPursuits);
 
             int dist = System.Math.Max(
                 System.Math.Abs(world.Actors.Get(new ActorId(3)).Position.X - world.Actors.Get(new ActorId(1)).Position.X),
@@ -83,8 +83,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             world.Actors.Add(quarry);
             world.GuardPursuits.Add(new PursuitRecord { GuardId = 3UL, TargetId = 1UL, UntilMinutes = 100 });
 
-            new ScheduleSystem().Advance(world.Actors, new GameTime(23 * 60),
-                System.Array.Empty<GridPosition>(), world.GuardPursuits);
+            new ScheduleSystem().Advance(world.Actors, new GameTime(23 * 60), world.GuardPursuits);
 
             Assert.That(world.GuardPursuits, Is.Empty, "an expired chase is pruned");
             Assert.That(world.Actors.Get(new ActorId(3)).Position, Is.EqualTo(new GridPosition(4, 4)),

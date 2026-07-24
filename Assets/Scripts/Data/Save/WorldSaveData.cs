@@ -75,6 +75,26 @@ public DungeonRoomSaveData[] dungeonRooms;
         public ulong[] pursuitGuardIds;
         public ulong[] pursuitTargetIds;
         public long[] pursuitUntilMinutes;
+        // W32 EAT: reservation ledger as parallel arrays (null on pre-W32 saves -> empty ledger).
+        public ulong[] reservationIds;
+        public ulong[] reservationSiteIds;
+        public string[] reservationItemTags;
+        public ulong[] reservationActorIds;
+        public long[] reservationUntilMinutes;
+        // The counter must persist: without it a load reassigns ids from 1 and collides (determinism break).
+        public ulong reservationNextId;
+        // W32 EAT: bounded action phase-trace ring, oldest-to-newest (null on pre-W32 saves ->
+        // empty ring). Save-mapped so load-continue equals an uninterrupted run.
+        public long[] actionLogTickMinutes;
+        public ulong[] actionLogActorIds;
+        public int[] actionLogIntents;
+        public int[] actionLogFromActions;
+        public int[] actionLogFromPhases;
+        public int[] actionLogToActions;
+        public int[] actionLogToPhases;
+        public ulong[] actionLogTargetIds;
+        public int[] actionLogReasons;
+        public long actionLogTotalPushed; // monotone: keeps "nth transition" identity across wraps
         // P1 ambient life: parallel arrays.
         public ulong[] critterIds;
         public ulong[] critterSiteIds;

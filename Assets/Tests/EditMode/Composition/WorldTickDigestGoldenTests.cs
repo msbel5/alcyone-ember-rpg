@@ -23,7 +23,21 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // Re-baselined 2026-07-23 for M6 harvest-needs-hands: HarvestStep now requires a
         // living civilian within reach and stamps the picker's ActorId into PlantHarvested -
         // the event stream (and so the digest) legitimately changed.
-        private const string BaselineHash = "e56cb7636d31f6f2d6499ca799fef39c4110f9a3da003a75e89a2c1ebb9e4712";
+        // Re-baselined 2026-07-25 for W32 stage A: the digest actor row grew eight ActorActionState
+        // mind fields (docs/ruh/w32/01-actor-action-state.md §4) - FORMAT growth only, every value
+        // is still zero because no system writes ActionState yet. Chunking-invariance and the
+        // save/load digest roundtrip passed unchanged, and the capturing run produced byte-identical
+        // digests across the same-seed double advance.
+        // Re-baselined 2026-07-25 for W32 stage B (EAT vertical slice): eating is now the
+        // decision->reservation->MoveToFood->TakeFood->ConsumeFood phase machine — arrival is a
+        // transition, stock drops at take (+1 tick), hunger at the consume commit (+4 ticks), and
+        // terminal ActionCompleted/ActionFailed events + the RESERVATIONS digest section joined the
+        // stream (meal_eaten lines stay verbatim). Eyeball check on the seed-4242 villager world:
+        // 78 meals == 78 ActionCompleted over two days, ring = 78 x 7 transitions exactly, zero
+        // failures/leaked claims, death count unchanged (predation pair). Chunking-invariance and
+        // the save/load digest roundtrip passed UNCHANGED; the capturing run produced byte-identical
+        // digests across the same-seed double advance. Old: e735114b45c96031cbf16663d7dbbcddb056d46002e77dd9d68a32bf8002a68f
+        private const string BaselineHash = "7ed20befd1bf5e68953037cba7d709b21dae48857ee269ad8638eeebb0a0cea9";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

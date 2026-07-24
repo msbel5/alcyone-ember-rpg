@@ -8,9 +8,8 @@ using NUnit.Framework;
 namespace EmberCrpg.Tests.EditMode.Living
 {
     /// <summary>
-    /// Review-mandated coverage: the eating loop's core semantics (eat-to-satiation at the
-    /// larder, reach gating, NEAREST-pile routing) previously had zero direct unit tests —
-    /// only the integration gates pinned them.
+    /// W32 EAT: the eating half moved to the action layer (EatActionStoryTests owns those
+    /// pins); what remains here is the sleep/metabolism half and the food-spot geometry.
     /// </summary>
     public sealed class NeedConsumptionSystemTests
     {
@@ -41,38 +40,34 @@ namespace EmberCrpg.Tests.EditMode.Living
         }
 
         [Test]
-        public void Tick_HungryActorAtTheLarder_EatsToSatiationAndDecrementsStock()
+        public void Tick_NightHour_TiredCivilianSleepsAndMoodFollows()
         {
             var world = World((5UL, 0, 10));
-            world.Actors.Add(Hungry(1, new GridPosition(2, 2), 80)); // site centre = (2,2)
+            var sleeper = Hungry(1, new GridPosition(2, 2), 10);
+            sleeper.ApplyNeeds(sleeper.Needs.WithFatigue(new NeedValue(60)));
+            world.Actors.Add(sleeper);
 
-            int meals = new NeedConsumptionSystem().Tick(world, hourOfDay: 12);
+            new NeedConsumptionSystem().Tick(world, hourOfDay: 23);
 
-            Assert.That(meals, Is.EqualTo(1));
-            Assert.That(world.Actors.Get(new ActorId(1)).Needs.Hunger.Value,
-                Is.EqualTo(NeedConsumptionSystem.MealHungerFloor));
-            Assert.That(world.Stockpiles[0].Get("wheat"), Is.EqualTo(9), "one meal consumes one wheat");
+            Assert.That(world.Actors.Get(new ActorId(1)).Needs.Fatigue.Value,
+                Is.EqualTo(60 - NeedConsumptionSystem.NightSleepFatigueRecovery),
+                "a night hour recovers fatigue by the fixed rate");
         }
 
         [Test]
-        public void Tick_HungryActorOutOfReach_DoesNotEat()
+        public void Tick_DayHour_DoesNotRecoverFatigue_AndNeverFeeds()
         {
             var world = World((5UL, 0, 10));
-            world.Actors.Add(Hungry(1, new GridPosition(9, 9), 80)); // Chebyshev 7 > EatReachCells
+            var worker = Hungry(1, new GridPosition(2, 2), 80); // AT the larder, starving
+            worker.ApplyNeeds(worker.Needs.WithFatigue(new NeedValue(60)));
+            world.Actors.Add(worker);
 
-            Assert.That(new NeedConsumptionSystem().Tick(world, 12), Is.EqualTo(0));
-            Assert.That(world.Stockpiles[0].Get("wheat"), Is.EqualTo(10));
-        }
+            new NeedConsumptionSystem().Tick(world, hourOfDay: 12);
 
-        [Test]
-        public void Tick_TwoLarders_ActorEatsFromTheNearestOne()
-        {
-            var world = World((5UL, 0, 10), (6UL, 40, 10));
-            world.Actors.Add(Hungry(1, new GridPosition(42, 2), 80)); // beside site 6's centre (42,2)
-
-            Assert.That(new NeedConsumptionSystem().Tick(world, 12), Is.EqualTo(1));
-            Assert.That(world.Stockpiles[0].Get("wheat"), Is.EqualTo(10), "far larder untouched");
-            Assert.That(world.Stockpiles[1].Get("wheat"), Is.EqualTo(9), "NEAREST larder feeds the actor");
+            Assert.That(world.Actors.Get(new ActorId(1)).Needs.Fatigue.Value, Is.EqualTo(60));
+            Assert.That(world.Actors.Get(new ActorId(1)).Needs.Hunger.Value, Is.EqualTo(80),
+                "W32: the hourly step NEVER feeds — meals belong to the action layer");
+            Assert.That(world.Stockpiles[0].Get("wheat"), Is.EqualTo(10), "stock untouched");
         }
 
         [Test]

@@ -84,6 +84,36 @@ namespace EmberCrpg.Tests.EditMode.Save
             world.WorldQuestStates[9002UL] = new EmberCrpg.Domain.Quest.QuestState(1, world.Time);
         }
 
+        // W32 DOC6 row 16: a mid-flight eat episode must survive save->load. The digest already
+        // carries the ActionState + Reservations sections; this pins the (action, phase,
+        // progress) triple and the live claim id verbatim — a dropped column half-loads the flight.
+        [Test]
+        public void MidFlightEatEpisode_SurvivesRoundtrip_TripleIntact()
+        {
+            var world = BuildSeededWorld();
+            world.Stockpiles[0].Add("wheat", 3);
+            Assert.That(world.Reservations.TryReserve(Site.Value, "wheat", Worker.Value,
+                untilMinutes: 999L, pileCount: 3, out var claim), Is.True);
+            world.Actors.Get(Worker).ApplyActionState(ActorActionState.ForIntent(ActorIntent.Eat)
+                .Start(ActorActionType.ConsumeFood, Site, ItemId.Empty, new ReservationId(claim),
+                       startedAtMinutes: 100, ActionInterruptPolicy.Interruptible)
+                .Advanced().Advanced()); // ConsumeFood@progress=2 with a live claim
+
+            var before = WorldStateDigest.Compute(world);
+            var loaded = WorldSaveMapper.ToWorld(WorldSaveMapper.ToData(world), BuildSeededWorld());
+
+            Assert.That(WorldStateDigest.Compute(loaded), Is.EqualTo(before),
+                "a mid-flight episode must roundtrip byte-identically");
+            var back = loaded.Actors.Get(Worker).ActionState;
+            Assert.That((back.CurrentAction, back.Phase, back.ProgressTicks),
+                Is.EqualTo((ActorActionType.ConsumeFood, ActionPhase.Running, 2)),
+                "the mid-flight (action, phase, progress) triple must load verbatim");
+            Assert.That(back.ReservationId.Value, Is.EqualTo(claim), "the claim follows the actor");
+            Assert.That(loaded.Reservations.TryGetByActor(Worker.Value, out var row), Is.True,
+                "the ledger's derived indexes are rebuilt after load");
+            Assert.That(row.Id, Is.EqualTo(claim));
+        }
+
         [Test]
         public void SaveThenLoad_PreservesWorldDigest()
         {

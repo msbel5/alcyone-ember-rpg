@@ -768,12 +768,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 {
                     // Resolve EXACTLY like WorldViewProjector (id first, key fallback) - the
                     // first key-only draft compared same-named twins and reported phantom drift.
-                    var simState = default(EmberCrpg.Presentation.Ember.Views.ActorViewState);
-                    bool resolved = view.HasDomainActorId
-                        ? commands.TryReadActor(view.DomainActorId, out simState)
-                        : !string.IsNullOrEmpty(view.DomainActorKey)
-                          && commands.TryReadActor(view.DomainActorKey, out simState);
-                    if (!resolved) continue;
+                    if (!TryResolveViewState(view, commands, out var simState)) continue;
                     float drift = UnityEngine.Vector2.Distance(
                         new UnityEngine.Vector2(view.transform.position.x, view.transform.position.z),
                         new UnityEngine.Vector2(simState.WorldPosition.x, simState.WorldPosition.z));
@@ -804,6 +799,57 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 }
                 Debug.Log($"[Invariant] spatial checks done - fails={spatialFails}.");
 
+                // W32 DOC5 §5: label invariant — the rendered TextMesh must equal the sim's
+                // CurrentAction verb, verified at the RENDER layer (memory: verify-at-render-layer).
+                // Ticks advance HERE one at a time (push, then sample) so a live 3-tick ConsumeFood
+                // window cannot be jumped over; the double-read guard drops any sample a background
+                // tick split. Leg B carries its OWN verb dictionary — asking ActionVerbTable would
+                // be a tautology. Bound: 2 sim days of hunger build-up (8/h toward the 55 threshold).
+                int labelFails = 0, eatingSeen = 0;
+                var host = UnityEngine.Object.FindFirstObjectByType<EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldHost>();
+                for (int step = 0; step < 2880 && eatingSeen == 0; step++)
+                {
+                    commands.AdvanceTick(commands.TickIndex + 1);
+                    host?.ProjectWorldViewsNow(); // push fresh labels so render == this very tick
+                    foreach (var view in viewsInScene)
+                    {
+                        if (view == null) continue; // despawned mid-warp (Unity destroyed-== null)
+                        var label = view.GetComponent<EmberCrpg.Presentation.Ember.Views.NpcActivityLabelView>();
+                        if (label == null) continue; // unlabeled actor (hostile/authored) out of scope
+                        if (!TryResolveViewState(view, commands, out var s1)) continue;
+                        string rendered = label.RenderedText ?? string.Empty;
+                        if (!TryResolveViewState(view, commands, out var s2)) continue;
+                        if (s1.Activity != s2.Activity || s1.ActionKind != s2.ActionKind) continue; // a tick intervened - drop the sample
+
+                        // LEG A — render == projection (catches a stale/disconnected push):
+                        if (rendered != (s1.Activity ?? string.Empty))
+                        {
+                            labelFails++;
+                            Debug.LogError($"[Invariant] label '{view.name}' renders '{rendered}' but sim projects '{s1.Activity}'.");
+                        }
+                        // LEG B — projection == action (catches a guess leaking back in):
+                        if (s1.ActionKind == "MoveToFood" && s1.Activity != "seeking food")
+                        { labelFails++; Debug.LogError($"[Invariant] '{view.name}' MoveToFood projects '{s1.Activity}', expected 'seeking food'."); }
+                        if (s1.ActionKind == "TakeFood" && s1.Activity != "taking food")
+                        { labelFails++; Debug.LogError($"[Invariant] '{view.name}' TakeFood projects '{s1.Activity}', expected 'taking food'."); }
+                        if (s1.ActionKind == "ConsumeFood" && s1.Activity != "eating")
+                        { labelFails++; Debug.LogError($"[Invariant] '{view.name}' ConsumeFood projects '{s1.Activity}', expected 'eating'."); }
+                        if (s1.ActionKind == "ConsumeFood") eatingSeen++;
+                    }
+                    if ((step & 7) == 7) yield return null; // keep the frame loop breathing
+                }
+                if (eatingSeen == 0)
+                {
+                    Debug.LogError("[Invariant] label assertion VACUOUS: no ConsumeFood observed.");
+                }
+                else
+                {
+                    // Render-layer proof of the verified 'eating' label (consume holds ~3 ticks).
+                    yield return new WaitForEndOfFrame();
+                    CaptureToPng(Path.Combine(_outputDir, "agentcheck_eating_label.png"));
+                }
+                Debug.Log($"[Invariant] label checks done - fails={labelFails}, eating={eatingSeen}.");
+
                 src.SelectTopic("companion_join: Travel with me");
                 Debug.Log($"[AgentCheck] recruit reply: {src.GetCurrentLine()}");
                 yield return new WaitForSecondsRealtime(8f);
@@ -822,6 +868,21 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 }
             Debug.Log($"[AgentCheck] inventory: {filled}/{slots.Count} slots filled — {summary}");
             Debug.Log("[AgentCheck] COMPLETE");
+        }
+
+        // W32 DOC5: id-first, key-fallback view->sim resolution — the one pattern the spatial and
+        // label invariant blocks share (WorldViewProjector resolves identically).
+        private static bool TryResolveViewState(
+            EmberCrpg.Presentation.Ember.Views.ActorView view,
+            EmberCrpg.Presentation.Ember.Adapters.IDomainSimulationAdapter commands,
+            out EmberCrpg.Presentation.Ember.Views.ActorViewState state)
+        {
+            state = default;
+            if (view == null) return false;
+            return view.HasDomainActorId
+                ? commands.TryReadActor(view.DomainActorId, out state)
+                : !string.IsNullOrEmpty(view.DomainActorKey)
+                  && commands.TryReadActor(view.DomainActorKey, out state);
         }
 
         private static IEnumerator WaitDialog(EmberCrpg.Presentation.Ember.Adapters.IDialogSource src, float seconds)

@@ -37,7 +37,8 @@ namespace EmberCrpg.Domain.Actors
             ActorMood mood = default,
             MemoryComponent memory = null,
             GridPosition? home = null,
-            GridPosition? dayAnchor = null)
+            GridPosition? dayAnchor = null,
+            ActorActionState actionState = default)
         {
             Id = id;
             Name = name;
@@ -56,6 +57,7 @@ namespace EmberCrpg.Domain.Actors
             _jobPreferences = new List<ActorJobPreference>();
             ApplyJobPreferences(jobPreferences);
             ScheduleState = scheduleState;
+            ActionState = actionState;
             Needs = needs;
             Mood = mood;
             Memory = memory ?? (id.IsEmpty ? null : new MemoryComponent(id));
@@ -80,6 +82,7 @@ namespace EmberCrpg.Domain.Actors
         public IReadOnlyList<string> AskedTopicIds => _askedTopicIds;
         public IReadOnlyList<ActorJobPreference> JobPreferences => _jobPreferences;
         public ActorScheduleState ScheduleState { get; private set; }
+        public ActorActionState ActionState { get; private set; }
         public ActorNeeds Needs { get; private set; }
         public ActorMood Mood { get; private set; }
         public MemoryComponent Memory { get; private set; }
@@ -111,6 +114,9 @@ namespace EmberCrpg.Domain.Actors
                 home,
                 dayAnchor);
             copy.ReplaceAskedTopics(_askedTopicIds);
+            // W32: the mapper once dropped Home/DayAnchor on this copy path ("sleeping pile" bug);
+            // ActionState must not repeat that class of loss.
+            copy.ApplyActionState(ActionState);
             return copy;
         }
 
@@ -162,6 +168,14 @@ namespace EmberCrpg.Domain.Actors
         public void ApplyScheduleState(ActorScheduleState scheduleState)
         {
             ScheduleState = scheduleState;
+        }
+
+        // CONSTRAINT (single writer): only ActionLifecycleSystem may call this in simulation code.
+        // Save/load (ActorSaveMapper) is the second legitimate caller. Anything else is a puppet-master
+        // regression — FieldOwnershipRegistry lists the owner; the W32 review gate greps call sites.
+        public void ApplyActionState(ActorActionState actionState)
+        {
+            ActionState = actionState;
         }
 
         public void ApplyNeeds(ActorNeeds needs)

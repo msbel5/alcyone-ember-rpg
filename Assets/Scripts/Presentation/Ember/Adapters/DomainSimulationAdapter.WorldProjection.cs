@@ -90,11 +90,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 UnityEngine.Quaternion.identity,
                 visible: true,
                 activity: DescribeActivity(actor),
-                sleeping: IsAsleepAtHome(actor));
+                sleeping: IsAsleepAtHome(actor),
+                actionKind: ActionVerbTable.KindName(actor.ActionState.CurrentAction));
         }
 
         // PLAYTEST FIX ("kimse eve gidip uyumuyor"): the lying pose belongs to the BED, not the
         // street - an actor sleeps only once the night commute has actually reached its home cell.
+        // GUESS(SLEEP slice): replace with ActionState.CurrentAction == Sleep.
         private bool IsAsleepAtHome(ActorRecord actor)
         {
             if (actor.Role == ActorRole.Guard || actor.Role == ActorRole.Enemy) return false;
@@ -105,26 +107,32 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             return System.Math.Max(dx, dy) <= 1;
         }
 
-        // PLAYTEST FIX ("npclerin ne yaptigi anlasilmiyor"): a floating one-word verb per actor.
-        // Windows MUST match ScheduleSystem (work 6-20, lunch 12-14) so the word tells the truth.
+        // W32 DOC5: the verb is a PROJECTION of ActionState.CurrentAction, never an inference
+        // from hour or position (RUH_TESHIS §2.9). Guess branches survive ONLY for actors that
+        // cannot carry an action yet (DescribeScheduleWord) and each is tagged with the slice
+        // that retires it.
         private string DescribeActivity(ActorRecord actor)
         {
+            var action = actor.ActionState.CurrentAction;
+            if (action != ActorActionType.None) return ActionVerbTable.Verb(action); // VERBATIM — no clue inputs
+            return DescribeScheduleWord(actor);
+        }
+
+        // PLAYTEST FIX ("npclerin ne yaptigi anlasilmiyor"), now for CurrentAction == None only:
+        // a floating one-word calendar guess per actor. W32 DOC5 §4: NEW guess branches are
+        // FORBIDDEN — a new verb means a new action type plus an ActionVerbTable row. The EAT
+        // guesses (12-14 plaza "eating", hunger "to the tavern") are DELETED: those verbs are now
+        // born only from ConsumeFood/MoveToFood actions.
+        private string DescribeScheduleWord(ActorRecord actor)
+        {
             int hour = (int)((_world.Time.TotalMinutes / 60) % 24);
-            if (actor.Role == ActorRole.Guard) return "on watch";
-            if (actor.Role == ActorRole.Enemy) return "hunting";
-            // PLAYTEST FIX ("hepsinin ustunde eating yaziyor, kimse masaya oturmuyor"): the verb
-            // must tell the TRUTH - 'eating' only AT the plaza table, walkers say where they go.
-            if (hour >= 12 && hour < 14)
-            {
-                var plaza = BillboardOrigin();
-                int pdx = System.Math.Abs(actor.Position.X - plaza.X);
-                int pdy = System.Math.Abs(actor.Position.Y - plaza.Y);
-                if (System.Math.Max(pdx, pdy) <= 3) return "eating";
-                if (actor.Needs.Hunger.Value >= 55) return "to the tavern";
-            }
+            if (actor.Role == ActorRole.Guard) return "on watch"; // GUESS(GUARD slice): retire with guard actions
+            if (actor.Role == ActorRole.Enemy) return "hunting";  // GUESS(COMBAT slice): retire with combat actions
+            // GUESS(SLEEP slice): replace with ActionState.CurrentAction == Sleep.
             if (hour < 6 || hour >= 22) return IsAsleepAtHome(actor) ? "sleeping" : "heading home";
-            if (hour >= 20) return "winding down";
+            if (hour >= 20) return "winding down"; // GUESS(SLEEP slice)
             // M6: standing at the crop belt reads as FARM WORK - and "harvesting" when it is ripe.
+            // GUESS(FARM/WORK slice): retire when HarvestAction lands.
             if (_world.Plants != null)
             {
                 foreach (var plantRow in _world.Plants.Rows)
@@ -139,7 +147,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
             // PLAYTEST ('hepsinin kafasinda about town'): an idle stroll is not information -
             // no label at all. A verb appears only when it says something true and specific.
-            return actor.ScheduleState.IsIdle ? null : "working";
+            return actor.ScheduleState.IsIdle ? null : "working"; // GUESS(WORK slice): retire when PerformWorkAction lands
         }
 
         // SOUL-04 (spawn-from-worldgen): hand the host a flat, Domain-free list of candidate

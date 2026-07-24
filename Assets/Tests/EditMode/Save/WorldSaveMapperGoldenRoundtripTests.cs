@@ -33,6 +33,30 @@ namespace EmberCrpg.Tests.EditMode.Save
             world.RumorEventCursor = 3;
             world.SiteUnrest.Add(new SiteUnrestRecord
             { SiteId = new SiteId(1), Unrest = 4, LastDecayDay = 2, SweepCooldownUntilMinutes = 777 });
+            // W32: non-default mind state so a dropped action-state mapping fails field-by-field.
+            var eater = world.Actors.Records.First(a => a != null);
+            eater.ApplyActionState(
+                ActorActionState.ForIntent(ActorIntent.Eat)
+                    .Start(ActorActionType.MoveToFood, targetSite: new SiteId(1),
+                           targetItem: ItemId.Empty, reservation: new ReservationId(9),
+                           startedAtMinutes: 123, policy: ActionInterruptPolicy.Interruptible)
+                    .Advanced()); // ProgressTicks=1: non-zero progress must roundtrip too
+            // W32: one live reservation row + a bumped NextId so the ledger arrays and counter
+            // are both proven by the reflection diff.
+            Assert.That(world.Reservations.TryReserve(
+                siteId: 1UL, tag: "wheat", actorId: eater.Id.Value,
+                untilMinutes: 999L, pileCount: 3, out _), Is.True);
+            // W32: a non-empty phase trace so all nine actionLog columns + the counter are proven.
+            world.ActionLog.Push(new EmberCrpg.Domain.Actors.Actions.ActionLogEntry(
+                123L, eater.Id.Value, ActorIntent.Eat,
+                ActorActionType.None, ActionPhase.None,
+                ActorActionType.MoveToFood, ActionPhase.Running,
+                1UL, EmberCrpg.Domain.Actors.Actions.ActionLogReason.ReservationAcquired));
+            world.ActionLog.Push(new EmberCrpg.Domain.Actors.Actions.ActionLogEntry(
+                137L, eater.Id.Value, ActorIntent.Eat,
+                ActorActionType.MoveToFood, ActionPhase.Running,
+                ActorActionType.MoveToFood, ActionPhase.Succeeded,
+                1UL, EmberCrpg.Domain.Actors.Actions.ActionLogReason.Arrived));
 
             var first = WorldSaveMapper.ToData(world);
             var back = WorldSaveMapper.ToWorld(first, new WorldFactory().Create(roomSeed: 7));

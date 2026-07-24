@@ -38,16 +38,22 @@ namespace EmberCrpg.Simulation.Composition
             SeasonCalendar seasonCalendar,
             IReadOnlyList<PlantSpeciesDef> plantSpecies)
         {
+            // W32 EAT: decide (@18) and advance (@22) are two phases of ONE lifecycle system —
+            // Actor.ActionState keeps a single writer while the registry shows both cadence slots.
+            var actionLifecycle = new EmberCrpg.Simulation.Living.Actions.ActionLifecycleSystem(
+                new EmberCrpg.Domain.Actors.Actions.ActionLogManager(
+                    new EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink()));
             return new WorldTickRegistry(new IWorldTickSystem[]
             {
                 new TimeStep(timeAdvance),
                 new MagicStep(magic),
                 new JobAssignmentStep(jobAssignment),
                 new QuestStep(new QuestSystem()),
+                new DecisionStep(actionLifecycle),
                 new ScheduleStep(schedule),
                 new CompanionFollowStep(), // V3: companions heel-follow the player, sim-side
                 new NeedsStep(needs),
-                new EatOnArrivalStep(),
+                new ActionAdvancementStep(actionLifecycle),
                 new ConsumptionStep(),
                 new AmbientLifeStep(),
                 new RumorStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
@@ -234,14 +240,44 @@ namespace EmberCrpg.Simulation.Composition
 
             public override void Run(in TickContext context)
             {
+                // W32 EAT: no food-spot feed — eating is the decision layer's business; the
+                // schedule now routes only actionless actors (rest/work/idle + pursuits).
                 if (context.World.Actors != null)
-                {
-                    // OYNANABILIRLIK: every settlement's larder is a food spot; each actor walks
-                    // to their NEAREST. (TavernCell routing predates real larders — retired.)
-                    var foodSpots = EmberCrpg.Simulation.Living.NeedConsumptionSystem.FoodSpots(context.World);
-                    _schedule.Advance(context.World.Actors, context.Stamp, foodSpots, context.World.GuardPursuits);
-                }
+                    _schedule.Advance(context.World.Actors, context.Stamp, context.World.GuardPursuits);
             }
+        }
+
+        // W32 EAT decide phase: intent + reservation + MoveToFood for idle hungry civilians.
+        // Order 18 < schedule(20): a decided actor is skipped by the router the SAME tick.
+        private sealed class DecisionStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.Living.Actions.ActionLifecycleSystem _lifecycle;
+
+            public DecisionStep(EmberCrpg.Simulation.Living.Actions.ActionLifecycleSystem lifecycle)
+                : base("living.decision", TickCadence.PerTick, 18)
+            {
+                _lifecycle = lifecycle ?? throw new ArgumentNullException(nameof(lifecycle));
+            }
+
+            public override void Run(in TickContext context)
+                => _lifecycle.Decide(context.World, context.Stamp);
+        }
+
+        // W32 EAT advance phase: inherits the retired EatOnArrivalStep's PerTick:22 slot so the
+        // Needs/Stockpiles write point stays fixed within the tick. CONSTRAINT: stamp is the
+        // cadence-BOUNDARY stamp (the catchup contract) — never post-advance world time.
+        private sealed class ActionAdvancementStep : StepBase
+        {
+            private readonly EmberCrpg.Simulation.Living.Actions.ActionLifecycleSystem _lifecycle;
+
+            public ActionAdvancementStep(EmberCrpg.Simulation.Living.Actions.ActionLifecycleSystem lifecycle)
+                : base("living.action_advance", TickCadence.PerTick, 22)
+            {
+                _lifecycle = lifecycle ?? throw new ArgumentNullException(nameof(lifecycle));
+            }
+
+            public override void Run(in TickContext context)
+                => _lifecycle.Advance(context.World, context.Stamp);
         }
 
         private sealed class QuestStep : StepBase
@@ -258,19 +294,6 @@ namespace EmberCrpg.Simulation.Composition
             {
                 _questSystem.Tick(context.World);
             }
-        }
-
-        // P0 arrival meals: the walk-eat-return rhythm resolves the tick the walker ARRIVES -
-        // the hour-long standing crowd at the plaza table was the single biggest pile-up source.
-        private sealed class EatOnArrivalStep : StepBase
-        {
-            private readonly EmberCrpg.Simulation.Living.NeedConsumptionSystem _consumption =
-                new EmberCrpg.Simulation.Living.NeedConsumptionSystem();
-
-            public EatOnArrivalStep() : base("living.eatOnArrival", TickCadence.PerTick, 22) { }
-
-            public override void Run(in TickContext context)
-                => _consumption.TickArrivals(context.World, context.Stamp);
         }
 
         // P1 ambient life: rats raid the larder, cats hunt the rats - cheap agents, real stock.
@@ -297,8 +320,8 @@ namespace EmberCrpg.Simulation.Composition
                 => _mill.Tick(context.World, context.Stamp);
         }
 
-        // CAN SUYU H1: the consumption half of the needs loop — hungry actors eat from real
-        // stockpiles, tired actors sleep at night. Order 35: right after NeedsStep raises them.
+        // CAN SUYU H1, narrowed by W32 EAT: only the sleep/metabolism half remains — eating
+        // belongs to the action layer now. Order 35: right after NeedsStep raises the ramps.
         private sealed class ConsumptionStep : StepBase
         {
             private readonly EmberCrpg.Simulation.Living.NeedConsumptionSystem _consumption =
@@ -308,9 +331,8 @@ namespace EmberCrpg.Simulation.Composition
 
             public override void Run(in TickContext context)
             {
-                var world = context.World;
                 int hour = (int)((context.Stamp.TotalMinutes / 60) % 24);
-                _consumption.Tick(world, hour, context.Stamp);
+                _consumption.Tick(context.World, hour);
             }
         }
 

@@ -68,6 +68,17 @@ namespace EmberCrpg.Data.Save
                 thirst = actor.Needs.Thirst.Value,
                 mood = actor.Mood.Value,
                 hasMood = true,
+                // W32: mind state — mirror every field; the golden roundtrip test fails on any drop.
+                currentIntent = (int)actor.ActionState.CurrentIntent,
+                currentAction = (int)actor.ActionState.CurrentAction,
+                actionPhase = (int)actor.ActionState.Phase,
+                actionTargetItemId = (long)actor.ActionState.TargetItemId.Value,
+                actionTargetSiteId = (long)actor.ActionState.TargetSiteId.Value,
+                actionReservationId = (long)actor.ActionState.ReservationId.Value,
+                actionProgressTicks = actor.ActionState.ProgressTicks,
+                actionStartedAtMinutes = actor.ActionState.StartedAtMinutes,
+                actionFailureReason = (int)actor.ActionState.FailureReason,
+                actionInterruptPolicy = (int)actor.ActionState.InterruptPolicy,
             };
         }
 
@@ -148,6 +159,14 @@ namespace EmberCrpg.Data.Save
 
             record.ReplaceAskedTopics(asked);
 
+            // W32: rebuild the mind. Defensive rule: an out-of-range enum or a violated
+            // "None => all zero" invariant resets the WHOLE block to Idle (fail-safe).
+            // A reset actor simply re-decides next tick — deterministic and story-preserving,
+            // unlike a half-restored action pointing at a target that no longer exists.
+            // A dangling actionReservationId is NOT resolved here; the first advancement
+            // validates against the ledger and produces Failed(ReservationLost).
+            record.ApplyActionState(ActorActionStateSaveReader.Read(save));
+
             return record;
         }
 
@@ -163,4 +182,24 @@ namespace EmberCrpg.Data.Save
             };
         }
 }
+
+    /// <summary>W32: single normalization point for the persisted mind block (corrupt -> Idle).</summary>
+    internal static class ActorActionStateSaveReader
+    {
+        public static ActorActionState Read(ActorSaveData save)
+        {
+            return ActorActionState.TryRestore(
+                (ActorIntent)save.currentIntent,
+                (ActorActionType)save.currentAction,
+                (ActionPhase)save.actionPhase,
+                new ItemId((ulong)save.actionTargetItemId),
+                new SiteId((ulong)save.actionTargetSiteId),
+                new ReservationId((ulong)save.actionReservationId),
+                save.actionProgressTicks,
+                save.actionStartedAtMinutes,
+                (ActionFailureReason)save.actionFailureReason,
+                (ActionInterruptPolicy)save.actionInterruptPolicy,
+                out var state) ? state : ActorActionState.Idle;
+        }
+    }
 }

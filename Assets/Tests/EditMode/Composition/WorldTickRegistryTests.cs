@@ -64,10 +64,11 @@ namespace EmberCrpg.Tests.EditMode.Composition
             Assert.That(triples, Is.EqualTo(new[]
             {
                 "PerTick:10:core.time",
+                "PerTick:18:living.decision", // W32: intent + reservation BEFORE the router runs
                 "PerTick:20:core.magic",
                 "PerTick:20:living.schedule",
                 "PerTick:21:living.companion_follow", // V3: heel-follow after schedule
-                "PerTick:22:living.eatOnArrival", // P0: reaching the table IS the meal
+                "PerTick:22:living.action_advance", // W32: the EAT phase machine in eatOnArrival's slot
                 "Hourly:10:econ.jobs",
                 "Hourly:15:quest.tick",
                 "Hourly:30:living.needs",

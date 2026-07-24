@@ -47,5 +47,10 @@ namespace EmberCrpg.Domain.World
         GuardResponded = 31,
         // CAN SUYU H4: runtime history — the monthly chronicle keeps writing AFTER worldgen.
         ChronicleEvent = 32,
+        // W32 RUH: actions are first-class — only the TERMINAL outcome becomes an event.
+        // Phase steps live in WorldState.ActionLog (bounded ring); writing steps here would
+        // resurrect the B21 per-step spam class (~1GB log by day 90).
+        ActionCompleted = 33,
+        ActionFailed = 34,
     }
 }

@@ -120,6 +120,21 @@ namespace EmberCrpg.Data.Save
         // every new save so the load path can tell them apart and round-trip
         // genuinely-Lowest actors instead of forcing them back to Neutral.
         public bool hasMood;
+
+        // W32 EAT slice — persisted mind/action state (docs/ruh/w32/01-actor-action-state.md).
+        // CONSTRAINT: all-zero block == Idle == pre-W32 save. NO presence flag needed (contrast
+        // hasMood, where 0 was a legitimate live value): StartedAtMinutes=0 is only meaningful
+        // when currentAction != 0, so the zero block is unambiguous.
+        public int currentIntent;          // ActorIntent
+        public int currentAction;          // ActorActionType
+        public int actionPhase;            // ActionPhase
+        public long actionTargetItemId;    // 0 = ItemId.Empty
+        public long actionTargetSiteId;    // 0 = SiteId.Empty
+        public long actionReservationId;   // 0 = ReservationId.Empty
+        public int actionProgressTicks;
+        public long actionStartedAtMinutes;
+        public int actionFailureReason;    // ActionFailureReason
+        public int actionInterruptPolicy;  // ActionInterruptPolicy
     }
 
     [Serializable]

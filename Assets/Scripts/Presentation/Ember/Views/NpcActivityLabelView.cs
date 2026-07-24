@@ -35,6 +35,9 @@ namespace EmberCrpg.Presentation.Ember.Views
             // the camera ourselves below with the text-readable convention.
         }
 
+        /// <summary>W32 DOC5 agentcheck: the ACTUAL TextMesh text — render-layer truth, not the pushed value.</summary>
+        public string RenderedText => _label != null ? _label.text : null;
+
         public void SetActivity(string activity)
         {
             if (_label != null && _label.text != (activity ?? string.Empty))

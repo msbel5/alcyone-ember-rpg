@@ -57,7 +57,8 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
             Assert.That(avgFatigue, Is.LessThan(75), $"avg fatigue {avgFatigue} — nobody sleeps");
 
             // Stocks must MOVE — production adds, meals subtract. A dead economy sits still.
-            int meals = world.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
+            // W32: meals are counted as TERMINAL ACTION OUTCOMES now, not reason-string grep.
+            int meals = world.Events.Events.Count(e => e.Kind == WorldEventKind.ActionCompleted);
             Assert.That(meals, Is.GreaterThanOrEqualTo(civilians.Count * 3),
                 $"only {meals} meals for {civilians.Count} villagers over five days — the table is theatre, not sustenance");
             int stockEnd = world.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
@@ -84,8 +85,8 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
             // The trajectories must DIVERGE: total stock, meals eaten, or job completions differ.
             int stockA = control.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
             int stockB = perturbed.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
-            int mealsA = control.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
-            int mealsB = perturbed.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
+            int mealsA = control.Events.Events.Count(e => e.Kind == WorldEventKind.ActionCompleted);
+            int mealsB = perturbed.Events.Events.Count(e => e.Kind == WorldEventKind.ActionCompleted);
             int jobsA = control.Events.Events.Count(e => e.Kind == WorldEventKind.JobCompleted);
             int jobsB = perturbed.Events.Events.Count(e => e.Kind == WorldEventKind.JobCompleted);
 
@@ -114,9 +115,10 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
             // Sample occupancy near the larder EVERY HOUR for two days: a living town produces a
             // WAVE (empty table → meal crowd → empty again); a frozen or window-routed town is
             // flat or a square pulse pinned to authored hours. We assert the wave's amplitude.
-            // P0 eat-on-arrival re-pin: meals resolve the tick a walker ARRIVES, so the crowd
-            // is a moving stream, not an hour-long standing pool - sample every 10 ticks or the
-            // hourly snapshot misses the (still emergent, still window-free) wave entirely.
+            // W32 re-pin (arrival != meal now): a walker who reaches the ring still TAKES and
+            // CHEWS for ConsumeDurationTicks before leaving, so table-sitting got LONGER and
+            // the wave stronger - but the crowd remains a stream, so keep sampling every 10
+            // ticks or the hourly snapshot misses the (still emergent, window-free) wave.
             int min = int.MaxValue, max = int.MinValue;
             for (int hour = 1; hour <= 48; hour++)
             {
@@ -208,7 +210,7 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
                 var composer = new WorldTickComposer();
                 AdvanceDays(world, composer, 31);
                 int stock = world.Stockpiles.Sum(p => p?.Entries.Sum(e => e.Value) ?? 0);
-                int meals = world.Events.Events.Count(e => e.Reason != null && e.Reason.StartsWith("meal_eaten"));
+                int meals = world.Events.Events.Count(e => e.Kind == WorldEventKind.ActionCompleted);
                 var reps = string.Join(",", world.Factions.ReputationRows
                     .Select(r => $"{r.A.Value}-{r.B.Value}:{r.Reputation.Value}"));
                 var chronicle = string.Join(",", world.Events.Events

@@ -101,49 +101,30 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(4, 2)));
         }
 
-        // CAN SUYU H2: the lunch WINDOW is dead. Hunger itself sends people to the food spot —
-        // a hungry civilian walks there at ANY hour, a fed one never does (even at 12:30), and
-        // the watch holds its post regardless. The midday crowd is an EMERGENT consequence of
-        // the morning hunger ramp, not a routing rule.
+        // W32 EAT: hunger routing LEFT this system — the decision layer owns meals now
+        // (EatActionStoryTests pins that side). The schedule may not move an actor whose
+        // legs belong to the action layer, and the utility table is rest/work/idle only.
         [Test]
-        public void Advance_HungerNotTheClock_SendsCiviliansToTheFoodSpot()
+        public void Advance_ActorWithActiveAction_IsNotMoved()
         {
-            var foodSpot = new GridPosition(5, 0);
-            var midMorning = new GameTime(9 * GameTime.MinutesPerHour); // 09:00 — NOT lunch time
+            var actors = new ActorStore();
+            var walker = Record(new GridPosition(0, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9));
+            walker.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Eat).Start(
+                ActorActionType.MoveToFood, new SiteId(1), ItemId.Empty,
+                new ReservationId(1), startedAtMinutes: 1, ActionInterruptPolicy.Interruptible));
+            actors.Add(walker);
 
-            var hungry = new ActorStore();
-            var hungryActor = Record(new GridPosition(0, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9));
-            hungryActor.ApplyNeeds(hungryActor.Needs.WithHunger(new NeedValue(70)));
-            hungry.Add(hungryActor);
-            var system = new ScheduleSystem();
+            new ScheduleSystem().Advance(actors, WorkHour);
 
-            system.Advance(hungry, midMorning, foodSpot);
-            Assert.That(hungry.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 0)),
-                "a HUNGRY civilian heads for the food at 09:00 — no window needed");
-
-            var fed = new ActorStore();
-            var fedActor = Record(new GridPosition(0, 0)).WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(9, 9));
-            fedActor.ApplyNeeds(fedActor.Needs.WithHunger(new NeedValue(10)));
-            fed.Add(fedActor);
-            system.Advance(fed, new GameTime((12 * GameTime.MinutesPerHour) + 30), foodSpot);
-            Assert.That(fed.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 1)),
-                "a FED civilian ignores the tavern even at 12:30 — the clock does not route meals");
-
-            var guards = new ActorStore();
-            var guard = Record(new GridPosition(0, 0), ActorRole.Guard)
-                .WithHomeAndAnchor(new GridPosition(0, 0), new GridPosition(0, 9));
-            guard.ApplyNeeds(guard.Needs.WithHunger(new NeedValue(90)));
-            guards.Add(guard);
-            system.Advance(guards, midMorning, foodSpot);
-            Assert.That(guards.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(0, 1)),
-                "the watch keeps its post route even starving — guards eat off-shift");
+            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(0, 0)),
+                "the action layer owns this actor's legs — the router must not double-move it");
         }
 
-        // CAN SUYU H2: the decision table itself — needs pick the behavior deterministically.
+        // CAN SUYU H2, narrowed by W32: the remaining utility table — needs pick the behavior
+        // deterministically; hunger is the action layer's business and never reaches this table.
         [Test]
         public void ChooseTarget_UtilityTable_NeedsDriveTheChoice()
         {
-            var foodSpot = new GridPosition(5, 0);
             var home = new GridPosition(0, 0);
             var anchor = new GridPosition(9, 9);
             var day = new GameTime(9 * GameTime.MinutesPerHour);
@@ -152,14 +133,14 @@ namespace EmberCrpg.Tests.EditMode.Living
             var actor = Record(new GridPosition(3, 3)).WithHomeAndAnchor(home, anchor);
 
             actor.ApplyNeeds(ActorNeeds.Comfortable.WithHunger(new NeedValue(80)));
-            Assert.That(ScheduleSystem.ChooseTarget(actor, day, foodSpot),
-                Is.EqualTo(new GridPosition(7, 0)), "hunger wins the day - to a ring seat, never the tabletop");
+            Assert.That(ScheduleSystem.ChooseTarget(actor, day), Is.EqualTo(anchor),
+                "hunger no longer routes here — a starving ACTIONLESS civilian minds its anchor");
 
             actor.ApplyNeeds(ActorNeeds.Comfortable.WithFatigue(new NeedValue(90)));
-            Assert.That(ScheduleSystem.ChooseTarget(actor, night, foodSpot), Is.EqualTo(home), "exhaustion sends you home at night");
+            Assert.That(ScheduleSystem.ChooseTarget(actor, night), Is.EqualTo(home), "exhaustion sends you home at night");
 
             actor.ApplyNeeds(ActorNeeds.Comfortable);
-            Assert.That(ScheduleSystem.ChooseTarget(actor, day, foodSpot), Is.EqualTo(anchor), "a comfortable idle actor minds its day anchor");
+            Assert.That(ScheduleSystem.ChooseTarget(actor, day), Is.EqualTo(anchor), "a comfortable idle actor minds its day anchor");
         }
 
         [Test]
@@ -191,65 +172,9 @@ namespace EmberCrpg.Tests.EditMode.Living
                 "street outlaws (home != dayAnchor) keep the F6 curfew commute");
         }
 
-        // PLAYTEST pin ("herkes town merkezinde"): under the eat threshold the table cannot feed
-        // you, so the schedule must not park sub-threshold civilians at the food spot — day or night.
-        [Test]
-        public void ChooseTarget_PeckishBelowEatThreshold_NeverTargetsTheFoodSpot()
-        {
-            var foodSpot = new GridPosition(5, 0);
-            var home = new GridPosition(0, 0);
-            var anchor = new GridPosition(9, 9);
-            var actor = Record(new GridPosition(3, 3)).WithHomeAndAnchor(home, anchor);
-
-            actor.ApplyNeeds(ActorNeeds.Comfortable.WithHunger(new NeedValue(40)));
-            Assert.That(ScheduleSystem.ChooseTarget(actor, new GameTime(23 * GameTime.MinutesPerHour), foodSpot),
-                Is.EqualTo(home), "peckish at night still sleeps at home");
-            Assert.That(ScheduleSystem.ChooseTarget(actor, new GameTime(9 * GameTime.MinutesPerHour), foodSpot),
-                Is.EqualTo(anchor), "peckish by day minds its anchor instead of standing at a table it cannot use");
-        }
-
-        [Test]
-        public void ChooseTarget_SeatOrdinals0Through15_DistinctRingSeats_NeverTheTabletop()
-        {
-            // Review-mandated pin (Gate8) + W30: every ordinal owns a DISTINCT cell inside eating
-            // reach, and NO ordinal enters the inner 3x3 where the plaza furniture renders.
-            var actor = IdleActor(new GridPosition(0, 0));
-            actor.ApplyNeeds(actor.Needs.WithHunger(new NeedValue(100)));
-            var table = new GridPosition(10, 10);
-
-            var seats = new System.Collections.Generic.HashSet<GridPosition>();
-            int worstReach = 0;
-            int nearestReach = int.MaxValue;
-            for (int ordinal = 0; ordinal < 16; ordinal++)
-            {
-                var seat = ScheduleSystem.ChooseTarget(actor, WorkHour, table, ordinal);
-                seats.Add(seat);
-                int reach = System.Math.Max(System.Math.Abs(seat.X - table.X), System.Math.Abs(seat.Y - table.Y));
-                if (reach > worstReach) worstReach = reach;
-                if (reach < nearestReach) nearestReach = reach;
-            }
-
-            Assert.That(seats.Count, Is.EqualTo(16), "no two ordinals may share a seat");
-            Assert.That(worstReach, Is.LessThanOrEqualTo(NeedConsumptionSystem.EatReachCells),
-                "every seat must stay within eating reach of the table");
-            Assert.That(nearestReach, Is.EqualTo(2),
-                "the inner 3x3 belongs to the table and benches - no diner stands ON the furniture");
-        }
-
-        [Test]
-        public void Advance_TwoFoodSpots_HungryActorWalksTowardTheNearest()
-        {
-            var actors = new ActorStore();
-            var actor = IdleActor(new GridPosition(0, 0));
-            actor.ApplyNeeds(actor.Needs.WithHunger(new NeedValue(100)));
-            actors.Add(actor);
-
-            new ScheduleSystem().Advance(actors, WorkHour,
-                new[] { new GridPosition(3, 0), new GridPosition(40, 40) });
-
-            Assert.That(actors.Get(new ActorId(1)).Position, Is.EqualTo(new GridPosition(1, 0)),
-                "the step must head to the NEAR larder, not the far one");
-        }
+        // W32 retirements, tracked by their successors: the peckish-below-threshold story is the
+        // decision gate (EatActionStoryTests), the seat ring moved to CommunalSeatTests, and
+        // nearest-larder selection is the decision's claim (Decision_PicksTheNearestLarder).
 
         private static ActorRecord AssignedActor(GridPosition position)
         {

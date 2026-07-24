@@ -14,7 +14,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
             var knownIds = new[]
             {
                 "core.time", "core.magic", "living.schedule", "living.companion_follow",
-                "living.eatOnArrival", "econ.jobs", "quest.tick", "living.needs",
+                "living.decision", "living.action_advance", "econ.jobs", "quest.tick", "living.needs",
                 "living.consumption", "living.predation", "living.companion_guard",
                 "living.witness", "living.ambient", "living.rumors",
                 "world.growth", "world.harvest", "econ.prices", "econ.trade",
@@ -34,7 +34,8 @@ namespace EmberCrpg.Tests.EditMode.Composition
         public void CoreMutableFields_HaveDeclaredOwnership()
         {
             foreach (var field in new[]
-                { "Actor.Position", "Actor.Needs", "Actor.Vitals", "World.Stockpiles", "World.GuardPursuits" })
+                { "Actor.Position", "Actor.Needs", "Actor.Vitals", "World.Stockpiles", "World.GuardPursuits",
+                  "Actor.ActionState", "World.Reservations" }) // W32: the new single-writer rows are pinned
                 Assert.That(FieldOwnershipRegistry.Writers.ContainsKey(field), Is.True,
                     field + " has no declared ownership - undeclared writers breed cadence conflicts");
         }

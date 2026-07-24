@@ -93,6 +93,10 @@ namespace EmberCrpg.Domain.World
             Jobs ??= new JobBoard();
             Worksites ??= new WorksiteStore();
             PlayerKnownSpellIds ??= new List<string>();
+            Reservations ??= new ReservationLedger();
+            // Derived (site,tag)/actor indexes are never serialized; a restored ledger is blind without them.
+            Reservations.RebuildIndexes();
+            ActionLog ??= new EmberCrpg.Domain.Actors.Actions.ActionLogRing();
         }
 
         // Codex audit (sixth pass D-P3 #D2): the five named role views below
@@ -171,6 +175,10 @@ namespace EmberCrpg.Domain.World
         public List<ulong> CompanionIds = new List<ulong>();
         /// <summary>P0 pursuit: active guard chases (guard -> quarry, with an expiry).</summary>
         public List<PursuitRecord> GuardPursuits = new List<PursuitRecord>();
+        /// <summary>W32 EAT: count-based stockpile reservations — the "last bread" is claimed once.</summary>
+        public ReservationLedger Reservations = new ReservationLedger();
+        /// <summary>W32 EAT: bounded deterministic action phase trace (terminal outcomes go to Events).</summary>
+        public EmberCrpg.Domain.Actors.Actions.ActionLogRing ActionLog = new EmberCrpg.Domain.Actors.Actions.ActionLogRing();
         /// <summary>P1 ambient life: rats and cats - cheap agents with real stock effects.</summary>
         public List<AmbientCritter> Critters = new List<AmbientCritter>();
         /// <summary>P1 RumorMill: town talk distilled from real events (cap 32, 3-day life).</summary>
@@ -250,6 +258,8 @@ namespace EmberCrpg.Domain.World
             NpcMemory = other.NpcMemory;
             CompanionIds = other.CompanionIds;
             GuardPursuits = other.GuardPursuits;
+            Reservations = other.Reservations;
+            ActionLog = other.ActionLog;
             Critters = other.Critters;
             Rumors = other.Rumors;
             RumorEventCursor = other.RumorEventCursor;

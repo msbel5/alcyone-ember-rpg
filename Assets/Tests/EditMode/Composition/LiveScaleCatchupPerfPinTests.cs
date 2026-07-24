@@ -12,7 +12,10 @@ namespace EmberCrpg.Tests.EditMode.Composition
     /// <summary>TICKPERF pin at LIVE scale: the factory-world pin (5 actors) never saw the
     /// actors x piles x sites blow-up that froze the marathon (EatOnArrival 152s per replayed
     /// day, tripling daily). This world is ~40 sites / 40 piles / 800 civilians - one replayed
-    /// game day must stay comfortably interactive.</summary>
+    /// game day must stay comfortably interactive. W32: the hot loop is now
+    /// decision+reservation+action_advance - the lazy FoodPileCache and the ledger's O(1)
+    /// reserved-count lookups MUST keep the reservation search O(actors); this test is their
+    /// warden.</summary>
     public sealed class LiveScaleCatchupPerfPinTests
     {
         [Test]

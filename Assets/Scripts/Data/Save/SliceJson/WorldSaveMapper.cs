@@ -37,7 +37,7 @@ namespace EmberCrpg.Data.Save
             // recover (e.g. surface a "save corrupt" status) rather than
             // crashing the save path.
             if (world == null) throw new ArgumentNullException(nameof(world));
-            return new WorldSaveData
+            var data = new WorldSaveData
             {
                 schemaVersion = CurrentSchemaVersion,
                 totalMinutes = (long)world.Time.TotalMinutes,
@@ -96,6 +96,13 @@ inventory = ToInventoryData(world.PlayerInventory),
                 pursuitGuardIds = world.GuardPursuits?.ConvertAll(p => p.GuardId).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitTargetIds = world.GuardPursuits?.ConvertAll(p => p.TargetId).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitUntilMinutes = world.GuardPursuits?.ConvertAll(p => p.UntilMinutes).ToArray() ?? System.Array.Empty<long>(),
+                // W32 EAT: reservation ledger rows in insertion order + the persisted id counter.
+                reservationIds = world.Reservations?.Rows.ConvertAll(r => r.Id).ToArray() ?? System.Array.Empty<ulong>(),
+                reservationSiteIds = world.Reservations?.Rows.ConvertAll(r => r.SiteId).ToArray() ?? System.Array.Empty<ulong>(),
+                reservationItemTags = world.Reservations?.Rows.ConvertAll(r => r.ItemTag).ToArray() ?? System.Array.Empty<string>(),
+                reservationActorIds = world.Reservations?.Rows.ConvertAll(r => r.ActorId).ToArray() ?? System.Array.Empty<ulong>(),
+                reservationUntilMinutes = world.Reservations?.Rows.ConvertAll(r => r.UntilMinutes).ToArray() ?? System.Array.Empty<long>(),
+                reservationNextId = world.Reservations?.NextId ?? 1UL,
                 critterIds = world.Critters?.ConvertAll(c => c.Id).ToArray() ?? System.Array.Empty<ulong>(),
                 critterSiteIds = world.Critters?.ConvertAll(c => c.SiteId.Value).ToArray() ?? System.Array.Empty<ulong>(),
                 critterXs = world.Critters?.ConvertAll(c => c.Cell.X).ToArray() ?? System.Array.Empty<int>(),
@@ -128,6 +135,9 @@ inventory = ToInventoryData(world.PlayerInventory),
                 encounterActive = world.EncounterActive,
                 lastNarrative = world.LastNarrative,
             };
+            // W32 EAT: the phase-trace ring rides as parallel arrays (nine columns + counter).
+            ToActionLogData(world.ActionLog, data);
+            return data;
         }
 
         public static WorldState ToWorld(WorldSaveData data, WorldState seedWorld)
@@ -210,6 +220,26 @@ world.Items = ToItemStore(data.itemRecords);
                         TargetId = data.pursuitTargetIds[i],
                         UntilMinutes = data.pursuitUntilMinutes[i],
                     });
+            // W32 EAT: rebuild the reservation ledger; pre-W32 saves (null arrays, counter 0) load
+            // as an empty ledger with NextId 1. Indexes are derived, so rebuild closes the load.
+            world.Reservations = new ReservationLedger();
+            if (data.reservationIds != null && data.reservationSiteIds != null && data.reservationItemTags != null
+                && data.reservationActorIds != null && data.reservationUntilMinutes != null)
+                for (int i = 0; i < data.reservationIds.Length && i < data.reservationSiteIds.Length
+                     && i < data.reservationItemTags.Length && i < data.reservationActorIds.Length
+                     && i < data.reservationUntilMinutes.Length; i++)
+                    world.Reservations.Rows.Add(new ReservationRecord
+                    {
+                        Id = data.reservationIds[i],
+                        SiteId = data.reservationSiteIds[i],
+                        ItemTag = data.reservationItemTags[i],
+                        ActorId = data.reservationActorIds[i],
+                        UntilMinutes = data.reservationUntilMinutes[i],
+                    });
+            world.Reservations.NextId = data.reservationNextId != 0UL ? data.reservationNextId : 1UL;
+            world.Reservations.RebuildIndexes();
+            // W32 EAT: restore the phase-trace ring (pre-W32 saves load an empty ring).
+            world.ActionLog = ToActionLogRing(data);
             world.Critters = new System.Collections.Generic.List<AmbientCritter>();
             if (data.critterIds != null && data.critterKinds != null)
                 for (int i = 0; i < data.critterIds.Length && i < data.critterKinds.Length; i++)

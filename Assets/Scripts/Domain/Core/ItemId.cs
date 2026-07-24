@@ -36,6 +36,12 @@ namespace EmberCrpg.Domain.Core
             get { return _value == 0UL; }
         }
 
+        /// <summary>The empty no-item sentinel.</summary>
+        public static ItemId Empty
+        {
+            get { return default; }
+        }
+
         /// <summary>
         /// Returns true when both item handles carry the same raw identifier.
         /// </summary>

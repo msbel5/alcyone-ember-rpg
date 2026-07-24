@@ -128,14 +128,17 @@ namespace EmberCrpg.Presentation.Ember.Views
             if (!_activityLabelProbed)
             {
                 _activityLabel = GetComponent<NpcActivityLabelView>(); // optional - civilians only
+                _poseIcon = GetComponent<NpcPoseIconView>();           // optional - civilians only
                 _curfew = GetComponent<EmberCrpg.Presentation.Ember.WorldDirector.NightCurfewView>();
                 _activityLabelProbed = true;
             }
             _activityLabel?.SetActivity(state.Activity);
+            _poseIcon?.SetActionKind(state.ActionKind); // W32 DOC5: MUG reads the action, not the clock
             _curfew?.SetSleeping(state.Sleeping);
         }
 
         private NpcActivityLabelView _activityLabel;
+        private NpcPoseIconView _poseIcon;
         private EmberCrpg.Presentation.Ember.WorldDirector.NightCurfewView _curfew;
         private bool _activityLabelProbed;
 
@@ -277,13 +280,18 @@ namespace EmberCrpg.Presentation.Ember.Views
         /// <summary>PLAYTEST FIX ("kimse eve gidip uyumuyor"): true only when the actor has
         /// ARRIVED at its home cell at night - the lying pose waits for the commute to end.</summary>
         public readonly bool Sleeping;
-        public ActorViewState(Vector3 worldPosition, Quaternion worldRotation, bool visible, string activity = null, bool sleeping = false)
+        /// <summary>W32 DOC5: stable CurrentAction kind ("MoveToFood"...), null when the actor
+        /// carries no action (schedule-word fallback). Views may branch on this; they may NOT
+        /// re-derive it from hour/position (that is the §2.9 disease).</summary>
+        public readonly string ActionKind;
+        public ActorViewState(Vector3 worldPosition, Quaternion worldRotation, bool visible, string activity = null, bool sleeping = false, string actionKind = null)
         {
             WorldPosition = worldPosition;
             WorldRotation = worldRotation;
             Visible = visible;
             Activity = activity;
             Sleeping = sleeping;
+            ActionKind = actionKind;
         }
     }
 }

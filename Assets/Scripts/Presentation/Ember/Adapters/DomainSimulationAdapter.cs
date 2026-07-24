@@ -63,6 +63,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             _world = world ?? throw new System.ArgumentNullException(nameof(world));
             _saveService = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService(
                 EmberCrpg.Data.Recipes.ProductionRecipeRegistry.Resolve);
+            // W32-04 §5.b: the greppable [Action] phase mirror is proof-only — flags gate it so
+            // normal play pays no per-transition string cost (the sink stays an observer either way).
+            EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink.Enabled = HasActionLogFlag();
             _tickComposer = new EmberCrpg.Simulation.Composition.WorldTickComposer();
 
             // SOUL-01: bind the save bridge to the live world so _saveService.Worksites/Jobs/Soils/Plants
@@ -92,6 +95,16 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         }
 
         public WorldState World => _world;
+
+        private static bool HasActionLogFlag()
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+                if (string.Equals(args[i], "--ember-proof-screenshots", System.StringComparison.Ordinal)
+                    || string.Equals(args[i], "--ember-action-log", System.StringComparison.Ordinal))
+                    return true;
+            return false;
+        }
 
 
 

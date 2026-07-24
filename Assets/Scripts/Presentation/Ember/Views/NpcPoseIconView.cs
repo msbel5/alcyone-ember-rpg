@@ -4,9 +4,9 @@ namespace EmberCrpg.Presentation.Ember.Views
 {
     /// <summary>
     /// F27: a tiny generated pictogram above a civilian billboard telling what they are DOING —
-    /// a HAMMER over workers during work hours, a MUG over everyone during the midday meal
-    /// (12:00-13:59, matching ScheduleSystem's lunch window). Same root-parented camera-facing
-    /// family as the hostile marker; sprites are 12×12 pixel masks, generated once.
+    /// a HAMMER over workers during work hours, a MUG while the actor's CurrentAction is
+    /// ConsumeFood (W32 DOC5: the mug reads the ACTION, not the clock). Same root-parented
+    /// camera-facing family as the hostile marker; sprites are 12×12 pixel masks, generated once.
     /// </summary>
     public sealed class NpcPoseIconView : MonoBehaviour
     {
@@ -16,6 +16,7 @@ namespace EmberCrpg.Presentation.Ember.Views
         private SpriteRenderer _icon;
         private bool _worker;
         private float _nextPoll;
+        private string _actionKind;
 
         public void Bind(bool workerRole)
         {
@@ -29,16 +30,21 @@ namespace EmberCrpg.Presentation.Ember.Views
             _icon.enabled = false;
         }
 
+        /// <summary>W32 DOC5: pushed by ActorView.SetTarget — the same feed as the activity label.
+        /// The view may branch on the kind; it may NOT re-derive it from hour/position.</summary>
+        public void SetActionKind(string kind) => _actionKind = kind;
+
         private void Update()
         {
             if (_icon == null || Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 1.1f; // the hour changes slowly — poll lazily
 
+            bool eating = _actionKind == "ConsumeFood"; // verbatim action read — no lunch-window guess
+            // GUESS(WORK slice): retire when PerformWorkAction lands — hour poll survives for this branch only.
             int hour = EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.HourOfDay;
-            bool lunch = hour >= 12 && hour < 14;
-            bool work = _worker && hour >= 8 && hour < 18 && !lunch;
+            bool work = _worker && hour >= 8 && hour < 18 && !eating;
 
-            if (lunch) { _icon.sprite = Mug(); _icon.enabled = true; }
+            if (eating) { _icon.sprite = Mug(); _icon.enabled = true; }
             else if (work) { _icon.sprite = Hammer(); _icon.enabled = true; }
             else _icon.enabled = false;
         }

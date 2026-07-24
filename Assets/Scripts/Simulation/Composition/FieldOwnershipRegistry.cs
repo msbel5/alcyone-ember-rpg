@@ -17,7 +17,8 @@ namespace EmberCrpg.Simulation.Composition
             {
                 ["Actor.Position"] = new[]
                 {
-                    "living.schedule@PerTick:20",        // routine movement
+                    "living.schedule@PerTick:20",        // NARROWED (W32): actionless actors only
+                    "living.action_advance@PerTick:22",  // W32: the active MoveToFood step
                     "living.companion_follow@PerTick:21", // heel AFTER schedule, by design
                     "living.predation@Hourly:40",         // hunters step toward prey
                     "living.witness@Hourly:45",           // civilians shy from trouble + guard nudge
@@ -25,9 +26,19 @@ namespace EmberCrpg.Simulation.Composition
                 },
                 ["Actor.Needs"] = new[]
                 {
-                    "living.needs@Hourly:30",        // the ramps
-                    "living.eatOnArrival@PerTick:22", // arrival meals
-                    "living.consumption@Hourly:35",  // metabolism half
+                    "living.needs@Hourly:30",           // the ramps
+                    "living.action_advance@PerTick:22", // W32: the ConsumeFood commit drops hunger
+                    "living.consumption@Hourly:35",     // NARROWED (W32): sleep/fatigue half only
+                },
+                ["Actor.ActionState"] = new[]
+                {
+                    "living.decision@PerTick:18",       // W32: intent + action START
+                    "living.action_advance@PerTick:22", // W32: phase steps + terminal handover
+                },
+                ["World.Reservations"] = new[]
+                {
+                    "living.decision@PerTick:18",       // W32: claim + expiry sweep
+                    "living.action_advance@PerTick:22", // W32: consumed/failed release
                 },
                 ["Actor.Vitals"] = new[]
                 {
@@ -43,8 +54,7 @@ namespace EmberCrpg.Simulation.Composition
                 ["World.Stockpiles"] = new[]
                 {
                     "world.harvest@Daily:25",
-                    "living.eatOnArrival@PerTick:22",
-                    "living.consumption@Hourly:35",
+                    "living.action_advance@PerTick:22", // W32: TakeFood decrement + failure return
                     "living.ambient@Hourly:50",   // vermin theft
                     "econ.trade@Daily:28",
                 },
