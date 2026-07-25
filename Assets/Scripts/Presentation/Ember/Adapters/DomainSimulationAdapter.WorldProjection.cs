@@ -123,9 +123,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // W33: the FARM guess branch ("harvesting"/"tending the field" from crop-belt
             // proximity) is DEAD — those verbs are now born only from real MoveToPlot/
             // PlantSeed/HarvestCrop/HaulCrop actions read verbatim through ActionVerbTable.
+            // W34: the WORK guess branch (schedule-derived "working" for any claimed but
+            // action-less actor) is DEAD — a claimed actor turns into MoveToWorksite via
+            // TryDecideWork within one Decide tick, and the ActionVerbTable then labels
+            // it truthfully. A between-tick idle actor with a job is unlabelled, not lied to.
             // PLAYTEST ('hepsinin kafasinda about town'): an idle stroll is not information -
             // no label at all. A verb appears only when it says something true and specific.
-            return actor.ScheduleState.IsIdle ? null : "working"; // GUESS(WORK slice): retire when PerformWorkAction lands
+            return null;
         }
 
         // SOUL-04 (spawn-from-worldgen): hand the host a flat, Domain-free list of candidate

@@ -26,6 +26,14 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
             Assert.That(ActionVerbTable.Verb(ActorActionType.PlantSeed), Is.EqualTo("planting"));
             Assert.That(ActionVerbTable.Verb(ActorActionType.HarvestCrop), Is.EqualTo("harvesting"));
             Assert.That(ActionVerbTable.Verb(ActorActionType.HaulCrop), Is.EqualTo("hauling"));
+            // W34 S7: the SLEEP and WORK verbs are TABLE rows born from real actions — the
+            // projection's clock+home guess ("sleeping"/"heading home"/"winding down") and its
+            // schedule-derived "working" dies with the arrival of MoveToBed/Sleep/MoveToWorksite/
+            // PerformWork actions the sim now TELLS the view.
+            Assert.That(ActionVerbTable.Verb(ActorActionType.MoveToBed), Is.EqualTo("heading home"));
+            Assert.That(ActionVerbTable.Verb(ActorActionType.Sleep), Is.EqualTo("sleeping"));
+            Assert.That(ActionVerbTable.Verb(ActorActionType.MoveToWorksite), Is.EqualTo("to work"));
+            Assert.That(ActionVerbTable.Verb(ActorActionType.PerformWork), Is.EqualTo("working"));
 
             // The signature IS the guarantee: one ActorActionType in, nothing else — the
             // formatter has no world/clock input to guess from (plaza+12:30 cannot say "eating").
@@ -63,8 +71,14 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
             // W33 F7: the farm guesses join the banned list — those verbs may only be born from
             // MoveToPlot/PlantSeed/HarvestCrop/HaulCrop actions, and the retired GUESS(FARM)
             // tag may not linger (a landed slice leaves no surviving guess to tag).
+            // W34 S7: the SLEEP+WORK guesses join too — the hour/needs sourced labels
+            // ("sleeping"/"heading home"/"winding down"/"working") may only be born from
+            // MoveToBed/Sleep/MoveToWorksite/PerformWork actions; the retired GUESS(SLEEP)
+            // and GUESS(WORK) tags may not linger either.
             foreach (var banned in new[] { "to the tavern", "hour >= 12", "\"eating\"", "\"seeking food\"",
-                "tending the field", "harvesting\"", "GUESS(FARM" })
+                "tending the field", "harvesting\"", "GUESS(FARM",
+                "\"heading home\"", "\"winding down\"", "\"working\"", "IsAsleepAtHome",
+                "GUESS(SLEEP", "GUESS(WORK" })
                 Assert.That(code.Contains(banned), Is.False,
                     $"'{banned}' guess branch still lives in the projection — the view invents verbs");
 
