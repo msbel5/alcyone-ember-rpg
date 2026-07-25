@@ -27,21 +27,37 @@ namespace EmberCrpg.Domain.Actors.Actions
                 world.Events?.Append(new WorldEvent(
                     new GameTime(entry.TickMinutes), WorldEventKind.ActionFailed,
                     new ActorId(entry.ActorId), new SiteId(entry.TargetId),
-                    $"eat:{Link(entry.FromAction)} failed reason={entry.Reason} target=site:{entry.TargetId} t={entry.TickMinutes}"));
-            else if (entry.ToPhase == ActionPhase.Succeeded && entry.ToAction == ActorActionType.ConsumeFood)
+                    $"{Chain(entry.FromAction)}:{Link(entry.FromAction)} failed reason={entry.Reason} target=site:{entry.TargetId} t={entry.TickMinutes}"));
+            // W33: the terminal-completion event generalizes from "== ConsumeFood" to every
+            // chain-final link (PlantSeed and HaulCrop end their chains); the EAT line stays
+            // byte-identical — RumorMill/Gate meal counters keep reading it unchanged.
+            else if (entry.ToPhase == ActionPhase.Succeeded && IsChainTerminal(entry.ToAction))
                 world.Events?.Append(new WorldEvent(
                     new GameTime(entry.TickMinutes), WorldEventKind.ActionCompleted,
                     new ActorId(entry.ActorId), new SiteId(entry.TargetId),
-                    $"eat:consume completed target=site:{entry.TargetId} t={entry.TickMinutes}"));
+                    $"{Chain(entry.ToAction)}:{Link(entry.ToAction)} completed target=site:{entry.TargetId} t={entry.TickMinutes}"));
             for (var i = 0; i < _sinks.Length; i++)
                 _sinks[i]?.OnPhase(entry);
         }
+
+        private static bool IsChainTerminal(ActorActionType action)
+            => action == ActorActionType.ConsumeFood
+            || action == ActorActionType.PlantSeed
+            || action == ActorActionType.HaulCrop;
+
+        // Enum layout truth: 1..3 are the EAT chain, 4..7 the FARM chain (append-only order).
+        private static string Chain(ActorActionType action)
+            => action >= ActorActionType.MoveToPlot ? "farm" : "eat";
 
         private static string Link(ActorActionType action) => action switch
         {
             ActorActionType.MoveToFood => "move",
             ActorActionType.TakeFood => "take",
             ActorActionType.ConsumeFood => "consume",
+            ActorActionType.MoveToPlot => "move",
+            ActorActionType.PlantSeed => "plant",
+            ActorActionType.HarvestCrop => "harvest",
+            ActorActionType.HaulCrop => "haul",
             _ => "none",
         };
     }

@@ -20,6 +20,12 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
             Assert.That(ActionVerbTable.Verb(ActorActionType.MoveToFood), Is.EqualTo("seeking food"));
             Assert.That(ActionVerbTable.Verb(ActorActionType.TakeFood), Is.EqualTo("taking food"));
             Assert.That(ActionVerbTable.Verb(ActorActionType.ConsumeFood), Is.EqualTo("eating"));
+            // W33 F7: the farm verbs are TABLE rows born from real actions now — the projection's
+            // crop-belt proximity guesses ("harvesting"/"tending the field") are dead branches.
+            Assert.That(ActionVerbTable.Verb(ActorActionType.MoveToPlot), Is.EqualTo("to the field"));
+            Assert.That(ActionVerbTable.Verb(ActorActionType.PlantSeed), Is.EqualTo("planting"));
+            Assert.That(ActionVerbTable.Verb(ActorActionType.HarvestCrop), Is.EqualTo("harvesting"));
+            Assert.That(ActionVerbTable.Verb(ActorActionType.HaulCrop), Is.EqualTo("hauling"));
 
             // The signature IS the guarantee: one ActorActionType in, nothing else — the
             // formatter has no world/clock input to guess from (plaza+12:30 cannot say "eating").
@@ -54,7 +60,11 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
                 "the projection must read the ONE truth source");
             Assert.That(code, Does.Contain("ActionState.CurrentAction"),
                 "the verb must be born from the actor's carried action");
-            foreach (var banned in new[] { "to the tavern", "hour >= 12", "\"eating\"", "\"seeking food\"" })
+            // W33 F7: the farm guesses join the banned list — those verbs may only be born from
+            // MoveToPlot/PlantSeed/HarvestCrop/HaulCrop actions, and the retired GUESS(FARM)
+            // tag may not linger (a landed slice leaves no surviving guess to tag).
+            foreach (var banned in new[] { "to the tavern", "hour >= 12", "\"eating\"", "\"seeking food\"",
+                "tending the field", "harvesting\"", "GUESS(FARM" })
                 Assert.That(code.Contains(banned), Is.False,
                     $"'{banned}' guess branch still lives in the projection — the view invents verbs");
 

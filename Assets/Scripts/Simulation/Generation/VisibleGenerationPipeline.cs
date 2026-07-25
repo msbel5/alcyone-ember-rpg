@@ -74,7 +74,7 @@ namespace EmberCrpg.Simulation.Generation
                         var elapsed = (long)(DateTime.UtcNow - started).TotalMilliseconds;
                         if (result.Success)
                         {
-                            Write(entry, result.ImageBytes);
+                            Write(entry, result.ImageBytes, result.IsPlaceholder);
                             succeeded++;
                             if (result.IsPlaceholder) placeholders++;   // EMB-042: provenance — fallback, not real gen
                             EntryThumbnail?.Invoke(entry, result.ImageBytes);
@@ -133,12 +133,16 @@ namespace EmberCrpg.Simulation.Generation
             return AssetSubjectKind.Npc;
         }
 
-        private void Write(ManifestEntry entry, byte[] bytes)
+        private void Write(ManifestEntry entry, byte[] bytes, bool isPlaceholder)
         {
             var fullPath = AssetManifestScanner.Resolve(_projectRoot, entry.ExpectedPath);
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
             File.WriteAllBytes(fullPath, bytes ?? Array.Empty<byte>());
-            if (entry.RequiresGeneration) GeneratedAssetProvenance.Write(fullPath, entry, _catalog);
+            // B17: a placeholder is a visible stand-in, never provenance. No .promptmeta means
+            // IsFresh stays "stale_missing_provenance" and the scanner retries the entry the
+            // moment a real model exists — stamping it would freeze the 8x8 grey as canonical.
+            if (entry.RequiresGeneration && !isPlaceholder)
+                GeneratedAssetProvenance.Write(fullPath, entry, _catalog);
         }
 
         private static uint StableSeed(string value)

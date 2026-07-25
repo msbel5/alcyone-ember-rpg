@@ -1,146 +1,82 @@
-using System;
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
-using EmberCrpg.Domain.Inventory;
-using EmberCrpg.Domain.Process;
-using EmberCrpg.Domain.Time;
 using EmberCrpg.Domain.World;
-using EmberCrpg.Simulation.Process;
+using EmberCrpg.Simulation.Composition;
+using EmberCrpg.Tests.EditMode.Actions.Support;
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Process
 {
-    /// <summary>Verifies deterministic ripe-plant harvest into the food stockpile.</summary>
+    /// <summary>
+    /// W33 pin migration (DOC4 §2 row 1): the Phase-5 HarvestSystem — "ripe plant becomes
+    /// stockpile inventory in one call" — is RETIRED with the fiat lane that called it; the
+    /// live harvest commit lives in HarvestCropAdvancer. The surviving pins migrate here with
+    /// ONE change: the output address is the ACTOR'S HANDS, never the pile (the pile only
+    /// rises at the HaulCrop deposit). The old stockpile-capacity refusal retired with
+    /// InventoryState: the site-pile deposit is Add-only by design (W33-01 §5).
+    /// </summary>
     public sealed class HarvestSystemTests
     {
         [Test]
-        public void TryHarvest_ConvertsRipePlantToStockpileOutputAndClearsSoil()
+        public void HarvestCommit_YieldsToHands_ClearsSoil_NeverTouchesThePile()
         {
-            var species = CreateWheat();
-            var plants = CreatePlants(new PlantStageId("ripe"));
-            var soils = CreateSoils();
-            var stockpile = new InventoryState(4);
-            var log = new WorldEventLog();
-            var now = new GameTime(GameTime.MinutesPerDay * 91);
+            var world = FarmSliceWorld.Build(seedStock: 0, soilCells: 1);
+            var plant = FarmSliceWorld.PlantRipe(world);
+            world.Actors.Add(FarmSliceWorld.Farmer(7, 5, 5));
+            var composer = new WorldTickComposer();
+            composer.Advance(world, 0);
+            ActorRecord A() => world.Actors.Get(new ActorId(7));
 
-            Assert.That(new HarvestSystem().TryHarvest(
-                species,
-                plants,
-                soils,
-                new WorldComponentId(90),
-                stockpile,
-                log,
-                now,
-                CreateHarvestItem), Is.True);
+            int tick = 0;
+            while (!world.Events.Events.Any(e => e.Kind == WorldEventKind.PlantHarvested) && tick < 100)
+                composer.Advance(world, ++tick);
 
-            Assert.That(plants.Contains(new WorldComponentId(90)), Is.False);
-            Assert.That(soils.Get(new WorldComponentId(10)).HasPlant, Is.False);
-            Assert.That(Quantity(stockpile, "wheat"), Is.EqualTo(1));
-
-            var evt = log.Events.Single();
-            Assert.That(evt.Kind, Is.EqualTo(WorldEventKind.PlantHarvested));
-            Assert.That(evt.Tick, Is.EqualTo(now));
-            Assert.That(evt.SiteId, Is.EqualTo(new SiteId(5)));
-            Assert.That(evt.ReasonTrace.Causes, Is.EqualTo(new[]
-            {
-                "plant_harvest",
-                "site:5",
-                "soil:10",
-                "plant:90",
-                "species:wheat",
-                "item:wheat",
-            }));
+            // The commit is atomic: unplant + yield-to-hands + event + plot→carry row swap in
+            // ONE step — sampled here BEFORE the haul walk reaches the pile.
+            var evt = world.Events.Events.Single(e => e.Kind == WorldEventKind.PlantHarvested);
+            Assert.That(evt.ActorId.Value, Is.EqualTo(7UL), "the harvester AUTHORS the event");
+            Assert.That(world.Plants.Contains(plant.Id), Is.False, "the plant left the world");
+            Assert.That(world.Soils.Get(FarmSliceWorld.SoilId(0)).HasPlant, Is.False, "the soil is clear");
+            Assert.That(A().ActionState.CarriedUnits, Is.EqualTo(FarmSliceWorld.HarvestYield),
+                "the yield rides in the HANDS — the old code's stockpile address is dead");
+            Assert.That(world.Stockpiles[0].Get(FarmSliceWorld.CropTag), Is.Zero,
+                "the pile is untouched at the commit — only the deposit raises stock");
+            Assert.That(world.Reservations.TryGetByActor(7UL, out var row), Is.True);
+            Assert.That(row.ItemTag, Is.EqualTo(FarmSliceWorld.CarryKeyPrefix + FarmSliceWorld.CropTag),
+                "the plot claim swapped into a carry row in the same step");
         }
 
         [Test]
-        public void TryHarvest_ReturnsFalseForUnripePlantWithoutMutation()
+        public void UnripePlant_IsRefusedWithoutMutation()
         {
-            var plants = CreatePlants(new PlantStageId("seed"));
-            var soils = CreateSoils();
-            var stockpile = new InventoryState(4);
-            var log = new WorldEventLog();
+            // The decision layer never targets an unripe plant (IsHarvestable gate), so the
+            // refusal is probed the attacker's way: the phase is FORCED to HarvestCrop beside
+            // a sprout — the advancer's own validation refuses, mutation-free (the old
+            // "unripe returns false without mutation" pin, alive at the new seam).
+            var world = FarmSliceWorld.Build(seedStock: 0, soilCells: 1);
+            var plant = FarmSliceWorld.Plant(world, 0, "sprout");
+            var reaper = FarmSliceWorld.Farmer(9, 0, 1); // adjacent: distance is NOT the refusal
+            world.Actors.Add(reaper);
+            Assert.That(world.Reservations.TryReserve(FarmSliceWorld.Site.Value,
+                FarmSliceWorld.PlotKeyPrefix + FarmSliceWorld.SoilId(0).Value, 9UL,
+                untilMinutes: 9_999L, pileCount: 1, out var claim), Is.True);
+            reaper.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Harvest).Start(
+                ActorActionType.HarvestCrop, FarmSliceWorld.Site, ItemId.Empty,
+                new ReservationId(claim), startedAtMinutes: 360, ActionInterruptPolicy.Interruptible));
 
-            Assert.That(new HarvestSystem().TryHarvest(CreateWheat(), plants, soils, new WorldComponentId(90), stockpile, log, new GameTime(0), CreateHarvestItem), Is.False);
-            Assert.That(plants.Contains(new WorldComponentId(90)), Is.True);
-            Assert.That(soils.Get(new WorldComponentId(10)).HasPlant, Is.True);
-            Assert.That(stockpile.Items.Count, Is.EqualTo(0));
-            Assert.That(log.IsEmpty, Is.True);
-        }
+            var composer = new WorldTickComposer();
+            composer.Advance(world, 0);
+            composer.Advance(world, 1); // one advancement: the harvestable gate fires pre-commit
 
-        [Test]
-        public void TryHarvest_ReturnsFalseWhenStockpileCannotAcceptOutputWithoutMutation()
-        {
-            var plants = CreatePlants(new PlantStageId("ripe"));
-            var soils = CreateSoils();
-            var stockpile = new InventoryState(1);
-            stockpile.TryAdd(new InventoryItem(new ItemId(9), "stone", "Stone", 1));
-            var log = new WorldEventLog();
-
-            Assert.That(new HarvestSystem().TryHarvest(CreateWheat(), plants, soils, new WorldComponentId(90), stockpile, log, new GameTime(0), CreateHarvestItem), Is.False);
-            Assert.That(plants.Contains(new WorldComponentId(90)), Is.True);
-            Assert.That(soils.Get(new WorldComponentId(10)).HasPlant, Is.True);
-            Assert.That(Quantity(stockpile, "wheat"), Is.EqualTo(0));
-            Assert.That(log.IsEmpty, Is.True);
-        }
-
-        [Test]
-        public void TryHarvest_RejectsNullInputsAndBadFactoryOutput()
-        {
-            var system = new HarvestSystem();
-            var species = CreateWheat();
-            var plants = CreatePlants(new PlantStageId("ripe"));
-            var soils = CreateSoils();
-            var stockpile = new InventoryState(4);
-            var log = new WorldEventLog();
-
-            Assert.Throws<ArgumentNullException>(() => system.TryHarvest(null, plants, soils, new WorldComponentId(90), stockpile, log, new GameTime(0), CreateHarvestItem));
-            Assert.Throws<ArgumentNullException>(() => system.TryHarvest(species, null, soils, new WorldComponentId(90), stockpile, log, new GameTime(0), CreateHarvestItem));
-            Assert.Throws<ArgumentNullException>(() => system.TryHarvest(species, plants, null, new WorldComponentId(90), stockpile, log, new GameTime(0), CreateHarvestItem));
-            Assert.Throws<ArgumentNullException>(() => system.TryHarvest(species, plants, soils, new WorldComponentId(90), null, log, new GameTime(0), CreateHarvestItem));
-            Assert.Throws<ArgumentNullException>(() => system.TryHarvest(species, plants, soils, new WorldComponentId(90), stockpile, null, new GameTime(0), CreateHarvestItem));
-            Assert.Throws<ArgumentNullException>(() => system.TryHarvest(species, plants, soils, new WorldComponentId(90), stockpile, log, new GameTime(0), null));
-            Assert.Throws<ArgumentException>(() => system.TryHarvest(species, plants, soils, default, stockpile, log, new GameTime(0), CreateHarvestItem));
-            Assert.Throws<InvalidOperationException>(() => system.TryHarvest(species, plants, soils, new WorldComponentId(90), stockpile, log, new GameTime(0), tag => null));
-            Assert.Throws<InvalidOperationException>(() => system.TryHarvest(species, plants, soils, new WorldComponentId(90), stockpile, log, new GameTime(0), tag => new InventoryItem(new ItemId(700), "wrong", "Wrong", 1)));
-        }
-
-        private static ComponentStore<PlantComponent> CreatePlants(PlantStageId stageId)
-        {
-            var plants = new ComponentStore<PlantComponent>();
-            plants.Add(new WorldComponentId(90), new PlantComponent(new WorldComponentId(90), new SiteId(5), new GridPosition(1, 2), "wheat", stageId, 0));
-            return plants;
-        }
-
-        private static ComponentStore<SoilComponent> CreateSoils()
-        {
-            var soils = new ComponentStore<SoilComponent>();
-            soils.Add(new WorldComponentId(10), new SoilComponent(new WorldComponentId(10), new SiteId(5), new GridPosition(1, 2), 80, 60, new WorldComponentId(90)));
-            return soils;
-        }
-
-        private static InventoryItem CreateHarvestItem(string templateId)
-        {
-            return new InventoryItem(new ItemId(700), templateId, "Wheat", 1);
-        }
-
-        private static int Quantity(InventoryState inventory, string templateId)
-        {
-            return inventory.Items.Where(item => item.TemplateId == templateId).Sum(item => item.Quantity);
-        }
-
-        private static PlantSpeciesDef CreateWheat()
-        {
-            return new PlantSpeciesDef(
-                "wheat",
-                "wheat_seed",
-                "wheat",
-                new[]
-                {
-                    new PlantGrowthStageDef(new PlantStageId("seed"), "Seed", 2, false),
-                    new PlantGrowthStageDef(new PlantStageId("ripe"), "Ripe Wheat", 0, true),
-                },
-                new[] { new PlantGrowthRule(Season.Spring, true, true) });
+            Assert.That(world.Plants.Contains(plant.Id), Is.True, "the sprout still stands");
+            Assert.That(world.Soils.Get(FarmSliceWorld.SoilId(0)).PlantId, Is.EqualTo(plant.Id),
+                "the soil link is untouched");
+            Assert.That(reaper.ActionState.Phase, Is.EqualTo(ActionPhase.Failed), "the action fell");
+            Assert.That(reaper.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.CropGone),
+                "'not harvestable' is the CropGone story, never a silent skip");
+            Assert.That(reaper.ActionState.CarriedUnits, Is.Zero, "no yield was minted");
+            Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.PlantHarvested), Is.False);
         }
     }
 }

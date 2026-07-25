@@ -114,6 +114,42 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(row.Id, Is.EqualTo(claim));
         }
 
+        // W33 pin migration (DOC4 §2 row 11): the farm twin of the eat pin above — a hands-full
+        // HaulCrop flight (CarriedUnits + carry row) PLUS a live plot claim on a second actor.
+        // WorldStateDigest carries CarriedUnits and the reservation rows, so a mapper that
+        // drops either loses a mid-haul unit or duplicates a plot — and fails HERE.
+        [Test]
+        public void MidFlightFarmEpisode_SurvivesRoundtrip_HandsAndClaimsIntact()
+        {
+            var world = BuildSeededWorld();
+            Assert.That(world.Reservations.TryReserve(Site.Value, "carry:wheat", Worker.Value,
+                untilMinutes: 999L, pileCount: int.MaxValue, out var carryRow), Is.True);
+            world.Actors.Get(Worker).ApplyActionState(ActorActionState.ForIntent(ActorIntent.Harvest)
+                .Start(ActorActionType.HaulCrop, Site, ItemId.Empty, new ReservationId(carryRow),
+                       startedAtMinutes: 100, ActionInterruptPolicy.Interruptible)
+                .WithCarriedUnits(2).Advanced()); // HaulCrop@progress=1 with 2 units in hand
+            // A SECOND actor holds the plot claim ("plot:{soilId}" — FarmOperations' codec):
+            // one row per actor, so the harvest-in-waiting belongs to the guard.
+            var guard = new ActorId(4UL);
+            Assert.That(world.Reservations.TryReserve(Site.Value, "plot:10", guard.Value,
+                untilMinutes: 999L, pileCount: 1, out var plotRow), Is.True);
+
+            var before = WorldStateDigest.Compute(world);
+            var loaded = WorldSaveMapper.ToWorld(WorldSaveMapper.ToData(world), BuildSeededWorld());
+
+            Assert.That(WorldStateDigest.Compute(loaded), Is.EqualTo(before),
+                "a mid-haul flight must roundtrip byte-identically — hands included");
+            var back = loaded.Actors.Get(Worker).ActionState;
+            Assert.That((back.CurrentAction, back.Phase, back.ProgressTicks, back.CarriedUnits),
+                Is.EqualTo((ActorActionType.HaulCrop, ActionPhase.Running, 1, 2)),
+                "the (action, phase, progress, hands) quad must load verbatim");
+            Assert.That(back.ReservationId.Value, Is.EqualTo(carryRow), "the carry row follows the hauler");
+            Assert.That(loaded.Reservations.TryGetByActor(guard.Value, out var plot), Is.True,
+                "the plot claim survives beside the carry row");
+            Assert.That((plot.Id, plot.ItemTag), Is.EqualTo((plotRow, "plot:10")),
+                "the plot row loads verbatim — the ledger IS the plot exclusivity");
+        }
+
         [Test]
         public void SaveThenLoad_PreservesWorldDigest()
         {

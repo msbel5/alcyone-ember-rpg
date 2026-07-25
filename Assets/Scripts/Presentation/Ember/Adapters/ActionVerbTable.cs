@@ -19,6 +19,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             ActorActionType.MoveToFood => "seeking food",
             ActorActionType.TakeFood => "taking food",
             ActorActionType.ConsumeFood => "eating",
+            // W33 FARM: real actions now own the field verbs the projection used to guess.
+            ActorActionType.MoveToPlot => "to the field",
+            ActorActionType.PlantSeed => "planting",
+            ActorActionType.HarvestCrop => "harvesting",
+            ActorActionType.HaulCrop => "hauling",
             // CONSTRAINT: unknown kind NEVER falls back to a guess — loud sentinel + one warn.
             _ => Unknown(kind)
         };
@@ -29,6 +34,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             ActorActionType.MoveToFood => "MoveToFood",
             ActorActionType.TakeFood => "TakeFood",
             ActorActionType.ConsumeFood => "ConsumeFood",
+            ActorActionType.MoveToPlot => "MoveToPlot",
+            ActorActionType.PlantSeed => "PlantSeed",
+            ActorActionType.HarvestCrop => "HarvestCrop",
+            ActorActionType.HaulCrop => "HaulCrop",
             _ => null
         };
 

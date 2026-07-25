@@ -37,7 +37,17 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // failures/leaked claims, death count unchanged (predation pair). Chunking-invariance and
         // the save/load digest roundtrip passed UNCHANGED; the capturing run produced byte-identical
         // digests across the same-seed double advance. Old: e735114b45c96031cbf16663d7dbbcddb056d46002e77dd9d68a32bf8002a68f
-        private const string BaselineHash = "7ed20befd1bf5e68953037cba7d709b21dae48857ee269ad8638eeebb0a0cea9";
+        // Re-baselined 2026-07-25 for W33 stage B (FARM behavior): the teleport harvest died —
+        // world.harvest@Daily:25 and its self-replant are retired; yield is now born at the
+        // HarvestCrop commit (plant removed, soil freed, units carried, HaulCrop deposits at
+        // the delivery tick), WorldFactory grows soils 8001-8003 under the stall plots, and
+        // village recipes run on SITE stockpiles (B06). Timing/authorship shifts, totals honest
+        // (docs/ruh/w33/02 §7.2 golden note: re-baseline EXPECTED, chunking referee must stay
+        // green). Chunking-invariance (Cadence/ActionPhase/EatChunking) and the save/load digest
+        // roundtrip passed unchanged, and the capturing run produced byte-identical digests
+        // across the same-seed double advance (captured == second digest in the red run log).
+        // Old: 7ed20befd1bf5e68953037cba7d709b21dae48857ee269ad8638eeebb0a0cea9
+        private const string BaselineHash = "a2489e8b351428d834a05a98a42d472520e85f4eb0a7a5f7eaf22e84aab5923e";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

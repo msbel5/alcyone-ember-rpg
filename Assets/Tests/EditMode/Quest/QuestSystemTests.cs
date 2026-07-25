@@ -81,13 +81,13 @@ namespace EmberCrpg.Tests.EditMode.Quest
 
             Assert.That(first.QuestState.IsComplete, Is.False);
             Assert.That(first.QuestState.IsTaskTriggered(0), Is.True);
-            Assert.That(first.IronIngotCount, Is.EqualTo(1));
+            Assert.That(first.SmeltCompletedCount, Is.EqualTo(1));
             Assert.That(first.QuestCompletedCount, Is.EqualTo(0));
             Assert.That(first.TaskTriggeredTickMinutes, Is.GreaterThan(0));
             Assert.That(first.TaskTriggeredTickMinutes, Is.EqualTo(second.TaskTriggeredTickMinutes));
         }
 
-        private static (QuestState QuestState, int IronIngotCount, int QuestCompletedCount, long TaskTriggeredTickMinutes) RunSmeltQuest()
+        private static (QuestState QuestState, int SmeltCompletedCount, int QuestCompletedCount, long TaskTriggeredTickMinutes) RunSmeltQuest()
         {
             var world = CreateSmeltQuestWorld();
             var questState = SeedForgeQuest(world);
@@ -103,7 +103,10 @@ namespace EmberCrpg.Tests.EditMode.Quest
 
             return (
                 questState,
-                Quantity(world.PlayerInventory, "iron_ingot"),
+                // W33 (B06): the smelt is proven by its RecipeCompleted event — the ingot now
+                // lands in the SITE pile (address pinned by SmeltIronCompletesTests) where the
+                // settlement's vermin may legally steal it before the day ends.
+                CountEvents(world, WorldEventKind.RecipeCompleted),
                 CountEvents(world, WorldEventKind.QuestCompleted),
                 FirstEventTick(world, WorldEventKind.QuestTaskTriggered));
         }
@@ -136,8 +139,16 @@ namespace EmberCrpg.Tests.EditMode.Quest
                 JobPriority.Active(1),
                 quantity: 1,
                 requesterId: Worker));
-            world.PlayerInventory.TryAdd(new InventoryItem(new ItemId(601UL), "iron_ore", "Iron Ore", 2));
-            world.PlayerInventory.TryAdd(new InventoryItem(new ItemId(602UL), "fuel", "Fuel", 1));
+            // W33 (B06): the NPC smelt loop's inputs live in the SITE stockpile — village
+            // production no longer cooks in the player's bag. The player's OWN ingot (the
+            // InventoryHasItemTag half of the objective) is staged directly, exactly like
+            // Tick_WithPostQuestCraftEvent_...: the composer run now pins the deterministic
+            // TICK of the NPC's recipe_completed:1001 event marking the objective.
+            var pile = new EmberCrpg.Domain.Process.StockpileComponent(ForgeSite);
+            pile.Add("iron_ore", 2);
+            pile.Add("fuel", 1);
+            world.Stockpiles.Add(pile);
+            world.PlayerInventory.TryAdd(new InventoryItem(new ItemId(601UL), "iron_ingot", "Iron Ingot", 1));
             return world;
         }
 

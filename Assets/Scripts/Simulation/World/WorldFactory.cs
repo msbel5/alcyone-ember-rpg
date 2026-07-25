@@ -138,10 +138,15 @@ namespace EmberCrpg.Simulation.World
             for (ulong plot = 1; plot <= 3; plot++)
             {
                 var plotId = new WorldComponentId(9000 + plot);
+                var position = new GridPosition(6 + (int)plot, 4);
                 world.Plants.Add(plotId, new PlantComponent(
-                    plotId, new SiteId(5),
-                    new GridPosition(6 + (int)plot, 4), "wheat",
+                    plotId, new SiteId(5), position, "wheat",
                     new PlantStageId("seed"), 0));
+                // W33-01 §9.4: the soil UNDER each plot — without it the plot key ("plot:{soilId}")
+                // points at nothing and the harvest chain can never target these fields.
+                var soilId = new WorldComponentId(8000 + plot);
+                world.Soils.Add(soilId, new SoilComponent(
+                    soilId, new SiteId(5), position, fertility: 50, moisture: 50, plantId: plotId));
             }
             world.Prices.SetPrice(new SiteId(1), "iron", 10);
 

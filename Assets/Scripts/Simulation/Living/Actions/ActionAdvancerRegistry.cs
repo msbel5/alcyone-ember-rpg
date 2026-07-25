@@ -12,7 +12,7 @@ namespace EmberCrpg.Simulation.Living.Actions
 
         public ActionAdvancerRegistry(params ActionAdvancer[] advancers)
         {
-            _byKind = new ActionAdvancer[(int)ActorActionType.ConsumeFood + 1];
+            _byKind = new ActionAdvancer[(int)ActorActionType.HaulCrop + 1];
             foreach (var advancer in advancers)
                 _byKind[(int)advancer.Handles] = advancer;
         }

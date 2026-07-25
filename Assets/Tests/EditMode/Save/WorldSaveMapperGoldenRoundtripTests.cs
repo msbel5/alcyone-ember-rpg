@@ -46,6 +46,18 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(world.Reservations.TryReserve(
                 siteId: 1UL, tag: "wheat", actorId: eater.Id.Value,
                 untilMinutes: 999L, pileCount: 3, out _), Is.True);
+            // W33: hands-full HaulCrop actor (CarriedUnits=2 + "carry:" row) — the most
+            // field-filling farm state; a dropped actionCarriedUnits mapping fails HERE (W33-01 §9.3).
+            var hauler = world.Actors.Records.First(a => a != null && a.Id != eater.Id);
+            Assert.That(world.Reservations.TryReserve(
+                siteId: 1UL, tag: "carry:wheat", actorId: hauler.Id.Value,
+                untilMinutes: 999L, pileCount: int.MaxValue, out var carryRowId), Is.True);
+            hauler.ApplyActionState(
+                ActorActionState.ForIntent(ActorIntent.Harvest)
+                    .Start(ActorActionType.HaulCrop, targetSite: new SiteId(1),
+                           targetItem: ItemId.Empty, reservation: new ReservationId(carryRowId),
+                           startedAtMinutes: 130, policy: ActionInterruptPolicy.Interruptible)
+                    .WithCarriedUnits(2));
             // W32: a non-empty phase trace so all nine actionLog columns + the counter are proven.
             world.ActionLog.Push(new EmberCrpg.Domain.Actors.Actions.ActionLogEntry(
                 123L, eater.Id.Value, ActorIntent.Eat,

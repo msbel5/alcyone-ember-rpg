@@ -46,6 +46,32 @@ namespace EmberCrpg.Tests.EditMode.Process
             Assert.That(board.IsClaimed(job.Id), Is.False);
         }
 
+        // W33 pin migration (DOC4 §2 row 4): the ghost 5101 recipe is no longer a road — a
+        // posted planting job becomes a BODIED Plant chain through the jobs→decision bridge:
+        // claim (econ.jobs) → Plant INTENT (living.decision) → MoveToPlot → PlantSeed. This
+        // pins the bridge itself; the chain's physics live in the Farm story tests.
+        [Test]
+        public void PostedPlantingJob_BecomesThePlantIntent_OnTheClaimedFarmer()
+        {
+            var world = EmberCrpg.Tests.EditMode.Actions.Support.FarmSliceWorld.Build(seedStock: 2, soilCells: 1);
+            world.Actors.Add(EmberCrpg.Tests.EditMode.Actions.Support.FarmSliceWorld.Farmer(7, 9, 9));
+            EmberCrpg.Tests.EditMode.Actions.Support.FarmSliceWorld.PostPlantingJob(world);
+            var composer = new EmberCrpg.Simulation.Composition.WorldTickComposer();
+            composer.Advance(world, 0);
+
+            var farmer = world.Actors.Get(new ActorId(7));
+            int tick = 0;
+            while (farmer.ActionState.CurrentIntent != ActorIntent.Plant && tick < 200)
+                composer.Advance(world, ++tick);
+
+            Assert.That(farmer.ScheduleState.CurrentJobId.IsEmpty, Is.False,
+                "the claim machine handed the job to the farmer (reused untouched)");
+            Assert.That(farmer.ActionState.CurrentIntent, Is.EqualTo(ActorIntent.Plant),
+                "the claimed 5101 job became a Plant INTENT — job → intent, never job → ghost recipe");
+            Assert.That(farmer.ActionState.CurrentAction, Is.EqualTo(ActorActionType.MoveToPlot),
+                "the intent opened the chain's first link");
+        }
+
         [Test]
         public void Factory_CreatesDistinctPlantAndHarvestRequests()
         {

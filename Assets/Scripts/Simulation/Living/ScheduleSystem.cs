@@ -106,8 +106,10 @@ namespace EmberCrpg.Simulation.Living
         {
             bool workHour = IsWorkHour(time);
 
-            // The watch holds its post (guards eat off-shift — an honest simplification, logged
-            // in ROADMAP_V2), and enemies keep the curfew commute: classic routing for both.
+            // The watch holds its post between meals: a hungry guard eats via the action layer
+            // (ActionLifecycleSystem.Decide grants EatIntent when no chase is live — pursuit
+            // outranks lunch), so guards reaching this table are fed or mid-chase. Enemies
+            // keep the curfew commute: classic routing for both.
             if (actor.Role == ActorRole.Guard || actor.Role == ActorRole.Enemy)
                 return ClassicTarget(actor, workHour);
 

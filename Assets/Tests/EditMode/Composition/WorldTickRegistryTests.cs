@@ -1,14 +1,6 @@
 using System;
 using System.Linq;
-using EmberCrpg.Domain.Process;
-using EmberCrpg.Domain.Time;
-using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Composition;
-using EmberCrpg.Simulation.Living;
-using EmberCrpg.Simulation.Magic;
-using EmberCrpg.Simulation.Process;
-using EmberCrpg.Simulation.Time;
-using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Composition
@@ -43,19 +35,9 @@ namespace EmberCrpg.Tests.EditMode.Composition
         [Test]
         public void DefaultRegistry_DeclaresCanonicalOrder()
         {
-            var registry = DefaultTickSystems.Create(
-                new GameTimeAdvanceSystem(DefaultCalendar()),
-                new NeedsSystem(),
-                new MagicTickDriver(new SpellCooldownService(), new ShieldBuffService()),
-                new CaravanSystem(),
-                new PlantGrowthSystem(),
-                new JobAssignmentSystem(),
-                new PriceUpdateSystem(),
-                new ScheduleSystem(),
-                new FactionReputationDecaySystem(),
-                FactionDecayConfig.Default,
-                DefaultCalendar(),
-                DefaultPlantSpecies());
+            // B03: construction lives in DefaultRegistryFixture — the SAME registry the
+            // ownership lint derives its known-id set from, so the two can never fork.
+            var registry = DefaultRegistryFixture.CreateDefault();
 
             var triples = registry.Ordered
                 .Select(s => $"{s.Cadence}:{s.Order}:{s.Id}")
@@ -80,44 +62,13 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "Hourly:55:living.rumors",      // P1: new events become one-line town talk
                 "Daily:10:world.caravans",
                 "Daily:20:econ.plantgrowth",
-                "Daily:25:world.harvest", // v0.2 F7: same-day grow→harvest→price chain (shipcheck FLAT finding)
+                // W33: Daily:25:world.harvest RETIRED — the fiat teleport died; harvest is now
+                // the action strip's MoveToPlot→HarvestCrop→HaulCrop on PerTick:18/22.
                 "Daily:27:econ.shortage_response", // CAN SUYU H1+H3: shortage → planting job (first cascade)
                 "Daily:28:world.runtime_history", // CAN SUYU H4: history keeps being written
                 "Daily:30:econ.prices",
                 "Daily:40:politics.faction_decay",
             }));
-        }
-
-        private static SeasonCalendar DefaultCalendar()
-        {
-            return new SeasonCalendar(new[]
-            {
-                new SeasonDefinition(Season.Spring, 1, 90),
-                new SeasonDefinition(Season.Summer, 91, 180),
-                new SeasonDefinition(Season.Autumn, 181, 270),
-                new SeasonDefinition(Season.Winter, 271, 360),
-            });
-        }
-
-        private static PlantSpeciesDef[] DefaultPlantSpecies()
-        {
-            return new[]
-            {
-                new PlantSpeciesDef(
-                    "wheat",
-                    "wheat_seed",
-                    "wheat_grain",
-                    new[]
-                    {
-                        new PlantGrowthStageDef(new PlantStageId("seed"), "Seed", 1, false),
-                        new PlantGrowthStageDef(new PlantStageId("sprout"), "Sprout", 1, false),
-                        new PlantGrowthStageDef(new PlantStageId("ripe"), "Ripe", 0, true),
-                    },
-                    new[]
-                    {
-                        new PlantGrowthRule(Season.None, true, false),
-                    }),
-            };
         }
 
         private sealed class StubStep : IWorldTickSystem

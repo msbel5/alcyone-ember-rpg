@@ -14,7 +14,14 @@ namespace EmberCrpg.Tests.EditMode.Composition
     public sealed class WorldNpcDailyRhythmTests
     {
         private const int ExpectedActors = 8;
-        private const int ExpectedClaimedJobs = 4;
+        // W33 pin migration (DOC4 §2 row 8): with REAL soil under the farm worksites the two
+        // planting jobs now COMPLETE through the action chain (claim → Plant intent →
+        // MoveToPlot → PlantSeed → JobCompleted) on day 0, leaving only the smith jobs
+        // claimed at the midday sample. The field walk comes from the MoveToPlot phase now —
+        // if this pin turns red, the phase cadence is wrong, not the sampling hour.
+        private const int ExpectedClaimedJobs = 2;   // the smiths hold; the farms FINISHED
+        private const int ExpectedAssignedJobs = 4;  // all four claims still happened
+        private const int ExpectedFarmCompletions = 2;
         private const int StartMinutes = 5 * GameTime.MinutesPerHour + 50;
         private const int ProofDayOffset = 2;
         private static readonly SiteId Site = new SiteId(910UL);
@@ -56,8 +63,13 @@ namespace EmberCrpg.Tests.EditMode.Composition
             Assert.That(middayAtDayTargets, Is.EqualTo(ExpectedActors), "midday actors should converge on worksites/day anchors");
             Assert.That(nightAtHomes, Is.EqualTo(ExpectedActors), "night actors should converge back home");
             Assert.That(divergedByHour, Is.EqualTo(ExpectedActors), "midday and night positions should visibly diverge");
-            Assert.That(claimedJobs, Is.EqualTo(ExpectedClaimedJobs), "multiple role-mapped jobs should be claimed");
-            Assert.That(assignmentEvents, Is.EqualTo(ExpectedClaimedJobs), "claims should be emitted through real composition");
+            Assert.That(claimedJobs, Is.EqualTo(ExpectedClaimedJobs),
+                "only the smith jobs stay claimed — the farm jobs COMPLETED through the action chain");
+            Assert.That(assignmentEvents, Is.EqualTo(ExpectedAssignedJobs), "claims should be emitted through real composition");
+            Assert.That(world.Events.Events.Count(evt => evt.Kind == WorldEventKind.JobCompleted),
+                Is.EqualTo(ExpectedFarmCompletions), "each planting job ended in a BODIED PlantSeed commit");
+            Assert.That(world.Events.Events.Count(evt => evt.Kind == WorldEventKind.PlantPlanted),
+                Is.EqualTo(ExpectedFarmCompletions), "the fields were sown by the chain, not by fiat");
         }
 
         private static WorldState BuildSeededWorld()
@@ -120,6 +132,12 @@ namespace EmberCrpg.Tests.EditMode.Composition
         private static void AddMatchingJob(WorldState world, ActorId actorId, JobKind kind, GridPosition position)
         {
             world.Worksites.Add(new WorksiteRecord(Site, position, WorksiteFor(kind), isActive: true));
+            // W33: real soil under the farm worksite — the planting chain needs a plot to claim
+            // (a soilless field leaves the job waiting claimed, the pre-W33 fixture's state).
+            if (kind == JobKind.Farmer)
+                world.Soils.Add(new WorldComponentId(8800UL + actorId.Value), new SoilComponent(
+                    new WorldComponentId(8800UL + actorId.Value), Site, position,
+                    fertility: 50, moisture: 50, plantId: default));
             world.Jobs.Add(kind == JobKind.Farmer
                 ? FarmingJobRequestFactory.CreatePlantingJob(JobFor(actorId), Site, position, Requester, JobPriority.Active(1))
                 : new JobRequest(

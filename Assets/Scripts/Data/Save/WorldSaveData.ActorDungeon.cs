@@ -135,6 +135,7 @@ namespace EmberCrpg.Data.Save
         public long actionStartedAtMinutes;
         public int actionFailureReason;    // ActionFailureReason
         public int actionInterruptPolicy;  // ActionInterruptPolicy
+        public int actionCarriedUnits;     // W33: eldeki hasat adedi; 0 = eller boş (Idle ile bit uyumlu)
     }
 
     [Serializable]

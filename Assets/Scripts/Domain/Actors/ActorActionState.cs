@@ -4,10 +4,17 @@ using EmberCrpg.Domain.Core;
 namespace EmberCrpg.Domain.Actors
 {
     /// <summary>Aktörün üst niyeti. Save'e int olarak yazılır: değerler SABİTTİR, silme/yeniden numaralama yasak.</summary>
-    public enum ActorIntent { None = 0, Eat = 1 }
+    /// <remarks>W33: Plant/Harvest ayrı değerlerdir (tek "Farm" değil) — zincir çatalı NextLink'te
+    /// bu MEVCUT alandan çözülür, ek saved alt-mod alanı gerekmez (W33-01 §2.1).</remarks>
+    public enum ActorIntent { None = 0, Eat = 1, Plant = 2, Harvest = 3 }
 
     /// <summary>Tipli eylem kimliği. UI bu değeri VERBATIM okur (RUH_TESHIS §10: activity == CurrentAction).</summary>
-    public enum ActorActionType { None = 0, MoveToFood = 1, TakeFood = 2, ConsumeFood = 3 }
+    public enum ActorActionType
+    {
+        None = 0, MoveToFood = 1, TakeFood = 2, ConsumeFood = 3,
+        // W33 FARM slice (append-only; values are saved as ints and MUST stay fixed):
+        MoveToPlot = 4, PlantSeed = 5, HarvestCrop = 6, HaulCrop = 7,
+    }
 
     /// <summary>
     /// Eylem fazı. Succeeded/Failed TEK advancement'lık devri-teslim halleridir:
@@ -17,7 +24,12 @@ namespace EmberCrpg.Domain.Actors
 
     /// <summary>Neden başarısız oldu — hikâyenin hammaddesi ("Mehmet ekmeği kaptı" = ReservationLost).</summary>
     /// <remarks>Append-only (save'e int yazılır). SourceDrained: rezervasyona rağmen pile harici yazarca boşaldı (W32-03 §7).</remarks>
-    public enum ActionFailureReason { None = 0, NoFoodFound = 1, ReservationLost = 2, Unreachable = 3, Interrupted = 4, TimedOut = 5, SourceDrained = 6 }
+    public enum ActionFailureReason
+    {
+        None = 0, NoFoodFound = 1, ReservationLost = 2, Unreachable = 3, Interrupted = 4, TimedOut = 5, SourceDrained = 6,
+        PlotTaken = 7,   // W33: plot'ta beklenmeyen bitki — benden önce ekilmiş / doğrulama kaybı
+        CropGone = 8,    // W33: hasat hedefi bitki yok ya da artık harvestable değil
+    }
 
     /// <summary>Karar sistemi yeni intent atamadan önce buna bakmak ZORUNDADIR.</summary>
     public enum ActionInterruptPolicy { Interruptible = 0, NonInterruptible = 1 }
@@ -42,13 +54,14 @@ namespace EmberCrpg.Domain.Actors
             ReservationId reservationId,
             int progressTicks,
             long startedAtMinutes,
+            int carriedUnits,
             ActionFailureReason failureReason,
             ActionInterruptPolicy interruptPolicy)
         {
             if (currentAction == ActorActionType.None
                 && (phase != ActionPhase.None || !targetItemId.IsEmpty || !targetSiteId.IsEmpty
                     || !reservationId.IsEmpty || progressTicks != 0 || startedAtMinutes != 0L
-                    || failureReason != ActionFailureReason.None))
+                    || carriedUnits != 0 || failureReason != ActionFailureReason.None))
                 throw new InvalidOperationException("ActorActionState invariant: None action requires all action fields zero.");
 
             CurrentIntent = currentIntent;
@@ -59,6 +72,7 @@ namespace EmberCrpg.Domain.Actors
             ReservationId = reservationId;
             ProgressTicks = progressTicks;
             StartedAtMinutes = startedAtMinutes;
+            CarriedUnits = carriedUnits;
             FailureReason = failureReason;
             InterruptPolicy = interruptPolicy;
         }
@@ -77,6 +91,9 @@ namespace EmberCrpg.Domain.Actors
         public int ProgressTicks { get; }
         /// <summary>Eylemin başladığı GameTime.TotalMinutes; CurrentAction == None iken 0.</summary>
         public long StartedAtMinutes { get; }
+        /// <summary>W33: eldeki hasat adedi; yalnız HarvestCrop/HaulCrop yaşam aralığında sıfırdan farklı.
+        /// Tag'i taşıyan rezervasyon satırıdır ("carry:{cropTag}") — struct string TAŞIMAZ (W33-01 §3/§6).</summary>
+        public int CarriedUnits { get; }
         public ActionFailureReason FailureReason { get; }
         public ActionInterruptPolicy InterruptPolicy { get; }
 
@@ -91,7 +108,7 @@ namespace EmberCrpg.Domain.Actors
             if (intent == ActorIntent.None)
                 throw new InvalidOperationException("ForIntent requires a non-None intent.");
             return new ActorActionState(intent, ActorActionType.None, ActionPhase.None,
-                default(ItemId), default(SiteId), ReservationId.Empty, 0, 0L,
+                default(ItemId), default(SiteId), ReservationId.Empty, 0, 0L, 0,
                 ActionFailureReason.None, ActionInterruptPolicy.Interruptible);
         }
 
@@ -106,8 +123,10 @@ namespace EmberCrpg.Domain.Actors
                 throw new InvalidOperationException("Start requires an intent (ForIntent first).");
             if (Phase == ActionPhase.Running)
                 throw new InvalidOperationException($"Cannot start {action} while {CurrentAction} is Running.");
+            // CarriedUnits survives Start: the HarvestCrop->HaulCrop handover calls Start on the
+            // Succeeded state and the load must not vanish. Fresh chains begin at ForIntent (0).
             return new ActorActionState(CurrentIntent, action, ActionPhase.Running,
-                targetItem, targetSite, reservation, 0, startedAtMinutes,
+                targetItem, targetSite, reservation, 0, startedAtMinutes, CarriedUnits,
                 ActionFailureReason.None, policy);
         }
 
@@ -118,7 +137,7 @@ namespace EmberCrpg.Domain.Actors
                 throw new InvalidOperationException($"Advanced requires Running, was {Phase}.");
             return new ActorActionState(CurrentIntent, CurrentAction, ActionPhase.Running,
                 TargetItemId, TargetSiteId, ReservationId, ProgressTicks + 1, StartedAtMinutes,
-                ActionFailureReason.None, InterruptPolicy);
+                CarriedUnits, ActionFailureReason.None, InterruptPolicy);
         }
 
         /// <summary>Running -> Succeeded.</summary>
@@ -128,7 +147,7 @@ namespace EmberCrpg.Domain.Actors
                 throw new InvalidOperationException($"Succeeded requires Running, was {Phase}.");
             return new ActorActionState(CurrentIntent, CurrentAction, ActionPhase.Succeeded,
                 TargetItemId, TargetSiteId, ReservationId, ProgressTicks, StartedAtMinutes,
-                ActionFailureReason.None, InterruptPolicy);
+                CarriedUnits, ActionFailureReason.None, InterruptPolicy);
         }
 
         /// <summary>Running -> Failed(reason).</summary>
@@ -140,7 +159,7 @@ namespace EmberCrpg.Domain.Actors
                 throw new InvalidOperationException("Failed requires a concrete reason.");
             return new ActorActionState(CurrentIntent, CurrentAction, ActionPhase.Failed,
                 TargetItemId, TargetSiteId, ReservationId, ProgressTicks, StartedAtMinutes,
-                reason, InterruptPolicy);
+                CarriedUnits, reason, InterruptPolicy);
         }
 
         /// <summary>TakeFood başarısında hedef item'ı bağlar.</summary>
@@ -152,7 +171,30 @@ namespace EmberCrpg.Domain.Actors
                 throw new InvalidOperationException("CarryingItem requires a non-empty item.");
             return new ActorActionState(CurrentIntent, CurrentAction, Phase,
                 item, TargetSiteId, ReservationId, ProgressTicks, StartedAtMinutes,
-                FailureReason, InterruptPolicy);
+                CarriedUnits, FailureReason, InterruptPolicy);
+        }
+
+        /// <summary>W33: rezervasyon satırını değiştirir — HarvestCrop commit'inin plot→carry satır
+        /// takası için (W33-01 §6 adım 4). Aktif eylem ister; takas aynı Step içinde kalır.</summary>
+        public ActorActionState WithReservation(ReservationId reservation)
+        {
+            if (CurrentAction == ActorActionType.None)
+                throw new InvalidOperationException("WithReservation requires an active action.");
+            return new ActorActionState(CurrentIntent, CurrentAction, Phase,
+                TargetItemId, TargetSiteId, reservation, ProgressTicks, StartedAtMinutes,
+                CarriedUnits, FailureReason, InterruptPolicy);
+        }
+
+        /// <summary>W33: eldeki hasat adedini bağlar (HarvestCrop commit'i doldurur, HaulCrop deposit'i sıfırlar).</summary>
+        public ActorActionState WithCarriedUnits(int units)
+        {
+            if (CurrentAction == ActorActionType.None)
+                throw new InvalidOperationException("WithCarriedUnits requires an active action.");
+            if (units < 0)
+                throw new InvalidOperationException("WithCarriedUnits requires units >= 0.");
+            return new ActorActionState(CurrentIntent, CurrentAction, Phase,
+                TargetItemId, TargetSiteId, ReservationId, ProgressTicks, StartedAtMinutes,
+                units, FailureReason, InterruptPolicy);
         }
 
         /// <summary>
@@ -161,29 +203,33 @@ namespace EmberCrpg.Domain.Actors
         /// </summary>
         public static bool TryRestore(ActorIntent intent, ActorActionType action, ActionPhase phase,
             ItemId targetItem, SiteId targetSite, ReservationId reservation,
-            int progressTicks, long startedAtMinutes,
+            int progressTicks, long startedAtMinutes, int carriedUnits,
             ActionFailureReason failureReason, ActionInterruptPolicy policy,
             out ActorActionState state)
         {
             state = Idle;
-            if (intent < ActorIntent.None || intent > ActorIntent.Eat) return false;
-            if (action < ActorActionType.None || action > ActorActionType.ConsumeFood) return false;
+            if (intent < ActorIntent.None || intent > ActorIntent.Harvest) return false;
+            if (action < ActorActionType.None || action > ActorActionType.HaulCrop) return false;
             if (phase < ActionPhase.None || phase > ActionPhase.Failed) return false;
-            if (failureReason < ActionFailureReason.None || failureReason > ActionFailureReason.SourceDrained) return false;
+            if (failureReason < ActionFailureReason.None || failureReason > ActionFailureReason.CropGone) return false;
             if (policy < ActionInterruptPolicy.Interruptible || policy > ActionInterruptPolicy.NonInterruptible) return false;
-            if (progressTicks < 0 || startedAtMinutes < 0L) return false;
+            if (progressTicks < 0 || startedAtMinutes < 0L || carriedUnits < 0) return false;
             if (action == ActorActionType.None
                 && (phase != ActionPhase.None || !targetItem.IsEmpty || !targetSite.IsEmpty
                     || !reservation.IsEmpty || progressTicks != 0 || startedAtMinutes != 0L
-                    || failureReason != ActionFailureReason.None))
+                    || carriedUnits != 0 || failureReason != ActionFailureReason.None))
                 return false;
             // A started action always carries an owning intent and a live phase; a failure
             // reason only exists in the Failed phase. Anything else is transition-unreachable.
             if (action != ActorActionType.None && (intent == ActorIntent.None || phase == ActionPhase.None)) return false;
             if (failureReason != ActionFailureReason.None && phase != ActionPhase.Failed) return false;
+            // W33: hands are only full between the HarvestCrop commit and the HaulCrop deposit —
+            // any other action carrying units is transition-unreachable (W33-01 §9.2).
+            if (carriedUnits > 0 && action != ActorActionType.HarvestCrop && action != ActorActionType.HaulCrop)
+                return false;
 
             state = new ActorActionState(intent, action, phase, targetItem, targetSite,
-                reservation, progressTicks, startedAtMinutes, failureReason, policy);
+                reservation, progressTicks, startedAtMinutes, carriedUnits, failureReason, policy);
             return true;
         }
 
@@ -198,6 +244,7 @@ namespace EmberCrpg.Domain.Actors
                 && ReservationId == other.ReservationId
                 && ProgressTicks == other.ProgressTicks
                 && StartedAtMinutes == other.StartedAtMinutes
+                && CarriedUnits == other.CarriedUnits
                 && FailureReason == other.FailureReason
                 && InterruptPolicy == other.InterruptPolicy;
         }
@@ -213,7 +260,7 @@ namespace EmberCrpg.Domain.Actors
         {
             return HashCode.Combine(
                 HashCode.Combine(CurrentIntent, CurrentAction, Phase, TargetItemId, TargetSiteId, ReservationId),
-                HashCode.Combine(ProgressTicks, StartedAtMinutes, FailureReason, InterruptPolicy));
+                HashCode.Combine(ProgressTicks, StartedAtMinutes, CarriedUnits, FailureReason, InterruptPolicy));
         }
 
         /// <summary>Returns a compact debug label for this action state.</summary>

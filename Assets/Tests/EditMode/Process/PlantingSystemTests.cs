@@ -80,6 +80,50 @@ namespace EmberCrpg.Tests.EditMode.Process
             Assert.That(log.IsEmpty, Is.True);
         }
 
+        // W33 pin migration (DOC4 §2 row 3): the live farm chain plants through the
+        // seed-source-agnostic takeSeed seam — the seed is a RESERVED stock unit, never the
+        // player's bag (§2.7). The seam's contract: takeSeed fires ONCE, after EVERY gate, so
+        // a refused plant can never burn a seed; and the planter is NAMED on PlantPlanted
+        // (the F1 authorship anchor).
+        [Test]
+        public void TryPlant_TakeSeedSeam_FiresOnceAfterEveryGate_AndNamesThePlanter()
+        {
+            var species = CreateWheat();
+            var system = new PlantingSystem();
+            var soils = CreateSoils();
+            var plants = new ComponentStore<PlantComponent>();
+            var log = new WorldEventLog();
+            int takeCalls = 0;
+
+            // Occupied soil: the gate refuses BEFORE the seam — no seed is ever burned.
+            var occupied = soils.Get(new WorldComponentId(10)).WithPlant(new WorldComponentId(88));
+            Assert.That(soils.Replace(new WorldComponentId(10), occupied), Is.True);
+            Assert.That(system.TryPlant(species, soils, plants, new WorldComponentId(10),
+                new WorldComponentId(90), () => { takeCalls++; return true; },
+                log, new GameTime(0), new ActorId(7UL)), Is.False);
+            Assert.That(takeCalls, Is.Zero, "a refused plant burns NO seed — gates fire first");
+            Assert.That(log.IsEmpty, Is.True);
+
+            // Drained source: takeSeed says no — zero world mutation.
+            Assert.That(soils.Replace(new WorldComponentId(10), occupied.WithoutPlant()), Is.True);
+            Assert.That(system.TryPlant(species, soils, plants, new WorldComponentId(10),
+                new WorldComponentId(90), () => { takeCalls++; return false; },
+                log, new GameTime(0), new ActorId(7UL)), Is.False);
+            Assert.That(takeCalls, Is.EqualTo(1), "the seam fired exactly once");
+            Assert.That(plants.Count, Is.Zero, "a failed take mutates NOTHING");
+            Assert.That(log.IsEmpty, Is.True);
+
+            // Happy path: one take, one plant, and the planter's name on the event.
+            Assert.That(system.TryPlant(species, soils, plants, new WorldComponentId(10),
+                new WorldComponentId(90), () => { takeCalls++; return true; },
+                log, new GameTime(60), new ActorId(7UL)), Is.True);
+            Assert.That(takeCalls, Is.EqualTo(2));
+            Assert.That(plants.Contains(new WorldComponentId(90)), Is.True);
+            var evt = log.Events.Single(e => e.Kind == WorldEventKind.PlantPlanted);
+            Assert.That(evt.ActorId.Value, Is.EqualTo(7UL),
+                "the PLANTER is named — authorship is the F1 story-trace anchor");
+        }
+
         [Test]
         public void TryPlant_RejectsNullInputs()
         {

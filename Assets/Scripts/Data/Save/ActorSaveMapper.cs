@@ -79,6 +79,7 @@ namespace EmberCrpg.Data.Save
                 actionStartedAtMinutes = actor.ActionState.StartedAtMinutes,
                 actionFailureReason = (int)actor.ActionState.FailureReason,
                 actionInterruptPolicy = (int)actor.ActionState.InterruptPolicy,
+                actionCarriedUnits = actor.ActionState.CarriedUnits,
             };
         }
 
@@ -197,6 +198,7 @@ namespace EmberCrpg.Data.Save
                 new ReservationId((ulong)save.actionReservationId),
                 save.actionProgressTicks,
                 save.actionStartedAtMinutes,
+                save.actionCarriedUnits,
                 (ActionFailureReason)save.actionFailureReason,
                 (ActionInterruptPolicy)save.actionInterruptPolicy,
                 out var state) ? state : ActorActionState.Idle;

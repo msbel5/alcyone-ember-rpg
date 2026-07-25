@@ -47,9 +47,14 @@ namespace EmberCrpg.Simulation.World
                     if (world.Jobs.Contains(jobId)) continue; // same-day repost guard
                     var requester = FirstCivilianId(world);
                     if (requester.IsEmpty) continue; // nobody left to want food — the colony is gone
-                    var field = FieldPositionFor(world, pile.SiteId);
+                    // W33-02 §7.3 post gate: a planting job must point at a FREE soil cell —
+                    // the old "beside an existing plant" advisory targeted OCCUPIED plots, and
+                    // no free soil means NO job at all (the daily post→cancel oscillation and
+                    // the commit-time plot-invalid cancel both become unreachable).
+                    var field = FreeSoilPositionFor(world, pile.SiteId);
+                    if (field == null) continue;
                     var job = FarmingJobRequestFactory.CreatePlantingJob(
-                        jobId, pile.SiteId, field, requester, JobPriority.Active(1), quantity: 1);
+                        jobId, pile.SiteId, field.Value, requester, JobPriority.Active(1), quantity: 1);
                     world.Jobs.Add(job);
                     posted++;
                     world.Events.Append(new WorldEvent(
@@ -79,14 +84,14 @@ namespace EmberCrpg.Simulation.World
             return false;
         }
 
-        private static EmberCrpg.Domain.Actors.GridPosition FieldPositionFor(WorldState world, SiteId siteId)
+        private static EmberCrpg.Domain.Actors.GridPosition? FreeSoilPositionFor(WorldState world, SiteId siteId)
         {
-            // Plant a new plot beside an existing plant of the site (or the site itself is fine —
-            // the field position is advisory for the walk target).
-            foreach (var row in world.Plants.Rows)
-                if (row.Value != null && row.Value.SiteId.Equals(siteId))
+            // Rows order = deterministic first-free-soil; null = fully planted or soilless site.
+            if (world.Soils == null) return null;
+            foreach (var row in world.Soils.Rows)
+                if (row.Value != null && row.Value.SiteId.Equals(siteId) && !row.Value.HasPlant)
                     return row.Value.Position;
-            return default;
+            return null;
         }
 
         private static List<string> FoodTags(WorldState world)

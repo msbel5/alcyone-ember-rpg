@@ -131,20 +131,9 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             // GUESS(SLEEP slice): replace with ActionState.CurrentAction == Sleep.
             if (hour < 6 || hour >= 22) return IsAsleepAtHome(actor) ? "sleeping" : "heading home";
             if (hour >= 20) return "winding down"; // GUESS(SLEEP slice)
-            // M6: standing at the crop belt reads as FARM WORK - and "harvesting" when it is ripe.
-            // GUESS(FARM/WORK slice): retire when HarvestAction lands.
-            if (_world.Plants != null)
-            {
-                foreach (var plantRow in _world.Plants.Rows)
-                {
-                    var plant = plantRow.Value;
-                    if (plant == null) continue;
-                    int fdx = System.Math.Abs(actor.Position.X - plant.Position.X);
-                    int fdy = System.Math.Abs(actor.Position.Y - plant.Position.Y);
-                    if (System.Math.Max(fdx, fdy) <= EmberCrpg.Simulation.Process.HarvestHandsService.ReachCells)
-                        return plant.StageId.Value == "ripe" ? "harvesting" : "tending the field";
-                }
-            }
+            // W33: the FARM guess branch ("harvesting"/"tending the field" from crop-belt
+            // proximity) is DEAD — those verbs are now born only from real MoveToPlot/
+            // PlantSeed/HarvestCrop/HaulCrop actions read verbatim through ActionVerbTable.
             // PLAYTEST ('hepsinin kafasinda about town'): an idle stroll is not information -
             // no label at all. A verb appears only when it says something true and specific.
             return actor.ScheduleState.IsIdle ? null : "working"; // GUESS(WORK slice): retire when PerformWorkAction lands

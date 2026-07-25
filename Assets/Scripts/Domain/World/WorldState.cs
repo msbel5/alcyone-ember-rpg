@@ -97,6 +97,34 @@ namespace EmberCrpg.Domain.World
             // Derived (site,tag)/actor indexes are never serialized; a restored ledger is blind without them.
             Reservations.RebuildIndexes();
             ActionLog ??= new EmberCrpg.Domain.Actors.Actions.ActionLogRing();
+            HealOrphanPlants();
+        }
+
+        // W33-01 §9.4: a plant no soil links to (pre-W33 factories/saves) could never be
+        // harvested once the fiat harvest step retired — it would wait ripe FOREVER. Synthesize
+        // its soil deterministically (Plants.Rows order; id = OrphanSoilBase + plantId), the
+        // same normalize-on-load family as RebuildIndexes. Idempotent: a healed plant is linked.
+        private void HealOrphanPlants()
+        {
+            const ulong OrphanSoilBase = 600_000UL;
+            var linked = new HashSet<ulong>();
+            foreach (var soilRow in Soils.Rows)
+                if (soilRow.Value != null && !soilRow.Value.PlantId.IsEmpty)
+                    linked.Add(soilRow.Value.PlantId.Value);
+            List<PlantComponent> orphans = null;
+            foreach (var plantRow in Plants.Rows)
+                if (plantRow.Value != null && !linked.Contains(plantRow.Value.Id.Value))
+                    (orphans ??= new List<PlantComponent>()).Add(plantRow.Value);
+            if (orphans == null)
+                return;
+            foreach (var plant in orphans)
+            {
+                var soilId = new WorldComponentId(OrphanSoilBase + plant.Id.Value);
+                if (Soils.Contains(soilId))
+                    continue; // id already taken by an unrelated soil — leave the orphan alone
+                Soils.Add(soilId, new SoilComponent(
+                    soilId, plant.SiteId, plant.Position, fertility: 50, moisture: 50, plantId: plant.Id));
+            }
         }
 
         // Codex audit (sixth pass D-P3 #D2): the five named role views below

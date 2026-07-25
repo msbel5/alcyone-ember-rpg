@@ -15,7 +15,10 @@ namespace EmberCrpg.Tests.EditMode.Composition
     /// game day must stay comfortably interactive. W32: the hot loop is now
     /// decision+reservation+action_advance - the lazy FoodPileCache and the ledger's O(1)
     /// reserved-count lookups MUST keep the reservation search O(actors); this test is their
-    /// warden.</summary>
+    /// warden. W33 (threshold and text UNCHANGED - the W30e lesson): the farm decision joins
+    /// the same hot loop - the plot/soil scan (TryDecidePlant/TryDecideHarvest) rides the
+    /// FoodPileCache pattern and the ledger's O(1) plot-claim counts, and MUST stay O(actors);
+    /// a red run here means the farm scan went quadratic, not that the bound was too tight.</summary>
     public sealed class LiveScaleCatchupPerfPinTests
     {
         [Test]

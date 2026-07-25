@@ -9,25 +9,24 @@ namespace EmberCrpg.Tests.EditMode.Composition
     public sealed class FieldOwnershipRegistryTests
     {
         [Test]
-        public void EveryDeclaredWriter_ExistsInTheTickRegistry()
+        public void EveryDeclaredWriter_IsARealRegisteredSystem_AtItsDeclaredSlot()
         {
-            var knownIds = new[]
-            {
-                "core.time", "core.magic", "living.schedule", "living.companion_follow",
-                "living.decision", "living.action_advance", "econ.jobs", "quest.tick", "living.needs",
-                "living.consumption", "living.predation", "living.companion_guard",
-                "living.witness", "living.ambient", "living.rumors",
-                "world.growth", "world.harvest", "econ.prices", "econ.trade",
-                "world.shortage", "world.history", "econ.caravan", "faction.decay",
-            };
-            var missing = FieldOwnershipRegistry.Writers
+            // B03: the known-id set is DERIVED from the composition root — a hand-typed list
+            // rotted into six ghosts and blessed the econ.trade@Daily:28 phantom writer.
+            // Linting the FULL "id@Cadence:Order" triple is simultaneously the reverse lint:
+            // a declared writer with no real system at that exact slot (or one whose cadence/
+            // order drifted without a ledger update) fails here.
+            var registered = DefaultRegistryFixture.CreateDefault().Ordered
+                .Select(s => $"{s.Id}@{s.Cadence}:{s.Order}")
+                .ToHashSet();
+            var ghosts = FieldOwnershipRegistry.Writers
                 .SelectMany(kv => kv.Value)
-                .Select(w => w.Split('@')[0])
                 .Distinct()
-                .Where(id => !knownIds.Contains(id))
+                .Where(w => !registered.Contains(w))
                 .ToList();
-            Assert.That(missing, Is.Empty,
-                "ownership ledger names writers that are not registered systems: " + string.Join(", ", missing));
+            Assert.That(ghosts, Is.Empty,
+                "ownership ledger declares writers with no real registered system at that slot: "
+                + string.Join(", ", ghosts));
         }
 
         [Test]

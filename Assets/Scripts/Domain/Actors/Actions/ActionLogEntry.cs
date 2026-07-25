@@ -17,6 +17,10 @@ namespace EmberCrpg.Domain.Actors.Actions
         Completed = 7,
         TargetGone = 8,
         InterruptPreempted = 9,
+        // W33 FARM slice (append-only): distinct story raw material — "someone grabbed my plot"
+        // and "the crop was already taken" are two different sentences, never folded into TargetGone.
+        PlotTaken = 10,
+        CropGone = 11,
     }
 
     /// <summary>One deterministic action phase-transition record.</summary>

@@ -194,6 +194,20 @@ namespace EmberCrpg.Domain.Process
             return true;
         }
 
+        /// <summary>
+        /// Releases a claim back to pending without removing the entry (W33 dead-claimant
+        /// sweep: a claim held by a dead actor would freeze the shortage cascade forever —
+        /// the exact B05 wound). The claim sequence resets; the next TryClaim reissues one.
+        /// </summary>
+        public bool ReleaseClaim(JobId id)
+        {
+            if (id.IsEmpty || !_byId.TryGetValue(id, out var entry) || !entry.IsClaimed)
+                return false;
+            entry.ClaimedBy = default;
+            entry.ClaimSequence = 0;
+            return true;
+        }
+
         /// <summary>Removes a completed pending job.</summary>
         public bool Complete(JobId id)
         {

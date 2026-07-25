@@ -87,12 +87,21 @@ namespace EmberCrpg.Presentation.Ember.Save
             // worksites/jobs/soils/plants on this bridge (round-trip tests, or the adapter before it
             // binds the live world), override those DTO fields from the bridge so they still persist.
             // For a bound adapter the bridge IS the saved world, making the override idempotent.
+            // W33 fix (found by the farm slice): an UNBOUND service saving a foreign world must NOT
+            // clobber that world's process stores with its untouched empty bridge — that silently
+            // dropped every soil/plant/job across a standalone save/load (the faction-decay
+            // save-replay only stayed green pre-W33 because both runs coincidentally lost them).
+            // Each override applies only when the bridge store actually holds staged content.
             var data = WorldSaveMapper.ToData(world);
-            data.worksites = WorldSaveMapper.ToWorksiteData(_bridge.Worksites);
+            if (_bridge.Worksites != null && _bridge.Worksites.Count > 0)
+                data.worksites = WorldSaveMapper.ToWorksiteData(_bridge.Worksites);
             data.recipeWorkOrders = _recipeWorkOrders.Select(EmberCrpg.Simulation.Process.WorldSaveRehydration.ToRecipeWorkOrderData).ToArray();
-            data.jobs = WorldSaveMapper.ToJobBoardData(_bridge.Jobs);
-            data.soils = WorldSaveMapper.ToSoilComponentData(_bridge.Soils);
-            data.plants = WorldSaveMapper.ToPlantComponentData(_bridge.Plants);
+            if (_bridge.Jobs != null && _bridge.Jobs.Count > 0)
+                data.jobs = WorldSaveMapper.ToJobBoardData(_bridge.Jobs);
+            if (_bridge.Soils != null && _bridge.Soils.Count > 0)
+                data.soils = WorldSaveMapper.ToSoilComponentData(_bridge.Soils);
+            if (_bridge.Plants != null && _bridge.Plants.Count > 0)
+                data.plants = WorldSaveMapper.ToPlantComponentData(_bridge.Plants);
             return JsonUtility.ToJson(data, true);
         }
 

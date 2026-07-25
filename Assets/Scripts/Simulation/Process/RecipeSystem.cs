@@ -57,6 +57,93 @@ namespace EmberCrpg.Simulation.Process
         }
 
         /// <summary>
+        /// W33 (B06): tag-count IO overload — village production runs on the worksite's real
+        /// container (site stockpile) instead of the player's bag. Same gates, same
+        /// consume-at-start contract; the InventoryState path above stays byte-identical.
+        /// </summary>
+        public bool TryStart(
+            RecipeDef recipe,
+            WorksiteStore worksites,
+            SiteId siteId,
+            GridPosition position,
+            IRecipeInventory io,
+            ActorId actorId,
+            out RecipeWorkOrder order)
+        {
+            if (recipe == null)
+                throw new ArgumentNullException(nameof(recipe));
+            if (worksites == null)
+                throw new ArgumentNullException(nameof(worksites));
+            if (io == null)
+                throw new ArgumentNullException(nameof(io));
+
+            order = null;
+
+            if (!worksites.TryGet(siteId, position, out var worksite))
+                return false;
+            if (!worksite.IsActive)
+                return false;
+            if (!MatchesWorksiteKind(recipe.WorksiteKind, worksite.Kind))
+                return false;
+            foreach (var input in recipe.Inputs)
+                if (io.CountOf(input.ItemTag) < input.Quantity)
+                    return false;
+            foreach (var input in recipe.Inputs)
+                if (!io.TryConsume(input.ItemTag, input.Quantity))
+                    throw new InvalidOperationException(
+                        $"Recipe input {input.ItemTag} passed availability check but could not be consumed.");
+
+            order = new RecipeWorkOrder(recipe, siteId, position, actorId);
+            return true;
+        }
+
+        /// <summary>
+        /// W33 (B06): tag-count Tick — outputs land as counts (no ItemId mint). A preflight
+        /// clone proves every output is acceptable BEFORE the first real accept, preserving
+        /// the all-or-nothing output contract of the InventoryState path.
+        /// </summary>
+        public bool Tick(RecipeWorkOrder order, IRecipeInventory io, WorldEventLog eventLog)
+        {
+            if (order == null)
+                throw new ArgumentNullException(nameof(order));
+            if (io == null)
+                throw new ArgumentNullException(nameof(io));
+            if (eventLog == null)
+                throw new ArgumentNullException(nameof(eventLog));
+            if (order.IsComplete)
+                return false;
+
+            if (order.ProgressTicks + 1 < order.Recipe.DurationTicks)
+            {
+                order.AdvanceOneTick();
+                return false;
+            }
+
+            var probe = io.CloneForPreflight();
+            foreach (var output in order.Recipe.Outputs)
+                if (!probe.TryAccept(output.ItemTag, output.Quantity))
+                    throw new InvalidOperationException($"Recipe IO cannot accept output {output.ItemTag}.");
+            foreach (var output in order.Recipe.Outputs)
+                if (!io.TryAccept(output.ItemTag, output.Quantity))
+                    throw new InvalidOperationException($"Recipe IO rejected output {output.ItemTag} after preflight.");
+
+            order.AdvanceOneTick();
+            eventLog.Append(new WorldEvent(
+                new GameTime(order.ProgressTicks),
+                WorldEventKind.RecipeCompleted,
+                order.ActorId,
+                order.SiteId,
+                $"recipe_completed:{order.Recipe.Id.Value}",
+                new ReasonTrace(new[]
+                {
+                    $"recipe:{order.Recipe.Id.Value}",
+                    $"worksite:{order.Recipe.WorksiteKind}",
+                    $"duration_ticks:{order.Recipe.DurationTicks}",
+                })));
+            return true;
+        }
+
+        /// <summary>
         /// Advances an active work order by one deterministic tick. On the completion tick,
         /// outputs are added and exactly one RecipeCompleted event is appended.
         /// The output factory must instantiate one item unit per call; RecipeOutput.Quantity

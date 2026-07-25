@@ -8,7 +8,10 @@ namespace EmberCrpg.Tests.EditMode.Composition
     /// <summary>W29 made catch-up O(delta) (per-tick replay for chunking invariance). This pin
     /// keeps that honest: a 14-day catch-up (one legacy travel leg) must stay interactive.
     /// Measured 33 ms at pin time - the bound leaves 150x headroom, so a red run means a
-    /// genuinely quadratic regression (an hourly system scanning unbounded history), not noise.</summary>
+    /// genuinely quadratic regression (an hourly system scanning unbounded history), not noise.
+    /// W33 (threshold and text UNCHANGED): the per-tick decision band now also runs the farm
+    /// rules (plot/soil scan + shortage-job bridge) - they are inside the measured window and
+    /// must stay O(actors) like the eat path they mirror.</summary>
     public sealed class CatchupPerfPinTests
     {
         [Test]

@@ -47,7 +47,16 @@ namespace EmberCrpg.Simulation.Forge
         public static string CacheKey(AssetGenerationRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return PromptHash.Sha256(request.Prompt + "|" + request.Style + "|" + request.Seed);
+            // B18: every field that changes the pixels is IN the key — W/H/negative/steps were
+            // invisible, so retuning them served stale art as cache hits. "v2|" names the key
+            // schema: widening the key again is a one-character bump, and every v1 entry becomes
+            // a clean MISS (never a wrong hit). ModelHint stays out (fold in as v3 if model
+            // switching ships); TimeoutSeconds never changes output pixels.
+            return PromptHash.Sha256(
+                "v2|" + request.Prompt + "|" + request.Style + "|" + request.Seed
+                + "|" + request.Width + "x" + request.Height
+                + "|" + request.NegativePrompt
+                + "|" + request.Steps);
         }
 
         private static AssetGenerationRequest Build(string requestId, AssetSubjectKind subject, WorldProfile profile, string prompt, string negative, uint seed, int width, int height)

@@ -40,9 +40,12 @@ namespace EmberCrpg.Simulation.Composition
         {
             // W32 EAT: decide (@18) and advance (@22) are two phases of ONE lifecycle system —
             // Actor.ActionState keeps a single writer while the registry shows both cadence slots.
+            // W33: the SAME species list PlantGrowthStep reads feeds the farm rules — one catalog,
+            // species truth cannot fork (W33-01 §7.1).
             var actionLifecycle = new EmberCrpg.Simulation.Living.Actions.ActionLifecycleSystem(
                 new EmberCrpg.Domain.Actors.Actions.ActionLogManager(
-                    new EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink()));
+                    new EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink()),
+                plantSpecies);
             return new WorldTickRegistry(new IWorldTickSystem[]
             {
                 new TimeStep(timeAdvance),
@@ -62,7 +65,8 @@ namespace EmberCrpg.Simulation.Composition
                 new WitnessStep(),      // CAN SUYU H3: attacks are seen, remembered, answered
                 new CaravanStep(caravans),
                 new PlantGrowthStep(plantGrowth, seasonCalendar, plantSpecies),
-                new HarvestStep(),
+                // W33: world.harvest@Daily:25 is RETIRED — the fiat +2/self-replant teleport
+                // died; harvesting is now the action strip's MoveToPlot→HarvestCrop→HaulCrop.
                 new ShortageResponseStep(), // CAN SUYU H1+H3: shortage → planting job (first cascade)
                 new RuntimeHistoryStep(),   // CAN SUYU H4: history keeps being written after worldgen
                 new PriceStepSystem(priceUpdate),
@@ -142,6 +146,25 @@ namespace EmberCrpg.Simulation.Composition
                 if (world.Actors == null || world.Jobs == null || world.Worksites == null)
                     return;
 
+                // W33: dead-claimant sweep (deterministic, Requests order). A chain failure
+                // leaves the claim with a LIVE actor (who retries); a DEAD claimant would hold
+                // the job forever and HasPendingPlanting would refreeze the cascade — the
+                // exact B05 resurrection this sweep forbids.
+                List<JobId> released = null;
+                foreach (var request in world.Jobs.Requests)
+                {
+                    var claimant = world.Jobs.GetClaimedBy(request.Id);
+                    if (claimant.IsEmpty) continue;
+                    if (world.Actors.TryGet(claimant, out var holder) && holder != null && holder.IsAlive)
+                        continue;
+                    (released ??= new List<JobId>()).Add(request.Id);
+                }
+                if (released != null)
+                    foreach (var jobId in released)
+                        if (world.Jobs.ReleaseClaim(jobId) && world.Jobs.TryGet(jobId, out var freed))
+                            world.Events?.Append(new WorldEvent(context.Stamp, WorldEventKind.ChronicleEvent,
+                                default, freed.SiteId, "job_claim_released reason:claimant_dead"));
+
                 while (_jobAssignment.TryAssignNext(world.Actors, world.Jobs, world.Worksites, out var result))
                 {
                     if (world.Actors.TryGet(result.ActorId, out var actor) && actor != null)
@@ -167,13 +190,20 @@ namespace EmberCrpg.Simulation.Composition
                         })));
                 }
 
-                if (world.PlayerInventory == null || world.Events == null)
+                if (world.Events == null)
                     return;
 
                 List<JobId> ghostJobs = null;
                 foreach (var request in world.Jobs.Requests)
                 {
                     if (!world.Jobs.IsClaimed(request.Id))
+                        continue;
+
+                    // W33: Farmer jobs work EMBODIED — the action strip (decide@18 +
+                    // advance@22) walks, plants and Completes them; the remote-progress
+                    // recipe strip may not touch them, so 5101/5102 can never reach the
+                    // ghost-cancel below again (B05's root closes).
+                    if (request.Kind == JobKind.Farmer)
                         continue;
 
                     RecipeDef recipe;
@@ -183,11 +213,8 @@ namespace EmberCrpg.Simulation.Composition
                     }
                     catch (KeyNotFoundException)
                     {
-                        // B05 ('ghost planting job froze the cascade'): an unresolvable recipe
-                        // stayed CLAIMED forever, and HasPendingPlanting then suppressed every
-                        // future shortage response for that site. Cancel it with a chronicle
-                        // trace (deterministic - no instance state); the daily cascade re-posts
-                        // until the real recipe registers (the W32 farm slice).
+                        // Safety net for genuinely unknown recipe ids (kept deliberately):
+                        // an unresolvable CLAIMED job would freeze its claimant forever.
                         (ghostJobs ??= new List<JobId>()).Add(request.Id);
                         world.Events.Append(new WorldEvent(context.Stamp, WorldEventKind.ChronicleEvent,
                             default, request.SiteId,
@@ -195,12 +222,15 @@ namespace EmberCrpg.Simulation.Composition
                         continue;
                     }
 
+                    // W33 (B06): village production eats from and fills the WORKSITE's real
+                    // container — the site stockpile — never world.PlayerInventory. The player
+                    // bag now belongs solely to player-initiated crafting.
                     _jobAssignment.StartRecipeForClaim(
                         world.Actors,
                         world.Jobs,
                         world.Worksites,
                         recipe,
-                        world.PlayerInventory,
+                        SiteRecipeInventory(world, request.SiteId),
                         request.Id,
                         out _);
                 }
@@ -209,19 +239,26 @@ namespace EmberCrpg.Simulation.Composition
                     foreach (var ghost in ghostJobs)
                         world.Jobs.Cancel(ghost);
 
-                var nextOutputItemId = NextInventoryItemId(world.PlayerInventory);
                 _jobAssignment.TickAssignedJobs(
                     world.Actors,
                     world.Jobs,
                     world.Worksites,
-                    world.PlayerInventory,
+                    siteId => SiteRecipeInventory(world, siteId),
                     world.Events,
-                    context.Stamp,
-                    output => new InventoryItem(
-                        new ItemId(nextOutputItemId++),
-                        output.ItemTag,
-                        ToDisplayName(output.ItemTag),
-                        1));
+                    context.Stamp);
+            }
+
+            /// <summary>Find-or-create the site's stockpile as recipe IO (B06). Jobs always
+            /// carry a real SiteId, so the pile constructor's non-empty guard holds.</summary>
+            private static IRecipeInventory SiteRecipeInventory(WorldState world, SiteId siteId)
+            {
+                var pile = world.FindStockpile(siteId);
+                if (pile == null)
+                {
+                    pile = new StockpileComponent(siteId);
+                    world.Stockpiles.Add(pile);
+                }
+                return new StockpileRecipeInventory(pile);
             }
         }
 
@@ -449,57 +486,6 @@ namespace EmberCrpg.Simulation.Composition
             }
         }
 
-        // F7/economy-chain (shipcheck "FLAT" finding): plants ripened but NOTHING harvested them — stockpiles
-        // and prices sat frozen forever. Daily harvest: every RIPE plant yields 2 units of its species into
-        // its site's stockpile and is replanted at seed, closing the growth→stock→price loop.
-        private sealed class HarvestStep : StepBase
-        {
-            public HarvestStep() : base("world.harvest", TickCadence.Daily, 25) { } // growth(20) → harvest(25) → prices(30): same-day chain
-
-            public override void Run(in TickContext context)
-            {
-                var world = context.World;
-                if (world.Plants == null || world.Stockpiles == null) return;
-
-                // snapshot the ripe set first — Replace() during iteration would mutate Rows
-                var ripe = new System.Collections.Generic.List<EmberCrpg.Domain.Process.PlantComponent>();
-                foreach (var row in world.Plants.Rows)
-                    if (row.Value != null && row.Value.StageId.Value == "ripe")
-                        ripe.Add(row.Value);
-
-                foreach (var p in ripe)
-                {
-                    // M6 ("kimse gelip toplamiyor"): no hands near = the plot WAITS ripe.
-                    // Villagers pass their fields daily (planting jobs, homes by the belt),
-                    // so yields shift by hours, not lost - and the event now names the picker.
-                    var hands = EmberCrpg.Simulation.Process.HarvestHandsService.FindHarvester(world, p);
-                    if (hands == null) continue;
-
-                    EmberCrpg.Domain.Process.StockpileComponent pile = null;
-                    for (int i = 0; i < world.Stockpiles.Count; i++)
-                    {
-                        var candidate = world.Stockpiles[i];
-                        if (candidate != null && candidate.SiteId.Equals(p.SiteId)) { pile = candidate; break; }
-                    }
-                    if (pile == null)
-                    {
-                        pile = new EmberCrpg.Domain.Process.StockpileComponent(p.SiteId);
-                        world.Stockpiles.Add(pile);
-                    }
-
-                    pile.Add(p.SpeciesId, 2); // a ripe plot yields two units
-                    // Review fix: harvest mutated stock with ZERO audit trail — PlantHarvested
-                    // existed but was never emitted from this step.
-                    world.Events?.Append(new EmberCrpg.Domain.World.WorldEvent(
-                        context.Stamp, EmberCrpg.Domain.World.WorldEventKind.PlantHarvested,
-                        hands.Id, p.SiteId, $"harvested species:{p.SpeciesId} qty:2 by:{hands.Id.Value}"));
-                    world.Plants.Replace(p.Id, new EmberCrpg.Domain.Process.PlantComponent(
-                        p.Id, p.SiteId, p.Position, p.SpeciesId,
-                        new EmberCrpg.Domain.Process.PlantStageId("seed"), 0)); // replant
-                }
-            }
-        }
-
         private sealed class PlantGrowthStep : StepBase
         {
             private readonly PlantGrowthSystem _plantGrowth;
@@ -635,34 +621,7 @@ namespace EmberCrpg.Simulation.Composition
             }
         }
 
-        private static ulong NextInventoryItemId(InventoryState inventory)
-        {
-            ulong max = 0UL;
-            foreach (var item in inventory.Items)
-            {
-                if (item.Id.Value > max)
-                    max = item.Id.Value;
-            }
-
-            return max + 1UL;
-        }
-
-        private static string ToDisplayName(string itemTag)
-        {
-            if (string.IsNullOrWhiteSpace(itemTag))
-                return "Crafted Item";
-
-            var parts = itemTag.Split('_');
-            for (var i = 0; i < parts.Length; i++)
-            {
-                if (string.IsNullOrEmpty(parts[i]))
-                    continue;
-
-                var part = parts[i];
-                parts[i] = char.ToUpperInvariant(part[0]) + part.Substring(1);
-            }
-
-            return string.Join(" ", parts);
-        }
+        // W33 (B06): NextInventoryItemId/ToDisplayName retired with the player-bag output
+        // mint — village production is tag-count now; item identity is the player lane's need.
     }
 }

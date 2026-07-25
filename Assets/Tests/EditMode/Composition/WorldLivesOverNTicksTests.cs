@@ -43,9 +43,10 @@ namespace EmberCrpg.Tests.EditMode.Composition
             for (var tick = 1; tick <= TwoGameDaysTicks; tick++)
                 composer.Advance(world, tick);
 
-            // (a) the crop LIVED: either its stage advanced, or it completed a FULL grow→harvest cycle —
-            // v0.2 F7's HarvestStep replants ripe crops at seed the same day, so a crop back at "seed"
-            // with yield in the stockpile is more alive than a stuck stage, not less.
+            // (a) the crop LIVED: either its stage advanced, or a harvest already banked yield.
+            // W33 (2026-07-25): the fiat HarvestStep is retired — a ripe plot now WAITS for a
+            // real MoveToPlot→HarvestCrop chain (the lone worker here is job-bound, so the
+            // plant simply ripens and stands); stage advancement is the living proof.
             var grownStage = world.Plants.Get(PlantId).StageId;
             bool stageAdvanced = !grownStage.Equals(startStage);
             bool harvested = false;

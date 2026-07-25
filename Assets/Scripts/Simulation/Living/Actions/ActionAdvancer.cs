@@ -73,8 +73,19 @@ namespace EmberCrpg.Simulation.Living.Actions
                 // returns it before the claim dies (no dup, no loss; W32-06 T5 contract).
                 if (state.CurrentAction == ActorActionType.ConsumeFood)
                     FoodOperations.FindPile(world, row.SiteId)?.Add(row.ItemTag, 1);
+                // W33-01 §6: a failed haul's load sweeps into the destination pile the carry
+                // row names — conservation over realism (same class as the ConsumeFood return).
+                else if (state.CarriedUnits > 0
+                    && FarmOperations.TryParseCarryKey(row.ItemTag, out var cropTag))
+                    FarmOperations.FindOrCreatePile(world, new EmberCrpg.Domain.Core.SiteId(row.SiteId))
+                        ?.Add(cropTag, state.CarriedUnits);
                 world.Reservations.Release(row.Id);
             }
+            // W33: hands zero on EVERY failure — the load was swept above, or (rowless: the
+            // mis-TTL/death class) is buried with its carrier; a Failed state still carrying
+            // units would double-count against the pile in the conservation ledger.
+            if (state.CarriedUnits > 0)
+                state = state.WithCarriedUnits(0);
             TransitionTo(world, actor, state.Failed(reason), ToLogReason(reason), stamp);
         }
 
@@ -85,6 +96,8 @@ namespace EmberCrpg.Simulation.Living.Actions
             ActionFailureReason.Interrupted => ActionLogReason.InterruptPreempted,
             ActionFailureReason.NoFoodFound => ActionLogReason.TargetGone,
             ActionFailureReason.SourceDrained => ActionLogReason.TargetGone,
+            ActionFailureReason.PlotTaken => ActionLogReason.PlotTaken,
+            ActionFailureReason.CropGone => ActionLogReason.CropGone,
             _ => ActionLogReason.InterruptPreempted,
         };
 

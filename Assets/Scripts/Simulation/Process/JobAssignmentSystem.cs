@@ -257,6 +257,72 @@ namespace EmberCrpg.Simulation.Process
             return true;
         }
 
+        /// <summary>
+        /// W33 (B06): tag-count IO variant of StartRecipeForClaim — same gate ladder, but the
+        /// inputs come from the caller-chosen container (the SITE stockpile in the tick loop),
+        /// never from the player's inventory.
+        /// </summary>
+        public bool StartRecipeForClaim(
+            ActorStore actors,
+            JobBoard board,
+            WorksiteStore worksites,
+            RecipeDef recipe,
+            IRecipeInventory io,
+            JobId jobId,
+            out JobRecipeStartResult result)
+        {
+            if (actors == null)
+                throw new ArgumentNullException(nameof(actors));
+            if (board == null)
+                throw new ArgumentNullException(nameof(board));
+            if (worksites == null)
+                throw new ArgumentNullException(nameof(worksites));
+            if (recipe == null)
+                throw new ArgumentNullException(nameof(recipe));
+            if (io == null)
+                throw new ArgumentNullException(nameof(io));
+
+            result = default;
+
+            if (jobId.IsEmpty || _activeOrders.ContainsKey(jobId))
+                return false;
+            if (!board.TryGet(jobId, out var request))
+                return false;
+            if (request.RecipeId != recipe.Id)
+                return false;
+
+            var actorId = board.GetClaimedBy(jobId);
+            if (actorId.IsEmpty || !actors.TryGet(actorId, out var actor) || !actor.IsAlive)
+                return false;
+            if (!actor.ScheduleState.IsIdle && actor.ScheduleState.CurrentJobId != jobId)
+                return false;
+            if (!TryGetActivePreference(actor, request.Kind, out _))
+                return false;
+            if (!TryGetActiveMatchingWorksite(request, worksites, out _))
+                return false;
+
+            var recipeSystem = new RecipeSystem();
+            if (!CanStartRequestedQuantity(recipeSystem, request, worksites, recipe, io, actorId))
+                return false;
+
+            if (!recipeSystem.TryStart(
+                recipe,
+                worksites,
+                request.SiteId,
+                request.WorksitePosition,
+                io,
+                actorId,
+                out var order))
+            {
+                return false;
+            }
+
+            _activeOrders.Add(jobId, order);
+            _completedExecutionCounts[jobId] = 0;
+            result = new JobRecipeStartResult(actorId, jobId, request.SiteId, request.WorksitePosition, order);
+            return true;
+        }
+
         /// <summary>Returns the active recipe work order for a claimed job.</summary>
         public bool TryGetActiveWorkOrder(JobId jobId, out RecipeWorkOrder order)
         {

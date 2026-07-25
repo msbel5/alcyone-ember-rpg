@@ -53,10 +53,20 @@ namespace EmberCrpg.Simulation.Composition
                 },
                 ["World.Stockpiles"] = new[]
                 {
-                    "world.harvest@Daily:25",
-                    "living.action_advance@PerTick:22", // W32: TakeFood decrement + failure return
+                    // W33: world.harvest@Daily:25 retired — stock now lands via HaulCrop deposit
+                    "living.action_advance@PerTick:22", // W32 TakeFood decrement + failure return; W33 HaulCrop deposit + PlantSeed seed take
                     "living.ambient@Hourly:50",   // vermin theft
-                    "econ.trade@Daily:28",
+                    "world.caravans@Daily:10", // B03: caravan load/unload (CaravanSystem Remove/Add) — the REAL daily trader; econ.trade was a ghost
+                    "econ.jobs@Hourly:10",        // W33 (B06): village recipes consume/fill SITE piles
+                },
+                ["World.Plants"] = new[]
+                {
+                    "econ.plantgrowth@Daily:20",        // stage advancement
+                    "living.action_advance@PerTick:22", // W33: PlantSeed birth + HarvestCrop removal
+                },
+                ["World.Soils"] = new[]
+                {
+                    "living.action_advance@PerTick:22", // W33: WithPlant on plant, WithoutPlant on harvest
                 },
                 ["World.Rumors"] = new[] { "living.rumors@Hourly:55" },
                 ["World.SiteUnrest"] = new[] { "living.witness@Hourly:45" },

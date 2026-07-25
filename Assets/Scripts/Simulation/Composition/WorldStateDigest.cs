@@ -115,6 +115,10 @@ namespace EmberCrpg.Simulation.Composition
                 AppendIntField(sb, actor.ActionState.ProgressTicks);
                 sb.Append('|');
                 AppendLongField(sb, actor.ActionState.StartedAtMinutes);
+                // W33: hands — without this, a world carrying harvest and a world with empty
+                // hands share a digest and the chunking referee is blind to the divergence.
+                sb.Append('|');
+                AppendIntField(sb, actor.ActionState.CarriedUnits);
                 sb.Append('\n');
             }
         }

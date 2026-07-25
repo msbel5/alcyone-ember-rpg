@@ -27,7 +27,12 @@ namespace EmberCrpg.Tests.EditMode.Process
             for (var tick = 1; tick <= WorldTickComposer.TicksPerGameDay; tick++)
                 composer.Advance(world, tick);
 
-            Assert.That(Quantity(world.PlayerInventory, "iron_ingot"), Is.EqualTo(1));
+            // W33 (B06): village production consumes from and fills the WORKSITE's stockpile —
+            // the ingot lands in the site pile; the player's bag stays byte-identical.
+            Assert.That(world.FindStockpile(Site).Get("iron_ingot"), Is.EqualTo(1));
+            Assert.That(world.FindStockpile(Site).Get("iron_ore"), Is.Zero, "inputs left the SITE pile");
+            Assert.That(Quantity(world.PlayerInventory, "iron_ingot"), Is.Zero,
+                "B06 is dead: the smith no longer cooks in the player's bag");
             Assert.That(world.Jobs.Contains(Job), Is.False);
             Assert.That(world.Actors.Get(Worker).ScheduleState, Is.EqualTo(ActorScheduleState.Idle));
             Assert.That(world.Events.Events.Any(evt => evt.Kind == WorldEventKind.JobAssigned && evt.Reason == "job_assigned:701"), Is.True);
@@ -60,8 +65,11 @@ namespace EmberCrpg.Tests.EditMode.Process
                 JobPriority.Active(1),
                 quantity: 1,
                 requesterId: Worker));
-            world.PlayerInventory.TryAdd(new InventoryItem(new ItemId(501UL), "iron_ore", "Iron Ore", 2));
-            world.PlayerInventory.TryAdd(new InventoryItem(new ItemId(502UL), "fuel", "Fuel", 1));
+            // W33 (B06): the smith's inputs live in the SITE stockpile, not the player's bag.
+            var pile = new StockpileComponent(Site);
+            pile.Add("iron_ore", 2);
+            pile.Add("fuel", 1);
+            world.Stockpiles.Add(pile);
             return world;
         }
 

@@ -26,6 +26,9 @@
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/UI/EmberHudFormatter.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Visual/**/*.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Adapters/CharacterCreationViewModel.cs" />
+    <!-- W32 DOC5/DOC6 T6: the action->verb table is engine-free (Domain enum + EmberLog seam) so the
+         label-truth story test compiles here; the projection adapter around it stays Unity-only. -->
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Adapters/ActionVerbTable.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/ComfyUiAssetForge.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Forge/ForgeLocator.cs" />
     <!-- Engine-free decorator (takes IResourceProbe, NOT the Unity probe) so it compiles in the fallback
