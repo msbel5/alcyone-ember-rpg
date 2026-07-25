@@ -43,7 +43,7 @@ namespace EmberCrpg.Simulation.Living.Actions
 
             var bench = actor.ScheduleState.TargetWorksitePosition;
             if (FarmOperations.Chebyshev(actor.Position, bench) > WorkOperations.WorkReachCells)
-                actor.MoveTo(MovementService.StepToward(actor.Position, bench));
+                actor.MoveTo(MovementService.StepToward(actor.Position, bench, world?.NavView));
             // Arrival is ADJACENCY (≤ WorkReachCells): the bench cell is occupied furniture.
             if (FarmOperations.Chebyshev(actor.Position, bench) <= WorkOperations.WorkReachCells)
                 TransitionTo(world, actor, state.Succeeded(), ActionLogReason.Arrived, stamp);

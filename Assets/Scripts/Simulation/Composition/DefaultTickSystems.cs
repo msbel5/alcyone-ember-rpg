@@ -273,7 +273,8 @@ namespace EmberCrpg.Simulation.Composition
                 // W32 EAT: no food-spot feed — eating is the decision layer's business; the
                 // schedule now routes only actionless actors (rest/work/idle + pursuits).
                 if (context.World.Actors != null)
-                    _schedule.Advance(context.World.Actors, context.Stamp, context.World.GuardPursuits);
+                    // B10 §A5: pass the world too so StepToward can consult world.NavView (blocker probe).
+                    _schedule.Advance(context.World.Actors, context.Stamp, context.World.GuardPursuits, context.World);
             }
         }
 
@@ -498,7 +499,8 @@ namespace EmberCrpg.Simulation.Composition
                         world.Events,
                         context.Stamp,
                         season,
-                        isSnowing: false);
+                        // B27 wound-close: coarse "growth pauses in winter" gate — see Slice 2 spec for a real weather roll.
+                        isSnowing: season == Season.Winter);
                 }
             }
         }

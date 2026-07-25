@@ -34,9 +34,11 @@ namespace EmberCrpg.Data.Save
             };
         }
 
-        private static WorldEventLog ToWorldEventLog(WorldEventSaveData[] data)
+        private static WorldEventLog ToWorldEventLog(WorldEventSaveData[] data, long firstRetainedSeq)
         {
-            var log = new WorldEventLog();
+            // B21: seed the seq baseline so cursors restore correctly. Pre-fix saves lack the field
+            // (Newtonsoft defaults to 0), which collapses to absolute-index identity — safe migration.
+            var log = new WorldEventLog(firstRetainedSeq);
             foreach (var worldEvent in data ?? Array.Empty<WorldEventSaveData>())
             {
                 if (worldEvent != null)

@@ -36,6 +36,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private ActorId _worldEncounterId;
         private bool _worldEncounterLootGranted;
 
+        // B26 (Doc 03 §6.2/§6.3): MAX-CONCURRENT peaks across the run — snapshots of
+        // `CurrentAction` alone catch nothing between chunks, so meals=6195/eatingNow=0
+        // is honest snapshot but *blind* evidence. Peaks are diagnostic scalars,
+        // never serialized, never touch domain: the sim reads none of these fields.
+        private int _livingPeakSleeping, _livingPeakWorking, _livingPeakEating, _livingPeakFarming;
+        private int _livingPeakSamples;                    // 0 = never sampled
+        private long _livingPeakSampledAtMinutes;          // last-sample game-clock, for the honesty rule
+
         /// <summary>The live world-encounter opponent, or null when none is bound.</summary>
         private ActorRecord WorldEncounterEnemy()
         {
@@ -696,8 +704,56 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                         case ActorActionType.HaulCrop: farming++; break;
                     }
                 }
-            return $"meals={meals} witnessed={witnessed} reported={reported} guardResponses={guard} chronicle={chronicle} shortages={shortage} aliveActors={actors} sleeping={sleeping} working={working} eating={eating} farming={farming} companions={_world.CompanionIds?.Count ?? 0} totalEvents={_world.Events.Count}";
+            // Fold the instant into the running peaks so ad-hoc callers (AGENTCHECK census-after-recruit,
+            // hand-issued proof queries) still see a non-zero peak whenever a slice happens to be live
+            // at the moment they ask — the marathon path samples every iteration in addition.
+            ProofSampleLivingPeaks();
+            return $"meals={meals} witnessed={witnessed} reported={reported} guardResponses={guard} chronicle={chronicle} shortages={shortage} aliveActors={actors} sleepingNow={sleeping} workingNow={working} eatingNow={eating} farmingNow={farming} sleepingPeak={_livingPeakSleeping} workingPeak={_livingPeakWorking} eatingPeak={_livingPeakEating} farmingPeak={_livingPeakFarming} peakSamples={_livingPeakSamples} companions={_world.CompanionIds?.Count ?? 0} totalEvents={_world.Events.Count}";
         }
+
+        /// <summary>B26/§6.2 diagnostic-only sample: folds the current per-state actor counts into the
+        /// adapter-owned MAX-CONCURRENT peaks. O(alive actors), zero alloc, never writes into `_world`.</summary>
+        public void ProofSampleLivingPeaks()
+        {
+            if (_world?.Actors?.Records == null) return;
+            int s = 0, w = 0, e = 0, f = 0;
+            foreach (var a in _world.Actors.Records)
+            {
+                if (a == null || !a.IsAlive) continue;
+                switch (a.ActionState.CurrentAction)
+                {
+                    case ActorActionType.Sleep: s++; break;
+                    case ActorActionType.PerformWork: w++; break;
+                    case ActorActionType.ConsumeFood: e++; break;
+                    case ActorActionType.PlantSeed:
+                    case ActorActionType.HarvestCrop:
+                    case ActorActionType.HaulCrop: f++; break;
+                }
+            }
+            if (s > _livingPeakSleeping) _livingPeakSleeping = s;
+            if (w > _livingPeakWorking) _livingPeakWorking = w;
+            if (e > _livingPeakEating) _livingPeakEating = e;
+            if (f > _livingPeakFarming) _livingPeakFarming = f;
+            _livingPeakSamples++;
+            _livingPeakSampledAtMinutes = _world.Time.TotalMinutes; // GameTime is a value type; _world null-checked above.
+        }
+
+        /// <summary>B26/§6.2: reset before each marathon arm — peaks live on the adapter and would
+        /// otherwise leak from a first run into a second, falsely passing a broken second run.</summary>
+        public void ProofResetLivingPeaks()
+        {
+            _livingPeakSleeping = _livingPeakWorking = _livingPeakEating = _livingPeakFarming = 0;
+            _livingPeakSamples = 0;
+            _livingPeakSampledAtMinutes = 0L;
+        }
+
+        /// <summary>B26/§6.3: the peaks the marathon PASS gate consults.</summary>
+        public (int sleeping, int working, int eating, int farming, int samples) ProofLivingPeaks()
+            => (_livingPeakSleeping, _livingPeakWorking, _livingPeakEating, _livingPeakFarming, _livingPeakSamples);
+
+        /// <summary>B26/§6.3: game-clock getter for the marathon's honesty rule — full-day soaks must
+        /// have witnessed at least one sleep and one work, else PASS is a lie. Zero when world absent.</summary>
+        public long WorldTimeMinutesOrZero() => _world?.Time.TotalMinutes ?? 0L;
 
         public string ProofLunchCensus()
         {

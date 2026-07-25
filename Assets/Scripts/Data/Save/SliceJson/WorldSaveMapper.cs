@@ -82,6 +82,9 @@ dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
                 worldQuestStates = ToWorldQuestStatesData(world.WorldQuestStates),
                 worldContracts = ToWorldContractsData(world.WorldContracts),
                 worldEvents = ToWorldEventLogData(world.Events),
+                // B21: only firstRetainedSeq hits disk — TotalAppended is derived at load-time as
+                // firstRetainedSeq + worldEvents.Length (invariant TotalAppended == FirstRetainedSeq + Count).
+                worldEventFirstRetainedSeq = world.Events?.FirstRetainedSeq ?? 0L,
                 toolCallTrace = ToToolCallTraceData(world.ToolCallTrace),
                 llmProposalLog = ToLlmProposalLogData(world.LlmProposalLog),
                 npcSeeds = ToNpcSeedData(world.NpcSeeds),
@@ -113,7 +116,7 @@ inventory = ToInventoryData(world.PlayerInventory),
                 rumorBornMinutes = world.Rumors?.ConvertAll(r => r.BornMinutes).ToArray() ?? System.Array.Empty<long>(),
                 rumorSiteIds = world.Rumors?.ConvertAll(r => r.SiteId.Value).ToArray() ?? System.Array.Empty<ulong>(),
                 rumorTexts = world.Rumors?.ConvertAll(r => r.Text).ToArray() ?? System.Array.Empty<string>(),
-                rumorEventCursor = world.RumorEventCursor,
+                rumorEventCursorSeq = world.RumorEventCursorSeq,
                 unrestSiteIds = world.SiteUnrest?.ConvertAll(u => u.SiteId.Value).ToArray() ?? System.Array.Empty<ulong>(),
                 unrestValues = world.SiteUnrest?.ConvertAll(u => u.Unrest).ToArray() ?? System.Array.Empty<int>(),
                 unrestLastDecayDays = world.SiteUnrest?.ConvertAll(u => u.LastDecayDay).ToArray() ?? System.Array.Empty<long>(),
@@ -200,7 +203,7 @@ world.Items = ToItemStore(data.itemRecords);
             world.Quests = ToQuestStore(data.quests);
             world.WorldQuestStates = ToWorldQuestStates(data.worldQuestStates);
             world.WorldContracts = ToWorldContracts(data.worldContracts);
-            world.Events = ToWorldEventLog(data.worldEvents);
+            world.Events = ToWorldEventLog(data.worldEvents, data.worldEventFirstRetainedSeq);
             world.ToolCallTrace = ToToolCallTrace(data.toolCallTrace);
             world.LlmProposalLog = ToLlmProposalLog(data.llmProposalLog);
             world.NpcSeeds = ToNpcSeeds(data.npcSeeds);
@@ -264,7 +267,7 @@ world.Items = ToItemStore(data.itemRecords);
                         SiteId = new SiteId(data.rumorSiteIds != null && i < data.rumorSiteIds.Length ? data.rumorSiteIds[i] : 0UL),
                         Text = data.rumorTexts[i],
                     });
-            world.RumorEventCursor = data.rumorEventCursor;
+            world.RumorEventCursorSeq = data.rumorEventCursorSeq;
             world.SiteUnrest = new System.Collections.Generic.List<SiteUnrestRecord>();
             if (data.unrestSiteIds != null && data.unrestValues != null)
                 for (int i = 0; i < data.unrestSiteIds.Length && i < data.unrestValues.Length; i++)

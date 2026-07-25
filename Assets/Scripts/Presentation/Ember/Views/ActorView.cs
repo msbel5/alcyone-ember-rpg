@@ -121,6 +121,11 @@ namespace EmberCrpg.Presentation.Ember.Views
         /// <summary>While true, an external pose (sleep/death) owns the billboard transform.</summary>
         public bool ExternalPoseOverride;
 
+        /// <summary>B24 (VARIANT B): true while ActorView is painting its damage tint (red flash from
+        /// <see cref="Apply"/>). The combat feedback arbiter reads this so its per-frame color write
+        /// does not clobber the tint with `_baseColor` when the two visuals overlap.</summary>
+        public bool DamageTinting => _tintRemaining > 0f;
+
         public void SetTarget(ActorViewState state)
         {
             _target = state;
@@ -229,7 +234,10 @@ namespace EmberCrpg.Presentation.Ember.Views
                 if (_walkTimer > _walkCycleFrequency)
                 {
                     _walkTimer = 0f;
-                    if (_renderer != null) _renderer.flipX = !_renderer.flipX;
+                    // B24 (VARIANT B, step 1a): BillboardWalkAnimView is now the SINGLE flipX author.
+                    // Retired the ActorView flip — two independent step counters were strobing the mirror
+                    // frame (0.4 s here vs 0.28 s over there). _walkCycleFrequency is retained only as a
+                    // no-op timer gate above so the numerics of the retained bob/lean stay identical.
                 }
                 // Stride: a fast vertical bob + a small lean make the flat painting WALK
                 // instead of glide — the cheapest animation a billboard can buy ("billboard
@@ -248,23 +256,28 @@ namespace EmberCrpg.Presentation.Ember.Views
             }
 
             // 3. Combat Effects
-            if (_tintRemaining > 0)
+            // B24 (VARIANT B): the tint block and the shake block share `_renderer.color` and
+            // `_billboard.localPosition` with ActorCombatFeedbackView (flash + lunge) and the corpse
+            // pose (Fall). Guard both with !ExternalPoseOverride so a corpse can neither flash white nor
+            // jitter after Fall pins it face-down. The `else { color = white }` branch is DROPPED — the
+            // feedback view now paints _baseColor back when nothing else is claiming the sprite (see
+            // ActorCombatFeedbackView.Update), so ActorView only writes color while a live tint is up.
+            if (!ExternalPoseOverride)
             {
-                _tintRemaining -= Time.deltaTime;
-                if (_renderer != null) _renderer.color = Color.red;
-            }
-            else
-            {
-                if (_renderer != null) _renderer.color = Color.white;
-            }
+                if (_tintRemaining > 0)
+                {
+                    _tintRemaining -= Time.deltaTime;
+                    if (_renderer != null) _renderer.color = Color.red;
+                }
 
-            if (_shakeRemaining > 0)
-            {
-                _shakeRemaining -= Time.deltaTime;
-                float shake = 0.05f;
-                // EMB-040: UnityEngine.Random is presentation-only here (cosmetic billboard jitter).
-                // It never feeds Domain/Simulation or the save — keep it that way (docs/DETERMINISM.md).
-                _billboard.localPosition += new Vector3(Random.Range(-shake, shake), Random.Range(-shake, shake), 0f);
+                if (_shakeRemaining > 0)
+                {
+                    _shakeRemaining -= Time.deltaTime;
+                    float shake = 0.05f;
+                    // EMB-040: UnityEngine.Random is presentation-only here (cosmetic billboard jitter).
+                    // It never feeds Domain/Simulation or the save — keep it that way (docs/DETERMINISM.md).
+                    _billboard.localPosition += new Vector3(Random.Range(-shake, shake), Random.Range(-shake, shake), 0f);
+                }
             }
         }
     }

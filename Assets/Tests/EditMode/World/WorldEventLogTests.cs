@@ -139,5 +139,63 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(log.Events, Is.Not.InstanceOf<System.Collections.Generic.List<WorldEvent>>());
             Assert.That(log.Events, Is.Not.InstanceOf<WorldEvent[]>());
         }
+
+        // B21 (W32-04 §6): trim contract - matter-conservation for the seq baseline.
+
+        /// <summary>Under-cap trim is a no-op: no drops, FirstRetainedSeq stays at 0.</summary>
+        [Test]
+        public void TrimOldest_UnderCap_IsNoop()
+        {
+            var log = new WorldEventLog();
+            for (int i = 0; i < 5; i++) log.Append(MakeEvent(i, WorldEventKind.ActorSpawned, "e" + i));
+
+            Assert.That(log.TrimOldest(maxRetained: 8), Is.EqualTo(0));
+            Assert.That(log.Count, Is.EqualTo(5));
+            Assert.That(log.FirstRetainedSeq, Is.EqualTo(0L));
+            Assert.That(log.TotalAppended, Is.EqualTo(5L));
+        }
+
+        /// <summary>Over-cap trim drops the oldest N; FirstRetainedSeq += N; TotalAppended unchanged; invariant holds.</summary>
+        [Test]
+        public void TrimOldest_OverCap_DropsOldestAndAdvancesSeqBaseline()
+        {
+            var log = new WorldEventLog();
+            for (int i = 0; i < 10; i++) log.Append(MakeEvent(i, WorldEventKind.ActorSpawned, "e" + i));
+
+            int dropped = log.TrimOldest(maxRetained: 4);
+
+            Assert.That(dropped, Is.EqualTo(6), "10-4=6 rows dropped");
+            Assert.That(log.Count, Is.EqualTo(4));
+            Assert.That(log.FirstRetainedSeq, Is.EqualTo(6L), "seq baseline advances by drop count");
+            Assert.That(log.TotalAppended, Is.EqualTo(10L), "TotalAppended is monotone across trim");
+            Assert.That(log.TotalAppended, Is.EqualTo(log.FirstRetainedSeq + log.Count),
+                "matter-conservation invariant: TotalAppended == FirstRetainedSeq + Count");
+            // The oldest surviving event is the one appended at index 6 (reason "e6").
+            Assert.That(log.Events[0].Reason, Is.EqualTo("e6"));
+        }
+
+        /// <summary>TryIndexForSeq maps seq→index correctly across a trim (path avoids the dropped band).</summary>
+        [Test]
+        public void TryIndexForSeq_MapsCorrectlyAcrossTrim()
+        {
+            var log = new WorldEventLog();
+            for (int i = 0; i < 10; i++) log.Append(MakeEvent(i, WorldEventKind.ActorSpawned, "e" + i));
+
+            // Before trim: seq==index.
+            Assert.That(log.TryIndexForSeq(3L, out int preIdx), Is.True);
+            Assert.That(preIdx, Is.EqualTo(3));
+
+            log.TrimOldest(maxRetained: 4);
+
+            // After trim (FirstRetainedSeq==6): a live seq maps to index (seq-6).
+            Assert.That(log.TryIndexForSeq(7L, out int liveIdx), Is.True);
+            Assert.That(liveIdx, Is.EqualTo(1));
+            // A pre-trim seq clamps to 0 (start of retained window) - never re-mills a dropped row.
+            Assert.That(log.TryIndexForSeq(2L, out int oldIdx), Is.True);
+            Assert.That(oldIdx, Is.EqualTo(0));
+            // A future seq clamps to Count (nothing to consume yet).
+            Assert.That(log.TryIndexForSeq(999L, out int futureIdx), Is.True);
+            Assert.That(futureIdx, Is.EqualTo(log.Count));
+        }
     }
 }

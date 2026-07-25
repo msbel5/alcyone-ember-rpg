@@ -129,7 +129,7 @@ namespace EmberCrpg.Simulation.Living
                     ^ (long)(companion.Id.Value * 97L) ^ (long)(threat.Id.Value * 193L)) | 1u);
                 resolver.Resolve(action, companion, threat,
                     damageBandWidth: System.Math.Max(1, companion.BaseDamage / 2),
-                    rng: rng, now: stamp, siteId: PredationSystem.FallbackSite(world), events: world.Events);
+                    rng: rng, now: stamp, siteId: PredationSystem.FallbackSite(world, threat.Position), events: world.Events);
                 strikes++;
             }
             return strikes;

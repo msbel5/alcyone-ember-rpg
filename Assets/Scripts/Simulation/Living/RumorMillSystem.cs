@@ -17,18 +17,24 @@ namespace EmberCrpg.Simulation.Living
 
         public int Tick(WorldState world, GameTime stamp)
         {
-            var events = world?.Events?.Events;
+            var log = world?.Events;
+            var events = log?.Events;
             if (events == null) return 0;
             world.Rumors ??= new List<RumorEntry>();
 
             // prune the stale
             world.Rumors.RemoveAll(r => stamp.TotalMinutes - r.BornMinutes > LifeMinutes);
 
-            if (world.RumorEventCursor < 0 || world.RumorEventCursor > events.Count)
-                world.RumorEventCursor = events.Count;
-            int start = events.Count - world.RumorEventCursor > ScanCap
-                ? events.Count - ScanCap
-                : world.RumorEventCursor;
+            // B21: seq-based cursor tolerates event-log TrimOldest. Clamp bad/legacy values into
+            // the retained window, cap backfill depth at ScanCap, then walk from the mapped index.
+            if (world.RumorEventCursorSeq < log.FirstRetainedSeq)
+                world.RumorEventCursorSeq = log.FirstRetainedSeq;
+            if (world.RumorEventCursorSeq > log.TotalAppended)
+                world.RumorEventCursorSeq = log.TotalAppended;
+            long unconsumed = log.TotalAppended - world.RumorEventCursorSeq;
+            if (unconsumed > ScanCap)
+                world.RumorEventCursorSeq = log.TotalAppended - ScanCap;
+            log.TryIndexForSeq(world.RumorEventCursorSeq, out int start);
             int born = 0;
             for (int i = start; i < events.Count; i++)
             {
@@ -37,7 +43,7 @@ namespace EmberCrpg.Simulation.Living
                 world.Rumors.Add(new RumorEntry { BornMinutes = stamp.TotalMinutes, SiteId = events[i].SiteId, Text = text });
                 born++;
             }
-            world.RumorEventCursor = events.Count;
+            world.RumorEventCursorSeq = log.TotalAppended;
             while (world.Rumors.Count > MaxRumors) world.Rumors.RemoveAt(0);
             return born;
         }

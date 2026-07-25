@@ -21,7 +21,15 @@ namespace EmberCrpg.Presentation.Ember.Audio
         private static string _outDir;
         private static int _seq;
         private static int _numSpeakers;
-        private static bool _dead;
+        // B16: bounded-retry + cooldown instead of a one-way permanent kill.
+        // A single transient (piper.exe crash, stdin pipe hiccup) must not silence the whole session.
+        private static int _failCount;
+        private static float _cooldownUntilRealtime;
+        private const int MAX_FAILS = 3;
+        private const float COOLDOWN_SECONDS = 30f;
+        private static bool IsSilenced() => _failCount >= MAX_FAILS && Time.realtimeSinceStartup < _cooldownUntilRealtime;
+        private static void NoteFailure() { _failCount++; if (_failCount >= MAX_FAILS) _cooldownUntilRealtime = Time.realtimeSinceStartup + COOLDOWN_SECONDS; }
+        private static void NoteSuccess() { if (_failCount != 0) _failCount = 0; }
         private static bool _probed;
         private static string _piperDir;
 
@@ -30,7 +38,7 @@ namespace EmberCrpg.Presentation.Ember.Audio
             get
             {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-                if (_dead) return false;
+                if (IsSilenced()) return false;
                 if (!_probed)
                 {
                     _probed = true;
@@ -63,18 +71,23 @@ namespace EmberCrpg.Presentation.Ember.Audio
             try
             {
                 EnsureProcess();
-                if (_proc == null || _proc.HasExited) { _dead = true; return false; }
+                // EnsureProcess() is idempotent on _proc == null - don't permanently kill; count and let the next call respawn.
+                if (_proc == null || _proc.HasExited) { NoteFailure(); return false; }
                 wavPath = Path.Combine(_outDir, $"utt_{++_seq:00000}.wav").Replace('\\', '/');
                 string json = "{\"text\":\"" + JsonEscape(text) + "\",\"speaker_id\":" + speakerId
                     + ",\"output_file\":\"" + wavPath + "\"}";
                 _stdin.WriteLine(json);
                 _stdin.Flush();
+                NoteSuccess();
                 return true;
             }
             catch (Exception e)
             {
-                _dead = true;
-                Debug.Log($"[Piper] synth failed, falling back to SAPI: {e.Message}");
+                // Kill the (possibly wedged) child so EnsureProcess respawns next call - and count toward cooldown.
+                try { if (_proc != null && !_proc.HasExited) _proc.Kill(); } catch (Exception) { }
+                _proc = null;
+                NoteFailure();
+                Debug.Log($"[Piper] synth failed ({_failCount}/{MAX_FAILS}), falling back to SAPI: {e.Message}");
                 return false;
             }
 #else

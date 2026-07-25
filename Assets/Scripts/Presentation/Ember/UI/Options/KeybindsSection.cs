@@ -17,22 +17,35 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
 
         private TMP_FontAsset _font;
 
-        // One row per REAL binding — this list mirrors EmberInput + the live screens; a key
-        // listed here must do what it says (the F32 "no dead buttons" rule cuts both ways).
+        // B25/B30 truth-up: this list mirrors the hard-coded switch in
+        // InGameUiController.HandleScreenInput — which is what the player actually presses
+        // against while the in-game UI owns input. The rebindable "Input" tab in Options
+        // edits InputRuntimeOptions.* paths that only the pre-InGameUi consumers listen for
+        // (EmberWorldHost.Input.cs gates them behind !InGameUiController.OwnsInput), so this
+        // read-only cheatsheet is the single source of truth for what's live in-game. Every
+        // row here must reflect a real KeyCode branch above; the F32 "no dead buttons" rule.
         private static readonly (string key, string action)[] Bindings =
         {
-            ("W / A / S / D", "Move"),
+            ("W / A / S / D  +  arrows", "Move"),
             ("Mouse", "Look"),
             ("Shift", "Sprint (forward)"),
             ("Space", "Jump"),
             ("E", "Interact (talk / doors / chests / sleep / heal)"),
-            ("Left click", "Melee strike"),
-            ("1 - 8", "Cast spell slot"),
-            ("Tab", "Inventory"),
+            ("F", "Melee swing (bound)"),
+            ("Left click", "Melee strike (raycast attack)"),
+            ("1 - 9", "Cast spell slot"),
+            ("F1", "Toggle cursor"),
+            ("F5 / F9", "Quick save / quick load"),
+            ("Tab", "Open ☰ browser"),
+            ("I", "Inventory"),
             ("M", "World map"),
             ("J", "Journal / quests"),
+            ("K", "Colony"),
             ("C", "Character sheet"),
             ("R", "Ask the oracle"),
+            ("B", "Forge / crafting"),
+            ("T", "Wait one hour"),
+            ("H", "Sleep to dawn"),
             ("Esc", "Pause menu (save / load / options) / close screens"),
         };
 

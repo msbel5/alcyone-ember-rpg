@@ -43,7 +43,7 @@ namespace EmberCrpg.Simulation.Living
                 {
                     Strike(world, resolver, action, guard, hunter, stamp);
                     world.Events.Append(new WorldEvent(stamp, WorldEventKind.GuardResponded,
-                        guard.Id, FallbackSite(world), $"guard_strikes_hunter target:{hunter.Id.Value}"));
+                        guard.Id, FallbackSite(world, hunter.Position), $"guard_strikes_hunter target:{hunter.Id.Value}"));
                     strikes++;
                     if (!hunter.IsAlive) continue;
                 }
@@ -76,7 +76,7 @@ namespace EmberCrpg.Simulation.Living
                 ^ (long)(attacker.Id.Value * 97L) ^ (long)(target.Id.Value * 193L)) | 1u);
             resolver.Resolve(action, attacker, target,
                 damageBandWidth: System.Math.Max(1, attacker.BaseDamage / 2),
-                rng: rng, now: stamp, siteId: FallbackSite(world), events: world.Events);
+                rng: rng, now: stamp, siteId: FallbackSite(world, target.Position), events: world.Events);
 
             // PLAYTEST FIX ("vardigimda kimse yoktu"): predation MAULS civilians, it does not
             // erase settlements — 58 travel days of lethal strikes had depopulated whole towns.
@@ -87,7 +87,7 @@ namespace EmberCrpg.Simulation.Living
                 target.ApplyVitals(new ActorVitals(
                     new VitalStat(1, target.Vitals.Health.Max), target.Vitals.Fatigue, target.Vitals.Mana));
                 world.Events?.Append(new WorldEvent(stamp, WorldEventKind.NeedChanged, target.Id,
-                    FallbackSite(world), $"mauled_survives by:{attacker.Id.Value}"));
+                    FallbackSite(world, target.Position), $"mauled_survives by:{attacker.Id.Value}"));
             }
         }
 
@@ -107,6 +107,14 @@ namespace EmberCrpg.Simulation.Living
 
         internal static int Chebyshev(GridPosition a, GridPosition b)
             => System.Math.Max(System.Math.Abs(a.X - b.X), System.Math.Abs(a.Y - b.Y));
+
+        internal static SiteId FallbackSite(WorldState world, GridPosition position)
+        {
+            if (world.Sites?.Records != null)
+                foreach (var site in world.Sites.Records)
+                    if (site != null && site.Contains(position)) return site.Id;
+            return FallbackSite(world);
+        }
 
         internal static SiteId FallbackSite(WorldState world)
         {

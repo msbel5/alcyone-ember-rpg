@@ -20,7 +20,7 @@ using EmberCrpg.Domain.Worldgen;
 namespace EmberCrpg.Domain.World
 {
     /// <summary>Pure aggregate state for the playable vertical slice.</summary>
-    public sealed class WorldState
+    public sealed class WorldState : EmberCrpg.Domain.Core.IWorldNavigability
     {
         public GameTime Time;
         public int RoomSeed;
@@ -96,11 +96,37 @@ namespace EmberCrpg.Domain.World
             Reservations ??= new ReservationLedger();
             // Derived (site,tag)/actor indexes are never serialized; a restored ledger is blind without them.
             Reservations.RebuildIndexes();
+            // B10 §A3: Blocked is derived too — the hydration hook repopulates it, but never let it be null.
+            Blocked ??= new BlockedCellSet();
             WorkOrders ??= new WorkOrderLedger();
             // W34: the jobId index is derived, never serialized — rebuild or the resume path is blind.
             WorkOrders.RebuildIndexes();
             ActionLog ??= new EmberCrpg.Domain.Actors.Actions.ActionLogRing();
             HealOrphanPlants();
+        }
+
+        /// <summary>B10 §A5: allocation-free nav-view accessor threaded into MovementService.
+        /// Just returns `this` — the WorldState implements IWorldNavigability directly so a per-tick
+        /// world.NavView read is one field load, no boxing, no wrapper allocation.</summary>
+        public EmberCrpg.Domain.Core.IWorldNavigability NavView => this;
+
+        // B10 §A3: IWorldNavigability impl — CIVILIAN nav only sees Blocked cells. Room walls stay
+        // the dungeon slice's business (RoomMovementService already consults ProceduralRoom.IsWalkable
+        // there); folding Room into this view would silently force room-perimeter rules onto every
+        // village actor whose home sits on the (0, y) or (x, 0) edge (Gate1/Gate8 froze the crowd).
+        bool EmberCrpg.Domain.Core.IWorldNavigability.IsWalkable(EmberCrpg.Domain.Actors.GridPosition cell)
+        {
+            return Blocked == null || !Blocked.Contains(cell);
+        }
+
+        // Corner-cut rule: refuse the diagonal iff BOTH orthogonal neighbours between `from` and
+        // `to` are blocked. Standard "no squeezing through a wall crack". Cheap: two Blocked probes.
+        bool EmberCrpg.Domain.Core.IWorldNavigability.BlocksDiagonal(EmberCrpg.Domain.Actors.GridPosition from, EmberCrpg.Domain.Actors.GridPosition to)
+        {
+            if (Blocked == null) return false;
+            var xNeighbour = new EmberCrpg.Domain.Actors.GridPosition(to.X, from.Y);
+            var yNeighbour = new EmberCrpg.Domain.Actors.GridPosition(from.X, to.Y);
+            return Blocked.Contains(xNeighbour) && Blocked.Contains(yNeighbour);
         }
 
         // W33-01 §9.4: a plant no soil links to (pre-W33 factories/saves) could never be
@@ -208,6 +234,10 @@ namespace EmberCrpg.Domain.World
         public List<PursuitRecord> GuardPursuits = new List<PursuitRecord>();
         /// <summary>W32 EAT: count-based stockpile reservations — the "last bread" is claimed once.</summary>
         public ReservationLedger Reservations = new ReservationLedger();
+        /// <summary>B10 §A3: sim-blocked cells (buildings projected from the presentation-side
+        /// SettlementLayout). DERIVED — never serialized; rebuilt on load via HydrateBlockedCells
+        /// on the same seam that runs EnsureInvariants (same pattern as Reservations.RebuildIndexes).</summary>
+        public BlockedCellSet Blocked = new BlockedCellSet();
         /// <summary>W34 WORK: in-flight recipe work orders on the world root (docs/ruh/w34/02 §5.2) —
         /// the row outlives the action chain and the claimant, which IS the pause semantics.</summary>
         public WorkOrderLedger WorkOrders = new WorkOrderLedger();
@@ -218,7 +248,9 @@ namespace EmberCrpg.Domain.World
         /// <summary>P1 RumorMill: town talk distilled from real events (cap 32, 3-day life).</summary>
         public List<RumorEntry> Rumors = new List<RumorEntry>();
         /// <summary>RumorMill's event cursor - persists so loads never re-mill old news.</summary>
-        public int RumorEventCursor;
+        // B21: seq-based cursor (long) so trimming the event log does not re-mill or skip news.
+        // Rename from RumorEventCursor (int, absolute index) — WorldStateCopyFromTests guards the copy.
+        public long RumorEventCursorSeq;
         /// <summary>P2: per-settlement crime pressure - the sweep threshold lives on this.</summary>
         public List<SiteUnrestRecord> SiteUnrest = new List<SiteUnrestRecord>();
         public SpellCooldownState PlayerSpellCooldowns = new SpellCooldownState();
@@ -293,11 +325,12 @@ namespace EmberCrpg.Domain.World
             CompanionIds = other.CompanionIds;
             GuardPursuits = other.GuardPursuits;
             Reservations = other.Reservations;
+            Blocked = other.Blocked; // B10 §A3: derived, but WorldStateCopyFromTests's reflection lint requires every field.
             WorkOrders = other.WorkOrders;
             ActionLog = other.ActionLog;
             Critters = other.Critters;
             Rumors = other.Rumors;
-            RumorEventCursor = other.RumorEventCursor;
+            RumorEventCursorSeq = other.RumorEventCursorSeq;
             SiteUnrest = other.SiteUnrest;
             PlayerSpellCooldowns = other.PlayerSpellCooldowns;
             PlayerShieldBuffs = other.PlayerShieldBuffs;

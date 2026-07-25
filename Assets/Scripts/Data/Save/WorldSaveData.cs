@@ -53,6 +53,11 @@ public DungeonRoomSaveData[] dungeonRooms;
         public TradeRouteSaveData[] tradeRoutes;
         public CaravanSaveData[] caravans;
         public WorldEventSaveData[] worldEvents;
+        // B21 (W32-04 §6): seq of the first row in worldEvents so a bounded log restores its cursors.
+        // Pre-fix saves lack the field → deserializes to 0 → seq math collapses to absolute-index
+        // identity, so the legacy int cursor drops in as a seq unchanged. TotalAppended is derived
+        // at load-time as firstRetainedSeq + worldEvents.Length (only one field on disk).
+        public long worldEventFirstRetainedSeq;
         public ToolCallTraceSaveData[] toolCallTrace;
         public LlmProposalLogSaveData[] llmProposalLog;
         public NpcSeedSaveData[] npcSeeds;
@@ -105,7 +110,10 @@ public DungeonRoomSaveData[] dungeonRooms;
         public long[] rumorBornMinutes;
         public ulong[] rumorSiteIds;
         public string[] rumorTexts;
-        public int rumorEventCursor;
+        // B21: seq-based (long) — a pre-fix save's int rumorEventCursor field is dropped by
+        // Newtonsoft (missing field on load → 0); the new value is written by the seq mapper.
+        // If migrating a hot save, note the pre-fix int cursor is not carried forward.
+        public long rumorEventCursorSeq;
         // P2 unrest ledger.
         public ulong[] unrestSiteIds;
         public int[] unrestValues;

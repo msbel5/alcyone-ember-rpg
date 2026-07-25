@@ -79,8 +79,20 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 new EmberCrpg.Simulation.Magic.SpellTargetValidator(),
                 new EmberCrpg.Simulation.Magic.SpellEffectResolutionService(),
                 new EmberCrpg.Simulation.Magic.SpellCastRollService());
-            var executed = executionService.TryExecute(
-                player, spell.TemplateId, knownIds, requestedTarget, _world.PlayerSpellCooldowns);
+            // B12: the live cast used TryExecute (no-roll) so every spell that cleared mana +
+            // target + cooldown landed at 100%. Route through TryExecuteWithRoll with a
+            // deterministic seed shaped the same way as melee (world time + strike serial +
+            // caster id) so SpellCastRollService + SpellSuccessChanceService gate the cast
+            // honestly. Same-tick rolls stay distinct via the shared strike serial; save/load
+            // replay stays consistent because the seed only depends on world time, caster id,
+            // and the session-local serial melee already resets on load.
+            _meleeStrikeSerial++;
+            uint timeSeed = (uint)(_world.Time.TotalMinutes & 0xFFFFFFFFL);
+            uint casterSeed = (uint)(player.Id.Value & 0xFFFFFFFFUL);
+            var castRng = new EmberCrpg.Simulation.Rng.XorShiftRng(
+                (timeSeed * 2654435761u) ^ (casterSeed * 40503u) ^ (_meleeStrikeSerial * 0x9E3779B9u) ^ 0x5EE1_CA57u);
+            var executed = executionService.TryExecuteWithRoll(
+                player, spell.TemplateId, knownIds, requestedTarget, castRng, _world.PlayerSpellCooldowns);
             if (!executed.Success)
             {
                 LogCombat(executed.Message ?? $"{spell.DisplayName ?? spell.TemplateId}: failed.");

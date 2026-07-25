@@ -17,6 +17,7 @@ using EmberCrpg.Presentation.Ember.Forge;
 using EmberCrpg.Presentation.Ember.UI;
 using EmberCrpg.Presentation.Ember.Views;
 using EmberCrpg.Presentation.Ember.Worldgen;
+using EmberCrpg.Simulation.WorldDirector;
 
 namespace EmberCrpg.Presentation.Ember.Adapters
 {
@@ -30,6 +31,77 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             HydrateHistory(generated);
             SeedWorldQuests(); // F2/quest variety: kill + visit quests join the forge errand
             MovePlayerToStartingSettlement();
+            // B10 §A6: project the deterministic building layouts into the sim's blocker set — MUST run
+            // LAST (after HydrateSites populated site bounds; the projection needs the site centre).
+            HydrateBlockedCells(generated);
+        }
+
+        /// <summary>
+        /// B10 §A6: sim-blocked-cell hydration. For each generated settlement, ask the deterministic
+        /// layout strategy for its building plan and project each building's XZ metre box into integer
+        /// sim cells around the site centre. Pure integer math against deterministic float inputs, so
+        /// the same seed yields the same blocker set every run (chunking-invariance holds).
+        ///
+        /// CONSTRAINT (docs risk §UX): worksite bench cells are NOT added — the action strip TARGETS
+        /// those cells, and blocking them would freeze the worker on approach. Building footprints only.
+        /// DERIVED — never serialized; rehydrated after every load via the same call path.
+        /// </summary>
+        private void HydrateBlockedCells(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)
+        {
+            if (_world == null || _world.Sites == null || generated == null) return;
+            _world.Blocked ??= new BlockedCellSet();
+            _world.Blocked.Clear(); // idempotent — re-realize / reload must not accumulate stale cells.
+
+            foreach (var settlement in generated.Settlements)
+            {
+                if (settlement == null) continue;
+                var siteId = SettlementSiteId(settlement.Id);
+                if (!_world.Sites.TryGet(siteId, out var site) || site == null) continue;
+
+                var kind = SettlementSizeToKind(settlement.Size);
+                // Deterministic per-settlement seed: SettlementId is unique + stable, so the layout
+                // never differs between runs. Non-zero (SettlementContext expects seed > 0 conceptually).
+                uint seed = unchecked((uint)((settlement.Id.Value * 2654435761UL + 17UL) | 1UL));
+                var context = new SettlementContext(settlement.Name ?? string.Empty, kind,
+                    EmberCrpg.Domain.Overland.BiomeKind.Plains, seed);
+                SettlementLayout layout;
+                try { layout = SettlementLayoutStrategyFactory.For(kind).Plan(context); }
+                catch { continue; } // a broken strategy for one settlement must not kill hydration.
+                if (layout?.Buildings == null) continue;
+
+                // Site centre in sim-grid coords (site.MinBound is the origin corner; MaxBound is
+                // the opposite corner). Buildings are LOCAL metre offsets centred at (0,0).
+                int centreX = (site.MinBound.X + site.MaxBound.X) / 2;
+                int centreY = (site.MinBound.Y + site.MaxBound.Y) / 2;
+
+                foreach (var b in layout.Buildings)
+                {
+                    // XZ metre box → integer cell rectangle. Floor/Ceil so partial-cell overlaps
+                    // still block (safer to over-block than to leave a walkable slit through a wall).
+                    int xMin = (int)System.Math.Floor(centreX + b.OriginX - (b.SizeX * 0.5f));
+                    int xMax = (int)System.Math.Ceiling(centreX + b.OriginX + (b.SizeX * 0.5f));
+                    int yMin = (int)System.Math.Floor(centreY + b.OriginZ - (b.SizeZ * 0.5f));
+                    int yMax = (int)System.Math.Ceiling(centreY + b.OriginZ + (b.SizeZ * 0.5f));
+                    for (int y = yMin; y < yMax; y++)
+                        for (int x = xMin; x < xMax; x++)
+                            _world.Blocked.Add(new GridPosition(x, y));
+                }
+            }
+        }
+
+        // SettlementSize → SettlementKind: deterministic, and independent of Overland (which is set
+        // AFTER hydration). Capital falls to City for layout purposes (both use the Streets strategy).
+        private static EmberCrpg.Domain.Overland.SettlementKind SettlementSizeToKind(SettlementSize size)
+        {
+            switch (size)
+            {
+                case SettlementSize.Capital:
+                case SettlementSize.City: return EmberCrpg.Domain.Overland.SettlementKind.City;
+                case SettlementSize.Town: return EmberCrpg.Domain.Overland.SettlementKind.Town;
+                case SettlementSize.Village: return EmberCrpg.Domain.Overland.SettlementKind.Village;
+                case SettlementSize.Hamlet: return EmberCrpg.Domain.Overland.SettlementKind.Hamlet;
+                default: return EmberCrpg.Domain.Overland.SettlementKind.Village;
+            }
         }
 
         private void HydrateSites(EmberCrpg.Simulation.Worldgen.GeneratedWorld generated)

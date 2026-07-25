@@ -9,22 +9,34 @@ namespace EmberCrpg.Presentation.Ember.Views
     /// <see cref="WorldCombatFeedbackFeed"/> stamps — unscaled time, because the combat modal pauses
     /// timeScale and the flash must still run behind it.
     /// </summary>
+    // B24 (VARIANT B, step 2a): pin this AFTER ActorView (default order 0). ActorView writes the base
+    // billboard pose (stride+idle+shake, and its red damage-tint when active) first each frame; the
+    // feedback view then overlays the F14 lunge as an ADDITIVE offset and the F10 flash on top of the
+    // tint. Same last-writer discipline the compositor variant would enforce, expressed via execution
+    // order so no new component / spawner wiring is needed.
+    [DefaultExecutionOrder(50)]
     public sealed class ActorCombatFeedbackView : MonoBehaviour
     {
         private ulong _actorId;
         private SpriteRenderer _sprite;
         private Behaviour _billboardFacing; // CameraFacingBillboard — disabled once the corpse lies down
+        private ActorView _actorView; // B24: read DamageTinting so the color arbiter respects Apply()'s red
         private int _hitSeen, _felledSeen, _strikeSeen;
         private float _flashUntil;
         private float _lungeUntil;
         private bool _fallen;
         private Color _baseColor = Color.white;
+        // B24 (VARIANT B, step 2b): cached lunge offset, refreshed each frame during the strike window
+        // and cleared to zero when it ends. Applied ADDITIVELY on top of whatever ActorView wrote — no
+        // more `= new Vector3(0, y, 0)` snap that used to clobber ActorView's shake x/z contribution.
+        private Vector3 _lungeOffset;
 
         public void Bind(ulong actorId, SpriteRenderer sprite, Behaviour billboardFacing)
         {
             _actorId = actorId;
             _sprite = sprite;
             _billboardFacing = billboardFacing;
+            _actorView = GetComponent<ActorView>();
             if (_sprite != null) _baseColor = _sprite.color;
             _hitSeen = WorldCombatFeedbackFeed.HitStamp;
             _felledSeen = WorldCombatFeedbackFeed.FelledStamp;
@@ -43,8 +55,16 @@ namespace EmberCrpg.Presentation.Ember.Views
                 }
             }
 
+            // B24 (VARIANT B, step 2c): color arbiter — flash wins, then ActorView's damage tint is
+            // preserved (do NOT overwrite _baseColor while Apply()'s red is running), else restore base.
+            // Runs after ActorView (DefaultExecutionOrder above), so DamageTinting reflects this frame.
             if (_sprite != null && !_fallen)
-                _sprite.color = Time.unscaledTime < _flashUntil ? new Color(1f, 0.25f, 0.2f) : _baseColor;
+            {
+                if (Time.unscaledTime < _flashUntil)
+                    _sprite.color = new Color(1f, 0.25f, 0.2f);
+                else if (_actorView == null || !_actorView.DamageTinting)
+                    _sprite.color = _baseColor;
+            }
 
             if (!_fallen && WorldCombatFeedbackFeed.FelledStamp != _felledSeen)
             {
@@ -65,17 +85,31 @@ namespace EmberCrpg.Presentation.Ember.Views
             {
                 var cam = UnityEngine.Camera.main; // fully-qualified: Ember.Camera namespace shadows the type
                 var board = _sprite.transform;
+                // B24: recompute the lunge offset every frame while the strike window is open, else zero
+                // it. The old code wrote `board.localPosition = new Vector3(0, y, 0) + dir` — the absolute
+                // set clobbered ActorView's shake x/z the next frame and the else-branch snap zeroed the
+                // shake entirely. Now we ADD on top of whatever ActorView wrote (execution order 50 above
+                // guarantees ActorView.Update ran first this frame).
                 if (Time.unscaledTime < _lungeUntil && cam != null)
                 {
                     var toCam = cam.transform.position - board.parent.position;
                     toCam.y = 0f;
                     if (toCam.sqrMagnitude > 0.01f)
-                        board.localPosition = new Vector3(0f, board.localPosition.y,
-                            0f) + board.parent.InverseTransformDirection(toCam.normalized) * 0.35f;
+                    {
+                        var dir = board.parent.InverseTransformDirection(toCam.normalized) * 0.35f;
+                        _lungeOffset = new Vector3(dir.x, 0f, dir.z);
+                    }
                 }
-                else if (board.localPosition.x != 0f || board.localPosition.z != 0f)
+                else
                 {
-                    board.localPosition = new Vector3(0f, board.localPosition.y, 0f);
+                    _lungeOffset = Vector3.zero;
+                }
+                if (_lungeOffset.x != 0f || _lungeOffset.z != 0f)
+                {
+                    board.localPosition = new Vector3(
+                        board.localPosition.x + _lungeOffset.x,
+                        board.localPosition.y,
+                        board.localPosition.z + _lungeOffset.z);
                 }
             }
         }

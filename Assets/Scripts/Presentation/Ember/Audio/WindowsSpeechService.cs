@@ -15,7 +15,16 @@ namespace EmberCrpg.Presentation.Ember.Audio
     {
         private static object _voice;
         private static object[] _roster;
-        private static bool _dead;
+        // B16: bounded-retry + cooldown replaces permanent kill. _sapiMissing stays permanent
+        // only for the one truly hopeless case: ProgID resolution returning null (SAPI absent).
+        private static int _failCount;
+        private static float _cooldownUntilRealtime;
+        private const int MAX_FAILS = 3;
+        private const float COOLDOWN_SECONDS = 30f;
+        private static bool _sapiMissing;
+        private static bool IsSilenced() => _failCount >= MAX_FAILS && Time.realtimeSinceStartup < _cooldownUntilRealtime;
+        private static void NoteFailure() { _failCount++; if (_failCount >= MAX_FAILS) _cooldownUntilRealtime = Time.realtimeSinceStartup + COOLDOWN_SECONDS; }
+        private static void NoteSuccess() { if (_failCount != 0) _failCount = 0; }
         private static string _last;
 
         public static int VoiceCount { get { EnsureVoice(); return _roster?.Length ?? 1; } }
@@ -23,7 +32,7 @@ namespace EmberCrpg.Presentation.Ember.Audio
         /// <summary>Legacy single-line entry (proofs, notifications): default signature.</summary>
         public static void Speak(string line)
         {
-            if (_dead || string.IsNullOrWhiteSpace(line) || line == _last) return;
+            if (_sapiMissing || IsSilenced() || string.IsNullOrWhiteSpace(line) || line == _last) return;
             _last = line;
             SpeakChunk(line, new EmberCrpg.Simulation.AiDm.NpcVoiceSignature(0, 1, 0), purgeFirst: true);
         }
@@ -31,7 +40,7 @@ namespace EmberCrpg.Presentation.Ember.Audio
         public static void SpeakChunk(string text, EmberCrpg.Simulation.AiDm.NpcVoiceSignature signature, bool purgeFirst)
         {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            if (_dead || string.IsNullOrWhiteSpace(text)) return;
+            if (_sapiMissing || IsSilenced() || string.IsNullOrWhiteSpace(text)) return;
             try
             {
                 EnsureVoice();
@@ -49,11 +58,14 @@ namespace EmberCrpg.Presentation.Ember.Audio
                 // 1=async, 8=XML; +2 purge only when the speaker changes mid-utterance.
                 int flags = 1 | 8 | (purgeFirst ? 2 : 0);
                 type.InvokeMember("Speak", System.Reflection.BindingFlags.InvokeMethod, null, _voice, new object[] { xml, flags });
+                NoteSuccess();
             }
             catch (Exception e)
             {
-                _dead = true;
-                Debug.Log($"[Speech] SAPI unavailable, staying silent: {e.Message}");
+                NoteFailure();
+                _voice = null;  // force EnsureVoice re-init on next attempt
+                _roster = null;
+                Debug.Log($"[Speech] SAPI hiccup ({_failCount}/{MAX_FAILS}), staying silent briefly: {e.Message}");
             }
 #endif
         }
@@ -61,7 +73,7 @@ namespace EmberCrpg.Presentation.Ember.Audio
         public static void StopSpeaking()
         {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            if (_dead || _voice == null) return;
+            if (_sapiMissing || IsSilenced() || _voice == null) return;
             try
             {
                 // Purge by speaking empty with SVSFPurgeBeforeSpeak - cheapest queue flush SAPI offers.
@@ -75,11 +87,12 @@ namespace EmberCrpg.Presentation.Ember.Audio
         private static void EnsureVoice()
         {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            if (_dead || _voice != null) return;
+            if (_sapiMissing || IsSilenced() || _voice != null) return;
             try
             {
                 var type = Type.GetTypeFromProgID("SAPI.SpVoice");
-                if (type == null) { _dead = true; return; }
+                // Genuinely absent SAPI (no COM registration) is the one truly permanent case - no point retrying.
+                if (type == null) { _sapiMissing = true; return; }
                 _voice = Activator.CreateInstance(type);
                 var tokens = type.InvokeMember("GetVoices", System.Reflection.BindingFlags.InvokeMethod,
                     null, _voice, new object[] { string.Empty, string.Empty });
@@ -90,11 +103,14 @@ namespace EmberCrpg.Presentation.Ember.Audio
                     _roster[i] = tokens.GetType().InvokeMember("Item",
                         System.Reflection.BindingFlags.InvokeMethod, null, tokens, new object[] { i });
                 Debug.Log($"[Speech] SAPI roster: {count} voice(s) - signatures map across them.");
+                NoteSuccess();
             }
             catch (Exception e)
             {
-                _dead = true;
-                Debug.Log($"[Speech] SAPI unavailable, staying silent: {e.Message}");
+                NoteFailure();
+                _voice = null;
+                _roster = null;
+                Debug.Log($"[Speech] SAPI init hiccup ({_failCount}/{MAX_FAILS}), staying silent briefly: {e.Message}");
             }
 #endif
         }

@@ -42,7 +42,7 @@ namespace EmberCrpg.Simulation.Living.Actions
             // matching FoodOperations.WithinEatReach's contract.
             if (NeedConsumptionSystem.TryGetSiteCentre(world, state.TargetSiteId, out var centre)
                 && !FoodOperations.WithinEatReach(world, actor, state.TargetSiteId.Value))
-                actor.MoveTo(MovementService.StepToward(actor.Position, centre));
+                actor.MoveTo(MovementService.StepToward(actor.Position, centre, world?.NavView));
 
             if (FoodOperations.WithinEatReach(world, actor, state.TargetSiteId.Value))
             {

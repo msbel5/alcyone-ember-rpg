@@ -36,7 +36,7 @@ namespace EmberCrpg.Simulation.Living.Actions
             // first ring contact would stack approach-side diners on one cell (Gate8).
             var seat = FoodOperations.SeatFor(world, row.SiteId, actor);
             if (!actor.Position.Equals(seat))
-                actor.MoveTo(MovementService.StepToward(actor.Position, seat));
+                actor.MoveTo(MovementService.StepToward(actor.Position, seat, world?.NavView));
             if (actor.Position.Equals(seat))
                 TransitionTo(world, actor, state.Succeeded(), ActionLogReason.Arrived, stamp);
             else

@@ -40,9 +40,12 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             Editable(input, "Move Right", Options.Input.MoveRightPath, "live", text => CommitBinding(text, (o, v) => o.Input.MoveRightPath = v, () => Options.Input.MoveRightPath));
             Editable(input, "Look", Options.Input.LookPath, "live", text => CommitBinding(text, (o, v) => o.Input.LookPath = v, () => Options.Input.LookPath));
             Editable(input, "Interact", Options.Input.InteractPath, "live", text => CommitBinding(text, (o, v) => o.Input.InteractPath = v, () => Options.Input.InteractPath));
-            Editable(input, "Regen World", Options.Input.RegenWorldPath, "live", text => CommitBinding(text, (o, v) => o.Input.RegenWorldPath = v, () => Options.Input.RegenWorldPath));
-            Editable(input, "Toggle Inventory", Options.Input.ToggleInventoryPath, "live", text => CommitBinding(text, (o, v) => o.Input.ToggleInventoryPath = v, () => Options.Input.ToggleInventoryPath));
-            Editable(input, "Toggle Colony", Options.Input.ToggleColonyPath, "live", text => CommitBinding(text, (o, v) => o.Input.ToggleColonyPath = v, () => Options.Input.ToggleColonyPath));
+            // B25/B30: these three action-map paths are legacy — inactive while InGameUiController owns input.
+            // The actual in-game bindings (Tab open browser / I inventory / K colony / R oracle / etc.) are hard-coded
+            // KeyCode branches in InGameUiController.HandleScreenInput. See KeybindsSection for what is really live.
+            Editable(input, "Regen World (legacy — inactive in-game)", Options.Input.RegenWorldPath, "live", text => CommitBinding(text, (o, v) => o.Input.RegenWorldPath = v, () => Options.Input.RegenWorldPath));
+            Editable(input, "Toggle Inventory (legacy — inactive in-game)", Options.Input.ToggleInventoryPath, "live", text => CommitBinding(text, (o, v) => o.Input.ToggleInventoryPath = v, () => Options.Input.ToggleInventoryPath));
+            Editable(input, "Toggle Colony (legacy — inactive in-game)", Options.Input.ToggleColonyPath, "live", text => CommitBinding(text, (o, v) => o.Input.ToggleColonyPath = v, () => Options.Input.ToggleColonyPath));
             Editable(input, "Pause", Options.Input.PausePath, "live", text => CommitBinding(text, (o, v) => o.Input.PausePath = v, () => Options.Input.PausePath));
             Editable(input, "Look Smooth", Read(() => Options.Input.LookSmoothingAlpha), "live", text => CommitFloat(text, (o, v) => o.Input.LookSmoothingAlpha = Mathf.Clamp01(v), () => Options.Input.LookSmoothingAlpha));
             Editable(input, "Number Slots", Read(() => Options.Input.NumberSlots), "live", text => CommitInt(text, (o, v) => o.Input.NumberSlots = Math.Max(1, v), () => Options.Input.NumberSlots));

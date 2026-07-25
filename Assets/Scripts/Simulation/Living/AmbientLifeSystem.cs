@@ -41,7 +41,7 @@ namespace EmberCrpg.Simulation.Living
                     if (critter == null || !critter.SiteId.Equals(site.Id)) continue;
                     if (critter.Kind == "rat")
                     {
-                        critter.Cell = StepToward(critter.Cell, larder);
+                        critter.Cell = MovementService.StepToward(critter.Cell, larder, world.NavView);
                         if (Chebyshev(critter.Cell, larder) <= StealReach)
                         {
                             var tag = FirstStockedTag(pile);
@@ -62,8 +62,8 @@ namespace EmberCrpg.Simulation.Living
                     var cat = world.Critters[i];
                     if (cat == null || cat.Kind != "cat" || !cat.SiteId.Equals(site.Id)) continue;
                     var prey = NearestRat(world, site.Id, cat.Cell);
-                    if (prey == null) { cat.Cell = StepToward(cat.Cell, larder); continue; }
-                    cat.Cell = StepToward(cat.Cell, prey.Cell);
+                    if (prey == null) { cat.Cell = MovementService.StepToward(cat.Cell, larder, world.NavView); continue; }
+                    cat.Cell = MovementService.StepToward(cat.Cell, prey.Cell, world.NavView);
                     if (Chebyshev(cat.Cell, prey.Cell) <= 1)
                     {
                         world.Critters.Remove(prey);
@@ -138,8 +138,8 @@ namespace EmberCrpg.Simulation.Living
         private static GridPosition Centre(SiteRecord site)
             => new GridPosition((site.MinBound.X + site.MaxBound.X) / 2, (site.MinBound.Y + site.MaxBound.Y) / 2);
 
-        private static GridPosition StepToward(GridPosition from, GridPosition to)
-            => new GridPosition(from.X + System.Math.Sign(to.X - from.X), from.Y + System.Math.Sign(to.Y - from.Y));
+        // B10 §A5: the duplicate wall-blind primitive is retired — MovementService.StepToward with
+        // world.NavView is the ONE grid stepper. Rats & cats now respect blockers like civilians do.
 
         private static int Chebyshev(GridPosition a, GridPosition b)
             => System.Math.Max(System.Math.Abs(a.X - b.X), System.Math.Abs(a.Y - b.Y));

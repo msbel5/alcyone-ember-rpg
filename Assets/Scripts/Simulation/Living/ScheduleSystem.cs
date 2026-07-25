@@ -29,13 +29,21 @@ namespace EmberCrpg.Simulation.Living
 
         public void Advance(ActorStore actors, GameTime time)
         {
-            Advance(actors, time, pursuits: null);
+            Advance(actors, time, pursuits: null, world: null);
         }
 
         /// <summary>P0 pursuit overload: active guard chases (from WitnessResponse) outrank the
         /// return-to-post routing at the SAME PerTick cadence - the chase can finally win.</summary>
         public void Advance(ActorStore actors, GameTime time,
             System.Collections.Generic.List<PursuitRecord> pursuits)
+        {
+            Advance(actors, time, pursuits, world: null);
+        }
+
+        /// <summary>B10 §A5: nav-aware overload — the composer path passes `world` so StepToward can
+        /// consult world.NavView. Older overloads and tests keep the wall-blind primitive.</summary>
+        public void Advance(ActorStore actors, GameTime time,
+            System.Collections.Generic.List<PursuitRecord> pursuits, WorldState world)
         {
             if (actors == null)
                 return;
@@ -61,7 +69,7 @@ namespace EmberCrpg.Simulation.Living
                     target = quarryCell; // the chase, at full tick speed
                 else
                     target = ChooseTarget(actor, time);
-                var next = MovementService.StepToward(actor.Position, target);
+                var next = MovementService.StepToward(actor.Position, target, world?.NavView);
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
             }

@@ -30,7 +30,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             { Id = 11, SiteId = new SiteId(1), Cell = new GridPosition(4, 5), Kind = "rat" });
             world.Rumors.Add(new RumorEntry
             { BornMinutes = 42, SiteId = new SiteId(1), Text = "golden tale" });
-            world.RumorEventCursor = 3;
+            world.RumorEventCursorSeq = 3L;
             world.SiteUnrest.Add(new SiteUnrestRecord
             { SiteId = new SiteId(1), Unrest = 4, LastDecayDay = 2, SweepCooldownUntilMinutes = 777 });
             // W32: non-default mind state so a dropped action-state mapping fails field-by-field.

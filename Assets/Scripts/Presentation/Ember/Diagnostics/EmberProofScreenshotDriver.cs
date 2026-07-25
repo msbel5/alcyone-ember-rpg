@@ -943,6 +943,14 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 yield return new WaitForSecondsRealtime(1f);
             }
 
+            // B26/§6.2: capture start game-clock and RESET the adapter's peak accumulators —
+            // peaks live across marathon runs within one Editor session; forgetting to reset
+            // means the second run inherits the first's peaks and falsely PASSes a broken world.
+            var soakAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
+                as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+            long gameMinStart = soakAdapter?.WorldTimeMinutesOrZero() ?? 0L;
+            soakAdapter?.ProofResetLivingPeaks();
+
             while (Time.unscaledTime < endAt)
             {
                 var adapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
@@ -986,14 +994,21 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 }
                 actions++;
 
+                // B26/§6.2: sample peaks every iteration — slices can start and finish between two
+                // 60s heartbeats, so heartbeat-only sampling still risks a zero-peak false PASS.
+                // Cost is O(alive actors) per call, dwarfed by the WaitForSecondsRealtime below.
+                adapter.ProofSampleLivingPeaks();
+
                 if (Time.unscaledTime >= nextHeartbeat)
                 {
                     nextHeartbeat = Time.unscaledTime + 60f;
                     long memNow = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
                     if (memNow > memPeak) memPeak = memNow;
+                    var hbPeaks = adapter.ProofLivingPeaks();
                     Debug.Log($"[Marathon] t={(int)(Time.unscaledTime - (endAt - minutes * 60f))}s " +
                               $"actions={actions} (travel={travels} fight={fights} trade={trades} clock={hours}) " +
-                              $"exceptions={exceptions} mem={memNow / 1048576}MB peak={memPeak / 1048576}MB");
+                              $"exceptions={exceptions} mem={memNow / 1048576}MB peak={memPeak / 1048576}MB " +
+                              $"peaks(sleep={hbPeaks.sleeping} work={hbPeaks.working} eat={hbPeaks.eating} farm={hbPeaks.farming} n={hbPeaks.samples})");
                 }
 
                 yield return new WaitForSecondsRealtime(2f + (next() % 5u));
@@ -1007,14 +1022,23 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             // Honesty rule: a soak that lost its world or did NOTHING cannot PASS — an aborted
             // run once reported PASS with actions=0 (the exact Potemkin pattern the V2
             // contract exists to kill).
-            bool pass = exceptions == 0 && flat && !aborted && actions > 0;
+            // B26/§6.3: a soak that lived through a full day-night cycle in which NOBODY slept,
+            // NOBODY worked, or NOBODY ate is a broken world wearing a green badge — reject it.
+            // Under 24 game-hours the peaks stay advisory (short smoke soaks would flake on clock phase).
             var livingAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
                 as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
+            long gameMinEnd = livingAdapter?.WorldTimeMinutesOrZero() ?? gameMinStart;
+            long gameHours = (gameMinEnd - gameMinStart) / 60L;
+            var peaks = livingAdapter?.ProofLivingPeaks() ?? default;
+            bool censusOk = gameHours < 24 || (peaks.sleeping > 0 && peaks.working > 0 && peaks.eating > 0);
+            bool pass = exceptions == 0 && flat && !aborted && actions > 0 && censusOk;
             Debug.Log($"[Marathon] LIVING: {(livingAdapter != null ? livingAdapter.ProofLivingCensus() : "adapter gone")}");
             Debug.Log($"[Marathon] VERDICT: {(pass ? "PASS" : "FAIL")} — {minutes:0}min soak, " +
                       $"actions={actions} (travel={travels} fight={fights} trade={trades} clock={hours}), " +
                       $"exceptions={exceptions}, mem {memStart / 1048576}MB -> {memEnd / 1048576}MB " +
-                      $"(peak {memPeak / 1048576}MB, flat={flat}).");
+                      $"(peak {memPeak / 1048576}MB, flat={flat}), " +
+                      $"gameHours={gameHours} censusOk={censusOk} " +
+                      $"peaks(sleep={peaks.sleeping} work={peaks.working} eat={peaks.eating} farm={peaks.farming} n={peaks.samples}).");
         }
 
         // F32-DoD (--ember-igtour): EVERY in-game screen, one frame each — HUD, inventory,

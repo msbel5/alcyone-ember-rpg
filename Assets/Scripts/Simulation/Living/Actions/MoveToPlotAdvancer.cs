@@ -69,7 +69,7 @@ namespace EmberCrpg.Simulation.Living.Actions
             }
 
             if (!actor.Position.Equals(soil.Position))
-                actor.MoveTo(MovementService.StepToward(actor.Position, soil.Position));
+                actor.MoveTo(MovementService.StepToward(actor.Position, soil.Position, world?.NavView));
             if (actor.Position.Equals(soil.Position))
                 TransitionTo(world, actor, state.Succeeded(), ActionLogReason.Arrived, stamp);
             else
