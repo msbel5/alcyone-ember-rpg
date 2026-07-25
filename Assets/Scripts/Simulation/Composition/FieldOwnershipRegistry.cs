@@ -86,6 +86,30 @@ namespace EmberCrpg.Simulation.Composition
                 },
                 ["World.Rumors"] = new[] { "living.rumors@Hourly:55" },
                 ["World.SiteUnrest"] = new[] { "living.witness@Hourly:45" },
+
+                // W35 (B04): fields formerly outside ownership. Only writers that resolve
+                // to a REAL registered step id go here - the reverse lint refuses the rest.
+                // Boot-only + command-driven mutation stays UNDECLARED with a comment; the ledger
+                // is a "who writes in the loop" contract, not a where-does-every-byte-live index.
+                ["World.Time"] = new[] { "core.time@PerTick:10" },
+                ["World.Plants"] = new[]
+                {
+                    "living.action_advance@PerTick:22", // HarvestCrop removes; PlantSeed adds
+                    "econ.plantgrowth@Daily:20",        // ripens plants
+                },
+                ["Actor.Mood"] = new[]
+                {
+                    "living.action_advance@PerTick:22", // ConsumeFood/Sleep re-evaluate
+                    "living.needs@Hourly:30",
+                },
+                ["World.NpcMemory"] = new[]
+                {
+                    "living.witness@Hourly:45",
+                    // Command-driven writers (dialog, trade completion, ToolUse) are boundary
+                    // writes, not tick systems - lint-inclusion would demand a fake registration.
+                },
+                ["World.CompanionIds"] = new[] { "living.companion_follow@PerTick:21" },
+                ["World.Factions"] = new[] { "politics.faction_decay@Daily:40" },
             };
     }
 }

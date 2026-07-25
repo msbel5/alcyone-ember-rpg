@@ -678,10 +678,25 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 else if (e.Kind == EmberCrpg.Domain.World.WorldEventKind.ChronicleEvent) chronicle++;
                 else if (e.Kind == EmberCrpg.Domain.World.WorldEventKind.ShortageDetected) shortage++;
             }
-            int actors = 0;
+            int actors = 0, sleeping = 0, working = 0, eating = 0, farming = 0;
             if (_world.Actors?.Records != null)
-                foreach (var a in _world.Actors.Records) if (a != null && a.IsAlive) actors++;
-            return $"meals={meals} witnessed={witnessed} reported={reported} guardResponses={guard} chronicle={chronicle} shortages={shortage} aliveActors={actors} companions={_world.CompanionIds?.Count ?? 0} totalEvents={_world.Events.Count}";
+                foreach (var a in _world.Actors.Records)
+                {
+                    if (a == null || !a.IsAlive) continue;
+                    actors++;
+                    // W35 SHRINK: LIVE proof each slice's action strip - a marathon that reports
+                    // sleeping=0 while shortages=N means Sleep never ran, not that it "worked".
+                    switch (a.ActionState.CurrentAction)
+                    {
+                        case ActorActionType.Sleep: sleeping++; break;
+                        case ActorActionType.PerformWork: working++; break;
+                        case ActorActionType.ConsumeFood: eating++; break;
+                        case ActorActionType.PlantSeed:
+                        case ActorActionType.HarvestCrop:
+                        case ActorActionType.HaulCrop: farming++; break;
+                    }
+                }
+            return $"meals={meals} witnessed={witnessed} reported={reported} guardResponses={guard} chronicle={chronicle} shortages={shortage} aliveActors={actors} sleeping={sleeping} working={working} eating={eating} farming={farming} companions={_world.CompanionIds?.Count ?? 0} totalEvents={_world.Events.Count}";
         }
 
         public string ProofLunchCensus()
