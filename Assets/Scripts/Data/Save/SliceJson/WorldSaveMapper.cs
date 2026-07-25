@@ -126,6 +126,7 @@ inventory = ToInventoryData(world.PlayerInventory),
                 mainQuestFinalDelveId = world.MainQuest?.FinalDelveId ?? 0UL,
                 mainQuestClaimedDelveIds = (world.MainQuest?.ClaimedDelveIds ?? new List<ulong>()).ToArray(),
                 playerKnownSpellIds = (world.PlayerKnownSpellIds ?? new List<string>()).ToArray(),
+                playerKnownSpellIdsAuthored = world.PlayerKnownSpellIds != null, // B20
                 playerGold = world.PlayerGold,
                 merchantGold = world.MerchantGold,
                 merchantStoreSeeded = world.MerchantStoreSeeded,
@@ -294,8 +295,9 @@ world.Items = ToItemStore(data.itemRecords);
                     ? new List<ulong>(data.mainQuestClaimedDelveIds)
                     : new List<ulong>(),
             };
-            world.PlayerKnownSpellIds = data.playerKnownSpellIds != null && data.playerKnownSpellIds.Length > 0
-                ? new List<string>(data.playerKnownSpellIds)
+            // B20 W36-tail: honor the author bit - "empty explicitly" survives, "missing" falls back.
+            world.PlayerKnownSpellIds = data.playerKnownSpellIdsAuthored
+                ? new List<string>(data.playerKnownSpellIds ?? System.Array.Empty<string>())
                 : world.PlayerKnownSpellIds ?? new List<string>();
             world.PlayerGold = data.playerGold;
             world.MerchantGold = data.merchantGold;

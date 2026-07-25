@@ -31,9 +31,11 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             HydrateHistory(generated);
             SeedWorldQuests(); // F2/quest variety: kill + visit quests join the forge errand
             MovePlayerToStartingSettlement();
-            // B10 §A6: project the deterministic building layouts into the sim's blocker set — MUST run
-            // LAST (after HydrateSites populated site bounds; the projection needs the site centre).
-            HydrateBlockedCells(generated);
+            // B10 §A6: sim-blocker projection. Wrap-catch is LOAD-BEARING - a broken layout strategy
+            // used to silently kill the adapter register (marathon-FAIL 2026-07-26). Over-blocking is
+            // a UX regression; a nulled adapter is a crash. Always keep the sim on its feet.
+            try { HydrateBlockedCells(generated); }
+            catch (System.Exception ex) { UnityEngine.Debug.LogError($"[B10] HydrateBlockedCells failed: {ex.Message}"); }
         }
 
         /// <summary>

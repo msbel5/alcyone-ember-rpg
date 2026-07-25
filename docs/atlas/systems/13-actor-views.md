@@ -1,328 +1,144 @@
 # 13-actor-views
 
-> Kapsam: aktor gorselleri — `EmberGeneratedActorSpawner`, `WorldViewProjector`, `ActorView`
-> (glide/snap/wander), `BillboardGroundingView`, `GeneratedNpcAccessibilityGuard`, paper-doll
-> tint/gear katmani ve billboard uydu-bilesenleri.
-> Ana dizin: `Assets/Scripts/Presentation/Ember/Views/` (14 dosya).
-> Tum satir referanslari 2026-07-24 calisma kopyasina gore dogrulandi.
-> UYARI: bu taramada calisma kopyasinda VE HEAD'de derlemeyi kirmasi gereken bir govde bulundu
-> (`WorldViewProjector.ReplaceActorViews` — borclar #1). Editorun canli derleme durumu bu
-> oturumda dogrulanmadi; asagidaki akis anlatimi kodun NIYETINI anlatir.
+## HLD - Ne ve Neden (5-10 cumle)
 
-## HLD - Ne ve Neden
+Aktör görselleri Domain'in `WorldState.Actors` kaydı ile sahnedeki 2D-billboard'lar arasındaki senkron katmanıdır (Daggerfall stili flat sprite in 3D). Katman iki iş yapar: (1) sim tarafından yürütülen konumu her tick billboard'a projekte etmek, (2) sahnede yazarlar tarafından authored edilmemiş worldgen NPC'lerini runtime'da doğurmak. Sahneler yalnızca ~5 authored `ActorView` içerir; `SOUL-01`'in hidrate ettiği ~750 worldgen NPC'si için görsel yoksa `EmberGeneratedActorSpawner` runtime'da billboard üretir ve stable `ActorId`'yi (`BindDomainActorId`) view'a damgalar. Bir kez damgalandıktan sonra `WorldViewProjector` id-keyed `TryReadActor` yolundan konumu okuyup `ActorView.SetTarget`'e verir. Presentation-only detaylar (wander, glide, tint, flash, lunge, fall, activity label, pose icon, event echo, gear mark, hostile marker, grounding, accessibility) burada yaşar; hiçbiri sim'e geri yazmaz (`docs/DETERMINISM.md`). W30 iki büyük yara kapadı: (a) şehir değişince önceki settlement'ın billboard'ları sahnede kalıp "kilometrelerce" yürüyordu → `CurrentSettlementKey` eşiğinde stale billboard'lar despawn ediliyor; (b) host boot'unda tek seferlik cache'lenmiş `ActorView[]` streaming spawner'ları içermiyordu → `WorldViewProjector.ReplaceActorViews` + `EmberWorldHost.RescanActorViews` ile late-join sağlandı. W36 açık borç: B24 çoklu-yazar sahnesi VARIANT B color arbiter ile kısmen kapatıldı ama story-test yok (`BUG_REPORT_SCORECARD` "SHIPPED-NO-TEST"). Runtime `UnityEngine.Random` kullanan tek yer wander/jitter — sim'e sızmadığı EMB-040 notu ile pinlenmiş.
 
-Bu sistem, yasayan dunyanin GOZLE GORULEN yuzudur: worldgen `WorldState.Actors`'a ~750 NPC
-hidrate eder ama sceneler yalnizca ~5 el-yapimi `ActorView` yazar — geri kalani gorunmezdi
-(`EmberGeneratedActorSpawner.cs:14-16`). Cozum uc katmandir: (1) **spawner** oyuncuya en yakin
-N adayin her biri icin calisma zamaninda bir billboard `ActorView` insa eder ve uzerine stable
-actor id'yi damgalar (`EmberGeneratedActorSpawner.cs:17-21`); (2) **projector** her tick sim
-kaydini `ActorViewState`'e cevirip view'a iter (`WorldViewProjector.cs:41-53`); (3) **ActorView**
-o hedefe dogru interpolasyon yapar — yuruyuscu NPC'ler sabit m/s ile "glide" eder, 5 m'den buyuk
-sicramalar "snap"tir, siviller ayrica kozmetik "wander" ile cevrelerinde dolanir
-(`ActorView.cs:196-206`, `:188-194`). Gorsel dil bilinclidir: Daggerfall tarzi, kameraya donen
-2D billboard'lar (`CameraFacingBillboard.cs:5-8`). Oyuncuya gorunen etki: kasaba sokaklari
-yuruyup calisan, ogle yemegine oturan, gece yatan, vurulunca kirmizi yanip dusen bir kalabalik.
-Felsefe kati bir tek-yon kuraldir: bu katman sim'e ASLA geri yazmaz — wander/jitter icin
-`UnityEngine.Random` kullanimi bile "presentation-only, never feeds Domain/Simulation or the
-save" diye isaretlidir (`ActorView.cs:91-95`, `:262-264`; `docs/DETERMINISM.md` referansiyla).
-Paper-doll v1 de ayni ucuzluk felsefesindedir: ayni base sprite, aktor-id'den deterministik
-kumas tintiyle farkli "cast" giyer; rol-gercek gear isaretleri ayri overlay katmanindadir ve
-forge'a asla tam figur re-render ettirilmez (`NpcVariantTintService.cs:3-7`,
-`BillboardGearMarkView.cs:5-10`).
+## HLD - Akış (numaralı adımlar)
 
-## HLD - Akis
+1. `EmberWorldHost` boot'ta authored `ActorView`'ları FindObjectsByType ile toplayıp `WorldViewProjector`'a verir (ctor).
+2. Host `EmberGeneratedActorSpawner.SpawnMissingNearbyActors()`'ı çağırır. Spawner adapter'dan `GetSpawnableActors()` alır (pre-projected `SpawnableActor` DTO'ları).
+3. `CurrentSettlementKey` değiştiyse: `_spawnedRoots` içindeki candidate-listesinde olmayan tüm billboard'ları `Destroy` eder (W30 cross-city fix); `_spawnedForSettlement` güncellenir.
+4. Halihazırda authored/spawned id'ler filtrelenir; kalanlar `PlayerRig`/`Camera.main`/origin anchor'ına göre XZ mesafesine sıralanır; `RuntimeNpcDensity.CapOrDefault(_maxSpawnCount)` cap'i uygulanır.
+5. Her `SpawnOne` root + "Billboard" child + `SpriteRenderer` (Generated/Core → bestiary silhouette → neutral fallback) + `ActorView` + `NightCurfewView` + `ActorCombatFeedbackView` + `BillboardWalkAnimView` + `BillboardGroundingView` + `GeneratedNpcAccessibilityGuard` + `EmberInteractable` + `BoxCollider` inşa eder; hostile role ise `HostileMarker` diamond ekler; civilian ise `NpcPoseIconView` + `NpcActivityLabelView` + wander(0.8m) ekler; herkese `BillboardGearMarkView.TryAttach` + `NpcEventEchoView.Bind` + deterministic `NpcVariantTintService` cloth-tint uygulanır; `SetGroundSpeed(hostile ? 3.4 : 1.3)` yazılır.
+6. `SpawnOne` başarısı sonrası spawner `EmberWorldHost.RescanActorViews()` çağırır → host `Object.FindObjectsByType<ActorView>` ile yeni set'i toplayıp `WorldViewProjector.ReplaceActorViews`'e geçirir (W30 late-join fix).
+7. Her tick `WorldViewProjector.ProjectTick(tickIndex)`: `_clock.AdvanceTick` → `Project()` (id/name-keyed `TryReadActor` her `ActorView`'a `SetTarget(state)` push'lar; Unity-null olan destroyed view'lar atlanır) → `EventLogHudPanel.Render`.
+8. `ActorView.Update` interpole eder: `_wander` XZ ofsetini ekler; sim mesafesi ≤5m ise `_groundSpeed`-glide, >5m ise SNAP (spawn/teleport/time-skip), `_groundSpeed=0` ise exponential Lerp. `ExternalPoseOverride=true` ise pose sahibi başka biri (sleep/fall) — bob/lean/shake/tint blokları es geçilir. Aksi halde `flipX` yok (retired), `strideBob`+lean writer'ları çalışır. `_tintRemaining>0` iken `_renderer.color = red`, `_shakeRemaining>0` iken localPosition jitter'ı.
+9. `ActorCombatFeedbackView.Update` (DefaultExecutionOrder=50, ActorView'dan sonra çalışır): `HitStamp/FelledStamp/EnemyStrikeStamp` polling; hit → 0.15s flash + sparks; felled → `Fall()` (`ExternalPoseOverride=true`, facing off, board 90° flat, grey); enemy strike → 0.2s lunge ofseti ADDITIVELY billboard localPosition'a ekleniyor. B24 color arbiter: flash aktifken red-orange, değilse `ActorView.DamageTinting` true iken base'e dönmüyor (Apply'ın kırmızısını korur), else `_baseColor`.
+10. `Update()` içindeki streaming sweep: 2.5s throttle + player 40m'den fazla hareket ettiyse `SpawnMissingNearbyActors` re-entrant çağrılır (Daggerfall-style lazy world).
 
-1. **Boot (host Start yolu)**: `EmberWorldHost` once sahnedeki el-yapimi `ActorView`/`WorksiteView`
-   setini toplar (`EmberWorldHost.cs:159-160`), sonra `EnsureGeneratedActorSpawner().SpawnMissingNearbyActors()`
-   cagirir; yeni billboard dogduysa view setini YENIDEN tarar (`EmberWorldHost.cs:168-169`).
-   Spawner tekil olarak host GameObject'ine eklenir (`EmberWorldHost.Ui.Overlay.cs:123-126`).
-2. **Projector kurulumu**: `_worldViewProjector = new WorldViewProjector(_clock, _worldView,
-   actorViews, worksiteViews, eventLogHud)` (`EmberWorldHost.cs:171`), ardindan ilk `Project()`
-   (`EmberWorldHost.cs:174`).
-3. **Spawn tek-cagri govdesi** (`EmberGeneratedActorSpawner.cs:76-145`): read model'den aday
-   listesi (`:78-82`), settlement degistiyse bayat billboard supurmesi (travel sonrasi eski
-   sehrin adamlari ufka yurumesin — `:84-106`), sahnede zaten id tasiyan view'larin toplanmasi
-   (`:110`), oyuncu ankraji (`PlayerRig` → `Camera.main` → origin, `:309-324`), filtre + kare-mesafe
-   sirala + `RuntimeNpcDensity.CapOrDefault(_maxSpawnCount)` ile kirp (`:117-133`;
-   `RuntimeNpcDensity.cs:12` — Inn az, City kalabalik), her aday icin `SpawnOne` (`:136-140`),
-   en az bir dogum olduysa `EmberWorldHost.RescanActorViews()` (`:141-143`).
-4. **SpawnOne insa sirasi** (`EmberGeneratedActorSpawner.cs:147-251`): root GameObject +
-   ring-scatter offset (`:158-161`, offset matematigi `:338-357`); `NightCurfewView` + rol-string'den
-   hostile tespiti (`outlaw|bandit|monster_*` — `:164-171`); "Billboard" cocugu (ad SOZLESMEDIR,
-   `ActorView.Awake` bu adla baglar — `:173-177`, `ActorView.cs:110-111`); sprite cozumu
-   library → bestiary siluet → notr gri quad (`:180`, `:371-385`); rol-bazli boy
-   (`BestiaryBillboardSpriteFactory.TargetHeightFor`, kurt kalca boyu — `:183-184`);
-   **paper-doll tint** feedback bind'dan ONCE (`:187-190`); `ActorCombatFeedbackView.Bind`
-   (`:193`); `BillboardGearMarkView.TryAttach` (`:194`); `NpcEventEchoView` (`:195`);
-   `BillboardWalkAnimView` (`:197`); hostile'a kirmizi elmas marker (`:199-202`, `:256-271`);
-   `ActorView` + `BindDomainActorId` + `SetGroundSpeed(hostile ? 3.4 : 1.3)` (`:207-212`);
-   YALNIZ sivillere `EnableWander(0.8)` + `NpcPoseIconView` + `NpcActivityLabelView`
-   (`:219-229`; F18: canavar amacla kovalar, milleme sarhos gosteriyordu — `:217-218`);
-   `GeneratedNpcAccessibilityGuard` (`:230`); `BillboardGroundingView` (`:233`);
-   `EmberInteractable.Setup(name, "General", id)` + kisi-boyu BoxCollider (E-etkilesimi icin —
-   `:238-246`).
-5. **Streaming respawn**: spawner `Update`'i 2.5 s'de bir oyuncu 40 m'den fazla yer degistirdiyse
-   `SpawnMissingNearbyActors`'i yeniden kosar — "quest 250m diyor ama orasi bos" fix'i,
-   Daggerfall tarzi yuruyerek belirme (`EmberGeneratedActorSpawner.cs:290-307`).
-6. **Tick kadansi**: `EmberWorldHost.OnTick` → `ProjectTick(tickIndex)`
-   (`EmberWorldHost.Bindings.cs:44-47`) → sirasi SABIT: clock ilerlet, `Project()`, event-log
-   HUD'a son 64 `WorldEvent`'i render et (`WorldViewProjector.cs:64-69`).
-7. **Project dongusu** (`WorldViewProjector.cs:41-61`): her `ActorView` icin id-anahtarli
-   (`TryReadActor(ActorId)`) ya da legacy ad-anahtarli (`TryReadActor(string)`) okuma → `SetTarget`
-   (`:47-52`); null (site degisiminde yok edilmis) view atlanir (`:46`). Worksite'lar AD ile
-   okunur (`:55-60`).
-8. **Tick-arasi tazeleme**: gercek-zamanli kovalama adimlari (1 hucre/0.45 s) tick BEKLEMEDEN
-   `ProjectWorldViewsNow()` ile view hedeflerini tazeler — clock ilerletmeden `Project()`
-   (`EmberWorldHost.Bindings.cs:49-52`; cagiran: `InGameUiController.cs:248`).
-9. **Kare kadansi (Update/LateUpdate yigini)**: `ActorView.Update` pozisyon interpolasyonu +
-   yürüme bob/lean + idle float + combat tint/shake (`ActorView.cs:182-266`). Sonra LateUpdate
-   katmani: `CameraFacingBillboard` yaw-donusu (`CameraFacingBillboard.cs:16-32`),
-   `BillboardGroundingView` 4 Hz raycast ile y-zemine oturtma (`BillboardGroundingView.cs:18-51`),
-   `GeneratedNpcAccessibilityGuard` bina kabuklarindan disari itme (`GeneratedNpcAccessibilityGuard.cs:16-35`).
+## LLD - Veri Modeli (file:line)
 
-## LLD - Veri Modeli
+- `ActorView` (`Assets/Scripts/Presentation/Ember/Views/ActorView.cs:33`) — `[SerializeField] _domainActorKey` (`:34`), `_domainActorId` (`:39`, string olarak — ulong inspector'da serialize edilmez), `_interpolationSpeed=8f` (`:40`), `_billboard` (`:41`), `_walkCycleFrequency=0.4f`/`_idleFloatFrequency=1.5f`/`_idleFloatAmplitude=0.05f` (`:44-46`), runtime state: `_target` (`ActorViewState`, `:82`), `_hasTarget`, `_renderer`, `_tintRemaining`, `_shakeRemaining` (`:83-86`), `_billboardBaseLocalPos` (`:87`), `_walkTimer`, `_lastPosition` (`:88-89`), wander alanları `_wander/_wanderRadius/_wanderSpeed=0.6f/_wanderCurrent/_wanderGoal/_wanderRepathTimer` (`:96-101`), `_groundSpeed` (`:106`), `ExternalPoseOverride` (public bool, `:122`), `DamageTinting` (`:127`, B24 sözleşmesi).
+- `ActorViewState` (`ActorView.cs:288`) readonly struct — `WorldPosition`, `WorldRotation`, `Visible`, `Activity` (string), `Sleeping` (bool), `ActionKind` (string, W32 DOC5).
+- `WorldViewProjector` (`WorldViewProjector.cs:8`) — `_clock` (IEmberSimulationClock), `_worldView` (IWorldViewReadModel), `_actorViews` (MUTABLE `ActorView[]`, W30 açıklaması `:12`), `_worksiteViews` (readonly), `_eventLogHud`, `_eventNarrator`.
+- `EmberGeneratedActorSpawner` (`EmberGeneratedActorSpawner.cs:41`) — serialize alanlar `_maxSpawnCount=24` (`:47`), `_billboardTargetHeight=2.1f` (`:52`), `_spawnSpacing=1.5f` (`:58`). Runtime state: `LoggedSpriteResolutions` (static HashSet), `_fallbackSprite`, `_spawnedIds` (HashSet<ulong>), `_spawnedRoots` (Dictionary<ulong,GameObject>), `_spawnedForSettlement` (ulong — W30 despawn eşiği), streaming: `_lastScanAnchor`, `_nextScanTime`, `ScanIntervalSeconds=2.5f`, `ScanMoveThresholdMeters=40f` (`:281-286`).
+- `SpawnableActor` DTO (`Assets/Scripts/Presentation/Ember/Adapters/IDomainSimulationAdapter.cs:106`) — id, name, spriteRole, worldX, worldZ, seed. Domain'den flat DTO, presentation Domain math görmez.
+- `ActorCombatFeedbackView` (`ActorCombatFeedbackView.cs:17`, `[DefaultExecutionOrder(50)]`) — `_actorId`, `_sprite`, `_billboardFacing`, `_actorView` (B24 arbiter için, `:23`), `_hitSeen/_felledSeen/_strikeSeen` (stamp cursors), `_flashUntil`, `_lungeUntil`, `_fallen`, `_baseColor`, `_lungeOffset` (`:31`).
+- `BillboardWalkAnimView` (`BillboardWalkAnimView.cs:11`) — `StepSeconds=0.28f`, `SquashScale=0.95f`, `_sprite`, `_baseScale`, `_lastPos`, `_nextStep`, `_frameB`.
+- `NpcPoseIconView` (`NpcPoseIconView.cs:11`) — static `s_hammer`/`s_mug`, `_icon`, `_worker`, `_nextPoll`, `_actionKind` (W32 DOC5: kind push'lanır, view hour derivmez).
+- `NpcActivityLabelView` (`NpcActivityLabelView.cs:12`) — TextMesh legacy path, `VisibleMeters=22f` cull.
+- `NpcEventEchoView` (`NpcEventEchoView.cs:11`) — static sprite havuzu (eye/alert/sword/sheaf/chat), `NpcEventEchoFeed.Stamp` polling.
+- `BillboardGearMarkView` (`BillboardGearMarkView.cs:11`) — static `s_spear`/`s_blade`, static-only class.
+- `BillboardGroundingView` (`BillboardGroundingView.cs:12`) — `_nextProbe`, `_groundY`, `_hasGround`; LateUpdate ray + hariç tut (self, actor collider, Roof/Canopy/Table/Bench/Trestle).
+- `CameraFacingBillboard` (`CameraFacingBillboard.cs:11`) — `_yawOnly=true`, `_cameraTransform` cache.
+- `GeneratedNpcAccessibilityGuard` (`GeneratedNpcAccessibilityGuard.cs:11`) — `_volumes` (BuildingAccessibilityVolume[]), `_nextRefreshTime`.
+- `BestiaryBillboardSpriteFactory` (`BestiaryBillboardSpriteFactory.cs:11`) — static wolf/spider/skeleton/ghost/bandit sprite'ları + `TargetHeightFor`.
 
-**SpawnableActor** (`IDomainSimulationAdapter.cs:106-124`) — sunum-yalitimli duz DTO:
-`Id: ulong` (stable actor id'nin ham hali), `Name: string`, `SpriteRole: string`,
-`WorldX/WorldZ: float` (adapter tarafinda ONCEDEN projekte edilmis — spawner Domain matematigi
-yapmaz), `Seed: int`. Uretici: `DomainSimulationAdapter.GetSpawnableActors`
-(`DomainSimulationAdapter.WorldProjection.cs:150-178`) — Player haric, olu haric ("olu ayakta
-respawn olmaz" — `:164-165`), YALNIZ mevcut settlement sakinleri ("baska sehrin adami burada
-belirdi" fix'i — `:154-159`).
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-**ActorViewState** (`ActorView.cs:270-288`) — tick basi gorsel anlik goruntusu:
-`WorldPosition: Vector3`, `WorldRotation: Quaternion`, `Visible: bool`,
-`Activity: string` (playtest: "ne yaptigi anlasilmiyor" — `:275-276`),
-`Sleeping: bool` (eve VARINCA true; yatma pozu commute'u bekler — `:277-279`).
+- `ActorView.HasDomainActorId => TryGetDomainActorId(out _)` (`ActorView.cs:57`) — id string non-empty & ulong parse & !=0.
+- `ActorView.DomainActorId => ActorId` (`:60`) — parse edilmiş stable id, yoksa `default`.
+- `ActorView.BindDomainActorId(ActorId id)` (`:71`) — SOUL-04 runtime damga; spawner'ın kullandığı text-form.
+- `ActorView.SetTarget(ActorViewState state)` (`:130`) — sim push; ilk çağrıda `NpcActivityLabelView/NpcPoseIconView/NightCurfewView` cache'lenir; her state pushunda label/pose/curfew güncellenir.
+- `ActorView.EnableWander(float radius)` (`:151`) — cosmetic idle wander; presentation-only (`UnityEngine.Random`).
+- `ActorView.SetGroundSpeed(float mps)` (`:166`) — overworld walker m/s; combat ise 0 tutulur (snap chase).
+- `ActorView.Apply(int amount)` (`:170`) — IDamageSink; 0.2s tint + 0.2s shake + combat log.
+- `ActorView.Update()` (`:181`) — interpole (wander/glide/snap/Lerp arbiter'ı `:200-210`), billboard bob/lean writer'ları (ExternalPoseOverride guard'lı), tint+shake writer'ları (B24 guard).
+- `WorldViewProjector.ctor(clock, worldView, actorViews[], worksiteViews[], eventLogHud)` (`WorldViewProjector.cs:17`) — actorViews null → boş array.
+- `WorldViewProjector.ReplaceActorViews(ActorView[])` (`:36`) — W30 INVARIANT FIX: streaming spawner'ları/post-travel refill'leri sync setine sokar.
+- `WorldViewProjector.Project()` (`:41`) — her ActorView için id/name-keyed `TryReadActor`; Unity-null view'lar atlanır (destroyed on site change); her WorksiteView için `TryReadWorksite`.
+- `WorldViewProjector.ProjectTick(int tickIndex)` (`:62`) — clock advance → project → event log render (eski tick sırası).
+- `EmberGeneratedActorSpawner.SpawnMissingNearbyActors() : int` (`EmberGeneratedActorSpawner.cs:76`) — reentrant one-shot; W30 despawn sweep + nearest-N + RescanActorViews.
+- `EmberGeneratedActorSpawner.SpawnOne(SpawnableActor, int spawnIndex) : bool` (`:147`) — root+billboard hierarchy inşası; hostile/civilian dallanma; BindDomainActorId + SetGroundSpeed + EnableWander(0.8f) civilian için.
+- `EmberGeneratedActorSpawner.AddHostileMarker(Transform root)` (`:246`) — F10 kırmızı elmas quad; collider destroy edilir; unlit-solid material.
+- `EmberGeneratedActorSpawner.CollectExistingViewIds() : HashSet<ulong>` (`:265`) — sahnedeki authored+spawned view id'lerini toplar.
+- `EmberGeneratedActorSpawner.Update()` (`:288`) — streaming rescan (2.5s throttle + 40m player hareketi).
+- `EmberGeneratedActorSpawner.ResolvePlayerAnchorXZ() : Vector2` (`:297`) — PlayerRig → Camera.main → origin.
+- `EmberGeneratedActorSpawner.SpawnOffset(int index) : Vector2` (`:340`) — deterministic square-ring scatter, `_spawnSpacing` step'li.
+- `EmberGeneratedActorSpawner.ResolvePlaceholderSprite(SpawnableActor)` (`:371`) — library → bestiary silhouette → neutral fallback.
+- `ActorCombatFeedbackView.Bind(ulong actorId, SpriteRenderer, Behaviour facing)` (`ActorCombatFeedbackView.cs:33`) — spawner tarafından çağrılır; stamp cursor'ları offset'lenir.
+- `ActorCombatFeedbackView.Update()` (`:42`) — hit/felled/strike stamps + color arbiter (B24) + lunge additive offset.
+- `ActorCombatFeedbackView.Fall()` (`:114`) — corpse pose; `ActorView.ExternalPoseOverride=true`, facing off, board 90° flat, grey.
+- `BillboardWalkAnimView.Bind(SpriteRenderer)` (`BillboardWalkAnimView.cs:23`) — base scale/last pos.
+- `BillboardWalkAnimView.Update()` (`:31`) — B24 SINGLE flipX yazarı; hareket varsa 0.28s cadence'te mirror + 0.95 squash.
+- `BillboardGroundingView.LateUpdate()` (`BillboardGroundingView.cs:18`) — 4Hz throttle + RaycastAll, actor collider/roof/canopy/furniture hariç, en yüksek yüzey.
+- `CameraFacingBillboard.LateUpdate()` (`CameraFacingBillboard.cs:15`) — yaw-only LookRotation.
+- `NpcActivityLabelView.Bind()` (`NpcActivityLabelView.cs:19`) — TextMesh (LegacyRuntime font) child inşa eder; kendisi camera-facing (CameraFacingBillboard mirror problemi).
+- `NpcActivityLabelView.SetActivity(string)` (`:41`) — ActorView.SetTarget'ten push'lanır.
+- `NpcActivityLabelView.Update()` (`:47`) — readable-facing (glyph mirror değil) + 22m cull.
+- `NpcPoseIconView.Bind(bool workerRole)` (`NpcPoseIconView.cs:22`) — icon child + CameraFacingBillboard.
+- `NpcPoseIconView.SetActionKind(string kind)` (`:34`) — W32 DOC5: kind push'lanır, view derivmez.
+- `NpcPoseIconView.Update()` (`:36`) — 1.1s poll; `_actionKind=="ConsumeFood"` → Mug; worker+work-hours (GUESS, PerformWork ile emekliye ayrılacak) → Hammer.
+- `NpcEventEchoView.Bind(ulong actorId)` (`NpcEventEchoView.cs:22`) — event echo child.
+- `NpcEventEchoView.Update()` (`:33`) — 0.4s poll; kind → sprite; 3.5s hide.
+- `BillboardGearMarkView.TryAttach(GameObject root, string spriteRole)` (`BillboardGearMarkView.cs:16`) — guard/knight → spear, outlaw/bandit → blade.
+- `GeneratedNpcAccessibilityGuard.LateUpdate()` (`GeneratedNpcAccessibilityGuard.cs:14`) — bina volume'unun içindeyse dışarı it.
+- `BestiaryBillboardSpriteFactory.For(string spriteRole) : Sprite` (`:14`) — monster_wolf/spider/skeleton/ghost/bandit dispatcher.
+- `BestiaryBillboardSpriteFactory.TargetHeightFor(...)` (`:27`) — per-tür billboard yüksekliği.
 
-**WorksiteViewState** (`WorksiteView.cs:45-54`): `IsActive: bool`, `QueueDepth: int`
-(QueueDepth'i hicbir gorsel kullanmiyor — `ApplyEmission` yalniz IsActive okur, `WorksiteView.cs:31-42`).
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-**EmberGeneratedActorSpawner durumu** (`EmberGeneratedActorSpawner.cs`):
-- `_maxSpawnCount = 24` (`:51`), `_billboardTargetHeight = 2.1f` (`:56`), `_spawnSpacing = 1.5f` (`:62`).
-- `_spawnedIds: HashSet<ulong>`, `_spawnedRoots: Dictionary<ulong, GameObject>` (`:66-67`),
-  `_spawnedForSettlement: ulong` (travel supurme anahtari — `:68`).
-- `LoggedSpriteResolutions: static HashSet<string>` (rol|kaynak|yol bazli tek-seferlik log — `:64`).
-- Streaming sabitleri: `ScanIntervalSeconds = 2.5f`, `ScanMoveThresholdMeters = 40f` (`:296-297`).
+Bu sistem `WorldState` yazmaz (presentation-only). `FieldOwnershipRegistry` alanlarına yazan yok; okuyan alanlar:
 
-**ActorView durumu** (`ActorView.cs`):
-- Serialized: `_domainActorKey` (`:37`), `_domainActorId` — ActorId ulong'u inspector
-  serialize edemedigi icin STRING tasinir (`:38-42`), `_interpolationSpeed = 8` (`:43`),
-  `_billboard` (`:44`), yurume/idle parametreleri (`:46-49`).
-- Runtime: `_target/_hasTarget` (`:82-83`), wander alanlari (`_wanderRadius`,
-  `_wanderSpeed = 0.6f`, hedef/repath sayaci — `:96-101`), `_groundSpeed` (0 = ussel chase,
-  >0 = sabit m/s glide — `:103-106`), `ExternalPoseOverride` (uyku/olum pozu transformu
-  sahiplenir — `:121-122`).
+- **Okur**: `Actor.GridPosition` (adapter'ın id-keyed `TryReadActor`'ı üzerinden — `ActorView.SetTarget`'e projected `WorldPosition`), `Actor.Vitals` (dolaylı — `WorldCombatFeedbackFeed` stamp'ları felled kararının ardında), `WorldEventFeed` (RecentWorldEvents), `NpcEventEchoFeed` (per-actor son event kind).
+- **Okur**: `IWorldViewReadModel.CurrentSettlementKey` (`EmberGeneratedActorSpawner` despawn eşiği) ve `GetSpawnableActors()` (nearest-N candidate havuzu).
 
-**Paper-doll tinti** (`NpcVariantTintService.cs`): `MinChannel = 0.80f` (`:11`);
-`TintFor(ulong)` splitmix64-tarzi hash'ten R/G/B'yi 0.80..1.00 araligina indirger (`:13-24`) —
-sanat okunur kalir, yalniz "cast" degisir. Simulation.AiDm namespace'inde ama saf fonksiyondur,
-sim durumuna dokunmaz.
+Presentation-layer yazarları (registry dışı, doküman notu):
+- `SpriteRenderer.color` yazarları: `ActorView` (`_tintRemaining>0` iken red; `!ExternalPoseOverride` guard'lı), `ActorCombatFeedbackView` (flash red-orange + base restore + Fall grey; B24 arbiter: `ActorView.DamageTinting` true iken base restore yasaklı), spawner ctor'da `NpcVariantTintService.TintFor` (cloth-tint, bir kez).
+- `SpriteRenderer.flipX` yazarı: **YALNIZ** `BillboardWalkAnimView` (B24 VARIANT B step 1a — ActorView'ın flipX yazımı retired, sadece walkTimer no-op gate kaldı).
+- `_billboard.localPosition` yazarları: `ActorView` (stride bob + idle float + shake; guard'lı), `ActorCombatFeedbackView` (lunge ADDITIVE offset; guard'lı; DefaultExecutionOrder=50 ile ActorView'dan sonra), `ActorCombatFeedbackView.Fall` (corpse pin y=0.15).
+- `_billboard.localRotation` yazarları: `ActorView` (walk lean sin + idle identity; guard'lı), `ActorCombatFeedbackView.Fall` (90° flat).
+- `transform.position` yazarı: `ActorView.Update` interpolasyonu (root); `BillboardGroundingView.LateUpdate` (Y snap); `GeneratedNpcAccessibilityGuard.LateUpdate` (bina dışına it) — sıra: ActorView@Update < ActorCombatFeedbackView@Update(50) < GroundingView@LateUpdate < AccessibilityGuard@LateUpdate < CameraFacingBillboard@LateUpdate.
+- `ExternalPoseOverride` yazarı: `ActorCombatFeedbackView.Fall`, `NightCurfewView` (sleep pose sahibi).
 
-**Feed'ler (stamp-not-consume deseni)**:
-- `WorldCombatFeedbackFeed` (`WorldCombatFeedbackFeed.cs:9-41`): `HitStamp/HitTargetId/HitMaterial`,
-  `FelledStamp/FelledTargetId`, `EnemyStrikeStamp/EnemyStrikeId` — cok view ayni feed'i okur,
-  kimse "tuketmez", herkes son gordugu stamp'i hatirlar (`:3-8`).
-- `NpcEventEchoFeed` (`NpcEventEchoFeed.cs:9-49`): 128'lik ring buffer + artan `Stamp`;
-  kind sabitleri Witness=0, Report=1, Guard=2, Harvest=3, Talk=4 (`:11-15`).
-- `RuntimeFieldMirror.HourOfDay` (`RuntimeFieldBuilder.cs:14`) — poz ikonlarinin saat kaynagi.
-- `RuntimeNpcDensity.Cap` (`RuntimeNpcDensity.cs:10-12`) — director realize'da yazar, spawner okur.
+## LLD - Ürettiği/Tükettiği Olaylar
 
-**BestiaryBillboardSpriteFactory** (`BestiaryBillboardSpriteFactory.cs`): 5 canavar tipi icin
-piksel-maske siluet (`:16-27`) + tip-bazli boy tablosu (kurt 1.2, orumcek 0.9, iskelet 2.0,
-hayalet 2.2, haydut 2.0 — `:31-42`); sprite'lar static alanlarda sonsuza dek cache'lenir (`:14`).
+**Üretmez** (presentation-only, sim geri yazımı yok).
 
-**BuildingAccessibilityVolume** (`BuildingAccessibilityVolume.cs:10-46`): yari-boyut + marj
-(`Configure`, `:16-21`); `TryPushOutside` icerideki noktayi EN YAKIN kenara iter (`:23-45`).
+**Tüketir**:
+- `IWorldViewReadModel.TryReadActor(ActorId/string) → ActorViewState` (per tick, `Project()`).
+- `IWorldViewReadModel.TryReadWorksite(string) → WorksiteViewState` (per tick).
+- `IWorldViewReadModel.RecentWorldEvents(64)` (event log render).
+- `IWorldViewReadModel.GetSpawnableActors()` + `CurrentSettlementKey` (spawner).
+- `WorldCombatFeedbackFeed.HitStamp/HitTargetId`, `FelledStamp/FelledTargetId`, `EnemyStrikeStamp/EnemyStrikeId` (ActorCombatFeedbackView polling).
+- `NpcEventEchoFeed.Stamp` + `LatestKindFor(id, seen)` (NpcEventEchoView).
+- `RuntimeFieldMirror.HourOfDay` (NpcPoseIconView — GUESS, PerformWork ile emekliye ayrılacak).
+- `RuntimeNpcDensity.CapOrDefault(default)` (spawner cap, director'dan).
+- `RuntimeMaterialPalette.Solid(color)` (hostile marker material).
+- `NpcVariantTintService.TintFor(id)` (paper-doll v1 cloth tint).
+- `EmberInteractable.Setup(name, "General", id)` — dialog id-keyed path'i tetikler.
 
-## LLD - Fonksiyon Haritasi
+## Testler (bu sistemi pinleyen test dosyaları - W32-W36 hikâye-testleri dahil)
 
-Spawner (`EmberGeneratedActorSpawner.cs`):
-- `int SpawnMissingNearbyActors()` — `:76-145` — idempotent, capli, settlement-supurmeli tek dogum kapisi; donen sayi > 0 ise host re-scan yapar.
-- `bool SpawnOne(SpawnableActor, int spawnIndex)` — `:147-251` — bir billboard'in tum bilesen zinciriyle insasi (HLD adim 4).
-- `static void AddHostileMarker(Transform)` — `:256-271` — kafa ustune kirmizi elmas quad; collider'i YOK EDILIR ki interact raycast'ini yemesin.
-- `static HashSet<ulong> CollectExistingViewIds()` — `:275-285` — sahnedeki tum ActorView id'leri (cift-dogum kilidi).
-- `static Vector2 ResolvePlayerAnchorXZ()` — `:309-324` — PlayerRig → Camera.main → origin fallback zinciri.
-- `Vector2 SpawnOffset(int index)` — `:338-357` — es-merkezli kare halkalarda (8r slot) deterministik sacilim.
-- `static void FitBillboardToPlayableHeight(Transform, SpriteRenderer, float)` — `:361-368` — hedef boy / sprite boyu, clamp 0.02..3.
-- `Sprite ResolvePlaceholderSprite(SpawnableActor)` — `:371-385` — library → bestiary siluet → notr fallback siralamasi.
-- `static Sprite ResolveGeneratedSprite(SpawnableActor)` — `:387-407` — `GeneratedNpcBillboardResolver.TryResolveRecord` + `GeneratedCoreSpriteLoader` yollari (`GeneratedNpcBillboardResolver.cs:5,23`; `GeneratedCoreSpriteLoader.cs:26,42`).
-- `Sprite GetOrCreateFallbackSprite()` — `:421-441` — 64px, 64 PPU notr gri (1x1 dev magenta'nin panzehiri).
+- `Assets/Tests/EditMode/World/WorldStateActorViewTests.cs` — **Domain-side** `WorldState.ReplaceActorView(ActorRole, ...)` sözleşmesini pinler (isim ambiguity, replace-by-role); Presentation `ActorView` MonoBehaviour'ı pinlemiyor.
+- `Assets/Tests/EditMode/GeneratedAssetLibrary/GeneratedNpcBillboardResolverTests.cs` — spawner'ın sprite çözünürlük yolunu (library → core fallback) dolaylı pinler (`ResolveGeneratedSprite`).
+- `Assets/Tests/EditMode/GeneratedAssetLibrary/GeneratedAssetSpritePipelineTests.cs` / `GeneratedAssetDatabaseTests.cs` / `CoreAssetLibraryRecordBuilderTests.cs` / `CoreAssetRegenerationScopeTests.cs` — GeneratedCore sprite kaynağı; spawner'ın consume ettiği katman.
+- `Assets/Tests/EditMode/Presentation/PlayableLoopCraftQuestTests.cs` — `BillboardOriginCell` adapter'ı çalıştırır; view'ın konum kaynağını dolaylı pinler.
 
-Projector (`WorldViewProjector.cs`):
-- ctor `WorldViewProjector(IEmberSimulationClock, IWorldViewReadModel, ActorView[], WorksiteView[], EventLogHudPanel)` — `:17-27` — DIKKAT: govde yalniz `_clock/_worldView/_actorViews` atar; `_worksiteViews`/`_eventLogHud` atamasi YANLIS metodda (borclar #1).
-- `void ReplaceActorViews(ActorView[])` — `:33-38` — gec dogan view'lari sync setine alir ("drifted 21m" invariant fix'i); su anki govdesi derlenemez durumda (borclar #1).
-- `void Project()` — `:41-61` — id/ad-anahtarli aktor okumasi + `SetTarget`; ad-anahtarli worksite okumasi + `SetState`.
-- `void ProjectTick(int)` — `:64-69` — advance → Project → event log render (eski tick sirasi AYNEN korunur).
+**Doğrudan story-test EKSİK**: `EmberGeneratedActorSpawner` cross-city despawn (W30), `WorldViewProjector.ReplaceActorViews` late-join, `ActorView` glide/snap eşiği (5m), B24 çoklu-yazar arbiter (`ActorView.DamageTinting` sözleşmesi). `BUG_REPORT_SCORECARD.md:33` B24 "SHIPPED-NO-TEST" olarak markalanmış. Presentation MonoBehaviour test harness'ı yok — B24/W30 için PlayMode fixture veya headless adapter-fake story-test'i açık borç.
 
-ActorView (`ActorView.cs`):
-- `bool TryGetDomainActorId(out ActorId)` — `:60-67` — string alanin ulong parse'i; 0 ve bos gecersiz.
-- `void BindDomainActorId(ActorId)` — `:77-80` — runtime dogumlarin SerializedObject muadili.
-- `void SetTarget(ActorViewState)` — `:124-136` — hedefi yazar + `Activity`'yi label'a, `Sleeping`'i curfew'a iletir (lazy component probe `:128-133`).
-- `void EnableWander(float radius)` — `:148-155` — kozmetik milleme; rastgele ic-nokta baslangici.
-- `void SetGroundSpeed(float)` — `:166-169` — >0 iken sabit m/s glide modu.
-- `void Apply(int)` (IDamageSink) — `:171-180` — legacy hasar geri bildirimi: 0.2 s tint+shake + adapter.LogCombat.
-- `void Update()` — `:182-266` — (1) glide ≤5 m / snap >5 m / ussel Lerp uclu interpolasyonu (`:196-206`), (2) hiz-esikli yurume bob/lean vs idle float, `ExternalPoseOverride` bekcisiyle (`:216-245`), (3) combat tint/shake (`:247-265`).
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
 
-Uydu bilesenler:
-- `CameraFacingBillboard.LateUpdate` — `CameraFacingBillboard.cs:16-32` — yaw-only kameraya donus.
-- `BillboardGroundingView.LateUpdate` — `BillboardGroundingView.cs:18-51` — +60 m'den 160 m asagi RaycastAll, kendi hiyerarsisi/aktorler/Roof-Canopy-mobilya haric EN YUKSEK yuzeye snap; 4 Hz.
-- `GeneratedNpcAccessibilityGuard.LateUpdate` — `GeneratedNpcAccessibilityGuard.cs:16-35` — tum volume'lara karsi `TryPushOutside`; volume listesi 1 s'de bir `FindObjectsByType` ile tazelenir (`:37-44`).
-- `BillboardWalkAnimView.Bind/Update` — `BillboardWalkAnimView.cs:22-56` — hareket varken 0.28 s kadansta flipX ayna-frame + %5 squash.
-- `static BillboardGearMarkView.TryAttach(GameObject, string)` — `BillboardGearMarkView.cs:15-34` — guard/knight'a mizrak, outlaw/bandit'e kilic pictogrami (12px maske, sortingOrder 11).
-- `NpcPoseIconView.Bind/Update` — `NpcPoseIconView.cs:20-44` — `HourOfDay`'den cekic (is) / kupa (ogle) ikonu; 1.1 s poll.
-- `NpcActivityLabelView.Bind/SetActivity/Update` — `NpcActivityLabelView.cs:19-55` — TextMesh fiil etiketi; CameraFacingBillboard KULLANMAZ (ayna yazi "gnilbi" bugi — `:33-36`), 22 m cull.
-- `NpcEventEchoView.Bind/Update` — `NpcEventEchoView.cs:21-47` — echo feed'den aktore ozel son olay pictogrami, 3.5 s gosterim, 0.4 s poll.
-- `ActorCombatFeedbackView.Bind/Update/Fall` — `ActorCombatFeedbackView.cs:23-93` — hit flash (unscaled: combat modali timeScale'i durdurur — `:8-10`), enemy-strike lunge (`:56-79`), olum pozu `Fall` (`:83-93`, `ExternalPoseOverride = true`).
-- `NpcVariantTintService.TintFor(ulong)` — `NpcVariantTintService.cs:13-24`.
+- **W30 — Cross-city despawn** (`EmberGeneratedActorSpawner.cs:83-107`): "npc ler koyden uzaklasmaya basliyorlar" LIVE bug. `readModel.CurrentSettlementKey != _spawnedForSettlement` iken `_spawnedRoots` içindeki candidate-listesinde olmayan tüm billboard'lar destroy edilir. F10 aynı-site corpse durumu bozulmasın diye anahtar-gated.
+- **W30 — Late-join view sync** (`WorldViewProjector.cs:36`): "drifted 21m, deterministic" INVARIANT FIX. Host boot'unda tek seferlik cache'lenmiş `_actorViews` array'i mutable oldu, `ReplaceActorViews` API'si açıldı, `EmberWorldHost.RescanActorViews` streaming spawner çağrısı sonrası array'i yenilior.
+- **W30 — Glide/snap eşiği** (`ActorView.cs:207-210`): "drifted 21m off its sim projection" INVARIANT FIX. `_groundSpeed>0` ise ≤5m mesafede MoveTowards glide, >5m ise SNAP (spawn/teleport/time-skip). Eski Lerp saniyelerce şehir üzerinden kayıyordu.
+- **W30 — Streaming rescan** (`EmberGeneratedActorSpawner.cs:279-295`): "quest 250m diyor ama orası boş" fix. `Update()` 2.5s throttle + 40m player hareketi eşiğiyle `SpawnMissingNearbyActors`'ı re-entrant çağırıyor — Daggerfall-style lazy world.
+- **W32 DOC5 — Action-kind push** (`ActorView.cs:143`, `NpcPoseIconView.cs:34`, `ActorViewState.ActionKind`): mug icon eskiden hour+lunch-window'dan derivyordu (`DomainSimulationAdapter.WorldProjection.cs:109-117` hala mirror comment'ı taşıyor — B22 tetiği). W32 DOC5: mug artık sim'in `CurrentAction.Kind=="ConsumeFood"` push'undan; view derivmiyor.
+- **W34 — Sleep sözleşmesi** (`EmberGeneratedActorSpawner.cs:157-162`): Prowler sprite-name guess silindi; `NightCurfewView` yalnızca `ActorViewState.Sleeping` gerçek sim Sleep action ile true olduğunda lying pose'a geçiyor.
+- **W36 tail — B24 VARIANT B color arbiter** (`ActorCombatFeedbackView.cs:12,23,29,58,88`, `ActorView.cs:124,237,259`): DefaultExecutionOrder=50 ile ActorView'dan sonra çalışıyor; `ActorView.DamageTinting` sözleşmesi eklendi; flash > tint > base color öncelik zinciri; `BillboardWalkAnimView` tek flipX yazarı, ActorView.flipX retired; lunge SETTEN ADDITIVE OFFSET'e çevrildi (`_lungeOffset`), shake x/z bileşenini kırpmıyor artık. **Story test yok** (`BUG_REPORT_SCORECARD` "SHIPPED-NO-TEST").
+- **F27/F29/F33 vitrini** (spawner ctor): `NpcPoseIconView` (worker/eater pictogram), `BillboardGearMarkView` (guard spear/bandit blade), `BestiaryBillboardSpriteFactory` (wolf/spider/skeleton/ghost/bandit silhouette fallback), `RuntimeHitSparks` (F33 landed-strike sparks), `NpcEventEchoView` (M6 event echo icons), `BillboardWalkAnimView` (F33 two-frame mirror gait) hepsi son beş haftada spawner'a wire edildi.
 
-Host baglantilari:
-- `EmberWorldHost.OnTick` — `EmberWorldHost.Bindings.cs:44-47`; `ProjectWorldViewsNow` — `:52`; `RescanActorViews` — `:55-57` (FindObjectsByType ile tum ActorView'lar → `ReplaceActorViews`).
-- `EmberWorldHost.EnsureGeneratedActorSpawner` — `EmberWorldHost.Ui.Overlay.cs:123-126`.
-- Adapter okuma yuzeyi: `TryReadActor(string)` — `DomainSimulationAdapter.WorldProjection.cs:23`; `TryReadActor(ActorId)` — `:40`; `GetSpawnableActors` — `:150-178`; `CurrentSettlementKey` — `DomainSimulationAdapter.Travel.cs:29`; bos adapter muadilleri `UnavailableSimulationAdapter.cs:46-50`.
+## Bilinen Borçlar + Kaçak Kapıları
 
-## LLD - Yazdigi/Okudugu Alanlar
-
-`FieldOwnershipRegistry` dilinde: bu sistemin `WorldState` uzerinde HICBIR yazimi yoktur ve
-registry'de kaydi yoktur — tamamen Presentation. `Actor.Position`'in beyanli yazarlari sim
-sistemleridir (bkz. 03-schedule-movement); bu katman o alanin yalnizca PROJEKSIYONUNU okur.
-
-**Yazdigi (Unity sahne durumu — registry disi):**
-- View root `Transform.position` — UC ayri yazar, kare icinde zincir halinde:
-  `ActorView.Update` (sim hedefine interpolasyon — `ActorView.cs:196-206`),
-  `BillboardGroundingView.LateUpdate` (y — `BillboardGroundingView.cs:49-50`),
-  `GeneratedNpcAccessibilityGuard.LateUpdate` (x/z disari itme — `GeneratedNpcAccessibilityGuard.cs:33-34`).
-  Bu uclunun sozlesmesi ORTULUDUR: siralama Update-vs-LateUpdate'e ve bilesen sirasina dayanir,
-  hicbir registry/lint korumaz (borclar #6).
-- Billboard cocugunun `localPosition/localRotation/flipX/color/scale` — yazarlar:
-  `ActorView.Update` (bob/lean/idle + tint restore — `:222-256`), `BillboardWalkAnimView` (flipX+squash —
-  `BillboardWalkAnimView.cs:49-55`), `ActorCombatFeedbackView` (flash/lunge/olum pozu —
-  `ActorCombatFeedbackView.cs:46-47`, `:64-79`, `:88-92`), `NightCurfewView` (yatma pozu —
-  `NightCurfewView.cs`). Tek hakem `ExternalPoseOverride` bayragi (`ActorView.cs:122`, `:216-221`)
-  ve o da yalniz ActorView'un kendi yazicilarini susturur (borclar #2-#3).
-- `ActorView._domainActorId` — `BindDomainActorId` (`ActorView.cs:77-80`), yazan: spawner `:208`.
-- `RuntimeNpcDensity.Cap` — bu sistem OKUR (`EmberGeneratedActorSpawner.cs:132`); yazari
-  WorldSceneDirector'dur (`RuntimeNpcDensity.cs:4-6`).
-
-**Okudugu:**
-- `WorldState.Actors` — dolayli, `IWorldViewReadModel.TryReadActor` ve `GetSpawnableActors`
-  uzerinden (`WorldViewProjector.cs:48-50`; `EmberGeneratedActorSpawner.cs:78-81`).
-- `CurrentSettlementKey` — travel supurme anahtari (`EmberGeneratedActorSpawner.cs:89-105`).
-- `WorldCombatFeedbackFeed.*Stamp` ve `NpcEventEchoFeed.Stamp/ring` — asagida.
-- `RuntimeFieldMirror.HourOfDay` (`NpcPoseIconView.cs:37`).
-- Sahne fizigi (`Physics.RaycastAll` — `BillboardGroundingView.cs:27`) ve `Camera.main`
-  (`CameraFacingBillboard.cs:20`, `NpcActivityLabelView.cs:46`, `ActorCombatFeedbackView.cs:66`).
-
-## LLD - Urettigi/Tukettigi Olaylar
-
-**Urettigi:**
-- `WorldEventKind` URETMEZ — sim'e geri olay yazan tek yol yoktur.
-- Log tag `[NpcBillboardResolve]`: her rol|kaynak|yol kombinasyonu icin bir kez, sprite'in
-  library/core/siluet/notr hangi kaynaktan geldigini soyler (`EmberGeneratedActorSpawner.cs:409-414`).
-- `adapter.LogCombat("{name} takes {n} damage!")` — legacy `IDamageSink.Apply` yolundan
-  (`ActorView.cs:171-180`).
-
-**Tukettigi:**
-- `WorldCombatFeedbackFeed`: `HitStamp/HitTargetId` (flash + `RuntimeHitSparks.Burst` —
-  `ActorCombatFeedbackView.cs:35-44`), `FelledStamp/FelledTargetId` (olum pozu — `:49-54`),
-  `EnemyStrikeStamp/EnemyStrikeId` (lunge tell — `:58-63`).
-- `NpcEventEchoFeed.LatestKindFor(actorId, sinceStamp)` — goz/unlem/kilic/demet/konusma
-  pictogramlari (`NpcEventEchoView.cs:41-46`).
-- `IWorldViewReadModel.RecentWorldEvents(64)` — projector her tick event-log HUD'ina verir
-  (`WorldViewProjector.cs:68`); anlatici `WorldEventNarrator` (`:15`).
-- `ActorViewState.Activity/Sleeping` — `SetTarget` icinden label ve curfew'a dagitilir
-  (`ActorView.cs:134-135`).
-
-## Testler
-
-- `Assets/Tests/EditMode/AiDm/NpcVariantTintServiceTests.cs` — paper-doll tint pinleri:
-  ayni id ayni tint (kararlilik), kanallar 0.80..1.00 (okunurluk), 40 koyluden ≥30 farkli tint
-  (cesitlilik).
-- `Assets/Tests/EditMode/GeneratedAssetLibrary/GeneratedNpcBillboardResolverTests.cs` —
-  spawner'in sprite cozum zincirinin kayit-cozumleme yarisini pinler (komsu sistem).
-- DIKKAT — ad cakismasi: `Assets/Tests/EditMode/World/WorldStateActorViewTests.cs` BU SISTEMI
-  test ETMEZ; Domain'deki `WorldState.ReplaceActorView(ActorRole, ...)` rol-kayit API'sini test
-  eder. "ActorView" adi iki ayri kavram icin kullaniliyor (aile (a) kokusu, ad-tek-otorite yok).
-- **Bosluk**: `EmberGeneratedActorSpawner`, `WorldViewProjector`, `ActorView` interpolasyonu,
-  `BillboardGroundingView`, `GeneratedNpcAccessibilityGuard`, curfew/feedback/echo/pose/label
-  bilesenlerinin HICBIRINI pinleyen test yok (hepsi MonoBehaviour; EditMode kapsami sifir).
-  Projector'daki derleme-kiran govdenin (borclar #1) yakalanmamis olmasi bu boslugun dogrudan
-  sonucudur.
-
-## Bilinen Borclar + Kacak Kapilari
-
-Aile harfleri `docs/SYSTEMS_ATLAS.md:52-60`'taki (a)-(g) siniflamasina gore.
-
-1. **KRITIK — `WorldViewProjector.ReplaceActorViews` derlenemez govde tasiyor** [aile (f):
-   edit/durum-sifirlama kazasi]. Kurucu yalniz `_clock/_worldView/_actorViews` atar
-   (`WorldViewProjector.cs:24-26`); `_worksiteViews = worksiteViews ?? ...` ve
-   `_eventLogHud = eventLogHud` satirlari `ReplaceActorViews`'un ICINDEDIR (`:36-37`) — orada
-   `worksiteViews`/`eventLogHud` diye parametre YOK (CS0103) ve iki alan `readonly`'dir
-   (`:13-14`, kurucu disinda atama CS0191). Gorunen o ki kurucunun iki satiri metoda
-   tasinmis/yapistirilmis. HEAD'deki icerik de ayni (commit `23367666` ile karsilastirildi) —
-   yani bu bir calisma-kopyasi yariminligi degil, COMMIT EDILMIS kirik. Unity editorunun su anki
-   canli derleme durumu bu oturumda dogrulanmadi. Naif duzeltme tuzagi: iki satiri sadece
-   silmek derler ama `_worksiteViews` null kalir ve `Project` `:55`'te NRE atar — dogru
-   duzeltme satirlari kurucuya GERI tasimaktir.
-2. **Paper-doll tinti icin cift renk-yazari, sira tanimsiz** [aile (c) analogu, view katmaninda].
-   `ActorView.Update` her kare kosulsuz `_renderer.color = Color.white` restore eder
-   (`ActorView.cs:253-256`); `ActorCombatFeedbackView.Update` ayni SpriteRenderer'a her kare
-   `_baseColor` (spawn'da tintlenmis renk) yazar (`ActorCombatFeedbackView.cs:46-47`).
-   Karenin son rengi hangi Update'in sonra kostuguna baglidir; Script Execution Order
-   tanimlanmamistir. Feedback view sonra kosuyorsa tint yasar, once kosuyorsa spawner'in
-   `:189-190`'da uyguladigi kumas tinti her kare BEYAZA ezilir. Hangi siranin gercekte
-   kostugu dogrulanmadi (canli olcum yok) — ama sozlesme yorumla bile korunmuyor.
-3. **Cift gait-yazari: flipX'e iki animator birden dokunuyor**. `ActorView.Update` yurume
-   dongusunde 0.4 s kadansla `_renderer.flipX` toggle'lar (`ActorView.cs:224-230`);
-   `BillboardWalkAnimView` AYNI renderer'da 0.28 s kadansla toggle'lar
-   (`BillboardWalkAnimView.cs:49-52`) — spawner IKISINI de takar (`EmberGeneratedActorSpawner.cs:197`,
-   `:207`). Iki bagimsiz metronom ayni bayragi surdugunde efektif adim ritmi ikisinin
-   girisimidir; F33'un "0.28 s adim" niyeti sessizce bozulur. (Gorsel etkisi playtest'te
-   raporlanmadi — dogrulanmadi.)
-4. **Poz ikonlari saat TAHMINI, sim karari degil** [aile (a); 03-schedule-movement borc #3'un
-   ayna yuzu]. `NpcPoseIconView` "12:00-13:59 lunch window, matching ScheduleSystem" iddiasiyla
-   `HourOfDay`'den ikon secer (`NpcPoseIconView.cs:6-9`, `:37-43`) ama H2 utility selector'da
-   artik sabit ogle penceresi yok — aclik erken/gec kazandiginda kupa ikonu yalan soyler.
-   `NpcActivityLabelView` ise sim'in gercek fiilini kullanir (dogru yol).
-5. **Rol-string ayristirma anlamsal veri tasiyor** [aile (a)/(g); `docs/SYSTEMS_ATLAS.md`'nin
-   kendi 5 no'lu tespiti]. Hostillik `spriteRole.IndexOf("outlaw"/"bandit")` + `monster_*`
-   onekiyle (`EmberGeneratedActorSpawner.cs:167-171`), iscilik `farmer|blacksmith|artisan`
-   substringiyle (`:224-226`), gear marki `guard|knight` substringiyle
-   (`BillboardGearMarkView.cs:18-21`) belirlenir. Tip bilgisi kaynak-id string'inde kacak
-   yasiyor; yeni bir rol adi eklendiginde uc ayri dosyada uc ayri liste sessizce eksik kalir.
-6. **View-root transformunda uc beyansiz yazar** [aile (c) on-kosulu]. Sync (Update),
-   grounding (LateUpdate, y) ve accessibility guard (LateUpdate, x/z) ayni `transform.position`'i
-   surer; guard bir NPC'yi bina disina iterken per-tick sync hedefi hala bina icindeyse aktor
-   kapida titrer (iki yazar her kare zit yonde) — bu, "gecici kabuk, kapi/ic mekan gelene
-   kadar" diye beyan edilmis bilinçli bir kacak kapisidir (`GeneratedNpcAccessibilityGuard.cs:6-9`,
-   `BuildingAccessibilityVolume.cs:5-8`) ama titreme senaryosu olculmedi (dogrulanmadi).
-7. **Zemin tespiti isim-string filtresiyle** [aile (d)/(g)]. Grounding raycast'i "Roof",
-   "Canopy", "Table", "Bench", "Trestle" ISIMLERINI dislar (`BillboardGroundingView.cs:37-39`);
-   yeni bir cati prefab'i farkli adla gelirse NPC catiya oturur. Ayrica komsu-aktor filtresi
-   `GetComponent<EmberInteractable>` cagrisiyla her hit icin yapilir (`:36`) — 4 Hz'de kabul
-   edilebilir, ama katman maskesi yerine tip/isim sorgusu iki kez kirilmis bir desenin devami
-   ("iki NPC cakisinca biri digerinin ustune cikti" fix'i ayni bloktadir, `:33-35`).
-8. **Bayat sayilar dokumantasyonda** [aile (f): guncellenmeyen defter]. Spawner ust yorumu
-   "nearest `_maxSpawnCount` (6 by default)" der (`EmberGeneratedActorSpawner.cs:27`), alan 24'tur
-   (`:51`); `ActorView` basligi "CAPPED to the nearest N (<=12)" der (`ActorView.cs:30-31`).
-   Iki yorum da iki nesil eski.
-9. **Worksite senkronu ad-anahtarli ve null-korumasiz**. Projector aktor dongusunde null view
-   atlar (`WorldViewProjector.cs:46`) ama worksite dongusunde atlamaz ve `worksite.name` okur
-   (`:55-58`) — site degisiminde yok edilen bir WorksiteView MissingReferenceException uretir
-   (senaryo canli gorulmedi — dogrulanmadi). Aktorler id'ye tasinmisken worksite'larin hala
-   sahne adiyla eslesmesi aile (a) tohumudur (`TryReadWorksite(worksite.name)`).
-10. **Statik cache'ler ve domain-reload varsayimlari** [aile (g)]. `LoggedSpriteResolutions`
-    (`EmberGeneratedActorSpawner.cs:64`), bestiary/gear/poz/echo sprite'lari
-    (`BestiaryBillboardSpriteFactory.cs:14`, `BillboardGearMarkView.cs:13`, `NpcPoseIconView.cs:13-14`,
-    `NpcEventEchoView.cs:13`) ve feed stamp'leri hepsi static — sahneler arasi yasarlar
-    (istenen davranis) ama editor domain-reload kapaliyken oturumlar arasi da tasinirlar;
-    feed stamp'lerinin yeni oyunda sifirlanmamasi "eski stamp'i hatirlayan view" sinifinda
-    tek-seferlik hayalet efekt uretebilir (dogrulanmadi).
-11. **`GameObject.Find("PlayerRig")` + `FindObjectsByType` taramalari**. Ankraj cozumu her
-    2.5 s'lik scan'de isimle arama yapar (`EmberGeneratedActorSpawner.cs:311`), guard her
-    saniye volume taramasi (`GeneratedNpcAccessibilityGuard.cs:41-43`), rescan tum sahneyi
-    tarar (`EmberWorldHost.Bindings.cs:56-57`). Hepsi bilincli olarak dusuk-frekansli — ama
-    hicbiri profillenmis bir butceye bagli degil; NPC sayisi buyudugunde LateUpdate'te
-    aktor-basina-1 Hz FindObjectsByType (guard) ilk supheli olacaktir.
-12. **`WorksiteViewState.QueueDepth` olu veri**. Sim uretir, projector tasir, gorsel katman
-    hic okumaz (`WorksiteView.cs:31-42`) — kucuk ama "tasiyip kullanmama" aile (f) kokusu.
+- **B24 SHIPPED-NO-TEST** (`BUG_REPORT_SCORECARD.md:33`): VARIANT B arbiter'ı sözleşmeleştirdi ama story-test yok. `DamageTinting` sözleşmesini yakalayan bir headless test (fake stamp feed + assert color chain) açık iş.
+- **B22 mug hour guess** (`DomainSimulationAdapter.WorldProjection.cs:109-117` — MUST-match yorumu): mug artık action-kind push'undan geliyor ama `NpcPoseIconView.cs:47` hala `hour>=8 && hour<18` guess'i içeriyor (worker branch); PerformWorkAction landing ile emekliye ayrılması gerek.
+- **Sim sızması korkusu**: `ActorView.EnableWander` + shake bloğu `UnityEngine.Random` kullanıyor (EMB-040 pin'li). Sim'e sızmadığı `docs/DETERMINISM.md` sözleşmesine bağlı; save/digest'e girmemesi projeksiyonel — regression testi yok.
+- **B25 mutable domain leak**: `IWorldViewReadModel` metotları Domain tipleri (`OverlandMap`) dönüyor; view teorik olarak `TryReadActor` yolundan sim state'ini mutate edebilir. B25 later-slice.
+- **Streaming spawner boot rescan race**: `RescanActorViews` boot'ta projector kurulmadan çağrılırsa no-op; comment satırı var (`EmberGeneratedActorSpawner.cs:140`) ama boot'ta ilk spawn sonrası host'un elle rescan etmesi bekleniyor. Order kırılırsa sessiz kayıp — invariant assert yok.
+- **`CollectExistingViewIds` her spawn'da O(scene) `FindObjectsByType`**: 750 NPC + streaming scan 2.5s cadence'te maliyet birikir; small-N cap sayesinde şu an sorun değil ama kaçak kapı.
+- **Grounding raycast dışlama listesi hardcoded string** (`BillboardGroundingView.cs:36-39`): Roof/Canopy/Table/Bench/Trestle isim eşleşmesi; yeni ground-emici mesh isimleri sessiz düşer.
+- **NpcActivityLabelView TextMesh legacy path**: TMP Essentials'sız çalışsın diye deliberately legacy; TMP'ye geçilirse ayrı mirror-fix gerekecek (CameraFacingBillboard'ın glyph mirror'ı).
+- **NpcEventEchoView `ChatMask` ilk-satır uzunluğu tutarsız** (`NpcEventEchoView.cs:96` — bir satır 10 char, geri kalanlar 12): `FromMask` `x < rows[y].Length` guard'lı, silent-safe ama görsel kırık.
+- **`_maxSpawnCount=24` cap'i realize-derived değil**: `RuntimeNpcDensity.CapOrDefault` bir override sağlıyor ama baked scene'lerde default kalıyor. Kalabalık şehir sahnesi hala 24 ile sınırlı.
+- **`ActorCombatFeedbackView.Fall` bir kere çalışıyor**: `_fallen=true` sonrası revive yolu yok; save/load sonrası "yeniden dirilme" için özel yol lazım (şu anda sim state'i drives etmiyor).

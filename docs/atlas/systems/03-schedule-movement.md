@@ -1,110 +1,98 @@
 # 03-schedule-movement
 
-> Kapsam: gunluk ritim + hareket — `ScheduleSystem`, day anchors, seat ring, `StepToward`, pursuit resolution.
-> Ana dosya: `Assets/Scripts/Simulation/Living/ScheduleSystem.cs` (198 satir).
-> Tum satir referanslari 2026-07-24 calisma kopyasina gore dogrulandi.
+## HLD - Ne ve Neden (5-10 cümle)
 
-## HLD - Ne ve Neden
+`ScheduleSystem` (SOUL-03 → CAN SUYU H2), aksiyonsuz aktörleri kendi ihtiyaçlarına göre `rest / work / idle` üçlüsünden birine yönlendiren utility-selector'dır; V1'in "12:00-13:59 arası koreografik öğle" gibi hardcoded pencerelerinin yerini aldı ve W32 EAT sonrası "yemek yeme" tercihi de aksiyon katmanına (`ActionLifecycleSystem`) taşındı, dolayısıyla bu sistem artık civilian için sadece `Idle-only steering` yapıyor. Muhafızlar için pursuit çözümlemesini de bu sistem koşturuyor: `WitnessResponseSystem` bir `PursuitRecord` yazınca aynı `PerTick` kadansındaki bu sistem chase'i her tikte bir hücre kapatıyor, expire olan/kayıp/ölü hedefler in-place prune ediliyor. Fiziksel hareketin tek uygulayıcısı `MovementService.StepToward` — Chebyshev 8-yön, tik başına eksen başına bir hücre, monoton yakınsama, hedefi asla aşmaz. W36 (B10 §A) sonrası bu adım opsiyonel bir `IWorldNavigability` view'ıyla çalışıyor: view null ise legacy wall-blind primitif; view varken diagonal duvar-köşesi kesimini reddediyor ve sabit sırayla (X-önce, sonra Y) axial fallback deniyor, her ikisi de kapalıysa bir tik donuyor (`from` döner). Blocker seti `WorldState.Blocked` (`BlockedCellSet`, packed `HashSet<long>`) türetilmiş bir durumdur — hiç serialize edilmez, `HydrateBlockedCells` ile bina footprint'lerinden yeniden inşa edilir. Böylece civilian yol arama basit bir StepToward + probe kalırken, dungeon slice `RoomMovementService`'te kendi kural setini korur (odayı `WorldState.NavView`'e katlamak Gate1/Gate8'te köylüleri dondururdu). Tüm sistem saf Domain/Simulation'dir: Unity yok, I/O yok, RNG yok, `PerTick@20` prioritesi.
 
-`ScheduleSystem` yasayan dunyanin "yuruyucusu"dur: her tick'te hayattaki her NPC'yi, o an ihtiyaclarinin sectigi davranisin hedefine dogru TEK karo yurutur (`ScheduleSystem.cs:14-15`). V1 saat-tabanli bir yonlendiriciydi ve 12:00-13:59 arasi HARDCODED bir ogle penceresi tasiyordu — denetimin "koreografi, davranis degil" dedigi kanonik ornek; CAN SUYU H2 bunu bir UTILITY SELECTOR ile degistirdi: her sivil kendi acligi/yorgunlugu ve saatten eat/rest/work/idle skorlarini uretir, kazanan davranisin hedefine yurur (`ScheduleSystem.cs:5-11`). Oyuncuya gorunen etkisi: sabah ise gidis, ogle vakti meydan masasina KENDILIGINDEN olusan kalabalik (aclik sabah boyunca birikip isi gecince), aksam eve donus, gece uyku — ve bir suc islendiginde nobetcilerin tam hizda kovalamasi. Felsefe: saf Domain/Simulation kodu — deterministik, Unity yok, I/O yok (`ScheduleSystem.cs:11`); kalabalik davranisi yazilmaz, IHTIYACLARDAN dogar. Hareket modeli kasitli olarak ilkel tutulmustur: yol bulma yok, tek eksende en fazla 1 adimlik Chebyshev yuruyusu (`ScheduleSystem.cs:188-196`).
+## HLD - Akış (numaralı adımlar)
 
-## HLD - Akis
+1. `WorldTickComposer` (living.schedule step, `PerTick` cadence, priority 20) her tikte `_schedule.Advance(actors, stamp, world.GuardPursuits, world)` çağırır.
+2. `Advance` `ActorStore.Records` üzerinde döner; ölü aktör atlanır, `ActorActionState.CurrentAction != None` olan aktör atlanır (aksiyon katmanının bacaklarını almış).
+3. F18 filtresi: `Role == Enemy && Home.Equals(DayAnchor)` olan lair guard'lar atlanır (rubber-band önleme).
+4. Muhafızsa `TryResolvePursuit` çalışır: kendi ID'sine ait aktif kaydı bulur, expire/dead-quarry/>40 hücre uzaklaşmışsa listeden siler ve `false` döner; canlıysa `target = quarry.Position`.
+5. Aksi halde `ChooseTarget(actor, time)` çağrılır: Guard/Enemy için `ClassicTarget` (work-hour içinde worksite ya da anchor; dışında Home). Civilian için utility tablosu — `rest = Fatigue.Value + (workHour ? 0 : 25)`, `work = workHour && !Idle ? 55 : 0`, `idle = workHour ? 35 : 0`; deterministic tie order `rest > work > idle`.
+6. `MovementService.StepToward(actor.Position, target, world?.NavView)` bir sonraki hücreyi hesaplar.
+7. `StepToward` iç akışı: `dx = Sign(to.X - from.X)`, `dy = Sign(to.Y - from.Y)`, `candidate = (from.X+dx, from.Y+dy)`; nav null ise anında `candidate` döner.
+8. Nav varsa: `diagonal` ve `nav.BlocksDiagonal(from, candidate)` ise diagonal reddedilir, `AxialFallback` çalışır; değilse `nav.IsWalkable(candidate)` doğruysa `candidate` döner, aksi halde yine `AxialFallback`.
+9. `AxialFallback` sabit sırayla X-axial (`from.X+dx, from.Y`) sonra Y-axial (`from.X, from.Y+dy`) dener; her ikisi de kapalıysa `from` döner (bir tik freeze — action'ın arrival predicate'i sonraki tikte tekrar dener).
+10. Sonuç `actor.Position`'a eşit değilse `actor.MoveTo(next)` çağrılır (Position rows yazılır, W28 SoA).
 
-1. **Tetik**: `WorldTickComposer` tick'i → `ScheduleStep` (`"living.schedule"`, `TickCadence.PerTick`, order 20) `DefaultTickSystems.cs:211-222`. PerTick olmasi bilinclidir: `Advance` cagri basina bir karo yurutur; Hourly'de NPC'ler saatte bir karo "surunuyordu" ve ise/eve hic varamiyordu (`DefaultTickSystems.cs:216-218`).
-2. `ScheduleStep.Run` yemek noktalarini toplar (`NeedConsumptionSystem.FoodSpots(world)`) ve `world.GuardPursuits` listesiyle birlikte `Advance`'e verir (`DefaultTickSystems.cs:224-233`).
-3. **Aktor dongusu** (`ScheduleSystem.cs:51-82`): `actors.Records` uzerinde deterministik EKLENME sirasiyla iterasyon (`ActorStore.cs:96-99`). Olu aktorler atlanir (`:61-62`).
-4. **F18 lair-guard muafiyeti**: `Home == DayAnchor` olan bir Enemy "pinned"dir (zindan sakini sozlesmesi) — gunluk ritmi yoktur, tek hareket ettiricisi dusman-kovalama AI'sidir; her tick eve geri adimlatmak aktif kovalamayi lastik gibi geri cekiyordu (`ScheduleSystem.cs:64-68`). Eve donusunu `DomainSimulationAdapter.WorldEncounter.cs:246-262` (lair leash) yapar.
-5. **Pursuit cozumu**: aktor Guard ise ve `TryResolvePursuit` aktif bir kovalama bulursa hedef = avin CANLI hucresi, tam tick hizinda (`ScheduleSystem.cs:74-75`). Cozum sirasinda suresi dolmus / avi olmus / >40 hucre kacmis kayitlar listeden yerinde budanir (`:84-106`).
-6. **Utility secimi**: diger herkes icin `ChooseTarget` (`ScheduleSystem.cs:117-148`). Guard ve Enemy klasik yonlendirmede kalir (`:126-127`, `:150-156`); siviller icin eat/rest/work/idle skorlanir, beraberlik sirasi deterministik: eat > rest > work > idle (`:140-147`).
-7. **Seat ring**: kazanan davranis "eat" ise hedef, food spot'un kendisi degil, cevresindeki Chebyshev ring-2'nin 16 koltugundan `seatOrdinal`'a dusen hucredir (`:141-142`, `:171-186`). `seatOrdinal` dongudeki sivil sirasindan uretilir (`:58`, `:77`) — ortak hedefler tek karoya yigilmak yerine dagilir ("birbirlerinin uzerinden yuruyorlar" düzeltmesi, `:70-72`).
-8. **Adim**: `StepToward` ile tek karoluk 8-yonlu adim; pozisyon degistiyse `actor.MoveTo(next)` (`:78-80`, `:191-196`).
-9. **Ayni tick'in devami**: order 21 `living.companion_follow` (yoldas topuk takibi, kasitli olarak schedule'dan SONRA — `DefaultTickSystems.cs:306-313`), order 22 `living.eatOnArrival` (masaya VARAN ac sivil ayni tick yemek yer; saatlik adimi beklerken masada dikilme yigilmasinin cozumu — `DefaultTickSystems.cs:252-263`, `NeedConsumptionSystem.cs:59-83`).
-10. **Pursuit'un silahlanmasi (yukari akis, Hourly)**: `WitnessResponseSystem` (`"living.witness"`, Hourly, order 45 — `DefaultTickSystems.cs:333-337`) son bir saatin `CombatResolved` olaylarini tarar; menzildeki (ResponseRadius 12) her guard icin `RegisterPursuit` cagirir (`CascadeSystems.cs:204`), ayrica site huzursuzluk esigi asilirsa TUM nobet supurmesi de her guard'a pursuit takar (`CascadeSystems.cs:264`). Kayit 120 dakika gecerlidir, guard basina tek kayit, en yeni bela kazanir (`CascadeSystems.cs:272-288`).
-11. **Anchor'larin dogumu (worldgen, tek seferlik)**: her NPC'ye site sinirlari icinde hash ile dagitilmis bir `Home` hucresi ve FARKLI hash'le dagitilmis bir `DayAnchor` verilir — gunduz herkes kendi noktasina dagilir, merkezde donmus tek kume olusmaz (`DomainSimulationAdapter.Worldgen.Npcs.cs:33-40`, `:70-83` HomeCellFor, `:84-100` DayAnchorFor).
+## LLD - Veri Modeli (file:line)
 
-## LLD - Veri Modeli
+- `ScheduleSystem` (sealed class) — `Assets/Scripts/Simulation/Living/ScheduleSystem.cs:14`
+  - `WorkStartHour = 6` (:17), `WorkEndHour = 20` (:20)
+  - `WorkScore = 55`, `IdleScore = 35`, `NightRestBonus = 25` (:25-27)
+- `MovementService` (static) — `Assets/Scripts/Domain/Core/MovementService.cs:11`
+  - `StepToward(from, to, nav = null)` (:17)
+  - `AxialFallback(from, dx, dy, nav)` (:36)
+- `IWorldNavigability` (interface) — `Assets/Scripts/Domain/Core/IWorldNavigability.cs:11`
+  - `bool IsWalkable(GridPosition cell)` (:14)
+  - `bool BlocksDiagonal(GridPosition from, GridPosition to)` (:18)
+- `BlockedCellSet` — `Assets/Scripts/Domain/World/BlockedCellSet.cs:13`
+  - `PackStride = 1_000_000L` (:18), `HashSet<long> _cells` (:20), `long _revision` (:21)
+  - `Revision`, `Count`, `Contains`, `Add`, `Clear`, `PackedCells`, `Pack(x,y)` (:23-44)
+- `PursuitRecord` — `Assets/Scripts/Domain/World/PursuitRecord.cs:8`
+  - `ulong GuardId`, `ulong TargetId`, `long UntilMinutes`
+- `WorldState : IWorldNavigability` — `Assets/Scripts/Domain/World/WorldState.cs:23`
+  - `NavView => this` (:111), açık interface impl `IsWalkable` (:117) ve `BlocksDiagonal` (:124)
+  - `BlockedCellSet Blocked = new BlockedCellSet()` (:240)
+  - `List<PursuitRecord> GuardPursuits` (aynı dosya; W28 SoA blokunda)
 
-**ScheduleSystem sabitleri** (`Assets/Scripts/Simulation/Living/ScheduleSystem.cs`):
-- `WorkStartHour = 6` (dahil) — `:18`; `WorkEndHour = 20` (haric) — `:21`.
-- `WorkScore = 55`, `IdleScore = 35`, `NightRestBonus = 25` — `:26-28`. Denge notu: aclik +20/saat ratchet'i tokken ogleye dogru 55'i gecer, aksam fatigue + gece bonusu her seyi gecer (`:23-25`).
-- `SeatOffsets`: food spot etrafindaki Chebyshev ring-2'nin 16 hucresi; ic 3x3 KASITLI olarak bos birakilir cunku meydan masasi + banklar oraya render edilir ("masanin uzerine cikip eating" canli buginin cozumu); her koltuk merkeze tam `EatReachCells` (2) mesafede, yemek her koltuktan basarili — `:171-180`.
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-**PursuitRecord** (`Assets/Scripts/Domain/World/PursuitRecord.cs:8-13`): `GuardId: ulong`, `TargetId: ulong`, `UntilMinutes: long`. Amac dokumantasyonu: "witness report yazar; PerTick schedule okur — kovalama, poste-donus yazicisiyla AYNI kadansta kosar, 60:1 kaybetmez" (`:3-7`).
-- Depo: `WorldState.GuardPursuits: List<PursuitRecord>` (`WorldState.cs:173`); kopya kurucuda referans paylasimi (`WorldState.cs:252` — dosyadaki tum liste alanlariyla ayni stil).
-- Kalicilik: `WorldSaveMapper.cs:96-98` (save: uc paralel dizi) / `:203-210` (load).
+- `void Advance(ActorStore actors, GameTime time)` — `ScheduleSystem.cs:29` — Nav'sız legacy overload, `Advance(actors, time, null, null)`'a devreder.
+- `void Advance(ActorStore, GameTime, List<PursuitRecord>)` — `ScheduleSystem.cs:35` — P0 pursuit overload, world hâlâ null (test yolları).
+- `void Advance(ActorStore, GameTime, List<PursuitRecord>, WorldState)` — `ScheduleSystem.cs:44` — B10 §A5 nav-aware ana giriş; composer bunu çağırır.
+- `bool TryResolvePursuit(pursuits, actors, guard, time, out target)` — `ScheduleSystem.cs:82` — Aktif chase'i quarry'nin canlı hücresine çözer; expire/dead/lost kayıtları prune eder.
+- `bool IsWorkHour(GameTime time)` — `ScheduleSystem.cs:105` — `hour in [6, 20)` kontrolü; ChooseTarget ve testler için public.
+- `GridPosition ChooseTarget(ActorRecord actor, GameTime time)` — `ScheduleSystem.cs:114` — Utility core; guard/enemy için ClassicTarget, civilian için rest/work/idle skor tablosu.
+- `GridPosition ClassicTarget(ActorRecord actor, bool workHour)` — `ScheduleSystem.cs:135` — Yasal muhafız/düşman routing: work-hour ⇒ worksite/anchor, dışı ⇒ Home.
+- `GridPosition StepToward(GridPosition from, GridPosition to, IWorldNavigability nav = null)` — `MovementService.cs:17` — Nav-opsiyonel Chebyshev bir tik; W28 pathfinding seam'i olacak yer.
+- `GridPosition AxialFallback(from, dx, dy, nav)` — `MovementService.cs:36` — X-önce Y-sonra sabit sırayla axial dener, her ikisi kapalı ⇒ `from` döner (freeze).
+- `IWorldNavigability WorldState.NavView` — `WorldState.cs:111` — `this` döner; allocation-free per-tick probe.
+- `bool WorldState.IsWalkable(cell)` — `WorldState.cs:117` — `Blocked == null || !Blocked.Contains(cell)` (odalar bu view'e dahil değil).
+- `bool WorldState.BlocksDiagonal(from, to)` — `WorldState.cs:124` — İki ortogonal komşusu da blocked ise diagonal reddedilir.
 
-**ActorScheduleState** (`Assets/Scripts/Domain/Actors/ActorScheduleState.cs`): immutable struct — `CurrentJobId` (`:43`), `TargetSiteId` (`:46`), `TargetWorksitePosition` (`:49`), `IsIdle => CurrentJobId.IsEmpty` (`:52`). Yazari bu sistem DEGIL, `JobAssignmentSystem`'dir (`:8-9` tasarim notu); ScheduleSystem sadece okur.
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-**ActorRecord ilgili alanlar** (`Assets/Scripts/Domain/Actors/ActorRecord.cs`): `Position` (`:70`), `Home` (`:71`), `DayAnchor` (`:72`), `IsAlive => !Vitals.IsDead` (`:78`), `ScheduleState` (`:82`), `Needs` (`:83`), `MoveTo(GridPosition)` (`:87-90`). Kurucuda `home`/`dayAnchor` verilmezse spawn pozisyonuna duser (`:48-49`) — `Home == DayAnchor` esitligi F18 "pinned" sozlesmesinin ta kendisidir.
+Kayıtlı sahiplik satırları (`Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs`):
 
-**GameTime** (`Assets/Scripts/Domain/Core/GameTime.cs`): `TotalMinutes` (`:37`), `Hour = (TotalMinutes/60) % 24` (`:41`).
+- **`Actor.Position`** yazar (:20): `living.schedule@PerTick:20` — NARROWED (W32): sadece actionless aktörler; `living.action_advance@PerTick:22` aktif MoveTo* için ayrı satır tutar.
+- **`World.GuardPursuits`** yazar (:53): `living.schedule@PerTick:20` — resolve/prune; `living.witness@Hourly:45` arm/refresh.
+- Okur (sahiplenmez): `Actor.ActionState.CurrentAction` (skip filtresi), `Actor.Role`, `Actor.Home`, `Actor.DayAnchor`, `Actor.ScheduleState.{IsIdle,TargetWorksitePosition}`, `Actor.Needs.Fatigue`, `GameTime.Hour`.
+- `MovementService.StepToward` okur: `IWorldNavigability.IsWalkable`, `IWorldNavigability.BlocksDiagonal` → altında `WorldState.Blocked` (hiçbir alan yazmaz).
+- `WorldState.Blocked` derived state — `HydrateBlockedCells` (Presentation adapter) tarafından yazılır, tik döngüsü sadece okur.
 
-**Komsu sabitler** (`Assets/Scripts/Simulation/Living/NeedConsumptionSystem.cs`): `HungerEatThreshold = 55` — kasitli olarak `WorkScore` ile hizali (`:16`); `EatReachCells = 2` (`:17`).
+## LLD - Ürettiği/Tükettiği Olaylar
 
-## LLD - Fonksiyon Haritasi
+- **Üretmez** — hareket sessizdir; `ActionLog`'a satır düşmez, `World.Events`'e olay basmaz. Tik izleri sadece `Actor.Position` diff'i ve `GuardPursuits`'un prune sonrası boyutu.
+- **Tüketir**: `WorldEventKind.CombatResolved` üzerinden dolaylı — `WitnessResponseSystem` olayı okuyup `GuardPursuits`'a yeni kayıt yazar; schedule sonra bu listeden okur.
+- **Yan-tetik**: Bir sonraki tikte `living.action_advance@PerTick:22` `Actor.Position`'ı okur; `living.companion_follow@PerTick:21` de schedule'dan SONRA heel yapar (tasarım gereği).
 
-Hepsi `ScheduleSystem.cs` icinde, aksi belirtilmedikce:
+## Testler (bu sistemi pinleyen test dosyaları - W32-W36 hikâye-testleri dahil)
 
-- `void Advance(ActorStore, GameTime)` — `:30-33` — food spot'suz geri-uyum sarmalayicisi.
-- `void Advance(ActorStore, GameTime, GridPosition? foodSpot)` — `:37-42` — H2 tek-larder sarmalayicisi; pencere yok, acligin kendisi karar verir.
-- `void Advance(ActorStore, GameTime, IReadOnlyList<GridPosition> foodSpots)` — `:46-47` — coklu-larder sarmalayicisi (herkes EN YAKIN noktaya; bir kasabanin ogle kalabaligi baska kasabanin masasina yurumez).
-- `void Advance(ActorStore, GameTime, IReadOnlyList<GridPosition>, List<PursuitRecord>)` — `:51-82` — gercek govde: aktor dongusu, pinned-enemy muafiyeti, pursuit oncelik dallanmasi, seat ordinal sayaci, adim + `MoveTo`.
-- `static bool TryResolvePursuit(List<PursuitRecord>, ActorStore, ActorRecord guard, GameTime, out GridPosition)` — `:86-106` — guard'in aktif kovalamasini avin canli hucresine cozer; suresi dolan (`:95`), avi olmus/yok (`:96-97`), >40 hucre kacan (`:101`) kayitlari yerinde siler (silme sonrasi `false` doner → guard o tick poste doner).
-- `static bool IsWorkHour(GameTime)` — `:109-113` — `hour >= 6 && hour < 20`.
-- `static GridPosition ChooseTarget(ActorRecord, GameTime, GridPosition? foodSpot)` — `:117-118` — testlerin hareket simule etmeden karar tablosunu pinlemesi icin public sarmalayici (seatOrdinal=0).
-- `static GridPosition ChooseTarget(ActorRecord, GameTime, GridPosition?, int seatOrdinal)` — `:120-148` — H2 utility cekirdegi. Onemli detay: `HungerEatThreshold` altindaki aclik icin eat skoru -1'e sabitlenir, cunku `TryEat` o aclikta zaten REDDEDIYORDU ama esik-alti aclik yine de idle/rest'i gecip butun kasabayi masada ac-ama-yeterince-ac-degil bekletiyordu ("herkes town merkezinde" playtest fix'i — `:129-135`).
-- `static GridPosition ClassicTarget(ActorRecord, bool workHour)` — `:150-156` — Guard/Enemy: mesai disinda `Home`; mesaide idle ise `DayAnchor`, degilse `TargetWorksitePosition`.
-- `static GridPosition? NearestSpot(IReadOnlyList<GridPosition>, GridPosition)` — `:158-169` — Chebyshev mesafeyle en yakin larder.
-- `static GridPosition Seat(GridPosition table, int seatOrdinal)` — `:182-186` — `seatOrdinal mod 16` ile ring koltugu.
-- `static GridPosition StepToward(GridPosition from, GridPosition to)` — `:191-196` — eksen basina `Math.Sign` ile tek karoluk, asla hedefi asmayan (monoton yakinsayan) 8-yon adimi. Engel/zemin kontrolu YOKTUR.
+- `Assets/Tests/EditMode/Living/ScheduleSystemTests.cs` — 10 test: work-hour worksite yakınsaması, gece/night no-move, actionless-action skip (W32), utility tablosu, F18 pinli-enemy hold, curfew commute enemy, idle→anchor.
+- `Assets/Tests/EditMode/Living/GuardPursuitTests.cs` — 3 test: witness→pursuit arm, chase her tikte kapatır, expire→home dönüşü.
+- `Assets/Tests/EditMode/Movement/MovementServiceBlockerTests.cs` — 7 test (W36/B10 §A4): null-nav legacy primitif, açık diagonal, blocked-diagonal X-önce fallback, X-blocked Y fallback, hepsi kapalı freeze, corner-cut refused, düz-axial etkilenmez.
+- `Assets/Tests/EditMode/Actions/MoveAvoidsBlockedCellsTests.cs` — 2 test (W36 story): `MoveToFood` blocked candidate'a girmez ve axial slide yapar; blocker yokken diagonal candidate hâlâ alınır (regresyon guard'ı).
+- `Assets/Tests/EditMode/World/BlockedCellSetTests.cs` — 6 test (W36/B10 §A2): boş, add + revision bump, idempotent add, clear + bump, empty-clear no-op, large-coord pack collision-free.
+- `Assets/Tests/EditMode/World/RoomMovementServiceTests.cs` — dungeon slice'ın kendi `IsWalkable`'ını consult ettiği ayrık path (bu sistemin `NavView`'i odayı **kapsamaz**).
 
-Yukari/asagi akis komsulari:
-- `WitnessResponseSystem.Tick(WorldState, GameTime)` — `CascadeSystems.cs:132-214` — pursuit'lari silahlar (`:204` yakin-menzil, `:264` sweep).
-- `static void RegisterPursuit(WorldState, ulong guardId, ulong targetId, GameTime)` — `CascadeSystems.cs:273-289` — guard basina tek kayit; var olani tazeler (`PursuitMinutes = 120`, `:272`).
-- `static List<GridPosition> NeedConsumptionSystem.FoodSpots(WorldState)` — `NeedConsumptionSystem.cs:223-244` — yemek tutan tum stok yiginlarinin site merkezleri.
-- `NeedConsumptionSystem.TickArrivals(WorldState, GameTime)` — `NeedConsumptionSystem.cs:62-83` — varista yemek (PerTick:22, schedule'in hemen ardindan).
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
 
-## LLD - Yazdigi/Okudugu Alanlar
+- **W32 EAT** — Hunger routing bu sistemden çıktı; `ActionLifecycleSystem.Decide` `EatIntent` verip `EatAction`'ı çakıyor. ScheduleSystem artık `CurrentAction != None` olan aktörü atlıyor. `ChooseTarget` utility tablosundaki `eat` slot'u kaldırıldı; utility artık sadece rest/work/idle. Ayrıca `MovementService.StepToward` `ScheduleSystem`'den koparılıp `Domain.Core`'a taşındı (W32-03 §5).
+- **W33 farm** — Bu sistemi doğrudan değiştirmedi ama `FieldOwnershipRegistry`'e yeni `Actor.Position` yazıcıları eklendi (farm advancer'ları); schedule'ın `PerTick:20` prioritesi ve NARROWED açıklaması korundu.
+- **W34 work & sleep** — `MoveToWorksiteAdvancer` / `MoveToBedAdvancer` yeni consumer'lar olarak `MovementService.StepToward`'u kullanır (schedule değil). Guard'ın peckish davranışı ActionLifecycle'da eat-eligibility'ye taşındı; schedule'da guard `ClassicTarget` yolu sağlamlaştı (yorum satırı :117-121'de netleştirildi).
+- **W35 Idle-only steering pin** — Yorumlar ve test isimleri "actionless routing" terimini benimsedi; schedule'ın civilian action-owner ile çakışmayacağı `Advance_ActorWithActiveAction_IsNotMoved` testi ile pinlendi.
+- **W36 (B10 §A) IWorldNavigability** — `IWorldNavigability` interface + `BlockedCellSet` + `WorldState.NavView` üçlüsü eklendi. `MovementService.StepToward` opsiyonel `nav` parametresi aldı; corner-cut refuse + X-önce axial fallback + freeze kuralları geldi. `ScheduleSystem.Advance` 4'lü overload (`world` parametreli) eklendi; composer bu yeni çağrıya yönlendirildi. `HydrateBlockedCells` presentation adapter'ında bina footprint'lerini `Blocked`'a projekte ediyor. 15 yeni test (`MovementServiceBlockerTests` + `MoveAvoidsBlockedCellsTests` + `BlockedCellSetTests`) eklendi.
 
-`FieldOwnershipRegistry` dilinde (`Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs`):
+## Bilinen Borçlar + Kaçak Kapıları
 
-**Yazdigi:**
-- `Actor.Position` ← `living.schedule@PerTick:20` ("routine movement", `FieldOwnershipRegistry.cs:20`). Ayni alanin diger beyan edilmis yazarlari: `living.companion_follow@PerTick:21` (kasitli olarak SONRA), `living.predation@Hourly:40`, `living.witness@Hourly:45`, `living.ambient@Hourly:50` (`:21-24`).
-- `World.GuardPursuits` ← `living.schedule@PerTick:20` rolu "resolves/prunes"; `living.witness@Hourly:45` rolu "arms/refreshes" (`:38-42`). Guard-pursuit sinifi catisma (farkli kadansta beyan edilmemis ikinci yazar) artik lint testiyle CI olayidir (`:6-11`).
-
-**Okudugu (registry disi, koddan dogrulandi):**
-- `World.Time` — `context.Stamp` uzerinden (`DefaultTickSystems.cs:231`); `GameTime.Hour` ve `TotalMinutes`.
-- `Actor.Needs.Hunger / Fatigue` — `ScheduleSystem.cs:133-136`.
-- `Actor.ScheduleState` (`IsIdle`, `TargetWorksitePosition`) — `:137`, `:146`, `:154-155`.
-- `Actor.Home`, `Actor.DayAnchor`, `Actor.Role`, `Actor.IsAlive`, `Actor.Position` — `:61-77`, `:144-147`.
-- `World.Stockpiles` + `World.Sites` — dolayli, `FoodSpots` araciligiyla (`NeedConsumptionSystem.cs:223-244`).
-- `World.GuardPursuits` — okuma + budama (`ScheduleSystem.cs:86-106`).
-
-## LLD - Urettigi/Tukettigi Olaylar
-
-- **ScheduleSystem'in kendisi HICBIR WorldEvent uretmez** — 198 satirlik dosyada `Events` erisimi yok (tam dosya okumasiyla dogrulandi). Hareket sessizdir; gorunurluk Presentation projeksiyonundan gelir.
-- **Tukettigi (dolayli)**: pursuit zinciri `WorldEventKind.CombatResolved` olaylarindan dogar — ama onlari okuyan ScheduleSystem degil, Hourly `WitnessResponseSystem`'dir (`CascadeSystems.cs:148`).
-- **Komsu uretimler** (bu ritmin gorunen izleri): `WorldEventKind.WitnessRecorded` (`CascadeSystems.cs:162`, `:183`), `WorldEventKind.ChronicleEvent` log tag `watch_sweep` (`CascadeSystems.cs:267-268`).
-- **Presentation tuketicileri**: `ActorView` GridPosition'i dunya uzayina projekte eder (`ActorView.cs:20`), `NpcActivityLabelView` aktivite fiilini gosterir (`NpcActivityLabelView.cs:8`), `DomainSimulationAdapter.WorldProjection.DescribeActivity` saat pencerelerinden fiil uretir (`WorldProjection.cs:108-127`).
-
-## Testler
-
-- `Assets/Tests/EditMode/Living/ScheduleSystemTests.cs` — 13 test, sistemi en genis pinleyen dosya: mesai ici worksite'a tek karo (`:25`), asimsiz yakinsama (`:38`), mesai disi hareketsizlik (`:55`), idle aktorun DayAnchor'a yuruyusu (`:79`), gece eve donus (`:91`), "aclik saati degil saat acligi" — pencere olmadan food spot'a gidis (`:109`, H2 notu `:104`), utility karar tablosu (`:144`, `:142`), pinned lair-guard yerinde kalir (`:166`), commuting enemy gece eve yurur (`:181`), esik-alti aclik ASLA food spot'u hedeflemez (`:197`), seat ordinal 0-15 → 16 FARKLI ring koltugu, asla masa ustu (`:212`), iki larderden en yakinina yuruyus (`:240`).
-- `Assets/Tests/EditMode/Living/GuardPursuitTests.cs` — P0 pursuit pinleri: witness raporu menzildeki guard'lara pursuit takar (`:35`), kovalayan guard lastiklenmek yerine HER tick yaklasir (`:52`), suresi dolan pursuit budanir ve nobet eve doner (`:75`).
-- `Assets/Tests/EditMode/Composition/FieldOwnershipRegistryTests.cs` — sahiplik lint'i: registry'deki her yazar tick kayitlarinda var mi / her Position-yazari beyan edilmis mi (`:23`, `:38`).
-- `Assets/Tests/EditMode/Composition/WorldTickRegistryTests.cs` — kanonik kadans/sira dizilimi (`:44`; `living.schedule@PerTick:20` bu dizilimin parcasi).
-- `Assets/Tests/EditMode/Save/WorldSaveMapperGoldenRoundtripTests.cs` — `GuardPursuits` save/load altin gidis-donusu (mapper alanlari `WorldSaveMapper.cs:96-98`, `:203-210`).
-
-## Bilinen Borclar + Kacak Kapilari
-
-1. **Yol bulma yok — duvarlarin icinden yurume** [aile (b)/(d) bitisigi]: `StepToward` saf isaret-adimidir (`ScheduleSystem.cs:191-196`); zemin, bina, su, baska aktor kontrolu yoktur. Sim tarafinda carpismasiz grid varsayimi bilincli, ama Presentation'da bina/engel var — NPC'lerin katı geometriden gecmesi bu bosluktan dogar.
-2. **Guard'lar hic yemek yemez** [beyan edilmis basitlestirme]: "the watch holds its post (guards eat off-shift — an honest simplification, logged in ROADMAP_V2)" (`ScheduleSystem.cs:124-127`). Guard acligi utility'ye hic girmez; `NeedConsumptionSystem` de Enemy'yi atlar ama Guard'i atlamaz — Hourly adimda masadan uzaktaysa `EatReachCells` nedeniyle yemek yine basarisiz olabilir (dogrulanmadi: guard acliginin uzun vadede ne yaptigi kosturulup olculmedi).
-3. **Olu ogle penceresinin hayaletleri Presentation'da yasiyor** [aile (a) tek-dogru ihlali]: H2 pencereyi oldurdu (`ScheduleSystem.cs:6-11`) ama `WorldProjection.DescribeActivity` hala hardcoded 12-14 penceresi + kopyalanmis `hunger >= 55` sabitiyle fiil uretiyor (`DomainSimulationAdapter.WorldProjection.cs:108-124`; ustelik yorum "Windows MUST match ScheduleSystem (work 6-20, lunch 12-14)" diyor — artik eslesecek pencere yok). `NpcPoseIconView` de "12:00-13:59, matching ScheduleSystem's lunch window" iddiasindadir (`NpcPoseIconView.cs:6-9`). Fiil/ikon, simin gercek kararindan degil saat tahmininden geliyor — aclik erken/gec kazandiginda soz yalan soyler.
-4. **Seat ordinal kimlik degil dongu-pozisyonu** [aile (a) bitisigi]: `seatOrdinal` her `Advance`'te canli aktorler uzerinde sayilarak uretilir (`ScheduleSystem.cs:58`, `:77`) — deterministik ama bir aktor OLDUGUNDE ondan sonraki herkesin koltugu kayar; yemek ortasinda toplu koltuk degisimi mumkun. Ayrica pursuit'e giren guard'lar sayaci ilerletmez, o da alt-siradakilerin ordinalini oynatir. (Gorsel etkisi playtest'te raporlanmadi — dogrulanmadi.)
-5. **16 koltuk siniri**: 16'dan fazla es-zamanli ac sivilde `seatOrdinal % 16` sarmalar (`ScheduleSystem.cs:184`) — koltuk paylasimi ve yigilma geri doner. Rezervasyon/doluluk kavrami yok.
-6. **Pursuit sabitleri gomulu**: kayip esigi 40 hucre (`ScheduleSystem.cs:101`), sure 120 dk (`CascadeSystems.cs:272`), sweep siniri site sinir+4 (`CascadeSystems.cs:260-263`) — hicbiri config'te degil.
-7. **`TryResolvePursuit` tek-kayit sozlesmesine ortulu bagimli**: budama sonrasi `return false` yapar, taramaya devam etmez (`ScheduleSystem.cs:95-97`, `:101`). `RegisterPursuit` guard basina tek kayit garantiler (`CascadeSystems.cs:276-282`) — ama bu garanti baska bir dosyada yasar; ikinci bir yazar cift kayit eklerse ikincisi sessizce golgede kalir. Kacak kapisi: sozlesme testle degil yorumla korunuyor.
-8. **`WorldState` kopya kurucusu `GuardPursuits` referansini paylasir** (`WorldState.cs:252`) — dosyadaki tum liste alanlariyla tutarli stil, ama PerTick budama yapan bir listenin kopyalar arasi paylasimi, kopyayi kullanan herhangi bir gelecek tuketici icin aliasing tuzagidir (bugun canli bir hata uretmiyor — dogrulanmadi).
-9. **Cadence-catismasi tarihi (cozuldu, aile (c) flagship)**: pursuit bir zamanlar Hourly nudge ile yurutuluyor ve PerTick poste-donus yazicisina 60:1 kaybediyordu ("pursuit is arithmetically erased", ARCHITECTURE_GAPS #2). Cozum `PursuitRecord` + ayni kadansta cozum (`PursuitRecord.cs:3-7`) + `FieldOwnershipRegistry` lint'i (`FieldOwnershipRegistry.cs:6-11`). Ayni ailenin ikinci uyesi (PerTick yurume / Hourly yemek) `EatOnArrivalStep` ile kapatildi (`DefaultTickSystems.cs:252-259`).
-10. **`IsWorkHour` mantigi Presentation'da elle kopyalanmis**: `WorldProjection` saat hesabini `GameTime.Hour` yerine `(TotalMinutes/60)%24` olarak yeniden yazar (`WorldProjection.cs:101`, `:112`) — kucuk ama aile (a) tohumu.
-11. **Hedefe varan aktor icin "isleme" kavrami yok**: worksite'a varan aktor orada sadece durur; uretimi `JobAssignmentSystem`/uretim sistemleri ayri yurutur. `ChooseTarget` idle aktoru mesai boyunca `DayAnchor`'da bekletir (`ScheduleSystem.cs:147`) — meydan kalabaliginin "donuk" gorunmesinin sim-tarafi nedeni.
+- **Path yok, tek tik freeze var**: `StepToward` üç adayı da kapalı bulursa `from` dönüyor. Uzun U-şeklinde engellerde aktör donabilir; Stage B'de A*/JPS `MovementService` seam'inin arkasına takılacak (yorumda "pathfinding plugs in behind this seam later" — `MovementService.cs:6`).
+- **NavView civilian-only**: `WorldState.IsWalkable` sadece `Blocked`'ı okur, oda duvarları GİRMEZ. Dungeon slice hâlâ `RoomMovementService`'in kendi kural setini kullanmalı; birleştirme denemesi Gate1/Gate8 crowd freeze'ini geri getirir (yorum :113-116).
+- **PursuitRecord `long UntilMinutes` linear scan**: `TryResolvePursuit` her guard için tüm listeyi tarıyor (`for i`). Çok sayıda muhafız + chase durumunda O(g·p). Şu anki köy ölçeği için sorun değil, ama caravan/battle ölçeğinde index gerekecek.
+- **F18 pinned-enemy kısayolu `Home.Equals(DayAnchor)` heuristiğine bağlı**: Yeni bir "sedanter civilian" role'ü aynı home==anchor invariant'ını taşırsa yanlış filtrelenir; F10 dungeon-dweller kontratını Role-based bir bayrağa çevirmek gerekebilir.
+- **Blocked derived + never serialized**: Save/load sonrası `HydrateBlockedCells` çağrılmazsa `Blocked` boş kalır ve civilian duvardan geçer. Hydration seam `EnsureInvariants`'la aynı yolda ama presentation-side; headless test'lerde manuel `world.Blocked.Add(...)` gerekiyor (MoveAvoidsBlockedCellsTests bunu yapıyor).
+- **Utility ağırlıkları hardcoded (55/35/25)**: `ChooseTarget` sabit skorlar kullanıyor; kişilik/kültür modülatörleri yok. CAN SUYU H3'te "trait skew" için buraya bir tablo enjekte edilecek.
+- **`Advance` 3-overload zinciri boilerplate**: Legacy `(actors, time)` ve pursuit-only `(actors, time, pursuits)` overload'ları test yolları için tutuluyor; composer sadece nav-aware olanı çağırıyor. Kaçak kapı: yeni bir çağrı eski overload'ı yanlışlıkla seçebilir ve `NavView` bypass olur — pin (`MovementServiceBlockerTests.NullNav_PreservesLegacyChebyshevPrimitive`) bu davranışın kasıtlı olduğunu belgeliyor ama grep-öncesi refaktörde tehlikelidir.
+- **`companion_follow@PerTick:21` schedule'dan SONRA çalışıyor** (yorum :22): Heel bir tik geri kalıyor — kabul edilmiş minor lag, ama companion ile pursuit hedefi çakışırsa companion "chase'in gerisinde" görünür.

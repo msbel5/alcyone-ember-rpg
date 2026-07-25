@@ -1,251 +1,157 @@
 # 01-time-cadence
 
-> Kapsam: GameTime, WorldTickComposer (per-tick replay + boundary stamps), WorldTickRegistry,
-> DefaultTickSystems, FieldOwnershipRegistry, EmberTickDriver, tick konfigürasyonu.
-> Kanıt biçimi: `dosya:satır`. Tüm yollar `Assets/` köklüdür.
+## HLD - Ne ve Neden (5-10 cümle)
 
-## HLD - Ne ve Neden
+Ember'in zamanı ve kadans katmanı: dünyanın hangi hızda ilerlediğini ve hangi sistemin hangi ritmde çalıştığını belirleyen tek noktadır. `GameTime` deterministik bir "epoch'tan bu yana toplam dakika" tamsayısıdır — Unity saatinden bağımsız, bit-eş replay için tasarlanmış. `WorldTickComposer` `Advance(world, tickIndex)` çağrılarında iki tick arası farkı görür ve W29 REFORM #2'den beri **birer birer replay eder** (tek atlama yerine `delta` kez adım) — bu, saatli/günlük geçişlerin tam düştükleri yerde düşmesini garanti eder. `WorldTickRegistry` (cadence, order, id) üçlüsüne göre sıralanmış immutable bir sistem listesi tutar; `DefaultTickSystems.Create` fabrikası bu listeyi kurar ve `WorldTickComposer` üç bantta (PerTick / Hourly / Daily) çağırır. `FieldOwnershipRegistry` her yazılabilir alanın kim tarafından ve hangi cadence:order slotunda yazıldığını **çalıştırılabilir dokümantasyon** olarak tutar — W33'te reverse-lint testi eklendi (bir slotta gerçek sistem yoksa build kırılır). W32-W36 arası sekiz farklı vertical slice bu bantlara oturdu; hepsi aynı `WorldTickComposer.Advance` sözleşmesinden geçtiği için "kim ne zaman yazar" sorusunun tek cevabı vardır. Bu sistem tek başına oyun mantığı yapmaz; sadece **hangi sistemi hangi ritimde çağıracağını** ve **saati nasıl ileriye taşıyacağını** bilir.
 
-Zaman-kadans sistemi, oyunun determinizm anayasasının kalbidir: tek bir tamsayı saat
-(ember tick) bütün simülasyonu sürer; aynı seed + aynı tick dizisi bayt-aynı WorldState ve
-olay logu üretmek ZORUNDADIR (bunu `WorldStateDigest` SHA-256 ile pinler). 1 ember-tick =
-1 oyun dakikasıdır (`WorldTickComposer.cs:46-52`); gerçek zamanda bir tick 0.8333 sn sürer,
-yani bir oyun günü (1440 tick) ≈ 20 gerçek dakikadır (`EmberTickDriver.cs:15-18`). Oyuncuya
-görünen etkisi: gündüz/gece döngüsü, NPC rutinleri, ekin büyümesi, fiyat kayması ve kervanlar
-hepsi aynı saatten akar; travel/wait/rest gibi hızlı-ileri sarmalar, aynı süreyi tek tek
-oynamakla BİREBİR AYNI tarihi üretir (chunking invariance). Felsefe, Daggerfall Unity'den
-alınan "tek tamsayı saat her simülasyonu sürsün" dersinin uygulamasıdır (docs/SYSTEMS_ATLAS.md
-§4). Sistem ayrıca (c) sınıfı hata ailesinin ("kadans yazar çatışmaları") yapısal panzehiridir:
-Reform #2 ile her mutable alanın yazarı kadans+sıra etiketiyle `FieldOwnershipRegistry`'de ilan
-edilir ve catch-up SINIR DAMGALI per-tick replay ile yapılır — 40-tick'lik bir sıçrama ile
-kırk adet 1-tick'lik çağrı özdeş tarih üretir (`WorldTickComposer.cs:236-241`).
+## HLD - Akış (numaralı adımlar)
 
-## HLD - Akis
+1. **Boot**: `WorldTickComposer` parametresiz kurucusu default `SeasonCalendar` (4 sezon × 90 gün) ve default `PlantSpeciesDef` (wheat) inşa eder; sekiz sistem instance'ını `DefaultTickSystems.Create(...)`'a verir ve dönen `WorldTickRegistry`'yi saklar.
+2. **Registry inşası**: `DefaultTickSystems.Create` her sistemin `StepBase` sarmalayıcısını yaratır (id + cadence + order). `WorldTickRegistry` constructor'ı id'leri validate eder (null/whitespace/duplicate yasak), `(Cadence, Order, IdOrdinal)` üçlüsüne göre sıralar, `PerTick/Hourly/Daily` filtreli array'lerini kurar.
+3. **Advance çağrısı**: `EmberTickDriver` (Presentation, 10 Hz) `DomainSimulationAdapter.AdvanceTick(tickIndex)` üzerinden `WorldTickComposer.Advance(world, tickIndex)` çağırır. Composer `delta = tickIndex - _lastTickIndex` hesaplar; `delta <= 0` no-op, negatif = yeni anchor.
+4. **Per-tick replay loop** (REFORM #2): `for step in 0..delta`:
+   a. `_tickRegistry.PerTick` üzerinde her sistemi `TickContext(world, world.Time, 1)` ile çağır (`core.time@10` en başta — saati bu tick ilerletir).
+   b. `_ticksSinceHourly++`; eşik `TicksPerGameHour`'a ulaşırsa aksümülatörü düş ve `Hourly` bandını çağır.
+   c. `_ticksSinceDaily++`; eşik `TicksPerGameDay`'e ulaşırsa aksümülatörü düş ve `Daily` bandını çağır.
+5. **Tick profiler**: her sistem çağrısı `Stopwatch` ile ölçülür; toplam tick > 12 ms ise `TickPerf` logger'ı hangi sistemin ne kadar sürdüğünü tek satırda bastırır.
+6. **Save/Load**: `DomainSimulationAdapter.Save` restore edildikten sonra `RebuildAccumulatorsFrom(world.Time)` çağrılır — `TotalMinutes mod TicksPerGameHour/Day` ile aksümülatörler deterministik olarak yeniden türetilir ve `_lastTickIndex = -1` re-anchor sağlar.
 
-1. **Gerçek zaman → tick:** `EmberTickDriver` (MonoBehaviour) her frame gerçek zamanı biriktirir;
-   `_tickIntervalSeconds = 0.8333f` dolunca `CurrentTick++` ve `Listener.OnTick(CurrentTick)`
-   çağrılır; frame başına en çok `_maxCatchupTicksPerFrame = 8` tick (`EmberTickDriver.cs:18-19,
-   44-56`). Pause ve save-align (`AlignTo`) driver seviyesindedir (`EmberTickDriver.cs:27, 37-42`).
-2. **Host köprüsü:** `EmberWorldHost` `EmberTickDriver.ITickListener`'ı uygular
-   (`Presentation/Ember/Bootstrap/EmberWorldHost.cs:21`), boot'ta `_clock.AdvanceTick(0)` ile
-   saat çapasını atar (`EmberWorldHost.cs:99`); her tick `OnTick` →
-   `_worldViewProjector.ProjectTick(tickIndex)` (`EmberWorldHost.Bindings.cs:44-47`).
-3. **Projeksiyon sırası:** `WorldViewProjector.ProjectTick` önce `_clock.AdvanceTick(tickIndex)`
-   (sim ilerler), sonra `Project()` (görünümler senkron), sonra HUD olay logu render eder
-   (`Presentation/Ember/Views/WorldViewProjector.cs:63-69`).
-4. **Adapter:** `DomainSimulationAdapter.AdvanceTick` önce off-thread LLM sonuç kuyruğunu ana
-   thread'de boşaltır (DET-02), `_tick`'i günceller, `_tickComposer.Advance(_world, tickIndex)`
-   çağırır, olay yankıları + alan aynasını yayınlar
-   (`Presentation/Ember/Adapters/DomainSimulationAdapter.Clock.cs:6-13`). Composer örneği
-   adapter'da yaşar (`DomainSimulationAdapter.cs:32, 65`).
-5. **Composer per-tick replay:** `WorldTickComposer.Advance` delta = yeni tickIndex − son;
-   İLK çağrı baseline olarak YUTULUR (delta 0; `WorldTickComposer.cs:229-231` — N günlük
-   döngü için N+1 çağrı gerekir). Sonra delta tick TEK TEK replay edilir: her adımda PerTick
-   bandı koşar; `_ticksSinceHourly` `TicksPerGameHour`'a ulaşınca Hourly bandı, `_ticksSinceDaily`
-   `TicksPerGameDay`'e ulaşınca Daily bandı TAM SINIR ANINDA koşar (`WorldTickComposer.cs:242-280`).
-   Sınır anında `world.Time` zaten o tick ilerletilmiş olduğundan sistemlere geçen
-   `TickContext.Stamp` sınır damgasının kendisidir (`WorldTickComposer.cs:255, 259`).
-6. **Kadans sabitleri tek kaynaktan:** `MinutesPerTick` (varsayılan 1) runtime opsiyonundan gelir;
-   `TicksPerHour`/`TicksPerDay` `Normalize()` içinde `GameTime.MinutesPerHour/Day ÷ MinutesPerTick`
-   olarak TÜRETİLİR (60/1440) — 240/10 dönemindeki "gün = 4 oyun-saati" desync'ini yapısal olarak
-   kapatır (`Domain/Configuration/EmberRuntimeOptions.cs:75-81, 249-255`).
-7. **Hızlı ileri sarmalar aynı kapıdan geçer:** `ProofAdvanceHours` saat-adımlı ilerler (tek
-   sıçramada hourly/daily sınırları atlanırdı — shipcheck6 bulgusu;
-   `DomainSimulationAdapter.WorldEncounter.cs:85-100`); `AdvanceTravelDay` günlük,
-   `WaitHours` saatlik sarar (`DomainSimulationAdapter.Travel.cs:80-86`).
-8. **Save/load:** restore sonrası `RebuildAccumulatorsFrom(_world.Time)` hourly/daily
-   akümülatör fazını mutlak oyun zamanından yeniden türetir (DET-01; soğuk yüklemede bellek
-   akümülatörleri 0 olduğundan `ResetAnchor` tek başına yetmiyordu —
-   `DomainSimulationAdapter.Save.cs:56-63`); driver tarafında `AlignTo` sayaç çakışmasını önler
-   (`EmberTickDriver.cs:29-42`).
+## LLD - Veri Modeli (file:line)
 
-## LLD - Veri Modeli
+- **`GameTime` (readonly struct)** — `Assets/Scripts/Domain/Core/GameTime.cs:12-89`
+  - Alan: `_totalMinutes` (long)
+  - Sabitler: `MinutesPerHour=60`, `MinutesPerDay=1440`, `MinutesPerMonth=43200`, `MinutesPerYear=518400`, `DaysPerMonth=30`, `MonthsPerYear=12`, `DaysPerYear=360`
+  - Türetilen: `Minute`, `Hour`, `DayOfMonth`, `Month`, `Year`, `DayOfYear`, `TotalMinutes`
+  - Immutable — her `AddMinutes/Hours/Days/Months/Years` yeni struct döner
+- **`TickCadence` (enum)** — `Assets/Scripts/Simulation/Composition/TickCadence.cs:3-8` — `PerTick=0, Hourly=1, Daily=2`
+- **`TickContext` (readonly struct)** — `Assets/Scripts/Simulation/Composition/TickContext.cs:6-18` — `World`, `Stamp`, `Delta` (delta her zaman 1 çünkü replay tek adımdır)
+- **`IWorldTickSystem` (interface)** — `Assets/Scripts/Simulation/Composition/IWorldTickSystem.cs:3-9` — `string Id`, `TickCadence Cadence`, `int Order`, `void Run(in TickContext)`
+- **`WorldTickRegistry` (sealed class)** — `Assets/Scripts/Simulation/Composition/WorldTickRegistry.cs:6-63`
+  - `IWorldTickSystem[] _ordered / _perTick / _hourly / _daily`
+  - Sıralama anahtarı: `Cadence` → `Order` → `Id` ordinal (`WorldTickRegistry.cs:42-51`)
+- **`WorldTickComposer` (sealed class)** — `Assets/Scripts/Simulation/Composition/WorldTickComposer.cs:47-317`
+  - `_tickRegistry` (`WorldTickRegistry`)
+  - `_lastTickIndex`, `_ticksSinceHourly`, `_ticksSinceDaily`
+  - Statik `MinutesPerTick / TicksPerGameDay / TicksPerGameHour` — `EmberRuntimeOptionsProvider.Current.Tick` üzerinden okunur; **runtime tunable**, sabit değil (`WorldTickComposer.cs:49-66`)
+  - Statik profiler: `SystemWatch`, `TickCosts`, `PerfLog`, `SlowTickMs=12d`
+- **`FieldOwnershipRegistry` (static)** — `Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs:14-114`
+  - Tek alan: `IReadOnlyDictionary<string, string[]> Writers` — key = alan adı, value = `"systemId@Cadence:Order"` yazar listesi
+  - W35 sonrası 20 satır grubu (aşağıda döküldü)
 
-| Tip | Alanlar / içerik | Kanıt |
-|---|---|---|
-| `GameTime` (readonly struct) | `_totalMinutes: long` tek gerçek; sabitler `MinutesPerHour=60`, `MinutesPerDay=1440`, `MinutesPerMonth=43200`, `MinutesPerYear=518400`, `DaysPerMonth=30`, `MonthsPerYear=12`, `DaysPerYear=360`; türev bileşenler `Minute/Hour/DayOfMonth/Month/Year/DayOfYear`; `Add*` ve karşılaştırma/fark operatörleri | `Domain/Core/GameTime.cs:9-89` |
-| `TickCadence` (enum) | `PerTick=0, Hourly=1, Daily=2` | `Simulation/Composition/TickCadence.cs:3-8` |
-| `TickContext` (readonly struct) | `World: WorldState`, `Stamp: GameTime` (sınır damgası), `Delta: int` (replay'de hep 1) | `Simulation/Composition/TickContext.cs:6-18` |
-| `IWorldTickSystem` | `Id: string`, `Cadence: TickCadence`, `Order: int`, `Run(in TickContext)` | `Simulation/Composition/IWorldTickSystem.cs:3-9` |
-| `WorldTickRegistry` | `_ordered/_perTick/_hourly/_daily` dizileri; ctor null/boş-id/çift-id doğrulaması; sıralama kadans → order → ordinal id | `Simulation/Composition/WorldTickRegistry.cs:8-34, 41-50` |
-| `WorldTickComposer` (durum) | `_tickRegistry`, `_lastTickIndex` (−1 = çapasız), `_ticksSinceHourly`, `_ticksSinceDaily`; statik profiler alanları `SystemWatch/TickCosts/PerfLog/SlowTickMs=12ms` | `WorldTickComposer.cs:69-73, 218-221` |
-| `TickRuntimeOptions` | `MinutesPerTick=1L`; `TicksPerDay=1440` ve `TicksPerHour=60` (Normalize'da TÜRETİLİR); `LowStockThreshold/HighStockThreshold/PriceStep` (fiyat sistemine sızıntı, burada taşınır) | `Domain/Configuration/EmberRuntimeOptions.cs:75-85` |
-| `SeasonCalendar` | sıralı, örtüşmesiz `SeasonDefinition` satırları; ctor doğrulaması | `Domain/Time/SeasonCalendar.cs:9-37` |
-| `SeasonDefinition` | `Season`, `StartDayOfYear`, `EndDayOfYear` (1-tabanlı, kapsayıcı), `ContainsDay` | `Domain/Time/SeasonDefinition.cs:7-40` |
-| `Season` (enum) | `None/Spring/Summer/Autumn/Winter`; davranış enum'a değil veri satırlarına bağlanır | `Domain/Time/Season.cs:4-11` |
-| Varsayılan takvim | 90'ar günlük 4 mevsim, Bahar 1. gün | `WorldTickComposer.cs:88-98` |
-| `FieldOwnershipRegistry` | `Writers: IReadOnlyDictionary<string, string[]>` — alan → `"systemId@Cadence:Order"` yazar listesi; yürütülebilir dokümantasyon | `Simulation/Composition/FieldOwnershipRegistry.cs:12-53` |
-| `WorldStateDigest` | kanonik metin (TIME, ACTORS, PLANTS, SOILS, JOBS, PRICES, STOCKPILES, CARAVANS, SPELL_COOLDOWNS, SHIELD_BUFFS, EVENTS, WORLDQUESTS bölümleri) → SHA-256 hex; WORLDQUESTS bölümü boşken ATLANIR ki eski golden'lar bayt-aynı kalsın | `Simulation/Composition/WorldStateDigest.cs:18-54, 380-390` |
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-## LLD - Fonksiyon Haritasi
+- `WorldTickComposer.Advance(WorldState world, int tickIndex)` — `WorldTickComposer.cs:215-267` — delta hesaplar ve her tick için üç bandı sırayla replay eder; slow-tick profil raporlar
+- `WorldTickComposer.ResetAnchor()` — `WorldTickComposer.cs:283-287` — sadece `_lastTickIndex = -1`; save-load sonrası re-anchor için, aksümülatörleri **KORUR** (8th pass A-P2 düzeltmesi)
+- `WorldTickComposer.RebuildAccumulatorsFrom(GameTime worldTime)` — `WorldTickComposer.cs:296-301` — restore sonrası aksümülatörleri `TotalMinutes mod X` ile yeniden türetir
+- `WorldTickComposer.BuildDefaultCalendar()` (static, private) — `WorldTickComposer.cs:89-98` — 4×90 gün sezon takvimi
+- `WorldTickComposer.BuildDefaultPlantSpecies()` (static, private) — `WorldTickComposer.cs:103-122` — deterministik "wheat" (seed→sprout→ripe) katalog
+- `WorldTickComposer.Accumulate(string name, double ms)` (static, private) — `WorldTickComposer.cs:212-213` — per-sistem stopwatch birikimi
+- `WorldTickRegistry.ctor(IEnumerable<IWorldTickSystem> systems)` — `WorldTickRegistry.cs:13-33` — validate + sort + bant filtreleri kurar; boş id/duplicate id/null sistem atar
+- `WorldTickRegistry.Compare(left, right)` (private static) — `WorldTickRegistry.cs:42-51` — sıralama anahtarı (Cadence, Order, IdOrdinal)
+- `WorldTickRegistry.Filter(TickCadence cadence)` (private) — `WorldTickRegistry.cs:53-62` — bir bandı `_ordered` içinden filtreleyip array döner
+- `DefaultTickSystems.Create(...)` (static) — `DefaultTickSystems.cs:27-79` — 20 sistemin tek fabrikası; `WorldTickRegistry` döner
+- `DefaultTickSystems.ResolveProductionRecipe(RecipeId id)` (static) — `DefaultTickSystems.cs:88-98` — `ProductionRecipeRegistry.Resolve`'un null-on-unknown sarmalayıcısı (W34 WORK)
+- `GameTimeAdvanceSystem.Advance(GameTime current, long minutes)` — `Time/GameTimeAdvanceSystem.cs:22-28` — safe AddMinutes (negatif dakika atar)
+- `GameTimeAdvanceSystem.Advance(current, minutes, eventLog, siteId)` — `Time/GameTimeAdvanceSystem.cs:30-42` — advance + gün/sezon geçiş event'i emit eder
+- `GameTimeAdvanceSystem.AppendTransitionEvents(...)` (private) — `Time/GameTimeAdvanceSystem.cs:44-88` — `DayAdvanced` + `SeasonChanged` WorldEvent'lerini basar
 
-**Çekirdek:**
-- `WorldTickComposer.Advance(WorldState world, int tickIndex): void` — `WorldTickComposer.cs:226` — delta'yı per-tick replay eder; idempotent; geri gidiş çapayı yeniler, domain'i geri sarmaz.
-- `WorldTickComposer.ResetAnchor(): void` — `WorldTickComposer.cs:309` — `_lastTickIndex = -1`; hourly/daily akümülatörleri KASITLI korunur (sekizinci pas A-P2).
-- `WorldTickComposer.RebuildAccumulatorsFrom(GameTime worldTime): void` — `WorldTickComposer.cs:322` — akümülatörleri `TotalMinutes mod TicksPerGameHour/Day`'den türetir (dokuzuncu pas A-P2; DET-01).
-- `WorldTickComposer.MinutesPerTick/TicksPerGameDay/TicksPerGameHour` (statik özellik) — `WorldTickComposer.cs:52, 59, 67` — runtime opsiyonlarına delege.
-- `DefaultTickSystems.Create(...): WorldTickRegistry` — `DefaultTickSystems.cs:27` — 21 adaptör adımını kaydeder (aşağıdaki bant tablosu).
-- `WorldTickRegistry..ctor(IEnumerable<IWorldTickSystem>)` — `WorldTickRegistry.cs:13` — doğrular, sıralar, bantlara böler; `Compare` kadans→order→id — `WorldTickRegistry.cs:41`.
-- `GameTimeAdvanceSystem.Advance(GameTime, long minutes): GameTime` — `Simulation/Time/GameTimeAdvanceSystem.cs:22` — negatif dakika fırlatır, saf ekleme.
-- `GameTimeAdvanceSystem.Advance(GameTime, long, WorldEventLog, SiteId): GameTime` — `GameTimeAdvanceSystem.cs:30` — geçiş olayları da yazar (runtime'da ÇAĞRILMIYOR, bkz. Borçlar).
-- `SeasonCalendar.GetSeason/TryGetSeason/IsSeasonBoundary` — `SeasonCalendar.cs:43, 53, 70`.
-- `WorldStateDigest.Compute(WorldState): string` — `WorldStateDigest.cs:18` — determinizm parmak izi.
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-**Sürücü zinciri:**
-- `EmberTickDriver.Update()` — `EmberTickDriver.cs:44` — akümülatör + sınırlı catch-up döngüsü.
-- `EmberTickDriver.AlignTo(int)` — `EmberTickDriver.cs:37` — restore sonrası sayaç hizası (PR #185 P1).
-- `EmberWorldHost.OnTick(int)` — `EmberWorldHost.Bindings.cs:44` — projektöre delege.
-- `WorldViewProjector.ProjectTick(int)` — `WorldViewProjector.cs:64` — advance → sync → HUD sırası.
-- `DomainSimulationAdapter.AdvanceTick(int)` — `DomainSimulationAdapter.Clock.cs:6` — kuyruk boşalt + composer + yayınlar.
-- `DomainSimulationAdapter.ProofAdvanceHours(int)` — `DomainSimulationAdapter.WorldEncounter.cs:91` — saat-adımlı sarma; hedef `world.Time` dakikası, `hours*4+8` guard'lı döngü.
-- `DomainSimulationAdapter.AdvanceTravelDay()` / `WaitHours(int)` — `DomainSimulationAdapter.Travel.cs:81-86`.
-- `EmberRuntimeOptionsProvider.Normalize` (tick bölümü) — `EmberRuntimeOptions.cs:249-255` — `TicksPerHour/Day` türetimi.
+Time-cadence sisteminin **doğrudan** dokunduğu tek FieldOwnershipRegistry satırı:
 
-**Kayıtlı bant tablosu (kanonik sıra; id@Kadans:Order → kanıt satırı = `base(...)` çağrısı, hepsi `DefaultTickSystems.cs`):**
+- `World.Time` → `core.time@PerTick:10` — `WorldTickComposer.cs` her tick `world.Time = _timeAdvance.Advance(...)` çağırır (`DefaultTickSystems.cs:114-118`, `TimeStep`)
 
-| Bant | Sıra | Id | Satır | Tek cümle |
-|---|---|---|---|---|
-| PerTick | 10 | `core.time` | :92 | `world.Time += Delta × MinutesPerTick` (`:97-102`) |
-| PerTick | 20 | `core.magic` | :110 | oyuncu büyü bekleme/kalkan tick'leri |
-| PerTick | 20 | `living.schedule` | :219 | NPC tile-adım yürüyüşü (Hourly'de sürünüyordu, bilinçli PerTick) |
-| PerTick | 21 | `living.companion_follow` | :311 | yoldaş heel-follow, schedule'dan SONRA |
-| PerTick | 22 | `living.eatOnArrival` | :259 | varış anında yemek (P0 yığılma çözümü) |
-| Hourly | 10 | `econ.jobs` | :128 | iş talep/claim + reçete ilerletme, JobAssigned olayı |
-| Hourly | 15 | `quest.tick` | :241 | görev sistemi saatlik tick |
-| Hourly | 30 | `living.needs` | :361 | ihtiyaç rampaları + mood; saatte TEK özet olay (`:380-398`) |
-| Hourly | 35 | `living.consumption` | :296 | metabolizma; saat `Stamp`'ten türetilir (`:301-302`) |
-| Hourly | 40 | `living.predation` | :328 | avcılar sim içinde avlanır |
-| Hourly | 42 | `living.companion_guard` | :319 | yoldaş gard vuruşu |
-| Hourly | 45 | `living.witness` | :337 | tanık belleği + devriye yakınsaması |
-| Hourly | 50 | `living.ambient` | :271 | fare/kedi ambient yaşamı, gerçek stok |
-| Hourly | 55 | `living.rumors` | :283 | olay → kasaba dedikodusu |
-| Daily | 10 | `world.caravans` | :406 | kervan hareketi |
-| Daily | 20 | `econ.plantgrowth` | :480 | mevsim-kurallı ekin büyümesi |
-| Daily | 25 | `world.harvest` | :424 | olgun bitki → stok +2, yeniden ekim; büyüme(20)→hasat(25)→fiyat(30) aynı-gün zinciri |
-| Daily | 27 | `econ.shortage_response` | :348 | kıtlık süpürmesi → ekim işi |
-| Daily | 28 | `world.runtime_history` | :514 | günlük olay→ilişki kayması + aylık kronik |
-| Daily | 30 | `econ.prices` | :523 | stok eşikli fiyat kayması |
-| Daily | 40 | `politics.faction_decay` | :559 | itibar nötrleşmesi; `ShouldApply` gün indeksini damga aritmetiğinden çıkarır (`:574-579`) |
+Composer, registry ve field-ownership katmanı **hiçbir Actor/World alanını doğrudan yazmaz** — sadece diğer sistemleri organize eder. Ancak `FieldOwnershipRegistry` **tüm** kayıtlı yazarların ledger'ıdır; W35 sonrası (`FieldOwnershipRegistry.cs:14-114`) tam liste:
 
-## LLD - Yazdigi/Okudugu Alanlar
+| Alan | Yazarlar |
+|---|---|
+| `Actor.Position` | `living.schedule@PerTick:20`, `living.action_advance@PerTick:22`, `living.companion_follow@PerTick:21`, `living.predation@Hourly:40`, `living.witness@Hourly:45`, `living.ambient@Hourly:50` |
+| `Actor.Needs` | `living.needs@Hourly:30`, `living.action_advance@PerTick:22` (W32 ConsumeFood + W34 Sleep) |
+| `Actor.ActionState` | `living.decision@PerTick:18`, `living.action_advance@PerTick:22` (W32 EAT) |
+| `Actor.Vitals` | `living.predation@Hourly:40`, `living.witness@Hourly:45`, `living.companion_guard@Hourly:42` |
+| `Actor.Mood` | `living.action_advance@PerTick:22`, `living.needs@Hourly:30` (W35) |
+| `World.Reservations` | `living.decision@PerTick:18`, `living.action_advance@PerTick:22` (W32) |
+| `World.GuardPursuits` | `living.witness@Hourly:45`, `living.schedule@PerTick:20` |
+| `World.Stockpiles` | `living.action_advance@PerTick:22` (W32 TakeFood + W33 HaulCrop/PlantSeed + W34 PerformWork), `living.decision@PerTick:18` (W34 refund), `living.ambient@Hourly:50`, `world.caravans@Daily:10` |
+| `World.WorkOrders` | `living.decision@PerTick:18`, `living.action_advance@PerTick:22` (W34) |
+| `World.Jobs` | `econ.jobs@Hourly:10`, `living.action_advance@PerTick:22`, `econ.shortage_response@Daily:27` (W34) |
+| `World.Plants` | `econ.plantgrowth@Daily:20`, `living.action_advance@PerTick:22` (W33) |
+| `World.Soils` | `living.action_advance@PerTick:22` (W33) |
+| `World.Rumors` | `living.rumors@Hourly:55` |
+| `World.SiteUnrest` | `living.witness@Hourly:45` |
+| `World.Time` | `core.time@PerTick:10` (W35) |
+| `World.NpcMemory` | `living.witness@Hourly:45` (komut-güdümlü yazarlar bilerek DEKLARE EDİLMEDİ) (W35) |
+| `World.CompanionIds` | `living.companion_follow@PerTick:21` (W35) |
+| `World.Factions` | `politics.faction_decay@Daily:40` (W35) |
 
-Bu sistemin KENDİ yazdığı tek alan: **`World.Time`** — yazar `core.time@PerTick:10`
-(`DefaultTickSystems.cs:97-102`). DİKKAT: `FieldOwnershipRegistry`'de `World.Time` satırı YOK —
-saat yazarlığı defterde ilan edilmemiş (bkz. Borçlar #3).
+## LLD - Ürettiği/Tükettiği Olaylar
 
-Defterin ilan ettiği satırlar (aynen; `FieldOwnershipRegistry.cs:18-52`):
-- `Actor.Position` ← `living.schedule@PerTick:20`, `living.companion_follow@PerTick:21`, `living.predation@Hourly:40`, `living.witness@Hourly:45`, `living.ambient@Hourly:50`
-- `Actor.Needs` ← `living.needs@Hourly:30`, `living.eatOnArrival@PerTick:22`, `living.consumption@Hourly:35`
-- `Actor.Vitals` ← `living.predation@Hourly:40`, `living.witness@Hourly:45`, `living.companion_guard@Hourly:42`
-- `World.GuardPursuits` ← `living.witness@Hourly:45` (kurar/tazeler), `living.schedule@PerTick:20` (çözer/budar)
-- `World.Stockpiles` ← `world.harvest@Daily:25`, `living.eatOnArrival@PerTick:22`, `living.consumption@Hourly:35`, `living.ambient@Hourly:50`, `econ.trade@Daily:28` (⚠ hayalet id, bkz. Borçlar #1)
-- `World.Rumors` ← `living.rumors@Hourly:55`
-- `World.SiteUnrest` ← `living.witness@Hourly:45`
+**Üretilen** (composer → `world.Events`):
 
-Composer'ın okuduğu kapı alanları: `world.Actors` ve `world.Events` null ise Hourly bandı,
-`world.Events` null ise Daily bandı ATLANIR ama sınır sayaçları yine tüketilir
-(`WorldTickComposer.cs:252-279`). Kadans sabitleri `EmberRuntimeOptionsProvider.Current.Tick`'ten
-okunur (`WorldTickComposer.cs:52-67`).
+- `WorldEventKind.DayAdvanced` — `GameTimeAdvanceSystem.AppendTransitionEvents` her gün dönüşünde (`Time/GameTimeAdvanceSystem.cs:53-65`)
+- `WorldEventKind.SeasonChanged` — sezon geçişlerinde (`Time/GameTimeAdvanceSystem.cs:70-88`)
+- `TickPerf` warn log satırı — `>12ms` tick'te "slow tick N: X.Xms — sysA=1.2ms sysB=3.4ms" (WorldTickComposer.cs:257-266) — `EmberLog` sink'i, WorldEvent değil
 
-## LLD - Urettigi/Tukettigi Olaylar
+**Tüketilen**: hiçbiri. Composer olay okumaz; sadece registry'deki sistemleri çağırır.
 
-**Üretilen (bu sistemin öz olayları):**
-- `WorldEventKind.DayAdvanced` ve `WorldEventKind.SeasonChanged` — yalnız
-  `GameTimeAdvanceSystem`'in 4-argümanlı `Advance` overload'ı yazar
-  (`GameTimeAdvanceSystem.cs:46-89`). **Runtime'da hiç üretilmez**: `TimeStep.Run` 2-argümanlı
-  overload'ı çağırır (`DefaultTickSystems.cs:99-101`); repo grep'inde 4-arg overload'ın tek
-  çağrıcısı testlerdir (`Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs:38, 68, 91`).
-  `WorldEventNarrator` bu iki tür için anlatı satırı taşır ama besleyen yok
-  (`Presentation/Visual/WorldEventNarrator.cs`).
-- Log tag `TickPerf` — 12 ms'i aşan tick'lerde sistem-başına maliyet dökümü `EmberLog.Warn`
-  (`WorldTickComposer.cs:218-221, 282-293`). Sink bağlı değilse sessiz.
+**Diğer sistemler**: Registry içindeki her sistem kendi olay setini üretir (ör. `econ.shortage_response` → `PlantingJobPosted`, `living.action_advance` → `ActionCompleted/ActionFailed`, vb.). Bunlar 02-actor-actions ve 03-plant-growth doclarında sayılır.
 
-**Damgası bu sistemce belirlenen (bant adımlarının olayları):** sınırda koşan her adım olay
-damgasını `context.Stamp`'ten alır — ör. `JobAssigned` (`DefaultTickSystems.cs:149-162`),
-`NeedChanged` saatlik özeti (`:386-398`), `PlantHarvested` (`:460-463`). Kural (CAN SUYU V2,
-MultiDayCatchup invariantı): pencere/gün-indeksi/olay damgası HEP `context.Stamp`'ten türetilir,
-`world.Time`'dan değil — per-tick replay'de ikisi sınır anında eşittir ama kural stateless'lığı
-korur.
+## Testler (bu sistemi pinleyen test dosyaları - W32-W36 hikâye-testleri dahil)
 
-**Tüketilen:** composer olay tüketmez; `WorldStateDigest.AppendEvents` tüm `WorldEventLog`'u
-parmak izine katar (`WorldStateDigest.cs:442-481`).
+**Composer / Registry / Cadence pinleri**:
 
-## Testler
+- `Assets/Tests/EditMode/Composition/WorldTickRegistryTests.cs` — sıralama, duplicate reddi, **canonical order golden'ı** (W34 sonrası: 6 PerTick + 8 Hourly + 6 Daily satır)
+- `Assets/Tests/EditMode/Composition/DefaultRegistryFixture.cs` — B03 fix: composer kurulumunun tek test-tarafı kaynağı
+- `Assets/Tests/EditMode/Composition/CadenceChunkingInvarianceTests.cs` — 2 tam gün: tick-by-tick vs 1/7/13/40/61/127... chunked çağrılar birebir aynı event log üretmeli (REFORM #2 sözleşmesi)
+- `Assets/Tests/EditMode/Composition/ActionPhaseChunkingInvarianceTests.cs` — W32/W33/W34 hikâye-testi: EAT + FARM (4 gün) + WORK (narrow cast) faz makinelerinin chunking invariance'ı; capture sink kullanıyor
+- `Assets/Tests/EditMode/Composition/WorldTickComposerReplayTests.cs` — DET-01 save/load: `ResetAnchor` yetmez, `RebuildAccumulatorsFrom(world.Time)` gereklidir (kesintisiz run ile birebir eşdeğerlik)
+- `Assets/Tests/EditMode/Composition/WorldTickDigestGoldenTests.cs` — same-seed double advance = byte-identical digest; W32 stage-A + W33 F7 + W34 sleep/work satırları için re-baseline'lı
+- `Assets/Tests/EditMode/Composition/WorldTickFactionDecayTests.cs` — daily band 15 günlük itibar düşüş integrasyonu
+- `Assets/Tests/EditMode/Composition/WorldLivesOverNTicksTests.cs` — N tick soak; yaşayan-dünya invariantları
+- `Assets/Tests/EditMode/Composition/WorldNpcDailyRhythmTests.cs` — 8-aktörlü rutin (W33: iki tarım işi day 0'da tamamlanır, iki demirci işi ele geçirilmiş kalır)
+- `Assets/Tests/EditMode/Composition/CatchupPerfPinTests.cs` — 14 günlük catch-up < 5 s (W29 O(delta) replay + W33 farm decide bantı içeride)
+- `Assets/Tests/EditMode/Composition/LiveScaleCatchupPerfPinTests.cs` — ~40 site / ~800 civilian ölçekte bir günlük catchup < 3 s
+- `Assets/Tests/EditMode/Composition/PlantGrowthSnowGateWireTests.cs` — B27 wound-close: `PlantGrowthStep.Run` `isSnowing: season == Season.Winter` (W36 tail)
 
-Hepsi `Assets/Tests/EditMode/` altında:
+**Field ownership lint**:
 
-- `Composition/CadenceChunkingInvarianceTests.cs` — tick-tek-tek vs düzensiz parçalar (1,7,13,…)
-  2 oyun günü boyunca ÖZDEŞ olay logu; boundary-stamp kontratının yük taşıyan invariantı
-  (`:9-45`). İlk koşusunda gerçek composer bug'ı yakaladı → per-tick replay reformu.
-- `Composition/WorldTickComposerReplayTests.cs` — save/load replay-eşdeğerliği:
-  `RebuildAccumulatorsFrom` sürekli koşuyu yeniden üretir, eski `ResetAnchor`-tek-başına yolunun
-  üretmediği de ayrıca kanıtlanır (`:9-18`).
-- `Composition/WorldTickDigestGoldenTests.cs` — golden SHA-256 digest; davranış değişimlerinde
-  bilinçli re-baseline geçmişi dosya başında (`:10-22`).
-- `Composition/WorldTickRegistryTests.cs` — registry sıralama/çift-id doğrulaması.
-- `Composition/FieldOwnershipRegistryTests.cs` — sahiplik lint'i: ilan edilen her yazar bilinen
-  id olmalı; çekirdek alanların satırı olmalı (`:11-40`; zaafı için Borçlar #1).
-- `Composition/CatchupPerfPinTests.cs` — 14 günlük catch-up interaktif kalmalı (33 ms ölçüm,
-  150x pay; `:8-12`).
-- `Composition/LiveScaleCatchupPerfPinTests.cs` — canlı ölçek (≈40 site / 800 sivil) 1 replayed
-  gün pini; EatOnArrival kuadratik regresyon bekçisi (`:12-16`).
-- `Composition/WorldLivesOverNTicksTests.cs` — SOUL-01/02 kabul kapısı: gerçek composer'la dünya
-  GÖRÜNÜR ilerler (ekin/iş/fiyat) (`:11-18`).
-- `Composition/WorldNpcDailyRhythmTests.cs` — günlük ritim (10:00 iş örneklemesi) (`:23-25`).
-- `Composition/WorldTickFactionDecayTests.cs` — günlük itibar nötrleşmesi + MultiDayCatchup
-  bağlantılı pinler.
-- `Time/GameTimeAdvanceSystemTests.cs` — GameTime ilerletme + DayAdvanced/SeasonChanged geçiş
-  satırları (yalnız burada üretilirler).
-- `Save/SaveLoadDigestRoundtripTests.cs` — digest üstünden save/load turu.
-- `CanSuyu/LivingWorldGateTests.cs` + `CanSuyu/GateContractLintTests.cs` — emergence kapıları
-  composer'ı gerçek kadansla sürer; lint sabit-saat/screenshot-kanıt gerilemesini reddeder.
+- `Assets/Tests/EditMode/Composition/FieldOwnershipRegistryTests.cs` — her deklare yazar gerçek kayıtlı sistem olmalı (reverse-lint); core alanların ownership satırı olmalı (W32'de `Actor.ActionState` + `World.Reservations` pinlendi)
 
-## Bilinen Borclar + Kacak Kapilari
+**GameTime birim testleri**:
 
-1. **Sahiplik lint'i elle tutulan listeye karşı koşuyor (c-ailesi bekçisinde delik).**
-   `FieldOwnershipRegistryTests.knownIds` gerçek registry'den TÜRETİLMİYOR, elle yazılmış
-   (`FieldOwnershipRegistryTests.cs:14-22`) ve kayıtlı id'lerle uyumsuz: listede `world.growth`,
-   `econ.trade`, `world.shortage`, `world.history`, `econ.caravan`, `faction.decay` var; gerçek
-   id'ler `econ.plantgrowth`, `econ.shortage_response`, `world.runtime_history`,
-   `world.caravans`, `politics.faction_decay` ve **`econ.trade` diye kayıtlı sistem hiç yok**
-   (kayıt listesi `DefaultTickSystems.cs:41-65`). Defterdeki `econ.trade@Daily:28` yazarı hayalet
-   (`FieldOwnershipRegistry.cs:49`; gerçek Daily:28 = `world.runtime_history`,
-   `DefaultTickSystems.cs:514`). "İlan edilen yazar GERÇEK sistem olmalı" iddiası bu haliyle
-   ölü/yeniden-adlanmış id'leri yakalayamaz — lint registry'nin `Ordered` listesinden
-   beslenmelidir.
-2. **DayAdvanced/SeasonChanged runtime'da hiç doğmuyor.** Olay-yazan overload'ı yalnız testler
-   çağırır (yukarıda kanıtlı); canlı loop 2-arg overload kullanır (`DefaultTickSystems.cs:99-101`).
-   Gün/mevsim geçişini dinlemek isteyen her tüketici bugün kendi damga aritmetiğini yazmak
-   zorunda — (c)/(g) ailesi tekrarına açık kapı.
-3. **`World.Time` sahiplik defterinde yok.** Saatin tek yazarı `core.time` fiilen doğru ama ilan
-   edilmemiş (`FieldOwnershipRegistry.cs:15-53`'te satır yok); Reform #2'nin "ikinci yazar CI
-   olayıdır" vaadi saat alanını kapsamıyor.
-4. **Sessiz bant atlama:** `world.Actors`/`world.Events` null iken Hourly (ve Events null iken
-   Daily) bandı koşmaz ama sınır sayacı tüketilir (`WorldTickComposer.cs:252-279`) — "sessiz"
-   bir dünya hourly tarihini hatasız kaybeder. Test dünyaları hep dolu olduğundan pinlenmemiş.
-5. **İlk tick baseline olarak yutulur** (`WorldTickComposer.cs:229-231`): N-gün döngüsü gün
-   sınırlarını 1..N−1 damgalar; gün-30 olayı 31 günlük döngü ister (CAN SUYU V2 kuralı).
-   Bilerek böyle, ama her yeni test yazarında bir kez tökezleten tuzak.
-6. **O(delta) catch-up gerçek saniye öder:** uzun travel/wait per-tick replay ile ilerler
-   (`WorldTickComposer.cs:236-241`); perf pinleri (`CatchupPerfPinTests`,
-   `LiveScaleCatchupPerfPinTests`) bekçi, ama kadro/dünya büyüdükçe pin bütçesi yeniden ölçülmeli.
-7. **`ProofAdvanceHours` tam-saat garantisi zayıf:** `ticksPerHour = TicksPerGameDay/24`
-   (`WorldEncounter.cs:92`) `MinutesPerTick` böleni tutmayınca yamulur; döngü hedef-dakika +
-   `hours*4+8` guard ile telafi eder (`:96-99`) — 8 saatlik ilerlemenin +7h çıktığı vaka
-   yaşandı (gözlem 13178, 2026-06-12).
-8. **`Normalize` bölünebilirlik denetlemez:** `TicksPerHour = 60/MinutesPerTick` tamsayı bölmesi
-   (`EmberRuntimeOptions.cs:254-255`); `MinutesPerTick=7` gibi bir değer saati 56 dakikaya
-   sıkıştırır — geçersiz kombinasyon sessizce kabul edilir.
-9. **Statik profiler durumu:** `SystemWatch`/`TickCosts` static (`WorldTickComposer.cs:218-219`);
-   iki composer aynı anda Advance ederse (test paralelliği, çok-dünya) maliyet raporu karışır —
-   determinizmi bozmaz, teşhisi bozar.
-10. **Stateless'lık sözleşmesi lint'siz:** registry adım örnekleri dünyalar arası paylaşılır;
-    tick sistemleri stateless olmalı ve damgayı `context.Stamp`'ten türetmeli (CAN SUYU V2
-    kuralı) — bunu doğrudan zorlayan analizör/lint yok, yalnız `CadenceChunkingInvarianceTests`
-    dolaylı yakalar.
-11. **`FactionDecayStep.ShouldApply` damga→gün çevirisini `TicksPerGameDay × MinutesPerTick`
-    çarpımıyla yapar (`DefaultTickSystems.cs:574-579`)** — türetilmiş sabitlerle doğru ama gün
-    indeksinin üçüncü bir hesaplanış biçimi; #2'deki eksik DayAdvanced olayının dolaylı maliyeti.
-12. **Hata ailesi bağları:** bu sistem (c) ailesinin (kadans yazar çatışması) kök çözümüdür
-    (Reform #2, docs/SYSTEMS_ATLAS.md §3/§5); #1-#3 borçları o reformun henüz kapanmamış
-    kenarlarıdır. (g) ailesine (mod önyargısı/unchecked sayaç) komşu riskler #7-#8'dedir.
+- `Assets/Tests/EditMode/Core/GameTimeTests.cs` — struct semantics
+- `Assets/Tests/EditMode/Time/GameTimeAdvanceSystemTests.cs` — day/season transition event doğruluğu
+
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
+
+**W32 (5049d445, 2026-07-25) — EAT slice**:
+- `DefaultTickSystems.cs`: `DecisionStep` (`living.decision@PerTick:18`) + `ActionAdvancementStep` (`living.action_advance@PerTick:22`) eklendi; retired `EatOnArrivalStep` slotuna oturdu
+- `FieldOwnershipRegistry.cs`: `Actor.ActionState` + `World.Reservations` satırları eklendi; `Actor.Position` altına `living.schedule` "NARROWED (W32): actionless actors only" notu; `Actor.Needs` altına W32 ConsumeFood notu
+- `WorldTickRegistryTests.cs` canonical order golden'ı 6 PerTick satırıyla genişledi
+
+**W33 (61e340f3, 2026-07-25) — FARM slice**:
+- `DefaultTickSystems.cs`: `HarvestStep@Daily:25` **retired** (fiat +2/self-replant teleport öldü); `JobAssignmentStep` shrink — `StartRecipeForClaim` çıkarıldı, sadece claim + ghost-cancel + dead-claimant sweep kaldı
+- `FieldOwnershipRegistry.cs`: `World.Plants`, `World.Soils` yeni satırlar; `World.Jobs` altına `living.action_advance` yazarı deklare edildi; `World.Stockpiles`'a HaulCrop/PlantSeed writer notları
+- Test-tarafı: `DefaultRegistryFixture` doğdu (B03 fix — hand-typed known-id listesi rotting sorunu çözüldü), `FieldOwnershipRegistryTests` reverse-lint kazandı
+
+**W34 (3aa87cf6, 2026-07-25) — SLEEP + WORK slices**:
+- `DefaultTickSystems.cs`: `NeedConsumptionSystem` + `ConsumptionStep@Hourly:35` **retired** (positionless night fiat öldü — sleep artık `MoveToBed→Sleep` deed); `JobAssignmentStep.TickAssignedJobs` **retired** (free-running counter öldü — order progress SADECE `living.action_advance@PerTick:22`)
+- `FieldOwnershipRegistry.cs`: `World.WorkOrders` yeni satır; `World.Jobs` multi-writer resmen deklare edildi (`econ.jobs@Hourly:10` + `living.action_advance@PerTick:22` + `econ.shortage_response@Daily:27`); `Actor.Needs`'e W34 Sleep notu; `World.Stockpiles`'a W34 PerformWork fund/mint notu
+
+**W35 (20a3b899, 2026-07-25) — Ownership widens**:
+- `FieldOwnershipRegistry.cs`: **6 yeni satır grubu** — `World.Time`, `World.Plants` (yeniden deklare — aşağı bak), `Actor.Mood`, `World.NpcMemory`, `World.CompanionIds`, `World.Factions`. Her deklare yazar reverse-lint ile gerçek kayıtlı adıma çözüldü; boot-only + komut-güdümlü yazarlar bilerek deklare edilmedi
+- `ScheduleSystem` küçüldü (guard-only) — bu doc'un konusu değil, ancak `Actor.Position` yazarı listesinde `living.schedule@PerTick:20`'nin "actionless only" hakikati W35'te resmileşti
+
+**W36 (f6c9e2d0, 2026-07-25) — RUH_TESHIS post-arch tail**:
+- `DefaultTickSystems.cs`: B27 close — `PlantGrowthStep.Run`'da hardcoded `isSnowing: false` öldü; şimdi `season == Season.Winter` (Slice 2 gerçek weather'e kadar coarse gate)
+- Composer/Registry contract'ı değişmedi; sadece step içi wire düzeltmesi
+
+## Bilinen Borçlar + Kaçak Kapıları
+
+- **`FieldOwnershipRegistry.cs:66` vs `:100`** — `World.Plants` anahtarı sözlükte **iki kez** ilan edildi (W33 satırı + W35 satırı). C# 6 indexer syntax (`["key"] = value`) duplicate atmaz, sessizce üzerine yazar — bu durumda ikinci (`W35`) tanım kazanır. İki tanım semantik olarak aynı yazarları saydığı için görünür bir arıza yok, ama ledger'ın kendisi single-source-of-truth iddiasını kırıyor. Küçük bir cleanup adayı.
+- **`WorldTickComposer.MinutesPerTick` / `TicksPerGameDay/Hour` runtime derived** — `EmberRuntimeOptionsProvider.Current.Tick`'ten okunuyor, `EmberRuntimeOptions.Normalize` `TicksPerHour/Day`'i `MinutesPerTick`'ten türetiyor (`EmberRuntimeOptions.cs:254-255`). Memory ID **13178**: `ProofAdvanceHours` 8 saatlik advance için exact olmayan bir sonuç veriyor — `MinutesPerTick > 1` konfigürasyonlarda saat başı hizalama sapabilir. Bir uçtan pinlenmiş test yok.
+- **`ResetAnchor` vs `RebuildAccumulatorsFrom` sıralama tuzağı** — 8th pass düzeltmesinden sonra `ResetAnchor` **aksümülatörleri korur**, ama restore path'i saati adjust etmeden `ResetAnchor` çağırırsa aksümülatörler eski durumda kalır. Tek doğru sıra: `world.Time` restore → `RebuildAccumulatorsFrom(world.Time)`. `DomainSimulationAdapter.Save.cs` doğru sırayı çağırıyor (grep pinli); ama yeni bir load path yazan bu tuzağa düşebilir.
+- **Duplicate-add validation `WorldTickRegistry`'de var, `FieldOwnershipRegistry`'de yok** — registry aynı id iki kez eklerse `InvalidOperationException`; ownership dictionary aynı key iki kez alırsa (yukarıdaki `World.Plants` örneği) sessiz overwrite. Reverse-lint bunu yakalamaz — sadece ghost yazar arar, duplicate key aramaz.
+- **`TickContext.Delta` her zaman 1** — REFORM #2 replay tek adım yapıyor; ancak arayüz `int Delta` sunuyor. Yeni bir sistem `context.Delta` üzerinden batch mantığı kurmak isterse (örn. "N tick worth of decay"), invariance testleri bunu yakalamaz — çünkü delta zaten 1'dir; ama chunking invariance sözleşmesini kırar. `TickContext` yorumu bunu söylemiyor, kaçak kapı.
+- **Slow-tick eşiği (12 ms) hardcoded** — `WorldTickComposer.cs:196` `SlowTickMs = 12d`. Editor'da tolere edilebilir, headless CI'da farklı olması gerekebilir; runtime option değil.
+- **`FieldOwnershipRegistry` "komut-güdümlü yazarlar bilerek deklare edilmedi" (dialog / trade completion / ToolUse / boot)** — W35 yorumunda açıkça belirtiliyor. Reverse-lint bu yazarları "ghost" saymaz çünkü ledger'da yoklar; ama tick-loop-dışı yazımların ownership'i hiçbir yerde denetlenmiyor. Yeni bir command handler bir alanı istediği zaman yazabilir; single-writer-per-field disiplini sadece tick loop içinde asayiş sağlar.

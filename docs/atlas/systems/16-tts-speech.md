@@ -1,242 +1,214 @@
 # 16-tts-speech
 
-## HLD - Ne ve Neden
+## HLD - Ne ve Neden (5-10 cumle)
 
-Konusan her varlik — NPC, oyuncu, kahin/DM — kalici ve taninabilir bir SESE sahip olsun:
-sistemin felsefesi "ses = kimlik"tir ve forge'un portreyi seed'den turetmesi gibi, ses imzasi da
-aktor id'sinden deterministik turetilir (`NpcVoiceSignatureService.cs:3-4`). Ikinci amac
-AKIS: LLM cevabi hala uretilirken tamamlanan cumleler aninda seslendirilir, "kulak, gozun
-okudugu akisi takip eder" (`SpeechDirector.cs:7-9`). Iki backend vardir: birincil olarak Piper
-neural TTS (`piper.exe` alt sureci, 904 konusmacili LibriTTS-R modeli, tamamen offline,
-`PiperSpeechSynth.cs:8-14`), model dosyalari yoksa veya surec olurse Windows SAPI (COM
-reflection ile, paketsiz/agsiz, `WindowsSpeechService.cs:246-252`). SAPI de yoksa sistem
-sessizce susar — ses hicbir zaman sert bagimlilik degildir (`WindowsSpeechService.cs:251`,
-`PiperSpeechSynth.cs:14`). Oyuncuya gorunen etki: NPC yazarken konusmaya baslar, her NPC
-her oturumda ayni sesle konusur, oyuncunun kendi sorulari kendi sesiyle okunur (M3b.3,
-`PlayerVoiceService.cs:3-6`) ve kahin (DM) sabit bir kahin sesine sahiptir
-(`ConsulFateView.cs:104-106`). Sistem tamamen sunum katmanindadir; simulasyona hicbir sey
-yazmaz.
+NPC'lerin ekranda **konuşurken** aynı anda kulağa da girmesi için Presentation-only bir TTS zinciri.
+Girdi: DialogAdapter'ın streaming callback'inden gelen partial/final metin (`SpeechDirector.FeedPartial/FeedFinal`)
+ve `DomainSimulationAdapter.Clock` üzerinden gelen NPC-NPC "talk" olayları (`AmbientVoiceDirector.Offer`).
+Çıktı: nöral öncelikli (piper.exe + LibriTTS-R medium, 904 hoparlör) veya SAPI yedekli (Windows COM) ses.
+Backend seçimi tek noktada (`SpeechDirector.SpeakRouted`): piper mevcutsa `TrySpeak`+`SpeechPlaybackHost.Enqueue`, aksi halde `WindowsSpeechService.SpeakChunk`.
+Her NPC'ye deterministik bir **NpcVoiceSignature** (voice index + rate + pitch) `NpcVoiceSignatureService` üretiyor — kimlik = ses, oturumlar arası kaymıyor.
+Konuşan NPC'nin sesi W31'den beri **konumsal**: `SetSpeakerAnchor` verilen `Transform`'a `SpeechPlaybackHost` her frame kilitleniyor (spatialBlend=1); oyuncu/oracle/anlatım 2D kalıyor.
+Yakındaki NPC-NPC muhabbetleri kendi hostu (`AmbientVoiceHost`) üzerinden **piper-only** mırıldanıyor — SAPI'nin tek COM kuyruğu dialoğa ait, çakışmıyor.
+W36'da (B16) her iki backend **bounded retry + cooldown**'a taşındı: tek bir hiccup oturumu susturmuyor, sadece 3 hata + 30 s cooldown yapıyor; SAPI'nin ProgID = null "gerçekten yok" durumu ise kalıcı (`_sapiMissing`).
+`Application.streamingAssetsPath/Models/tts/piper/piper.exe`+`en_US-libritts_r-medium.onnx` **shipped değilse** `Available=false` sessizce SAPI'ye düşüyor — sert bağımlılık yok.
 
-## HLD - Akis
+## HLD - Akış (numaralı adımlar)
 
-Kadans: sim tick'i DEGIL, sunum frame'i. Tum giris noktalari Unity `Update()` veya UI
-callback'idir.
+1. UI/adapter, bir NPC yanıtı için `SpeechDirector.SetSpeakerAnchor(voiceKey, npcBillboard)` çağırıp anchor'ı ekliyor (dialog paneli açılırken).
+2. LLM stream'i her tick partial metin üretiyor; `InGameUiController.Update` bunu `SpeechDirector.FeedPartial(voiceKey, displayLine)`'a veriyor.
+3. `FeedPartial` display "…" son ekini kırpıyor, "Thinking…"/"… thinks…"/`"..."` placeholder'larını atıyor, `RetargetIfNeeded` ile speaker değişmişse cursor'u sıfırlıyor.
+4. `SpeechSentenceChunker.Drain(text, ref _spokenChars)` şu ana kadar bitmiş cümleleri (`.`, `!`, `?` ile biten) çıkarıyor; oluşmakta olan kuyruk parçası bekliyor.
+5. Her bitmiş cümle `SpeakRouted(text, voiceKey, purgeFirst:false)` — kuyruğa ekleniyor, aynı konuşmacıda kesme yok.
+6. `SpeakRouted`:
+   - `PiperSpeechSynth.Available` ise `NpcVoiceSignatureService.SignatureFor(voiceKey, NumSpeakers)` → `TrySpeak(text, VoiceIndex, out wavPath)` → `SpeechPlaybackHost.Enqueue(wavPath, 1f + pitchOffset*0.015f, voiceKey==_anchorKey ? _anchorTransform : null)`.
+   - Değilse `WindowsSpeechService.SpeakChunk(text, sig, purgeFirst)` — SAPI XML `<pitch absmiddle=...>`, Rate=1+RateOffset, roster'dan `pick`, async flag 1|8 (+2 purge).
+7. `TrySpeak` piper.exe stdin'ine tek JSON satırı `{text, speaker_id, output_file}` yazıyor; piper WAV'ı `Application.temporaryCachePath/tts-out/utt_NNNNN.wav`'a yazıp bitiriyor.
+8. `SpeechPlaybackHost.Update` her 100 ms `TryLoadFinishedWav`'ı **EXCLUSIVE** dosya açımıyla deniyor — piper yazımı sürüyorsa `IOException` alınıp bir sonraki poll'e bırakılıyor (yarım klip yok).
+9. WAV yüklendiğinde `_source.spatialBlend = anchor != null ? 1f : 0f`, `_source.pitch` set, `transform.position = anchor.position`, `Play()` — voice speaker'la yürüyor.
+10. Stream sonlanınca `FeedFinal(voiceKey, finalLine)` kalan kuyruğu (henüz terminatörsüz clause) konuşturuyor; sanitizer düzeltirse ve `_spokenChars > finalLine.Length` ise cursor sıfırlanıp temiz başlanıyor.
+11. Farewell / Ctrl-close / ekran kapatma: `StopConversationSpeech()` — piper kuyruğu (`SpeechPlaybackHost.Flush`) + SAPI purge (`WindowsSpeechService.StopSpeaking`) + tüm stream state reset.
+12. Paralel patika: `DomainSimulationAdapter.Clock` bir NPC-talk event'ini `AmbientVoiceDirector.Offer(subject, RumorMillSystem.PickFor(...))` ile forwardluyor; guards: piper mevcut + `AnyScreenOpen==false` + 30 s cooldown + host boşta + `ActorView.DomainActorId==subject` bulundu + `Camera.main`'e mesafe ≤ 18 f. Geçerse `TrySpeak`+`AmbientVoiceHost.Play(spatialBlend=1, volume=0.75)`.
+13. B16 sözleşmesi: `TrySpeak`/`SpeakChunk` hata verirse `NoteFailure` sayaç 3'e ulaştığında 30 s `IsSilenced()` true; herhangi bir başarı `NoteSuccess` ile sayaç sıfırlanıyor.
 
-1. **NPC akisi (her frame):** `InGameUiController.Update` acik dialog varken kaynaktan o anki
-   satiri ceker; `IsThinking` ise `SpeechDirector.FeedPartial(voiceKey, line)`, degilse
-   `FeedFinal(voiceKey, line)` (`InGameUiController.cs:165-173`). `voiceKey` adaptorun
-   `VoiceKey` ozelliginden gelir: gercek `ActorId.Value`, yoksa isim uzerinden FNV-1a
-   (`DomainSimulationAdapter.Dialog.Source.cs:26-29`).
-2. **Oyuncu sesi (tiklama/yazma aninda):** bir konu secildiginde veya serbest soru
-   yazildiginda `SpeakPlayerQuestion` soruyu dogal cumleye cevirip
-   (`DialogStreamText.NaturalQuestion`, `DialogStreamText.cs:54`) oyuncunun anahtariyla
-   `FeedFinal` cagirir (`DomainSimulationAdapter.Dialog.Source.cs:128-137`; cagiranlar:
-   `Dialog.Topics.cs:33,87`, "Any news?" yolu `Dialog.Source.cs:302`, kahin sorusu
-   `InGameUiController.cs:536`).
-3. **Kahin cevabi:** LLM cevabi cozuldugunde sabit anahtar `7UL` ile `FeedFinal`
-   (`ConsulFateView.cs:106`). **Headless kanit yuzeyi:** `--ember-speech-check` bayragiyla
-   dunya acilisinda `FeedFinal(42UL, ...)` tam yigini bir kez calistirir
-   (`InGameUiController.cs:117-124`).
-4. **SpeechDirector on-isleme:** " …" gorunum eki soyulur (`SpeechDirector.cs:89-90`),
-   "Thinking…"/"X thinks…"/"..." placeholder'lari atlanir (`SpeechDirector.cs:92-93`).
-   Konusmaci degisirse offsetler sifirlanir ama kuyruk BOSALTILMAZ — sesler konusma
-   sirasina gore kuyruklanir (`SpeechDirector.cs:78-87`, canli hata notu 84-86).
-5. **Yeni-akis tespiti (stream prefix):** metin kisalmissa VEYA 12 karakterlik prefix
-   cakismiyorsa bu yeni bir cevaptir; `_spokenChars` ve `_streamPrefix` sifirlanir
-   (`SpeechDirector.cs:27-34`; "ilk cumleyi seslendirmedi" canli hatasinin duzeltmesi).
-6. **Cumle drenaji:** `SpeechSentenceChunker.Drain` `.` `!` `?` sonlandiricili tamam
-   cumleleri cikartir, olusan kuyruk basina `SpeakRouted` cagrilir; sonlanmamis kuyruk
-   bekler (`SpeechDirector.cs:35-37`, `NpcVoiceSignatureService.cs:52-68`).
-7. **Yonlendirme:** Piper varsa imza `NumSpeakers`'a gore hesaplanir, cumle JSON satiri
-   olarak piper stdin'ine yazilir ve donen wav yolu pitch ile `SpeechPlaybackHost`'a
-   kuyruklanir (`SpeechDirector.cs:58-68`; pitch formulu `1f + PitchOffset * 0.015f`,
-   `SpeechDirector.cs:67`). Piper yoksa/olduyse ayni imza matematigiyle SAPI
-   `SpeakChunk` (`SpeechDirector.cs:71`).
-8. **Calma:** `SpeechPlaybackHost.Update` 0.10 sn'de bir kuyrugun basindaki wav'i EXCLUSIVE
-   acmayi dener; piper hala yaziyorsa acilis basarisiz olur ve sonraki poll'da tekrar denenir
-   — yarim okunan klip olmaz (`PiperSpeechSynth.cs:178-191,193-213`). PCM16 wav elle parse
-   edilip `AudioClip`'e cevrilir (`PiperSpeechSynth.cs:215-238`).
-9. **Final kalani:** `FeedFinal` akisin seslendirmedigi kuyrugu okur; final metni
-   konusulandan sapmis ise bastan baslar; akista HIC konusulmamis bir final "yeni cevap
-   ikamesi" sayilip kuyrugu temizler (`SpeechDirector.cs:40-54`, purge karari 53).
+## LLD - Veri Modeli (file:line)
 
-## LLD - Veri Modeli
+- `PiperSpeechSynth` **static**, `Assets/Scripts/Presentation/Ember/Audio/PiperSpeechSynth.cs:12`
+  - `const string VoiceFile = "en_US-libritts_r-medium.onnx"` @ `:14`
+  - `_proc: System.Diagnostics.Process` @ `:15`, `_stdin: StreamWriter` @ `:16`, `_outDir: string` @ `:17`, `_seq: int` @ `:18`, `_numSpeakers: int` @ `:19`
+  - **B16 sayaçlar**: `_failCount: int` `:22`, `_cooldownUntilRealtime: float` `:23`, `MAX_FAILS = 3` `:24`, `COOLDOWN_SECONDS = 30f` `:25`
+  - `_probed: bool` `:29`, `_piperDir: string` `:30`
+- `SpeechPlaybackHost : MonoBehaviour` (aynı dosyada, `:158`)
+  - `s_instance` `:160`, `_queue: Queue<(string path, float pitch, Transform anchor)>` `:161`
+  - `_source: AudioSource` `:163`, `_nextPoll: float` `:164`, `_currentAnchor: Transform` `:165`
+- `WindowsSpeechService` **static**, `WindowsSpeechService.cs:13`
+  - `_voice: object` `:15`, `_roster: object[]` `:16`
+  - **B16 sayaçlar**: `_failCount` `:19`, `_cooldownUntilRealtime` `:20`, `MAX_FAILS = 3` `:21`, `COOLDOWN_SECONDS = 30f` `:22`
+  - `_sapiMissing: bool` `:23` — **kalıcı**, sadece ProgID=null yolunda `true` işaretleniyor (`:88`)
+  - `_last: string` `:27` (legacy `Speak(line)` yolunun de-dup filtresi)
+- `SpeechDirector` **static**, `SpeechDirector.cs:12`
+  - `_currentKey: ulong` `:14`, `_spokenChars: int` `:15`, `_lastFinal: string` `:16`, `_streamPrefix: string` `:17`
+  - **W31 spatial**: `_anchorKey: ulong` `:18`, `_anchorTransform: Transform` `:19`
+- `AmbientVoiceDirector` **static**, `AmbientVoiceDirector.cs:11`
+  - `s_host: AmbientVoiceHost` `:13`, `s_nextOfferTime: float` `:14`
+- `AmbientVoiceHost : MonoBehaviour` (aynı dosyada, `:52`)
+  - `_source: AudioSource` `:54`, `_anchor: Transform` `:55`, `_pendingWav: string` `:56`, `_pendingPitch: float` `:57`
+- Yardımcı model (namespace `EmberCrpg.Simulation.AiDm`):
+  - `NpcVoiceSignature { VoiceIndex, RateOffset, PitchOffset }` — `Assets/Scripts/Simulation/AiDm/NpcVoiceSignatureService.cs:6`
+  - `NpcVoiceSignatureService` `:22` — SplitMix64 hash; VoiceIndex ∈ [0, availableVoices), Rate ∈ [-3,+3], Pitch ∈ [-9,+9]
+  - `SpeechSentenceChunker.Drain(text, ref fromIndex): List<string>` `:52`
 
-- **`NpcVoiceSignature`** (readonly struct, `NpcVoiceSignatureService.cs:5-20`):
-  `VoiceIndex` (backend rosterina modulo-maplenir, :8), `RateOffset` -3..+3 (:10),
-  `PitchOffset` -9..+9 (:12).
-- **`SpeechDirector` statik durumu** (`SpeechDirector.cs:16-19`): `_currentKey` (aktif
-  konusmaci), `_spokenChars` (akis offseti), `_lastFinal` (final dedupe), `_streamPrefix`
-  (12 karlik yeni-akis cipasi). Tek global set — ayni anda tek konusma varsayimi.
-- **`PiperSpeechSynth` statik durumu** (`PiperSpeechSynth.cs:18-26`): `VoiceFile` sabiti
-  `en_US-libritts_r-medium.onnx` (:18), `_proc`/`_stdin` (canli alt surec), `_outDir`
-  (`temporaryCachePath/tts-out`, :89), `_seq` (wav adi sayaci), `_numSpeakers` (model
-  json'undan, :41), `_dead` (kalici devre-disi bayragi), `_probed`, `_piperDir`.
-- **`SpeechPlaybackHost`** (MonoBehaviour, `PiperSpeechSynth.cs:148-153`):
-  `Queue<(string path, float pitch)>` `_queue`, tek `AudioSource` (`spatialBlend=0`,
-  "3D voices come with M3b.3" notu :175 — hala 2D), `_nextPoll`. `DontDestroyOnLoad`
-  singleton'i lazy kurulur (:168-176).
-- **`WindowsSpeechService` statik durumu** (`WindowsSpeechService.cs:16-19`): `_voice`
-  (SAPI.SpVoice COM nesnesi, ProgID ile :81), `_roster` (kurulu SAPI sesleri, :84-91),
-  `_dead`, `_last` (legacy `Speak` dedupe).
-- **Ses anahtarlari (ulong):** NPC = `ActorId.Value` ya da isim FNV-1a'si
-  (`Dialog.Source.cs:26-29`); oyuncu = `FNV(name) XOR FNV(class)*0x9E3779B97F4A7C15`
-  (`PlayerVoiceService.cs:10-15`; `PlayerClassName` `WorldState.cs:146`'da yasar ve
-  `WorldSaveMapper.cs:92,200` ile save'e girer — ses reload'da ayni kalir); kahin = sabit
-  `7UL` (`ConsulFateView.cs:106`); speech-check = `42UL` (`InGameUiController.cs:122`).
-- **Sevk edilen varliklar (diskte dogrulandi):** `Assets/StreamingAssets/Models/tts/piper/`
-  icinde `piper.exe`, model + `.onnx.json`, `espeak-ng.dll` + `espeak-ng-data`, piper'in
-  KENDI `onnxruntime.dll`'i — surec izolasyonu sayesinde forge'un onnxruntime kopyasiyla
-  asla karsilasmaz (`PiperSpeechSynth.cs:12`).
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-## LLD - Fonksiyon Haritasi
+**PiperSpeechSynth.cs**
+- `bool Available { get; }` `:34` — bir kez `_probed`, streamingAssets'te piper.exe + voice .onnx varsa `_piperDir` set, num_speakers okunur; silenced'ken `false`.
+- `int NumSpeakers => _numSpeakers > 0 ? _numSpeakers : 1;` `:60`
+- `bool TrySpeak(string text, int speakerId, out string wavPath)` `:62` — `EnsureProcess`; JSON tek satır stdin'e; başarıda `NoteSuccess`, hatada child kill + `NoteFailure` + SAPI'ye fallback için `false`.
+- `void EnsureProcess()` `:92` — `_outDir` altında eski `utt_*.wav`'ları sil, piper.exe'yi `--model ... --json-input` ile başlat, iki pipe'ı da drain et, `Application.quitting += Kill`.
+- `void Kill()` `:123`, `int ReadNumSpeakers(string)` `:129`, `string JsonEscape(string)` `:145`
+- `bool IsSilenced()` `:26`, `void NoteFailure()` `:27`, `void NoteSuccess()` `:28` — B16 üçlüsü.
 
-- `SpeechDirector.FeedPartial(ulong voiceKey, string displayLine)` — `SpeechDirector.cs:21-38`;
-  akan satirdan tamam cumleleri drenar, yeni-akis tespitiyle offseti sifirlar.
-- `SpeechDirector.FeedFinal(ulong voiceKey, string finalLine)` — `SpeechDirector.cs:40-54`;
-  seslendirilmemis kalani konusur, prefix cipasini birakir.
-- `SpeechDirector.SpeakRouted(string, ulong, bool purgeFirst)` — `SpeechDirector.cs:58-72`;
-  Piper-once yonlendirme, basarisizlikta SAPI'ye ayni imza matematigiyle duser.
-- `SpeechDirector.RetargetIfNeeded(ulong)` — `SpeechDirector.cs:78-87`; konusmaci degisiminde
-  durum sifirlar, kuyrugu KORUR.
-- `NpcVoiceSignatureService.SignatureFor(ulong voiceKey, int availableVoices)` —
-  `NpcVoiceSignatureService.cs:26-37`; splitmix64-tarzi avalanche ile deterministik
-  voice/rate/pitch (:28-35).
-- `NpcVoiceSignatureService.VoiceKeyFor(string actorName)` — `NpcVoiceSignatureService.cs:40-45`;
-  FNV-1a, sifir sonucu 1'e katlanir.
-- `SpeechSentenceChunker.Drain(string text, ref int fromIndex)` —
-  `NpcVoiceSignatureService.cs:52-68`; saf fonksiyon, tamam cumleleri dondurur, kuyruk kalir.
-- `PlayerVoiceService.PlayerVoiceKey(string playerName, string className)` —
-  `PlayerVoiceService.cs:10-15`; yaratim secimlerinden kalici oyuncu anahtari.
-- `PiperSpeechSynth.Available { get; }` — `PiperSpeechSynth.cs:28-54`; tek seferlik dosya
-  probe'u; model yoksa log atip false kalir. Yalnizca Windows (`#if` :32).
-- `PiperSpeechSynth.TrySpeak(string text, int speakerId, out string wavPath)` —
-  `PiperSpeechSynth.cs:58-83`; JSON satirini stdin'e yazar, wav yolunu geri verir; istisna
-  `_dead=true` yapar (kalici SAPI'ye dusus).
-- `PiperSpeechSynth.EnsureProcess()` — `PiperSpeechSynth.cs:86-114`; alt sureci baslatir,
-  eski wav'lari temizler (:91-92), stdout/stderr'i bosaltir (:107-111, aksi halde piper
-  tikanir), `Application.quitting`'e `Kill` baglar (:112).
-- `PiperSpeechSynth.ReadNumSpeakers(string configPath)` — `PiperSpeechSynth.cs:122-136`;
-  model json'undan `num_speakers`'i elle substring-parse eder (JSON kutuphanesiz).
-- `SpeechPlaybackHost.Enqueue(string wavPath, float pitch)` / `Flush()` —
-  `PiperSpeechSynth.cs:155-159,161-166`; kuyruga ekle / kuyrugu bosalt + calani durdur.
-- `SpeechPlaybackHost.Update()` — `PiperSpeechSynth.cs:178-191`; 0.10 sn poll, sirali calma.
-- `SpeechPlaybackHost.TryLoadFinishedWav(string)` — `PiperSpeechSynth.cs:193-213`;
-  `FileShare.None` ile exclusive acilis kapisi (:199); bozuk wav'da 1-sample bos klip (:211).
-- `SpeechPlaybackHost.ParsePcm16Wav(byte[], string)` — `PiperSpeechSynth.cs:215-238`;
-  'data' chunk taramali elle PCM16 parse.
-- `WindowsSpeechService.SpeakChunk(string, NpcVoiceSignature, bool purgeFirst)` —
-  `WindowsSpeechService.cs:31-59`; COM reflection ile Voice sec (:42), Rate ayarla (:45-46),
-  300 karakter kirp (:47), pitch'i SAPI XML olarak dokur (:48), bayraklar `1|8|(purge?2:0)`
-  (:50).
-- `WindowsSpeechService.Speak(string line)` — `WindowsSpeechService.cs:24-29`; legacy tek
-  satir girisi, varsayilan imza. **Cagirani bulunamadi** (repo grep'i yalnizca tanimi buldu)
-  — olu-adaya benziyor, dogrulanmadi (reflection/gelecek kullanim olabilir).
-- `WindowsSpeechService.StopSpeaking()` — `WindowsSpeechService.cs:61-73`; bos metin +
-  purge bayragiyla en ucuz SAPI kuyruk temizligi. **Cagirani bulunamadi.**
-- `WindowsSpeechService.EnsureVoice()` — `WindowsSpeechService.cs:75-100`; `SAPI.SpVoice`
-  ProgID'sinden COM nesnesi + kurulu ses rosteri; hatada `_dead=true`, sessiz kalir.
-- `DomainSimulationAdapter.VoiceKey { get; }` — `Dialog.Source.cs:26-29`; id-oncelikli anahtar.
-- `DomainSimulationAdapter.SpeakPlayerQuestion(string)` — `Dialog.Source.cs:128-137`;
-  oyuncunun sorusunu oyuncunun sesiyle final olarak besler.
+**SpeechPlaybackHost (aynı dosya)**
+- `static void Enqueue(string wavPath, float pitch, Transform anchor = null)` `:167` — singleton spawn + kuyruğa ekle.
+- `static void Flush()` `:173` — kuyruğu boşalt + `_source.Stop()` (W31 farewell yolu buraya varır).
+- `static void Ensure()` `:180` — `DontDestroyOnLoad` host + tek AudioSource (Linear rolloff 2..18f, doppler 0).
+- `void Update()` `:192` — anchor varsa `transform.position` speaker'a kilitli, 100 ms poll'lu `TryLoadFinishedWav`, klip hazır olduğunda `spatialBlend` anchor'a göre 1/0, sonra `Play()`.
+- `static AudioClip TryLoadFinishedWav(string path)` `:216` — `FileShare.None` exclusive open, `IOException` → yazım sürüyor, `null` dön.
+- `static AudioClip TryLoadFinishedWavPublic(string path)` `:214` — `AmbientVoiceHost`'un okuduğu ince proxy (internal).
+- `static AudioClip ParsePcm16Wav(byte[] wav, string name)` `:236` — 'data' chunk'ı tara, PCM16→float[], `AudioClip.SetData`.
 
-## LLD - Yazdigi/Okudugu Alanlar
+**WindowsSpeechService.cs**
+- `int VoiceCount { get; }` `:29` — `EnsureVoice`; roster.Length veya 1.
+- `void Speak(string line)` `:32` — legacy tek-satır, `_last == line` ise no-op, purgeFirst=true.
+- `void SpeakChunk(string text, NpcVoiceSignature signature, bool purgeFirst)` `:39` — roster'dan `VoiceIndex` mod ile pick, Rate set, 300 char kırpma, SAPI XML `<pitch absmiddle=...>`, async flag `1|8|(2 if purgeFirst)`.
+- `void StopSpeaking()` `:71` — boş `Speak(string.Empty, 1|2)` = purge queue.
+- `void EnsureVoice()` `:84` — SAPI.SpVoice COM, roster çekiliyor; ProgID=null → `_sapiMissing=true` (kalıcı); catch B16 sayacı.
+- `IsSilenced/NoteFailure/NoteSuccess` `:24-26` — B16 üçlüsü.
 
-`FieldOwnershipRegistry` (`Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs:12-54`)
-bu sisteme ait HICBIR kayit icermez — TTS hicbir sim alanina yazmaz; tamamen sunum
-katmanidir ve tek-yazar defterinin disindadir (dogru konum: defter yalnizca mutable
-aktor/dunya alanlarini kapsar).
+**SpeechDirector.cs**
+- `void SetSpeakerAnchor(ulong voiceKey, Transform anchor)` `:25` — W31: sadece bu key'in klipleri 3D olacak.
+- `void StopConversationSpeech()` `:34` — W31 farewell: state reset + `SpeechPlaybackHost.Flush()` + `WindowsSpeechService.StopSpeaking()`.
+- `void FeedPartial(ulong voiceKey, string displayLine)` `:42` — placeholder ele, `RetargetIfNeeded`, "shrink or diverge = new stream" tespiti, `SpeechSentenceChunker.Drain` → `SpeakRouted`.
+- `void FeedFinal(ulong voiceKey, string finalLine)` `:61` — dedup `_lastFinal`, kalan clause'ı konuştur, cursor tamamı olarak işaretle.
+- `void SpeakRouted(string text, ulong voiceKey, bool purgeFirst)` `:79` — piper-first + SAPI fallback; purgeFirst piper yolunda `Flush()`.
+- `NpcVoiceSignature SignatureFor(ulong voiceKey)` `:96` — SAPI için VoiceCount ile signature çevir.
+- `void RetargetIfNeeded(ulong voiceKey)` `:100` — speaker değişince cursor sıfırla ama **kuyruğu tutmaya** özen göster.
+- `string StripDisplaySuffix(string)` `:110`, `bool IsPlaceholder(string)` `:113`.
 
-Okuduklari:
-- `WorldState.PlayerClassName` (`WorldState.cs:146`; `Dialog.Source.cs:135` uzerinden) ve
-  oyuncu `ActorRecord.Name` (`CompanionService.FindPlayer`, `Dialog.Source.cs:132`).
-- `IDialogSource.GetCurrentLine()/IsThinking/VoiceKey` (frame basi,
-  `InGameUiController.cs:165-173`).
-- Disk: `StreamingAssets/Models/tts/piper/*` (probe, `PiperSpeechSynth.cs:37-41`),
-  `temporaryCachePath/tts-out/utt_*.wav` (okuma, :193-205).
+**AmbientVoiceDirector.cs**
+- `void Offer(ulong actorId, string line)` `:16` — W31 spatial mutter: 6 guard (piper, cooldown, `InGameUiController.AnyScreenOpen`, host boşta, `ActorView` bulundu, ≤18 f).
+- `void Ensure()` `:43` — `DontDestroyOnLoad("AmbientVoiceHost")`.
+- `AmbientVoiceHost.Busy` `:58`, `void Play(string wavPath, float pitch, Transform anchor)` `:60`.
+- `void EnsureSource()` `:66` — spatialBlend=1, Linear 2..18 f, volume 0.75.
+- `void Update()` `:78` — anchor'a kilit + WAV hazır olduğunda tek klipi çal.
 
-Yazdiklari (defter-disi, sunum/OS yan etkileri):
-- OS alt sureci `piper.exe` (`PiperSpeechSynth.cs:105`) ve stdin'i (:70-71).
-- `temporaryCachePath/tts-out/utt_NNNNN.wav` dosyalari (piper yazar, adres :67; boot
-  temizligi :91-92).
-- `DontDestroyOnLoad` "SpeechPlaybackHost" GameObject'i + `AudioSource.pitch/clip/Play`
-  (`PiperSpeechSynth.cs:171-175,188-190`).
-- SAPI COM `Voice`/`Rate` ozellikleri ve `Speak` kuyrugu (`WindowsSpeechService.cs:42-51`).
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-## LLD - Urettigi/Tukettigi Olaylar
+Bu sistemin **Domain/WorldState'e yazdığı hiçbir alan yok** — tamamı Presentation-katman static/instance state'i. FieldOwnership perspektifi:
 
-- **WorldEventKind: uretmez.** Yakin komsu: konu secimi `WorldEventKind.ActorTalked`
-  ("topic_selected id:...") uretir ama bu dialog sisteminin isidir, TTS'in degil
-  (`Dialog.Source.cs:332-337`).
-- **Log taglari:** `[Piper]` — roster bulundu (`PiperSpeechSynth.cs:42`), model yok (:46),
-  synth hatasi/SAPI'ye dusus (:77), surec ayakta (:113), bozuk wav (:210). `[Speech]` —
-  SAPI kullanilamiyor (`WindowsSpeechService.cs:56,97`), roster sayisi (:92).
-- **Tukettigi:** `Application.quitting` (piper'i oldurmek icin, `PiperSpeechSynth.cs:112`);
-  `System.Environment.CommandLine` icindeki `--ember-speech-check` bayragi
-  (`InGameUiController.cs:119`).
+| Alan | Sahip | Yazan | Okuyan |
+| --- | --- | --- | --- |
+| `PiperSpeechSynth._proc/_stdin/_outDir/_seq/_probed/_piperDir/_numSpeakers` | `PiperSpeechSynth` | `EnsureProcess`, `Available` probe | `TrySpeak`, `Available`, `NumSpeakers` |
+| `PiperSpeechSynth._failCount/_cooldownUntilRealtime` | `PiperSpeechSynth` | `NoteFailure`/`NoteSuccess` | `IsSilenced`, `Available` |
+| `SpeechPlaybackHost._queue/_source/_nextPoll/_currentAnchor` | `SpeechPlaybackHost` | `Enqueue`, `Flush`, `Update` | `Update` |
+| `WindowsSpeechService._voice/_roster/_last` | `WindowsSpeechService` | `EnsureVoice`, `Speak`, catch bloğu | `SpeakChunk`, `StopSpeaking`, `VoiceCount` |
+| `WindowsSpeechService._failCount/_cooldownUntilRealtime/_sapiMissing` | `WindowsSpeechService` | `NoteFailure`/`NoteSuccess`, `EnsureVoice` (ProgID=null) | `SpeakChunk`, `StopSpeaking`, `EnsureVoice`, `Speak` |
+| `SpeechDirector._currentKey/_spokenChars/_lastFinal/_streamPrefix` | `SpeechDirector` | `RetargetIfNeeded`, `FeedPartial`, `FeedFinal`, `StopConversationSpeech` | `FeedPartial`, `FeedFinal` |
+| `SpeechDirector._anchorKey/_anchorTransform` | `SpeechDirector` | `SetSpeakerAnchor`, `StopConversationSpeech` | `SpeakRouted` (piper Enqueue anchor seçimi) |
+| `AmbientVoiceDirector.s_host/s_nextOfferTime` | `AmbientVoiceDirector` | `Ensure`, `Offer` (cooldown) | `Offer` |
+| `AmbientVoiceHost._source/_anchor/_pendingWav/_pendingPitch` | `AmbientVoiceHost` | `EnsureSource`, `Play`, `Update` | `Busy`, `Update` |
 
-## Testler
+Okunan dışsal state:
+- `Application.streamingAssetsPath`, `Application.temporaryCachePath`, `Application.quitting`
+- `Time.realtimeSinceStartup` (B16 cooldown), `Time.unscaledTime` (Enqueue poll + Offer cooldown)
+- `Camera.main.transform.position` (AmbientVoiceDirector.Offer earshot check)
+- `ActorView.DomainActorId`, `ActorView.transform` (Offer'da anchor arama, `FindObjectsByType<ActorView>`)
+- `InGameUiController.AnyScreenOpen` (Offer'da modal susturucu)
+- `NpcVoiceSignatureService.SignatureFor(voiceKey, numSpeakers)` (deterministik ses kimliği)
+- `SpeechSentenceChunker.Drain(text, ref cursor)` (saf splitter)
 
-- `Assets/Tests/EditMode/AiDm/NpcVoiceSignatureServiceTests.cs` — imza kararliligi + aralik
-  pini (:10-21), 60 NPC'de ses/pitch sacilimi (:24-36), chunker'in tamam-cumle drenaji ve
-  kuyruk korumasi (:39-47).
-- `Assets/Tests/EditMode/AiDm/PlayerVoiceServiceTests.cs` — oyuncu anahtari kararli (:9-12),
-  sinif degisince ses degisir (:14-17), bos girdide asla sifir degil (:19-21).
-- **Test disi kalanlar (gercek durum):** `SpeechDirector`'un akis durum makinesi (offset
-  sifirlama, prefix cipasi, purge karari), `PiperSpeechSynth` surec yasam dongusu,
-  `SpeechPlaybackHost` wav parse/exclusive-open kapisi ve `WindowsSpeechService` COM yolu
-  hicbir birim testiyle pinli DEGIL (Unity/surec/COM bagimli). Tek calisir-durum kaniti
-  `--ember-speech-check` bayragidir (`InGameUiController.cs:117-124`); yorum "headless runs
-  can assert wavs" der ama repo icinde bu bayragi calistirip wav varligini dogrulayan bir
-  betik BULUNAMADI (dogrulanmadi — CI disi elle kosuluyor olabilir).
+## LLD - Ürettiği/Tükettiği Olaylar
 
-## Bilinen Borclar + Kacak Kapilari
+**Tüketilen (upstream olaylar → bu sisteme çağrı):**
+- LLM streaming callback → `SpeechDirector.FeedPartial/FeedFinal`
+  - `InGameUiController.cs:179,181` (dialog panel)
+  - `InGameUiController.cs:123` (oracle 42UL yolu)
+  - `ConsulFateView.cs:151` (oracle 7UL)
+  - `DomainSimulationAdapter.Dialog.Source.cs:149`
+- Dialog panel yaşam döngüsü → `SpeechDirector.SetSpeakerAnchor` / `StopConversationSpeech`
+  - `InGameUiController.cs:486` (ekran kapanma), `:512` (dialog başlama)
+  - `EmberWorldHost.Input.cs:27` (Ctrl-close global cut)
+- Sim'in NPC-talk event akışı → `AmbientVoiceDirector.Offer`
+  - `DomainSimulationAdapter.Clock.cs:77` (RumorMillSystem.PickFor ile line üretiliyor)
+- Unity yaşam döngüsü → `Application.quitting += PiperSpeechSynth.Kill` (`PiperSpeechSynth.cs:121`)
 
-Aile harfleri `docs/SYSTEMS_ATLAS.md:52-60` taksonomisine gore. Bu sistem (f) ailesinin
-("akislarda offset/durum-sifirlama hatalari — TTS ilk-cumle") ADIYLA anilan uyesidir.
+**Üretilen (downstream tarafta gözlemlenen):**
+- **Hiçbir Domain/Sim event'i emit edilmiyor** — çıktı sadece işitsel + `Debug.Log` iz kayıtları:
+  - `"[Piper] voice found — {n} speakers on the roster."`
+  - `"[Piper] no voice model shipped — SAPI backend stays on duty."`
+  - `"[Piper] process up — neural voices online."`
+  - `"[Piper] synth failed ({n}/{max}), falling back to SAPI: {e}"`
+  - `"[Piper] bad wav {path}: {e}"`
+  - `"[Speech] SAPI roster: {n} voice(s) — signatures map across them."`
+  - `"[Speech] SAPI hiccup ({n}/{max}), staying silent briefly: {e}"`
+  - `"[Speech] SAPI init hiccup ({n}/{max}), staying silent briefly: {e}"`
+- Yan etki: `piper.exe` child process (RedirectStandardInput/Output/Error, CreateNoWindow), `Application.temporaryCachePath/tts-out/utt_NNNNN.wav` dosyaları (sonraki `EnsureProcess`'te silinir).
 
-1. **(f) Akis-offset durum makinesi hala kirilgan ve testsiz.** Iki canli hata dogrudan bu
-   dosyada yamandi: ayni konusmaciya ikinci soruda eski offset yuzunden ilk cumlenin
-   yutulmasi (`SpeechDirector.cs:27-33`) ve konusmaci degisiminde flush'in oyuncunun
-   sorusunu kesmesi (`SpeechDirector.cs:84-86`). Duzeltmeler semptom-basina (12 karlik
-   prefix sezgisi, purge kaldirma); durum makinesi hala 4 statik alanla elle tutuluyor ve
-   birim testi yok — kok uretec duruyor.
-2. **(f, suphe — kod okumasiyla tespit, calistirilarak dogrulanmadi.** `FeedFinal`'daki
-   purge kosulu (`SpeechDirector.cs:53`) konusmaci KONTROLU yapmadan "hic akmamis final =
-   ikame" der. Akissiz her `FeedFinal` (oyuncu sorusu, kahin `7UL`) `_spokenChars ==
-   remainder.Length` uretip `SpeechPlaybackHost.Flush()` tetikler (`SpeechDirector.cs:64`)
-   — yani oyuncunun sesli sorusu kuyruktayken gelen akissiz kahin cevabi onu kesebilir;
-   84-86'daki "yalnizca ayni-konusmaci ikamesi purge eder" niyetiyle celisir gorunuyor.
-3. **(a) Tek-nokta tasarim.** `SpeechDirector` durumu, `SpeechPlaybackHost` (tek
-   AudioSource) ve her iki backend tamami statik/singleton — ayni anda iki konusma ya da
-   sahne-yerlestirilmis 3D ses imkansiz. `spatialBlend=0` yaninda "3D voices come with
-   M3b.3" notu duruyor (`PiperSpeechSynth.cs:175`) ama M3b.3 oyuncu sesini getirdi, 3D'yi
-   getirmedi — bayat yorum/odenmemis vaat.
-4. **(e) COM/surec API kullanimi kacak kapilariyla dolu.** SAPI tamamen string-tabanli
-   reflection (`WindowsSpeechService.cs:42-51,81-91`) — derleme-zamani guvence sifir;
-   `_dead` bayragi HER istisnada kalici kapanir ve oturum boyunca geri acilmaz
-   (`WindowsSpeechService.cs:56-57`). Ayni kalicilik Piper'da da var: tek surec olumu
-   `_dead=true` yapar ve yeniden deneme yolu yoktur (`PiperSpeechSynth.cs:66,76`) — bir
-   crash, oturumun kalanini SAPI'ye (o da olduyse sessizlige) mahkum eder.
-5. **Elle JSON, iki yonde.** Giden: `JsonEscape` yalnizca `\` `"` `\n` `\r` kacislar
-   (`PiperSpeechSynth.cs:138-139`) — diger kontrol karakterleri piper'in JSON satirini
-   bozabilir. Gelen: `ReadNumSpeakers` substring taramasi (`PiperSpeechSynth.cs:122-136`);
-   json bicimi degisirse sessizce 1 doner (tek-konusmaci moduna gizli dusus).
-6. **Disk buyumesi.** Calinan wav'lar oturum icinde SILINMEZ — temizlik yalnizca surec
-   dogumunda (`PiperSpeechSynth.cs:91-92`); uzun oturumda `tts-out` sinirsiz buyur
-   (temporaryCachePath oldugu icin OS eninde sonunda toplar, ama oturum-ici tavan yok).
-7. **Cumle bolucu naif.** `.` `!` `?` her gecende boler (`NpcVoiceSignatureService.cs:60`)
-   — "Mr. Aldric" ya da "3.5" iki parca olur; `chunk.Length > 1` tek koruma (:63). SAPI
-   yolunda 300 karakter kirpma uzun final kalanlarini sessizce keser
-   (`WindowsSpeechService.cs:47`).
-8. **Capraz-konusmaci final dedupe siralamasi.** `FeedFinal` `_lastFinal` karsilastirmasini
-   `RetargetIfNeeded`'den ONCE yapar (`SpeechDirector.cs:42-44`) — B konusmacisinin finali
-   A'nin son finaliyle birebir ayniysa hic seslendirilmez (kucuk ama gercek kenar durumu;
-   testsiz).
-9. **Olu/yetim API'ler:** `WindowsSpeechService.Speak` (:24-29) ve `StopSpeaking` (:61-73)
-   icin repo'da cagiran bulunamadi; yorumdaki "proofs, notifications" kullanimlari ya
-   kaldirilmis ya hic baglanmamis (dogrulanmadi).
-10. **Genel kacak kapisi:** ses tamamen `#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN`
-    arkasinda (`PiperSpeechSynth.cs:32,61,85`, `WindowsSpeechService.cs:33,63,77`) — diger
-    platformlarda sistem derlenir ama sonsuza dek sessizdir; bu bilincli bir kapsam karari,
-    gizli bir hata degil.
+## Testler (bu sistemi pinleyen test dosyaları — W32-W36 hikaye-testleri dahil)
+
+- `Assets/Tests/EditMode/Presentation/SpeechRetryCooldownTests.cs` — **W36 / B16 pin (yeni)**
+  - `Piper_SingleTransientFailure_DoesNotSilenceTheSession`
+  - `Piper_ThreeFailuresWithinWindow_SilencesUntilCooldown`
+  - `Piper_NoteSuccess_ResetsCounter`
+  - `Windows_ThreeFailuresSilenceButFourthAfterCooldownReturns`
+  - `Windows_SapiMissing_StaysPermanentAcrossAnyCooldown`
+  - `Windows_NoteSuccess_ResetsCounter`
+  - Reflection ile `_failCount/_cooldownUntilRealtime/_sapiMissing` alanlarına + `IsSilenced/NoteFailure/NoteSuccess` metotlarına erişiyor.
+- `Assets/Tests/EditMode/AiDm/NpcVoiceSignatureServiceTests.cs` — M3b pin
+  - `SignatureFor_SameKey_IsStable_AndInRange`
+  - `SignatureFor_SpreadsAcrossVoicesAndPitches`
+  - `Chunker_DrainsCompleteSentences_KeepsTheFormingTail` (SpeechSentenceChunker)
+- `Assets/Tests/EditMode/AiDm/PlayerVoiceServiceTests.cs` — M3b.3 pin
+  - `PlayerVoiceKey_IsStable`
+  - `PlayerVoiceKey_ClassChangesTheVoice`
+  - `PlayerVoiceKey_NeverZero_EvenOnEmptyInputs`
+- `Assets/Tests/EditMode/AiDm/DialogStreamTextTests.cs` — komşu sistem (dialog splitter), ama bu boru hattının **girdisini** koruyor (parrot metinler `SpeechDirector`'a hiç ulaşmasın diye).
+
+**Pinsiz alanlar (borç):** `SpeechDirector.FeedPartial` state-makinesi (retarget/reset/prefix), `SpeakRouted` neural→SAPI fallback zinciri, `AmbientVoiceDirector.Offer` 6-guard, `SpeechPlaybackHost.TryLoadFinishedWav` exclusive-open retry — hiçbirinin pin'li testi yok.
+
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
+
+- **W31** (`1e9b474b`, 2026-07-24) — sekiz canlı yaranın üçüncüsü bu sistemi biçimlendirdi:
+  - `SpeechDirector.SetSpeakerAnchor` + `_anchorKey/_anchorTransform` eklendi; klipler artık speaker Transform'a kilitli (spatialBlend=1).
+  - `SpeechDirector.StopConversationSpeech` eklendi (daha önce `StopSpeaking`'in **sıfır çağrısı** vardı) — Ctrl-close ve `InGameUiController.CloseScreen` bu yola bağlandı.
+  - `AmbientVoiceDirector` + `AmbientVoiceHost` **yeni**: NPC-NPC "talk" event'lerine spatial ambient mutter, piper-only, budget 1, 30 s cooldown, 18 f earshot.
+  - `SpeechPlaybackHost` içine internal `TryLoadFinishedWavPublic` proxy'si (ambient host'un aynı WAV parser'ı kullanabilmesi için).
+- **W32** (`5049d445`, `c477c217`) — EAT slice + hotfixler; **bu sisteme dokunmadı** (sim tarafı).
+- **W33** (`61e340f3`) — FARM slice; **bu sisteme dokunmadı**.
+- **W34** (`3aa87cf6`, `9012485e`) — SLEEP + WORK slice; **bu sisteme dokunmadı**.
+- **W35** (`20a3b899`) — ScheduleSystem küçültme + ownership; **bu sisteme dokunmadı**.
+- **W36** (`f6c9e2d0`, 2026-07-25) — **RUH_TESHIS tail**, B16 kalıcı çözüm:
+  - `PiperSpeechSynth`'te `_dead` tek-yönlü kilit silindi → `_failCount/_cooldownUntilRealtime/MAX_FAILS=3/COOLDOWN_SECONDS=30` + `IsSilenced/NoteFailure/NoteSuccess` üçlüsü.
+  - `WindowsSpeechService`'te aynı üçlü + tek istisna: ProgID=null olduğunda `_sapiMissing=true` kalıcı (COM hiç kurulu değil senaryosu).
+  - `EnsureVoice` ve `StopSpeaking` son `_dead` referansları temizlendi.
+  - Pin: `SpeechRetryCooldownTests` (6 hikaye-testi, reflection ile private static'lara).
+
+## Bilinen Borçlar + Kaçak Kapıları
+
+**Borçlar:**
+- **Test kapsamı**: yalnız retry/cooldown ve signature/chunker pinli. `SpeechDirector` cursor state-makinesi (özellikle "shrink veya diverge = new stream" heuristik'i), `SpeakRouted` piper→SAPI fallback, `AmbientVoiceDirector.Offer` altı-guard'ı — hepsi pinsiz; regression yakalayacak test yok.
+- **Reflection'a bağımlı testler**: `SpeechRetryCooldownTests` `_failCount/_cooldownUntilRealtime/_sapiMissing` private field adlarına + `IsSilenced/NoteFailure/NoteSuccess` metod adlarına kilitli — bir rename testleri sessizce kırar (compile ederler ama davranışı doğrulamazlar? Aslında `GetField`/`GetMethod` null döner + `NullReferenceException` — o yüzden kırılır, ama hata mesajı yanıltıcıdır).
+- **Sihirli sabitler her yerde**: `18f` (earshot ve rolloff maxDistance) 3 yerde, `2f` (minDistance) 2 yerde, `30f` (Offer cooldown ile backend cooldown), `0.10f` (playback poll), `0.75f` (ambient volume), `300` (SAPI clip), `0.015f` (pitchOffset→AudioSource.pitch skalası) — tek config noktası yok.
+- **`_last` legacy dedup**: `WindowsSpeechService._last` sadece `Speak(string)` legacy giriş noktasında; `SpeakChunk` yolunda dedup yok — aynı chunk çift gelirse çift söylenir.
+- **`FindObjectsByType<ActorView>` her `Offer`'da**: town-scale'de her mırıldanmada tüm sahne taranır (O(n)). ID→Transform sözlüğü yok.
+- **SAPI 300-char kırpma**: `SpeakChunk`'ta uzun bir cümlenin ortasında kesilebiliyor (chunker doğrusal olarak paragraf uzunluğunu kısıtlamıyor).
+
+**Kaçak kapıları:**
+- `_sapiMissing=true` **oturum içinde sıfırlanmıyor**: kullanıcı SAPI'yi kurup restart etmezse aynı çalışan SAPI'ye asla dönmez.
+- `PiperSpeechSynth._probed=true` bir kez set olduktan sonra dosya sistemi değişse bile yeniden probe yok; oyun sırasında model dosyası eklenirse görmez.
+- `SpeechPlaybackHost` singleton `DontDestroyOnLoad`; sahne geçişlerinde kuyrukta bekleyen stale WAV path'leri kalabilir (`Flush` explicit çağrılmazsa).
+- `Application.temporaryCachePath/tts-out` altındaki eski WAV'lar sadece `EnsureProcess` içinde temizleniyor; piper zaten canlıysa (idempotent early return) temizlik olmaz — uzun oturumda disk sürünmesi.
+- Piper child process'ini `Kill` yalnız `Application.quitting`'e bağlı; Editor **domain reload**'unda static'ler sıfırlanır ama child process **öksüz** yaşamaya devam edebilir (yeni `EnsureProcess` başka bir piper.exe daha fork'lar).
+- `AmbientVoiceDirector.Offer` `Camera.main`'e bağımlı — yeni bir "Main" tag'li kamera yoksa mırıltı hiç oynamaz (sessizce return, log yok).
+- `SpeechDirector`'un tüm state'i static — Editor test ortamında SetUp'ta manuel sıfırlama gerekir, `Reset` API yok (`StopConversationSpeech` yeterli ama isim başkasını çağrıştırıyor).
+- `SpeechPlaybackHost.ParsePcm16Wav` sadece PCM16 destekliyor; piper varsayılan çıktısı bu olduğu için çalışıyor, ama voice modeli değişirse (float32 çıktı) sessiz `AudioClip.Create("empty", 1, 1, 22050, false)` döner.

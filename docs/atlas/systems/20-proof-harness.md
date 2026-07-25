@@ -1,318 +1,342 @@
 # 20-proof-harness
 
-> Kapsam: kanıt zinciri — `EmberProofScreenshotDriver` modları, master bayrak
-> (`--ember-proof-screenshots`), koşu-içi invariantlar, saf-C# fallback harness
-> (`tools/validation/`), CAN SUYU gate testleri ve digest golden pini.
-> Kanıt biçimi: `dosya:satır`. Yollar aksi belirtilmedikçe `Assets/` veya repo köklüdür.
+> Kapsam: kanıt zinciri — `EmberProofScreenshotDriver` modları, W30 master-bayrak
+> dersi, W32 spatial + label invariantları, W36 `ProofLivingCensus` peaks,
+> fallback harness gate (pure-C# NUnit) ve CAN SUYU / dijest golden pin testleri.
+> Tarih: 2026-07-26 (W36 sonrası B26 CENSUS storysi kapandı).
 
-## HLD - Ne ve Neden
+## HLD - Ne ve Neden (5-10 cumle)
 
-Kanıt zinciri, "oyun kendini test eder" ilkesinin uygulamasıdır: insan gözünün ve CI'nin
-göremediği şeyleri (headless sahne gerçekten kuruluyor mu, NPC'ler gerçekten yürüyor mu,
-LLM gerçekten cevap veriyor mu) oyunun kendi çalıştırılabilir dosyası üretir ve PNG +
-transcript + PASS/FAIL satırı olarak diske bırakır (README.md:76-81). Zincir dört
-katmandır: (1) **oyuncu-binary kanıtı** — `EmberProofScreenshotDriver`, player build'e
-`--ember-proof-screenshots <dir>` master bayrağıyla takılan 17-modlu bir MonoBehaviour
-sürücüsü (EmberProofScreenshotDriver.cs:23-33); (2) **saf-C# fallback harness** — Unity
-editörü olmayan makinede Domain/Simulation kaynak testlerini `dotnet test` ile koşan NUnit
-projesi (tools/validation/run-validation.sh:161-203); (3) **gate testleri** — bir yönlendirme
-scriptinin FİZİKSEL OLARAK taklit edemeyeceği canlı-dünya özelliklerini (ihtiyaçlar düşer,
-tek aktörü silmek tarihi değiştirir, olaylar kimse yazmadan doğar) zaman-serisi üzerinden
-ölçen CAN SUYU sözleşmesi (Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs:10-15);
-(4) **digest golden** — aynı seed + aynı tick dizisinin bayt-aynı dünya üretmesini SHA-256
-pinleyen determinizm çıpası (Assets/Tests/EditMode/Composition/WorldTickDigestGoldenTests.cs:26).
-Felsefe, V1 kanıt sisteminin çürümesinden çıkan derstir: "saat 12'de 8 kişi tavernada"
-tarzı koreografi kanıtları sahtelenebilir; ekran görüntüsü DESTEKLEYİCİ delildir, asla tek
-başına kapı değildir — bu kural lint testiyle CI hatasına bağlanmıştır
-(GateContractLintTests.cs:8-13, 56-59). Oyuncuya görünen etki dolaylıdır: her sürüm notundaki
-"shipcheck 9/9 PASS" satırı bu zincirin çıktısıdır ve sürüm notu kanıttan SONRA yazılır
-(Docs/ROADMAP_V1.md:9-12).
+Kanıt harness'i, Alcyone Ember'in "başımı sallamak yerine ekran görüntüsü göster"
+disiplinini işletir: her büyük iddia — sahne yükleniyor, NPC eşit dağılıyor, marathon
+memory düz, action label doğru — yalnız data-layer log ile değil, yürüyen player
+binary + render katmanında yakalanan PNG/txt kanıtı ile ispatlanır (memory:
+`verify-at-render-layer`). Bunun üç katmanı vardır: (1) **oyuncu-binary kanıtı** —
+`EmberProofScreenshotDriver`, player build'e gömülen tek `MonoBehaviour`; master
+bayrak `--ember-proof-screenshots` yoksa `Bootstrap` erken çıkar (driver hiç
+mount olmaz). (2) **saf-C# fallback harness** — Unity binary bulunmadığında
+`tools/validation/run-validation.sh` `dotnet test`'i
+`ValidationFallbackHarness.csproj` üstünde koşturur (Domain/Simulation/Data +
+Assets/Tests/EditMode/** wildcardu). (3) **CAN SUYU + digest golden testleri** —
+gate kontratları ve `WorldStateDigest` SHA-256 pini, iki-katmanı da tek imzalı
+belirteçle bağlar. W30 dersi tekildir: proof runları arka-plan shell'den açılınca
+pencere focus almaz ve pause olan player tüm coroutine'leri dondurur; W36 dersi
+"anlık `eating=0` alongside `meals=6195` false-PASS ediyordu"'nun peaks
+accumulator ile kapatılmasıdır.
 
-## HLD - Akis
+## HLD - Akış (numaralı adımlar)
 
-1. **Boot kancası:** `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)] Bootstrap()` komut
-   satırında master bayrak `--ember-proof-screenshots` yoksa hiçbir şey yapmaz; varsa
-   `Application.runInBackground = true` (arka plandan başlatılan pencere odak alamayınca
-   coroutine'ler donuyordu), `DontDestroyOnLoad` bir GameObject yaratır ve sürücüyü ekler
-   (EmberProofScreenshotDriver.cs:23-33).
-2. **Çıktı dizini:** `ResolveOutputDir()` master bayrağın HEMEN SONRAKİ argümanını tam yol
-   yapar; bulunamazsa `persistentDataPath/proof-screenshots` (EmberProofScreenshotDriver.cs:2460-2467).
-3. **Mod seçimi:** `Start()` 17 alt-bayrağı sırayla `HasArg` ile yoklar ve İLK eşleşen modu
-   koşturur (EmberProofScreenshotDriver.cs:35-209): `--ember-rescue-proof` (:39),
-   `--ember-gameplay-shot` (:50), `--ember-playthrough` (:61), `--ember-marathon` (:72),
-   `--ember-igtour` (:80), `--ember-mainquest` (:88), `--ember-timelapse` (:96),
-   `--ember-agentcheck` (:104), `--ember-lookaround` (:112), `--ember-looptest` (:123),
-   `--ember-shipcheck` (:134), `--ember-scene-tour` (:145), `--ember-llm-proof` (:156),
-   `--ember-forge-proof` (:167), `--ember-world-proof` (:178), `--ember-input-proof` (:189),
-   `--ember-planet-proof` (:200). Alt-bayrak yoksa varsayılan tur koşar: boot → mainmenu →
-   karakter yaratma adımları → sentetik worldgen sorusu + kasıtlı sentetik hata
-   (`includeSyntheticFailure: true`, :211-262, :302).
-4. **Her mod SONUNDA çıkar:** "oyun testten sonra kapanmıyor" playtest bulgusu üzerine her
-   dalın sonunda koşulsuz `Application.Quit()`; eski opt-in `--ember-proof-quit` bayrağı hiç
-   geçilmediği için pencereler birikiyordu (EmberProofScreenshotDriver.cs:41-47, 202-208).
-5. **Boot yarışı çözümü:** dünya-giren modlar `WaitForBootToSettle()` ile MainMenu aktif sahne
-   olana KADAR bekler (sabit ön-bekleme, boot'un kendi MainMenu navigasyonu tarafından
-   eziliyordu — "world-enter: no adapter" bulgusu; EmberProofScreenshotDriver.cs:2469-2479).
-6. **Dünyaya giriş kalıbı:** modlar `EmberWorldGenIntent.Pending = new EmberWorldGenIntent("grim",
-   "wanderer", "crossroads")` ile karakter-yaratmanın AYNISI tohumu bırakıp `GeneratedWorld`
-   sahnesini yükler — bare fallback değil, gerçek oynanır sahne (EmberProofScreenshotDriver.cs:322-329,
-   438-441).
-7. **Yakalama boru hattı:** pencere modunda `ScreenCapture.CaptureScreenshot` (UI dahil tam
-   ekran); `-batchmode`'da swapchain OLMADIĞI için ana kamera offscreen RenderTexture'a
-   açıkça render edilip PNG'ye okunur — overlay UI bu yolda GÖRÜNMEZ
-   (EmberProofScreenshotDriver.cs:1926-1934, 1960-1980, 1982-2014). Modal yakalamalar
-   `WaitForEndOfFrame` sınırından sonra yapılmak zorunda (UI Toolkit geçişi frame sonunda;
-   :405-411) ve aynı-frame ikinci istek öncekini EZDİĞİ için 0.4 sn ayrımlarla serpiştirilir (:602-605).
-8. **Doğrulama zincirinin CI ayağı:** GitHub Actions önce `static-audit.sh`'ı kaynak-only
-   checkout'ta koşar (yalancı-yeşilleri yakalar), sonra EditMode testleri —
-   "green is NOT runtime/LLM/art/build proof" adıyla, dürüst etiketli
-   (.github/workflows/unity-test.yml:79-89, 124-125). Lokal makinede `run-validation.sh`
-   Unity varsa gerçek EditMode, yoksa fallback harness koşar (tools/validation/run-validation.sh:205-217).
-9. **Kadans:** proof koşuları isteğe bağlıdır (playtest/DoD anında elle veya ajan tarafından);
-   CI static-audit + EditMode her push/PR'da, nightly cron yalnızca ağır opsiyonel build
-   işini tetikler (.github/workflows/unity-test.yml:26-45).
+1. **Bootstrap gate**: `RuntimeInitializeOnLoadMethod(BeforeSceneLoad)` çalışır;
+   `HasArg("--ember-proof-screenshots")` false ise dönüş — driver hiç mount olmaz
+   (`EmberProofScreenshotDriver.cs:23-33`).
+2. **runInBackground ON + `DontDestroyOnLoad`**: master bayrak varsa
+   `Application.runInBackground = true` set edilir ve yeni GO'ya driver eklenir
+   (aynı blok:29-32). W30 dersi ("soak armed then silence"): windowed proof runları
+   arka-plan shell'den başlar, focus yoksa pause olan player tüm coroutine'leri
+   dondururdu.
+3. **Output klasörü**: `ResolveOutputDir()` `--ember-proof-screenshots <path>`
+   argümanının bir sonraki tokenini `Path.GetFullPath` ile mutlaklaştırır;
+   bulunamazsa `persistentDataPath/proof-screenshots`
+   (`EmberProofScreenshotDriver.cs:2545-2551`).
+4. **Mod seçici**: `Start()` her mod bayrağını sırayla kontrol edip ilgili
+   coroutine'i döndürür ve `Application.Quit()` çağırır (17 mod; :35-209). Master
+   bayrak varsa mod bayrağı yoksa fallback rescue-benzeri hızlı capture akışı
+   çalışır (:209-260) — mod bayrağı yoksa yine quit eder.
+5. **PLAYTEST FIX (W30)**: her mod çıkışı ALWAYS `Application.Quit()` çağırır —
+   eski opt-in `--ember-proof-quit` bayrağı hiç geçilmediğinden pencereler
+   birikiyordu ("oyun testten sonra kapanmıyor"). Yorum satırı her mod dalında
+   verbatim tekrarlanır (:41-47, :53-57, :64-68 … :202-208).
+6. **BOOT-RACE FIX (shipcheck)**: `WaitForBootToSettle()` MainMenu aktif sahne
+   olana kadar bekler + 0.8s grace; eski sabit `WaitForSeconds` boot navigasyonu
+   ile yarıştığından "world-enter: no adapter" hatası veriyordu
+   (`EmberProofScreenshotDriver.cs:2528-2539`).
+7. **Sahne + adapter yükleme**: gameplay modları `EmberWorldGenIntent.Pending`
+   ile intent kurar, `SceneManager.LoadScene(EmberScenes.GeneratedWorld)` çağırır,
+   `EmberDomainAdapterLocator.Current is DomainSimulationAdapter` görülene kadar
+   bounded polling yapar (marathon örneği: 120s deadline, :941-947).
+8. **Peaks reset (W36/B26)**: marathon başlangıcında
+   `soakAdapter?.ProofResetLivingPeaks()` çağırılır — peaks adapter üstünde
+   Editor session'ları arası kalır; sıfırlanmazsa ilk run'ın peaks'i ikinci run'a
+   sızar ve bozuk ikinci run false-PASS eder (:950-952).
+9. **W32 DOC5 render-layer invariants (agentcheck)**: her tick sonrası spatial
+   drift (billboard sim projeksiyonuna) ve label doğruluğu (`NpcActivityLabelView.
+   RenderedText` == `s1.Activity`, `s1==s2` double-read guard'ıyla) `LogError`
+   olarak akıtılır; `eatingSeen==0` ise assert VACUOUS damgalanır (:801-853).
+10. **PASS gate (marathon)**: `bool pass = exceptions == 0 && flat && !aborted &&
+    actions > 0 && censusOk;` — `censusOk = gameHours < 24 || (peaks.sleeping > 0
+    && peaks.working > 0 && peaks.eating > 0)` (:1024-1037). Kısa smoke soaks
+    peaks'i advisory tutar; 24-saat üstü gerçek marathon peaks'i zorunlu kılar.
+11. **Fallback zinciri**: `run-validation.sh` `--mode auto` — Unity binary
+    bulunursa `-batchmode -runTests -testPlatform EditMode`, aksi halde
+    `dotnet test tools/validation/fallback/ValidationFallbackHarness.csproj`;
+    T-CENSUS-3 gibi engine-free testler her iki katmanda da koşar, T-CENSUS-1/2
+    `#if UNITY_EDITOR` guard ile Editor-only kalır.
 
-## LLD - Veri Modeli
+## LLD - Veri Modeli (file:line)
 
-Bu sistem kalıcı veri tipi TANIMLAMAZ; ürettiği artefaktlar dosyadır. Sözleşmeleri:
+- `EmberProofScreenshotDriver` — proof mode sürücüsü, tek `MonoBehaviour`
+  (`Assets/Scripts/Presentation/Ember/Diagnostics/EmberProofScreenshotDriver.cs:20`),
+  2661 satır, 17 mod coroutine'i.
+- `_outputDir : string` — mode başlangıcında `ResolveOutputDir()` ile set edilir;
+  tüm capture yolları buraya `Path.Combine` edilir (`:22`).
+- `EmberProofScreenshotDriver` bayrak dize sabitleri — literal argüman
+  formatında; `HasArg`/`GetArg` `Environment.GetCommandLineArgs()` üstünde çalışır
+  (`:2555-2569`).
+- Peaks accumulator (W36/B26) — `DomainSimulationAdapter.WorldEncounter.cs:43-45`:
+  `_livingPeakSleeping, _livingPeakWorking, _livingPeakEating, _livingPeakFarming
+  : int`, `_livingPeakSamples : int` (0 = hiç örneklenmedi),
+  `_livingPeakSampledAtMinutes : long` (honesty rule için son örnekleme
+  game-clock'u).
+- `NpcActivityLabelView.RenderedText : string` — TextMesh'ın FIILI text'i, push
+  edilen değil (`Assets/Scripts/Presentation/Ember/Views/NpcActivityLabelView.cs
+  :38-39`). W32 DOC5 label invariantının render-layer okuma noktası.
+- `ActorViewState` — `Views/ActorViewState` (WorldPosition/Activity/ActionKind)
+  billboard↔sim resolve sırasında read model olarak taşınır.
+- Marathon soak state — `RunMarathon()` içinde local: `exceptions:int`,
+  `memStart/memPeak:long`, `rngState:uint` (xorshift), sayaçlar (`actions,
+  travels, fights, trades, hours`), `endAt/nextHeartbeat:float`, `aborted:bool`,
+  `gameMinStart:long`, `censusOk/flat/pass:bool` (`:920-1037`).
 
-### Sürücü durumu — `Assets/Scripts/Presentation/Ember/Diagnostics/EmberProofScreenshotDriver.cs`
-- `_outputDir : string` — tek örnek alan; `ResolveOutputDir()` sonucu (:21, 37).
-- `TourScenes : string[]` — sahne turu listesi, tek kaynak `EmberScenes.GameplayTour`
-  (EMB-056; :1832-1833).
-
-### Çıktı artefaktları (dosya sözleşmeleri)
-- PNG kareler: `shipcheck_modal/final.png` (:528, 534), `looptest_levelup/respawn/final.png`
-  (:575, 601, 608), `lapse_000..089.png` (:666), `igtour_*.png` (:980-1025),
-  `pt_01..pt_05_*.png` (:1056-1121), `look_*.png` / `ab_*.png` / `sky/weather/interior`
-  serileri (:1151-1784), `tour_NN_<scene>_ui/noui.png` (:1842-1849),
-  `input-proof_*.png` (:2414-2424), `planet-seed-{1,42,1234}.png` (:2178-2180).
-- Metin raporları: `llm-proof.txt` (provider/model + gerçek yanıt; :1868-1910),
-  `forge-die.txt` + `forge-die.png` (:2052-2124), `planet-proof.txt` (determinizm satırı
-  dahil; :2215-2216), `world-proof.txt` (PASS/FAIL + sayaç dökümü; :2231-2398),
-  `input-proof.log` (facade anlık görüntüleri; :2412-2427).
-- Log-satırı sözleşmeleri: `SHIPCHECK [PASS|FAIL] <section>: <detail>` + `SHIPCHECK VERDICT:`
-  (:433, 535), `[Marathon] VERDICT: PASS|FAIL — ...` (:953-956), `LOOP-PROOF: ...` (:548, 607),
-  `[Playthrough] VERDICT:` (:1125).
-
-### Fallback harness — `tools/validation/fallback/`
-- `ValidationFallbackHarness.csproj` — net8.0 + NUnit 4.3.2; Domain/Simulation/Infrastructure/Data
-  tümü + motor-bağımsız seçme Presentation dosyaları + `Assets/Tests/EditMode/**` derlenir
-  (csproj:18-47). `GuardAgainstConflictMarkers` MSBuild hedefi BeforeBuild'de merge-marker
-  taraması yapar (csproj:60-74; GuardConflictMarkers.ps1:5-27, guard-conflict-markers.sh:28-47).
-- `UnityJsonUtilityStub.cs` — `UnityEngine.Vector3` + `JsonUtility`'nin System.Text.Json
-  üstünde küçük taklidi; "Unity serileştirme paritesi İDDİASI DEĞİLDİR" (stub:84-87, 96-123).
-- `Directory.Build.props` — obj/bin çıktısını `validation-output/fallback-harness/` altına
-  yönlendirir (props:1-6).
-
-### Digest golden — `Assets/Scripts/Simulation/Composition/WorldStateDigest.cs`
-- `WorldStateDigest.Compute(WorldState) : string` — `WSDIGEST_v1` başlıklı kanonik metin
-  (TIME, ACTORS, PLANTS, SOILS, JOBS, PRICES, STOCKPILES, CARAVANS, büyü bekleme/kalkan,
-  EVENTS, QUESTS bölümleri sabit sırada) → SHA-256 hex (:18-54; aktör satırı pozisyon +
-  IsIdle + CurrentJobId + Hunger/Fatigue/Thirst içerir, :80-99).
-- `WorldTickDigestGoldenTests.BaselineHash` — elle güncellenen altın sabit
-  `"e56cb763..."`; her re-baseline gerekçe yorumu bırakır (2026-06-10 olay-log şişmesi,
-  2026-06-11 HarvestStep, CAN SUYU H1 tüketim döngüsü, 2026-07-23 M6 hasat-el-gerektirir;
-  WorldTickDigestGoldenTests.cs:12-26).
-
-## LLD - Fonksiyon Haritasi
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
 Hepsi `EmberProofScreenshotDriver.cs` içinde (aksi yazılmadıkça):
 
-- `static void Bootstrap()` — :23. Master bayrak kapısı + sürücü montajı.
-- `IEnumerator Start()` — :35. Mod dispatcher + varsayılan tur + koşulsuz Quit.
-- `IEnumerator RunGameplayShot()` — :311. Gerçek New Game tohumuyla spawn FPS + açılı tepeden kareler.
-- `IEnumerator RunPlaythrough()` — :330. 11 karakter-yaratma adımının HER BİRİ + worldgen reveal +
-  16 in-game ekran turu (33 kare; auto-advance çift-atlama düzeltmesi :344-349).
-- `IEnumerator RunShipCheck()` — :424. F4 tek-komut regresyon paketi; bölüm kapıları aşağıda.
-- `IEnumerator RunLoopProof()` — :541. F2 tam oyun döngüsü: quest → encounter → müzik BATTLE/DAY →
-  levelup ekranı → trade → üretilmiş fetch görevi → taverna uykusu → ölüm-diriliş → silah farkı.
-- `IEnumerator RunTimelapse()` — :623. Plaza kamerasından 90 kare × 10 sn (≈18 oyun saati,
-  gece sokağa çıkma yasağı dahil); FPS controller kapatılır (:649-655).
-- `IEnumerator RunAgentCheck()` — :674. DM kahini, gerçek NPC diyaloğu (selamlama + konu +
-  serbest metin + İKİNCİ karşılaşma tanışıklığı), yoldaş alımı, envanter; REFORM #1 uzamsal
-  invariantlar (aşağıda).
-- `IEnumerator RunMarathon()` — :836. F34 30-dk otonom soak; `--ember-marathon-minutes N`
-  kısaltır (:845-851); xorshift RNG seed 0xF34F34 (:862-867); eylem karışımı 2/8 travel,
-  3/8 fight, 2/8 trade, 1/8 saat (:891-925); dakikalık heartbeat + bellek örnekleme (:927-936);
-  hüküm `exceptions==0 && memEnd < 2×memStart && !aborted && actions>0` — iptal olmuş/hiçbir şey
-  yapmamış koşu PASS diyemez ("Potemkin" dürüstlük kuralı; :941-956).
-- `IEnumerator RunIgTour()` — :962. F32: HUD + envanter + karakter/journal/harita + pause +
-  3 options sekmesi, 9 kare.
-- `IEnumerator RunMainQuest()` — :1036. F31 üç-perde omurga: delve sandıkları → başkent bilgesi →
-  final Warden + jenerik; hüküm `complete=True` (:1122-1126).
-- `IEnumerator RunLookAround()` — :1129. Öz-playtest: 360° pan, R2 fog/ambient A/B tanısı
-  (:1155-1171), perf probu (avg≤16ms; :1173-1183), bina içi/çiftlik/harita/gece/suç/gökyüzü/
-  hava/iç mekân/büyü/zindan (takip, tuzak, boss, sandık, bestiary) kare serileri (:1184-1793).
-- `IEnumerator RunRescueProof()` — :1799. Karakter yaratma + görünür worldgen yükleme ekranı +
-  GeneratedWorld iki kez (kurtarma senaryosu).
-- `IEnumerator RunSceneTour()` — :1836. Her gameplay sahnesi UI'li + tüm Canvas'lar kapalı
-  ikişer kare (magenta/materyal avı; UrpMaterialRescue sahne başına tetiklenir; :1828-1852).
-- `IEnumerator RunLlmProof()` — :1862. EMB-006: `ForgeLocator.NativeLlm` için 90 sn bekler,
-  `Complete()`'i worker thread'de 240 sn zaman aşımıyla koşar, provenance + gerçek yanıtı
-  `llm-proof.txt`'e yazar.
-- `IEnumerator RunForgeProof()` — :2045. Canlı `IAssetForge` üzerinden sabit "carved bone die"
-  üretimi; `--ember-forge-prompt/-negative/-size/-seed` ile parametrik (:2062-2070); 300 sn
-  zaman aşımı; PNG + provenance.
-- `IEnumerator RunPlanetProof()` — :2156. Seed {1, 42, 1234} küresel gezegen üretimi →
-  equirectangular PNG; seed 42 için `digest = digest*31 + elev*1000 + plateId` yuvarlanan
-  özeti yeniden-üretimle karşılaştırıp `DETERMINISTIC|MISMATCH` yazar (:2172-2207).
-- `IEnumerator RunWorldProof()` — :2231. Motor-dışı domain koşusu: `WorldFactory().Create(1)` +
-  `SeedWorld` + tam bir oyun günü tick döngüsü; NPC sabah/öğle/gece pozisyon örneklemesi
-  (:2255-2270), demir külçe/smelt/quest/overland sayaçları; PASS koşulu
-  `jobCompleted && ironIngotProduced && anyQuestComplete && overlandHasSettlements` (:2330).
-- `IEnumerator RunInputProof()` — :2407. E7-020 Stage 0: yalnızca `EmberInput` facade çıktısı
-  kaydeder, sentetik girdi ENJEKTE ETMEZ (:2412-2414).
-- Yakalama yardımcıları: `CaptureToPng` :1960, `CaptureCameraToPng` :1982, `FindSceneCamera`
-  :1937 (inaktif rig kamerasını zorla açar), `CaptureFixedAfter` :1910, `CaptureAfter` :1918,
-  `CaptureOverheadAfter` :2016, `WritePlanetPng` :2218 (dikey çevirme).
-- Argüman/senkron yardımcıları: `HasArg` :2481, `GetArg` :2489, `WaitForBootToSettle` :2473,
-  `WaitDialog` :827 (LLM `IsThinking` bir frame SONRA yandığı için 1.5 sn ön-bekleme).
-- Sürüş yardımcıları: `DriveToBuildSelection` :263, `DriveToDossier` :281,
-  `MountWorldgenProof` :289 (maxRegions 2 / sentetik hata dahil projeksiyon).
+- `static void Bootstrap()` — :24. `--ember-proof-screenshots` yoksa erken çıkar;
+  master gate. `runInBackground = true` set eder, driver GO'yu mount eder.
+- `IEnumerator Start()` — :36. 17 mod bayrağını sırayla kontrol eder; eşleşen
+  coroutine'i döndürüp `Application.Quit()` çağırır (W30 PLAYTEST FIX).
+- `IEnumerator RunGameplayShot()` — :311. `EmberWorldGenIntent.Pending` seed +
+  `GeneratedWorld` sahnesi + FPV/overhead spawn ve `+4s` frame'leri (`--ember-
+  gameplay-shot`).
+- `IEnumerator RunPlaythrough()` — :330. `--ember-playthrough`; MainMenu'den 11
+  char-creation adımı + worldgen reveal + gameplay + 16 in-game modal.
+- `IEnumerator RunShipCheck()` — :424. `--ember-shipcheck` ONE-COMMAND regresyon:
+  quest-seed, encounter-loot, economy, perf 90-frame avg/worst, 10x fast-travel
+  soak, economy chain, audio-forge centroid, modal capture; `SHIPCHECK VERDICT`
+  satırı bastırır.
+- `IEnumerator RunLoopProof()` — :541. `--ember-looptest` full loop:
+  quests→encounter→loot→trade→respawn (F2/F17/F26 legs), `LOOP-PROOF` satırları.
+- `IEnumerator RunTimelapse()` — :623. `--ember-timelapse` KARE-KARE CANLILIK:
+  sabit plaza kamerası, 90 frame × 10s = ~18 game saati, 360° pan.
+- `IEnumerator RunAgentCheck()` — :674. `--ember-agentcheck` DM oracle + gerçek
+  NPC diyaloğu + W32 DOC5 spatial + label invariantları LOUD; `agentcheck_eating_
+  label.png` render-layer proof (yalnız `eatingSeen>0` ise).
+- `IEnumerator RunMarathon()` — :897. `--ember-marathon`; 30-dk (varsayılan)
+  otonom soak, `--ember-marathon-minutes N` ile kısaltılır. `[Marathon] VERDICT
+  PASS/FAIL` peaks + censusOk gate ile.
+- `IEnumerator RunIgTour()` — :1047. `--ember-igtour` F32-DoD 9 in-game ekranın
+  frame turu (HUD/inventory/character/journal/map/pause + 3 options section).
+- `IEnumerator RunMainQuest()` — :1121. `--ember-mainquest` F31/F35 three-act
+  spine: delve chestleri → capital sage → final Warden.
+- `IEnumerator RunLookAround()` — :1214. `--ember-lookaround` self-playtest:
+  spawn 360° pan + kapıya yürüyüş + iç oda + F16/F18/F19/F20/F29 legs.
+- `IEnumerator RunRescueProof()` — :1884. `--ember-rescue-proof` rescue yolu +
+  worldgen loading + generated_world capture.
+- `IEnumerator RunSceneTour()` — :1919. `--ember-scene-tour` her gameplay
+  sahnesini UI-on + UI-off çift capture (magenta/material rescue proof).
+- `IEnumerator RunLlmProof()` — :1942. `--ember-llm-proof` `ForgeLocator.NativeLlm`
+  bekle → off-main-thread `Complete()` → provenance + response `llm-proof.txt`.
+- `IEnumerator RunForgeProof()` — :2130. `--ember-forge-proof` SDXL D1
+  verification; `--ember-forge-prompt/negative/size/seed` parametrize eder.
+- `IEnumerator RunPlanetProof()` — :2241. `--ember-planet-proof` PlanetGenerator
+  determinism (seed 42 regen) + equirectangular PNG'ler + `planet-proof.txt`.
+- `IEnumerator RunWorldProof()` — :2316. `--ember-world-proof` engine-free
+  `WorldFactory` + `WorldTickComposer.TicksPerGameDay` gün simülasyonu +
+  `world-proof.txt` (JobAssigned/JobCompleted/SmeltCompleted/QuestCompleted).
+- `IEnumerator RunInputProof()` — :2488. `--ember-input-proof` E7-020 Stage 0;
+  `EmberInput` facade snapshot'ları (Input System yokken derlenebilir kalır).
+- `static bool TryResolveViewState(ActorView, IDomainSimulationAdapter, out ActorViewState)`
+  — :735. W32 DOC5 id-first, key-fallback view→sim resolve
+  (`WorldViewProjector` ile aynı desen).
+- `static IEnumerator WaitDialog(IDialogSource, float)` — :755. Async LLM'nin
+  `IsThinking` bir frame sonra flip ettiği için 1.5s beat + bounded polling.
+- `static IEnumerator WaitForBootToSettle()` — :2528. MainMenu aktif sahne olana
+  kadar bekle + 0.8s grace; shipcheck boot-race fix.
+- `void CaptureToPng(string)` — :2622. Non-batchmode'da `ScreenCapture.
+  CaptureScreenshot` (overlay UI dahil); batchmode'da kamera→RT→PNG.
+- `IEnumerator CaptureFixedAfter(float, string)` — :2604. Wait + capture +
+  35ms async separation.
+- `IEnumerator CaptureOverheadAfter(float, string, float)` — :2662. Rig
+  kamerasını yukarı çeker, tek angled top-down alır, geri koyar (URP
+  configured cam borrow'u).
 
-`tools/validation/`:
-- `run-validation.sh` — mod `auto|unity|fallback` (:17-57); Unity ikilisi env değişkenleri +
-  PATH + bilinen Hub yolları sırasıyla aranır (:84-127); unity modu `-batchmode -runTests
-  -testPlatform EditMode` (:129-159); fallback `dotnet test ... --logger trx` (:161-203);
-  log `validation-output/latest.log`'a kopyalanır (:60-67).
-- `static-audit.sh` — 6 bölüm: (1) çift .meta GUID HARD FAIL (:44-56); (2/2b) LFS pointer
-  plugin/görsel — bilgi ya da `--require-runtime(-visual)` ile HARD FAIL (:61-96); (3) eksik
-  .meta WARN (:103-111); (3b) takipli asset + takipsiz .meta HARD FAIL — temiz klonda GUID
-  kırılması (:119-134); (3c) takipli .meta + gitignore'lu asset HARD FAIL — HYG-11 cuDNN/onnx
-  boşluğu (:143-159); (4) yetim .meta WARN (:163-178); (5) bilgi grepleri: legacy Input,
-  PlayerPrefs, Task.Run, `GetAwaiter().GetResult()` (:183-191); (6) determinizm sınır bekçisi —
-  Domain + Data/Save içinde `UnityEngine.Random`/`DateTime.Now|UtcNow` HARD FAIL (:199-208).
-- `check-sprint4-branch-hygiene.sh` — HEAD'in sprint-4 taban commit'inden indiğini ve eski
-  soy commit'lerinin (52f2e1e/116ae2e) taze aralıkta olmadığını doğrular (:5-36).
-- `run-worldgen-character-sample.ps1` + `sample/Program.cs` — worldgen seed 42 + sınıf önerisi
-  yazan dotnet konsol dumanı testi (Program.cs:13-27).
-- `analyze-generated-image.py` — forge PNG'si için yapı-mı-gürültü-mü hükmü: lag-1
-  otokorelasyon, kanal-arası korelasyon, doygunluk, FFT düşük-frekans oranı (:1-14).
+Adapter tarafı — `Assets/Scripts/Presentation/Ember/Adapters/
+DomainSimulationAdapter.WorldEncounter.cs`:
 
-## LLD - Yazdigi/Okudugu Alanlar
+- `string ProofLivingCensus()` — :676. Event log'dan `meals/witnessed/
+  reported/guard/chronicle/shortage` + aktör aksiyonundan `sleepingNow/
+  workingNow/eatingNow/farmingNow` sayar; kendi içinde `ProofSampleLivingPeaks()`
+  fold eder ve `sleepingPeak/workingPeak/eatingPeak/farmingPeak/peakSamples`
+  yazdırır.
+- `void ProofSampleLivingPeaks()` — :716. O(alive actors), zero alloc; instant
+  sayımı MAX-CONCURRENT peaks'e katar; `_livingPeakSamples++`; `_livingPeakSampledAtMinutes`
+  günceller (WorldState'e yazmaz — diagnostic-only).
+- `void ProofResetLivingPeaks()` — :743. Marathon her koluna girişte çağırılır;
+  peaks + samples + sampledAtMinutes sıfırlanır. B26 sızıntı savunması.
+- `(int sleeping, int working, int eating, int farming, int samples) ProofLivingPeaks()`
+  — :751. Marathon PASS gate'in okuduğu tuple.
+- `long WorldTimeMinutesOrZero()` — :755 civarı. Marathon honesty rule için
+  game-clock; world yoksa 0.
+- `bool ProofMovePlayerBeside(ulong)` — :670. Reach-gated flowlar için sim
+  player'ı hedef actor'ün yanına atlar (proof-only, gerçek oyun yürür).
 
-Kanıt zinciri `FieldOwnershipRegistry`'de yazar olarak KAYITLI DEĞİLDİR — tasarım gereği:
-sim alanlarına tick bandları dışında dokunmaz, adapter'ın `Proof*` yüzeyinden geçer (saat
-ilerletme bile `ProofAdvanceHours` üzerinden kadans kapısına girer; shipcheck6 dersi,
-bkz. 01-time-cadence §7). Yine de sunum katmanında DOĞRUDAN mutasyon yapar:
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-- **Yazar (sunum-katmanı, koşu-ömürlü):** `Application.runInBackground` (:29);
-  `EmberWorldGenIntent.Pending` (:322, 438, 545 vb.); PlayerRig `transform.position/rotation`
-  + `CharacterController.enabled` + `EmberFirstPersonController.enabled` (ışınlama/pan için;
-  :639-656, 1141-1147, 1190-1207); `RenderSettings.fog/ambientLight` (R2 A/B, geri yüklenir;
-  :1162-1171); `Canvas.enabled` (scene-tour noui kareleri; :1846-1849); kamera
-  `targetTexture/fieldOfView/farClipPlane` (geri yüklenir; :1988-2012, 2023-2040);
-  `Time` üzerinden değil — `adapter.ProofAdvanceHours` ile oyun saati (:921, 1247).
-- **Okur:** `EmberDomainAdapterLocator.Current / WorldViewReadModel / ConsultFateOracle`
-  (:443, 476, 697); `ForgeLocator.NativeLlm / AssetForge` (:1863, 2054);
-  `Profiler.GetTotalAllocatedMemoryLong` (:860, 942); `Time.unscaledDeltaTime` (perf;
-  :460-465, 1176-1182); `EmberInput` facade'ının tamamı (input-proof; :2431-2457);
-  `WorldState` kökleri (WorldProof: `world.Events/Quests/Overland/PlayerInventory/Actors`;
-  :2273-2323).
-- **Digest okuru:** `WorldStateDigest.Compute` dünya-tick'in TÜM mutable depolarını salt-okur
-  kanonikleştirir (WorldStateDigest.cs:35-54) — sahiplik defterinin "her alanın tek yazarı"
-  iddiasının bağımsız denetçisidir: kayıt-dışı bir yazar drift'i digest'i oynatır ve golden
-  test kırılır.
+Driver **hiçbir** `WorldState` alanına yazmaz — proof surface tam olarak read-only
++ side-effect free adapter komutları üstünden çalışır. Ownership tarafı:
 
-## LLD - Urettigi/Tukettigi Olaylar
+- **Yazar**:
+  - `_outputDir` (driver-local) — `ResolveOutputDir()` sonucu.
+  - `Application.runInBackground` — global; W30 dersi (window focus yoksa
+    coroutine'ler donmasın).
+  - `_livingPeakSleeping/Working/Eating/Farming/Samples/SampledAtMinutes`
+    (adapter-private) — `ProofSampleLivingPeaks` / `ProofResetLivingPeaks`
+    tarafından yazılır; **hiçbir gameplay pathi bunları okumaz**, sadece proof
+    çıktısı yazdırır.
+  - `PlayerRig.transform.position/rotation` — sadece agent-check + lookaround +
+    timelapse gibi self-playtest modlarında; `CharacterController` bir tick
+    disable edilip restore edilir. `EmberFirstPersonController.enabled` iki tick
+    off/on (aim ownership'i almak için).
+  - `Camera.transform` + `farClipPlane` — `CaptureOverheadAfter` içinde ödünç
+    alıp restore.
+- **Okur** (yalnız):
+  - `EmberDomainAdapterLocator.Current`, `.WorldViewReadModel`,
+    `.ConsultFateOracle`.
+  - `IDomainSimulationAdapter.GetSpawnableActors()`, `TryReadActor(id|key)`,
+    `GetDialogSource(ActorId)`, `TickIndex`, `AdvanceTick(index)`,
+    `InventorySlots`, `TryTravelToSettlement(name)`.
+  - `DomainSimulationAdapter` proof yüzeyleri (yukarıda).
+  - `Environment.GetCommandLineArgs()` (bayrak parse), `Time.unscaledTime` (soak
+    deadline), `Profiler.GetTotalAllocatedMemoryLong()` (memory flat check).
+  - `SceneManager.GetActiveScene()`, `Application.CanStreamedLevelBeLoaded`.
 
-- **Tükettiği WorldEventKind'lar (WorldProof):** `JobAssigned`, `JobCompleted`,
-  `RecipeCompleted`, `QuestStarted`, `QuestCompleted` (EmberProofScreenshotDriver.cs:2273-2289);
-  smelt tespiti reason metni + `ReasonTrace` "recipe:1001" fallback'i ile (:2515-2537).
-- **Tükettiği WorldEventKind'lar (gate testleri):** `NeedChanged`, `ShortageDetected`,
-  `JobAssigned`, `JobCompleted`, `PlantStageAdvanced`, `PlantHarvested`, `PriceChanged`,
-  `CombatResolved`, `GuardResponded`, `WitnessRecorded`, `FactionReputationChanged`,
-  `TradeCompleted`, `CaravanArrived`, `PlantPlanted`, `ChronicleEvent`
-  (LivingWorldGateTests.cs:307-322); ayrıca `meal_eaten` reason öneki (:60, 87).
-- **Ürettiği olay:** WorldEvent ÜRETMEZ (Proof* adapter bacakları üretir, o sistemlerin
-  atlas sayfalarına aittir). Ürettiği şey log-tag sözleşmeleridir:
-  `[Proof]` (×67), `[AgentCheck]` (×16), `[EmberProofScreenshotDriver]` (×7),
-  `[Marathon]` (×5), `[Invariant]` (×3), `[Playthrough]`, `[WorldProof]`, `[Perf]`, `[R2]`,
-  `[Timelapse]`, `[MainQuest]` ve satır-başı `SHIPCHECK` / `LOOP-PROOF` damgaları
-  (dağılım dosya genelinde; örn. :433, 548, 785, 805, 953).
-- **Digest golden'ın tükettiği:** olay logunun kendisi digest'e girer (`AppendEvents`,
-  WorldStateDigest.cs:50) — olay spam'i golden'ı kırar; 2026-06-10 re-baseline tam bu yüzden
-  yapıldı (WorldTickDigestGoldenTests.cs:12-15).
+## LLD - Ürettiği/Tükettiği Olaylar
 
-## Testler
+Driver hiçbir `WorldEvent` üretmez (proof gözlem katmanıdır, oyun değil).
+Ürettikleri: **log satırları** ve **dosyalar**.
 
-- `Assets/Tests/EditMode/Composition/WorldTickDigestGoldenTests.cs` — golden pin:
-  `Advance_OverTwoGameDays_MatchesCommittedBaselineDigest` (:39, çifte-koşu bayt-aynılık +
-  BaselineHash eşitliği), `Advance_SameSeedSameTicks_ProducesSameDigest` (:54),
-  `Advance_DifferentTickHorizons_ProduceDifferentDigests` (:62). Tohum dünyası
-  `WorldLivesOverNTicksTests` ile hizalı (:80-110).
-- `Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs` — Gate1 yaşanabilirlik (açlık<70,
-  yorgunluk<75, öğün≥3×nüfus, stok DONMAMIŞ; :39-66), Gate2 pertürbasyon duyarlılığı (:68-97),
-  Gate3 senaryosuz olay hızı ≥60/gün (:299-333), Gate4 penceresiz öğle kalabalığı dalgası
-  amplitüd≥5 (:99-136), Gate5 olay kaskadı derinlik-3 saldırı→tanık→devriye (:139-166),
-  Gate6 runtime tarih + fraksiyon değişimi + seed-farklı kronik (:168-197), Gate7 üç seed
-  ikili-farklı yaşamlar (:200-226), Gate8 hücre başına ≤2 sivil (:228-251), Gate9 tanık
-  hafızası diyalog prompt'una ulaşır (:253-273), Gate10 yoldaş sadakati (:275-297).
-- `Assets/Tests/EditMode/CanSuyu/GateContractLintTests.cs` — sözleşmenin linti: her gate
-  gövdesi `AdvanceDays(`/`composer.Advance(` içermek ZORUNDA, gate dosyasında
-  `Screenshot|CaptureFrame|IsAtHour(12` yasak (:44-59); `docs/ROADMAP_V2_CAN_SUYU.md` DoD
-  satırlarında "sabit saat"/"screenshot proof" vb. yasak (:63-80).
-- `Assets/Tests/EditMode/Save/SaveLoadDigestRoundtripTests.cs` — save/load sonrası digest
-  aynılığı (:29-38, :88-100).
-- `Assets/Tests/EditMode/Save/WorldSaveMapperGoldenRoundtripTests.cs` — çift roundtrip
-  refleksiyonla alan-aynı (Home/DayAnchor sınıfı düşen-alan hatalarına karşı; :15-21).
-- Fallback harness bu testlerin TAMAMINI `Assets/Tests/EditMode/**` wildcard'ı ile derler
-  (ValidationFallbackHarness.csproj:45) — yani gate + golden testler Unity'siz makinede de
-  koşar; PlayMode koşmaz.
-- CI: `static-audit` işi → `editmode-tests` işi ona `needs` ile bağlı
-  (.github/workflows/unity-test.yml:79-89, 124-128).
+Log prefixleri:
 
-## Bilinen Borclar + Kacak Kapilari
+- `[Proof]` — ×67 (rescue, playthrough, mainquest, sceneTour, F16/18/19/20/29
+  legs).
+- `[AgentCheck]` — ×16 (RunAgentCheck sırasında DM/dialog/inventory
+  transcript'i).
+- `[Invariant]` — spatial + label (W32 DOC5) LogError'ları; per-tick fail
+  sayaçları.
+- `[Marathon]` — soak armed, heartbeat (t=Ns, actions, exceptions, mem, peaks),
+  LIVING census, VERDICT PASS/FAIL.
+- `[Playthrough]` — main menu, char-creation adımları, VERDICT (creation to
+  credits).
+- `[Timelapse]` — 90 frame sekans özeti.
+- `[MainQuest]` — three-act spine geçişleri.
+- `LOOP-PROOF` — Encounter/Trade/GeneratedQuest/TavernSleep leg özetleri.
+- `SHIPCHECK [PASS|FAIL] <bölüm>` + `SHIPCHECK VERDICT` — kompakt CI mesajı.
+- `[EmberProofScreenshotDriver]` — ×7 (camera search, screen-grab, wrote path).
 
-Aile harfleri `docs/SYSTEMS_ATLAS.md:51-60` (a)-(g) sınıflamasına göre.
+Dosya çıktıları (`_outputDir` altında):
 
-1. **README ölü bayrak belgeliyor** — README.md:78 hâlâ `--ember-proof-quit` yazar; kod bu
-   bayrağın "hiç geçilmediğini" söyleyip koşulsuz Quit'e geçmiş
-   (EmberProofScreenshotDriver.cs:203-205). Belge-kod drifti.
-2. **Dispatch kopyala-yapıştır — sınıf (f).** 17 if-bloğunun her birine aynı 4 satırlık
-   "PLAYTEST FIX" yorumu ve aynı Quit kuyruğu yapıştırılmış (:39-209); yeni mod ekleyen
-   birinin Quit'i unutması yapısal olarak mümkün.
-3. **ResolveOutputDir argüman yutar** — master bayrağın hemen ardındaki argüman KÖR alınır
-   (:2460-2465); `--ember-proof-screenshots --ember-lookaround` yazılırsa çıktı dizini
-   `--ember-lookaround` adlı klasör olur. Doğrulama yok.
-4. **ShipCheck exception sayacı aboneliği geri alınmaz** — anonim lambda
-   `logMessageReceived`'e eklenir, hiç çıkarılmaz (:427); Marathon kendi handler'ını düzgün
-   söker (:858, 941). Quit izlediği için zararsız ama kalıp tutarsız.
-5. **Batchmode yakalama overlay UI'yi GÖREMEZ** — kamera-render yolu yalnız 3D sahne
-   (:1926-1934, 1963-1967); headless igtour/modal kareleri bu yüzden pencere modunda koşulmalı.
-   Bu sınır kodda yorumla itiraf edilmiş ama hiçbir yerde makine-okur biçimde işaretli değil.
-6. **Async screenshot zamanlama koreografisi — sınıf (f).** Aynı-frame ikinci istek öncekini
-   ezer (:602-605); çözüm dosya geneline serpilmiş 0.25-0.4 sn beklemeler. Kare kaybı sessiz
-   olur, koşu FAIL olmaz.
-7. **Proof koşuları sahneyi mutasyona uğratır** — FPS controller/CharacterController kapatma,
-   rig ışınlama, RenderSettings elleme (:649-656, 1141-1147, 1162-1171). Yalnızca "sonunda
-   Quit var" varsayımıyla güvenli; mod sonunda geri-alma sözleşmesi yok.
-8. **Uzamsal invariant eşikleri elle gömülü — sınıf (d).** Aktör drift eşiği 5.5 m (:780),
-   pencere-duvar kabuğu 0.13 (:799) — 3× gömülü-pencere hatasını pinliyorlar ama yalnızca
-   `--ember-agentcheck` koşusunda LOUD'lar; shipcheck bu invariantları koşmaz.
-9. **`--ember-input-proof` Stage 0** — sentetik girdi enjeksiyonu YOK, yalnız facade anlık
-   görüntüsü (:2412-2414). "Input kanıtı" adı vaadinden büyük.
-10. **Fallback harness dürüst-KISMÎ** — "pure-C# source tests only; does NOT validate Unity
-    compile, scenes, assets, .meta, plugins, or PlayMode" (run-validation.sh:198);
-    `UnityJsonUtilityStub` serileştirme paritesi iddia etmez (stub:84-87). Yeşil fallback,
-    yeşil oyun DEĞİLDİR — bu boşluğu static-audit + CI etiketi kapatmaya çalışır
-    (unity-test.yml:125).
-11. **Golden re-baseline el süreci** — `BaselineHash` elle güncellenir; meşru davranış
-    değişikliği ile kazara drift diff'te AYNI görünür, ayrım yorum disiplinine emanet
-    (WorldTickDigestGoldenTests.cs:12-26). Digest'i üreten koşunun "ikinci koşu aynı mı"
-    kontrolü testin içinde (:41-46) ama baseline'ı üreten aracın kendisi repo'da yok.
-12. **Marathon/Timelapse duvar-saati bağımlı — sınıf (g) kıyısı.** `WaitForSecondsRealtime`
-    tabanlı soak süreleri makine hızına göre farklı sayıda eylem üretir (:930-938); hüküm
-    eşiği (`actions>0`, bellek 2×) bunu tolere edecek kadar gevşek, ama koşular arası
-    karşılaştırma anlamlı değil.
-13. **`analyze-generated-image.py` yetim** — repo içinde onu çağıran script/CI bulunamadı
-    (tools/, Docs/, .github taraması boş döndü); elle çağrılan yardımcı. Otomatik forge
-    kapısı değil — doğrulanmadı sayılmasın diye not: taramam çağıran satır bulamadı, bu
-    "hiç kullanılmıyor" kanıtı değildir.
-14. **Sentetik hata varsayılan turda kasıtlı** — mod bayraksız koşuda
-    `includeSyntheticFailure: true` (:302); "assetgen_failures" karesi TASARIM gereği hata
-    gösterir. Bilmeyen biri bunu gerçek regresyon sanabilir.
-15. **PlayMode CI'dan çıkarılmış** — eski PlayMode "testleri" prosedürel gradyan PNG üretiyordu,
-    gerçek görsel kanıt değildi; 2026-05-15 denetimiyle söküldü (unity-test.yml:5-16).
-    Gerçek render-regresyon kapısı hâlâ açık iş.
+- Ekran görüntüsü PNG'leri: mode-özel prefix'lerle (`cc_*`, `ig_*`, `lapse_*`,
+  `look_*`, `pt_*`, `igtour_*`, `shipcheck_*`, `looptest_*`, `gameplay_*`,
+  `agentcheck_*`, `planet-seed-*`, `forge-die.png`, `tour_*_ui/noui.png`).
+- Metin raporları: `llm-proof.txt`, `forge-die.txt`, `planet-proof.txt`,
+  `world-proof.txt`, `input-proof.log`.
+
+Tüketilen: hiçbir `WorldEvent` subscription'ı yok — driver polling + doğrudan
+adapter çağrılarıyla çalışır.
+
+## Testler (bu sistemi pinleyen test dosyaları - W32-W36 hikâye-testleri dahil)
+
+- `Assets/Tests/EditMode/Diagnostics/ProofLivingCensusPeaksTests.cs` — B26
+  T-CENSUS-1 (`SnapshotZero_EventsMany_ExposesTheWound`) + T-CENSUS-2
+  (`PeaksAccumulateAcrossSamples_EvenWhenSnapshotZero`). `#if UNITY_EDITOR`
+  guard'lı (adapter Unity-tied). Şu invariantları pin'ler: `eatingNow==0` +
+  `eatingPeak>0` peaks sample'ı yaşasın; `peakSamples>=2` her explicit sample
+  sayılsın.
+- `Assets/Tests/EditMode/Diagnostics/MarathonPassGateCensusTests.cs` — B26
+  T-CENSUS-3 pure-boolean gate; `CensusOk(hours,sleep,work,eat)` driver'daki
+  clause'un birebir aynası. 6 test: `FullDay_ZeroSleepPeak_Rejects`,
+  `FullDay_AllPeaksPositive_Passes`, `ShortSmoke_AllZeroPeaks_Passes_AdvisoryOnly`,
+  `FullDay_ZeroWorkPeak_Rejects`, `FullDay_ZeroEatPeak_Rejects`,
+  `ExactlyDayBoundary_RequiresPositivePeaks`. Fallback harness'ta koşar (engine-
+  free).
+- `Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs` — CAN SUYU V2 H1-H5
+  gate testleri (stateless + Stamp tick rules, gate contract, marathon benchmark).
+- `Assets/Tests/EditMode/CanSuyu/GateContractLintTests.cs` — LivingWorldGate
+  test dosyasının varlığını + kontrat sözleşmesini lint eder (silinirse kırılır).
+- `Assets/Tests/EditMode/Composition/WorldTickDigestGoldenTests.cs` —
+  `WorldStateDigest` SHA-256 golden pin; herhangi bir schedule/sim değişikliği
+  onaylanmamışsa kırar (W34-A: sleep/work state golden seed).
+- `Assets/Tests/EditMode/Save/SaveLoadDigestRoundtripTests.cs` — save
+  mapping'in her iki yöne de digest'i koruduğunu pin'ler.
+- `tools/validation/fallback/ValidationFallbackHarness.csproj` — 27
+  `<Compile Include>` satırı; `Assets/Tests/EditMode/**/*.cs` wildcard'ı ile
+  T-CENSUS-3 dahil tüm engine-free testler dotnet test altında yeşile döner.
+
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
+
+- **W30 (proof-harness launch protocol)**: master flag `--ember-proof-
+  screenshots` zorunlulaştırıldı; `Application.runInBackground = true` set edildi
+  (background shell'den açılan proof runları focus almadığı için "soak armed
+  then silence"); her mod çıkışında `Application.Quit()` hardcoded (opt-in
+  `--ember-proof-quit` unutuluyordu, pencereler birikiyordu); 5 blind run'dan
+  sonra `WaitForBootToSettle` shipcheck'in "world-enter: no adapter" yarışını
+  kesti. Memory: `proof-harness-launch-protocol.md`.
+- **W31 (soul weeks)**: 8 canlı yara → 20 sistem atlas dokümantasyonu; proof
+  harness bunlardan biri olarak ilk kez ayrıştırıldı.
+- **W32 DOC5 (render-layer invariants)**: `RunAgentCheck` içine spatial (billboard
+  drift > 5.5m fail; window pane wall-face clear fail) + label (`RenderedText`
+  == sim.Activity, `s1==s2` double-read guard, `eatingSeen>0` VACUOUS assert,
+  2-sim-gün bound) invariantları eklendi; `TryResolveViewState` id-first key-
+  fallback pattern'i çıkarıldı (`WorldViewProjector` ile aynı). Memory: `verify-
+  at-render-layer.md`.
+- **W33 (farm slice)**: F1-F5 farm story testleri; `ProofLivingCensus` içinde
+  `PlantSeed/HarvestCrop/HaulCrop` `farming` sayacı olarak eklendi (`DomainSimulationAdapter.WorldEncounter.cs:701-705`).
+- **W34 (sleep + work slice)**: `Sleep` → `sleepingNow`, `PerformWork` →
+  `workingNow` sayaçları eklendi; W34-A digest golden seed'i non-default
+  sleep/work state ile yenilendi (`WorldTickDigestGoldenTests`); marathon
+  peaks accumulator için zemin atıldı.
+- **W35 SHRINK**: `ProofLivingCensus` LIVE-proof kararı — "marathon
+  sleeping=0 while shortages=N Sleep hiç çalışmadı demek, `worked around` değil"
+  yorumu ile per-action strip sayacı sertleştirildi (aynı dosya :688-707).
+- **W36 (B26 CENSUS)**: peaks accumulator + reset + sample + PASS gate; adapter
+  private fields (`_livingPeakSleeping/Working/Eating/Farming/Samples/
+  SampledAtMinutes`); `RunMarathon` her iterasyonda `ProofSampleLivingPeaks`
+  çağırır (heartbeat-only sampling arası slice başlayıp bitebiliyordu); PASS
+  gate `censusOk = gameHours < 24 || (peaks.sleeping > 0 && peaks.working > 0
+  && peaks.eating > 0)`; T-CENSUS-1/2 Editor-only, T-CENSUS-3 fallback-safe.
+  2026-07-25 kapandı.
+
+## Bilinen Borçlar + Kaçak Kapıları
+
+1. **`--ember-proof-quit` yorum satırı ölü** — 15 mod dalında verbatim çoğaltılan
+   PLAYTEST FIX yorumu artık relevant değil (opt-in bayrak yok); consolidation
+   `private void QuitProof(string reason)` yardımcısına indirir (`EmberProofScreenshotDriver.
+   cs:41-208`). Belge-kod drifti riski.
+2. **`RunAgentCheck` W32 invariantları yalnız `--ember-agentcheck` altında
+   koşar** — shipcheck bu invariantları koşmaz, marathon sadece census/peaks
+   bakar; label/spatial regresyonu ancak nightly agentcheck çalıştırıldığında
+   yakalanır. Regresyon fırsatı: shipcheck'e "1 tick + label okuma" hızlı probe.
+3. **Farming peak PASS gate'e girmiyor** — `censusOk` sadece sleep/work/eat
+   ister; harvest/plant/haul günü yaşamayan bir marathon PASS eder. Farm
+   sisteminin gerçekten canlı olduğu iddiası proof-layer'da pin'lenmez (ancak
+   `farmingPeak` yazdırılır — göz kontrolü mümkün).
+4. **`SnapshotZero_EventsMany_ExposesTheWound`** t-1 testi wound'u belgeliyor
+   (rename tuzağı), positive fix testi t-2 farklı; ikisi de aynı adapter
+   instance'ında birlikte koşarsa peaks leak'i (t-1 hiç reset çağırmıyor) t-2'yi
+   yanıltmaz çünkü t-2 en başta `ProofResetLivingPeaks` çağırıyor — ama testler
+   arası shared adapter state fixture'ı gelirse bu kırılabilir.
+5. **`CaptureToPng` non-batchmode dalında UI overlay yakalanır ama camera-render
+   dalında (batchmode) MISS eder** — headless shipcheck/marathon capture'ları
+   3D kameradan aşağıdır; overlay-only asserts (HUD sayaçları) headless
+   koşularda görünmez. Belgelenmemiş bir false-negative kaçağı.
+6. **`_livingPeakSampledAtMinutes` yazılıyor ama hiçbir yerde okunmuyor** —
+   honesty rule için niyet edildi, PASS gate `WorldTimeMinutesOrZero()`'yu
+   kullanıyor; alan ya tüketilmeli ya kaldırılmalı (dead field warning riski).
+7. **Fallback harness `Assets/Tests/EditMode/**/*.cs` wildcard'ı** — Unity-tied
+   test dosyaları `#if UNITY_EDITOR` guard'ıyla korunur; yeni bir Editor-only
+   test guard'ı unutursa fallback harness build kırar (bu istenen davranış
+   ama regresyon gürültüsü olabilir).
+8. **`RunLookAround` FPS controller `enabled=false/true` toggle'ları try/finally
+   yok** — proof crash olursa controller kalıcı disabled kalır (in-scene sadece
+   proof runlarında olduğu için etkisiz, ama coroutine exception path
+   ateşlenirse driver GO destroy edilmiyor). Düşük şiddet, dokümante edilmiş.

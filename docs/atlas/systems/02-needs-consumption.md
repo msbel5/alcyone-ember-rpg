@@ -1,208 +1,207 @@
 # 02-needs-consumption
 
-> Kapsam: ihtiyac basinclari (ActorNeeds), saatlik metabolizma (NeedsSystem), tuketim yarisi
-> (NeedConsumptionSystem: hourly yemek/uyku + per-tick varis yemekleri + pile cache) ve mood
-> turetimi (NeedMoodEvaluator). Tum satir numaralari 2026-07-24 calisma kopyasindan dogrulandi.
+> Kapsam: `ActorNeeds` component'i + `NeedsSystem` saatlik ihtiyaç rampaları + `NeedConsumptionSystem`
+> (yalnız sabitler + site/food-spot doğrusu — W32'den sonra Tick'i öldü) + `ConsumeFoodAdvancer`
+> (W32 EAT dilimi: instant-eat yerine 3-tick meal) + `SleepAdvancer` (W34 SLEEP dilimi:
+> pozisyonsuz gece fiyatının yerine yatakta ladder). `NeedRecoverySystem` command/dialog
+> köprüsüdür (tick bandında değil), Borçlar bölümüne düşer.
+> Kanıt biçimi: `dosya:satır`. Tüm yollar `Assets/` köklüdür.
 
-## HLD - Ne ve Neden
+## HLD - Ne ve Neden (5-10 cümle)
 
-Bu sistem, yasayan-dunya dongusunun "kapali devre" yarisidir. `NeedsSystem` yalnizca basinc
-YUKSELTIR (aclik/yorgunluk/susuzluk rampalari); `NeedConsumptionSystem` ise CAN SUYU H1 ile
-eklenen eksik yariyi kapatir: ac aktorler gercek stockpile'lardan yer, yorgun aktorler gece
-uyur (`NeedConsumptionSystem.cs:6-10`). Bunun oyuncuya gorunen etkisi uc katmanlidir:
-(1) "yuru-ye-don" ritmi — yemek masada yenir, aktor larder'a kadar yurur
-(`NeedConsumptionSystem.cs:17,173-175`); (2) stok gercekten duser, fiyatlar talebi gorur,
-kitlik gercek olur (`NeedConsumptionSystem.cs:8-10`); (3) aclik >= 80 veya mood <= 25 olan
-aktor is REDDEDER (`JobAssignmentSystem.Tick.cs:358-375`), yani beslenme ekonomiyi tasir.
-Felsefe: deterministik, olay-yayan, saf Simulation katmani (Unity tipi yok); olaylar
-catch-up sirasinda kadans SINIRINDA damgalanir ki gun-gun ve coklu-gun sicramalari ayni
-logu yazsin (`NeedConsumptionSystem.cs:29-31`). Kim neyi yazar sorusu
-`FieldOwnershipRegistry` ile bildirilmis ve lint testiyle CI olayina baglanmistir
-(`FieldOwnershipRegistry.cs:5-11`).
+İhtiyaç sistemi Phase 4'ün "deneyimlenen zaman" katmanıdır: aktörün üç bastıran hissi
+(hunger/fatigue/thirst) `NeedValue` ile 0-100 aralığında (yüksek = kötü) tutulur ve `NeedsSystem`
+her oyun saati sabit oranda tırmandırır (Hourly:30 bandı). 0-100'lük ölçek ve "artış otomatik
+clamp'lenir" kuralı `NeedValue.Increase/Decrease` içindedir (`Domain/Actors/NeedValue.cs:35-52`),
+oranlar (H=8, F=6, T=5 per oyun-saati; `NeedsSystem.cs:19-29`) CAN SUYU H2'nin 24 saatlik
+yaşam kalibrasyonudur — eski +20/+15/+10 ratchet çağı öğle vakti herkesi tüketiyordu. W32 EAT
+dilimi bir yıkıcı sadeleşme getirdi: **hunger düşüşü artık bir yerdedir** — `ConsumeFoodAdvancer`
+tabakta 3 tick çiğnendikten sonra atomik commit ile hunger'ı `MealHungerFloor=5`'e, thirst'ü
+`-MealThirstRecovery=40`'e indirir ve verbatim `meal_eaten` olayını yazar
+(`ConsumeFoodAdvancer.cs:44-60`). "İnstant-eat" (varış anında ye) B09 ailesinin kök nedeniydi —
+gate-Living'de aktörler "W32 eat slice"inde ölüyordu — o yol öldü, `NeedConsumptionSystem.Tick`
+tamamen silindi (kalanı sabitler + food-spot lookup, `NeedConsumptionSystem.cs:14-59`). W34 SLEEP
+dilimi ise ikinci yıkıcı sadeleşmedir: pozisyonsuz `NightSleepFatigueRecovery(40)/saat` fiat'ı
+öldü, yerine `SleepAdvancer` **yalnızca Running fazında ve Home hücresinde** her 3. tick 2 puan
+fatigue düşürür (`SleepAdvancer.cs:19-22, 61-68`) — yürüyen adam uyumaz, uzakta uyumaz.
+Böylece "aktörlerde kimlik var, fakat devam eden irade yok" pini kırıldı: bir gün YAŞANIR,
+anlatılmaz. `FieldOwnershipRegistry` "Actor.Needs" satırında iki yazar ilan eder:
+`living.needs@Hourly:30` (rampalar) ve `living.action_advance@PerTick:22` (ConsumeFood + Sleep
+commit'leri) — `living.consumption@Hourly:35` W34'te retire edildi
+(`FieldOwnershipRegistry.cs:27-34`; `DefaultTickSystems.cs:63`).
 
-## HLD - Akis
+## HLD - Akış (numaralı adımlar)
 
-Kadans/siralar `DefaultTickSystems.Create` kayit listesinden (`DefaultTickSystems.cs:41-64`):
+1. **Hourly rampa (living.needs@30):** `NeedsStep.Run` `world.Actors.Records`'ı gezer, her canlı
+   aktör için `actor.ApplyNeeds(_needs.TickNeeds(actor.Needs))` + `RecomputeMood(actor)` çağırır;
+   `TickNeeds` üç need'i sırayla `+8/+6/+5 × ticks` `Increase` eder ve clamp 100'de kilitlenir
+   (`DefaultTickSystems.cs:414-422`; `NeedsSystem.cs:44-51`).
+2. **Saatte TEK özet olay:** `NeedsStep` per-actor `NeedChanged` yerine sabit bir "needs_tick_summary"
+   olayı yazar (`actors:N`, `time:TotalMinutes`); per-actor spam'i öldürmenin nedeni ~900
+   entry/gün-saati ve gün-90 gen2 GC (`DefaultTickSystems.cs:426-446`). `TickActorNeeds` per-actor
+   overload'ı hâlâ vardır (`NeedsSystem.cs:63-97`) ama bant onu çağırmaz — testler + `CascadeSystems`
+   gibi çağrı köprüleri kullanır.
+3. **Karar (decision katmanı):** `ActionLifecycleSystem.Decide` `PerTick:18` bandında koşar; boş
+   aktör için önce `actor.Needs.Hunger >= HungerEatThreshold=55` kapısı, sonra `TryDecideEat`
+   (rezervasyon + `MoveToFood → TakeFood → MoveToPile → ConsumeFood` zinciri;
+   `ActionLifecycleSystem.cs:77-88`).
+4. **Yeme (W32):** `ConsumeFoodAdvancer.Step` her tick önce ReservationLost + WithinEatReach
+   probe'ları çalıştırır (uzakta çiğneme yok, T1 witness-nudge sınıfı), 3 tick tamamlandığında
+   ATOMİK commit: `WithHunger(new NeedValue(5))` + `WithThirst(mevcut - 40)`, mood re-evaluate,
+   `meal_eaten` `NeedChanged` olayı (SiteId dolu — RumorMill/Gate bunu okur), reservation release
+   (`ConsumeFoodAdvancer.cs:26-59`).
+5. **Karar (uyku):** aynı `Decide` fonksiyonunda kod sırası öncelik sırasıdır: eat kararı üretmedi
+   ise `SleepOperations.IsNightHour(stamp.Hour) && Fatigue.Value >= FatigueSleepThreshold=1`
+   kapısı `TryDecideRest`'i tetikler → `MoveToBed → Sleep` zinciri
+   (`ActionLifecycleSystem.cs:91-97`).
+6. **Uyku (W34):** `SleepAdvancer.Step` her tick ÜÇ kapıdan geçer — (a) reservation var + benim +
+   BedKey home'umla eşleşiyor mu (`SleepOperations.TryParseBedKey`), (b) Chebyshev(pos, Home) ≤ 1
+   (bed reach — 3x3 "yatak odası"), (c) hâlâ `IsNightHour(Stamp.Hour)` mı — dawn'da reservation
+   release + Succeeded (`SleepAdvancer.cs:29-56`).
+7. **Recovery ladder:** `ProgressTicks++`; `progressed.ProgressTicks % TicksPerRecoveryStep(3) == 0`
+   ise `WithFatigue(new NeedValue(mevcut - 2))` + mood re-evaluate (`SleepAdvancer.cs:59-67`).
+   Fatigue 0 GECEYİ BİTİRMEZ — aktör dawn'a kadar yatar. `TransitionTo` faz sınırlarını yazar,
+   in-phase tick'ler log'suz geçer (B21 grammar).
+8. **Terminal:** Sleep TransitionTo(Succeeded) → `ActionLifecycleSystem.NextLink` yeni intent'i
+   düşünür; MoveToBed TimedOut olduysa (dawn geldi ama yatağa varılamadı) failure — kimse gece
+   ratchet'ini almaz, sürünmüş bir gün mühürlenir.
 
-1. **`living.needs` @Hourly:30 (NeedsStep)** — her canli aktor icin `TickNeeds` calisir:
-   aclik +8, yorgunluk +6, susuzluk +5 / oyun-saati (`NeedsSystem.cs:21-28`,
-   `DefaultTickSystems.cs:356-377`). Rol filtresi YOK: Player, Guard, Enemy dahil herkes
-   rampalanir (`DefaultTickSystems.cs:371-377`). Saatte BIR ozet olayi yazilir
-   (aktor-basina spam GC krizine yol acmisti — `DefaultTickSystems.cs:380-397`).
-2. **`living.schedule` @PerTick:20 (ScheduleStep)** — `NeedConsumptionSystem.FoodSpots` ile
-   tum yemekli pile merkezleri toplanir, `ScheduleSystem.Advance`'e beslenir
-   (`DefaultTickSystems.cs:224-233`). `ChooseTarget` icinde aclik yalnizca
-   `HungerEatThreshold` (55) uzerindeyse yemek teklifi verir; esik alti aclik masaya
-   cekMEZ ("herkes town merkezinde" playtest fixi, `ScheduleSystem.cs:129-135`).
-3. **`living.eatOnArrival` @PerTick:22 (EatOnArrivalStep)** — `TickArrivals`: larder'a
-   VARMIS ac sivil ayni tick yer; saatlik adimi beklerken masada dikilme kalabaligi
-   cozulur (`NeedConsumptionSystem.cs:59-84`, `DefaultTickSystems.cs:252-263`). Per-tick
-   maliyet, TICKPERF fixiyle pile cache'e indirildi ("EatOnArrival 152s/day and tripling",
-   `NeedConsumptionSystem.cs:66-72`).
-4. **`living.consumption` @Hourly:35 (ConsumptionStep)** — metabolizma yarisi: ac ve
-   erisimdeki aktor yer; 22:00-06:00 arasi yorgunluk saatte 40 duser (uyku)
-   (`NeedConsumptionSystem.cs:32-57`, `DefaultTickSystems.cs:289-304`). Sira 35, NeedsStep
-   (30) yukselttikten hemen sonra (`DefaultTickSystems.cs:290`).
-5. Her ihtiyac yazimindan sonra mood yeniden turetilir: `mood = 50 - (H+F+T)/3`
-   (`NeedMoodEvaluator.cs:123-130`). `JobAssignmentSystem.IsRefusing` bunu tuketir
-   (aclik >= 80 veya `Mood.IsLow`) (`JobAssignmentSystem.Tick.cs:358-375`).
-6. Yenen her ogun `StockpileComponent.Remove` ile stok dusurur
-   (`NeedConsumptionSystem.cs:157,177`); fiyat ve kitlik sistemleri (PriceStepSystem
-   @30, ShortageResponseStep @Daily:27) bu stogu okur — bu dosyanin kapsami disi
-   (`DefaultTickSystems.cs:60-62`).
+## LLD - Veri Modeli (file:line)
 
-## LLD - Veri Modeli
-
-| Tip | Alanlar / Sozlesme | Kanit |
+| Tip | Alanlar / içerik | Kanıt |
 |---|---|---|
-| `NeedValue` (readonly struct) | 0-100 clamp'li basinc skaleri; `Min=0, Max=100`, `Comfortable=default`, `Critical=100`; `Increase` headroom-clamp'li, `Decrease` negatif-guvenli | `NeedValue.cs:11-53,100-107` |
-| `NeedKind` (enum) | `None=0, Hunger=1, Fatigue=2, Thirst=3` | `NeedKind.cs:115-121` |
-| `ActorNeeds` (readonly struct) | `Hunger/Fatigue/Thirst : NeedValue`; immutable, `With/WithHunger/WithFatigue/WithThirst` kopya-uretir; `Comfortable=default` | `ActorNeeds.cs:11-72` |
-| `ActorMood` (readonly struct) | 0-100, dusuk = isteksiz; `NeutralValue=50`, `LowMoodThreshold=25`, `IsLow => Value <= 25`; ic saklama `+1` kaydirmali ki `default` Neutral cozulsun | `ActorMood.cs:121-133,48`; tasarim notu `ActorMood.cs:112-117` |
-| `ActorRecord` (ilgili uyeler) | `Needs { get; private set; }` (83), `Mood { get; private set; }` (84); tek yazim kapilari `ApplyNeeds(167)`, `ApplyMood(172)` | `ActorRecord.cs:83-84,167-175` |
-| `StockpileComponent` | SiteId-kapsamli tag→adet sozlugu; `Get` (38, yoksa 0), `Add` (45-58, long'a terfi + Int32 clamp — unchecked tasma fixi), `Remove` (64-75, gercekte silinen adedi doner, asla eksiye dusmez), enumeration kanonik tag sirali (77-85) | `StockpileComponent.cs:12-85` |
-| `FoodPileEntry` (private readonly struct) | TickArrivals cache satiri: `Pile, CentreX, CentreY, HasSite` | `NeedConsumptionSystem.cs:86-94` |
-| Sabitler (tuketim) | `HungerEatThreshold=55` (H2 utility crossover'la hizali — `WorkScore=55`, `ScheduleSystem.cs:26`), `EatReachCells=2`, `MealHungerFloor=5`, `MealThirstRecovery=40` ("su simulasyonu yok, icecek ogunun icinde"), `NightSleepFatigueRecovery=40`, gece 22-06 | `NeedConsumptionSystem.cs:16-22` |
-| Sabitler (rampa) | `HungerIncreasePerTick=8, FatigueIncreasePerTick=6, ThirstIncreasePerTick=5` (24 saatlik yasam olcegi re-balансi) | `NeedsSystem.cs:17-28` |
-| Save/load | `hunger/fatigue/thirst/mood` 0-100 int + `hasMood` bayragi; eski save'lerde `mood>0` fallback, degilse Neutral | `ActorSaveMapper.cs:63-70,92-99` |
+| `NeedValue` (readonly struct) | tek alan `Value: int`, sabitler `Min=0/Max=100`; ctor Clamp; `Increase(a)` headroom check + Critical shortcut; `Decrease(a)` `Math.Max(0,a)` sonra clamp | `Domain/Actors/NeedValue.cs:12-56` |
+| `NeedKind` (enum) | `None=0, Hunger=1, Fatigue=2, Thirst=3` | `Domain/Actors/NeedKind.cs:9-15` |
+| `ActorNeeds` (readonly struct) | `Hunger/Fatigue/Thirst: NeedValue`; `Comfortable` = default; `Get/With(NeedKind, NeedValue)` selector + `WithHunger/WithFatigue/WithThirst` overload'ları; `NeedKind.None` fırlatır | `Domain/Actors/ActorNeeds.cs:11-73` |
+| `ActorMood` (readonly struct) | `NeutralValue` çapa; NeedMoodEvaluator türetir | `Domain/Actors/ActorMood.cs` (referans: `NeedMoodEvaluator.cs:18`) |
+| `ActorRecord` (Needs bölümü) | `Needs: ActorNeeds` (immutable snapshot), `ApplyNeeds(next)` re-atar; `ApplyMood(mood)` mood alanını yazar | `Domain/Actors/ActorRecord*.cs` (kullanım: `NeedsSystem.cs:77`, `ConsumeFoodAdvancer.cs:54-55`, `SleepAdvancer.cs:64-65`) |
+| `NeedsSystem` sabitleri | `HungerIncreasePerTick=8`, `FatigueIncreasePerTick=6`, `ThirstIncreasePerTick=5` (per oyun-saati; H2 kalibrasyonu) | `Simulation/Living/NeedsSystem.cs:22-27` |
+| `NeedConsumptionSystem` sabitleri | `HungerEatThreshold=55` (H2 utility crossover), `EatReachCells=2` (tabaka kadar yürü), `MealHungerFloor=5` (doyuma kadar ye), `MealThirstRecovery=40` (yemek içeriği içer), `NightStartHour=22`, `NightEndHour=6` (yalnız `SleepOperations.IsNightHour` okur) | `Simulation/Living/NeedConsumptionSystem.cs:15-23` |
+| `ConsumeFoodAdvancer.ConsumeDurationTicks` | `= 3` — "yemek 3 tick sürer" sabitinin tek evi | `Simulation/Living/Actions/ConsumeFoodAdvancer.cs:15` |
+| `SleepAdvancer.RecoveryPerStep/TicksPerRecoveryStep` | `= 2 / = 3` — retired fiat 40/saat verbatim: 40/60 = 2/3 → her 3. Running tick'te 2 puan; determinizm sadece integer | `Simulation/Living/Actions/SleepAdvancer.cs:18-22` |
+| `SleepOperations` sabitleri | `FatigueSleepThreshold=1` (fiat'ın `Fatigue > 0` gate'i verbatim), `BedReachCells=1` (3x3 yatak odası; aile üyeleri aynı Home'u paylaşır), `BedPrefix="bed:"` | `Simulation/Living/Actions/SleepOperations.cs:22-31` |
+| `FoodPileCache.Entry` (readonly struct) | `Pile: StockpileComponent`, `CentreX/CentreY: int`, `HasSite: bool`; per-tick snapshot | `Simulation/Living/FoodPileCache.cs:16-24` |
 
-## LLD - Fonksiyon Haritasi
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-**NeedsSystem** (`Assets/Scripts/Simulation/Living/NeedsSystem.cs`)
-- `ActorNeeds TickNeeds(ActorNeeds needs, int ticks = 1)` — 42-51; uc basinci rampa oraniyla yukseltir, `ScaleRate` long-tasma korumali (102-106).
-- `ActorMood RecomputeMood(ActorRecord actor)` — 53-61; evaluator'i cagirir ve `ApplyMood` yazar.
-- `bool TickActorNeeds(actor, eventLog, now, ticks)` — 63-100; aktor-basina `NeedChanged` olayi yazan iz surumu. Uretim cagiricisi YOK (yalnizca testler; `DefaultTickSystems.cs:384` yorumu bunu bilerek saklar).
+**NeedValue / ActorNeeds (Domain, saf):**
+- `NeedValue.Increase(int amount): NeedValue` — `Domain/Actors/NeedValue.cs:38` — amount ≤ 0 no-op; headroom taşması Critical'e clamp; determinizm anayasası (float yok).
+- `NeedValue.Decrease(int amount): NeedValue` — `Domain/Actors/NeedValue.cs:50` — negatif amount 0'a kırpılır, sonra Clamp.
+- `NeedValue.IsAtLeast(NeedValue threshold): bool` — `Domain/Actors/NeedValue.cs:33` — decision katmanının eşik testleri (HungerEatThreshold vs).
+- `ActorNeeds.Get(NeedKind): NeedValue` / `With(NeedKind, NeedValue): ActorNeeds` — `Domain/Actors/ActorNeeds.cs:28, 44` — kind switch, `None` fırlatır; three `WithXxx` overload'ı record-copy döner.
 
-**NeedMoodEvaluator** (`NeedMoodEvaluator.cs`)
-- `ActorMood Evaluate(ActorNeeds)` — 123-130; `50 - toplamBasinc/3`. Saf, mutasyonsuz.
+**NeedsSystem (Hourly:30):**
+- `NeedsSystem.TickNeeds(ActorNeeds needs, int ticks=1): ActorNeeds` — `Simulation/Living/NeedsSystem.cs:44` — üç Increase zinciri (`WithHunger/WithFatigue/WithThirst`); `ScaleRate(rate,ticks)` long taşmayı `int.MaxValue`'ya clamp'ler; ticks ≤ 0 no-op.
+- `NeedsSystem.RecomputeMood(ActorRecord): ActorMood` — `Simulation/Living/NeedsSystem.cs:54` — `_moodEvaluator.Evaluate(actor)` + `actor.ApplyMood(mood)`; null aktör fırlatır.
+- `NeedsSystem.TickActorNeeds(ActorRecord, WorldEventLog, GameTime, int ticks=1): bool` — `Simulation/Living/NeedsSystem.cs:63` — per-actor overload: previousNeeds → nextNeeds → ApplyNeeds → RecomputeMood + 7-string ReasonTrace `NeedChanged` olayı (`needs_tick, actor:X, ticks:N, time:T, hunger:a->b, fatigue:a->b, thirst:a->b, mood:m`). Bant bunu ÇAĞIRMAZ; testler + CascadeSystems okur.
+- `NeedsStep.Run(in TickContext)` — `Simulation/Composition/DefaultTickSystems.cs:414` — canlı aktörler için `ApplyNeeds(TickNeeds(Needs))` + `RecomputeMood`; SADECE bir özet olay yazar (yukarıda 2. adım).
+- `NeedMoodEvaluator.Evaluate(ActorNeeds): ActorMood` — `Simulation/Living/NeedMoodEvaluator.cs:15` — `totalPressure / 3` penalty, `NeutralValue - penalty`; mutasyon yok, stateless.
 
-**NeedConsumptionSystem** (`NeedConsumptionSystem.cs`)
-- `int Tick(WorldState, int hourOfDay, GameTime stamp)` — 32-57; saatlik yemek+uyku; Player/Enemy haric (41); donen deger = yenen ogun sayisi (kanit metrigi).
-- `int TickArrivals(WorldState, GameTime stamp)` — 62-84; per-tick varis yemekleri; species listesi + pile cache tick basina BIR kez kurulur, secim matematigi degismedi (66-75).
-- `static List<FoodPileEntry> BuildFoodPileCache(world, species)` — 96-121; yemekli pile'larin site merkezlerini stockpile sirasiyla cache'ler.
-- `bool TryEatCached(world, actor, stamp, species, cache)` — 123-167; Chebyshev en-yakin secim, sitesiz pile dist=0 ile ONE sortlanir, strict `<` first-wins tie-break; ayni tick erken boşalan pile `Get` ile yeniden dogrulanir (126-140).
-- `bool TryEat(world, actor, stamp)` — 169-187; saatlik yolun cache'siz esdegeri.
-- `static bool TryGetSiteCentre(world, siteId, out centre)` — 190-203; "tek merkez-otoritesi" iddiali yardimci — AMA cagiricisi yok (asagida borc #1).
-- `static bool WithinReach(world, actor, pile)` — 205-218; site merkezine Chebyshev <= 2; sitesiz dunya/pile PERMISSIVE (true) doner.
-- `static List<GridPosition> FoodSpots(world)` — 223-245; tum yemekli pile merkezleri; ScheduleStep'in beslemesi.
-- `static GridPosition? FoodSpot(world)` — 247-257; TEKIL eski API, uretim cagiricisi yok (yalnizca `LivingWorldGateTests.cs:106`).
-- `static StockpileComponent FindNearestFoodPile(world, from, out foodTag)` — 261-291; saatlik yolun en-yakin secicisi (cache'siz, pile x site tarama).
-- `static StockpileComponent FindFoodPile(world, out foodTag)` — 293-309; ilk-yemekli-pile (FoodSpot icin).
-- `static List<string> FoodTags(world)` — 311-320; "wheat" sabit cekirdek + `world.Plants.Rows` icindeki HER `SpeciesId`.
+**NeedConsumptionSystem (yalnız sabitler + site truth):**
+- `NeedConsumptionSystem.TryGetSiteCentre(WorldState, SiteId, out GridPosition): bool` — `Simulation/Living/NeedConsumptionSystem.cs:27` — 4 kez duplike edilen site-center lookup'ın tek evi (review fix).
+- `NeedConsumptionSystem.FoodSpots(WorldState): List<GridPosition>` — `Simulation/Living/NeedConsumptionSystem.cs:44` — `FoodPileCache.FoodTags` → `Build` → HasSite olan her entry için centre; multi-settlement dünyalarda MANY larders (gate wave sampler'ı için).
+- `NeedConsumptionSystem.FoodSpot(WorldState): GridPosition?` — `Simulation/Living/NeedConsumptionSystem.cs:56` — ilki (deterministik: stockpile sırası).
+- `FoodPileCache.FoodTags(WorldState): List<string>` — `Simulation/Living/FoodPileCache.cs:24` — `"wheat"` staple + live plant species; O(plants).
+- `FoodPileCache.Build(WorldState, List<string>): List<Entry>` — `Simulation/Living/FoodPileCache.cs:36` — TICKPERF hoist: "EatOnArrival 152s/day" species×piles×sites re-build'inden çıktı, per-tick tek build.
 
-**Tuketiciler / kompozisyon**
-- `ScheduleSystem.ChooseTarget` yemek teklifi — `ScheduleSystem.cs:120-148` (esik kapisi 133-135; tie sirasi eat > rest > work > idle, 140-147).
-- `JobAssignmentSystem.IsRefusing` — `JobAssignmentSystem.Tick.cs:358-375` (aclik >= 80 sabiti; `Mood.IsLow`); `CanActorWorkJob` bunu zincire ekler (`JobAssignmentSystem.cs:160-165`).
-- Step adaptörleri: `NeedsStep` (`DefaultTickSystems.cs:356-398`), `EatOnArrivalStep` (254-263), `ConsumptionStep` (289-304; saat `(TotalMinutes/60)%24` ile hesaplanir, 301), `ScheduleStep` (211-234).
+**ConsumeFoodAdvancer (W32; PerTick:22):**
+- `ConsumeFoodAdvancer.Step(WorldState, ActorRecord, GameTime)` — `Simulation/Living/Actions/ConsumeFoodAdvancer.cs:25` — reservation triple (var + benim + ID eşleşir) → `FoodOperations.WithinEatReach` (T1 uzakta çiğneme reddi) → ProgressTicks < 3 ise `ActionLogReason.ProgressTicked`; == 3'te ATOMİK commit: `WithHunger(NeedValue(5))` + `WithThirst(mevcut - 40)`, mood, `meal_eaten` NeedChanged (SiteId dolu), release, `Succeeded` handover. `TryEatCached`'in verbatim math bloğu (retired NeedConsumptionSystem.cs:180-188).
 
-## LLD - Yazdigi/Okudugu Alanlar
+**SleepAdvancer (W34; PerTick:22):**
+- `SleepAdvancer.Step(WorldState, ActorRecord, GameTime)` — `Simulation/Living/Actions/SleepAdvancer.cs:30` — reservation quad (var + benim + BedKey parse + Home ile eşleşir) → Chebyshev(pos, Home) > 1 ise Unreachable fail (witness-nudge sınıfı) → `!IsNightHour(Stamp.Hour)` ise release + Succeeded (dawn) → progressed.ProgressTicks % 3 == 0 ise `WithFatigue(mevcut - 2)` + mood → in-phase `TransitionTo(ProgressTicked)`.
+- `SleepOperations.BedKey(GridPosition): string` — `Simulation/Living/Actions/SleepOperations.cs:34` — `"bed:X:Y"` codec; SiteId 0UL (bed hiçbir site-scoped süpürmeye katılmaz).
+- `SleepOperations.TryParseBedKey(string, out GridPosition): bool` — `Simulation/Living/Actions/SleepOperations.cs:39` — plot-key pattern; başarısızlık = ReservationLost. `AllowLeadingSign` (Home negatif olabilir).
+- `SleepOperations.IsNightHour(int hour): bool` — `Simulation/Living/Actions/SleepOperations.cs:60` — `hour >= 22 || hour < 6`; NeedConsumptionSystem sabitlerini okur — TEK predicate (§11 risk 5, MoveToBed TimedOut ile Sleep Succeeded aynı testi kullanmalı yoksa dawn'da off-by-one).
+- `SleepOperations.MinutesUntilDawn(GameTime): long` — `Simulation/Living/Actions/SleepOperations.cs:63` — TTL sizing (1 tick = 1 dakika).
+- `SleepOperations.ResidentCount(WorldState, GridPosition): int` — `Simulation/Living/Actions/SleepOperations.cs:69` — bed kapasitesi = bu cell'i Home diyen canlı aktörler; worldgen'in ev ataması aile tanımıdır.
 
-`FieldOwnershipRegistry` diliyle (`FieldOwnershipRegistry.cs:26-31,43-50`):
+**Decision katmanı (PerTick:18, bu sistemin dışsal gate'i):**
+- `ActionLifecycleSystem.TryDecideEat(WorldState, ActorRecord, List<string>, List<FoodPileCache.Entry>, GameTime)` — `Simulation/Living/Actions/ActionLifecycleSystem.cs:277` — HungerEatThreshold gate'inden geçen aktör için larder seçimi + rezervasyon zinciri.
+- `ActionLifecycleSystem.TryDecideRest(WorldState, ActorRecord, GameTime)` — `Simulation/Living/Actions/ActionLifecycleSystem.cs:391` — TryDecideEat/Plant mould'u; IsNightHour + Fatigue ≥ 1 kapısından geçen aktör için MoveToBed rezervasyonu.
 
-**Yazar oldugu bildirilen alanlar**
-- `Actor.Needs` ← `living.needs@Hourly:30` (rampalar), `living.eatOnArrival@PerTick:22`
-  (varis yemekleri), `living.consumption@Hourly:35` (metabolizma yarisi).
-- `World.Stockpiles` ← `living.eatOnArrival@PerTick:22`, `living.consumption@Hourly:35`
-  (digger yazarlar: harvest, ambient vermin, trade).
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-**Fiilen yazilan ama defterde OLMAYAN alan**
-- `Actor.Mood` — uc adim da `ApplyMood` cagirir (`NeedConsumptionSystem.cs:53,162,182`;
-  `NeedsSystem.cs:59` uzerinden NeedsStep) fakat registry'de `Actor.Mood` anahtari yok
-  (`FieldOwnershipRegistry.cs:15-53` tam liste). Bkz. borc #5.
+Bu sistemin defterdeki yazar kayıtları (`FieldOwnershipRegistry.cs`):
 
-**Okudugu alanlar** (registry disi, koddan): `Actor.Position` (mesafe, `NeedConsumptionSystem.cs:142-143,152-153`),
-`Actor.Role`/`IsAlive` (40-41,78-79), `World.Sites.Records` sinir kutulari (109-117,208-216),
-`World.Plants.Rows[].SpeciesId` (316-318), `World.Time` (27), `World.Events` (163,183).
+- **`Actor.Needs`** ← `living.needs@Hourly:30` (rampalar), `living.action_advance@PerTick:22` (W32 ConsumeFood hunger drop; W34 Sleep fatigue drop). W34 öncesi burada `living.consumption@Hourly:35` da vardı — retire edildi çünkü Sleep recovery zaten ConsumeFood'un sahip olduğu advance slot'una taşındı (yorum: `FieldOwnershipRegistry.cs:28-31`).
+- **`Actor.Mood`** ← `living.action_advance@PerTick:22` (ConsumeFood/Sleep re-evaluate), `living.needs@Hourly:30` (NeedsStep RecomputeMood) (`FieldOwnershipRegistry.cs:105-109`).
+- **`World.Reservations`** ← `living.decision@PerTick:18` (claim + expiry sweep), `living.action_advance@PerTick:22` (consumed/failed release) — bu sistem BedKey/food-key row'larını burada tutar (`FieldOwnershipRegistry.cs:40-44`).
+- **`World.Stockpiles`** ← `living.action_advance@PerTick:22` (W32 TakeFood decrement + failure return; sıralı satır `FieldOwnershipRegistry.cs:63`) — yeme geometrisi burayı okur ama bu sistemin öz yazarlığı DEĞİL (TakeFoodAdvancer yazar).
 
-## LLD - Urettigi/Tukettigi Olaylar
+**Okuduğu alanlar:**
+- `world.Actors.Records` — `NeedsStep` ve `SleepAdvancer.ResidentCount` gezer.
+- `world.Sites.Records` — site centre lookup (`NeedConsumptionSystem.TryGetSiteCentre`).
+- `world.Stockpiles` + `world.Plants.Rows` — `FoodPileCache` build inputs (`FoodPileCache.cs:29, 40`).
+- `world.Reservations` — hem ConsumeFood hem Sleep advancer per-tick validation triple/quad okur.
+- `world.Events` — null ise özet olayı yazılmaz ama bant koşar; SleepAdvancer hiç olay yazmaz.
+- `actor.Position`, `actor.Home` — Chebyshev bed reach + WithinEatReach; `actor.Role` (Guard) — decision katmanının pursuit carve-out'u.
 
-**Urettigi** — hepsi `WorldEventKind.NeedChanged = 7` (`WorldEventKind.cs:21`):
-- `"meal_eaten item:{tag} hunger:{n}"` — aktor + pile.SiteId ile; hem saatlik yol
-  (`NeedConsumptionSystem.cs:183-185`) hem varis yolu (163-165).
-- `"needs_tick_summary"` — saatte BIR, ReasonTrace: `needs_tick / actors:N / time:T`;
-  temsilci aktor = ilk canli aktor (deterministik anchor)
-  (`DefaultTickSystems.cs:369-397`).
-- `"need_changed:{actorId}"` + tam oncesi→sonrasi ReasonTrace — yalnizca test-yolu
-  `TickActorNeeds` (`NeedsSystem.cs:81-97`).
-- **Uyku bilerek LOGSUZ** — gece saati basina aktor-basina olay logu sisirirdi; etkiyi
-  Gate1 pinler (`NeedConsumptionSystem.cs:46-47`).
+## LLD - Ürettiği/Tükettiği Olaylar
 
-**Dolayli tukettigi/tetikledigi**: `JobRefused` olaylari bu sistemin yazdigi Needs/Mood
-uzerinden JobAssignment'ta dogar (`JobAssignmentSystem.cs:79-80`); stok dususu fiyat ve
-kitlik adimlarina girdi olur (kapsam disi).
+**Üretilen:**
+- `WorldEventKind.NeedChanged` — **iki farklı yayınlayıcı:**
+  - **Hourly özet (bant):** `NeedsStep.Run` `anchor` aktör + reason `"needs_tick_summary"` + ReasonTrace `["needs_tick", "actors:N", "time:T"]` (`DefaultTickSystems.cs:434-445`). Saatte 1, aktör sayısından bağımsız.
+  - **Per-actor detay (per-actor overload):** `NeedsSystem.TickActorNeeds` reason `"need_changed:{actorId}"` + 7-string trace (yukarıda). Bant çağırmaz; testler + CascadeSystems + eski demo scriptler kullanır.
+- `WorldEventKind.NeedChanged` (meal_eaten satırı) — `ConsumeFoodAdvancer.Step` atomic commit tick'inde: reason `"meal_eaten item:{ItemTag} hunger:{Value}"`, **SiteId dolu** (larder site) (`ConsumeFoodAdvancer.cs:57-58`). RumorMill/Gate meal counter'ı bu prefix'i okur (`DomainSimulationAdapter.WorldEncounter.cs:683`).
+- **Sleep hiç WorldEvent yazmaz** — B21 grammar: Started/Completed action log satırları `TransitionTo` üzerinden yayılır (log tag `ProgressTicked/Completed`), ayrı bir WorldEvent yok. Nedeni: "sleep sayacı okuyan yok, en az LOC" (yorum: `SleepAdvancer.cs:70-72`).
 
-## Testler
+**Tüketilen:** bu sistem WorldEvent tüketmez; RumorMill/CascadeSystems/AmbientLife kendi kanallarında `NeedChanged`'i okur.
 
-| Test dosyasi | Pinledigi sey |
-|---|---|
-| `Assets/Tests/EditMode/Living/NeedConsumptionSystemTests.cs` | Saatlik yemek: doygunluga kadar ye + stok dus (44), erisim disi yiyemez (58), iki larder'dan yakini secilir (68), `FoodSpots` pile-basina bir merkez (79) |
-| `Assets/Tests/EditMode/Living/EatOnArrivalTests.cs` | Varan ac sivil AYNI tick yer (15); ac degil / orada degil → ogun yok (41) |
-| `Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs` | Gate1: 5 gunde ihtiyaclar GERI DUSER + stok cift yonlu akar (39-51); Gate4: oglen kalabaligi pencere-kodsuz olusur, `FoodSpot` ile (99,106) |
-| `Assets/Tests/EditMode/Living/ScheduleSystemTests.cs` | Aclik esigi karar tablosu: esik ustu food-spot'a gider (109), esik alti ASLA gitmez (197) |
-| `Assets/Tests/EditMode/Composition/LiveScaleCatchupPerfPinTests.cs` | Canli olcekte bir replay gunu < 3 sn (19) — TICKPERF/EatOnArrival regresyon pini |
-| `Assets/Tests/EditMode/Composition/CadenceChunkingInvarianceTests.cs`, `WorldTickDigestGoldenTests.cs` | TICKPERF yorumunun atifta bulundugu bit-ozdes tarih goldenlari (`NeedConsumptionSystem.cs:71-72`) |
-| `Assets/Tests/EditMode/Composition/FieldOwnershipRegistryTests.cs` | Sahiplik lint'i: bildirilmemis yazar CI'da patlar |
-| `Assets/Tests/EditMode/Save/ActorNeedsRoundTripTests.cs` | Needs+Mood save round-trip (14) |
-| `Assets/Tests/EditMode/Living/NeedsEventLogTests.cs`, `NeedsSystemMoodTests.cs`, `ColonyNeedsAcceptanceReplayTests.cs` | `TickActorNeeds` olay sozlesmesi, mood turetimi, koloni kabul replay'i |
+**Action log satırları:** `ActionLogManager.Started/Completed/ProgressTicked` her ConsumeFood + Sleep faz sınırında (`ActionAdvancer.TransitionTo` üzerinden). B21 grammar: bir night başına tek Started + tek Completed; in-phase tick'ler log'suz.
 
-## Bilinen Borclar + Kacak Kapilari
+## Testler (bu sistemi pinleyen test dosyaları — W32-W36 hikâye-testleri dahil)
 
-Hata ailesi kodlari `docs/SYSTEMS_ATLAS.md:52-60`'taki (a)-(g) siniflamasina gore.
+- `Actors/ActorNeedsTests.cs` — `Comfortable`, ctor, `Get/With(NeedKind)` selector, `WithHunger/Fatigue/Thirst` — üç need bağımsız (thirst'i sessizce silme regresyonuna karşı A-P1 pin).
+- `Actors/NeedValueTests.cs` — 0-100 clamp, Increase headroom, Decrease negatif kırpma.
+- `Actors/NeedKindTests.cs` — enum ordinal + isim pin.
+- `Actors/ActorRecordNeedsTests.cs` — `ApplyNeeds` immutability + copy.
+- `Actors/ActorNeedsRoundTripTests.cs` — save/load turu (üç need + mood).
+- `Living/NeedsSystemTests.cs` — rate pin (H=8, F=6, T=5); repeated ticks clamp; ticks ≤ 0 no-op.
+- `Living/NeedsSystemMoodTests.cs` — rampa sonrası mood re-derive.
+- `Living/NeedsEventLogTests.cs` — `TickActorNeeds` 7-string ReasonTrace pin (per-actor overload; hourly özet farklı test).
+- `Living/NeedMoodEvaluatorTests.cs` — `totalPressure/3` penalty formülü.
+- `Living/NeedConsumptionSystemTests.cs` — W32 sonrası KALAN: yalnız `FoodSpots` geometri (Tick pinleri fiat ile birlikte öldü; comment `NeedConsumptionSystemTests.cs:14-16, 33-35`).
+- `Living/NeedRecoverySystemEatTests.cs` + `NeedRecoverySystemSleepTests.cs` — command/dialog köprüsü olan `NeedRecoverySystem` için; tick sistemi değil (Borçlar #2).
+- `Living/ColonyNeedsAcceptanceReplayTests.cs` — replay determinism (needs branch).
+- `Living/EatActionStoryTests.cs` — W32 tarihinden gelen story pinleri.
+- `Actions/EatHungerAtCompletionTests.cs` — W32 EAT dilimi T-serisi: hunger düşüşünün SADECE 3. tick'te olduğunu pinler.
+- `Actions/EatInterruptionConservationTests.cs` — W32 T-serisi: yarım-yenmiş meal iptal edilirse rezerve edilen unit ve hunger değişmez (matter conservation).
+- `Actions/EatAtDistanceTests.cs` — T1: uzakta çiğneme (witness-nudge diner) reddi.
+- `Actions/EatActionContinuityTests.cs` — chunking invariance pini (tick-tek-tek vs. parça).
+- `Actions/EatStoryChainTests.cs` — decide → walk → take → eat zinciri.
+- `Actions/GuardEatStoryTests.cs` — W33-C: guards-eat pursuit carve-out (chase outranks lunch).
+- `Actions/SleepRecoveryAuthorshipTests.cs` — **W34 DOC4 S1** (canonical): fatigue yalnızca Sleep+Running+at-Home iken düşer; MoveToBed sıfır recovery; iki günlük horizon'da gece 22 → dawn tam bracket ve day2 sunrise < day1 bedtime (sustainability pin).
+- `Actions/SleepInterruptionTests.cs` — **W34 DOC4 S2**: hunted sleeper WAKES → Failed(Interrupted); reservation release; banked recovery korunur (refund değil).
+- `Actions/SleepWorkStoryChainTests.cs` — **W34 DOC4 S5** capstone: work → walk home → sleep → wake → work; 24 saat bodied chain (RUH_TESHIS "kimlik var, süregelen irade yok" kırılması).
+- `Actions/Support/EatSliceWorld.cs` + `SleepSliceWorld.cs` — support fixture (Tired/Hungry aktör builder'ları, larder, bed odası).
+- `Composition/WorldTickDigestGoldenTests.cs` — SHA-256 golden; needs branch değişince re-baseline geçmişi.
+- `Composition/LiveScaleCatchupPerfPinTests.cs` — canlı ölçek pini; EatOnArrival regresyon bekçisi (TICKPERF hoist'un koruyucusu).
+- `Composition/WorldTickComposerReplayTests.cs` — save/load replay eşdeğerliği (needs dahil).
+- `Save/SaveLoadDigestRoundtripTests.cs` — needs alanlarının kanonikleşmiş digest turu.
+- `CanSuyu/LivingWorldGateTests.cs` — H1 gate'i needs saatlik rampasını gerçek composer ile sürer.
 
-1. **`TryGetSiteCentre` olu kod / yarim refactor** — dokstring "tek merkez-otoritesi, dort
-   kopya birlestirildi" der (`NeedConsumptionSystem.cs:189-190`) ama repo genelinde SIFIR
-   cagirici var; `(Min+Max)/2` merkez aritmetigi hala 5+ yerde inline
-   (113-114, 152-153, 211-212, 238-240, 253-255, 282-283). **Aile (b)/(d)**: koordinat
-   otoritesi coğaltilmis, review fixi tamamlanmamis.
-2. **Susuzlugun bagimsiz kaynagi yok** — tek geri kazanim ogundeki icecek
-   (`MealThirstRecovery=40`, "no water sim yet", `NeedConsumptionSystem.cs:19`). Yemek
-   biterse aclik VE susuzluk birlikte 100'e kilitlenir (bagli cokme). Ayrica
-   `NeedsSystem.cs:26-27` yorumu "hunger (20) / fatigue (15)" der ama sabitler 8/6 —
-   H2 re-balансindan kalma BAYAT yorum (**aile (f)** benzeri: guncellenmeyen defter).
-3. **Player ve Enemy rampalanir ama beslenmez** — NeedsStep rol filtresiz herkesi yukseltir
-   (`DefaultTickSystems.cs:371-377`); tuketim iki rolu de atlar
-   (`NeedConsumptionSystem.cs:41,79`). Player/Enemy acligi 100'e, mood'u tabana oturur.
-   Player icin ayri bir yeme yolu bu taramada BULUNAMADI — *dogrulanmadi* (baska sistemde
-   olabilir); Enemy icin bilerek olabilir ama hicbir yerde belgelenmemis.
-4. **Muhafizlar teoride yer, pratikte masaya gidemez** — tuketim Guard'i DAHIL eder (filtre
-   yalnizca Player/Enemy, 41) ama `ScheduleSystem.ChooseTarget` Guard/Enemy'yi
-   `ClassicTarget`'a yollar, food-spot'a asla rotalamaz (`ScheduleSystem.cs:124-127`;
-   "guards eat off-shift — honest simplification, logged in ROADMAP_V2"). Cikarim: posta/ev
-   merkezi larder'a Chebyshev <= 2 degilse muhafiz hic yiyemez → aclik 100, mood dusuk.
-   Etki zinciri kod-kanitli, oyun-ici sonucu *dogrulanmadi* (mood muhafiz davranisini su an
-   ne kadar etkiliyor, ayri inceleme ister).
-5. **`Actor.Mood` sahiplik defterinde yok** — uc adim `ApplyMood` yazar ama
-   `FieldOwnershipRegistry`'de `Actor.Mood` anahtari yok (15-53). Lint bu alani koruMUYOR;
-   ileride dorduncu bir mood yazari sessizce girebilir. **Aile (c)** on-kosulu.
-6. **Her bitki turu yemektir** — `FoodTags` "wheat"i sabit koyar ve `Plants.Rows`'taki HER
-   `SpeciesId`'yi menuye ekler (`NeedConsumptionSystem.cs:311-320`). Yenmez tur (lif, sus)
-   eklendigi gun aktorler onu da yer. Su an yenmez tur var mi — *dogrulanmadi*.
-7. **Ikiz secim mantigi elle senkron** — `TryEatCached` ile `FindNearestFoodPile` ayni
-   secim kuralinin iki kopyasi; yorum bunu acikca kabul eder (126-128). Sitesiz-pile
-   dist=0 + strict `<` tie-break sozlesmesi ince ve yalnizca goldenlarla pinli. Kurallardan
-   biri degisirse per-tick ve hourly yollar sessizce ayrisir. **Aile (b)/(f)**.
-8. **`FoodSpot` (tekil) eski API duruyor** — cok-yerlesimli dunyada herkesi ilk pile'a
-   yuruten tek-nokta tasarimin kalintisi (**aile (a)**, `SYSTEMS_ATLAS.md:52`); uretimde
-   cagirici yok, Gate4 testi kullaniyor (`LivingWorldGateTests.cs:106`). Silinemiyor cunku
-   test API'si haline gelmis.
-9. **Sitesiz pile = evrensel mutfak (kacak kapisi)** — `WithinReach` site kaydi yoksa
-   `true` doner (207,217) ve sitesiz pile mesafe 0 sayilip HERKESIN "en yakini" olur
-   (277). Ciplak test dunyalari icin bilincli permissiflik; uretimde site'siz bir pile
-   olusursa tum harita oradan beslenir. Uretimde boyle pile olusuyor mu — *dogrulanmadi*.
-10. **Saatlik yol hala cache'siz** — TICKPERF fixi yalnizca `TickArrivals`'i cache'ledi;
-    `Tick` → `TryEat` → `FindNearestFoodPile` her ac aktor icin pile x site taramasini
-    saatte bir tekrar eder (169-187, 261-291). Saatlik kadans maliyeti bugun tasiyor;
-    aktor/pile sayisi buyudugunde ayni **aile (c)** perf deseninin ikinci gelisi olur.
-    Ayrica `TickArrivals` cache'i, ac aktor hic olmasa da yemekli pile varsa her tick
-    yeniden kurulur (73-75, ac filtresi 80'de cache'ten SONRA).
-11. **Uyku bir durum degil, sayi dususu** — gece penceresinde yorgunluk dusurulur ama
-    "uyuyor" durumu yok; aktor yururken de "uyur" (`NeedConsumptionSystem.cs:48-54`).
-    Yatak/ev kosulu yok; pencere 22-06 sabit (21-22). Uyku ayrica bilerek logsuz (46-47) —
-    denetim izi yalnizca Gate1'in etki pini.
-12. **Ogun tip-agnostik anlik doyum** — 1 adet herhangi bir yemek acligi dogrudan 5'e
-    ceker (`MealHungerFloor`, 158-160); besin degeri/porsiyon farki yok. `MealThirstRecovery`
-    susuzluk 0 iken de uygulanir, `NeedValue` clamp'i sessizce yutar (`NeedValue.cs:100-107`).
-13. **Saat hesabi kopyasi** — ConsumptionStep saati `(Stamp.TotalMinutes/60)%24` ile elde
-    eder (`DefaultTickSystems.cs:301`); `GameTime.Hour` benzeri tek otorite yerine inline
-    aritmetik (**aile (b)** mikro-ornegi; `ScheduleSystem.IsWorkHour` `time.Hour` kullanir,
-    `ScheduleSystem.cs:109-112`).
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
+
+- **W32 EAT slice (DOC3):** `ConsumeFoodAdvancer` doğdu (`ConsumeFoodAdvancer.cs`); `NeedConsumptionSystem.Tick` (retired) — instant-eat/`TryEatCached` bloğu SİLİNDİ, verbatim math ConsumeFoodAdvancer'a taşındı. `Actor.Needs` yazarı olarak `living.action_advance@PerTick:22` defterye eklendi (`FieldOwnershipRegistry.cs:33`). B09 "aktörler W32 eat slice'inda ölüyor" ailesinin kök çözümü: yeme artık 3-tick action, hunger commit atomik, uzakta çiğneme reddedilir. `NeedConsumptionSystemTests` iki eski Tick pini silindi (yorum `NeedConsumptionSystemTests.cs:33-35`).
+- **W33-C:** `GuardEatStoryTests` + `HasLivePursuit(Guard)` carve-out — nöbetçiler chase varken yemek kararı vermez (`ActionLifecycleSystem.cs:71-76`); `Actor.Needs` yazarları değişmedi.
+- **W34-B SLEEP slice (DOC4):** `SleepAdvancer` + `MoveToBedAdvancer` + `SleepOperations` doğdu; `NightSleepFatigueRecovery(40)/saat` fiat'ı `NeedConsumptionSystem.Tick`'ten SİLİNDİ (kalan sabitler `NightStartHour/EndHour` yalnız `SleepOperations.IsNightHour` üzerinden okunur). `living.consumption@Hourly:35` bant kaydı retire edildi (`DefaultTickSystems.cs:63`; `FieldOwnershipRegistry.cs:28-31`). SleepRecoveryAuthorshipTests + SleepInterruptionTests + SleepWorkStoryChainTests eklendi. Projection'ın 22/6 literal kopyası da öldü (§11 risk 5 karşılığı, tek predicate).
+- **W34-C WORK:** ihtiyaç sisteminde doğrudan yazma yok; ama `Actor.Needs` writer listesi commentle güncellendi (`FieldOwnershipRegistry.cs:31`) — decision katmanı priority order artık "eat > sleep > work" (kod sırası = öncelik doktrini, `ActionLifecycleSystem.cs:88-97`).
+- **W35 (B04):** `FieldOwnershipRegistry` boot-only writer pratiğine düzenlendi; `Actor.Mood` bu sistemin ikinci yazar seti olarak açıkça eklendi (`FieldOwnershipRegistry.cs:105-109`). NeedsSystem/Mood-derive ikili yazarlığı defter satırıyla ilan edildi.
+- **W36:** B17/B18/B06 fix'leri push edildi (f6c9e2d0); needs sistemi bu batch'te doğrudan cerrahiye girmedi ama Actor.Mood ownership row + boot-mutation kuralı ihtiyaç modeline dokunuyor.
+
+## Bilinen Borçlar + Kaçak Kapıları
+
+1. **`NeedRecoverySystem` boot/dialog/command köprüsü, tick bandında değil.** `EatMealAction="eat_meal"`, `SleepAction="sleep"` string action'ları `NeedRecoveryRecipe` üstünden envanterden yer ve bir NeedChanged olayı yazar (`NeedRecoverySystem.cs:19-98`); `Assets/Scripts/Simulation/Composition/DefaultTickSystems.cs` içinde HİÇ Step olarak kayıtlı DEĞİL. Yani `NeedRecoverySystem.EatMeal` çağrıldığında `Actor.Needs`'e yazan bir kod var ama defterde `<hangi-cadence>:` yazarı yok — Reform #2'nin CI vaadi bu boot/dialog patikasını KAPSAMIYOR. Testleri (`NeedRecoverySystemEatTests`, `NeedRecoverySystemSleepTests`) geçiyor çünkü direkt fonksiyon çağırıyorlar.
+2. **Per-actor NeedChanged olayı iki köprüden geliyor.** Bant sadece özeti yayınlarken (`DefaultTickSystems.cs:434`), `NeedsSystem.TickActorNeeds` overload'ı hâlâ 7-string trace ve reason `need_changed:{id}` yazıyor (`NeedsSystem.cs:82-95`). Aramalar (`Grep TickActorNeeds`) `CascadeSystems`'de + `RumorMillCursorTrimTests`'de kullanım gösteriyor; iki farklı reason prefix (`needs_tick_summary` vs `need_changed:`) tüketicilerin ayrı switch-case'ler yazmasına yol açıyor (`RumorMillSystem.cs:69`, `AmbientLifeSystem.cs:51-70`, `NeedRecoverySystem.cs:98`). RumorMill/Narrator/Interest tekilleştirilmemiş.
+3. **Sleep hiç WorldEvent yazmaz.** ConsumeFood `meal_eaten` yazar, Sleep sadece action log ile idare eder (`SleepAdvancer.cs:70-72`). RumorMill'in "geçen gece iyi uyudu" satırı yok; UI'da uyku bir sayaç okuyamıyor. Kasten LOC minimize, ama "sleep_completed" olayı istenirse burası yeniden dönülecek.
+4. **`FoodPileCache` per-tick build.** `FoodPileCache.Build` decision katmanının her hungry aktörü için tekrar çağrılabilir; `ActionLifecycleSystem.Decide` cache'i lazy build ediyor (`ActionLifecycleSystem.cs:81-84`) ama bu cache tick-scope'lu — persistent hoist yok, yalnız aynı Decide çağrısı içinde reuse edilir. Canlı ölçek pini bekçi, ama daha büyük dünyada tekrar bakılmalı.
+5. **`SleepOperations.ResidentCount` O(N) actor scan.** Her sleep karar denemesinde canlı aktör listesi taranır (`SleepOperations.cs:74-79`); Home indeksi yok. Aile 2-4 kişi için ucuz ama 800 sivilde her IsNightHour+Fatigue≥1 aktör için lineer.
+6. **Thirst tüketimi çok yumuşak.** `MealThirstRecovery=40` her meal'de düşerken `ThirstIncreasePerTick=5/saat` yalnız rampa; yemek olmayan bir dünyada thirst kritiğe gider ama ayrı bir "iç" action yok. `WithThirst`'in eklendiği W28-öncesi pin (`NeedsSystemTests` explicitly asserted thirst unchanged; obs 5886) tarihsel dip.
+7. **`HungerEatThreshold=55` sihirli sabit.** Comment "H2 utility crossover" der (`NeedConsumptionSystem.cs:15`) ama başka bir sisteme referans linki yok — WorkScore/priority tablosu dokümante değil; değişirse decision katmanı sessiz kaymaya başlar.
+8. **`MealHungerFloor=5` her yemekte kesin 5'e döner.** Yarı yiyen bir aktör bile 3-tick chew tamamlanırsa 5'e clamp'lenir — `.WithHunger(new NeedValue(5))` (`ConsumeFoodAdvancer.cs:52`). "Az yeyen az doyar" modeli yok; küçük ısırık ekleyeceksek bu satır dallanır.
+9. **`SleepAdvancer.RecoveryPerStep=2` fiat parity yorumu güvenilmez ölçekleme.** 40/60 = 2/3 hesabı gerçek fiat'ı `MinutesPerTick=1` altında verbatim eder. `TickRuntimeOptions.MinutesPerTick` değişirse (7 dakika/tick gibi) `TicksPerRecoveryStep=3` fiat rate'i bozar — `%3` PROGRESS ticks'i sayıyor, tick uzunluğunu değil.
+10. **BedKey format brittle.** `"bed:X:Y"` codec sadece Home cell'i kodlar; iki aktör aynı Home'a paylaşımlı yatak vermek istenirse ekstra alan gerek. Şu an `SleepOperations.ResidentCount` bunu "aile" sayıyor ama reservation ledger'ı per-actor row açıyor; kapasite kontrolü yok — 5 kişilik aile aynı BedKey için 5 ayrı row rezerv edebilir.
+11. **`ConsumeFoodAdvancer.EatReachCells=2` ile `NeedConsumptionSystem.EatReachCells=2` iki yerde sabit.** İkinci yer NeedConsumption'ın "site truth"unda; FoodOperations.WithinEatReach reach'i başka bir yerden okur (Grep bulmadı, LOAD-BEARING değişiklik gerekirse üç noktayı hizalamak lazım).
+12. **B09 ailesi: instant-eat retired, ama yamalar kalıntısı var.** `NeedConsumptionSystem.cs` yorumları hâlâ "H1, narrowed twice" açıklıyor (line 5-9); dosya adı değişmedi, testler `NeedConsumptionSystemTests` adında ama yalnız FoodSpots pinliyor — okuyan bir yeni geliştirici için isim yanıltıcı, `FoodSpotRegistry` gibi bir refactor ismi geç kalmış.
+13. **`NeedsStep` özet olayı `anchor` aktör kullanır (deterministik ilk canlı aktör).** Aktör silinirse anchor kayar ve olay ActorId'si değişir — `WorldStateDigest`'e giriyorsa golden re-baseline gerekir (aktör death'ler zaten bunu tetikliyor ama sebep zinciri örtük).
+14. **Hourly cadence olay logu spam'i öldürüldü, ama TickActorNeeds spam'i öldürülmedi.** CascadeSystems saldırı sırasında `NeedChanged` yazar (`CascadeSystems.cs:89`), AmbientLife de yer (`AmbientLifeSystem.cs:51, 70`) — özet ile per-actor tüketicilerin karışması (#2) gen2 GC'yi tekrar açabilir; ölçüm yok.

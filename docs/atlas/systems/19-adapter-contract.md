@@ -1,411 +1,114 @@
 # 19-adapter-contract
 
-> Kapsam: IDomainSimulationAdapter rol arayüzleri, DomainSimulationAdapter'in 40 partial dosyası,
-> UnavailableSimulationAdapter, EmberDomainAdapterLocator, statik mirror kanalları (kaçak kapı
-> envanteri) ve DTO sınırları.
-> Kanıt biçimi: `dosya:satır`. Aksi belirtilmedikçe tüm yollar
-> `Assets/Scripts/Presentation/Ember/Adapters/` köklüdür; diğer yollar `Assets/` köklü yazılır.
-> Not: görev tanımı "24 partial" der — gerçek sayı **40**'tır (40 dosyanın hepsi
-> `partial class DomainSimulationAdapter` bildirimi içerir; grep ile doğrulandı). 24 sayısı
-> muhtemelen eski bir snapshot'tır.
+## HLD - Ne ve Neden (5-10 cumle)
 
-## HLD - Ne ve Neden
+`IDomainSimulationAdapter` Presentation.Ember katmaninin Domain simulasyonuna baktigi TEK yuzeydir - Presentation asmi hicbir zaman `EmberCrpg.Domain.*` tipini dogrudan cagirmaz, adapter uzerinden gecer. Codex 6. audit / C-P2 asamasinda tek sisman arayuz alti rol arayuzune ayrilmistir: `IEmberSimulationClock` (sink+source), `IEmberHudReadModel`, `IWorldViewReadModel`, `IPlayerCommandSink`, `IConsultFateOracle`, `IEmberSaveBridge`. Aggregate arayuz bunlari devralir, boylece dar consumer'lar (HUD paneli, telemetry, spawner) sadece ihtiyac duyduklari rolu enjekte edebilir. `EmberDomainAdapterLocator` scene-scoped tekil register/resolve saglar; test tear-down'lari `Register(null)` cagirir. Tek somut implementasyon `DomainSimulationAdapter`'dir - `sealed partial class` olarak 40 partial dosyaya bolunmustur ve Codex ARCH-02 tarafindan surdurulur; `UnavailableSimulationAdapter` ise adapter boot edemedigi zamanki "duz cevaplayan" fallback'idir. W31'de eklenen `CurrentSettlementKey` (Travel partial'inde `SettlementId.Value` olarak yayilir) spawner'in fast-travel sonrasi eski sehrin billboard'larini toplama sinyalidir. W32-W34 boyunca `ActionVerbTable` on-screen fiil dictionary'si haline geldi: `Verb(ActorActionType)` bir DOMAIN alan kadi (`Actor.ActionState.CurrentAction`) alir ve VERBATIM string cevirir - projeksiyon sozluk disi tahmin (saat/pozisyon) yapmaz (`WorldProjection.DescribeActivity`). Bu nedenle tek "ne yapiyor?" yalanini tabladan uretmis olur - RUH_TESHIS §2.9 guess branch'i olu.
 
-Adapter kontratı, deterministik simülasyon dünyası (`Domain` + `Simulation` asmdef'leri) ile
-Unity sahne katmanı (`Presentation` asmdef) arasındaki TEK dikişin sözleşmesidir: runtime host
-her tick `IDomainSimulationAdapter` üzerinden simülasyonu ilerletir ve görünüm başına düz DTO
-satırları okur (`IDomainSimulationAdapter.cs:252-268`). Oyuncuya görünen etkisi dolaylı ama
-total: HUD üst barı, colony/faction/job panelleri, envanter, dialog, combat ekranı, dünya
-haritası, save/load ve fal (fate) ribbonu — hepsi bu tek kulptan beslenir. Felsefe iki
-katmanlıdır: (1) tek şişman arayüz yerine BEŞ rol arayüzü (clock, HUD read-model, world-view
-read-model, player command sink, fate oracle) + save köprüsü; agregat sadece "tek
-implementasyon her şeyi çalıştırır" düzenini derleme-uyumlu tutmak için yaşar
-(`IDomainSimulationAdapter.cs:10-15, 260-267`). (2) Gerçek adapter boot edemezse oyun YALAN
-söylemez: `UnavailableSimulationAdapter` sahte gameplay satırı uydurmak yerine dürüst
-"unavailable" durumları gösterir (`UnavailableSimulationAdapter.cs:10-16`). Adapter'in sahneye
-dokunamaması bilinçli bir kısıttır; sahnenin adapter'dan ANLIK sinyal alması gerektiğinde
-kontrat dışına çıkan statik mirror kanalları devreye girer — bunlar bu haritanın "kaçak kapı"
-envanteridir (örn. `DomainSimulationAdapter.WorldEncounter.cs:8-11` kendini açıkça "adapter
-UI açamaz, one-shot statik sinyal" diye gerekçelendirir). Arayüz dosyasının kendisi bile
-"temporary aggregate ... while role interfaces are extracted" der
-(`IDomainSimulationAdapter.cs:1`) — kontrat bitmiş değil, göç halindedir.
+## HLD - Akış (numaralı adımlar)
 
-## HLD - Akis
+1. Boot: `EmberWorldHost` tek `DomainSimulationAdapter` yaratir (ctor `WorldState` alir), `EmberDomainAdapterLocator.Register(adapter)` cagirir.
+2. Her frame host `IEmberClockSink.AdvanceTick(tickIndex)` cagirir → `Clock` partial `DrainMainThreadApply` (DET-02 kuyrugu) → `_tickComposer.Advance(_world, tickIndex)` → `PublishEventEchoes` + `PublishFieldMirror`.
+3. UI panelleri `EmberDomainAdapterLocator.WorldViewReadModel` (veya HUD/Fate/Save role handle'lari) uzerinden readonly DTO'lar okur: `JobQueueRows`, `ColonyNeedsRows`, `InventorySlots`, `Overland`, `PlayerOverlandTile`, `StartingSettlementName`, `CurrentSettlementKey`, `TryReadActor`, `GetSpawnableActors`, `RecentWorldEvents`.
+4. `EmberGeneratedActorSpawner.SpawnMissingNearbyActors()` her frame `readModel.CurrentSettlementKey` degisti mi diye kontrol eder; degistiginde `_spawnedRoots` icinden yeni candidate listesinde OLMAYANLARI `Destroy` eder ve `_spawnedForSettlement`'i yeni key ile guncelter (Travel'in `_billboardOriginResolved=false` sinyali ile beraber).
+5. Player girdi: `IPlayerCommandSink.TryMeleeStrike / TryCastSpell / TryInteract(ActorId) / GetDialogSource(ActorId) / SeedWorld` - hepsi Domain yazimini adapter icinde yapar; Presentation Domain tipine dokunmaz.
+6. LLM/AI-DM async yollari `TryConsumeResolvedFate` polluyla adapter'a geri konur - post-await mutasyonlar `_mainThreadApply` ConcurrentQueue'ya girer ve bir sonraki `AdvanceTick`'in tepesinde main-thread'de drain edilir (EMB-007 race'i kapatti).
+7. Verb projeksiyonu: `ProjectActor(ActorRecord)` → `DescribeActivity(actor)` → `action != None` ise `ActionVerbTable.Verb(action)` (VERBATIM); yalnizca `None` durumunda dar `DescribeScheduleWord` kalir (Guard: "on watch", Enemy: "hunting"; digerleri null - tahmin yok).
+8. Save round-trip: `IEmberSaveBridge.ExportStateJson` / `RestoreStateJson`, `JsonSliceSaveService` deleged; adapter Domain snapshot'i (Actors + Worksites + Jobs + Soils + Plants + WorkOrderLedger + WorldEvents) opak JSON'a sarar.
 
-1. **Boot (sahne Awake):** `EmberWorldHost.Awake` adapteri üç aşamalı fallback ile seçer:
-   `EmberDomainAdapterLocator.Current ?? EmberWorldContinuity.Take() ?? TryCreateDomainAdapter()`,
-   hepsi null ise `CreateFallbackAdapter()` → `UnavailableSimulationAdapter`
-   (`Presentation/Ember/Bootstrap/EmberWorldHost.cs:72-75`,
-   `Presentation/Ember/Bootstrap/EmberWorldHost.AdapterBootstrap.cs:9-13, 24-63`).
-   `EmberWorldHostAdapterBinding` agregatı beş rol koluna ayırır — host cast etmez
-   (`Presentation/Ember/Bootstrap/EmberWorldHostAdapterBinding.cs:12-27`). Sonra
-   `EmberDomainAdapterLocator.Register(_adapter)` (`EmberWorldHost.cs:81`).
-2. **Worldgen intent tüketimi:** MainMenu sihirbazının bıraktığı `EmberWorldGenIntent.Pending`
-   ilk tick'ten ÖNCE `_commands.SeedWorld(...)` + `ApplyCharacterCreation(...)` ile dünyaya
-   uygulanır (`EmberWorldHost.cs:83-97`; `DomainSimulationAdapter.Worldgen.cs:26-90, 92-127`).
-3. **Tick kadansı:** `EmberTickDriver.Update` → `Listener.OnTick` → projektör →
-   `AdvanceTick(tickIndex)`: önce off-thread LLM sonuç kuyruğu ana thread'de boşaltılır
-   (DET-02), `_tickComposer.Advance(_world, tickIndex)` simülasyonu ilerletir, sonra
-   `PublishEventEchoes()` + `PublishFieldMirror()` statik kanallara yayın yapar
-   (`DomainSimulationAdapter.Clock.cs:6-13`; driver `Presentation/Ember/Tick/EmberTickDriver.cs:44-56`).
-4. **Frame kadansı (okuma):** UI panelleri her frame rol arayüzlerinden DTO okur; `HudText`
-   tick başına cache'lenir ("oyun her tickte kasıyor" fix,
-   `DomainSimulationAdapter.Hud.cs:18-23, 59-60`). Satır DTO'ları her okumada yeniden inşa
-   edilir (`DomainSimulationAdapter.WorldRows.cs:14-51`).
-5. **Oyuncu komutları (olay kadansı):** E tuşu → `TryInteract` → aktör bulunursa
-   `GetDialogSource(id)` (sohbet) ya da düşman rolündeyse world-encounter bağlama + one-shot
-   sinyal (`DomainSimulationAdapter.Combat.Interaction.cs:21-54`,
-   `DomainSimulationAdapter.WorldEncounter.cs:52-68`). Melee/spell/trade/craft/levelup/travel
-   verb'leri kendi partial'larında domain servislerine yönlenir.
-6. **Async LLM (fate/dialog):** `ConsultFate` anında placeholder döner, `Task.Run` ile LLM'i
-   off-thread çağırır, sonucu `_mainThreadApply` kuyruğuna koyar; kuyruk bir SONRAKİ
-   `AdvanceTick` başında ana thread'de uygulanır ve host `TryConsumeResolvedFate()` ile tam bir
-   kez tüketir (`DomainSimulationAdapter.Fate.cs:28-46, 87-128`; kuyruk
-   `DomainSimulationAdapter.Clock.cs:15-30`).
-7. **Save/load:** `ExportStateJson` → `JsonSliceSaveService.SaveToJson`; `RestoreStateJson` →
-   `LoadFromJson` + `WorldState.CopyFrom` + `EnsureInvariants` + composer akümülatör yeniden
-   türetimi (DET-01) (`DomainSimulationAdapter.Save.cs:24-64`); driver tarafında `AlignTo`
-   sayaç hizalar (`EmberTickDriver.cs:37-42`).
-8. **Fast travel (sahne reload):** canlı adapter `EmberWorldContinuity.Carry` ile statik slota
-   konur; yeni host `Take()` ile tam bir kez alır — yoksa oynanan dünya sessizce default
-   dünyayla değişirdi (`Presentation/Ember/Bootstrap/EmberWorldContinuity.cs:5-28`,
-   `EmberWorldHost.cs:69-74`).
+## LLD - Veri Modeli (file:line)
 
-## LLD - Veri Modeli
+- `IDomainSimulationAdapter` aggregate → `Assets/Scripts/Presentation/Ember/Adapters/IDomainSimulationAdapter.cs:284-292` (`IEmberSimulationClock, IEmberHudReadModel, IWorldViewReadModel, IPlayerCommandSink, IConsultFateOracle, IEmberSaveBridge`).
+- Rol arayuzleri: `IEmberClockSink:23`, `IEmberClockSource:29`, `IEmberSimulationClock:34`, `IEmberHudReadModel:40`, `IWorldViewReadModel:48-97`, `IPlayerCommandSink:130-197`, `IConsultFateOracle:207-227`, `IEmberSaveBridge:238-259`.
+- `SpawnableActor` readonly struct → `IDomainSimulationAdapter.cs:106-122` (Id ulong + Name + SpriteRole + WorldX/Z + Seed; hicbir Domain tipi tasimaz).
+- `CurrentSettlementKey` → `IDomainSimulationAdapter.cs:96` (kontrat), impl `DomainSimulationAdapter.Travel.cs:29` (`=> CurrentSettlementOrStart.Value`), Unavailable `UnavailableSimulationAdapter.cs:50` (`=> 0UL`).
+- `EmberDomainAdapterLocator` → `IDomainSimulationAdapter.cs:270-303` (`Current`, `ClockSource`, `HudReadModel`, `WorldViewReadModel`, `PlayerCommandSink`, `ConsultFateOracle`, `SaveBridge`, `Register`, `Clear`).
+- Root partial state: `DomainSimulationAdapter.cs:28-100` - `_world`, `_saveService`, `_tickComposer`, `_tick`, `_lastCombatLine`, `_activeDialogActor/Id/NpcId`, `_currentDialogLine`, `_currentPortrait`, `_conversation`, `_pendingFate`, `_pendingFateFollowups`, `_isFateThinking`, `_isDialogThinking`, `_topicAskCounts`, `_streamingPartialLine`, `_suppressGlobalTopicFallback` + offset sabitleri `RegionSiteOffset=100_000UL`, `SettlementSiteOffset=200_000UL`, `GeneratedNpcActorOffset=10_000UL`.
+- Travel state: `DomainSimulationAdapter.Travel.cs:17` `_currentSettlement`; `CurrentSettlementOrStart` (nearest-fallback → StartingSettlement).
+- Billboard origin: `DomainSimulationAdapter.WorldProjection.cs:55-57` `_billboardOrigin`, `_billboardOriginResolved`.
+- Wizard-derived state: `DomainSimulationAdapter.Worldgen.State.cs:29-33` - `GeneratedWorld`, `StartingRegion`, `StartingSettlement`, `StartingFaction`.
+- `ActionVerbTable` (public static) → `Assets/Scripts/Presentation/Ember/Adapters/ActionVerbTable.cs:16-66` - 11 satirlik enum→string switch + `KindName` + `Unknown` sentinel (ilk bilinmeyende bir kez warn, ekrana `(Kind)` yazar).
 
-### Rol arayüzleri (hepsi `IDomainSimulationAdapter.cs`)
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-| Tip | Üyeler | Satır |
-|---|---|---|
-| `IEmberClockSink` | `AdvanceTick(int)` | 23-26 |
-| `IEmberClockSource` | `TickIndex` | 29-32 |
-| `IEmberSimulationClock` | sink + source kompozisyonu | 35-37 |
-| `IEmberHudReadModel` | `HudText`, `CombatHud`, `PlayerSheet` | 40-45 |
-| `IWorldViewReadModel` | `JobQueueRows`, `ColonyNeedsRows`, `FactionRows`, `InventorySlots`, `SpellSlots`, `Overland`, `PlayerOverlandTile`, `StartingSettlementName`, `RecentWorldEvents(int)`, `TryReadActor(string/ActorId)`, `TryReadWorksite`, `GetSpawnableActors()`, `CurrentSettlementKey` | 48-97 |
-| `IPlayerCommandSink` | `LogCombat`, `TakePlayerDamage`, `TryCastSpell`, `TryMeleeStrike`, `TryInteract(string/ActorId)`, `GetDialogSource(string/ActorId)`, `SeedWorld(mood, calling, startLocation, uint? worldSeed)` | 127-203 |
-| `IConsultFateOracle` | `ConsultFate()`, `ConsultFate(string)`, `TryConsumeResolvedFate()` | 213-228 |
-| `IEmberSaveBridge` | `ExportStateJson()`, `RestoreStateJson(string)` | 238-250 |
-| `IDomainSimulationAdapter` | yukarıdaki altısının agregatı | 260-268 |
-| `EmberDomainAdapterLocator` | `Current` + rol-özel accessor'lar (`ClockSource`..`SaveBridge`), `Register`, `Clear` | 279-305 |
+- `void AdvanceTick(int tickIndex)` — `DomainSimulationAdapter.Clock.cs:6` — main-thread apply kuyrugunu bosaltir, tick composer'i advance eder, event echo + field mirror yayinlar.
+- `int TickIndex` — `Clock.cs:31` — son advance edilen tick index.
+- `IReadOnlyList<SpawnableActor> GetSpawnableActors()` — `WorldProjection.cs:140-163` — Player disi & yasayan actor'lari CURRENT settlement'a filtreleyerek Domain-free DTO listesi verir.
+- `bool TryReadActor(ActorId id, out ActorViewState state)` — `WorldProjection.cs:39-46` — id-keyed billboard sync (SOUL-04).
+- `bool TryReadActor(string actorName, out ActorViewState state)` — `WorldProjection.cs:23-35` — legacy isim yolu.
+- `ActorViewState ProjectActor(ActorRecord actor)` — `WorldProjection.cs:87-99` — grid→world XZ projeksiyonu + `DescribeActivity` verb + `sleeping = Sleep action` + `actionKind = KindName`.
+- `string DescribeActivity(ActorRecord actor)` — `WorldProjection.cs:105-110` — CurrentAction varsa `ActionVerbTable.Verb`, yoksa `DescribeScheduleWord`.
+- `string DescribeScheduleWord(ActorRecord actor)` — `WorldProjection.cs:117-132` — Guard→"on watch", Enemy→"hunting", diger her sey null (W32-W34 tahmin branch'lari olu).
+- `ulong CurrentSettlementKey` — `Travel.cs:29` — `CurrentSettlementOrStart.Value` (spawner despawn sinyalidir).
+- `bool TryBeginTravelToSettlement(...)` — `Travel.cs:31-79` — player actor'u destination site merkezine tasir, `_currentSettlement` yazilir, `_billboardOriginResolved=false`.
+- `bool TryTravelToSettlement(string, out string)` — `Travel.cs:103-111` — legacy sync yol (14-day capped) proof driver'lar icin.
+- `void SeedWorld(string mood, string calling, string startLocation, uint? worldSeed=null)` — `Worldgen.cs:26-83` — wizard tuple → deterministic seed → `PlanetWorldService.GetOrGenerate` → `HydrateGeneratedWorld` → `Overland` projeksiyonu → main-quest arm.
+- `void ApplyCharacterCreation(string playerName, string classId, string birthsignId)` — `Worldgen.cs:85-125` — Class+Birthsign stat/vital'lerini player actor'e uygular.
+- `bool TryCastSpell(int spellSlotIndex)` — `Combat.Spells.cs` — mana/cooldown/target kontrol + refuse loglama.
+- `bool TryMeleeStrike(string targetActorName, int rawDamage)` — `Combat.Melee.cs` — hedef domain actor'a hasar.
+- `bool TryInteract(ActorId actorId)` / `bool TryInteract(string targetTag)` — `Combat.Interaction.cs` — E-key ile world objesi/actor etkilesimi.
+- `IDialogSource GetDialogSource(ActorId id)` / `IDialogSource GetDialogSource(string actorName)` — `Dialog.Source.cs` — id-keyed dialog binding (name overload legacy fallback).
+- `string ConsultFate()` / `ConsultFate(string question)` / `TryConsumeResolvedFate()` — `Fate.cs` — sync placeholder + async LLM polling.
+- `string ExportStateJson()` / `void RestoreStateJson(string json)` — `Save.cs` — `JsonSliceSaveService` proxy.
+- `void LogCombat(string message)` — root partial — `_lastCombatLine` set + Debug.Log.
+- `void TakePlayerDamage(int amount)` — `Combat.cs` — player vitals decrement.
+- `static string Verb(ActorActionType kind)` — `ActionVerbTable.cs:18-38` — 11 satirlik enum→string map (unknown → `Unknown` sentinel).
+- `static string KindName(ActorActionType kind)` — `ActionVerbTable.cs:41-55` — `ActorViewState.ActionKind` icin stable string; None → null.
+- `static void Register(IDomainSimulationAdapter)` / `Clear()` — `IDomainSimulationAdapter.cs:294-302` — scene-scoped singleton wire/reset.
 
-Notlar: `IPlayerCommandSink`'te default-method shim'leri bilinçli KALDIRILDI — eksik verb
-görünmez kalamaz, her implementasyon açıkça yazmak zorunda
-(`IDomainSimulationAdapter.cs:132-141`). `GetDialogSource(ActorId)` çözülemeyen id'de null
-DEĞİL, kasıtlı boş source döndürmek zorundadır (`IDomainSimulationAdapter.cs:180-193`).
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-### İkincil rol arayüzleri (agregat DIŞINDA, ekran başına)
+Adapter Presentation katmanindadir; `FieldOwnershipRegistry` tick-composer sistemlerinin (`living.*`, `econ.*`, `world.*`) domain field'lara yazma iznini deklare eder. Adapter kendi basina bu tabloda yer almaz - o "Player'in Domain'e komut yolu" ve "Domain'in Presentation'a okunma yolu" olarak durur.
 
-Adapter bunları partial bildirimlerinde ek olarak uygular; `UnavailableSimulationAdapter` da
-hepsini uygular (`UnavailableSimulationAdapter.cs:14-16`):
+- **Adapter uzerinden Presentation'a OKUNAN Domain alanlar** (read-only projection): `WorldState.Actors` (WorldProjection, GetSpawnableActors, TryReadActor), `Actor.Position` / `Actor.ActionState.CurrentAction` / `Actor.IsAlive` / `Actor.Vitals` / `Actor.Needs` / `Actor.Name` / `Actor.Role` (`ActorRecord` uzerinden), `WorldState.Sites` (`BillboardOrigin`, `CenterOfSite`), `WorldState.Overland` (`Overland` property + `PlayerOverlandTile`), `WorldState.Events` (`RecentWorldEvents`), `WorldState.Time`, `WorldState.WorldProfile`.
+- **Player komut yolu ile Domain'e YAZILAN alanlar** (adapter Domain API'sini cagirdigi noktada owner o Domain sistemidir, degil adapter):
+  - `WorldState.RoomSeed` — `Worldgen.SeedWorld:35` (bootstrap-only, world tabula rasa iken).
+  - `WorldState.WorldProfile` — `Worldgen.SeedWorld:52-63`.
+  - `WorldState.Overland` — `Worldgen.SeedWorld:73-75`.
+  - `Actor.Position` (player) — `Travel.TryBeginTravelToSettlement:60` (`player.MoveTo`); FieldOwnershipRegistry `Actor.Position`'un tick-composer writer'larini tanir - adapter'in player-move'u Domain `ActorRecord.MoveTo` uzerinden Domain'e yazar (adapter tick disi fiat write yapmaz).
+  - `WorldState.Actors` (player replace) — `Worldgen.ApplyCharacterCreation:120` (`_world.ReplaceActorView(ActorRole.Player, replacement)`).
+  - `Actor.Vitals` (player rest / player damage) — `Travel.ApplyRest:99` + `Combat` partial `TakePlayerDamage`.
+- **Adapter icinde YASAYAN presentation-only state** (Domain'de degil): `_tick`, `_billboardOrigin/_billboardOriginResolved`, `_currentSettlement`, `_lastCombatLine`, `_activeDialogActor/Id/NpcId`, `_conversation`, `_pendingFate/_pendingFateFollowups`, `_isFateThinking/_isDialogThinking`, `_topicAskCounts`, `_streamingPartialLine`, `_suppressGlobalTopicFallback`, `_mainThreadApply` (DET-02 kuyrugu). Bunlarin hicbiri `FieldOwnershipRegistry` icinde tanimli degildir cunku Domain snapshot'ina girmezler.
 
-- `ICombatScreenSource` — `Presentation/Ember/UI/CombatScreenSource.cs:70`; adapter:
-  `DomainSimulationAdapter.CombatScreen.cs:8`
-- `ICraftingSource` / `ICraftingCommandSink` — `Presentation/Ember/UI/CraftingSource.cs:58,63`;
-  adapter: `DomainSimulationAdapter.Crafting.cs:14`
-- `IJournalSource` — `Presentation/Ember/UI/JournalSource.cs:46`; adapter:
-  `DomainSimulationAdapter.Journal.cs:9`
-- `ILevelUpSource` / `ILevelUpCommandSink` — `Presentation/Ember/UI/LevelUpSource.cs:95,100`;
-  adapter: `DomainSimulationAdapter.LevelUp.cs:8`
-- `ITradeSource` / `ITradeCommandSink` — `Presentation/Ember/UI/TradeSource.cs:83,88`; adapter:
-  `DomainSimulationAdapter.Trade.cs:10`
-- `IQuestGuidanceSource` / `IQuestGuidanceTracker` —
-  `Presentation/Ember/UI/QuestGuidanceSource.cs:34,43`; adapter:
-  `DomainSimulationAdapter.QuestGuidance.cs:11`
-- `IWorldTravelSink` — adapter dosyasının İÇİNDE tanımlı
-  (`DomainSimulationAdapter.Travel.cs:7-10`), adapter: `Travel.cs:12`
-- `IDialogSource` / `IDialogSourcePortrait` — `IDialogSource.cs:12-36, 43-46`
-  (`VoiceKey`, `GetCurrentLine`, `GetTopics`, `SelectTopic`, `AskFreeText`, `EndConversation`,
-  `IsThinking` default'lu); adapter kök partial'da: `DomainSimulationAdapter.cs:28`
+## LLD - Ürettiği/Tükettiği Olaylar
 
-### DTO sınırı — readonly struct satırları
+- **Tuketilen** (`AdvanceTick` icinde): `_world.Events` yeni event'lerini `PublishEventEchoes` uzerinden actor-adli floating echo'lara cevirir (`_echoCursor` current-end'de baslar - save yuklerken 10k eski event replay olmaz). `_world.Plants` uzerinden dominant stage `PublishFieldMirror` ile field visual'a yayilir (`_lastPlantsHash` degistiginde).
+- **Uretilen**:
+  - `_lastCombatLine` — `LogCombat`, `ApplyCharacterCreation` sonu ("X begins as Class under Birthsign.").
+  - Combat pipeline event/log satirlari — `Combat.Melee.cs`, `Combat.Spells.cs`, `TakePlayerDamage`.
+  - `Domain Seeded: seed=... style=... ...` — `Worldgen.SeedWorld:76-80` UnityEngine.Debug.Log tek satir bootstrap ozeti.
+  - Dialog akisi: `Dialog.*` partial'lari asenkron LLM cikislarini `_streamingPartialLine`'a besler ve `TryConsumeResolvedFate`/`GetCurrentLine` uzerinden UI'a saglar.
+- **Kanal-disi yol**: `ActionLogDebugSink.Enabled = HasActionLogFlag()` — root partial ctor'da `--ember-proof-screenshots` veya `--ember-action-log` bayragi varsa `[Action]` phase mirror greppable log akisini acar (normal oynanis payini omez).
 
-Kontratın vaadi: "wires Captain's domain stores into the Ember view layer **without leaking
-domain types** into the presentation assembly" (`IDomainSimulationAdapter.cs:253-256`). DTO'lar:
+## Testler (bu sistemi pinleyen test dosyaları - W32-W36 hikâye-testleri dahil)
 
-- `SpawnableActor` — `Id:ulong, Name, SpriteRole, WorldX, WorldZ, Seed`; world pozisyonu
-  ÖNCEDEN projekte edilmiş, spawner Domain matematiği yapmaz
-  (`IDomainSimulationAdapter.cs:99-124`)
-- `CombatHudState` — `Presentation/Ember/UI/CombatHud.cs:144`; `PlayerSheetState` — aynı
-  dosya `:170`
-- `JobQueueRow` — `Presentation/Ember/UI/JobQueuePanel.cs:82`
-- `ColonyNeedsRow` — `Presentation/Ember/UI/ColonyNeedsPanel.cs:82`. DİKKAT: aynı basit adla
-  İKİNCİ bir `ColonyNeedsRow` `Presentation/Visual/ColonyNeedsSnapshot.cs:44`'te yaşar; kök
-  partial bu çakışma yüzünden `using` yerine tip alias'ı kullanmak zorunda
-  (`DomainSimulationAdapter.cs:17-21`)
-- `FactionRow` — `Presentation/Ember/UI/FactionPanel.cs:83`; `InventorySlot` —
-  `Presentation/Ember/UI/InventoryGrid.cs:176`; `TradeItemRow` —
-  `Presentation/Ember/UI/TradeSource.cs:35`
-- `ActorViewState` — `Presentation/Ember/Views/ActorView.cs:270`; `WorksiteViewState` —
-  `Presentation/Ember/Views/WorksiteView.cs:45`
-- `WorldEventRow` — `Presentation/Visual/WorldEventTailSnapshot.cs:73`
-- `CombatScreenState` + `CombatSpellActionRow` — `Presentation/Ember/UI/CombatScreenSource.cs`
+- `Assets/Tests/EditMode/Presentation/VisualLayer/ActivityLabelTruthTests.cs` — `ActionVerbTable.Verb` 11 satirlik verbatim assert (`Verb(MoveToFood)="seeking food"`, ... `Verb(PerformWork)="working"`) + `KindName(None)==null` + kod-icinde `ActionVerbTable.Verb` cagrisinin varligi lint'i.
+- `Assets/Tests/EditMode/Actions/WorkStoryChainTests.cs` — W34-C is-hikayesi; `smith.ActionState.CurrentAction == PerformWork` iken `ActionVerbTable`'in "working" verdigini pinler (satir 46-52).
+- `Assets/Tests/EditMode/Actions/SleepInterruptionTests.cs` — W34-B uyku-hikayesi; `MoveToBed`/`Sleep` action akisi + label verbatim.
+- `Assets/Tests/EditMode/Audit/AuditSixthPassCoverageTests.cs` — Codex 6. audit C-P2 rol-interface ayrimini pinler (`IEmberClockSink`, `IWorldViewReadModel` vs. aggregate).
+- `Assets/Tests/EditMode/Audit/AuditSeventhPassCoverageTests.cs` — 7. audit C-P3 #12 default-method shim retirement + `EmberDomainAdapterLocator.ClockSource/HudReadModel/...` narrow accessor pin.
+- `Assets/Tests/EditMode/Audit/AuditFourthPassTailCoverageTests.cs` — `RecentWorldEvents` tail snapshot kontrat.
+- `Assets/Tests/EditMode/Audit/SelectSpellTargetTests.cs` — `TryCastSpell` slot->target kontrat.
+- `Assets/Tests/EditMode/Audit/EmberWorldGenIntentHandoffTests.cs` — `SeedWorld` intent (mood/calling/start) → `WorldProfile` handoff pin (W30-W31).
+- `Assets/Tests/EditMode/AiDm/LlmToolAuthorityTests.cs` — `IConsultFateOracle` async round-trip + `TryConsumeResolvedFate` bir-kere-drain kontrati.
+- `Assets/Tests/EditMode/Presentation/JournalSourceTests.cs` — `IJournalSource` (adapter Journal partial) kontrat.
+- `Assets/Tests/EditMode/Presentation/PlayableLoopCraftQuestTests.cs` — `ITradeSource/ICraftingSource/ILevelUpSource/ICombatScreenSource` full player-loop pin.
+- `Assets/Tests/EditMode/Diagnostics/MarathonPassGateCensusTests.cs`, `Assets/Tests/EditMode/Diagnostics/ProofLivingCensusPeaksTests.cs` — `EmberDomainAdapterLocator` uzerinden marathon proof harness'in adapter census'unu pinler.
 
-**Sınır ihlalleri (kontratın kendi metninde):** `IWorldViewReadModel` Domain tiplerini DOĞRUDAN
-sızdırır — `EmberCrpg.Domain.Overland.OverlandMap Overland` (`IDomainSimulationAdapter.cs:57`),
-`EmberCrpg.Domain.Actors.GridPosition PlayerOverlandTile` (`:60`) ve `ActorId` parametreleri
-(`:77, 167, 193`). `UnavailableSimulationAdapter` bile bu yüzden `Domain.Overland` import etmek
-zorunda (`UnavailableSimulationAdapter.cs:38-39`). Tek asmdef `EmberCrpg.Presentation` olduğu
-için derleyici bunu yakalamaz — sınır sözleşmeyle, derlemeyle değil (asmdef listesi:
-`Assets/Scripts/*/*.asmdef`; Presentation tek parçadır).
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
 
-### Kök partial durumu (`DomainSimulationAdapter.cs:30-58`)
+- **W32 (SOUL-04 spawn-from-worldgen + label-truth)**: `SpawnableActor` DTO'su ve `IWorldViewReadModel.GetSpawnableActors()` eklendi (`IDomainSimulationAdapter.cs:81-90, 106-122`); `ProjectActor` ile spawner ayni grid→world formulunu paylasti (`WorldProjection.cs:140-163`). `ActionVerbTable` dogdu (`ActionVerbTable.cs`) ve `DescribeActivity` bir "action varsa VERBATIM Verb, yoksa dar schedule word" kontratina indi - `WorldProjection.DescribeScheduleWord` icindeki EAT tahmin branch'i (12-14 plaza "eating", aclik→"to the tavern") DELETED. `CurrentSettlementKey` (`IDomainSimulationAdapter.cs:91-96` + `Travel.cs:29`) `IWorldViewReadModel`'e eklendi; `EmberGeneratedActorSpawner:89-105` bunu bir onceki settlement key'i ile kiyaslayip stale billboard'lari `Destroy` etti - "npc ler koyden uzaklasmaya basliyorlar" live-bug'ini kapatti. `_billboardOriginResolved` bayragi `TryBeginTravelToSettlement`'ta `false`'a cekildi (`Travel.cs:62`), `BillboardOrigin` yeniden resolve etti.
+- **W33 (FARM verb suit)**: `ActionVerbTable`'a `MoveToPlot="to the field"`, `PlantSeed="planting"`, `HarvestCrop="harvesting"`, `HaulCrop="hauling"` satirlari eklendi (`ActionVerbTable.cs:22-28`). `WorldProjection.DescribeScheduleWord` icindeki FARM guess branch'i (crop-belt proximity → "harvesting"/"tending the field") DELETED (`WorldProjection.cs:126-128` yorum). `IPlayerCommandSink` default-method shim'leri (7. audit C-P3 #12) retire edildi - `TryCastSpell/TryMeleeStrike/TryInteract` her implementation'da acikca override zorunlulugu geldi (`IDomainSimulationAdapter.cs:132-149`).
+- **W34 (SLEEP + WORK verb suit)**: `ActionVerbTable`'a `MoveToBed="heading home"`, `Sleep="sleeping"`, `MoveToWorksite="to work"`, `PerformWork="working"` satirlari eklendi (`ActionVerbTable.cs:31-36`). `WorldProjection`'in gece guess branch'i (20-22 "winding down", hour+Chebyshev "sleeping") DELETED (`WorldProjection.cs:122-126`); WORK guess branch'i (schedule-derived "working") DELETED (`WorldProjection.cs:129-132`). `ProjectActor.sleeping` bayragi `Actor.ActionState.CurrentAction == Sleep`'e bagli olarak Domain'den okunuyor (`WorldProjection.cs:96`). RUH_TESHIS §2.9 tahmin katmani tamamen olu.
+- **W35 (partial split leveling)**: `DomainSimulationAdapter.cs` "shared state only" kontratina indirildi (root partial 112 satir, `WorldState` + `JsonSliceSaveService` + `WorldTickComposer` + 15 kadar `_field`). Yeni partial'lar: `Combat.Helpers`, `Combat.Interaction`, `Combat.Melee`, `Combat.Spells` (Combat mono-partial'i 4 sorumlulukla ayrildi); `Dialog.Binding`, `Dialog.Greetings`, `Dialog.Source`, `Dialog.Text`, `Dialog.Topics` (Dialog'un 5-way'i); `Worldgen.Hydration`, `Worldgen.Npcs`, `Worldgen.NpcStats`, `Worldgen.Player`, `Worldgen.Production`, `Worldgen.Selection`, `Worldgen.State` (Worldgen'in 7-way'i); `WorldProjection`, `WorldQuests`, `WorldRows`, `WorldEncounter`, `QuestGuidance`, `QuestInteraction`, `QuestProgress`, `MainQuest`, `Overland`, `Haunters`, `Journal`, `LevelUp`, `Trade`, `Crafting`, `CombatScreen`, `Travel`, `Save`, `Fate`, `Hud`, `Clock`. Toplam **40 partial** (task hint'inde "24" idi - bu W32 draft'inin stale count'u; her partial `sealed partial class DomainSimulationAdapter` ile tek dosyada tek sorumluluk).
+- **W36 (id-keyed dialog + save fidelity)**: `DLG-01` id-keyed `GetDialogSource(ActorId)` overload + `_suppressGlobalTopicFallback` bayragi (`IDomainSimulationAdapter.cs:151-167`, `DomainSimulationAdapter.cs:52-56`) - id resolve olmayinca "no one here" yerine global topics'e sessizce dusme retire edildi. `TryInteract(ActorId)` (`IDomainSimulationAdapter.cs:141-147`) actor id ile etkilesim kanonu. `IEmberSaveBridge` round-trip contract EditMode round-trip test suite'i altinda pinlendi. `SeedWorld` imzasi `uint? worldSeed = null` ile geniletildi (nullable seed - Jun 12 observation'i).
 
-`_world` (WorldState, ctor'da null-check `:60-62`), `_saveService` (JsonSliceSaveService,
-`BindWorld` ile canlı dünyaya bağlanır — bağlanmazsa seed'lenen worksiteler tick'lenmezdi,
-`:63-71`), `_tickComposer`, `_tick`, `_lastCombatLine`, dialog durumu
-(`_activeDialogActor/-Id`, `_conversation`, `_currentPortrait`, `_streamingPartialLine`,
-`_suppressGlobalTopicFallback`), fate durumu (`_pendingFate`, `_isFateThinking`),
-`_topicAskCounts` (tekrar soruları yeniden ifade ettiren sayaç, `:45-48`), id-uzayı offsetleri
-(`RegionSiteOffset=100_000`, `SettlementSiteOffset=200_000`, `GeneratedNpcActorOffset=10_000`,
-`:56-58`). `World` property'si canlı WorldState'i DIŞARI verir (`:93`) — DTO sınırının en
-büyük deliği (bkz. Borçlar).
+## Bilinen Borçlar + Kaçak Kapıları
 
-### 40 partial dosyanın haritası
-
-| Partial | Satır sayısı | Sorumluluk |
-|---|---|---|
-| `DomainSimulationAdapter.cs` | 98 | paylaşılan durum + ctor + `World` |
-| `.Clock.cs` | 150 | `AdvanceTick`, DET-02 apply kuyruğu, event echo + field mirror yayını |
-| `.Hud.cs` | 99 | `HudText` (tick-cache), `CombatHud`, `PlayerSheet` |
-| `.WorldRows.cs` | 119 | job/needs/faction/inventory/spell satır projeksiyonları |
-| `.WorldProjection.cs` | 269 | `TryReadActor/Worksite`, `GetSpawnableActors`, billboard origin |
-| `.Overland.cs` | 60 | `Overland`, `PlayerOverlandTile`, `StartingSettlementName` |
-| `.Combat.cs` | 41 | `LogCombat`, `TakePlayerDamage` (gerçek vitals mutasyonu) |
-| `.Combat.Interaction.cs` | 57 | `TryInteract` (string→id köprüsü, id→dialog/encounter yönlendirme) |
-| `.Combat.Melee.cs` | 198 | `TryEquip`, melee vuruş çözümü, crime tetiği, hit-feed yayını |
-| `.Combat.Spells.cs` | 140 | `TryCastSpell`, `SpellResolved` olayı, spell-fx mirror |
-| `.Combat.Helpers.cs` | 173 | `CenterOf`, `WorksiteKindFor`, `HitMaterialFor` statik yardımcıları |
-| `.CombatScreen.cs` | 67 | `ICombatScreenSource` + battle mirror yayını |
-| `.WorldEncounter.cs` | 994 | encounter bağla/çöz, loot/XP/respawn, kapı/tavern/temple etkileşimi, Proof* kancaları |
-| `.Crafting.cs` | 159 | `ICraftingSource/Sink` |
-| `.Trade.cs` | 193 | `ITradeSource/Sink`, canlı pazar fiyatı (statik baz fiyatı ezer, `:71`) |
-| `.Journal.cs` | 108 | `IJournalSource` — quest→journal projeksiyonu |
-| `.LevelUp.cs` | 66 | `ILevelUpSource/Sink` |
-| `.QuestGuidance.cs` | 239 | pusula/yönlendirme satırları |
-| `.QuestInteraction.cs` | 62 | quest hedefi etkileşimi |
-| `.QuestProgress.cs` | 17 | anlık `QuestSystem.Tick` (tick dışı yeniden değerlendirme) |
-| `.WorldQuests.cs` | 157 | bounty/pilgrimage quest tohumları (`QuestId 9001/9002`, `:9-10`), rep yazımı |
-| `.MainQuest.cs` | 99 | üç-perde omurga + `JustCreatedWorld`/`OpeningHook` STATİK bayrakları (`:9-10`) |
-| `.Travel.cs` | 135 | `IWorldTravelSink`, wait/rest; `_currentSettlement` KASITLI save-dışı (`:15-17`) |
-| `.Haunters.cs` | 182 | sentetik zindan sakinleri + watch (id bantları 9M/9.5M, `:9-14`) |
-| `.Fate.cs` | 132 | async LLM fal + DET-03 governed tool gate |
-| `.Save.cs` | 66 | `IEmberSaveBridge` round-trip |
-| `.Dialog.cs` | 7 | boş indeks partial'ı (yorum: "concrete responsibilities live in siblings") |
-| `.Dialog.Binding.cs` | 215 | konuşma bağlama, portre çözümü, NPC memory kaydı |
-| `.Dialog.Source.cs` | 394 | `IDialogSource` implementasyonu, topic akışı, followup ayrıştırma |
-| `.Dialog.Text.cs` | 285 | greeting matrisi, `NarrateEvent`, `SanitizeNpcLine`, `CompleteLlmOrEmpty` |
-| `.Dialog.Topics.cs` | 130 | topic listesi üretimi |
-| `.Dialog.Greetings.cs` | 125 | selamlama seçimi |
-| `.Worldgen.cs` | 127 | `SeedWorld` + `ApplyCharacterCreation` |
-| `.Worldgen.State.cs` | 37 | `GeneratedWorld`, `StartingRegion/Settlement/Faction` property'leri |
-| `.Worldgen.Hydration.cs` | 121 | site/faction/NPC/history hidrasyon sırası (`:25-33`) |
-| `.Worldgen.Npcs.cs` | 166 | NPC seed → ActorRecord |
-| `.Worldgen.NpcStats.cs` | 74 | rol→stat/vitals tabloları, `ToRuntimeEventKind` eşlemesi |
-| `.Worldgen.Player.cs` | 69 | oyuncu yerleştirme, history→event yazımı, site-id türetme (`:65-66`) |
-| `.Worldgen.Production.cs` | 84 | üretim tohumları |
-| `.Worldgen.Selection.cs` | 127 | başlangıç bölge/yerleşim/faction seçimi, `FoldSeed` (`:99-121`) |
-
-## LLD - Fonksiyon Haritasi
-
-- `void AdvanceTick(int tickIndex)` — `Clock.cs:6-13` — kuyruk boşalt → composer ilerlet →
-  statik kanallara yayınla; kontratın tek yazma-kadansı girişi.
-- `DomainSimulationAdapter(WorldState world)` — `DomainSimulationAdapter.cs:60-91` — save
-  service'i canlı dünyaya bağlar, site→worksite tohumlar.
-- `void SeedWorld(string mood, string calling, string startLocation, uint? worldSeed = null)`
-  — `Worldgen.cs:26-90` — FNV-1a fold ya da verilen seed ile deterministik dünya; profil +
-  hidrasyon + overland projeksiyonu + `ConfigureMainQuest()`.
-- `void ApplyCharacterCreation(string playerName, string classId, string birthsignId)` —
-  `Worldgen.cs:92-127` — oyuncu ActorRecord'unu sınıf/burç statlarıyla değiştirir.
-- `bool TryInteract(ActorId actorId)` — `Combat.Interaction.cs:38-54` — aktör lookup →
-  `GetDialogSource(id)`; hostile rol `TryBeginWorldEncounter`'a sapar
-  (`WorldEncounter.cs:52-68`).
-- `bool TryBeginWorldEncounter(ActorRecord, NpcSeedRecord)` — `WorldEncounter.cs:52-68` —
-  outlaw VEYA bounty'li guard'ı gerçek combat rakibi olarak bağlar, iki one-shot sinyal atar.
-- `CombatScreenState ReadCombatScreenState()` — `CombatScreen.cs:10-65` — world-encounter
-  önceliği + battle mirror yazımı + spell aksiyon satırları.
-- `void TakePlayerDamage(int amount)` — `Combat.cs:27-38` — GERÇEK `ActorRecord.Vitals`
-  mutasyonu (eski geçici sayaç kaldırıldı).
-- `string ConsultFate(string question)` / `string TryConsumeResolvedFate()` —
-  `Fate.cs:30-46` — anında placeholder + tek-seferlik çözülmüş kehanet; async gövde
-  `ConsultFateAsync` `Fate.cs:48-129` (deterministik d100 bucket + LLM süsleme + DET-03
-  governed tool-call yolu).
-- `string ExportStateJson()` / `void RestoreStateJson(string json)` — `Save.cs:24-64` —
-  tam deterministik snapshot round-trip; restore sonrası `EnsureInvariants` +
-  `RebuildAccumulatorsFrom`.
-- `bool TryBeginTravelToSettlement(string, out int travelDays, out string message)` —
-  `Travel.cs:31-60+` — Chebyshev tile mesafesi = gün; oyuncu aktörünün pozisyonu tek gerçek
-  kaynak olarak taşınır.
-- `IReadOnlyList<SpawnableActor> GetSpawnableActors()` — `WorldProjection.cs` (bildirim
-  arayüzde `IDomainSimulationAdapter.cs:80-90`) — ön-cull YASAK, deterministik sıra şart.
-- `int EnsureWatchOfficers()` — `Haunters.cs:21-40+` — ilk suçta plazaya iki sentetik watch;
-  idempotent deterministik id'ler.
-- `EmberWorldHostAdapterBinding.Create(candidate, fallbackFactory)` —
-  `Bootstrap/EmberWorldHostAdapterBinding.cs:34-46` — null adayda fallback fabrikası.
-- `EmberDomainAdapterLocator.Register/Clear` — `IDomainSimulationAdapter.cs:296-304` —
-  uyarısız overwrite; testler `[TearDown]`'da `Register(null)` çağırır (`:273-277`).
-
-## LLD - Yazdigi/Okudugu Alanlar
-
-`FieldOwnershipRegistry` yalnızca TICK SİSTEMLERİNİN yazarlarını deklare eder
-(`Simulation/Composition/FieldOwnershipRegistry.cs:12-56`); **adapter'in hiçbir yazımı bu
-deftere kayıtlı değildir**. Adapter'in yazımları oyuncu-komutu kadansındadır (tick bantları
-dışında, ana thread'de) ve lint testi onları göremez — bkz. Borçlar #5.
-
-Yazdıkları (ilgili registry alanı parantezde):
-
-- `Actor.Vitals` (registry'de living.predation/witness/companion_guard'a aittir) —
-  `TakePlayerDamage` `Combat.cs:36`; melee/spell/encounter çözümleri
-  (`Combat.Melee.cs`, `Combat.Spells.cs`, `WorldEncounter.cs`).
-- `Actor.Position` (registry'de living.schedule vd.) — travel `player.MoveTo`
-  `Travel.cs:56-57`; hydration `MovePlayerToStartingSettlement` (`Worldgen.Hydration.cs:32`).
-- `Actor` kayıtlarının kendisi — `ApplyCharacterCreation` oyuncuyu değiştirir
-  (`Worldgen.cs:123-125`); Haunters/Watch sentetik aktör ekler (`Haunters.cs:21+`);
-  worldgen hidrasyonu tüm NPC'leri ekler (`Worldgen.Npcs.cs`).
-- `World.Events` — `SpellResolved` append (`Combat.Spells.cs:90-95`), `ActorTalked` append
-  (`Dialog.Source.cs:332-335`), history→event hidrasyonu (`Worldgen.Player.cs:32-35`).
-- `World.WorldProfile`, `World.RoomSeed`, `World.Overland` — `Worldgen.cs:34-35, 55-65, 76-79`.
-- `World.MainQuest` (Configure), `World.LastNarrative`, statik `OpeningHook` —
-  `MainQuest.cs:29-35`.
-- `World.PlayerReputation` / `World.PlayerBountyGold` — quest ödülleri / suç
-  (`WorldQuests.cs:117, 152`; `Combat.Melee.cs:114` civarı [Crime] yolu).
-- `World.ToolCallTrace` — fate governed-gate trace kayıtları (`Fate.cs:121-122`).
-- `World.PlayerEquipment` / `World.PlayerInventory` — `TryEquip` (`Combat.Melee.cs:36-54`),
-  trade/craft/loot yolları.
-- NPC `Memory` — `RecordEvent(InteractionEvent)` (`Dialog.Binding.cs:114`,
-  `Dialog.Source.cs:110, 185`).
-- TÜM WorldState — restore'da `_world.CopyFrom(restored)` (`Save.cs:47`).
-
-Okudukları: pratikte WorldState'in tamamı (Actors, Sites, Plants, Caravans, Events, Time,
-NpcSeeds, Quests, Stockpiles, CompanionIds, MainQuest, Overland...) — read-model
-projeksiyonlarının doğası gereği (`WorldRows.cs`, `Hud.cs:14-55`, `Clock.cs:41-147`,
-`Overland.cs:14-58`).
-
-## LLD - Urettigi/Tukettigi Olaylar
-
-**Ürettiği WorldEventKind'lar** (`_world.Events.Append` ile):
-
-- `SpellResolved` — `Combat.Spells.cs:90-95` (reason: `slice_spell_cast id:... mana:...`)
-- `ActorTalked` — `Dialog.Source.cs:332-335`
-- Worldgen history eşlemesi: `FactionReputationChanged`, `TradeCompleted`,
-  `ShortageDetected`, `StorytellerCheckpoint` — `Worldgen.NpcStats.cs:57-69` →
-  `Worldgen.Player.cs:32-35`
-
-**Tükettiği WorldEventKind'lar:**
-
-- Echo yayını için: `WitnessRecorded` (reason "reported…" ise KindReport), `GuardResponded`,
-  `PlantHarvested`, `ActorTalked` — `Clock.cs:51-76`
-- Dialog anlatısı (`NarrateEvent`) için: `NeedChanged`, `WitnessRecorded`, `GuardResponded`,
-  `ShortageDetected`, `CaravanArrived`, `PriceChanged`, `FactionReputationChanged`,
-  `CombatResolved`, `PlantHarvested`, `ChronicleEvent` — `Dialog.Text.cs:157-182`
-- Encounter/tavern dedikodu filtresi — `WorldEncounter.cs:675-679`
-
-**Log tag'leri** (Debug.Log + LogCombat): `[Encounter]`, `[Crime]`, `[Spell]`, `[MainQuest]`,
-`[Quest]`, `[QuestGen]`, `[Rep]`, `[XP]`, `[Loot]`, `[Key]`, `[Door]`, `[Tavern]`, `[Temple]`,
-`[Lunch]`, `[Bestiary]`, `[Respawn]`, `[Rest]`, `[Trade]`, `[NpcGreeting]`, `[fate]`
-(dağılım: yukarıdaki partial'lar; örn. `WorldEncounter.cs:66-990`, `Fate.cs:120`).
-
-## Statik Mirror Kanallari — Kacak Kapi Envanteri
-
-Adapter sahneye/UI'a dokunamaz; bu yüzden kontrat DIŞINDA statik global kanallar kullanılır.
-Desen ailesi üç varyanttır: **mirror** (sürekli değer, poll edilir), **stamp feed** (artan
-sayaç, çoklu tüketici — "stamp-not-consume"), **one-shot signal** (tek tüketici consume eder).
-
-### Adapter'in YAZDIĞI kanallar
-
-| Kanal | Tanım | Adapter yazım noktası | Tüketici / desen |
-|---|---|---|---|
-| `RuntimeFieldMirror` | `Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs:11-45` — HourOfDay, MinutesOfDay, WorldDay, PlantCount, StageIndex, `Plants[]`+`PlantsStamp` | `Clock.cs:116-133, 122` | ekin sapları, gökyüzü, gece sokağı, hava durumu seçimi (mirror; hash değişince yayın `Clock.cs:118-123`) |
-| `RuntimeCaravanMirror` | `RuntimeCaravanView.cs:10-15` — AtSiteCount | `Clock.cs:147` | plaza ticaret arabası görünürlüğü (mirror, 2 sn poll) |
-| `NpcEventEchoFeed` | `NpcEventEchoFeed.cs:10-50` — 128'lik ring, 5 kind sabiti, `Stamp` | `Clock.cs:56-74` | NPC üstü ikon yankıları (stamp-not-consume ring; tek slot patlamaları düşürürdü) |
-| `WorldCombatFeedbackFeed` | `WorldCombatFeedbackFeed.cs:10-42` — HitStamp/HitTargetId/HitMaterial, FelledStamp, EnemyStrikeStamp | `Combat.Melee.cs:173,192`; `Combat.Spells.cs:100`; `WorldEncounter.cs:327, 978` | billboard kırmızı flash / yere yatma / düşman hamlesi (stamp; ÇOK tüketici) |
-| `RuntimeSpellFxMirror` | `RuntimeSpellFx.cs:7-13` — LastCastTemplate, LightUntilRealtime, HasteUntilRealtime, RecallRequested | `Combat.Spells.cs:118-132` | bolt vfx + fener orb + recall snap (mirror + RecallRequested one-shot'ı VIEW sıfırlar `RuntimeSpellFx.cs:55-57`) |
-| `RuntimeBattleMirror` | `RuntimeMusicDirector.cs:6-11` — Active, BossActive | `CombatScreen.cs:18-24`; `WorldEncounter.cs:348` | müzik direktörünün BATTLE slotu (mirror) |
-| `RuntimeMainQuestMirror` | `RuntimeMainQuestFinale.cs:8-11` — FinaleRequested | `WorldEncounter.cs:989` | finale overlay (one-shot; view sıfırlar) |
-| `WorldEncounterSignal` | adapter dosyasının İÇİNDE: `WorldEncounter.cs:12-24` | `WorldEncounter.cs:64` | `UI/InGame/InGameUiController.cs:218` combat ekranını açar (one-shot consume) |
-| `WorldEncounterStingFeed` | `WorldEncounter.cs:26-32` | `WorldEncounter.cs:65` | audio sting (ayrı one-shot — "one flag, one consumer" kuralı) |
-| `DomainSimulationAdapter.JustCreatedWorld` / `.OpeningHook` | adapter SINIFININ statik alanları `MainQuest.cs:9-10` | `MainQuest.cs:30, 35` | intro hikaye overlay'i bir kez tüketir |
-
-### Adapter'in OKUDUĞU / yaşam döngüsünü taşıyan statikler
-
-| Kanal | Tanım | Rol |
-|---|---|---|
-| `EmberDomainAdapterLocator` | `IDomainSimulationAdapter.cs:279-305` | sahne-scoped singleton; `Register` uyarısız ezer |
-| `EmberWorldContinuity` | `Bootstrap/EmberWorldContinuity.cs:13-28` | fast-travel sahne reload'unda canlı adapter'i taşıyan tek-seferlik slot |
-| `EmberWorldGenIntent.Pending` | `UI/EmberWorldGenIntent.cs:15` | MainMenu sihirbazı → host `SeedWorld` handoff'u (`EmberWorldHost.cs:83-97`) |
-| `ForgeLocator.LlmRouter/NativeLlm/AssetForge/Embedding` | `Forge/ForgeLocator.cs:8-20` | fate/dialog LLM yolunun servis locator'ı (`Fate.cs:50`) |
-
-### Ailenin adapter-DIŞI üyeleri (tam envanter için; adapter yazmaz/okumaz)
-
-`RuntimeWeatherMirror` (`RuntimeWeatherController.cs:8-15`; weather controller yazar, müzik/sky
-okur — adapter yalnızca `WorldDay`'i besleyerek dolaylı sürer), `ScreenRequestSignal`
-(`RuntimeFunctionalInteriors.cs:24`; interior → `InGameUiController.cs:250`),
-`NpcEventEchoFeed` benzeri diğer WorldDirector feed'leri ve `Infrastructure/AiDm/SyncTaskBridge.cs:6`.
-
-## Testler
-
-- `Assets/Tests/EditMode/Presentation/PlayableLoopCraftQuestTests.cs` — adapteri gerçek
-  WorldState ile 12+ kez kurar (`:34, 77, 100, ...`); craft/quest/trade komut yüzeyini pinler.
-- `Assets/Tests/EditMode/Presentation/JournalSourceTests.cs:29,44` — `IJournalSource`
-  projeksiyonu.
-- `Assets/Tests/EditMode/AiDm/LlmToolAuthorityTests.cs` — fate'in DET-03 governed tool-gate
-  yolu.
-- `Assets/Tests/EditMode/Audit/AuditFourthPassTailCoverageTests.cs`,
-  `AuditSixthPassCoverageTests.cs`, `AuditSeventhPassCoverageTests.cs`,
-  `SelectSpellTargetTests.cs` — audit bulgularının regresyon pinleri (adapter referanslı).
-- `Assets/Tests/EditMode/Audit/EmberWorldGenIntentHandoffTests.cs` — `SeedWorld` handoff'u.
-- `Assets/Tests/EditMode/Acceptance/FazSixToTwelveBackendAcceptanceTests.cs` — `SeedWorld`
-  kabul yolu.
-- `Assets/Tests/EditMode/Save/StoreRoundTripTests.cs` + `EditMode/Worldgen/NpcSeedSaveRoundTripTests.cs`
-  + `WorldProfileSaveRoundTripTests.cs` — `IEmberSaveBridge`'in dayandığı round-trip sadakati
-  (arayüz yorumu da bunu işaret eder, `IDomainSimulationAdapter.cs:234-236`).
-- **Doğrulanmadı/bulunamadı:** rol-arayüz AYRIŞMASININ kendisini (örn. bir tüketicinin yalnız
-  `IEmberClockSource` alabildiğini) pinleyen özel bir test taramada bulunamadı; audit test
-  dosyalarında `IEmberClockSource`/`IPlayerCommandSink` adlarına rastlanmadı. Statik mirror
-  kanallarını pinleyen EditMode testi de bulunamadı.
-
-## Bilinen Borclar + Kacak Kapilari
-
-1. **Rol ayrışması yarım.** Arayüz dosyası kendini "temporary aggregate ... while role
-   interfaces are extracted" diye etiketler (`IDomainSimulationAdapter.cs:1, 10-15`); pratikte
-   tüm tüketiciler hâlâ tek agregat implementasyonun üstünden geçer, binding yalnız görünüşte
-   daraltır (`EmberWorldHostAdapterBinding.cs:15-19` — aynı nesnenin altı görünümü).
-2. **DTO sınırı delik.** (a) `IWorldViewReadModel` Domain tipleri sızdırır (`OverlandMap:57`,
-   `GridPosition:60`, `ActorId:77`); (b) `DomainSimulationAdapter.World` canlı `WorldState`'i
-   public verir (`DomainSimulationAdapter.cs:93`) — herhangi bir Presentation kodu sim'i
-   doğrudan mutasyona açabilir; (c) tek Presentation asmdef olduğu için ihlal derlemede
-   yakalanmaz.
-3. **Statik kanal ailesi = global mutable state.** 10+ statik kanal (yukarıdaki envanter)
-   domain-reload/scene-reload yaşam döngüsüne ve "tek tüketici" disiplinine güvenir; hiçbir
-   test pinlemez (bkz. Testler). `RuntimeSpellFxMirror.RecallRequested` ve
-   `RuntimeMainQuestMirror.FinaleRequested` consume'u VIEW'in Update'inde yapılır — ikinci bir
-   tüketici eklenirse sessiz yarış. `JustCreatedWorld`/`OpeningHook` süreç ömürlü statiktir;
-   aynı süreçte save YÜKLEYINCE sıfırlanmaz (yalnız yeni SeedWorld set eder,
-   `MainQuest.cs:30`) — load-sonrası intro davranışı **doğrulanmadı**.
-4. **Locator uyarısız ezer.** `EmberDomainAdapterLocator.Register` bilinçli overwrite
-   (`IDomainSimulationAdapter.cs:273-277, 296-299`) — additive sahne yüklerinde çift kayıt
-   maskelenir; yanlış sahne sırasında hangi adapter'in kazandığı görünmezdir.
-5. **Adapter yazımları FieldOwnershipRegistry dışı.** Registry yalnız tick sistemlerini
-   listeler (`FieldOwnershipRegistry.cs:14-17`); adapter'in `Actor.Vitals`/`Actor.Position`/
-   `World.Stockpiles`-komşusu yazımları deftere ve lint testine görünmez. Bu, 01-time-cadence
-   haritasının (c) sınıfı ("kadans yazar çatışmaları") hata ailesinin adapter tarafında AÇIK
-   kalan kanadıdır: oyuncu-komutu yazımı ile hourly sistem yazımı aynı alana çakışırsa CI
-   yakalamaz. ((a)-(g) taksonomisinin tanım dosyası repo'da bulunamadı — 10-save-load.md:158
-   de aynı notu düşer; burada yalnız (c) ile bağ kurulabildi.)
-6. **Adapter-yerel durum save'e girmez.** `_topicAskCounts`, `_echoCursor`, `_lastPlantsHash`,
-   `_worldEncounterId`, `_currentSettlement` (kasıtlı — `Travel.cs:15-17`), `_conversation`
-   adapter alanlarıdır; load sonrası sıfırlanır. Çoğu için zararsız/kasıtlı, ama aktif
-   world-encounter save edilip yüklenirse bağın kopması beklenir — **doğrulanmadı**.
-7. **Proof/looptest yüzeyi üretim sınıfının içinde.** `Proof*` metotları (örn.
-   `ProofQuestSnapshot` `WorldEncounter.cs:73+`, `ProofConsultSage` `MainQuest.cs:67-77`,
-   `ProofListSettlementNames` `MainQuest.cs:80-88`) teşhis içindir ama public API olarak
-   agregat sınıfta yaşar; kontrat arayüzlerinde değildir — çağıran (diagnostics driver)
-   somut tipe cast etmek zorunda kalır (host'un `ApplyCharacterCreation` cast'i de aynı
-   desendedir, `EmberWorldHost.cs:93-94`).
-8. **`WorldEncounter.cs` 994 satır.** En büyük partial; encounter + loot + respawn + kapı/
-   tavern/temple + proof kancaları tek dosyada. `Combat.cs:1` başlığı "until command handlers
-   are extracted" der — çıkarma yapılmadı.
-9. **Dialog partial'ı boş iskelet.** `Dialog.cs` 7 satırlık indekstir; dialog sorumluluğu beş
-   kardeş dosyaya yayılmıştır — partial sayısını şişiren ama zarar vermeyen bir kalıntı.
-10. **Ad çakışması tuzağı.** İki `ColonyNeedsRow` (UI + Visual) — kök partial alias'la yaşar
-    (`DomainSimulationAdapter.cs:17-21`); yeni partial'a dikkatsiz `using
-    EmberCrpg.Presentation.Visual;` eklemek derleme hatası/yanlış tip bağlama üretir.
+- **Aggregate interface hala varliginin borcu**: `IDomainSimulationAdapter` hala 6 rolu tek yerde aggregate ediyor - Codex C-P2 not'u der ki "New callers should depend on the narrower role interfaces above". Uygulamada `WorldSceneDirector`, `EmberProofScreenshotDriver`, `EmberInteractable` gibi eski cagri yerleri hala `EmberDomainAdapterLocator.Current` (aggregate) alir. Yeni site'lar dar arayuz kullanmali; yenileme henuz bitmedi.
+- **`UnavailableSimulationAdapter` sessiz false**: `TryMeleeStrike`, `TryCastSpell`, `TryInteract` hep `false` doner (`UnavailableSimulationAdapter.cs:54-57`); `ConsultFate` "unavailable" mesajini surekli tekrar eder. Bu bilincli bir dusustur (adapter boot edememis) ama test/proof kosumu Unavailable'a dustugunde hicbir suret ekranda uyarilmaz.
+- **Ctor'da eager site hydration**: root partial ctor (`DomainSimulationAdapter.cs:74-92`) `_world.Sites`'in tum record'larini _saveService.Worksites'e boot-time'da mirror'lar (`Add` if not exists). Buyuk worldgen (~200 settlement, ~2000 site) durumunda O(sites) - kabul edilebilir ama planlanan streaming save-service'in geldiginde bu kopya zombie kalir.
+- **`BillboardOrigin` lazy resolve tuzagi**: `_billboardOrigin` ilk `BillboardOrigin()` cagrisina kadar `(0,0)` doner. Travel `_billboardOriginResolved=false` ile origini re-resolve tetikler; site henuz hydrate edilmemisse origin `(0,0)`'da kalir ve `GetSpawnableActors` bir sonraki frame'de gercek konumu kaydeder - ilk frame'de billboard'lar yanlis noktaya spawn edip ikinci frame'de sync ile yerine gelir (koruma: BillboardOrigin cache ancak site.TryGet true olunca set edilir).
+- **`_topicAskCounts` reset kanali yok**: Player ayni topic'i tekrar tekrar sorunca sayaci artar ve LLM prompt varyasyonuna eklenir - fakat conversation kapandiginda temizlenmiyor. Uzun sessions'ta dictionary buyuyebilir (pratikte "actor#topic" key'i bounded oldugundan risk kucuk).
+- **`_mainThreadApply` istisna yeme**: `DrainMainThreadApply` (`Clock.cs:23-28`) apply exception'ini sessizce swallow eder ("a queued apply must never break the tick"). Bir LLM continuation Domain'e bozuk snapshot yazmaya calisirsa tick akmaya devam eder ama write kayiptir - proof harness log grep'i ile catch edilmeli.
+- **`ActionVerbTable.Unknown` bir kez warn**: Yeni `ActorActionType` eklenip `Verb` satiri eklenmezse ekran `(NewKind)` gosterir ve sadece ilk gecte `Log.Warn` atar (`ActionVerbTable.cs:57-64`). "Sessiz gecmis olabilir" durumu warn'in loglarda kaybolmasi ile mumkun; W32 DOC5 §4 lint bunu compile-time'a cekemedi (enum ekleme run-time).
+- **Locator scene-scoped ama non-thread-safe**: `_current` static field, `Register`/`Clear` naive assign. Additive scene loads ust uste `Register` cagirir - Codex C-P3 #C5 uyarisi der ki "overwrite without warning" - test tear-down `Register(null)` cagirmayi UNUTURSA bir sonraki test-run stale adapter tutar.

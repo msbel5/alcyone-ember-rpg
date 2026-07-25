@@ -11,6 +11,10 @@ namespace EmberCrpg.Simulation.Process
     /// claimed job's worksite. Emits ActorStepped events for every successful step.
     /// Closes CO-03 in docs/sprint-phase-4-atom-map.md Debt ledger.
     /// </summary>
+    /// <summary>B29 dormant path — W36 shipped a MovementService + IWorldNavigability + BlockedCellSet
+    /// stack that every action advancer already uses. Kept as a design reference for a full A* when
+    /// per-actor path caches are needed. NOT called from any live seam.</summary>
+    [System.Obsolete("B29: dormant since 2026-07-25. MovementService + world.NavView is the production stepper.", false)]
     public sealed class PathfindingSystem
     {
         private readonly IPathfinder _pathfinder;

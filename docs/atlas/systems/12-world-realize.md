@@ -1,313 +1,398 @@
 # 12-world-realize
 
-> Kapsam: WorldSceneDirector.Realize, deterministik yerleşim planı (SettlementLayoutStrategy ailesi),
-> RuntimeBuildingBuilder (katlar/kanatlar/iç bölmeler/kapılar/pencereler), RuntimeMineBuilder,
-> RuntimeFieldBuilder/SimFieldView, RuntimeWeatherController, RuntimeLightingRig, SkyController, plaza.
-> Kanıt biçimi: `dosya:satır`. Aksi belirtilmedikçe yollar `Assets/Scripts/` (builder'lar
-> `Presentation/Ember/WorldDirector/`, plan katmanı `Simulation/WorldDirector/`) köklüdür.
-> Teren streaming (TerrainStreamer/RuntimeTerrainBuilder) ve zindan üretimi (RuntimeDungeonBuilder)
-> ayrı sistem dosyalarının konusudur; burada yalnız Realize'ın onları tetiklediği dikişler anlatılır.
+Dünya gerçekleştirme hattı: overland grid + `RegionTile` + `SettlementKind` verisinden, aynı seed'in
+her zaman aynı kasabayı ürettiği çalıştırma-zamanı (runtime) primitive geometrisine (`New Game`
+sahnesi açılırken tek atım). `WorldSceneDirector.Realize` yönetir; deterministik plan
+`SettlementLayoutStrategyFactory` üstünden gelir; her `BuildingPlacement`,
+`RuntimeBuildingBuilder.Build` ile duvar/tavan/döşeme/pencere/kapı ve doorstep basamakları olan
+bir kabuğa dönüşür; plaza (masa+banklar+kuyu), bölge bayrağı, madenler, tarlalar, kervan arabası
+ve (Dungeon ise) mağara ağzı + çok-odalı delve aynı çağrının içinde eklenir. Tüm satırlar koddan
+doğrulandı.
 
-## HLD - Ne ve Neden
+## HLD - Ne ve Neden (5-10 cümle)
 
-Dünya-gerçekleştirme sistemi, "New Game dünyayı ÜRETİR, sen içinde durursun" vaadinin motorudur:
-oyuncunun overland haritada durduğu tile, sahne yüklendiği anda editör bake'i OLMADAN, doğrudan
-dünya verisinden canlı Unity geometrisine çevrilir (`WorldSceneDirector.cs:9-18`). Aynı seed aynı
-kasabayı bayt-aynı yeniden üretir; bunun için plan katmanı (Simulation.WorldDirector) Unity'siz saf
-fonksiyonlardır (`ISettlementLayoutStrategy.cs:129-137`) ve sunum katmanı bu planı primitive
-küplerden (AssetDatabase'siz) inşa eder (`RuntimeBuildingBuilder.cs:6-10`). Oyuncuya görünen etki:
-plaza + masa/kuyu/sancak, sokaklar boyunca kapılı-pencereli-bacalı evler, ilk üç binada işlevli
-tavern/temple/shop, kasaba kenarında maden ağzı ve sim bitkilerinin hücre-hücre büyüdüğü tarlalar,
-üstünde sim saatine bağlı gökyüzü + güne-deterministik hava. Felsefe Daggerfall Unity'den:
-"deterministik olanı yeniden üret, yalnız deltayı sakla" — layout bir SAKLANMAZ, her sahne
-yüklemede seed'den yeniden planlanır (`VillageLayoutStrategy.cs:7-11`). Director geometri sahibi
-değildir; NPC'ler SONRADAN, bu adımın yarattığı "PlayerRig" çapasına host spawner tarafından
-eklenir (`WorldSceneDirector.cs:13-14`). Canlı-dünya bağı statik ayna kanallarıyla kurulur:
-adapter her tick RuntimeFieldMirror/RuntimeCaravanMirror'a yazar, sahnedeki view'lar poll eder
-(`RuntimeFieldBuilder.cs:53-57`; `DomainSimulationAdapter.Clock.cs:116-147`).
+Amaç: worldgen katmanının ürettiği dünyayı bake edilmiş sahnelere gömmek yerine, oyuncunun
+üstünde durduğu tek tile'ı NEW GAME anında canlı olarak inşa etmek — "same seed → same town"
+ilkesini gerçek geometriye kadar taşımak. Bu, Daggerfall-benzeri "yeryüzünün her karesi
+yürünebilir" hedefinin girilebilir yüzü: yerleşim kimliği (kind + biome + region + seed) katı bir
+plana dönüşür (Sim katmanı, `SettlementLayoutStrategy`), plan `RuntimeBuildingBuilder` +
+`RuntimeDungeonBuilder` + `RuntimeMineBuilder` + `RuntimeCaravanBuilder` üstünden Unity
+primitive'lerine (Cube/Cylinder) çevrilir — hiçbir AssetDatabase, hiçbir prefab yok
+(`RuntimeBuildingBuilder.cs:7-9`). Populasyon kimliği aynı çağrıda pin'lenir
+(`RuntimeNpcDensity.Cap`, `WorldSceneDirector.cs:58-59`) çünkü NPC spawner'ı Realize'dan SONRA
+koşar ve kapasitesini bu statik kanaldan devşirir. Mimari felsefe: builder'lar tek yönlü yazarlar
+(GameObject üretirler, RuntimeXxxInfo statiklerine anchor kaydederler), okuyucular
+(EmberProofScreenshotDriver, EmberGeneratedActorSpawner, DomainSimulationAdapter) SONRA gelir —
+çift yazar yok. BROKEN-state failsafe: `view.Overland == null` durumunda düz Perlin pad + rig
+kurulup log basılır, oyuncu asla siyah boşluğa düşmez (`WorldSceneDirector.cs:29-43`).
 
-## HLD - Akis
+## HLD - Akış (numaralı adımlar)
 
-1. **Tetik (tek atış, sahne yükünde):** `EmberWorldHost` boot'ta SeedWorld + `AdvanceTick(0)`
-   sonrası, YALNIZ aktif sahne `EmberScenes.GeneratedWorld` ise `WorldSceneDirector.Realize(_worldView)`
-   çağırır — baked dilim sahneleri dokunulmaz kalır (`Bootstrap/EmberWorldHost.cs:106-107`).
-   Fast travel bu sahneyi yeniden yükler → Realize yeniden koşar.
-2. **Korkuluklar:** read model null → uyarı + çık (`WorldSceneDirector.cs:23-27`); overland null →
-   "BROKEN" failsafe: Perlin fallback pad + ışık + rig, oyuncu karanlık boşlukta kalmaz
-   (`WorldSceneDirector.cs:32-43`).
-3. **Girdi çözümleme:** home tile (`ResolveHomeTile`, `WorldSceneDirector.cs:305-309` — tile yoksa
-   harita ortası), settlement kind (`ResolveKind`, `:311-321` — eşleşme yoksa Village), seed =
-   `homeTile.PropVariationSeed` (0 ise 1; `:48`). `EmberLog.Sink` yoksa `Debug.Log` bağlanır (`:51-52`).
-4. **Nüfus kimliği:** kind → NPC billboard tavanı `RuntimeNpcDensity.Cap`'e yazılır (City 24 …
-   Shrine 4, Dungeon 14; `:58-59, 290-303`) — spawner director'dan SONRA yaratıldığı için statik kanal.
-5. **Plan:** `SettlementLayoutStrategyFactory.For(kind).Plan(new SettlementContext(name, kind, biome, seed))`
-   (`:61-62`). City/Town → `StreetLayoutStrategy` (radyal caddeler), Village → ring,
-   Hamlet/Inn/Shrine/Dungeon → `CompactLayoutStrategy` (1-3 bina) (`SettlementLayoutStrategyFactory.cs:107-124`).
-6. **Zemin:** `WorldGeoSampler.TryCreate` harita geo anlık görüntüsüne bağlanır (başarısızsa legacy
-   Perlin — log "PARTIAL"; `:71-74`), `TerrainStreamer.Initialize(seed, biome, geoSampler)` ile
-   Daggerfall-tarzı akan arazi kurulur (`:76-78`). (Detay: teren sistemi dosyası.)
-7. **Binalar:** her `BuildingPlacement` için `RuntimeBuildingBuilder.Build`; ilk ÜÇ kabuk işlevsel
-   rol alır (tavern/temple/shop + parlayan tabela küpü `AttachFunctionalRole`, `:82-97, 132-154`);
-   üçü de varsa `RuntimeInteriorInfo.Record` + adapter'a `PinHostInsideTavern` (`:90-96`).
-8. **Maden:** `PlanetAtlas.TryGetTileOre` iron>0.5 veya coal>0.5 derse kasaba kenarına
-   (`GroundRadius+14f`, açı = seed%360) maden ağzı (`:103-110`; `RuntimeMineBuilder.cs:13-33`).
-9. **Tarlalar:** Dungeon/Shrine dışında `SimFieldView` bileşeni eklenir — REFORM #1: kutup-dekor
-   kuşağı emekli, ekinler sim bitkilerinin projeksiyon hücrelerinde, bitki-başına sahne
-   (`:115-128`; `RuntimeFieldBuilder.cs:190-251`).
-10. **Dungeon dalı:** kind==Dungeon ise delve ölçekli mağara ağzı (`RuntimeMineBuilder.Build(root, 9f, …)`)
-    + `RuntimeDungeonBuilder.Build` (5-10 odalı graf) + adapter'dan dweller'lar (`:159-177`; detay:
-    zindan dosyası).
-11. **Plaza kalbi:** ticaret arabası (`RuntimeCaravanBuilder.Build`, görünürlük kervan aynasına bağlı;
-    `:181-182`; `RuntimeCaravanView.cs:136-158`), bölge sancağı (RegionId → deterministik HSV;
-    `:187, 263-287`), taş plaza diski (`:191-198`), masa+sıralar+kuyu prop seti (`:204-227`).
-12. **Işık + gök + hava:** `RuntimeLightingRig.Apply` flat ambient (%35 biome tonu) + yönlü güneş
-    kurar, güneşe `SkyController.Bind` ve `RuntimeWeatherController.Bind(biome)` takar
-    (`:229`; `RuntimeLightingRig.cs:13-39`).
-13. **Spawn + rig:** spawn = layout plaza merkezi; Dungeon'da `RuntimeDungeonLayoutInfo.StartRoomWorld+0.4y`
-    (tavan-spawn canlı hatası düzeltmesi; `:231-241`), `RuntimePlayerSpawn.Record` (F15 ölüm-ekranı
-    dönüşü) + `RuntimePlayerRig.Build` (`:242-243`; `RuntimePlayerRig.cs:17-57` — idempotent).
-14. **Ses/müzik/yüzme:** `RuntimeAudioDirector.Attach`, `RuntimeMusicDirector.Attach`,
-    `RuntimeWaterIndex.Clear()` + `SwimView.Attach` (`:246-254`).
-15. **Hazırlık raporu:** playtest loguna tek özet satır (kind, bina sayısı, geo REAL/LEGACY,
-    localShore, npcCap, rig konumu; `:258-260`).
-16. **Kadans (Realize sonrası, sürekli):** eklenen MonoBehaviour'lar frame kadansında poll eder ve
-    sim gerçeğini AYNALARDAN okur: `SkyController.Update` her frame `RuntimeFieldMirror.MinutesOfDay`
-    (`SkyController.cs:54-88, 200-207`); `RuntimeWeatherController.Update` gün değişince yeni hava
-    uygular (`RuntimeWeatherController.cs:86-97`); `CropStalkView` 2 sn'de bir, `SimFieldView` 1.5 sn'de
-    bir stamp kontrolü (`RuntimeFieldBuilder.cs:114-137, 204-227`); `CaravanCartView` 2 sn
-    (`RuntimeCaravanView.cs:124-133`); `RuntimeDoorView` 4 Hz mesafe (`RuntimeDoorView.cs:172-201`);
-    tavern/temple/shop tetikleri 0.4 sn + E tuşu (`RuntimeFunctionalInteriors.cs:81-100`).
-    Aynaları dolduran tek yazar adapter'ın tick'idir (`DomainSimulationAdapter.Clock.cs:116-147`).
+1. **Gate:** `WorldSceneDirector.Realize(view)` — `view == null` erken uyarıyla döner
+   (`WorldSceneDirector.cs:21-27`). `view.Overland == null` failsafe pad + `TerrainStreamer` +
+   `RuntimeLightingRig` + `RuntimePlayerRig` inşa eder (`:29-43`).
+2. **Kimlik çözümü:** `ResolveHomeTile` (map'ten `PlayerOverlandTile`; yoksa merkez tile) +
+   `ResolveKind` (yerleşim listesinden `Kind`; yoksa `Village`) + `homeTile.PropVariationSeed`
+   (0 ise 1) — bunlar `SettlementContext(name, kind, biome, seed)` olur (`:45-48, 61, 305-321`).
+3. **Log seam:** `EmberLog.Sink ??= Debug.Log` (simulation katmanına Unity log kanalını enjekte
+   eder, `:51-52`).
+4. **NPC kapasite pin'i:** `RuntimeNpcDensity.Cap = NpcCapFor(kind)` — City=24, Town=16,
+   Village=10, Hamlet=6, Inn=5, Shrine=4, Dungeon=14 (`:58-59, 290-303`).
+5. **Plan:** `SettlementLayoutStrategyFactory.For(kind).Plan(context)` — City/Town →
+   `StreetLayoutStrategy`, Village → `VillageLayoutStrategy`, Hamlet/Inn/Shrine/Dungeon →
+   `CompactLayoutStrategy` (kompakt VillageLayoutStrategy min=1, max=3, radius=5),
+   `SettlementLayoutStrategyFactory.cs:16-33`.
+6. **Root + Terrain:** `GameObject("GeneratedLocation")` altına
+   `TerrainStreamer.Initialize(seed, biome, geoSampler)` — `WorldGeoSampler.TryCreate` ile map'e
+   bağlı gerçek jeografi varsa deniz seviyesi rölatiftir, yoksa legacy Perlin
+   (`WorldSceneDirector.cs:64-78`).
+7. **Kabuklar:** `layout.Buildings` üzerinde döngü — her placement için
+   `RuntimeBuildingBuilder.Build(root, placement)` (bir GameObject "Building" döndürür); ilk üç
+   bina F26 fonksiyonel rol alır (`AttachFunctionalRole`): 0=Tavern (amber sign +
+   `RuntimeTavernView`), 1=Temple (beyaz sign + `RuntimeTempleView`), 2=Shop (yeşil sign +
+   `RuntimeShopCounterView`); dünya konumları `RuntimeInteriorInfo.Record` ile kaydedilir + host
+   adapter tavana pin'lenir (`:80-97, 132-154`).
+8. **Ekonomik dekor:** Ore tile'ları için (`PlanetAtlas.TryGetTileOre`) `RuntimeMineBuilder.Build`
+   town-edge'de çıkar (`:103-110`); Dungeon/Shrine dışı yerleşimlerde `SimFieldView` GameObject'i
+   eklenir (nüfus → plots hesabı hâlâ log satırında ama plots artık dekor değil, canlı
+   `PlantGrowth` mirror'ından render — REFORM #1, `:115-128`).
+9. **Delve dallanması:** `kind == Dungeon` ise `RuntimeMineBuilder.Build` mağara ağzı +
+   `RuntimeDungeonBuilder.Build` 5-10 odalı deterministik graf; sim tarafı
+   `DomainSimulationAdapter.EnsureDungeonDwellers(DwellerSpots, BossSpot, ArchetypeName)` çağrılır
+   — F10→F18 dwellers idempotent (`:159-177`).
+10. **Kervan + bayrak + plaza:** `RuntimeCaravanBuilder.Build` (görünürlük mirror'a bağlı,
+    `:181-182`), `BuildRegionBanner` (pole+flag, hue `regionValue*47%360`, `:187, 263-287`),
+    plaza silindiri `PlazaFloor` (Ø14m, wall_showroomoverview textured), üstüne
+    `TableTop+TableTrestleA/B+BenchNorth/South+WellRing+WellPost` primitive'leri
+    (`:191-227`).
+11. **Işık + spawn + rig:** `RuntimeLightingRig.Apply(root, biome)` (`:229`), spawn
+    `(layout.PlayerSpawnX, 0.2, layout.PlayerSpawnZ)` — **Dungeon override (W30):**
+    `RuntimeDungeonLayoutInfo.RoomCount > 0` ise `StartRoomWorld + up*0.4` (crest sonrası ilk oda
+    merkezi; eski EntryWorld mine mound collider'ına oturuyordu). `RuntimePlayerSpawn.Record` +
+    `RuntimePlayerRig.Build` (`:231-243`).
+12. **Rig eklentileri:** `RuntimeAudioDirector.Attach(PlayerRig)`,
+    `RuntimeMusicDirector.Attach(PlayerRig)`, `RuntimeWaterIndex.Clear()`,
+    `SwimView.Attach(PlayerRig)` (`:246-254`).
+13. **READINESS log:** tek satır özet (kind, buildings, geo=REAL/LEGACY, localShore, npcCap,
+    rig konumu) — playtest logları bu satıra karşı diff'lenir (`:258-260`).
 
-## LLD - Veri Modeli
+### RuntimeBuildingBuilder alt-akışı (per placement)
 
-**Plan katmanı (Unity'siz, deterministik):**
-- `SettlementContext` (readonly struct): `Name` (yalnız log), `Kind`, `Biome`, `Seed`
-  (= PropVariationSeed) — `Simulation/WorldDirector/SettlementContext.cs:37-55`.
-- `BuildingPlacement` (readonly struct): `OriginX/OriginZ` (metre, merkez), `SizeX/SizeZ`,
-  `Height`, `MaterialIndex` (soyut palet slotu; UnityEngine.Color plan katmanına girmez) —
-  `BuildingPlacement.cs:9-27`.
-- `SettlementLayout`: `Buildings` (IReadOnlyList), `GroundRadius` (yarı-uzam), `PlayerSpawnX/Z`,
-  `PlayerFacingDeg` — `SettlementLayout.cs:66-90`.
-- `GeoSample` (readonly struct): `ElevationMeters`, `IsWater`, `SandBlend01`, `WaterSurfaceMeters` —
-  `WorldGeoSampler.cs:8-24`.
+1. Root `Building`, `placement.OriginX/Z`'e taşınır; `BuildingAccessibilityVolume` eklenir
+   (halfX+margin/halfZ+margin push-outside sözleşmesi, spawner NPC'lerini kabuğun içine sokmasın
+   diye — `RuntimeBuildingBuilder.cs:17-25`, `BuildingAccessibilityVolume.cs:16-45`).
+2. Duvar materyali `RuntimeMaterialPalette.Textured(WallTextureId(materialIndex),
+   WallColor(materialIndex), tiling: 2f)` (`:28-31`).
+3. `ChooseEntranceSide`: |OriginX| > |OriginZ| ise Ox≥0 → West aksi East; değilse Oz≥0 → South
+   aksi North (kapı hep merkeze bakar, `:399-404`).
+4. **W31 varyasyon rolü** (`varRoll = hash(origin.x*4, origin.z*4)`): `varPick < 0.30 ∧
+   size>4×4` → **UpperStorey** (`AddSlab` üst kutu + roof, `:102-113`); `0.30 ≤ varPick <
+   0.55` VEYA storey band yetersizse → **hasWing = true** (aşağıda); `0.55 ≤ varPick < 0.75` →
+   **Awning** (kapı üstü sundurma + iki direk, `:154-178`); kalan yalın (`:41-53`).
+5. **Duvarlar (AddWallX/AddWallZ):** entrance yönündeki duvar `withDoor=true` iki segment +
+   lintel (W17 playtest fix) alır; aynı kapılı-duvar mantığı `hasWing ∧ wingDoor` için de
+   çalışır — WING duvarındaki paylaşılan duvara doorway açar (W31 fix; wing artık girilebilir
+   oda, kapalı dekoratif kutu değil, `:57-64, 430-476`).
+6. **Doorstep basamakları (W32):** entrance + varsa wing kapısı için `AddDoorstep` — üç kademe,
+   tepe kotları 0/-0.3/-0.6, dışa doğru 0.42m adımlarla — kabuk terrain'in TILE MERKEZ
+   yüksekliğinde oturduğundan eğimli tile'ta 1m'ye kadar düşen kapı eşiğini step limitinin altına
+   böler (`:66-72, 406-428`).
+7. **Çatı + ridge + baca:** `Roof` slab, `RoofRidge` alt-slab, `Chimney` deterministik rooftop
+   stack (~%75, `chimneyRoll = hash(origin.x*8, origin.z*8)`, `:77-98`).
+8. **hasWing branch (W31 HOLLOW WING v2):** yan wing için ayrı `WingFloor+WingRoof` slab'ları
+   ve UÇ (far), YAN-A, YAN-B duvarları — döşemesi 0.03 yükselti, tavanı `max(H*0.62, 2.4)`
+   (kapıdan asla kısa değil). Eski branch tek katı kübdü (`:114-153`).
+9. **Zemin + partition (P1-1 / W31 gate fix):** `Floor` slab; `partitioned = size > 4.8×4.8`
+   (eski >6f gate hiç açılmıyordu — generator 3.5-5.69m üretiyor, gate PATCH'lenmeden ölü
+   koddu). Partition duvar setine (segW+segW + lintel) iç kapı 1.2m×2.0m açılır — entrance ekseni
+   dikeyse Z=%20 depth'te, aksi durumda X=%20 depth'te (`:180-223`).
+10. **Furnish (W17):** `Hash01(state)`'e göre 2-3 slot (partitioned ise merkez slot iptal, bed
+    kind'ı crate'e demote — dar arka odaya 1.8m yatak sığmaz). Kind 0=BedFrame+BedBlanket,
+    1=TableTop+TableLeg, 2=Crate+CrateLid (`:306-364`).
+11. **Hearth + Door + Windows:** noktasal `HearthLight` (renk 1,0.78,0.55; range = maxSize*1.2;
+    shadows None, `:366-377`); `DoorHinge` GameObject'ine `RuntimeDoorView` bağlanır + panel
+    (collider ölür — swing sırasında oyuncuyu kilitlemesin, `:235-265`); `AddWindows` iki yan
+    duvara + arka duvara `WindowFrame*+Window*` slab çifti — cam 0.72,0.82,0.92; frame
+    0.24,0.17,0.10; outward offset 0.16m (üç kez raporlanan "pencereler yok" bug'ının kesin
+    fix'i, `:267-302`).
 
-**Sunum katmanı — statik ayna/kanal tipleri (tek-yazar sözleşmeli):**
-- `RuntimeFieldMirror`: `HourOfDay`, `MinutesOfDay` (varsayılan 08:00 — tick öncesi kare sabah
-  görünsün), `WorldDay`, `PlantCount`, `StageIndex` (0-2), `PlantCell{Id,LocalX,LocalZ,Stage}`
-  dizisi + `PlantsStamp` — `RuntimeFieldBuilder.cs:58-92`. Yazar: adapter tick
-  (`DomainSimulationAdapter.Clock.cs:116-132`).
-- `RuntimeWeatherMirror`: `Kind` ("clear|rain|snow|fog"), `Raining`, `FogFactor` (0-1; URP fog
-  varyantları player build'den strip olduğu için okunabilir sis gök rengi+güneşte yaşar) —
-  `RuntimeWeatherController.cs:47-56`.
-- `RuntimeCaravanMirror`: `AtSiteCount` — `RuntimeCaravanView.cs:111-116`; yazar adapter
-  (`DomainSimulationAdapter.Clock.cs:147`).
-- `RuntimeNpcDensity`: `Cap` (0 = ayarsız → spawner kendi varsayılanı) — `RuntimeNpcDensity.cs:94-99`.
-- `RuntimePlayerSpawn`: `Position` — `RuntimePlayerSpawn.cs:80-85`.
-- `RuntimeInteriorInfo`: `TavernWorld/TempleWorld/ShopWorld`; `ScreenRequestSignal` (tek-bayrak
-  tek-tüketici, `Request/Consume`) — `RuntimeFunctionalInteriors.cs:8-29`.
-- `RuntimeDungeonLayoutInfo`: `RoomCount`, `EntryWorld`, `StartRoomWorld`, `BossRoomWorld`,
-  `ChestWorld`, `DwellerSpots`, `BossSpot`, `ArchetypeName` vd. — `RuntimeDungeonLayoutInfo.cs:9-26`
-  (yazar zindan builder'ı; Realize spawn/dweller için okur).
-- `RuntimeBuildingBuilder.DoorSide` (private enum): North/South/East/West — `RuntimeBuildingBuilder.cs:414-420`.
-- Sabitler: `WallThickness=0.25`, `DoorWidth=1.6`, `DoorHeight=2.2` — `RuntimeBuildingBuilder.cs:13-15`.
+## LLD - Veri Modeli (file:line)
 
-## LLD - Fonksiyon Haritasi
+### Presentation katmanı (Unity'li)
+- `Assets/Scripts/Presentation/Ember/WorldDirector/WorldSceneDirector.cs:19-322` — statik
+  facade, tek public giriş `Realize(IWorldViewReadModel)`; private yardımcılar
+  `BuildRegionBanner`, `NpcCapFor`, `ResolveHomeTile`, `ResolveKind`.
+- `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeBuildingBuilder.cs:11-497` — statik
+  builder + `DoorSide { North, South, East, West }` private enum (`:489-495`); sabitler
+  `WallThickness=0.25f`, `DoorWidth=1.6f`, `DoorHeight=2.2f` (`:13-15`).
+- `Assets/Scripts/Presentation/Ember/WorldDirector/BuildingAccessibilityVolume.cs:10-46` —
+  `MonoBehaviour`, `_halfX/_halfZ/_margin` alanları, `Configure(sizeX, sizeZ, margin)` +
+  `TryPushOutside(pos, out adjusted)` sözleşmesi.
+- `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeDungeonLayoutInfo.cs:9-52` — statik
+  alanlar `RoomCount`, `EntryWorld`, `StartRoomWorld`, `BossRoomWorld`, `ChestWorld`,
+  `FootprintCenterWorld`, `FootprintExtentMeters`, `List<Vector3> DwellerSpots`, `BossSpot`,
+  `TrapWorld`, `KeyWorld`, `BossDoorWorld`, `ArchetypeName = "Mağara"`; iki writer
+  `Record(...)` ve `RecordArchetype(...)`.
+- `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFunctionalInteriors.cs:8-20` — statik
+  `RuntimeInteriorInfo { TavernWorld, TempleWorld, ShopWorld, Record(...) }`; aynı dosyada
+  `ScreenRequestSignal { Request(str), Consume() }` (`:24-29`).
+- `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimePlayerSpawn.cs:8-13` — statik
+  `Position = (0, 0.2, 0)`, `Record(spawn)`.
+- `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeNpcDensity.cs` — statik `Cap` alanı
+  (kullanım `WorldSceneDirector.cs:58, 260`).
 
-**Direktör:**
-- `WorldSceneDirector.Realize(IWorldViewReadModel view)` — `WorldSceneDirector.cs:21`; tüm akışın
-  sahibi (yukarıdaki 2-15).
-- `ResolveHomeTile(OverlandMap, GridPosition): RegionTile` — `:305`; tile yoksa harita merkezi.
-- `ResolveKind(OverlandMap, GridPosition): SettlementKind` — `:311`; settlement listesinde lineer arama.
-- `NpcCapFor(SettlementKind): int` — `:290`; kind → billboard tavanı.
-- `BuildRegionBanner(Transform, ulong regionValue)` — `:263`; hue = (region*47)%360, direk+bayrak.
-- `AttachFunctionalRole(GameObject, int)` (yerel statik fn) — `:132-154`; tabela küpü + point light +
-  `RuntimeTavernView`/`RuntimeTempleView`/`RuntimeShopCounterView` ekler.
+### Simulation katmanı (Unity'siz, deterministik)
+- `Assets/Scripts/Simulation/WorldDirector/SettlementContext.cs` — `readonly struct`
+  `(Name, Kind, Biome, Seed)`.
+- `Assets/Scripts/Simulation/WorldDirector/BuildingPlacement.cs:9-27` — `readonly struct`,
+  `OriginX/OriginZ/SizeX/SizeZ/Height/MaterialIndex` alanları (Unity referansı yok — bilinçli).
+- `Assets/Scripts/Simulation/WorldDirector/SettlementLayout.cs:10-34` — `sealed class`
+  `(IReadOnlyList<BuildingPlacement> Buildings, GroundRadius, PlayerSpawnX, PlayerSpawnZ,
+  PlayerFacingDeg)`.
+- `Assets/Scripts/Simulation/WorldDirector/ISettlementLayoutStrategy.cs` — `Plan(in
+  SettlementContext) → SettlementLayout` sözleşmesi.
+- `Assets/Scripts/Simulation/WorldDirector/SettlementLayoutStrategyFactory.cs:10-34` — statik
+  `For(kind)` — üç strateji singleton'u (`Village`, `Compact`, `Streets`).
+- `Assets/Scripts/Simulation/WorldDirector/VillageLayoutStrategy.cs:13-` — City/Town/Village
+  ölçekli halka planlaması (sabitler `CentralPlazaRadius=7`, `RingSpacingMeters=13`,
+  `MinimumArcSpacingMeters=12`, `MaxRings=8`, `DefaultStreetClearance=4.5`).
+- `Assets/Scripts/Simulation/WorldDirector/CompactLayoutStrategy.cs:8-13` —
+  `VillageLayoutStrategy(min=1, max=3, ringRadius=5)` sarar.
+- `Assets/Scripts/Simulation/WorldDirector/StreetLayoutStrategy.cs:14-` — radial avenue
+  ızgarası; sabitler `PlazaRadius=8`, `StreetHalfWidth=3.5`, `ParcelStep=9`, `Clearance=2.5`;
+  City 4-5 avenue × 4-6 parsel/yön, Town 3-4 × 3-4; `heightBoost` City=3.2, Town=1.0.
+- `Assets/Scripts/Simulation/WorldDirector/WorldGeoSampler.cs` — `TryCreate(map, tile, seed,
+  out sampler)`; `SeaLevelMeters`, `HasLocalShore` sinyalleri.
 
-**Plan stratejileri (Simulation/WorldDirector/):**
-- `SettlementLayoutStrategyFactory.For(SettlementKind): ISettlementLayoutStrategy` —
-  `SettlementLayoutStrategyFactory.cs:107`; kind → strateji (OCP).
-- `VillageLayoutStrategy.Plan(in SettlementContext): SettlementLayout` — `VillageLayoutStrategy.cs:32`;
-  XorShiftRng(seed) ile halka yerleşimi: kind ölçeği (City 26-40 bina/16m/+2.5m boy; `:43-49`),
-  dominant malzeme kimliği (%60; `:50, 79`), plaza-bloke ve örtüşme redleri (`BlocksPlaza :96`,
-  `Overlaps :114` — sokak payı 4.5m), en çok 8 halka (`:19, 62`).
-- `StreetLayoutStrategy.Plan` — `StreetLayoutStrategy.cs:145`; radyal 3-5 cadde, cadde başına iki
-  yanlı 3-6 parsel, 3.5m temiz şerit (`:140-186`); v2 (cross-street, parsel/kapı graf düğümleri)
-  açıkça "queued" (`:136`).
-- `CompactLayoutStrategy.Plan` — `CompactLayoutStrategy.cs:217-219`; VillageLayoutStrategy(1..3, r=5)
-  kompozisyonu.
-- `WorldGeoSampler.TryCreate(OverlandMap, GridPosition, uint, out sampler): bool` —
-  `WorldGeoSampler.cs:66-73`; geo snapshot yoksa false (legacy Perlin yolu).
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-**Bina builder'ı:**
-- `RuntimeBuildingBuilder.Build(Transform, BuildingPlacement): GameObject` — `RuntimeBuildingBuilder.cs:17`;
-  kabuk + çatı + varyant + iç bölme + mobilya + kapı + pencereler.
-- `ChooseEntranceSide(placement): DoorSide` — `:348`; kapı DAİMA yerleşim merkezine bakar (cadde kuralı).
-- `AddWallX/AddWallZ(…, bool withDoor)` — `:355, 380`; kapılı duvar iki segment + LİNTEL
-  ("kapının üst tarafı açık" playtest düzeltmesi; `:373-377, 398-400`).
-- Çatı + saçak basamağı (`Roof`/`RoofRidge`) — `:48-57`; baca: pozisyon-hash'li ~3/4 olasılık —
-  `:58-69`.
-- **Silüet varyantları** (`varRoll`; `:70-133`): <0.30 **ikinci kat** (geri çekilmiş üst kutu + kendi
-  çatısı; `:76-87`), <0.55 **L-kanat** (giriş duvarını asla kapatmayan yan ek; 0.62→0.78 "kanat
-  duvar içine sızdı" otopsi düzeltmesi; `:88-108`), <0.75 **kapı sundurması** (iki direkli ahşap
-  saçak; `:109-133`).
-- **İç bölme** (`SizeX>6 && SizeZ>6`): P1 WallWithGap portu — iki segman + lintelli GERÇEK kapı
-  boşluklu ara duvar, girişe göre %20 derinlikte — `:137-175`.
-- `Furnish(root, placement, entrance)` — `:258-313`; NEGATİF float→uint UB'sine karşı kantize-int
-  seed (`:260-264`), arka duvarda çakışmasız 3 slot, yatak/masa/sandık şekilleri (`:282-311`).
-- `AddDoor` — `:187-217`; menteşe + collider'sız panel; `RuntimeDoorView` −90°/1.5s yaklaşınca açar
-  (`RuntimeDoorView.cs:157-203`).
-- `AddWindows` — `:219-254`; kapısız HER duvara koyu çerçeve + parlak cam; 0.03→0.16 ofset "3x
-  pencereler yok" canlı hatasının düzeltmesi (`:236-240`).
-- `AddHearthLight` — `:315-326`; gölgesiz sıcak point light.
-- `Hash01(ref uint)` — `:328`; xorshift 0-1.
-- `BuildingAccessibilityVolume.Configure/TryPushOutside` — `BuildingAccessibilityVolume.cs:116, 123`;
-  NPC billboard'ları ayak-izinden dışarı iter (sim yerleşimini ETKİLEMEZ).
+- `public static void Realize(IWorldViewReadModel view)` —
+  `WorldSceneDirector.cs:21` — dünya gerçekleştirme facade'ı; tüm alt-adımları sırayla koşar.
+- `private static void BuildRegionBanner(Transform parent, ulong regionValue)` —
+  `WorldSceneDirector.cs:263` — plaza kenarına deterministik renkli direk+bayrak diker.
+- `private static int NpcCapFor(SettlementKind kind)` —
+  `WorldSceneDirector.cs:290` — kind → billboard sınırı (City=24 … Dungeon=14).
+- `private static RegionTile ResolveHomeTile(OverlandMap map, GridPosition tilePosition)` —
+  `WorldSceneDirector.cs:305` — tile lookup + merkez fallback.
+- `private static SettlementKind ResolveKind(OverlandMap map, GridPosition tilePosition)` —
+  `WorldSceneDirector.cs:311` — settlement listesinden Kind eşleştirir; yoksa Village.
+- `static void AttachFunctionalRole(GameObject building, int roleIndex)` —
+  `WorldSceneDirector.cs:132` (Realize içinde local func) — glowing sign cube + trigger view
+  (Tavern/Temple/Shop) ekler.
+- `public static GameObject Build(Transform parent, BuildingPlacement placement)` —
+  `RuntimeBuildingBuilder.cs:17` — bir kabuk (duvar + çatı + zemin + partition + furnish +
+  hearth + door + windows + doorstep) inşa eder, root GameObject döner.
+- `private static void AddDoor(Transform root, BuildingPlacement placement, DoorSide entrance)` —
+  `RuntimeBuildingBuilder.cs:235` — hinge + kapak paneli (collider'sız); `RuntimeDoorView`
+  bağlar.
+- `private static void AddWindows(Transform root, BuildingPlacement placement, DoorSide
+  entrance)` — `RuntimeBuildingBuilder.cs:267` — iki yan + arka duvara frame+pane slab çifti;
+  outward 0.16m offset.
+- `private static void Furnish(Transform root, BuildingPlacement placement, DoorSide entrance,
+  bool partitioned)` — `RuntimeBuildingBuilder.cs:306` — origin-hash'li seed ile 2-3 kind
+  (bed/table/crate) DISTINCT slotlara yerleştirir.
+- `private static void AddHearthLight(Transform root, BuildingPlacement placement)` —
+  `RuntimeBuildingBuilder.cs:366` — noktasal ışık, gölgesiz, range = maxSize×1.2.
+- `private static float Hash01(ref uint state)` —
+  `RuntimeBuildingBuilder.cs:379` — inline xor-shift; furnish + varyasyon rolleri için.
+- `private static void AddSlab / AddWall / AddWallX / AddWallZ / AddDoorstep` —
+  `RuntimeBuildingBuilder.cs:388-476` — primitive Cube üretici yardımcılar; `AddWallX/Z`
+  `withDoor=true` ise iki segment + lintel bırakır; `AddDoorstep` üç-kademe basamak dizer.
+- `private static DoorSide ChooseEntranceSide(BuildingPlacement placement)` —
+  `RuntimeBuildingBuilder.cs:399` — kapıyı plaza merkezine baktırır.
+- `void BuildingAccessibilityVolume.Configure(float sizeX, float sizeZ, float margin)` —
+  `BuildingAccessibilityVolume.cs:16` — half-extent + margin alanlarını kilitler.
+- `bool BuildingAccessibilityVolume.TryPushOutside(Vector3 worldPosition, out Vector3
+  adjusted)` — `BuildingAccessibilityVolume.cs:23` — eğer world nokta hacmin içindeyse en yakın
+  yüze iter, dışarıdaysa false döner.
+- `RuntimeDungeonLayoutInfo.Record(int roomCount, Vector3 entry, Vector3 startRoom, Vector3
+  bossRoom, Vector3 chest, Vector3 fpCenter, float fpExtent, List<Vector3> dwellerSpots, Vector3
+  bossSpot, Vector3 trap, Vector3 key, Vector3 bossDoor)` — `RuntimeDungeonLayoutInfo.cs:33` —
+  tek yazar (`RuntimeDungeonBuilder`), tüm anchor'ları statik alanlara yazar.
+- `RuntimeDungeonLayoutInfo.RecordArchetype(string archetypeName)` —
+  `RuntimeDungeonLayoutInfo.cs:28` — F29 arketip adı (Mağara/Kripta/Harabe).
+- `RuntimeInteriorInfo.Record(Vector3 tavern, Vector3 temple, Vector3 shop)` —
+  `RuntimeFunctionalInteriors.cs:14` — WorldSceneDirector tarafından ilk üç binanın dünya
+  konumlarını yazar.
+- `RuntimePlayerSpawn.Record(Vector3 spawn)` —
+  `RuntimePlayerSpawn.cs:12` — ölüm-uyanma teleportu için rig konumunu pin'ler.
+- `ISettlementLayoutStrategy.Plan(in SettlementContext context) → SettlementLayout` —
+  `VillageLayoutStrategy.cs:32`, `CompactLayoutStrategy.cs:12`, `StreetLayoutStrategy.cs:21` —
+  strateji girişleri; sim tarafı Unity'siz kalır.
 
-**Çevre builder'ları:**
-- `RuntimeMineBuilder.Build(Transform, float distance, float angleDeg, bool coal): GameObject` —
-  `RuntimeMineBuilder.cs:13`; höyük+ağız+kiriş+cevher arabası; ağız kasabaya döner (`:19`).
-- `RuntimeCaravanBuilder.Build(Transform)` — `RuntimeCaravanView.cs:139`; plaza kenarında araba;
-  `CaravanCartView.Update` ayna 0 ise çocukları gizler (`:124-133`).
-- `RuntimeLightingRig.Apply(Transform, BiomeKind)` — `RuntimeLightingRig.cs:13`; flat ambient
-  (nötr taban + %35 biome; R2 "nane yeşili" düzeltmesi `:16-21`), soft-shadow güneş, SkyController +
-  WeatherController takılır (`:36-38`).
-- `SkyController.Bind(Light)` / `Update` — `SkyController.cs:38, 54`; sim dakikasından gün-kesri
-  (`DayFraction :200-207`; adapter yoksa 2 dakikalık gün), gök rengi = kamera clear-colour
-  (skybox shader'ları build'den strip olur; `:14-17, 80-83`), güneş pitch/intensity (`:68-73`),
-  gece: 140 yıldızlı altın-açı kubbesi + üretilmiş ay sprite'ı, kamerayı izler (`EnsureCelestials
-  :93-142`, `BuildMoonSprite :144-163`, `UpdateCelestials :165-195`).
-- `RuntimeWeatherController.Bind(BiomeKind)` / `Update` — `RuntimeWeatherController.cs:84, 86`;
-  `Pick(day)` = hash(day,biome) → biome+mevsim ağırlıklı deterministik seçim (`:99-128`);
-  `Apply` yağmur/kar/sis/açık: 130 küplük manuel havuz (ParticleSystem player build'de HİÇ
-  çizmedi — proof bulgusu; `:77-79, 190-209`), Linear fog + FogFactor + yağmur loop sesi
-  (`:130-188`); `Rehome/FollowCamera` kamera-merkezli 30m kolon geri dönüşümü (`:234-268`).
-- `RuntimePlayerRig.Build(Vector3, Quaternion, float fov=70)` — `RuntimePlayerRig.cs:17`;
-  idempotent (`:19-21`), CharacterController + EyeCamera + isimle 5 kontrolcü (`AddControllerByName
-  :60-70` — bulunamazsa yalnız uyarı).
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-**Ölü ama derlenen builder'lar (çağıran YOK — grep ile doğrulandı):**
-- `RuntimeGroundBuilder.Build/BuildBoundary` — `RuntimeGroundBuilder.cs:222, 263`; TerrainStreamer
-  gelince emekli oldu, hiçbir çağrı kalmadı.
-- `RuntimeFieldBuilder.BuildBelt/Build` — `RuntimeFieldBuilder.cs:148, 159`; REFORM #1 ile kutup
-  kuşağı emekli — ancak AYNI dosyadaki `RuntimeFieldMirror`/`CropStalkView`/`SimFieldView` canlıdır.
+Bu sistem sim veri modeline (WorldState/Actors/…) YAZMAZ; sahne graf'ına ve statik
+"runtime info" kanallarına yazar. Registry'ye kayıtlı SIM alanı yok (repo grep'inde `WorldDirector`
+karşılığı `FieldOwnershipRegistry` girdisi görülmedi — dogrulanmadi).
 
-## LLD - Yazdigi/Okudugu Alanlar
+**Yazdığı runtime kanallar (sahibi: `WorldSceneDirector`):**
+- `RuntimeNpcDensity.Cap` (int; `WorldSceneDirector.cs:58`) — sonra `EmberGeneratedActorSpawner`
+  ve `EmberProofScreenshotDriver` okur.
+- `RuntimeInteriorInfo.TavernWorld/TempleWorld/ShopWorld` (Vector3; `:92`) — sonra
+  `EmberProofScreenshotDriver` + `DomainSimulationAdapter.WorldProjection` okur.
+- `RuntimePlayerSpawn.Position` (Vector3; `:242`) — sonra `RuntimeMainQuestFinale` / ölüm-uyanma
+  akışı okur.
+- `EmberCrpg.Simulation.Diagnostics.EmberLog.Sink` (delegate, ??= Debug.Log; `:52`) — proje
+  standardı log seam'i, sim katmanının Unity-agnostik logger'ı.
 
-Bu sistem sunum katmanıdır; `FieldOwnershipRegistry`'de kaydı YOKTUR ve sim alanlarına doğrudan
-yazmaz. Tek sim-mutasyon dikişi: `hostAdapter?.PinHostInsideTavern(functionalWorld[0])` — adapter
-üzerinden hancı aktörün konum pin'i (`WorldSceneDirector.cs:93-95`). Sahiplik dili burada statik
-kanalların "tek yazar / tek okur" sözleşmesidir:
+**Yazdığı runtime kanallar (sahibi: `RuntimeBuildingBuilder`):**
+- Yeni `GameObject`'ler (`Building`, `Wall`, `Roof`, `Floor`, `WingFloor/Roof`, `UpperStorey`,
+  `Awning`, `Chimney`, `WindowFrame*/Window*`, `DoorHinge/DoorPanel`, `HearthLight`,
+  `BedFrame/BedBlanket`, `TableTop/TableLeg`, `Crate/CrateLid`, `Doorstep0..2`) — parent
+  `GeneratedLocation/Building` altında.
+- `BuildingAccessibilityVolume` bileşeni (`RuntimeBuildingBuilder.cs:22-25`).
 
-**Yazdıkları (yazar bu sistem):**
-- `RuntimeNpcDensity.Cap` ← Realize (`WorldSceneDirector.cs:58`); okur: EmberGeneratedActorSpawner.
-- `RuntimeInteriorInfo.TavernWorld/TempleWorld/ShopWorld` ← Realize (`:92`); okur: proof çapaları,
-  hancı pin'i.
-- `RuntimePlayerSpawn.Position` ← Realize (`:242`); okur: F15 ölüm-ekranı dönüşü.
-- `RuntimeWeatherMirror.Kind/FogFactor` ← WeatherController (`RuntimeWeatherController.cs:138,
-  152-183`); okur: SkyController (`SkyController.cs:66`), müzik.
-- `RenderSettings.ambientLight/ambientMode/fog*` ← LightingRig (`RuntimeLightingRig.cs:15-23`),
-  SkyController her frame (`SkyController.cs:75`), WeatherController hava değişiminde
-  (`RuntimeWeatherController.cs:153-186`) — ÜÇ yazarlı paylaşım, aşağıda borç #6.
-- Kamera `clearFlags/backgroundColor` ← SkyController (`SkyController.cs:51, 83`).
-- `EmberLog.Sink` ← Realize, yalnız null ise (`WorldSceneDirector.cs:51-52`).
-- `RuntimeWaterIndex` ← `Clear()` ile sıfırlama (`:253`; seviyeleri streamer doldurur).
+**Yazdığı runtime kanallar (sahibi: `RuntimeDungeonBuilder`):**
+- `RuntimeDungeonLayoutInfo.*` alanları — `RuntimeDungeonBuilder.cs:52, 267`; tek yazar
+  garantisi.
 
-**Okudukları (yazar başka sistem):**
-- `IWorldViewReadModel.Overland/PlayerOverlandTile/StartingSettlementName` (`:29, 45-47`).
-- `RegionTile.PropVariationSeed/Biome/RegionId` (`:48, 61, 187`).
-- `PlanetAtlas.TryGetTileOre` cevher katmanı (`:103-105`).
-- `RuntimeFieldMirror.MinutesOfDay/WorldDay/Plants/StageIndex` — yazar adapter tick
-  (`DomainSimulationAdapter.Clock.cs:116-132`); okurlar SkyController/WeatherController/stalk'lar.
-- `RuntimeCaravanMirror.AtSiteCount` — yazar adapter (`DomainSimulationAdapter.Clock.cs:147`).
-- `RuntimeDungeonLayoutInfo.*` — yazar RuntimeDungeonBuilder; Realize spawn + dweller için okur
-  (`WorldSceneDirector.cs:172-176, 236-241`).
+**Okuduğu (ama YAZMADIĞI) alanlar / servisler:**
+- `IWorldViewReadModel.Overland / PlayerOverlandTile / StartingSettlementName` —
+  `WorldSceneDirector.cs:29, 45-48`.
+- `OverlandMap.Settlements` (SettlementRecord listesi, `ResolveKind`) — `:311-319`.
+- `PlanetAtlas.TryGetTileOre(map, x, y, out iron, out coal)` — `:103-105`.
+- `RegionTile.Biome / PropVariationSeed / RegionId` — `:47-48, 187`.
+- `RuntimeDungeonLayoutInfo.RoomCount / StartRoomWorld / DwellerSpots / BossSpot /
+  ArchetypeName` — Realize DUNGEON dalında OKUR (`:174, 236-241`).
+- `EmberDomainAdapterLocator.Current as DomainSimulationAdapter` — `PinHostInsideTavern`,
+  `EnsureDungeonDwellers` — `:93-96, 169-176`.
 
-## LLD - Urettigi/Tukettigi Olaylar
+## LLD - Ürettiği/Tükettiği Olaylar
 
-- **WorldEventKind üretmez ve tüketmez** — klasörde `WorldEventKind` referansı yok (grep ile
-  doğrulandı); sim gerçeği olaylarla değil, yukarıdaki tick-aynalarıyla gelir.
-- **Sinyal:** `ScreenRequestSignal.Request("trade")` — shop tezgâhından UI denetleyicisine
-  tek-bayrak istek (`RuntimeFunctionalInteriors.cs:24-29, 75`).
-- **Log etiketleri (shipcheck/playtest bunlara pinlenir):** `[WorldDirector]` (realize özeti,
-  bina sayısı, maden, banner, dweller; `WorldSceneDirector.cs:25, 35, 54, 59, 72-74, 96-98, 109,
-  127, 176, 182, 259-260, 286`), `[Building]` (mobilya; `RuntimeBuildingBuilder.cs:312`),
-  `[Weather]` (gün/mevsim/seçim; `RuntimeWeatherController.cs:140`), `[Sky]` (celestial kurulum;
-  `SkyController.cs:141`), `[Shop]` (tezgâh; `RuntimeFunctionalInteriors.cs:76`).
-- **Kaçak kapı/olay dışı girdiler:** `--ember-weather clear|rain|snow|fog` komut satırı pin'i
-  (`RuntimeWeatherController.cs:132-136`) ve `RuntimeWeatherController.ProofForce(kind)` statik
-  override'ı (`:67-69`) — proof sürücüleri için.
+Bu sistem `WorldEventKind` üretmez veya tüketmez — üretim/observer akışının ÖNCESİNDE koşar
+(sahne açılışı, tek atım). Domain event çıkış noktaları yok.
 
-## Testler
+**Ürettiği log satırları (playtest / shipcheck diff kaynağı):**
+- `"[WorldDirector] directing settlement '{name}' kind=... biome=... seed=..."` (`:54`).
+- `"[WorldDirector] npc billboard cap for {kind}: {cap}"` (`:59`).
+- `"[WorldDirector] terrain bound to world geography (REAL — sea at {SeaLevelMeters:0.#}m
+  rel.)"` | `"[WorldDirector] no geography snapshot — legacy Perlin terrain (PARTIAL)."`
+  (`:72-74`).
+- `"[WorldDirector] functional interiors: tavern/temple/shop on buildings 0/1/2."` (`:96`).
+- `"[WorldDirector] {N} buildings built"` (`:98`).
+- `"[WorldDirector] {coal|iron} mine realized at town edge (iron=..., coal=...)."` (`:109`).
+- `"[WorldDirector] fields={N} plots for pop={P} ({Kind}) — farm belt at the town edge."`
+  (`:127`).
+- `"[WorldDirector] delve dwellers ensured: +{N} across {R} rooms (idempotent — corpses stay
+  down)."` (`:176`).
+- `"[WorldDirector] trade cart realized (visibility bound to the caravan mirror)."` (`:182`).
+- `"[WorldDirector] region banner raised (region ..., hue ...)."` (`:286`).
+- `"[WorldDirector] realize complete for '{name}': kind=..., buildings=..., geo=REAL/LEGACY,
+  localShore=..., npcCap=..., rig at ..."` — **READINESS satırı**, tek başına özet, (`:259-260`).
+- `"[Building] furnished {pieces} pieces at (x,z)"` — per building (`RuntimeBuildingBuilder.cs:363`).
 
-Hepsi `Assets/Tests/EditMode/WorldDirector/` altında; SADECE plan katmanı pinli:
-- `SettlementLayoutDeterminismTests.cs` — aynı seed birebir aynı layout (`:15-32`), farklı seed
-  farklı (`:36-50`), binalar zemin içinde (`:54-67`), sokak payı korunur (`:71-80`).
-- `StreetLayoutStrategyTests.cs` — aynı-seed determinizm (`:14`), City>Town bina sayısı (`:27`),
-  plaza temiz + çift örtüşme yok (`:34`).
-- `SettlementLayoutStrategyFactoryTests.cs` — kind→strateji eşlemesi (`:12, 21, 30`).
-- `WorldGeoSamplerTests.cs` — projeksiyon ölçeği, TryCreate, determinizm, düz-kuru pad, süreklilik,
-  su bayrağı (`:27-92`).
-- `WorldGeoSamplerShoreTests.cs` — kıyı yerleşimlerinde yürünebilir su + worldgen zinciri
-  determinizmi (`:22, 61`).
-- **Boşluk:** `WorldSceneDirector.Realize`, `RuntimeBuildingBuilder` ve TÜM Runtime* builder'lar
-  için doğrudan test YOK; sahne tarafını pinleyen tek şey proof-screenshot sürücüsünün
-  GeneratedWorld akışı (`Diagnostics/EmberProofScreenshotDriver.cs:307`) ve `[WorldDirector]`
-  log satırlarına bakan shipcheck'lerdir.
+**Bir sinyal üretir (`ScreenRequestSignal`) ama Realize bunu kullanmaz** — F26 world-prop → UI
+istekleri için (`RuntimeFunctionalInteriors.cs:24-29`).
 
-## Bilinen Borclar + Kacak Kapilari
+## Testler (bu sistemi pinleyen test dosyaları - W32-W36 hikâye-testleri dahil)
 
-Aile harfleri `docs/SYSTEMS_ATLAS.md:52-60` (a)-(g) sınıflamasına göre.
+**Deterministik plan (sim, Unity'siz):**
+- `Assets/Tests/EditMode/WorldDirector/SettlementLayoutStrategyFactoryTests.cs` — City/Town →
+  Streets, Village → Ring, Hamlet/Inn/Shrine/Dungeon → Compact, unknown → Village
+  (`:12-30`).
+- `Assets/Tests/EditMode/WorldDirector/SettlementLayoutDeterminismTests.cs` — aynı seed
+  identical layout (`:14`), farklı seed farklı layout (`:35`), binalar ground plane içinde
+  (`:53`), street clearance korunur (`:70`).
+- `Assets/Tests/EditMode/WorldDirector/StreetLayoutStrategyTests.cs` — aynı seed identical
+  (`:13`), City > Town bina sayısı (`:26`), plaza clear + çift-örtüşme yok (`:33`).
 
-1. **Negatif-float→uint UB, düzeltilen hatanın kopyaları — sınıf (f)/(g).** `Furnish` bu tuzağı
-   açıkça belgeleyip kantize-int'e geçti (`RuntimeBuildingBuilder.cs:260-264`), ama AYNI desen iki
-   yerde hâlâ ham float cast'iyle duruyor: baca seed'i `(uint)(placement.OriginX * 8f)`
-   (`:60-61`) ve silüet-varyant seed'i `(uint)(placement.OriginX * 4f)` (`:73-74`). Negatif
-   koordinatlı binalarda (kasabanın yarısı!) cast 0'a çökebilir → o yarıda baca/varyant zarı tek
-   değere yapışır. "Skyline stops repeating" vaadinin yarım kalma riski; davranış platform-bağımlı,
-   oyunda ne kadar görünür olduğu **doğrulanmadı**.
-2. **"İlk üç bina" tek-nokta tasarımı — sınıf (a)** (SYSTEMS_ATLAS §2'nin kendi tespiti):
-   tavern/temple/shop rolleri listede İLK üç kabuğa yapışır (`WorldSceneDirector.cs:82-97`).
-   Compact yerleşim 1-3 bina üretir (`CompactLayoutStrategy.cs:217`): 1-2 binalı Inn/Hamlet'te
-   roller yine 0/1 indekslerine takılır ama `RuntimeInteriorInfo.Record` + hancı pin'i
-   `Count>=3` şartına takılıp ÇALIŞMAZ (`:90-96`) — tabelası yanan ama proof-çapası/hancısı
-   olmayan tavern mümkün. **Doğrulanmadı** (canlıda 1-2 binalı seed'e denk gelinmedi), kod yolu net.
-3. **Dungeon + zengin cevher = çifte höyük — sınıf (a).** Maden bloğu kind'e bakmaz (`:103-110`);
-   Dungeon dalı ayrıca delve ağzı kurar (`:159-166`). Cevheri zengin bir Dungeon tile'ında iki
-   ayrı mağara ağzı yan yana doğar. **Doğrulanmadı** (böyle bir tile'ın oluşup oluşmadığı veriye bağlı).
-4. **Ölü kod çifti:** `RuntimeGroundBuilder` (tamamı) ve `RuntimeFieldBuilder.BuildBelt/Build`
-   sıfır çağıranla derleniyor (grep kanıtı; `RuntimeGroundBuilder.cs:222`,
-   `RuntimeFieldBuilder.cs:148-187`). İkincisi canlı tiplerle aynı dosyada saklandığı için
-   fark edilmesi zor. Ayrıca `plots` hesabı (DF oranları) artık YALNIZ log satırı üretiyor —
-   SimFieldView onu hiç okumuyor (`WorldSceneDirector.cs:117-127`).
-5. **`GameObject.Find("PlayerRig")` string bağı — sınıf (g).** Realize üç kez (`:246-254`),
-   kapı/iç-mekân tetikleri poll'da (`RuntimeDoorView.cs:179`, `RuntimeFunctionalInteriors.cs:90`)
-   isimle arar; rig adı değişirse ses/müzik/yüzme/kapılar sessizce ölür. Aynı şekilde
-   `AddControllerByName` tip bulamazsa yalnız uyarı loglar (`RuntimePlayerRig.cs:60-70`).
-6. **RenderSettings'in üç yazarı — sınıf (c) sunum kopyası.** Ambient'i LightingRig kurar
-   (`RuntimeLightingRig.cs:19-22`), SkyController her frame `_baseAmbient` üzerinden ezer
-   (`SkyController.cs:41, 75`), fog'u WeatherController hava değişiminde yazar
-   (`RuntimeWeatherController.cs:153-186`). Sıra bugün tutuyor; SkyController `Bind` ÖNCESİ ambient
-   değişirse `_baseAmbient` bayatlar. Tek-yazar registrisi yok (bilinçli: presentation).
-7. **Statik kanalların yaşam süresi — sınıf (f).** Ayna/kanal tipleri process-static:
-   `RuntimeWaterIndex.Clear()` çağrılır (`WorldSceneDirector.cs:253`) ama `RuntimeNpcDensity`,
-   `RuntimeInteriorInfo`, `RuntimeDungeonLayoutInfo`, `RuntimeWeatherMirror` travel-reload'da
-   ÖNCEKİ lokasyonun değerlerini yeni yazım olana dek taşır. Bugün tüketiciler kind korumalı
-   (ör. spawn guard `kind==Dungeon`, `:236`) — yeni tüketici eklerken en bilinen tuzak.
-8. **Katlar/kanatlar cephe yalanı (dürüstçe):** ikinci kat ve L-kanat İÇİ OLMAYAN dolu slablar —
-   merdiven yok, kanat odaya bağlı değil ("odalar arasında kapı yok" otopsisi kanadı 0.78 ile
-   tamamen DIŞARI itti; gerçek çok-oda P1 WallWithGap portuna havale; `RuntimeBuildingBuilder.cs:88-102`).
-   İç bölme yalnız `SizeX>6 && SizeZ>6` kabuklarda (`:140`) — köy evlerinin çoğu (3.5-5.7m;
-   `VillageLayoutStrategy.cs:76-77`) TEK oda kalır, bölme fiilen büyük Town/City parsellerine özgü.
-9. **Sundurma direklerinin collider'ı duruyor — sınıf (d) riski.** `AddSlab` primitive collider'ı
-   korur; kapı paneli collider'ı bilinçli silinirken (`:210-211`) sundurma direkleri kapının 1m
-   önünde çarpışmalı dikilir (`:128-132`). Kapı genişliği 1.6m, direk arası ~1.9m — geçilebilir
-   ama NPC itme hunisi. **Doğrulanmadı** (canlı şikâyet yok).
-10. **Kaçak kapılar (bilinçli):** `--ember-weather` CLI pin'i (`RuntimeWeatherController.cs:132-136`),
-    `ProofForce` statik override (`:67-69`; null'a geri almayı unutmak havayı kalıcı sabitler),
-    adapter'sız gök için 2-dakikalık gün fallback'i (`SkyController.cs:206`), overland'sız BROKEN
-    pad (`WorldSceneDirector.cs:32-43`), `EmberLog.Sink` init'inin buraya gömülü olması (`:51-52` —
-    logger kurulumunun doğal evi değil).
-11. **Açık v2 kuyruğu (kodun kendi beyanı):** StreetLayout cross-street/parsel-graf
-    (`StreetLayoutStrategy.cs:136`), asset-gate readiness v2 "loading screen arkasında blokla"
-    (`WorldSceneDirector.cs:256-257`), bölge sancağında faction inceltmesi (`:184-186`).
+**Presentation (bağlı sistemler; Realize'ı doğrudan koşan test bulunamadı):**
+- `Assets/Tests/EditMode/Presentation/EmberWorldHostAdapterBindingTests.cs` — Realize
+  adapter'ının narrow-role hydration'ı (`:10, 25`).
+- `Assets/Tests/EditMode/Presentation/VisualLayer/WorldEventTailSnapshotTests.cs` — visual olay
+  tail'inin sözleşmesi (yakın komşu).
+- `Assets/Tests/EditMode/Presentation/WorldHostInputPolicyTests.cs` — dış input policy.
+
+**Doğrudan Pinleme boşluğu (dogrulanmadi):** `WorldSceneDirector.Realize`, `RuntimeBuildingBuilder.Build`,
+`BuildingAccessibilityVolume.TryPushOutside`, `RuntimeInteriorInfo.Record`,
+`RuntimePlayerSpawn.Record` için Assets/Tests grep'inde eşleşen test dosyası bulunamadı.
+Realize'ı bir NUnit yolundan koşan pin yok — proof harness (20-proof-harness dokümanı) tek
+canlı guardrail.
+
+**W32-W36 hikâye testleri:** W33/W34 story test'leri sim slice'larını (Farm/Sleep/Work) pinliyor;
+bu SİSTEMİ (world-realize) doğrudan pinleyen W32+ hikâye testi eklenmedi (dogrulanmadi — grep
+`WorldSceneDirector|RuntimeBuildingBuilder|BuildingAccessibilityVolume`, Assets/Tests, 0
+eşleşme).
+
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
+
+Git log (`Assets/Scripts/Presentation/Ember/WorldDirector/WorldSceneDirector.cs` +
+`RuntimeBuildingBuilder.cs` + `Assets/Scripts/Simulation/WorldDirector/`, `--since=2026-07-05`):
+
+- **W32 — `959ccb99` `feat(world)+docs(ruh): doorsteps bridge sloped doorways`.** Kapı eşiği
+  üç-kademe basamakla (`AddDoorstep`, `RuntimeBuildingBuilder.cs:406-428`) toprağın kotuna iner;
+  entrance + wing kapısı ayrı ayrı köprülenir (`:70-72`). "kapi yukarda gorunuyor, bazen
+  girilmiyor" playtest bug'ının fix'i. **Doorstep tiers W32'de landed — task prompt'undaki "W35"
+  ifadesi git ile eşleşmiyor (dogrulanmadi ama commit tarih pin'i W32'yi işaret ediyor).**
+- **W31 — `1e9b474b` `fix(soul): W31 - eight live wounds + the full HLD/LLD systems atlas`.**
+  Winged house paylaşılan duvarına build-time'da doorway açan `hasWing/wingDoor` hoist'ı
+  (`RuntimeBuildingBuilder.cs:38-64`); L-wing artık HOLLOW ANNEX (WingFloor+WingRoof + üç duvar,
+  `:114-153`) — eski sealed cube ölür. Partition gate `>6f` → `>4.8f` (dead-code autopsy;
+  generator 3.5-5.69m üretiyor, eski gate hiç açılmıyordu, `:188`). Furnish partitioned dallanma:
+  merkez slot iptal, bed→crate demote (`:337, 346`).
+- **W30 — `8c16b572` `fix(world): W30 - the four wounds close`.** Dungeon spawn override
+  `EntryWorld` → `StartRoomWorld + up*0.4` (`WorldSceneDirector.cs:236-241`); eski
+  proof-camera anchor mine mound collider'ıyla çakışıyordu — CharacterController depenetration
+  oyuncuyu çatıya fırlatıyordu. `RuntimeDungeonLayoutInfo.Record` imzasına
+  `StartRoomWorld` eklenmesi bu değişikliğin sim tarafı.
+- **W33-W36 → değişiklik YOK.** Sim katmanı slice'ları (Farm/Sleep/Work) bu sistemi güncellemedi.
+  `WorldSceneDirector.cs`, `RuntimeBuildingBuilder.cs`, `Assets/Scripts/Simulation/WorldDirector/`
+  git log'unda `--since=2026-07-15` sıfır commit.
+
+Referans (W32 öncesi büyük hareketler, bağlam için):
+- `79d9eaca` P1-1 real interior partitions with doorways (WallWithGap portu — W31'in temelini
+  attı).
+- `46806f5b` skyline stops repeating — storeys/wings/awnings varyasyon rolleri (`:41-178`).
+- `6953e3ac` doorways with lintels + windows that read (`AddWallX/Z` lintel + `AddWindows`
+  outward offset).
+- `5738d49f` table + trestle + bench + well plaza propları
+  (`WorldSceneDirector.cs:216-227`).
+
+## Bilinen Borçlar + Kaçak Kapıları
+
+1. **Realize'ın kendisi PIN'SİZ.** `WorldSceneDirector.Realize` grep'te sıfır test eşleşmesi
+   veriyor (Assets/Tests). Sim strateji planı pinli, ama planı → GameObject çevirimini test
+   koşan bir edit-mode ya da play-mode test yok. Tek canlı guardrail proof-harness screenshot
+   akışı (20-proof-harness) — memory'deki "verify at render layer" ilkesi bu sistem için
+   düğüm noktası.
+2. **`RuntimeBuildingBuilder.Build` monolit — 200+ satırlık tek metot.** Varyasyon rolü,
+   duvar/roof/wing/awning branch'ları, partition, furnish, door, windows tek `Build` içinde;
+   `hasWing` / `varPick` / `partitioned` flag'leri lokal değişken çorbası oluşturuyor.
+   Regression yüzeyi geniş; birim testi bir alt-adımı izole edemiyor (dogrulanmadi ama
+   dosya satır sayısı 497 ve tek public metot bunu doğrular).
+3. **`EmberDomainAdapterLocator.Current` casting kaçak kapısı.** `WorldSceneDirector.cs:93,
+   169-170` `as DomainSimulationAdapter` — locator'ın somut tipi değişirse `PinHostInsideTavern`
+   ve `EnsureDungeonDwellers` sessizce null'a düşer (log yok). Realize devam eder, delve DWELLER
+   spawn'ı sessizce 0 döner.
+4. **W31 dead-code autopsy hâlâ patch, gate değil.** `partitioned = SizeX > 4.8f && SizeZ >
+   4.8f` (`RuntimeBuildingBuilder.cs:188`) — generator'ın min/max footprint'i değişirse gate yine
+   ölü koda düşer. Threshold `BuildingPlacement` boyutlarıyla birlikte değişmiyor; regenerator
+   parametreleri değişince atlas + gate manuel senkron gerektirir.
+5. **W30 spawn override `RoomCount > 0` şartına bağlı.** `RuntimeDungeonLayoutInfo` ilk çağrıdan
+   önce OKUNUYOR olabilir mi? Realize'da `RuntimeDungeonBuilder.Build` DAHA ÖNCE çağrılıyor
+   (`WorldSceneDirector.cs:166 → 236-241`), sıra doğru — ama başka giriş noktası (test harness'i,
+   partial fail) statik alanı temizlemezse ESKİ oyunun `StartRoomWorld`'ü yeni sahnede yanlış
+   spawn üretebilir (statik alan life-cycle'ı domain reload'a bağlı, dogrulanmadi).
+6. **`AttachFunctionalRole` role-index hard-coded 0/1/2 = tavern/temple/shop.** Layout ilk üç
+   binayı köşe/plaza-yakın diye üretmiyor (VillageLayoutStrategy ring'te açı sırası, StreetLayout
+   avenue sırası). Kind identity oyuncuya sağlam bir yer sunmuyor — "tavern nerede?" playtest
+   sorusu için deterministik ama insan-okuyabilir bir seçim yok (dogrulanmadi bug — playtest
+   log grep'inde bulunamadı, ama tasarım borcu net).
+7. **Pop → plots hesabı ölü satır.** `WorldSceneDirector.cs:117-127` `plots` hesaplanıyor,
+   log'lanıyor ama HİÇBİR yere iletilmiyor — REFORM #1'de field belt kaldırıldı, `SimFieldView`
+   plots argümanı almıyor. Kod okuyanı yanıltır (log "farm belt at the town edge" hâlâ diyor).
+8. **`RuntimeMaterialPalette` tekilliği doğrulanmadı.** Tüm builder'lar palette'i `Solid` /
+   `Textured` üstünden okuyor; palette invalidation stratejisi ve texture-atlas kaynağı bu
+   dokümanın kapsamı dışında ama Realize'ın deterministik "same seed → same look" iddiası
+   palette'in seed-agnostik olmasına bağlı (dogrulanmadi).
+9. **`BuildingAccessibilityVolume` yalnız runtime NPC push-out için.** Sim tarafı actor
+   placement bu hacmi bilmez ("does not affect deterministic simulation placement" —
+   `BuildingAccessibilityVolume.cs:6-8`); NPC yürüyüşü fiziksel controller'a bağımlı, bu da
+   NPC'nin duvarı geçmesini engellemek için hem billboard cull hem push-out olması gerektiği
+   anlamına gelir. Kaçak: yeni bir spawner tipi bu bileşeni sormayı unutursa NPC binada gömülür.
+10. **Failsafe pad'in de deterministik olmama riski.** `map == null` failsafe (`:29-43`)
+    `TerrainStreamer.Initialize(1u, BiomeKind.Plains, sampler=null)` çağırıyor; seed sabit ama
+    sampler yok, streamer varsayılana düşer. Bu path bir kez tetiklenmiş oturum + sonraki
+    ideal-restore arası state'i karıştırabilir (dogrulanmadi ama BROKEN log'u belirteci
+    bulunması gereken bir hikâye).

@@ -1,150 +1,167 @@
 # 04-cascades-crime
 
-Kapsam: PredationSystem, WitnessResponseSystem, GuardPursuits, SiteUnrest (+ sweep + cooldown), CompanionSystem.
-Ana kaynaklar: `Assets/Scripts/Simulation/Living/CascadeSystems.cs`, `Assets/Scripts/Simulation/Living/CompanionSystem.cs`, `Assets/Scripts/Simulation/Living/ScheduleSystem.cs` (pursuit tuketicisi), `Assets/Scripts/Simulation/Composition/DefaultTickSystems.cs` (kayit/kadans).
+> Kapsam: predation + tanik + guard pursuit + site huzursuzluk supurmesi + yoldas topuk-takibi/koruma — kisacasi kasabanin GORULEN, HATIRLANAN, YANITLANAN suc zinciri.
+> Ana dosyalar: `Assets/Scripts/Simulation/Living/CascadeSystems.cs` (299 satir) + `Assets/Scripts/Simulation/Living/CompanionSystem.cs` (153 satir).
+> Yardimci: `Assets/Scripts/Domain/World/PursuitRecord.cs` (13 satir), `Assets/Scripts/Domain/World/SiteUnrestRecord.cs` (11 satir), `ScheduleSystem.TryResolvePursuit` (`ScheduleSystem.cs:80-102`).
+> Tum satir referanslari 2026-07-26 calisma kopyasi (main @ `f6c9e2d0`) uzerinden dogrulandi.
 
 ## HLD - Ne ve Neden
 
-CAN SUYU H3'ten once tek reaktif davranis Presentation adaptorunde yasiyordu: render pompasinda kosuyor ve SADECE oyuncuyu avliyordu — NPC-vs-NPC imkansizdi ve hicbir olay baska bir olayi dogurmuyordu (`CascadeSystems.cs:8-14`). Bu dosyadaki sistemler dunyanin ilk gercek olay zincirini simulasyona tasir: bir avci (Enemy) bir sivili parcalar (CombatResolved) → yakindaki siviller bunu GORUR (WitnessRecorded + gercek bir ActorMemory kaydi — NpcMemory'nin ilk calisma-zamani yazari) → tanik muhafiza KOSAR ve rapor eder → rapor bir pursuit (kovalamaca) kurar ve kasabanin unrest defterine islenir → esik asilirsa TUM devriye sweep yapar (ChronicleEvent). Oyuncuya gorunen etkisi: kasaba meydaninda bir saldiri artik "sahne dekoru" degil; kalabalik kacar, muhafizlar gercekten kovalar ve NPC diyalogu yasananlari hatirlar (Gate9: bellek dile ulasir). CompanionSystem ayni felsefenin parti tarafi: yoldaslar yeni bir rol DEGIL, ise alinmis sivillerdir — kimliklerini, sprite'larini ve ActorMemory'lerini korurlar; oyuncunun yaninda dusmanlara predation'in ayni deterministik zarlariyla vururlar (`CompanionSystem.cs:8-13`). Tum sistemler H1 dersine uyar: stateless step instance'lari, deterministik zar (boundary stamp + aktor id'leri), saf Simulation katmani — render pompasina sifir bagimlilik.
+CAN SUYU H3 bu sisteme ruh verdi: o gune kadar tepkisel davranis SADECE render pump'inda oturuyor ve YALNIZCA oyuncuyu takip ediyordu — NPC-vs-NPC imkansizdi, hicbir olay bir baskasini tetiklemiyordu. `PredationSystem` + `WitnessResponseSystem` predation'i simulasyona tasidi ve dunyanin ilk gercek zincirini kurdu: bir avci sivili PATAKLAR (`CombatResolved`) → yakindaki siviller GORUR (`WitnessRecorded` + `NpcMemory`'nin ilk runtime yazicisi) → tanik nobetciye kadar KOSAR ve rapor eder (dedup'lu ikinci `WitnessRecorded`) → nobet CHASE ederek yakinlasip vurur (`GuardResponded`). P0-P2 iyilestirmeleri bu zincirin uc gedigini kapatti: (P0) kovalama artik `PerTick`'te; (P1) siviller pataklanip 1 HP'de HAYATTA kalir — 58 gunluk marathon 3 kasabayi bosaltiyordu; (P2) kasabanin bir "huzursuzluk defteri" var ve esigi asinca TUM nobet supurmesi tetiklenir. V3 YOLDAŞ ayni felsefeyi partiye tasidi: yoldas yeni bir rol degil, aktarilmis kimlikli (adi + sprite'i + hafizasi kalir) bir sivildir — `CompanionIds` uyeliktir, davranis PerTick heel-follow + Hourly guard-strike'a bolunur. Butun kod stateless step instance (H1 dersi), tamamen Simulation katmani, Unity yok, RNG boundary stamp + iki ID'den turer (ayni dunya, ayni isirik). W35-W36'da PLANLANAN "guard+combat action slice" (RUH_TESHIS §2.4'un son iki puppet path'i) hala TASARIM asamasinda — `docs/ruh/w36/00-guard-combat-design.md` cizildi, kod yok; predation/witness dogrudan `CombatActionResolver.Resolve` cagirmaya devam ediyor (action lifecycle sistemi bunlari GORMEZ).
 
-## HLD - Akis
+## HLD - Akış
 
-Kayit sirasi ve kadanslar (`DefaultTickSystems.cs:47-56` yorumlu liste; kesin kayitlar asagida):
-
-| Adim | Kadans:Order | Kayit |
-|---|---|---|
-| living.schedule | PerTick:20 | `DefaultTickSystems.cs:219` |
-| living.companion_follow | PerTick:21 | `DefaultTickSystems.cs:311` |
-| living.predation | Hourly:40 | `DefaultTickSystems.cs:328` |
-| living.companion_guard | Hourly:42 | `DefaultTickSystems.cs:319` |
-| living.witness | Hourly:45 | `DefaultTickSystems.cs:337` |
-
-Zincir, bir saatlik dongu icinde soyle akar:
-
-1. **Predation (Hourly:40, tetikleyen: tick registry).** Her canli Enemy icin: once StrikeReach(2) icindeki EN YAKIN muhafiz avciya vurur (GuardResponded + CombatResolved; zincirin ucuncu halkasi one alinmis — kasabanin bosalmasini engelleyen fren, `CascadeSystems.cs:38-49`). Avci hayattaysa HuntRadius(6) icindeki en yakin sivili secer; StrikeReach icindeyse vurur, degilse 1 Chebyshev hucre yaklasir (`CascadeSystems.cs:51-65`).
-2. **Mauled-survives kurali.** Predation sivili OLDURMEZ: 0 HP'ye dusen sivil 1 HP'de hayatta kalir ve `mauled_survives` (NeedChanged) damgasi alir; NeedRecovery iyilestirir. Avcilar ve muhafizlar birbirini oldurmeye devam eder — yirtici nufusu kendini sinirlar (`CascadeSystems.cs:81-91`, playtest fix "vardigimda kimse yoktu").
-3. **CompanionGuard (Hourly:42).** Her yoldas, oyuncunun VEYA kendisinin GuardReachCells(2) icindeki en yakin dusmana predation'in ayni zar semasıyla vurur (`CompanionSystem.cs:110-136`).
-4. **Witness (Hourly:45, tetikleyen: tick registry).** Son BIR SAATIN CombatResolved olaylari taranir (pencere `(stamp-60, stamp]`, derinlik tavani 4096 olay, `CascadeSystems.cs:135-148`). Saldirgan Enemy degilse atlanir (oyuncu kavgalari bounty sisteminin isi, `CascadeSystems.cs:150`). WitnessRadius(8) icindeki her canli, Enemy/Player olmayan aktor: `witnessed_attack` ActorMemory kaydi + WitnessRecorded olayi alir (`CascadeSystems.cs:159-164`).
-5. **Rapor (Depth 4).** Tanik 16 hucre icindeki en yakin muhafiza KOSAR; muhafizin 2 hucresi icindeyse saldirgan basina bir kez `reported_attack` kaydi + ikinci bir WitnessRecorded uretir; uzaktaysa muhafiza dogru 1 hucre yurur (`CascadeSystems.cs:166-193`).
-6. **Konverjans + pursuit + unrest.** ResponseRadius(12) icindeki her muhafiz: (a) `RegisterPursuit` ile 120 dakikalik bir kovalamaca kurar/tazeler (muhafiz basina TEK aktif pursuit, en yeni bela kazanir, `CascadeSystems.cs:271-289`); (b) `RaiseUnrest(+2)` ile sitenin suc defterini kabartir; (c) saldirgana dogru 1 hucre yurur (`CascadeSystems.cs:196-211`).
-7. **Pursuit kosusu (PerTick:20, tetikleyen: ScheduleSystem).** Kovalamacayi WitnessResponse DEGIL, PerTick calisan ScheduleSystem kosar: aktif pursuit'i olan muhafizin hedefi avin CANLI hucresi olur ve posta-donus rotasini gecersiz kilar — saatlik itis tek basina posta-donus yazarina 60:1 kaybediyordu (ARCHITECTURE_GAPS #2 "pursuit is arithmetically erased"; `ScheduleSystem.cs:74-75`, `PursuitRecord.cs:15-19`). Suresi dolan / avi olen / 40+ hucre kacan pursuit yerinde budanir (`ScheduleSystem.cs:86-107`).
-8. **Sweep (esik olayi).** Unrest >= SweepThreshold(6) olursa ve site cooldown'da degilse: o yerlesimin sinir+4 icindeki TUM canli muhafizlari ayni saldirgana pursuit kurar, bir ChronicleEvent (`watch_sweep guards:N target:X`) dusulur, unrest 2'ye iner ("sweep havayi temizler, hafizayi degil") ve site 1440 dakikalik (1 oyun gunu) sweep cooldown'una girer. Cooldown suresince unrest esigin hemen altinda (5) tutulur — kasaba "tetikte" kalir ama devriye gunde en fazla bir kez yuruyus yapar (`CascadeSystems.cs:216-268`, tuning: "sweep spam", 5510 marathon satiri).
-9. **CompanionFollow (PerTick:21, schedule'dan SONRA).** Geride kalan yoldas oyuncuya dogru 1 (cok gerideyse 2) Chebyshev adim atar; boylece follow adimi o tick icin hucrenin son sahibi olur — schedule/follow titremesi yok (`CompanionSystem.cs:69-106`, `DefaultTickSystems.cs:308-312`). Olen yoldas rostadan SESLI dusurulur: `companion_fell` olayi (`CompanionSystem.cs:75-87`).
-10. **Recruit/dismiss (tetikleyen: oyuncu etkilesimi, tick disi).** `CompanionService.TryRecruit/TryDismiss` — 3 hucre mesafe, en fazla 2 yoldas, Player/Enemy alinamaz (`CompanionSystem.cs:22-45`).
-
-Catchup sozlesmesi: her iki kaskad sistemi de `Tick(world, stamp)` imzasiyla boundary stamp alir; zarlar ve olay damgalari bu stamp'ten turer. Witness taramasi erken KIRAMAZ — cok gunluk catchup'ta log stamp-monoton degildir (saatlik gecisler, gunluk gecislerin geri-doldurmasindan once eklenir) (`CascadeSystems.cs:25-26, 129-131`).
+1. **Tetik zamanlamasi** (`DefaultTickSystems.cs:374-386`):
+   - `PredationStep` — `"living.predation"`, `Hourly:40`.
+   - `CompanionGuardStep` — `"living.companion_guard"`, `Hourly:42`.
+   - `WitnessStep` — `"living.witness"`, `Hourly:45`.
+   - `CompanionFollowStep` — `"living.companion_follow"`, `PerTick:21` (order kasitli olarak `living.schedule@PerTick:20`'den SONRA — lagging yoldas'in karosunu follow step sahiplenir, jitter yok).
+   - `ScheduleStep` — `"living.schedule"`, `PerTick:20`, `world.GuardPursuits`'i `Advance`'e verir (`DefaultTickSystems.cs:277`).
+2. **Predation tick** (`CascadeSystems.cs:22-64`): `world.Actors.Records` uzerinde deterministik iterasyon; her hostile icin ONCE `StrikeReach=2` icindeki guard tetiklenir (`:39-49` — cascade'in ucuncu halkasi ONCE calisir; predation-once-guard-response sirasi kasitli, testle pinlenmis), sonra `HuntRadius=6` icindeki en yakin sivil av secilir (`:51-53`). `Chebyshev(hunter,prey) <= 2` ise `Strike`, aksi halde tek karoluk yaklasim adimi (`:56-63`).
+3. **Deterministik zar** (`CascadeSystems.cs:67-77`): RNG seed `(TotalMinutes*2654435761) ^ (attackerId*97) ^ (targetId*193) | 1u` — ayni dunya + ayni saat + ayni cift = ayni zar. `CombatActionResolver.Resolve` `CombatResolved` olayini yazar, hasar bandi genisligi `max(1, BaseDamage/2)`.
+4. **Mauled-survives contract** (`CascadeSystems.cs:82-90`): dusman VEYA nobet olmayan bir hedef 0 HP'ye duserse HP 1'de klanplenir, `NeedChanged` olayi `mauled_survives by:{id}` etiketiyle yazilir. 58 marathon gunu boyunca predation kasabalari bosaltmasin diye — playtest fix'i ("vardigimda kimse yoktu"); nobet + avci hala birbirini oldurur, ust populasyon kendini yine sinirlar.
+5. **Witness tick** (`CascadeSystems.cs:148-215`): son `stamp - 60 dk` icindeki olay logu tarama, `scanFloor = max(0, events.Count - 4096)` derinlik kepi (marathon'da 50k+ olay birikince O(history) buyume kesildi; per-hour ~500 olay).
+6. Her `CombatResolved` icin `WitnessRadius=8` icindeki HER sivil/nobetci (`attacker.Id`'ye esit olmayan, non-Enemy non-Player, `:161-166`):
+   - `NpcMemory.GetOrCreate(witness.Id).RecordEvent("witnessed_attack", …)` — `NpcMemory`'nin ilk runtime yazma noktasi (`:168-171`).
+   - `WitnessRecorded` olayi yazilir (`:172-173`).
+7. **Depth-4 rapor** (`CascadeSystems.cs:177-198`): tanik en yakin `radius=16` guard'i arar; guard'a Chebyshev <=2 ise `reported_attack` bir kez memory'e yazilir (dedup: ayni attacker + ayni tanik = tek rapor — `:180-192`), yoksa tanik guard'a dogru bir karo yurur (mill in shock DEGIL). Bu adim iki-gunluk gate testinden once "gate kirilinca dedup yok" review-notu ile pinlendi.
+8. **Watch converges** (`CascadeSystems.cs:201-215`): `ResponseRadius=12` icindeki HER guard icin `RegisterPursuit` (pursuit kaydi armlanir) + `RaiseUnrest(siteId, +2, …)` ; ayrica `Chebyshev>1` guard bir karo yaklasik yurur (kayit takim hemen hazir olmasa da guard visibly hareket eder).
+9. **Pursuit resolve** (`ScheduleSystem.cs:69-77`): PerTick'te guard'in aktif pursuit'i varsa hedef = avin CANLI hucresi, `MovementService.StepToward` ile tam-tick hizinda; onceden 60:1 kaybediyordu — return-to-post yazicisiyla ayni kadansa cikinca kovalama gercekten kapatiyor (marathon: 1.8m closed / 2.6s vs eski ~5.7m).
+10. **Pursuit budama** (`ScheduleSystem.cs:80-102`): `time > UntilMinutes` (varsayilan 120 dk), av olmus/yok, veya `>40 hucre` kacmis kayitlar `pursuits.RemoveAt(i)` — guard poste doner.
+11. **Site sweep** (`CascadeSystems.cs:223-277`): `RaiseUnrest` her cagirimda `today > LastDecayDay` ise `-1/gun` ile eritilir, sonra `+amount`; `Unrest >= SweepThreshold(6)` VE `stamp >= SweepCooldownUntilMinutes` ise: (a) `SweepCooldownUntilMinutes = stamp + 1440 dk`, (b) `Unrest = 2` (defter havayi temizler, hafizayi silmez), (c) site sinirlarinin +4 karo cevresindeki HER guard'a `RegisterPursuit` — TOPLU sefer, (d) `ChronicleEvent` `watch_sweep guards:{n} target:{id}` yazilir. Cooldown icinde tekrar esige varilirsa `Unrest = SweepThreshold - 1`'e klanplenir — site "primed" kalir ama bir oyun-gununden fazla marsi tekrarlamaz (W30 wound-4: 5510 marathon supurme satiri fix'i).
+12. **Companion follow** (`CompanionSystem.cs:72-108`): oncelikle olu yoldaslari `CompanionIds`'ten ters yonde tarayarak dusurur ve `companion_fell` yazar (ölum bir hikaye ani — M2). Sonra her uye icin `gap = Chebyshev(companion, player)`; `gap <= HeelCells(1)` ise dokunmaz; `gap > 2` ise CIFT ADIM (P0 re-pin — schedule/meal detour'lari heel'i asamasin), diger halde tek adim.
+13. **Companion guard** (`CompanionSystem.cs:113-135`): her yoldas icin `NearestHostile(player, companion)` `GuardReachCells=2` icinde ise predation ile ayni deterministik RNG (`stamp * 2654435761 ^ compId*97 ^ threatId*193 | 1u`) ile `CombatActionResolver.Resolve` cagirilir — ayni motor, ayni zar; site fallback `PredationSystem.FallbackSite(world, threat.Position)`.
+14. **Recruit/dismiss** (`CompanionSystem.cs:19-45`): `CompanionService.TryRecruit` `RecruitReachCells=3` ve `MaxCompanions=2` gate'ler; player veya enemy olan REDDEDILIR; basari `ActorTalked` + `companion_joined name:{name}`. `TryDismiss` cikarir + `companion_left name:{name}`.
+15. **Save/load** (`WorldSaveMapper.cs:100-103, 120-123, 221-236`): `CompanionIds` bir dizi; `GuardPursuits` uc paralel dizi (GuardId/TargetId/UntilMinutes); `SiteUnrest` dort paralel dizi (SiteId/Unrest/LastDecayDay/SweepCooldownUntilMinutes — sonuncusu W30 sonrasi golden 777 ile seed'lendi).
 
 ## LLD - Veri Modeli
 
-**PursuitRecord** (`Assets/Scripts/Domain/World/PursuitRecord.cs:20-25`) — aktif bir muhafiz kovalamacasi:
-- `ulong GuardId` — kovalayan muhafiz (muhafiz basina tek satir).
-- `ulong TargetId` — av.
-- `long UntilMinutes` — son kullanma ani (kurulusta stamp + 120 dk, `CascadeSystems.cs:272, 287`).
+**Sabitler** — `Assets/Scripts/Simulation/Living/CascadeSystems.cs`:
+- `PredationSystem.HuntRadius = 6` (`:19`) — avci sivili bu Chebyshev mesafeye kadar arar.
+- `PredationSystem.StrikeReach = 2` (`:20`) — bu mesafede guard avciya vurur / avci ava vurur.
+- `WitnessResponseSystem.WitnessRadius = 8` (`:145`).
+- `WitnessResponseSystem.ResponseRadius = 12` (`:146`).
+- `WitnessResponseSystem.SweepThreshold = 6` (`:221`).
+- `WitnessResponseSystem.SweepCooldownMinutes = 1440` (`:222`) — bir oyun gunu.
+- `WitnessResponseSystem.PursuitMinutes = 120` (`:281`) — guard pursuit'inin varsayilan gecerlilik penceresi.
+- Witness tarama pencere kepi `scanFloor = max(0, events.Count - 4096)` (`:157`) — marathon O(history) borcu.
 
-**SiteUnrestRecord** (`Assets/Scripts/Domain/World/SiteUnrestRecord.cs:5-11`) — yerlesimin suc basinci (DFU LegalRep-lite):
-- `SiteId SiteId`
-- `int Unrest` — rapor basina +2; esik 6.
-- `long LastDecayDay` — tembel gunluk cozunme cizelgesi (gun basina -1, yalniz yazim aninda islenir, `CascadeSystems.cs:233-238`).
-- `long SweepCooldownUntilMinutes` — bir sonraki sweep'e izin ani (stamp + 1440 dk).
+**Sabitler** — `Assets/Scripts/Simulation/Living/CompanionSystem.cs`:
+- `CompanionService.MaxCompanions = 2` (`:18`).
+- `CompanionService.RecruitReachCells = 3` (`:19`).
+- `CompanionSystem.HeelCells = 1` (`:66`) — bu mesafede yoldas rahat durur.
+- `CompanionSystem.GuardReachCells = 2` (`:67`) — hostile bu mesafedeyse yoldas vurur.
 
-**WorldState alanlari** (`Assets/Scripts/Domain/World/WorldState.cs`):
-- `NpcMemoryStore NpcMemory` (:167) — tanik bellegi buraya yazilir.
-- `List<ulong> CompanionIds` (:171) — parti uyeligi (rol degisimi yok).
-- `List<PursuitRecord> GuardPursuits` (:173).
-- `List<SiteUnrestRecord> SiteUnrest` (:181).
+**PursuitRecord** (`Assets/Scripts/Domain/World/PursuitRecord.cs:8-13`) — `GuardId: ulong`, `TargetId: ulong`, `UntilMinutes: long`. Depo: `WorldState.GuardPursuits: List<PursuitRecord>` (`WorldState.cs:234`); kopyada referans paylasimi (`:326`).
 
-**ActorMemory / InteractionEvent** (`Assets/Scripts/Domain/Memory/`):
-- `ActorMemory` (:13): 64 olaylik ring buffer (`MaxEvents = 64`, tasarsa en eski silinir, `ActorMemory.cs:16, 32-37`).
-- `InteractionEvent` (readonly struct, `InteractionEvent.cs:13-40`): `Timestamp, EventType, ActorSeen, SubjectId, ItemTemplateId, Amount, Location`. Kaskadlarin yazdigi EventType'lar: `"witnessed_attack"` (SubjectId `"predation"`), `"reported_attack"` (SubjectId `"watch_report"`).
-- `NpcMemoryStore.GetOrCreate(ActorId)` (`NpcMemoryStore.cs:19`).
+**SiteUnrestRecord** (`Assets/Scripts/Domain/World/SiteUnrestRecord.cs:5-11`) — `SiteId: SiteId`, `Unrest: int`, `LastDecayDay: long`, `SweepCooldownUntilMinutes: long` (W30 alani). Depo: `WorldState.SiteUnrest: List<SiteUnrestRecord>` (`WorldState.cs:255`; kopyada `:334`).
 
-**Sabitler:**
-- PredationSystem: `HuntRadius=6`, `StrikeReach=2` (`CascadeSystems.cs:20-21`).
-- WitnessResponseSystem: `WitnessRadius=8`, `ResponseRadius=12` (:124-125), rapor kosu yaricapi 16 / rapor mesafesi 2 (koda gomulu, :169, :173), `SweepThreshold=6` (:219), `SweepCooldownMinutes=1440` (:220), `PursuitMinutes=120` (:272), tarama derinlik tavani 4096 (:143).
-- CompanionService/System: `MaxCompanions=2`, `RecruitReachCells=3` (`CompanionSystem.cs:19-20`), `HeelCells=1`, `GuardReachCells=2` (:65-66).
-- ScheduleSystem pursuit: kayip esigi 40 hucre (`ScheduleSystem.cs:102`).
+**CompanionIds** — `WorldState.CompanionIds: List<ulong>` (`WorldState.cs:232`; kopyada `:325`).
 
-**Kalicilik** (`Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.cs`): CompanionIds (:95), pursuit paralel dizileri guardIds/targetIds/untilMinutes (:96-98), unrest paralel dizileri siteIds/values/lastDecayDays/sweepCooldowns (:108-111); geri yukleme :203-246. Golden roundtrip testi pinler (asagida).
+**Uretilen olay etiketleri** (`WorldEvent.Detail` icinde):
+- `guard_strikes_hunter target:{id}` — `CascadeSystems.cs:46`.
+- `mauled_survives by:{id}` — `CascadeSystems.cs:90`.
+- `witnessed attacker:{id}` — `CascadeSystems.cs:173`.
+- `reported attacker:{id} guard:{id}` — `CascadeSystems.cs:192`.
+- `watch_sweep guards:{n} target:{id}` — `CascadeSystems.cs:275`.
+- `companion_joined name:{name}` — `CompanionSystem.cs:33`.
+- `companion_left name:{name}` — `CompanionSystem.cs:42`.
+- `companion_fell name:{name}` — `CompanionSystem.cs:88`.
 
 ## LLD - Fonksiyon Haritasi
 
-- `PredationSystem.Tick(WorldState, GameTime) : int` — `CascadeSystems.cs:26` — saatlik av dongusu; vurulan darbe sayisini dondurur.
-- `PredationSystem.Strike(world, resolver, action, attacker, target, stamp)` (private static) — `CascadeSystems.cs:70` — deterministik XorShiftRng (stamp*2654435761 ^ attackerId*97 ^ targetId*193 | 1) ile `CombatActionResolver.Resolve` cagirir; mauled-survives kuralini uygular.
-- `PredationSystem.Nearest(world, from, radius, filter) : ActorRecord` (internal static) — `CascadeSystems.cs:94` — Chebyshev en-yakin canli aktor; KENDINI haric tutmaz (asagida borclara bkz).
-- `PredationSystem.Chebyshev(a, b) : int` (internal static) — `CascadeSystems.cs:108`.
-- `PredationSystem.FallbackSite(world) : SiteId` (internal static) — `CascadeSystems.cs:111` — site store'daki ILK siteyi dondurur; bos ise SiteId(1).
-- `WitnessResponseSystem.Tick(WorldState, GameTime) : int` — `CascadeSystems.cs:132` — son saatin CombatResolved'larini tarar; yazilan tanik kaydi sayisini dondurur.
-- `WitnessResponseSystem.RaiseUnrest(world, siteId, amount, stamp, attackerId)` (private static) — `CascadeSystems.cs:221` — tembel cozunme + esik + cooldown + sweep; sweep'te site sinir+4 filtresiyle tum devriyeye `RegisterPursuit`.
-- `WitnessResponseSystem.RegisterPursuit(world, guardId, targetId, stamp)` (private static) — `CascadeSystems.cs:273` — muhafiz basina tek satir; var olani hedef+sure ile tazeler.
-- `ScheduleSystem.Advance(actors, time, foodSpots, List<PursuitRecord> pursuits)` — `ScheduleSystem.cs:52-53` — PerTick rota secimi; pursuit'i olan muhafizin hedefi avin canli hucresi (:74-75). F18: pinli Enemy (home==dayAnchor) schedule'dan muaf (:64-68).
-- `ScheduleSystem.TryResolvePursuit(pursuits, actors, guard, time, out target) : bool` (private static) — `ScheduleSystem.cs:86` — suresi dolmus / avi olmus / 40+ hucre kacmis satirlari yerinde budar.
-- `CompanionService.TryRecruit(world, actorId) : bool` — `CompanionSystem.cs:22` — mesafe/kota/rol kapilari; `companion_joined` olayi.
-- `CompanionService.TryDismiss(world, actorId) : bool` — `CompanionSystem.cs:38` — `companion_left` olayi.
-- `CompanionService.IsCompanion(world, actorId) : bool` — `CompanionSystem.cs:47`.
-- `CompanionService.FindPlayer(world) : ActorRecord` — `CompanionSystem.cs:50` — public: Presentation'daki proof yuzeyi de kullanir.
-- `CompanionSystem.TickFollow(world) : int` — `CompanionSystem.cs:69` — olu yoldas temizligi (`companion_fell`) + heel-follow (gerekirse cift adim, :96-102).
-- `CompanionSystem.TickGuard(world, stamp) : int` — `CompanionSystem.cs:110` — yoldas basina en fazla bir vurus; predation zar semasi.
-- `CompanionSystem.NearestHostile(world, playerPos, companionPos) : ActorRecord` (private static) — `CompanionSystem.cs:138` — min(oyuncuya, yoldasa) Chebyshev <= 2 olan en yakin Enemy.
-- `CombatActionResolver.Resolve(...) : CombatActionOutcome` — `Assets/Scripts/Simulation/Combat/CombatActionResolver.cs:25` — stamina kapisi → hit roll → damage roll → `defender.ApplyVitals` → CombatResolved olayi (:76-81). Kaskadlarin vitals'a dokundugu tek yol (mauled-survives istisnasi haric).
+**PredationSystem** (`Assets/Scripts/Simulation/Living/CascadeSystems.cs`):
+- `int Tick(WorldState)` — `:22` — `world.Time`'i boundary stamp olarak overload'a devreder.
+- `int Tick(WorldState, GameTime stamp)` — `:25-64` — hostile dongusu; guard-first strike sirasi, sonra av arama + yaklas/vur; sayaç geriye doner (dogrulama icin).
+- `static void Strike(WorldState, resolver, action, attacker, target, GameTime stamp)` — `:66-91` — deterministik RNG ile `CombatActionResolver.Resolve`; sivil olumu klanplenir.
+- `internal static ActorRecord Nearest(WorldState, GridPosition from, int radius, Func<ActorRecord,bool>)` — `:93-104` — Chebyshev'e gore en yakin filtre-uyan aktor (WitnessResponse ve CompanionSystem tarafindan da kullanilir).
+- `internal static int Chebyshev(GridPosition, GridPosition)` — `:106-107`.
+- `internal static SiteId FallbackSite(WorldState, GridPosition position)` — `:109-115` — pozisyonu iceren siteyi arar (`site.Contains`); yoksa `FallbackSite(world)`. B22'nin GERCEK cozumu — onceden ilk site sabit yaziliyordu.
+- `internal static SiteId FallbackSite(WorldState)` — `:117-123` — herhangi bir site yoksa `SiteId(1)`.
 
-## LLD - Yazdigi/Okudugu Alanlar
+**WitnessResponseSystem** (`Assets/Scripts/Simulation/Living/CascadeSystems.cs`):
+- `int Tick(WorldState)` — `:148`.
+- `int Tick(WorldState, GameTime stamp)` — `:151-217` — govde: log window scan (4096 depth cap), witness dongusu, rapor dedup, watch converge + `RegisterPursuit` + `RaiseUnrest`.
+- `void RaiseUnrest(WorldState, SiteId, int amount, GameTime stamp, ulong attackerId)` — `:223-277` — decay + accumulate + threshold + cooldown clamping + sweep (site-scoped guard sec, +4 karo tolerans) + chronicle event.
+- `void RegisterPursuit(WorldState, ulong guardId, ulong targetId, GameTime stamp)` — `:281-297` — guard basina en yeni bela kazanir; varsa `UntilMinutes` uzatir, yoksa yeni kayit.
 
-FieldOwnershipRegistry dili (`Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs`):
+**CompanionService** (statik — `Assets/Scripts/Simulation/Living/CompanionSystem.cs:17-60`):
+- `bool TryRecruit(WorldState, ActorId)` — `:21-36` — cap/reach/role/canlilik gate; basari `ActorTalked` event.
+- `bool TryDismiss(WorldState, ActorId)` — `:38-45`.
+- `bool IsCompanion(WorldState, ActorId)` — `:47-48`.
+- `ActorRecord FindPlayer(WorldState)` — `:50-56` — presentation'in proof yuzeyi de kullaniyor (public bilincli).
+- `internal static int Chebyshev(GridPosition, GridPosition)` — `:58-59`.
 
-| Alan | Beyanli yazarlar | Registry satiri |
-|---|---|---|
-| `Actor.Position` | `living.schedule@PerTick:20`, `living.companion_follow@PerTick:21`, `living.predation@Hourly:40` (avci adimi), `living.witness@Hourly:45` (tanik kosusu + muhafiz konverjansi) | :18-25 |
-| `Actor.Vitals` | `living.predation@Hourly:40`, `living.witness@Hourly:45`, `living.companion_guard@Hourly:42` | :32-37 |
-| `World.GuardPursuits` | `living.witness@Hourly:45` (kurar/tazeler), `living.schedule@PerTick:20` (cozer/budar) | :38-42 |
-| `World.SiteUnrest` | `living.witness@Hourly:45` | :52 |
+**CompanionSystem** (`Assets/Scripts/Simulation/Living/CompanionSystem.cs:63-152`):
+- `int TickFollow(WorldState)` — `:72-108` — olu-yoldas dusurme (reverse walk) + heel-follow; gap>2 ise cift-adim (P0 re-pin); sayac.
+- `int TickGuard(WorldState, GameTime stamp)` — `:113-135` — her yoldas icin en yakin hostile bul + deterministik RNG ile `Resolve`.
+- `static ActorRecord NearestHostile(WorldState, GridPosition player, GridPosition companion)` — `:137-150` — min(player-mesafe, companion-mesafe) `GuardReachCells` icinde en yakin Enemy.
 
-Beyan DISI kalan gercek yazimlar (asagida borclara da islendi):
-- `World.NpcMemory` — witness yazar (`CascadeSystems.cs:159-161, 181-182`); registry'de alan yok.
-- `World.CompanionIds` — CompanionService.TryRecruit/TryDismiss (`CompanionSystem.cs:32, 40`) ve CompanionSystem.TickFollow olum temizligi (:83) yazar; registry'de alan yok.
-- `Actor.Vitals` icin beyanli `living.witness@Hourly:45`: mevcut kodda WitnessResponseSystem vitals'a HIC yazmiyor (dosyada Resolve/ApplyVitals cagrisi yok) — fazla-beyan (stale gorunumlu; zararsiz ama defteri yaniltir).
-- Okumalar: her iki kaskad `World.Events` logunu okur (witness tarama :142-148), `World.Actors.Records`, `World.Sites.Records` (FallbackSite :111-117, sweep siniri :254-256); ScheduleSystem `World.GuardPursuits` okur/budar.
+**ScheduleSystem hosted karsiliklari** (`Assets/Scripts/Simulation/Living/ScheduleSystem.cs`):
+- `void Advance(ActorStore, GameTime, List<PursuitRecord>, WorldState)` — `:44-77` — guard ise `TryResolvePursuit`, aksi halde `ChooseTarget`; nav-farkindali `StepToward`.
+- `static bool TryResolvePursuit(List<PursuitRecord>, ActorStore, ActorRecord guard, GameTime, out GridPosition)` — `:80-102` — expiry/dead-quarry/>40 cell budama, canli hedef donusu.
 
-## LLD - Urettigi/Tukettigi Olaylar
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-WorldEventKind kaynagi: `Assets/Scripts/Domain/World/WorldEventKind.cs`.
+Registry: `Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs`.
 
-| Olay / log tag | Kind (satir) | Ureten | Tuketen |
-|---|---|---|---|
-| `combat_resolved action:predation ...` | CombatResolved=20 (:34) | PredationSystem → resolver | WitnessResponseSystem (tek kaskad tetigi, :148-150); RumorMill; sunum |
-| `combat_resolved action:companion_guard ...` | CombatResolved=20 | CompanionSystem.TickGuard | Witness taramasi bunu ATLAR (saldirgan Enemy degil, :150) |
-| `guard_strikes_hunter target:X` | GuardResponded=31 (:47) | PredationSystem (:45-46) | Gate5 log kaniti; sunum |
-| `mauled_survives by:X` | NeedChanged=7 (:21) | PredationSystem (:89-90) | NeedRecovery anlatisi; log |
-| `witnessed attacker:X` | WitnessRecorded=30 (:46) | WitnessResponseSystem (:162-163) | Gate5; diyalog boru hatti (Gate9) |
-| `reported attacker:X guard:Y` | WitnessRecorded=30 | WitnessResponseSystem (:183-184) | log/chronicle |
-| `watch_sweep guards:N target:X` | ChronicleEvent=32 (:49) | RaiseUnrest (:267-268) | chronicle; SiteUnrestTests |
-| `companion_joined/left/fell name:X` | ActorTalked=2 (:16) | CompanionService/System (:33, :42, :85) | log; sunum |
-| ActorMemory: `witnessed_attack`, `reported_attack` | (InteractionEvent, olay logu degil) | WitnessResponseSystem | NpcMemoryLlmEnvelope.RecallLines → LLM diyalog baglami (Gate9) |
+**Yazicilar** (declared, W35 sonrasi):
+- `Actor.Vitals` (`:44-49`) → `living.predation@Hourly:40`, `living.witness@Hourly:45`, `living.companion_guard@Hourly:42` (uc yazici da `CombatActionResolver.Resolve` uzerinden).
+- `World.GuardPursuits` (`:50-54`) → `living.witness@Hourly:45` (arm/refresh — `RegisterPursuit` iki callsite: witness converge + sweep) VE `living.schedule@PerTick:20` (resolve/prune — `TryResolvePursuit` in-place remove).
+- `World.SiteUnrest` (`:88`) → `living.witness@Hourly:45` (tek yazici — `RaiseUnrest`).
+- `World.CompanionIds` (`:111`) → `living.companion_follow@PerTick:21` (tek DECLARED yazici — olu-dusurme). NOT: `CompanionService.TryRecruit/TryDismiss` boot/dialog komut yolu — ledger "tick loop'ta kim yazar" kontratidir, bu carve-out `FieldOwnershipRegistry.cs:107-110` yorumunda kayitli.
+- `World.NpcMemory` (`:106-110`) → `living.witness@Hourly:45` (tek DECLARED — `RecordEvent`); dialog/trade/ToolUse boundary yazilari kasitli UNDECLARED.
+- `Actor.Mood` (`:101-105`) → witness dolayli olarak degistirmez; Kabuluk gerginlikte degil.
 
-Tuketim tarafi: WitnessResponseSystem YALNIZ `CombatResolved` + saldirgan rolu Enemy olanlari tuketir. WitnessRecorded olaylari bir sonraki saatte pencere disina duser (pencere alt siniri exclusive, :147) — kendi kendini tetikleyen dongu yok.
+**Okuyucular** (kod yolu — registry'de olmayan `World.Events`, `World.Sites`, `World.Actors` genel okumalar):
+- `World.Events` — witness log scan (`CascadeSystems.cs:154-179`); ambient/rumors da okur ama farkli sistemler.
+- `World.Sites.Records` — `FallbackSite` (`:109-114`), sweep site-scope filtresi (`:262-269`).
+- `World.Actors.Records` — hem predation, hem witness converge, hem companion tick.
+
+## LLD - Ürettiği/Tükettiği Olaylar
+
+**Uretilenler** (`WorldEventKind` — `Assets/Scripts/Domain/World/WorldEventKind.cs`):
+- `CombatResolved` — `Resolve` cagrilari uzerinden (predation, witness'in dolayli tetikledigi guard-strike, companion guard). BU dosyada dogrudan `Events.Append` YOK — resolver yazar.
+- `GuardResponded` — `CascadeSystems.cs:45` — guard avciya vurdugunda ("cascade'in ucuncu halkasi").
+- `NeedChanged` — `:88` — mauled-survives etiketi (borç: NeedChanged bu semantik icin ideal degil ama enum sozlestirme yerine yeniden kullanildi).
+- `WitnessRecorded` — `:171` (witnessed) ve `:190` (reported).
+- `ChronicleEvent` — `:274` — sweep chronicle line, `RuntimeHistorySystem` bunu chronicle'a yigar.
+- `ActorTalked` — `CompanionSystem.cs:33, 42, 87` — companion_joined/left/fell (yeni enum yerine mevcut kanal).
+
+**Tuketilenler**:
+- `CombatResolved` — `WitnessResponseSystem` son bir saatin log'undan tarar (`:154, :156`); attacker rol filtresi Enemy'e sinirlar (`:161` — player brawl'lari bounty sisteminin isi).
 
 ## Testler
 
-- `Assets/Tests/EditMode/Living/CascadeSystemsTests.cs` — tek-rapor idempotensi (:35), mauled-survives (:61), muhafiz once vurur (:83).
-- `Assets/Tests/EditMode/Living/GuardPursuitTests.cs` — rapor pursuit kurar (:35), kovalayan muhafiz her tick yaklasir / rubber-band yok (:52), suresi dolan pursuit budanir ve devriye posta doner (:75).
-- `Assets/Tests/EditMode/Living/SiteUnrestTests.cs` — esik + toplu sweep (:41), gunde bir sweep + cooldown sonrasi yeniden kurulum (:61), gunlerle cozunme (:84).
-- `Assets/Tests/EditMode/Living/CompanionSystemTests.cs` — recruit/kota/mesafe (:40, :54), heel-follow (:71, :86), guard strike (:97), olum-rosta cikisi (:112), dismiss (:128).
-- `Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs` — Gate5 kaskad ucgeni: saldiri→tanik→muhafiz yaniti, en az 2 tanik + 2 bellek kaydi (:139-166); Gate9 bellek dile ulasir (:253); Gate10 yoldas sadakati tam gun (:275).
-- `Assets/Tests/EditMode/Composition/FieldOwnershipRegistryTests.cs` — her beyanli yazar tick registry'de var (:12), cekirdek mutable alanlarin sahipligi beyanli (:34) — "guard-pursuit sinifi catisma" (beyansiz hizli-kadans ikinci yazar) CI olayi olur.
-- `Assets/Tests/EditMode/Save/WorldSaveMapperGoldenRoundtripTests.cs` — CompanionIds / GuardPursuits / SiteUnrest kaliciligini pinler.
+- `Assets/Tests/EditMode/Living/CascadeSystemsTests.cs` (96 satir): `WitnessTick_SameAttackerTwice_FilesExactlyOneReport`, `PredationTick_CivilianCanNeverDieOfPredation_OnlyMauled`, `PredationTick_GuardInReach_StrikesTheHunterFirst` — review-mandated per-tick pins.
+- `Assets/Tests/EditMode/Living/GuardPursuitTests.cs` (93 satir): `WitnessReport_ArmsAPursuit_ForGuardsInEarshot`, `Advance_PursuingGuard_ClosesEveryTick_InsteadOfRubberBanding`, `Advance_ExpiredPursuit_IsPruned_AndTheWatchGoesHome` — P0 (ARCHITECTURE_GAPS #2) pinleri.
+- `Assets/Tests/EditMode/Living/SiteUnrestTests.cs` (101 satir): `RepeatedReports_CrossTheThreshold_AndTheWholeWatchSweeps`, `ContinuousTrouble_SweepsOncePerDay_AndReArmsAfterTheCooldown`, `Unrest_DecaysWithTheDays` — P2 defter + W30 cooldown pinleri.
+- `Assets/Tests/EditMode/Living/CompanionSystemTests.cs` (138 satir, 7 test): `TryRecruit_NearbyCivilian_JoinsAndEmitsEvent`, `TryRecruit_BeyondReachOrOverCap_IsRefused`, `TickFollow_CompanionLagsBehind_StepsTowardThePlayer`, `TickFollow_CompanionAtHeel_HoldsPosition`, `TickGuard_EnemyBesideThePlayer_CompanionStrikesIt`, `TickFollow_CompanionDied_LeavesThePartyWithAFallenEvent`, `TryDismiss_Companion_LeavesAndEmitsEvent` — V3 TDD-first.
+- `Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs` (337 satir, 10 gate): `Gate5_EventCascade_AnAttackIsSeenAndRemembered`, `Gate9_MemoryReachesTheTongue_WitnessedEventsEnterTheDialoguePrompt`, `Gate10_CompanionLoyalty_ThePartyHoldsThroughAFullDay` — integration gates (2-day sim).
+- `Assets/Tests/EditMode/Actions/WorkOutputAuthorshipTests.cs` — companion pursuit carve-out'un `guards-eat` decision path'te bozulmadigini pinler.
+- `Assets/Tests/EditMode/Memory/MemoryWriteSystemTests.cs` — NpcMemory yazma tarafi (witness tarafindan tetiklenen).
+- `Assets/Tests/EditMode/World/RuntimeHistorySystemTests.cs` — `watch_sweep` chronicle'a girdisinin yazilmasi.
 
-## Bilinen Borclar + Kacak Kapilari
+W32-W36 sirasinda bu sistem icin YENI story-test slice acilmadi (EAT/SLEEP/WORK/FARM story-test slice'lari ayri sistemlere aitti). Kaskadin sınav yeri hala iki-gunluk integration gate + yukaridaki 4 unit-test dosyasi.
 
-Hata ailesi harfleri `docs/SYSTEMS_ATLAS.md:52-59` taksonomisine gore.
+## W32-W36 Değişiklikleri
 
-1. **FallbackSite = tek-site atfi — sinif (a).** Predation'in tum CombatResolved/GuardResponded olaylari `FallbackSite(world)` yani store'daki ILK siteye yazilir (`CascadeSystems.cs:79, 111-117`); RaiseUnrest de `evt.SiteId` uzerinden ayni siteye isler (:206). Sonuc: cok-siteli dunyada TUM predation kaynakli unrest cografyadan bagimsiz ilk sitede birikir; sweep de o sitenin sinirlarıyla filtrelenir. Kirsalda islenen suc baskentin devriyesini yurutebilir. (CompanionGuard da ayni FallbackSite'i kullanir, `CompanionSystem.cs:132`.)
-2. **Witness tarama derinlik tavani 4096 — bilincli kacak kapisi.** O(history) tam-tarama buyumesi (canli 6 dk kosuda ~50k olay) 4096-olay tavaniyla degistirildi (`CascadeSystems.cs:139-143`). Bir saat + catchup serpistirmesi 4096'yi asarsa penceredeki eski saldirilar SESSIZCE taniksiz kalir. Uretim saatlik hacmi ~500 — pay genis ama sinir izlenmiyor (tasma sayaci yok) — sinif (g).
-3. **`Nearest` kendini haric tutmaz → muhafiz-tanik kendine rapor verir.** Muhafizlar tanik olabilir (filtre yalniz Enemy/Player'i eler, :155); tanik-muhafiz `Nearest(..., Role==Guard)` cagrisinda mesafe 0 ile KENDINI bulur ve kendi bellegine `reported_attack` yazar (:169-185). Zararsiz gorunuyor (rapor idempotent) ama "muhafiza kosma" sahnesinin anlamini bosaltir; dogrulanmadi: tasarim mi yan etki mi.
-4. **Olu muhafizin pursuit satiri sizintisi.** `TryResolvePursuit` budamayi yalniz o muhafiz Advance dongusunde CANLIYKEN yapar (`ScheduleSystem.cs:60-62` olu aktor atlanir); muhafiz olurse PursuitRecord'u sonsuza dek `World.GuardPursuits`'ta kalir ve save'e yazilir. Kucuk ama birikimli — sinif (g).
-5. **Fazla-beyan: `Actor.Vitals` ← `living.witness@Hourly:45`.** Registry beyan ediyor (`FieldOwnershipRegistry.cs:35`) ama mevcut WitnessResponseSystem vitals'a yazmiyor. Lint testi yalniz "beyanli yazar registry'de var mi" yonunu denetler (:12) — ters yon (beyan var, yazim yok) yakalanmaz. Defter okuyucusunu yaniltir.
-6. **Beyansiz alanlar: `World.NpcMemory` ve `World.CompanionIds`.** Ikisi de gercek calisma-zamani yazimina sahip (witness :159-161; CompanionService :32/:40; TickFollow :83) ama FieldOwnershipRegistry'de alan olarak yok. Registry'nin varlik nedeni "beyansiz ikinci yazar" sinifini CI olayina cevirmekti (`FieldOwnershipRegistry.cs:5-10`) — bu iki alan korumasiz. Sinif (c) riskinin acik kapisi.
-7. **Unrest cozunmesi tembel (yalniz yazimda).** `LastDecayDay` yalniz RaiseUnrest cagrildiginda islenir (:233-238); belasi biten site esik alti bir degerde donar. Esik altinda etkisiz ama save'de "hayalet gerginlik" olarak yasar — sinif (g), kozmetik.
-8. **Olay-kind geri donusumu.** `mauled_survives` NeedChanged=7 uzerinde, yoldas uyelik olaylari ActorTalked=2 uzerinde tasinir — kind'a gore filtreleyen tuketiciler icin anlamsal gurultu; ozel kind yok. Sinif (g).
-9. **CompanionGuard "uzaktan vurus" gorunumu.** Tehdit OYUNCUNUN 2 hucresi icindeyse yoldas mesafesine bakilmaksizin vurur (`CompanionSystem.cs:145-148` min(player, companion) semantigi — yorum :66 bunu acikca soyluyor, yani kasitli). Yoldas tehdide YURUMEZ; gorsel olarak vurusun kaynagi belirsiz kalabilir. Sunum tarafinda karsiligi dogrulanmadi.
-10. **Muhafizlar postada yemek yer — belgeli basitlestirme.** Pursuit disinda muhafiz rotasi klasiktir ve "guards eat off-shift" ROADMAP_V2'ye loglanmis durumda (`ScheduleSystem.cs:126-129`).
-11. **Cift `Chebyshev` kopyasi.** `PredationSystem.Chebyshev` (:108) ve `CompanionService.Chebyshev` (`CompanionSystem.cs:58`) ayni fonksiyonun iki kopyasi; ScheduleSystem.TryResolvePursuit uçuncu bir inline kopya tasir (:99-101). Davranis riski yok, bakim borcu.
-12. **Predation oyuncuyu avlamaz.** Av filtresi Player'i disarida tutar (:52) — oyuncu tehdidi baska sistemde (bounty/presentation). Sinir bilincli ama bu dosyadan gorunmez; capraz referans dogrulanmadi.
+- **W30 (`8c16b572`)** — Wound-4: `SweepCooldownUntilMinutes` alani `SiteUnrestRecord`'a eklendi, cooldown mantigi `RaiseUnrest`'e kondu (`CascadeSystems.cs:243-253`), save iki yone mapper'landi (`WorldSaveMapper.cs:123, 233`), golden 777 seed edildi. 5510 marathon `watch_sweep` satirinden kurtulundu — 12 saat sikinti = 1 sweep, ertesi gun tekrar armlanir.
+- **W32 (`5049d445`)** — EAT slice: `ScheduleSystem` %50 kuculdu, `Idle`-only guard geldi (`:59-60` — `CurrentAction != None` ise atla); pursuit resolve/prune path'i etkilenmedi ama `Advance` imzasi `world` alarak nav-farkindali oldu (`ScheduleSystem.cs:44-46`) ve `GuardPursuitTests.cs:5` bu overload'a gore migrate edildi. Companion follow-order 21 (`schedule@20`+1) burada sabitlendi.
+- **W33 (`61e340f3`)** — FARM slice: bu sistem dogrudan degismedi. `world.Stockpiles` yazicilarina `living.action_advance@PerTick:22` eklendi (`FieldOwnershipRegistry.cs:60`), cascade'in `NeedChanged` etiketleri farm-scoping'de yeniden kullanilmadi. NOT: `guards-eat` carve-out (W33-C task #11) `ActionLifecycleSystem.Decide`'e kondu — nobet AKTIF chase'de yemege GITMEZ (`ActionLifecycleSystem.cs:71` yorum).
+- **W34 (`3aa87cf6`)** — SLEEP + WORK slice: puppet path'lerin retiring'i cascade'i dolayli etkiledi — projection'un GUESS(WORK) fallback'i kaldirildi (`W35` acilinda 2. sirada bitti); pursuit ve companion path'lerine dokunulmadi.
+- **W35 (`20a3b899`)** — `FieldOwnershipRegistry`'nin 6 yeni satiri: `World.Time`, `World.Plants`, `Actor.Mood`, `World.NpcMemory`, `World.CompanionIds`, `World.Factions` DECLARED oldu (`:88-111`). Her declared yazici W33-C reverse lint'ini GECIYOR — bogus row build'i patlatir. Command-driven yazilar (recruit/dismiss) UNDECLARED birakildi + yorum. `ProofLivingCensus` yoldas + guard sayaclarini yigmayi ogrendi (soak: meals=6195, shortages=5296, guard-chase gorunur).
+- **W36 (`f6c9e2d0`)** — RUH_TESHIS post-arch tail: `CascadeSystems.cs`'e 14 satir eklendi — B22 fix'i `FallbackSite(world, GridPosition)` overload'i (`:109-115`). Onceden `guard_strikes_hunter` ve `mauled_survives` `SiteId(1)`'e sabit yaziliyordu — artik pozisyonu iceren siteye. Test yok (SHIPPED-NO-TEST — `BUG_REPORT_SCORECARD.md:31`). Guard+combat action slice `docs/ruh/w36/00-guard-combat-design.md` cizildi ama kod YOK — implementation "content depth, next wave" olarak ertelendi. Ayrica `CompanionSystem.cs`'de 2 satir tail dokunusu (event narrator wire-up), `ScheduleSystem.cs`'de 12 satir (nav overload B10 tamamlamasi).
+
+## Bilinen Borçlar + Kaçak Kapıları
+
+1. **W35-W36 tasarlandi ama uygulanmadi**: guard + combat action slice. Predation, witness converge, companion guard ve player melee HALA `CombatActionResolver.Resolve`'u DOGRUDAN cagiriyor; action lifecycle onlari GORMEZ. `ActorActionType`'ta `Strike`/`Chase` verb'i yok — puppet path bu iki alan icin yasiyor. `docs/ruh/w36/00-guard-combat-design.md` var, kod yok. W35 close-out'unda bilincli birakildi ("guard/combat word survivors are TAGGED with the slice that retires them").
+2. **B22 fix'i test-sizdir** (SHIPPED-NO-TEST — `BUG_REPORT_SCORECARD.md:31`): `FallbackSite` overload'i `site.Contains(position)` ile calisir ama bunu pinleyen bir story testi yok. Test yazilana kadar regresyona acik.
+3. **B24 SHIPPED-NO-TEST**: cascade'in yazdigi `Actor.Vitals` render tarafinda `ActorCombatFeedbackView` VARIANT B "renk arbiter" ile birden fazla yaziciyi tolere ediyor — story test yok, cascade tarafinda direct etki degil ama presentation kirsa cascade zincirinin gorunumu bozulur.
+4. **`Actor.Vitals` uc yazici**: predation + witness + companion_guard AYNI Hourly'de yaziyor (`FieldOwnershipRegistry.cs:44-49`). Sirali (40/42/45) ama ayni tick'te bir aktoru birden fazla yazici HP dusurebilir; deterministik ama "kim vurdu?" sorusu ChronicleEvent'te kayipsizdir sadece `mauled_survives by:` bakisiyla. Race yok cunku hepsi single-thread.
+5. **Witness scan cap 4096** (`CascadeSystems.cs:157`): tick basina en fazla 4096 son olay taranir; catchup + gerceklestirme yolunda hourly-then-daily interleaving cok yogun ise (nadir) dogru saati asan olaylar taranmadan gecebilir. Production ~500/hour, pratik olarak 4096 rahat kapsar. Borç: cap gelecekte configurable veya per-hour-index olabilir.
+6. **Pursuit yumusak esikleri**: `>40 cell` kayip esigi ve `120 dk` gecerlilik penceresi sabitler — cok genis dungeon'larda quarry teleport'lu (F18 lair leash) bir hedefe kilitlenmis guard `>40` uzerinden hemen budanir. Bu istenen davranis ama tuning notu.
+7. **`NeedChanged` overload'u**: `mauled_survives` semantigi icin uygun bir enum yok, `NeedChanged` yeniden kullanildi. Konsolide etme borç.
+8. **Companion cift-adim heel**: `gap > HeelCells+1` ise iki adim (`CompanionSystem.cs:100`) — kalabalık kanal darligında P0 re-pin sırasında yoldas geriden gelen bir NPC'nin uzerinden gecebilir; nav-blocker'i takip etmez cunku `MoveTo` dogrudan cagirilir (StepToward yok).
+9. **Watch converge move-step yalnizca `d>1`**: `d==1`'de guard yerinde durur (`CascadeSystems.cs:213`) — `d==0` gate'i yok ama zaten kovalayan `ResponseRadius=12` icindeki her guard hem move-step hem `RegisterPursuit` alir; PerTick pursuit resolve zaten one gecer, bu Hourly step'in `MoveTo`'su neredeyse gozardi edilebilir bir dokunustur — kaldirilirsa churn azalir.
+10. **Save round-trip sirasi**: `WorldSaveMapper.cs:100-103` companion + pursuit + unrest icin paralel-diziler kullaniyor — `Count` uyusmazligi asserted DEGIL, sadece `Length`'lerden dolar. Bir array'in kirilmasi silent olarak fasit sonuca yol acar; `WorldSaveMapper` load path'inde `Math.Min(len1,len2,len3)` savunmasi olmali (W33-A'da benzer koruma isJobs icin geldi, buraya gelmedi).

@@ -79,6 +79,7 @@ namespace EmberCrpg.Presentation.Ember.Bootstrap
             _commands = binding.Commands;
             _oracle = binding.Oracle;
             EmberDomainAdapterLocator.Register(_adapter);
+            UnityEngine.Debug.Log("[B10-boot] adapter registered ok: " + _adapter?.GetType().Name);
 
             // Codex ninth-pass A-P1: consume any pending world-gen intent
             // from the MainMenu wizard BEFORE the first tick advances state,

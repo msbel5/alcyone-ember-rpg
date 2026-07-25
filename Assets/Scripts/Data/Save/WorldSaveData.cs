@@ -125,6 +125,9 @@ public DungeonRoomSaveData[] dungeonRooms;
         public ulong mainQuestFinalDelveId;
         public ulong[] mainQuestClaimedDelveIds;
         public string[] playerKnownSpellIds;
+        /// <summary>B20 W36-tail: presence flag. Old saves land as false → mapper falls back to the
+        /// world's own list; new saves stamp true so an EXPLICITLY empty list survives roundtrip.</summary>
+        public bool playerKnownSpellIdsAuthored;
         public int playerGold;
         public int merchantGold;
         public bool merchantStoreSeeded;

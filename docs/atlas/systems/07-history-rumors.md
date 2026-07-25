@@ -1,232 +1,133 @@
 # 07-history-rumors
 
-Tarih + kronik + dedikodu hattı: `WorldEventLog` (omurga), `RuntimeHistorySystem` (runtime kronik),
-`RumorMillSystem` (kasaba dedikodusu), `NpcEventEchoFeed` + `NpcEventEchoView` (olay piktogramları).
-Tüm satırlar koddan doğrulandı; doğrulanamayanlar açıkça `dogrulanmadi` etiketiyle işaretli.
+## HLD — Ne ve Neden (5-10 cümle)
 
-## HLD - Ne ve Neden
+Bu sistem, oyunun **tarih + kronik + dedikodu** eksenidir: worldgen'in yazdığı sabit geçmişten SONRA dünyanın konuşmaya devam etmesini sağlar. Üç katmandan oluşur: (1) `WorldEventLog` — bütün simülasyonun append-only kroniği; her tick ne olduysa buraya yazılır. (2) `RuntimeHistorySystem` (Daily:28) — dünkü sim olaylarını faction ilişkilerine sürer (watch renown, shortage gerginliği) ve ay sonunda `(RoomSeed, day)`-tohumlu bir kronik olay üretir (festival / caravan_surge / border_dispute) + bled-out settlement'ları migrant'la takviye eder. (3) `RumorMillSystem` (Hourly:55) — YENİ event'leri deterministik olarak bir satır kasaba diline damıtır ve `Rumors` listesinde 3 gün / cap 32 tutar; `PickFor` ile diyalogda ve `AmbientVoiceDirector` ile sokakta konuşturur. Sunum katmanında `NpcEventEchoFeed` (ring buffer[128]) tekil aktörlerin başına 12×12 pictogram (göz / uyarı / kılıç / demet / sohbet) astırır. **W36 ayrışması**: log artık `TrimOldest(maxRetained)` + seq-based kursor kontratı ile SINIRLI olmaya HAZIR (B21) — RumorMill kursörü `RumorEventCursorSeq` (long) olarak seq'e taşındı, trim'i tolere ediyor; ancak trim'i tetikleyen bir tick step'i HENÜZ takılmadı, bu yüzden runtime'da log hâlâ unbounded büyüyor (aşağıda "Bilinen Borçlar" — B21 yarım açık).
 
-Worldgen'in HistorySystems'i zengin bir kronik yazar ama dakika sıfırda DONAR — bundan sonra hiçbir
-faction bir diğeri hakkında fikir değiştirmezdi (`RuntimeHistorySystem.cs:6-13` tasarım notu).
-Bu hat, dünyanın oyun BAŞLADIKTAN sonra da tarih yazmasını sağlar: dünkü simülasyon olayları
-faction ilişkilerini kaydırır, her ay sonunda tohumlu bir kronik olayı somut mekanik etkiyle yazılır
-("never just a log line"). Omurga `WorldEventLog`: append-only, deterministik, null kabul etmeyen tek
-chronicle (`WorldEventLog.cs:5-15`); tarih de dedikodu da NPC üstü ikonlar da hep bu tek log'un
-OKUYUCUSUDUR. `RumorMillSystem` LLM'siz, saf formatter: yeni olayları tek satırlık kasaba lafına
-damıtır, 3 gün ömür, 32 tavan, cursor save'e yazılır ki load eski haberi yeniden öğütmesin
-(`RumorMillSystem.cs:7-11`). Oyuncuya görünen yüzü: "Any news?" diyalog cevabı
-(`DomainSimulationAdapter.Dialog.Source.cs:294-303`), selamlaşmalara %35 ihtimalle eklenen olay
-anlatısı (`DomainSimulationAdapter.Dialog.Text.cs:85-89`), aylık kronikle değişen faction ilişkileri,
-boşalan yerleşimlere gelen göçmenler ve NPC kafası üstünde 3.5 saniyelik olay piktogramları
-(göz/ünlem/kılıç/demet/konuşma — `NpcEventEchoView.cs:5-9`). Felsefe: stateless step instance'ları
-(H1 dersi, `RuntimeHistorySystem.cs:13`), her şey (RoomSeed, dayIndex)'ten türetilir — iki dünya iki
-FARKLI tarih yaşar; catchup çok günlük sıçramalarda birebir aynı replay'i üretir
-(`RuntimeHistorySystem.cs:35-36`).
+## HLD — Akış (numaralı adımlar)
 
-## HLD - Akis
+1. **Her tick** — Herhangi bir sim step'i (Cascade, Recipe, Job, Plant, Faction, Ambient, Trade, Combat...) bir olayı `world.Events.Append(new WorldEvent(...))` ile log'un sonuna yapıştırır. `WorldEvent` ctor `Kind ≠ None`, `ActorId ∨ SiteId ≠ empty`, `Reason ≠ blank` invariant'larını dayatır; `TotalAppended++`.
+2. **PerTick** (Presentation) — `DomainSimulationAdapter.AdvanceTick` içinde `PublishEventEchoes()` `_echoCursor`'dan itibaren log kuyruğunda 256 taneyle sınırlı yürüyor; `WitnessRecorded`, `GuardResponded`, `PlantHarvested`, `ActorTalked` gördükçe `NpcEventEchoFeed.Raise(actorId, kind)` çağırır ve `ActorTalked` için ayrıca `AmbientVoiceDirector.Offer(subject, RumorMillSystem.PickFor(...))` ile spatial mırıltıyı bırakır.
+3. **Hourly:55** — `RumorStep` çalışır → `RumorMillSystem.Tick(world, stamp)`: stale rumor'ları (>3 gün) siler, `RumorEventCursorSeq`'i `FirstRetainedSeq..TotalAppended` aralığına clamp'ler, `ScanCap=256` ile backfill'i keser, `log.TryIndexForSeq(cursor, out start)` ile mevcut retained pencerede index bulur, [start..events.Count) döner, her event için `Distill(evt)` non-null döndürürse yeni `RumorEntry { BornMinutes, SiteId, Text }` ekler; sonda `Rumors.Count > 32` iken en eskiden kırpar; kursör `TotalAppended`'a atlar (asla re-mill etmez).
+4. **Daily:28** — `RuntimeHistoryStep` çalışır → `RuntimeHistorySystem.Tick(world, stamp)`. Önce `DriftFromYesterday`: son 8192 event'i sondan tarayıp `[dayStart..stamp]` penceresinde `GuardResponded` ve `ShortageDetected` sayar; guard cevapları `law→craft` ve `law→trade`'e +1 renown, shortage `craft↔trade`'e −1 tension olarak `FactionReputationSystem.ApplyDelta` ile yazılır.
+5. **Ay sonunda** (day % `DaysPerMonth == 0`) — `MonthlyChronicle`: `XorShiftRng((RoomSeed * 2654435761) ^ (day * 40503) | 1)` ile intensity (1..20) ve dal seçilir → festival (`law↔craft/craft↔trade` +4), caravan_surge (`Stockpiles[0].Add("wheat", 25+intensity)`), veya border_dispute (`law↔trade` −6). Aynı rng ile diplomatik ripple (−4..+4) rastgele bir çifte uygulanır. `ChronicleEvent` log'a düşer + `ArriveMigrants` bled-out (`<MigrantFloor=4` civil) settlement'lara `MigrantsPerMonth=2` yeni Talker doğurur ve her biri için `ActorSpawned` event'i emit eder.
+6. **Save/Load** — `WorldSaveMapper` diskke `worldEvents[]` + `worldEventFirstRetainedSeq` (**tek** long, `TotalAppended = firstRetainedSeq + worldEvents.Length` invariant'ıyla türetilir) + `rumorBornMinutes[]/rumorSiteIds[]/rumorTexts[]` + `rumorEventCursorSeq` yazar; load `new WorldEventLog(firstRetainedSeq)` ctor'unu kullanır → kursorlar seq-uzayında aynı yerde uyanır, trim'lenmiş event'ler re-mill'lenmez.
+7. **Diyalog** — Oyuncu bir NPC'ye "Any news?" derse `DomainSimulationAdapter.Dialog.Source` `RumorMillSystem.PickFor(world, askerId, siteId, now)` çağırır; site-local pool varsa oradan, yoksa global; hash `askerId * 2654435761 ^ (day * 40503)` deterministik pick — aynı asker aynı gün aynı hikâyeyi alır.
 
-1. **Üretim (sürekli):** Simülasyon sistemleri tick boyunca `world.Events.Append(...)` çağırır —
-   cascade (WitnessRecorded/GuardResponded, `CascadeSystems.cs:45,162,183`), hasat, ticaret, fiyat,
-   need değişimleri vb. Log append-only, insertion-order (`WorldEventLog.cs:49-55`).
-2. **Hourly:55 — `living.rumors` (RumorStep, `DefaultTickSystems.cs:283`):**
-   `RumorMillSystem.Tick` önce 3 günden eski dedikoduları budar (`RumorMillSystem.cs:25`), sonra
-   `world.RumorEventCursor`'dan log sonuna kadar YENİ olayları tarar (ScanCap 256, `:29-31`),
-   `Distill` ile satıra çevirir (null = konuşulmaya değmez), `RumorEntry` doğurur, cursor'ı log
-   sonuna alır, listeyi 32'ye kırpar (`:40-41`).
-3. **Daily:28 — `world.runtime_history` (RuntimeHistoryStep, `DefaultTickSystems.cs:514`):**
-   a. `DriftFromYesterday` (`RuntimeHistorySystem.cs:51-75`): son 8192 olayı tersten tarar, dünün
-      penceresindeki (`dayStart < Tick <= stamp`) GuardResponded/ShortageDetected sayar; bekçi cevap
-      verdiyse law→craft ve law→trade +1 ("watch_renown"), kıtlık varsa craft→trade −1
-      ("grain_tension").
-   b. `MonthlyChronicle` (`:77-120`): yalnız ay SONUNDA (dayIndex % 30 == 0) çalışır. Rng tohumu
-      `((RoomSeed*2654435761) ^ (dayIndex*40503)) | 1` (`:87`). Üç şubeden biri: festival (+4/+4
-      ilişki), caravan_surge (Stockpiles[0]'a 25+intensity buğday, `:99-100`), border_dispute
-      (law↔trade −6). Her ay ayrıca −4..+4 diplomatik "chronicle_ripple" (`:110-114`). Sonra
-      `ChronicleEvent` append edilir (`:116-117`) ve `ArriveMigrants` koşar.
-   c. `ArriveMigrants` (`:132-167`): nüfusu MigrantFloor(4) altına düşen her Settlement'a ayda en
-      çok 2 göçmen; deterministik id şeması `400M + site*4096 + (dayIndex%512)*8 + k` (`:151-152`);
-      `ActorSpawned` "migrant_arrived" olayı (`:162-164`).
-4. **Render pompası (her presentation tick):** `DomainSimulationAdapter.PublishEventEchoes`
-   (`DomainSimulationAdapter.Clock.cs:11,41-80`) kendi cursor'ıyla (yine 256 cap) yeni olayları
-   tarar; WitnessRecorded→eye/alert, GuardResponded→sword, PlantHarvested→sheaf, ActorTalked→chat
-   olarak `NpcEventEchoFeed.Raise` çağırır. Cursor load'da log sonuna atlar — 10k olaylık save
-   hiçbir şeyi replay etmez (`Clock.cs:39-40,45`).
-5. **Görsel tüketim:** `NpcEventEchoView` her 0.4 sn'de `LatestKindFor(actorId, sinceStamp)` sorar,
-   piktogramı 3.5 sn gösterir (`NpcEventEchoView.cs:34-47`). Halka tamponu stamp-not-consume:
-   tek cascade tick'i ÇOK olay patlatabilir, tek slot düşürürdü (`NpcEventEchoFeed.cs:6-7`).
-6. **Diyalog tüketimi:** "Any news?" konusu `RumorMillSystem.PickFor` ile cevaplanır — anlık,
-   deterministik, site-local öncelikli, asla tüketilmez (`Dialog.Source.cs:294-303`). Selamlaşmada
-   %35 ihtimalle `ComposeRumor` son 32 olayı hikaye cümlesine çevirir + zindan yol tarifi ekler
-   (`Dialog.Text.cs:127-158`, `NarrateEvent :160-195`).
-7. **Save/Load:** olay logu TAMAMEN serialize edilir (`WorldSaveMapper.cs:82,188`;
-   `WorldSaveMapper.Narrative.cs:19-54`); dedikodular paralel dizilerle + cursor
-   (`WorldSaveMapper.cs:104-107`, restore `:223-232`). İki mill cursor'ı da load'da clamp'lenir.
+## LLD — Veri Modeli (file:line)
 
-## LLD - Veri Modeli
+- **`WorldEventLog`** — `Assets/Scripts/Domain/World/WorldEventLog.cs:24-126`
+  - `_events: List<WorldEvent>` (L26) + `_eventsView: ReadOnlyCollection<WorldEvent>` (L27)
+  - `_firstRetainedSeq: long` (L32), `_totalAppended: long` (L33) — B21 seq accounting
+  - Ctor `WorldEventLog()` (L35), restore ctor `WorldEventLog(long firstRetainedSeq)` (L46)
+  - Invariant: `TotalAppended == FirstRetainedSeq + _events.Count`
+- **`WorldEvent`** — `Assets/Scripts/Domain/World/WorldEvent.cs:18-43`
+  - `Tick: GameTime`, `Kind: WorldEventKind`, `ActorId`, `SiteId`, `Reason: string`, `ReasonTrace?`
+  - Ctor pins invariants (L21-31): `Kind ≠ None`, `actorId ∨ siteId ≠ empty`, `reason ≠ blank`
+- **`WorldEventKind`** enum — `Assets/Scripts/Domain/World/WorldEventKind.cs:12-55`
+  - 35 rakam kind: `None=0..ActorFailed=34`; H3 `WitnessRecorded=30`/`GuardResponded=31`; H4 `ChronicleEvent=32`; W32 `ActionCompleted=33`/`ActionFailed=34` (per-step spam SILINDİ — B21 sınıfını yeniden doğurmasın)
+- **`RumorEntry`** — `Assets/Scripts/Domain/World/RumorEntry.cs:5-9`
+  - `BornMinutes: long`, `SiteId: SiteId`, `Text: string` (plain fields, no ctor invariants — sadece mill yazar)
+- **`WorldState.Events`** — `Assets/Scripts/Domain/World/WorldState.cs:40, 82`
+- **`WorldState.Rumors`** — `Assets/Scripts/Domain/World/WorldState.cs:249` (`List<RumorEntry>`)
+- **`WorldState.RumorEventCursorSeq`** — `Assets/Scripts/Domain/World/WorldState.cs:253` (**long**, B21'de int index'ten seq'e taşındı; `CopyFrom(other)` L333'te aynen taşınır)
+- **`WorldEventSaveData[]`** — `Assets/Scripts/Data/Save/WorldSaveData.cs` + `worldEventFirstRetainedSeq: long` (L60), rumor alanları (L110-116)
+- **`NpcEventEchoFeed.Echo`** struct — `Assets/Scripts/Presentation/Ember/WorldDirector/NpcEventEchoFeed.cs:18-23` — `ActorId: ulong`, `Kind: int`, `StampAt: int`; `Ring[128]` static (L25)
 
-| Tip | Alanlar | Kaynak |
-|---|---|---|
-| `WorldEvent` | `Tick:GameTime`, `Kind:WorldEventKind`, `ActorId`, `SiteId`, `Reason:string`, `ReasonTrace` — ctor `None` kind'ı, boş actor+site ikilisini ve boş reason'ı reddeder | `WorldEvent.cs:89-111` |
-| `WorldEventLog` | `_events:List<WorldEvent>` + `ReadOnlyCollection` sarmalı; `Count`, `IsEmpty`, `Events` (CANLI view — snapshot DEĞİL, sonraki Append'ler görünür) | `WorldEventLog.cs:25-67` |
-| `WorldEventKind` | 32 üye; `None=0` sentinel; `WitnessRecorded=30`, `GuardResponded=31` (H3 cascade), `ChronicleEvent=32` (H4) | `WorldEventKind.cs:135-173` |
-| `RumorEntry` | `BornMinutes:long`, `SiteId`, `Text:string` — mutable POCO | `RumorEntry.cs:117-122` |
-| `WorldState` alanları | `Events:WorldEventLog` (`:40`), `Rumors:List<RumorEntry>` (`:177`), `RumorEventCursor:int` (`:179`); `CopyFrom` üçünü de aynalar (`:221 civari Events`, `:254-255` Rumors/cursor) | `WorldState.cs` |
-| `NpcEventEchoFeed.Echo` | `ActorId:ulong`, `Kind:int` (0=witness..4=talk), `StampAt:int`; `Ring[128]` statik halka + monoton `Stamp` | `NpcEventEchoFeed.cs:11-27` |
-| `WorldEventSaveData` | `tickMinutes, kind:int, actorId:long, siteId:long, reason, reasonTrace:string[]` | `WorldSaveMapper.Narrative.cs:24-35` |
-| Rumor save şekli | `rumorBornMinutes[]`, `rumorSiteIds[]`, `rumorTexts[]`, `rumorEventCursor` — paralel diziler, restore'da uzunluk savunması | `WorldSaveMapper.cs:104-107, 223-232` |
-| `WorldEventRow` (HUD) | log kuyruğunun salt-okunur projeksiyonu | `WorldEventTailSnapshot.cs:14-36` |
+## LLD — Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-Sabitler: `MaxRumors=32`, `LifeMinutes=4320`, `ScanCap=256` (`RumorMillSystem.cs:14-16`);
-`GuardRenownDelta=1`, `ShortageTensionDelta=-1`, `FestivalBondDelta=4`, `DisputeDelta=-6`,
-`CaravanWheat=25`, `MigrantFloor=4`, `MigrantsPerMonth=2` (`RuntimeHistorySystem.cs:25-29,126-127`);
-`LawTag/CraftTag/TradeTag` faction etiket sabitleri (`:21-23`) — presentation hydration bu tag'leri
-garanti eder (`DomainSimulationAdapter.Worldgen.Hydration.cs:89-96`).
+**Domain — WorldEventLog (`Assets/Scripts/Domain/World/WorldEventLog.cs`)**
+- `void Append(WorldEvent worldEvent)` (L77) — Null reddeder, `_events.Add`, `_totalAppended++`.
+- `int TrimOldest(int maxRetained)` (L90) — B21: `_events.RemoveRange(0, drop)` + `_firstRetainedSeq += drop`; drop sayısını döner (`Count ≤ maxRetained` iken 0). O(N) memmove — max 16384'te ~64KB/gün.
+- `bool TryIndexForSeq(long seq, out int index)` (L110) — Absolute seq → mevcut `Events` index'i; `seq ≤ FirstRetainedSeq` iken 0, `seq ≥ TotalAppended` iken `Events.Count`; her zaman `true`.
+- `IReadOnlyList<WorldEvent> Events { get; }` (L123) — Canlı read-only view; sonraki Append'ler görünür (snapshot değil).
 
-## LLD - Fonksiyon Haritasi
+**Simulation — RumorMillSystem (`Assets/Scripts/Simulation/Living/RumorMillSystem.cs`)**
+- `int Tick(WorldState world, GameTime stamp)` (L18) — Stale prune → kursor clamp/ScanCap kes → `TryIndexForSeq` ile start bul → walk, her rumorable event için `RumorEntry` ekle → kursor `TotalAppended`'a, list `MaxRumors=32`'ye kırp; born-this-tick sayısını döner.
+- `static string Distill(WorldEvent evt)` (L50) — Kind + reason'a göre bir cümle üretir (`GuardResponded`, `WitnessRecorded/reported`, `PlantHarvested`, `TradeCompleted`, `ChronicleEvent`, `NeedChanged/vermin_theft|cat_catch|mauled_survives`); tanınmayan → `null` (talk'a değmez).
+- `static string PickFor(WorldState world, ulong askerId, SiteId siteId, GameTime now)` (L83) — Site-local varsa oradan, yoksa global pool; `hash = askerId * 2654435761 ^ (day * 40503) * 40503` → deterministik pick.
 
-| İmza | Konum | Ne yapar |
-|---|---|---|
-| `RuntimeHistorySystem.Tick(WorldState, GameTime)` | `RuntimeHistorySystem.cs:37` | Guard'lar (Factions/Events null, stamp<=0, üç tag'den biri eksik → sessiz çık), sonra drift + kronik. |
-| `DriftFromYesterday(world, stamp, law, craft, trade)` | `:51` | 8192-derinlik-kapaklı ters tarama; GuardResponded/ShortageDetected sayımına göre itibar delta'ları. |
-| `MonthlyChronicle(...)` | `:77` | `dayIndex % DaysPerMonth == 0` filtresi; seeded rng ile 3 şubeli olay + ripple + `ChronicleEvent` append. |
-| `ArriveMigrants(world, stamp, dayIndex, rng)` | `:132` | Yerleşim nüfus sayımı → deterministik id'li göçmen aktörler + `ActorSpawned` olayı. |
-| `FindByTag(world, tag)` / `FirstSite(world)` | `:169 / :176` | Tag'li ilk faction / ilk site; site yoksa `SiteId(1)` fallback. |
-| `RumorMillSystem.Tick(WorldState, GameTime) : int` | `RumorMillSystem.cs:18` | Budama + cursor taraması + damıtma; doğan dedikodu sayısını döner. |
-| `RumorMillSystem.Distill(WorldEvent) : string` | `:46` | Kind→cümle eşlemesi; `NeedChanged` reason önekine bakar (vermin_theft/cat_catch/mauled_survives); null = sessiz. |
-| `RumorMillSystem.PickFor(world, askerId, siteId, now) : string` | `:77` | `(asker*2654435761) ^ (gun*40503)` hash'i ile havuzdan seçim; site-local havuz doluysa önce o. |
-| `FactionReputationSystem.ApplyDelta(factions, a, b, delta, reasonCode, now, events)` | `FactionReputationSystem.cs:15-22` | İtibarı persist eder + `FactionReputationChanged` olayı yazar; FactionId-A, SiteId sentinel'i olarak kodlanır (`:38-47`). |
-| `WorldEventLog.Append(WorldEvent)` | `WorldEventLog.cs:49` | Null'da throw; sessiz boşluk yok. |
-| `NpcEventEchoFeed.Raise(ulong actorId, int kind)` | `NpcEventEchoFeed.cs:29` | Halkaya yaz, `Stamp`'i artır. |
-| `NpcEventEchoFeed.LatestKindFor(ulong actorId, int sinceStamp) : int` | `:36` | Aktörün sinceStamp'ten yeni en taze echo'su; -1 = yok. |
-| `DomainSimulationAdapter.PublishEventEchoes()` | `DomainSimulationAdapter.Clock.cs:41` | Presentation cursor'ı ile 4 kind'ı echo'ya çevirir; `WitnessRecorded` reason'ı "reported" ile başlıyorsa alert, değilse eye (`:53-58`). |
-| `NpcEventEchoView.Bind(ulong)` / `Update()` | `NpcEventEchoView.cs:21 / :34` | Spawner bağlar (`EmberGeneratedActorSpawner.cs:195`); 0.4 sn poll, 3.5 sn gösterim. |
-| `WorldEventTailSnapshot.FromLog(log, maxRows[, predicate])` | `WorldEventTailSnapshot.cs:25, :39` | HUD için kuyruk projeksiyonu, mutasyonsuz. |
-| `WorldSaveMapper.ToWorldEventLogData / ToWorldEventLog` | `WorldSaveMapper.Narrative.cs:19 / :37` | Logun tam gidiş-dönüşü; ReasonTrace dahil. |
-| `DomainSimulationAdapter.ComposeRumor(uint h)` / `NarrateEvent(WorldEvent)` | `Dialog.Text.cs:127 / :160` | Selamlaşma dedikodusu: son 32 olaydan hikaye cümlesi + zindan reveal. |
+**Simulation — RuntimeHistorySystem (`Assets/Scripts/Simulation/World/RuntimeHistorySystem.cs`)**
+- `void Tick(WorldState world)` (L29) — `Tick(world, world.Time)` overload.
+- `void Tick(WorldState world, GameTime stamp)` (L33) — Guard'lar (factions/events var mı, stamp>0, law/craft/trade tag'li 3 faction var mı) → `DriftFromYesterday` + `MonthlyChronicle`.
+- `private void DriftFromYesterday(...)` (L48) — Son 8192 event'i sondan tarar, `[dayStart..stamp]` penceresinde `GuardResponded` / `ShortageDetected` say, `_reputation.ApplyDelta` ile law/craft/trade'e sür.
+- `private void MonthlyChronicle(...)` (L74) — `day % DaysPerMonth == 0` gate; `XorShiftRng`'den festival/caravan_surge/border_dispute + monthly ripple; `ChronicleEvent` append; `ArriveMigrants` çağır.
+- `private static void ArriveMigrants(WorldState world, GameTime stamp, long dayIndex, XorShiftRng rng)` (L118) — Her Settlement site için living-civilian sayar; `< MigrantFloor` ise `MigrantsPerMonth` kadar deterministik id/home ile Talker doğurur; her biri için `ActorSpawned` event'i emit eder ("migrant_arrived name:{...}").
 
-Kayıt noktaları: `RumorStep` → `living.rumors@Hourly:55` (`DefaultTickSystems.cs:283`, listede `:53`);
-`RuntimeHistoryStep` → `world.runtime_history@Daily:28` (`:514`, listede `:61`).
+**Presentation — NpcEventEchoFeed (`Assets/Scripts/Presentation/Ember/WorldDirector/NpcEventEchoFeed.cs`)**
+- `static void Raise(ulong actorId, int kind)` (L29) — Ring'e yazar, `Stamp++` (monotone), `_writeIndex++`; hiçbir zaman consume etmez (bir cascade'te aynı aktör birden fazla event'i doğurabilir).
+- `static int LatestKindFor(ulong actorId, int sinceStamp)` (L36) — Ring'i tamamen tarar, `sinceStamp`'ten yeni + aktör eşleşen en yeni echo'nun kind'ini (yoksa −1) döner.
 
-## LLD - Yazdigi/Okudugu Alanlar
+**Presentation — NpcEventEchoView (`Assets/Scripts/Presentation/Ember/Views/NpcEventEchoView.cs`)**
+- `void Bind(ulong actorId)` (L21) — Child GO oluşturur, `SpriteRenderer` + `CameraFacingBillboard` ekler, `_seenStamp`'i mevcut `Stamp`'a kilitler (geriye replay yok).
+- `void Update()` (L33) — 0.4s poll → `LatestKindFor` çağır, kind ≥ 0 ise `SpriteFor(kind)` ile pictogram bas, 3.5s sonra gizle. Sprite'lar tembel cache (`s_eye/s_alert/s_sword/s_sheaf/s_chat`), her biri 12×12 mask'ten `Texture2D` üretir.
 
-FieldOwnershipRegistry diliyle (`FieldOwnershipRegistry.cs`):
+**Presentation — DomainSimulationAdapter.Clock (`Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Clock.cs`)**
+- `void AdvanceTick(int tickIndex)` (L6) — DrainMainThreadApply → `_tickComposer.Advance` → `PublishEventEchoes()` → `PublishFieldMirror()`.
+- `private void PublishEventEchoes()` (L41) — `_echoCursor` tail scan (max 256), `WitnessRecorded/GuardResponded/PlantHarvested/ActorTalked` gördükçe `NpcEventEchoFeed.Raise` + `ActorTalked` için `AmbientVoiceDirector.Offer(PickFor(...))`.
 
-**Yazdıkları:**
-- `World.Rumors` ← `living.rumors@Hourly:55` — ledger'da DEKLARE (`FieldOwnershipRegistry.cs:51`).
-  `World.RumorEventCursor` aynı yazıcıya ait ama ayrı ledger satırı yok.
-- `World.Events` (append) ← her iki sistem + tüm üreticiler. Ledger'da satırı YOK — append-only
-  olduğu için çok-yazarlı çatışma sınıfı dışında sayılmış görünüyor (gerekçe dokümante değil,
-  dogrulanmadi).
-- Faction itibar matrisi (`FactionStore.WithReputation`) ← `world.runtime_history@Daily:28`
-  (`RuntimeHistorySystem.cs:70-74,94-114` üzerinden `FactionReputationSystem.cs:36`) — ledger'da
-  DEKLARE DEĞİL. `politics.faction_decay@Daily:40` da aynı matrise yazar; ikisi de sicilsiz.
-- `World.Stockpiles[0]` ("wheat", caravan_surge) ← `world.runtime_history@Daily:28`
-  (`RuntimeHistorySystem.cs:99-100`) — ledger'ın `World.Stockpiles` satırında YOK; satırda
-  var olmayan bir `econ.trade@Daily:28` id'si duruyor (aşağıda borçlar).
-- `World.Actors` (göçmen `Add`, `RuntimeHistorySystem.cs:159-161`) — Actors üyeliği için ledger
-  satırı hiç yok.
-- `NpcEventEchoFeed.Ring/Stamp` (statik) ← yalnız presentation (`Clock.cs`); sim alanı değil,
-  ledger kapsamı dışı.
+## LLD — Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-**Okudukları:** `World.Events.Events` (iki sistem de derinlik-kapaklı: 8192 tarih / 256 mill+echo),
-`World.Factions` (tag araması + `GetReputation`), `World.Sites.Records` (yerleşim sayımı, FirstSite),
-`World.Actors.Records` (nüfus sayımı), `World.Stockpiles`, `World.Time`, `World.RoomSeed` (rng
-tohumu), `World.Rumors` (PickFor).
+- **`World.Events`** (WorldEventLog) — **yazar**: her append yapan sim/adapter (16 çağrı, `CascadeSystems`, `CaravanSystem`, `RecipeSystem`, `PlantingSystem`, `PlantGrowthSystem`, `HarvestCropAdvancer`, `ConsumeFoodAdvancer`, `JobAssignmentSystem`, `NeedsSystem`, `NeedRecoverySystem`, `CombatActionResolver`, `SpellResolver`, `RuntimeHistorySystem` monthly + migrant, `FactionReputationSystem/DecaySystem`, `TradeService`, `ToolCallRouter`, `DmAgentEscalationService/NarrationServices`). Ownership registry'de **UNDECLARED** (multi-writer + boundary-write karışımı). **okur**: `RumorMillSystem`, `RuntimeHistorySystem.DriftFromYesterday`, `DomainSimulationAdapter.PublishEventEchoes`, `WorldEventTailSnapshot.FromLog`, `CombatEventTailSnapshot.FromLog`, `NarrationServices`, `NeedsSystemMoodTests` ve `Faz1AcceptanceReplayTests` benzeri golden'lar.
+- **`World.Rumors`** — **yazar**: `living.rumors@Hourly:55` (**tek writer**, `FieldOwnershipRegistry.cs:87`). **okur**: `RumorMillSystem.PickFor` (dialog + ambient voice), `WorldSaveMapper` (save/load).
+- **`World.RumorEventCursorSeq`** — **yazar**: `living.rumors@Hourly:55` (mill her tick sonunda `TotalAppended`'a atar). Ownership registry'de ayrı satır YOK (rumor pool ile aynı writer, deklare edilmiş sayılır). **okur**: sadece `RumorMillSystem.Tick` ve save mapper.
+- **`World.Factions` (delta)** — `politics.faction_decay@Daily:40` + **`world.runtime_history@Daily:28`** (drift + chronicle) + boundary trade/dialog. Runtime history'nin delta yazması `_reputation.ApplyDelta` üzerinden, event'i de aynı çağrı yazar.
+- **`World.Stockpiles[0]`** — caravan_surge branch buğday ekler (boundary-benzeri, month-end).
+- **`World.Actors`** — `ArriveMigrants` yazar (`Add(loadout.Create(...))`). Bu, sim'in ilk runtime `ActorSpawned` emitter'ı (worldgen dışında).
+- **Runtime-only (save DIŞI)**: `NpcEventEchoFeed.Ring[128]` + `Stamp` + `_writeIndex` — hepsi static, restart'ta sıfırlanır; loadta echo replay etmez (view `Bind`'de `_seenStamp = Stamp` çekiyor).
 
-## LLD - Urettigi/Tukettigi Olaylar
+## LLD — Ürettiği/Tükettiği Olaylar
 
-**Üretilen (WorldEventKind + reason etiketi):**
-- `ChronicleEvent` — `"chronicle:{festival|caravan_surge|border_dispute} intensity:N day:D"`
-  (`RuntimeHistorySystem.cs:116-117`)
-- `ActorSpawned` — `"migrant_arrived name:... site:..."` (`:162-164`) — ActorSpawned'ın ilk runtime
-  emitter'ı (`:125`)
-- `FactionReputationChanged` — `"faction_reputation a:.. b:.. from:.. to:.. reason:{watch_renown|grain_tension|festival|border_dispute|chronicle_ripple}"`
-  (`FactionReputationSystem.cs:42-47,50-54`)
+**Ürettiği** (`world.Events.Append`):
+- `RuntimeHistorySystem.MonthlyChronicle` → `ChronicleEvent` (reason `"chronicle:{festival|caravan_surge|border_dispute} intensity:{n} day:{d}"`)
+- `RuntimeHistorySystem.ArriveMigrants` → `ActorSpawned` (reason `"migrant_arrived name:{...} site:{...}"`)
+- `_reputation.ApplyDelta` (bu sistemden çağrılınca) → `FactionReputationChanged` reason `"watch_renown" / "grain_tension" / "festival" / "border_dispute" / "chronicle_ripple"`
 
-**Tüketilen:**
-- RuntimeHistory drift: `GuardResponded`, `ShortageDetected` (`RuntimeHistorySystem.cs:63-64`)
-- RumorMill.Distill: `GuardResponded`, `WitnessRecorded` (reason "reported" ayrımı),
-  `PlantHarvested`, `TradeCompleted`, `ChronicleEvent`, `NeedChanged`
-  (vermin_theft/cat_catch/mauled_survives önekleri) (`RumorMillSystem.cs:49-73`)
-- NpcEventEchoFeed (Clock adapter): `WitnessRecorded`, `GuardResponded`, `PlantHarvested`,
-  `ActorTalked` (`Clock.cs:51-76`)
-- Dialog.NarrateEvent: `NeedChanged(meal_eaten)`, `WitnessRecorded`, `GuardResponded`,
-  `ShortageDetected`, `CaravanArrived`, `PriceChanged`, `FactionReputationChanged`,
-  `CombatResolved`, `PlantHarvested`, `ChronicleEvent` (`Dialog.Text.cs:160-193`)
+**Tükettiği**:
+- `RumorMillSystem.Distill` — `GuardResponded`, `WitnessRecorded`, `PlantHarvested`, `TradeCompleted`, `ChronicleEvent`, `NeedChanged (vermin_theft / cat_catch / mauled_survives)`
+- `RuntimeHistorySystem.DriftFromYesterday` — `GuardResponded`, `ShortageDetected`
+- `DomainSimulationAdapter.PublishEventEchoes` — `WitnessRecorded`, `GuardResponded`, `PlantHarvested`, `ActorTalked`
 
-## Testler
+**Emit-side effects (save/HUD)**:
+- `NpcEventEchoFeed.Raise` — HUD ring (in-memory only, non-save)
+- `AmbientVoiceDirector.Offer` — PiperTTS spatial line (18m earshot, 30s cooldown, 1 concurrent)
 
-- `Assets/Tests/EditMode/World/RuntimeHistorySystemTests.cs` — aynı seed aynı kronik (`:33-46`),
-  ay dışı gün kronik yazmaz (`:49-55`), ay sonu göçmen (`:58-75`), GuardResponded→renown (`:78-91`).
-- `Assets/Tests/EditMode/Living/RumorMillSystemTests.cs` — bir olay bir dedikodu + cursor asla
-  yeniden öğütmez (`:22-32`), 3 günlük budama (`:35-41`), PickFor determinizm + site-local
-  (`:44-54`).
-- `Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs` — Gate6: 31 günde en az bir kronik, en az
-  bir ilişki değişimi, iki seed iki farklı tarih (`:168-198`); Gate7 census'ünde chronicle vektörü
-  (`:200-227`); "town hums" kapısında ChronicleEvent sayımı (`:300-334`).
-- `Assets/Tests/EditMode/World/WorldEventTests.cs` — WorldEvent ctor sözleşmesinin tamamı
-  (`:31-146`).
-- `Assets/Tests/EditMode/Save/StoreRoundTripTests.cs` — WorldEventLog save round-trip (`:34-70`).
-- `Assets/Tests/EditMode/Save/WorldSaveMapperGoldenRoundtripTests.cs` — Rumors + RumorEventCursor
-  round-trip (`:31-33`).
-- `Assets/Tests/EditMode/Composition/FieldOwnershipRegistryTests.cs` — ledger lint (borçlara bak).
-- `Assets/Tests/EditMode/Visual/WorldEventInterestTests.cs` — log kuyruğunun görsel projeksiyonu
-  (kapsam detayı dogrulanmadi; dosya bu sistemin tüketicisini pinliyor).
-- NpcEventEchoFeed/View için TEST YOK (Assets/Tests grep'inde `NpcEventEcho` sıfır eşleşme) —
-  presentation halka tamponu tamamen pinsiz.
+## Testler (bu sistemi pinleyen test dosyaları — W32-W36 hikâye-testleri dahil)
 
-## Bilinen Borclar + Kacak Kapilari
+- `Assets/Tests/EditMode/Living/RumorMillSystemTests.cs` — 3 test: `Tick_DistillsEventsOnce_AndCursorNeverReMills`, `Tick_StaleRumors_ArePruned`, `PickFor_IsDeterministic_AndPrefersLocalTalk`
+- `Assets/Tests/EditMode/Living/RumorMillCursorTrimTests.cs` — **B21 story pin (W35)**: `RumorMill_Cursor_SurvivesTrim_AndOnlyMillsFreshEvents` — 300 event seed → mill → trim 16 → 5 fresh → mill; `born == 5` ve kursor `TotalAppended`'a düşmüş.
+- `Assets/Tests/EditMode/World/WorldEventLogTests.cs` — 201 satır: append invariant, empty view, `TrimOldest_UnderCap_IsNoop`, `TrimOldest_OverCap_DropsOldestAndAdvancesSeqBaseline`, `TryIndexForSeq` clamp senaryoları, restore ctor + TotalAppended replay
+- `Assets/Tests/EditMode/World/WorldEventTests.cs` — 156 satır: ctor invariant testleri (None kind, empty ids, blank reason)
+- `Assets/Tests/EditMode/World/RuntimeHistorySystemTests.cs` — 93 satır: `DriftFromYesterday` guard renown / grain tension, `MonthlyChronicle` day-30 gate, chronicle rng determinism, migrant arrival trigger
+- `Assets/Tests/EditMode/World/FactionReputationDecaySystemTests.cs` — decay + runtime history etkileşimi
+- `Assets/Tests/EditMode/Composition/WorldTickComposerReplayTests.cs` — replay determinism (event log tail + rumor list snapshot)
+- `Assets/Tests/EditMode/Living/ColonyNeedsAcceptanceReplayTests.cs` — acceptance golden'ı: rumor'lar dahil narrative slice
+- `Assets/Tests/EditMode/Visual/WorldEventTailSnapshotTests.cs`, `WorldEventInterestTests.cs`, `WorldEventNarratorTests.cs` — HUD projection consumer'ları
+- `Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs` — H3/H4 gate (event chain + chronicle mekanik etki)
 
-1. **Ledger yalanı — `econ.trade@Daily:28` diye bir sistem yok.** `FieldOwnershipRegistry.cs:49`
-   `World.Stockpiles` yazarı olarak `econ.trade@Daily:28` deklare ediyor; `DefaultTickSystems.cs`
-   içindeki gerçek step id'leri arasında `econ.trade` YOK (tam liste: `core.time, core.magic,
-   econ.jobs, living.schedule, quest.tick, living.eatOnArrival, living.ambient, living.rumors,
-   living.consumption, living.companion_follow, living.companion_guard, living.predation,
-   living.witness, econ.shortage_response, living.needs, world.caravans, world.harvest,
-   econ.plantgrowth, world.runtime_history, econ.prices, politics.faction_decay`). Gerçek Daily:28
-   Stockpiles yazarı `world.runtime_history`'nin caravan_surge şubesi
-   (`RuntimeHistorySystem.cs:99-100`) — yani ledger'daki satır hayalet, gerçek yazar sicilsiz.
-   Bu tam olarak ledger'ın yakalamak için var olduğu "deklare edilmemiş ikinci yazar" ailesi
-   (`FieldOwnershipRegistry.cs:5-11` kendi ifadesi). ((a)-(g) aile harfi eşlemesi repo içinde
-   bulunamadı — dogrulanmadi.)
-2. **Lint testinin knownIds listesi bayat.** `FieldOwnershipRegistryTests.cs:14-22` şu id'leri
-   "gerçek kayıtlı sistem" sayıyor: `world.growth`, `econ.trade`, `world.shortage`,
-   `world.history`, `econ.caravan`, `faction.decay` — HİÇBİRİ tick registry'de yok (gerçekleri:
-   `econ.plantgrowth`, `econ.shortage_response`, `world.runtime_history`, `world.caravans`,
-   `politics.faction_decay`). Test registry'den okumak yerine elle kopyalanmış liste kullandığı
-   için "declared writer gerçek sistem mi" iddiası boş güvence: hayalet `econ.trade` linti geçiyor.
-3. **RuntimeHistory'nin Faction matrisi ve Actors yazıları sicilsiz.** İtibar matrisine iki Daily
-   yazar var (`world.runtime_history@Daily:28`, `politics.faction_decay@Daily:40`) ama ledger'da
-   `World.Factions` satırı hiç yok; göçmen `Actors.Add` için de yok. Çatışma bugün yok (sıra
-   28<40 deterministik) ama sınıf, guard-pursuit vakasıyla aynı.
-4. **WorldEventLog sınırsız büyür ve save'e TAMAMEN yazılır.** Budama/rotasyon yok
-   (`WorldEventLog.cs:25`, `WorldSaveMapper.Narrative.cs:19-22`); `PathfindingSystem.cs:57` her
-   adım için `ActorStepped` bile basıyor. Okuyucular kendilerini kapaklıyor (8192/256/32) ama save
-   boyutu ve `ToWorldEventLogData`'nın O(n) LINQ kopyası uzun oturumda büyümeye devam eder. Uzun
-   marathon save'lerinde ölçülmüş üst sınır: dogrulanmadi.
-5. **ScanCap kaçak kapısı — sessiz haber kaybı.** Hem mill (`RumorMillSystem.cs:29-31`) hem echo
-   (`Clock.cs:45`) cursor gerisinde 256'dan fazla olay birikirse arayı ATLAR (cursor yine sona
-   çekilir). Catchup patlamalarında dedikodu/ikon üretilmeden kaybolur — kasıtlı (O(1) tick) ama
-   log'a düşmeyen bir veri kaybı.
-6. **`PickFor` doc-drift.** Yorum "newest bucket" vaat ediyor (`RumorMillSystem.cs:76`) ama
-   implementasyon tazelik ağırlığı uygulamıyor — havuzun tamamından hash'le seçiyor (`:81-84`).
-   Davranış deterministik ve testli, sadece yorum yanlış.
-7. **Rumor doğum damgası olay zamanı değil, mill zamanı.** `BornMinutes = stamp.TotalMinutes`
-   (`RumorMillSystem.cs:37`) — 3 gün önce olmuş bir olay catchup'ta bugün öğütülürse "taze" doğar
-   ve 3 gün daha yaşar. Küçük ama gerçek bir zaman kayması.
-8. **`NpcEventEchoFeed` statik ve asla sıfırlanmaz.** `Ring`/`Stamp`/`_writeIndex` statik
-   (`NpcEventEchoFeed.cs:24-27`), Reset API'si yok: aynı editor/oyun oturumunda dünya değişse de
-   eski aktör id'lerinin echo'ları halkada kalır. `Bind` anındaki `Stamp` snapshot'ı
-   (`NpcEventEchoView.cs:31`) pratikte replay'i engeller; id çakışması teorik risk. Domain-reload
-   kapalı editor ayarında davranış: dogrulanmadi.
-9. **Kronik dedikodusu jenerik.** `Distill`'in `ChronicleEvent` satırı hangi olayın yazıldığını
-   söylemez ("The chroniclers wrote a new page...", `RumorMillSystem.cs:61-62`) — reason'daki
-   festival/caravan_surge/border_dispute bilgisi kullanılmıyor; ayrıntılı anlatım yalnız
-   selamlaşma yolundaki `NarrateEvent`'te var (`Dialog.Text.cs:182-190`). İki damıtıcı (Distill +
-   NarrateEvent) aynı işi iki ayrı kopyada yapıyor — birleşik tek formatter borcu.
-10. **Migrant id şeması 512 ay sonra sarar.** `(dayIndex % 512)` (`RuntimeHistorySystem.cs:152`)
-    ~42 oyun yılı sonrası id çakışmasında `Contains` kontrolü göçmeni sessizce atlar (`:153`) —
-    kasıtlı kaçak kapısı, kayıp loglanmaz.
-11. **Drift eşik-temelli, hacim-körü.** `DriftFromYesterday` gün içinde 1 de olsa 50 de olsa
-    GuardResponded için aynı +1'i uygular (`RuntimeHistorySystem.cs:68-74`) — tasarım mı borç mu
-    dokümante değil (dogrulanmadi).
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
+
+- **W32 — Action olayları çöp yığın olmaktan çıktı**: `WorldEventKind` sadece `ActionCompleted=33` + `ActionFailed=34`'ü ekledi; phase-step olayları KASITEN log'dan silindi. Yorum (`WorldEventKind.cs:47-49`): "phase steps live in `WorldState.ActionLog` (bounded ring); writing steps here would resurrect the B21 per-step spam class (~1GB log by day 90)".
+- **W35 — B21 tasarımı formalleşti**: unbounded log gerçekliği inceleme masasına yatırıldı; MaxRetained=16384, seq-based cursor, Daily:99 trim step, altı-dosyalı yüzey planlandı.
+- **W36 — B21 uygulama katmanı indi (kısmi)**:
+  - `WorldEventLog` ctor + `TrimOldest` + `FirstRetainedSeq/TotalAppended/TryIndexForSeq` (`WorldEventLog.cs:24-126`).
+  - `WorldState.RumorEventCursorSeq` — int index'ten **long seq**'e rename; `CopyFrom` L333 taşır.
+  - `RumorMillSystem.Tick` — seq-clamp + `TryIndexForSeq` + `ScanCap=256` backfill guard (`RumorMillSystem.cs:26-40`).
+  - `WorldSaveMapper` — `worldEventFirstRetainedSeq` diske girer (**tek** long), load `new WorldEventLog(firstRetainedSeq)` restore ctor'unu kullanır (`WorldSaveMapper.cs:87, 206`; `WorldSaveMapper.Narrative.cs:37-45`).
+  - `RumorMillCursorTrimTests` — 300→trim(16)→5→mill senaryosu pin edildi.
+- **W36 (aynı batch)** — B19/B21 fixleri f6c9e2d0 olarak `main`'e taşındı; observation 19836 "B21 Story Complete: WorldEventLog Seq-Based Trim + RumorMill Cursor Migration Across 12 Files" ve 19848 "W36 batch pushed to main as f6c9e2d0".
+- **AÇIK KALAN**: Daily:99 **`WorldEventTrimStep`** composer'a takılmadı — `TrimOldest` sadece testlerde çağrılıyor (`grep .TrimOldest` = 4 hit, hepsi test). Kod yazıldı, koşan bir yerde çağrılmıyor. Bu, aşağıdaki bilinen borçların #1'i.
+
+## Bilinen Borçlar + Kaçak Kapıları
+
+1. **B21 yarım — trim çağıran YOK** (KRİTİK). API + seq contract + test pin var, ama `DefaultTickSystems.cs`'de `Daily,99` slotunda hiç step yok (`grep "Daily," DefaultTickSystems.cs` = 6 satır, hiçbiri trim). Runtime log hâlâ unbounded büyür — Jun 10 observation 12299 "WorldEventLog Is Unbounded Append-Only List Growing Since Tick 1" hâlâ ayakta. Fix: `WorldEventLogTrimStep` sınıfı + `Daily,99` cadence + `context.World.Events.TrimOldest(16384)`.
+2. **`RumorMillSystem.ScanCap = 256` sessiz kayıp**: bir save 300+ unmilled event'le açılırsa (mill 3 gün çalışmamış vs.), en eski (Total − 256) event'in altı silinip kursor oraya çekilir → o event'lerden rumor doğmaz. Ne log'lanır ne diagnoz'lanır. En azından "skipped N older events" telemetrisi eklenmeli.
+3. **`Distill` switch'i hard-coded string tablosu**: yeni bir `WorldEventKind` eklendiğinde otomatik olarak `null` döner (talk'a değmez). "Yeni event beklerken kimse konuşmuyor" bug'ı için bir kırmızı bayrak yok. Kind ↔ Distiller kayıt registrasyon defter tutulabilir.
+4. **`RuntimeHistorySystem.DriftFromYesterday` scan floor = 8192**: log 8192'yi geçtikten sonra sondan eski günlere dönüşü keser — B21 trim'i (16384) devreye girdiğinde bile bu 8192 çakışmaz ama iki cadence çakışırsa (catchup burst içinde önce trim sonra history) drift eksik sayabilir. History cadence bugün trim'in ÖNCE mi SONRA mı olduğunu bilmediği için `Daily,28` vs `Daily,99` sıralama kritik.
+5. **`MigrantNames` 8-name döngüsü** (`RuntimeHistorySystem.cs:139`): büyük dünya + uzun oyun → "Rill of the Road" x N tekrarı görülebilir. Deterministik ama zayıf.
+6. **`NpcEventEchoFeed.LatestKindFor` O(128) her poll**: 500 aktör × 0.4s poll = 500 × 2.5Hz = 1250 tam-ring tarama/s = ~160k karşılaştırma/s. Bugün ihmal edilebilir ama kabalık limiti — actor→lastEcho map'i O(1)'e indirebilir.
+7. **`NpcEventEchoView` sprite cache static + `PiperTTS`/`AmbientVoiceDirector.s_host` static**: Editor domain reload sırasında NullRef riski; play-mode enter'da ilk poll'de `s_eye != null` false görülebilir. Zararsız (tembel yaratılıyor) ama edge case.
+8. **`WorldEventLog.Events` canlı view — snapshot değil**: caller iterating iken bir sim step Append yaparsa `IReadOnlyList` boyutu değişir. Presentation'da `PublishEventEchoes` bunu tek thread aynı tick içinde yaptığı için sorun yok; ama LLM/agent async tarafında bir gün UI thread'inde iterate + sim thread'inde Append riski var. Save mapper `Events` üzerinde `.Select` çağırıyor — büyük log'da tek allocation.
+9. **`RumorEntry` alanları public field + no ctor**: hiçbir invariant yok (BornMinutes negatif, Text null geçebilir). Mill her zaman doğru yazıyor ama save mapper (`WorldSaveMapper.cs:266`) null-tolerant değil — data corrupt olursa NRE.
+10. **`ChronicleEvent` reason string'i grep-lenebilir ama structured değil**: quest/UI kod `reason.Contains("festival")` gibi string-match yapıyor. Enum/tag alanı yok; kaçak kapı olarak future refactor'da `ReasonTrace` ile ayrılabilir.
+11. **`AmbientVoiceDirector`'ın `RumorMillSystem.PickFor` boş dönüşü** (`_currentDialogLine = rumor ?? "Quiet lately..."` — dialog'da fallback var, ambient voice tarafında **`Offer(null)` → sessizce reddediliyor** ama tetikleyen event kayboluyor). Yani rumor havuzu boşken NPC ağzını tamamen kapatır — bir "no news" seed rumor'u atılmıyor.

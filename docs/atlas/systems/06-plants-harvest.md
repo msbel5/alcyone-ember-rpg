@@ -1,267 +1,123 @@
 # 06-plants-harvest
 
-> Kapsam: bitki buyume + hasat + sim-gorsel tarla birlesmesi. Ana dosyalar:
-> `Assets/Scripts/Simulation/Process/PlantGrowthSystem.cs`, `HarvestSystem.cs`, `PlantingSystem.cs`,
-> `HarvestHandsService.cs`, `FarmingJobRequestFactory.cs`,
-> `Assets/Scripts/Simulation/Composition/DefaultTickSystems.cs` (PlantGrowthStep/HarvestStep),
-> `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs` (RuntimeFieldMirror + CropStalkView + SimFieldView),
-> `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Clock.cs` (PublishFieldMirror).
+## HLD - Ne ve Neden (5-10 cumle)
 
-## HLD - Ne ve Neden
+Bitki-hasat sistemi, dünyanın **canlı ekin** halkasıdır: soil hücrelerine iliştirilen `PlantComponent` satırları veri-tanımlı büyüme kurallarıyla `seed → sprout → ripe` yolunu **gün başına deterministik** ilerler, ripe olan bitkiyi bir **bodied hasatçı** eline alır, hasatçı yükü stockpile'a **yürüyerek** taşır. W33 öncesinde bu zincirin merkezi bir `world.harvest@Daily:25` fiat'ıydı: yakında bir el gördüğü an tabaka +2 yaz, bitkiyi seed'e sar - RUH_TESHIS §2.8'in "ışınlanan madde" kayıtlı hastalığı. W33 slice'ı o fiat'ı öldürdü, `HarvestCropAdvancer` (2 tick, plant→hands atomik commit) ve `HaulCropAdvancer` (yürü + ilk reach-contact'ta hands→pile) çiftini gerçek eyleme bağladı. W35 (B04) `FieldOwnershipRegistry`'ye `World.Plants` ve `World.Soils` yazar deklarasyonlarını ekledi - artık lint her iki mağarayı biliyor. W36 (B27) `PlantGrowthStep`'in hardcoded `isSnowing: false` telini kapadı: kaba `isSnowing = (season == Winter)` gate gerçek kar-blokajlı türleri kışın dondurur. Sunum tarafında 2026-07-24 REFORM #1 (P0-4) polar `RuntimeFieldBuilder` belt'ini emekliye çıkardı; `SimFieldView` sim'in `PlantComponent`'lerini `RuntimeFieldMirror.Plants` üzerinden **hücre başına stalk** olarak projekte ediyor - görsel alan artık sim alanının kendisi. Kısacası: **büyüme sistemi + hasat/haul action'ları + sim-görsel union** üç ayaklı bir tabure; hiçbirinin yerine öbürünün konuşmasına izin yok.
 
-Bitki sistemi, yerlesimin tarlalarindaki ekinleri deterministik gunluk adimlarla buyutur
-(seed -> sprout -> ripe), olgunlasan ekini YAKINDAKI BIR KOYLUNUN ELIYLE hasat edip site
-stokuna 2 birim urun ekler ve ayni gun tohuma geri diker — boylece buyume -> stok -> fiyat
-zinciri her gun kendini besler (shipcheck "FLAT" bulgusunun cozumu, `DefaultTickSystems.cs:419-421`).
-Oyuncuya gorunen etkisi: kasaba kenarindaki tarla parselleri sim'in GERCEK PlantComponent'lerinin
-projeksiyonunda durur; her sap kendi bitkisinin evresini giyer, tohum aniziden yesil filize,
-oradan olgun altina saniyeler icinde yukselir/alcalir — hasat "glitch" degil hasat gibi okunur
-(`RuntimeFieldBuilder.cs:81-90`). Felsefe iki reform uzerine kurulu: REFORM #1 "tek mekansal
-otorite" — gorsel tarla SIM tarlasidir, dekoratif polar kusak emekliye ayrildi
-(`RuntimeFieldBuilder.cs:143-147`, `WorldSceneDirector.cs:122-126`); M6 "ekinler birden yok
-olmasin" — hasat fiat ile degil ELLE olur, kimse yoksa parsel olgun bekler
-(`HarvestHandsService.cs:7-12`). Sim katmani saf ve Unity'siz; sunum katmani statik mirror
-kanalindan okur, geri yazmaz. Onemli gercek: sistemin YASAYAN yolu (HarvestStep) ile ATOMIK
-yolu (PlantingSystem/HarvestSystem/FarmingJobRequestFactory) ayri dunyalardir — ikincisi test
-altinda tutulan ama tick'e baglanmamis, buyuk olcude uyuyan bir boru hattidir (asagida "Borclar").
+## HLD - Akış (numaralı adımlar)
 
-## HLD - Akis
+1. **Boot**: `DomainSimulationAdapter.Worldgen.Production` başlangıç yerleşiminin merkezine 1 `WorksiteKind.Field` + 1 soil + 1 seed-tabakasında `PlantComponent` yerleştirir (SOUL-01 sabiti; deterministic anchor).
+2. **Daily (@20)**: `PlantGrowthStep` her `PlantSpeciesDef` için `PlantGrowthSystem.AdvanceOneDay(species, world.Plants, world.Events, now, season, isSnowing: season == Winter)` çağırır. Species önce `CanGrow(season, isSnowing)` gate'inden geçer (W36); geçenler için her satırda `DaysInStage++`; `DaysToNextStage`'a ulaşan satır `TryGetNextStage` ile bir sonraki stage'e sarar ve `WorldEventKind.PlantStageAdvanced` event'i yazar.
+3. **Shortage (@27)**: Stok < 4 iken `FarmingJobRequestFactory` bir `Plant` job'u board'a asar (bkz. `07-farming-jobs`); job atanınca aktör `ActorIntent.Plant → MoveToPlot → PlantSeed` zincirine girer. Bu zincir plant'ı **doğurur** (`FarmPlantAuthorshipTests` §F1); yeni plant `Plants` store'una PerTick:22 writer'ı üzerinden eklenir - Growth step onu yarın sabahtan itibaren ilerletir.
+4. **Harvest kararı**: `ActorIntent.Harvest + MoveToPlot` completion'ında lifecycle `NextLinkFor` → `HarvestCrop` seçer. Hasatçı reservasyon `plotKey`li satırı elinde, `HarvestCropAdvancer` çalışır.
+5. **Harvest tick 1-2**: 2 tick ilerler (`HarvestDurationTicks`), her tick öncesi (a) reservation kaybı, (b) plant kaybı / `IsHarvestable` düşmesi, (c) `Chebyshev(actor, plant) > HarvestReachCells (2)` şart-hatası bakılır - üçünden biri `Fail` (reservasyon serbest, matter konserve).
+6. **Harvest commit (tick 2)**: **Atomik**: `Plants.Remove(plant.Id)` + `Soils.Replace(soil.WithoutPlant())` + `WorldEventKind.PlantHarvested` event + plot-row release + carry-row `TryReserve(CarryKey(species), untıl = now + haulWalk + 60)` + `state.WithCarriedUnits(HarvestYieldUnits: 2).Succeeded()`. Hiçbir chunk sınırı "yield basıldı ama bitki hâlâ ayakta" veya tersini görmez (W33-01 §6 CONSTRAINT).
+7. **Haul walk**: `HaulCropAdvancer` her tick: carry-row'un tag'ini `TryParseCarryKey`'le okur; `FoodOperations.WithinEatReach`'te değilse `MovementService.StepToward(actor.Position, siteCentre, world.NavView)`.
+8. **Haul deposit**: Reach-contact anında `FarmOperations.FindOrCreatePile(world, siteId).Add(cropTag, CarriedUnits)` + carry-row release + `state.WithCarriedUnits(0).Succeeded()`. Add-only (kapasite/rezervasyon yok) - varış sırası önemsiz.
+9. **PerTick clock**: `DomainSimulationAdapter.Clock` her tick `PlantComponent.Rows`'u iterate eder, home-site plant'larını **hash**'ler, sadece hash değişirse `RuntimeFieldMirror.PublishPlants(cellArray)` yapar (redundant publish yok). Ayrıca dominant stage'i `RuntimeFieldMirror.Publish(count, stage)` ile ilan eder.
+10. **Presentation poll**: `SimFieldView.Update` (1.5s periyot) `PlantsStamp` değiştiyse cell dictionary'sini diff'ler; new id → yeni plot GameObject + `CropStalkView` (`ExternalStage = cell.Stage`); missing id → parent plot destroy. `CropStalkView` (2s periyot) stage değişince target height ve palette rengini set eder, sonra frame-başı `MoveTowards` ile büyür/söner (harvest'ta "birden yok olma" playtest fix).
 
-Gunluk sim akisi (hepsi `TickCadence.Daily`, WorldTickComposer -> WorldTickRegistry uzerinden;
-kayit listesi `DefaultTickSystems.cs:42-64`):
+## LLD - Veri Modeli (file:line)
 
-1. **econ.plantgrowth @ Daily:20** (`DefaultTickSystems.cs:470-508`): sezon `SeasonCalendar`'dan
-   cozulur (bulunamazsa Spring varsayilir, satir 493-495), katalogdaki her tur icin
-   `PlantGrowthSystem.AdvanceOneDay` cagrilir; `isSnowing` SABIT `false` gecilir (satir 505 —
-   canli hava durumu sim'e bagli degil).
-2. `AdvanceOneDay` (`PlantGrowthSystem.cs:17-79`): tur uyusan her bitkinin `DaysInStage`'i +1;
-   esik asilirsa sonraki evreye gecirir ve `PlantStageAdvanced` olayi yazar (satir 58-74).
-   Son evre (`DaysToNextStage == 0`) atlanir (satir 42-43).
-3. **world.harvest @ Daily:25** (`DefaultTickSystems.cs:422-468`): `StageId == "ripe"` olan
-   bitkiler snapshot'lanir (satir 431-435), her biri icin `HarvestHandsService.FindHarvester`
-   ile 2 hucre (Chebyshev) icindeki en yakin canli sivil aranir (satir 442); kimse yoksa parsel
-   olgun BEKLER (satir 443). Toplayan varsa site stokuna `pile.Add(SpeciesId, 2)` (satir 457),
-   toplayicinin ActorId'siyle `PlantHarvested` olayi (satir 460-462) ve AYNI bitki Id'siyle
-   "seed" evresine geri dikim (satir 463-465).
-4. **econ.shortage_response @ Daily:27** (`DefaultTickSystems.cs:343-348`,
-   `ShortageResponseSystem.cs:27-61`): her stokta gida etiketi < 4 ise `ShortageDetected` +
-   JobBoard'a `FarmingJobRequestFactory.CreatePlantingJob` (satir 51-53). (Bu is bir ciftciyi
-   tarlaya YURUTUR ama bitki DIKMEZ — bkz. Borclar #2.)
-5. **econ.prices @ Daily:30** (`DefaultTickSystems.cs:518-526`): hasadin sistirdigi stok fiyati
-   ayni gun icinde gunceller — 20 -> 25 -> 30 ayni-gun zinciri bilerek (yorum: satir 424).
-6. **Sunum, her tick**: `DomainSimulationAdapter.AdvanceTick` (`Clock.cs:6-13`) composer'i
-   ilerlettikten sonra `PublishFieldMirror()` cagirir (`Clock.cs:81-147`): aktif yerlesimin
-   bitkileri taranir, evre sayimi + FNV hash cikartilir (satir 88-113); baskin evre
-   `RuntimeFieldMirror.Publish` ile (satir 114-117), bitki hucre listesi SADECE hash
-   degistiginde `PublishPlants` ile yayinlanir (satir 119-122). Saat/gun kanallari da ayni
-   yerden beslenir (satir 125-132).
-7. **Gorsel, Unity Update**: `SimFieldView` 1.5 sn'de bir `PlantsStamp`'i yoklar
-   (`RuntimeFieldBuilder.cs:157-180`), yeni hucre icin parsel kurar, olen Id'yi budar;
-   her `CropStalkView` 2 sn'de bir evresini yoklar ve boyunu 0.18 birim/sn ile hedefe surer
-   (`RuntimeFieldBuilder.cs:67-90`).
+- **PlantComponent** (immutable, id-only) - `Assets/Scripts/Domain/Process/PlantComponent.cs:9-58`
+  - `WorldComponentId Id` / `SiteId SiteId` / `GridPosition Position` / `string SpeciesId` / `PlantStageId StageId` / `int DaysInStage`
+  - `WithStage(newStageId)` → `DaysInStage=0` sıfırlar; `WithDaysInStage(n)` sadece sayaç.
+- **PlantSpeciesDef** (species catalog satırı) - `Assets/Scripts/Domain/Process/PlantSpeciesDef.cs:11-101`
+  - `SpeciesId`, `SeedItemTag`, `HarvestItemTag`, `IReadOnlyList<PlantGrowthStageDef> Stages`, `IReadOnlyList<PlantGrowthRule> GrowthRules`
+  - `TryGetStage(id, out stage)` / `TryGetNextStage(id, out next)` / `CanGrow(season, isSnowing)` / `FirstStage`.
+- **PlantGrowthStageDef** - `Assets/Scripts/Domain/Process/PlantGrowthStageDef.cs:6-27`
+  - `PlantStageId Id`, `string DisplayName`, `int DaysToNextStage` (0 = terminal), `bool IsHarvestable`.
+- **PlantGrowthRule** - `Assets/Scripts/Domain/Process/PlantGrowthRule.cs:5-28`
+  - `Season Season` (`Season.None` = wildcard), `bool AllowsGrowth`, `bool BlockedBySnow`.
+  - `Matches(season)` + `CanGrow(isSnowing) = AllowsGrowth && (!isSnowing || !BlockedBySnow)`.
+- **WorldState mağaraları** - `Assets/Scripts/Domain/World/WorldState.cs:54-58` yorumu
+  - `world.Plants : ComponentStore<PlantComponent>` (SOUL-01 nedeniyle world root'unda)
+  - `world.Soils : ComponentStore<SoilComponent>` (plant reference'ını `PlantId` üzerinden taşır; `WithPlant`/`WithoutPlant`).
+- **Presentation mirror** - `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs:11-45`
+  - `RuntimeFieldMirror.PlantCount / StageIndex` (agregat) + `PlantCell[] Plants + int PlantsStamp` (REFORM #1, cell array + monotonic version).
+  - `PlantCell { ulong Id; int LocalX; int LocalZ; int Stage; }`.
 
-Tohumlama (tick disinda, bir kez): `WorldFactory.SeedWorldAnchors` Site 5'e 3 bugday
-bitkisi + 320 bugday larder'i koyar (`WorldFactory.cs:135`, `138-145`);
-`DomainSimulationAdapter.SeedStartingProductionSites` baslangic yerlesimine 1 Field worksite +
-1 soil + 1 seed bugday ekler (`DomainSimulationAdapter.Worldgen.Production.cs:46-55`).
+## LLD - Fonksiyon Haritası (imza + file:line + 1 cümle)
 
-## LLD - Veri Modeli
+- `PlantGrowthSystem.AdvanceOneDay(PlantSpeciesDef species, ComponentStore<PlantComponent> plants, WorldEventLog eventLog, GameTime now, Season season, bool isSnowing) : int` - `Assets/Scripts/Simulation/Process/PlantGrowthSystem.cs:17-79` - Species'in `CanGrow` gate'inden sonra o species'in tüm satırlarında `DaysInStage++` yapar, eşik dolarsa `WithStage(next)` + `PlantStageAdvanced` event yazar, ilerleyen bitki sayısını döner.
+- `PlantSpeciesDef.CanGrow(Season, bool isSnowing) : bool` - `Assets/Scripts/Domain/Process/PlantSpeciesDef.cs:91-99` - İlk `Matches(season)` kuralının `CanGrow(isSnowing)` sonucunu döner; kural yoksa false (winter/summer default freeze).
+- `PlantGrowthRule.CanGrow(bool isSnowing) : bool` - `Assets/Scripts/Domain/Process/PlantGrowthRule.cs:24-27` - `AllowsGrowth && (!isSnowing || !BlockedBySnow)` snow-gate kontratı.
+- `HarvestCropAdvancer.Step(WorldState, ActorRecord, GameTime) : void` - `Assets/Scripts/Simulation/Living/Actions/HarvestCropAdvancer.cs:32-89` - Rezervasyon/plant/reach fail-fast; 2 tick ilerledikten sonra plant remove + soil `WithoutPlant` + `PlantHarvested` event + carry-row rezerve + `CarriedUnits = 2` atomik commit.
+- `HaulCropAdvancer.Step(WorldState, ActorRecord, GameTime) : void` - `Assets/Scripts/Simulation/Living/Actions/HaulCropAdvancer.cs:16-64` - Boş el / row kayıp fail; site centre'a `StepToward` (siteless world'de permissive); `WithinEatReach`'te `FindOrCreatePile.Add(cropTag, units)` + release + `WithCarriedUnits(0).Succeeded()`.
+- `FarmOperations.IsHarvestable(IReadOnlyList<PlantSpeciesDef>, PlantComponent) : bool` - `Assets/Scripts/Simulation/Living/Actions/FarmOperations.cs:98-108` - Species catalog'da lookup + stage'in `IsHarvestable` bayrağı.
+- `FarmOperations.FindOrCreatePile(WorldState, SiteId) : StockpileComponent` - `Assets/Scripts/Simulation/Living/Actions/FarmOperations.cs:112-` - Site'ın stockpile'ını bulur veya oluşturur (haul deposit hedefi).
+- `FarmOperations.Chebyshev(GridPosition, GridPosition) : long` - `Assets/Scripts/Simulation/Living/Actions/FarmOperations.cs:124-` - Yürüyüş ve reach ölçümleri için 8-yönlü mesafe.
+- `FarmOperations.HarvestReachCells : const int = 2` - `Assets/Scripts/Simulation/Living/Actions/FarmOperations.cs:20` - Retired `HarvestHandsService.ReachCells`'ten VERBATIM.
+- `FarmOperations.CarryKey(string cropTag) : string` / `TryParseCarryKey` / `TryParsePlotKey` - `Assets/Scripts/Simulation/Living/Actions/FarmOperations.cs:32-58` - Tek-yazar rezervasyon tag formatı ("plot:soilId" / "carry:cropTag").
+- `HarvestCropAdvancer.HarvestDurationTicks : const int = 2` / `HarvestYieldUnits : const int = 2` - `Assets/Scripts/Simulation/Living/Actions/HarvestCropAdvancer.cs:19-22` - W33-01 §5 tek konut + retired HarvestStep "+2" ekonomik kalibrasyonu.
+- `DefaultTickSystems.PlantGrowthStep.Run` - `Assets/Scripts/Simulation/Composition/DefaultTickSystems.cs:467-505` - Daily @20 step; `SeasonCalendar.SeasonAt`'i `Time.TotalMinutes`'tan alır, her species için `AdvanceOneDay(..., isSnowing: season == Season.Winter)` (W36 wound-close).
+- `RuntimeFieldMirror.PublishPlants(PlantCell[]) : void` - `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs:40-44` - Cell array'i set + `PlantsStamp++` (SimFieldView'un poll tetikleyicisi).
+- `RuntimeFieldMirror.Publish(int plantCount, int stageIndex) : void` - `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs:29-33` - Dominant stage'i clamp'leyerek agregat kanala yayınlar (legacy belt fallback için).
+- `SimFieldView.Update()` - `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs:157-181` - Stamp diff varsa alive-set kur, missing id → destroy, new id → `BuildPlot`, mevcut → `ExternalStage = cell.Stage`.
+- `SimFieldView.BuildPlot(PlantCell) : CropStalkView` - `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs:183-206` - LocalX/LocalZ'de bir soil + bir stalk cube; collider yok (walk-through crops).
+- `CropStalkView.Update()` - `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs:70-95` - `ExternalStage ?? RuntimeFieldMirror.StageIndex` seçer; `_targetHeight = StageHeights[stage]`; her frame `MoveTowards(0.18/s)` ile büyür/söner (playtest fix "ekinler birden yok oluyor").
+- `RuntimeFieldBuilder.BuildBelt / Build` - `Assets/Scripts/Presentation/Ember/WorldDirector/RuntimeFieldBuilder.cs:105-149` - Polar arc üstünde 15 stalk'lı `FarmBelt` (REFORM #1 sonrası retired; sadece `SimFieldView`'un boş olduğu senaryolar için fallback dekor).
+- `DomainSimulationAdapter.Clock.PublishPlants pass` - `Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Clock.cs:90-132` - Home-site plant satırlarını gezip cell listesi + FNV-1a hash kurar; hash değişirse `PublishPlants`; her tick agregat `Publish`.
 
-**PlantComponent** (`Assets/Scripts/Domain/Process/PlantComponent.cs:9-54`) — immutable:
-- `Id: WorldComponentId`, `SiteId: SiteId`, `Position: GridPosition` (satir 38-40)
-- `SpeciesId: string`, `StageId: PlantStageId`, `DaysInStage: int` (satir 41-43)
-- `WithStage(stageId)` gun sayacini sifirlar (satir 45-48); `WithDaysInStage` (satir 50-53)
+## LLD - Yazdığı/Okuduğu Alanlar (FieldOwnershipRegistry dilinde)
 
-**SoilComponent** (`Assets/Scripts/Domain/Process/SoilComponent.cs:13-69`) — immutable:
-- `Id`, `SiteId`, `Position`, `Fertility: int (0-100)`, `Moisture: int (0-100)`,
-  `PlantId: WorldComponentId`, `HasPlant` (satir 36-42)
-- `WithMoisture` / `WithPlant` / `WithoutPlant` (satir 44-59). NOT: Fertility/Moisture hicbir
-  canli sistem tarafindan okunmaz/yazilmaz — susleme verisi (bkz. Borclar #6).
+Kaynak: `Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs:78-99`.
 
-**PlantSpeciesDef** (`Assets/Scripts/Domain/Process/PlantSpeciesDef.cs:10-101`):
-- `SpeciesId`, `SeedItemTag`, `HarvestItemTag` (satir 54-56), `Stages`, `GrowthRules`,
-  `FirstStage` (satir 57-59)
-- `TryGetStage` (61-74), `TryGetNextStage` — evre siralamasi liste sirasidir (76-89),
-  `CanGrow(season, isSnowing)` — ILK eslesen kural karar verir (91-100)
+- **World.Plants** yazarları:
+  - `econ.plantgrowth@Daily:20` - `PlantGrowthStep` (stage advancement, `WithStage`/`WithDaysInStage`).
+  - `living.action_advance@PerTick:22` - `PlantSeedAdvancer` (birth) + `HarvestCropAdvancer` (removal).
+- **World.Soils** yazarları:
+  - `living.action_advance@PerTick:22` - `PlantSeedAdvancer` (`WithPlant` on plant), `HarvestCropAdvancer` (`WithoutPlant` on harvest).
+- **World.Reservations** (bu sistemin *kiracısı*): `HarvestCropAdvancer` plot-row release + carry-row `TryReserve`; `HaulCropAdvancer` carry-row release. Formal writer sahibi `living.action_advance@PerTick:22`.
+- **World.Events** ekleyicileri: `PlantGrowthStep` (`PlantStageAdvanced`), `HarvestCropAdvancer` (`PlantHarvested`).
+- **World.Stockpiles / SiteInventory** yazarı: `HaulCropAdvancer.Add(cropTag, units)` (bkz. `08-inventory-stockpile`).
+- **RuntimeFieldMirror.Plants / PlantsStamp / StageIndex / PlantCount** yazarı: `DomainSimulationAdapter.Clock` PerTick pass (presentation-kutup, ownership registry kapsamı dışında).
 
-**PlantGrowthStageDef** (`Assets/Scripts/Domain/Process/PlantGrowthStageDef.cs:6-27`):
-- `Id: PlantStageId`, `DisplayName`, `DaysToNextStage: int` (0 = son evre),
-  `IsHarvestable: bool` (satir 23-26)
+## LLD - Ürettiği/Tükettiği Olaylar
 
-**PlantGrowthRule** (`Assets/Scripts/Domain/Process/PlantGrowthRule.cs:4-27`):
-- `Season` (`Season.None` = joker, satir 17-20), `AllowsGrowth`, `BlockedBySnow` (satir 13-15)
+- **Ürettiği** (`WorldEventKind`):
+  - `PlantStageAdvanced` - `PlantGrowthSystem.AdvanceOneDay`; `ReasonTrace = [plant_growth, site:{siteId}, plant:{plantId}, species:{id}, from:{prevStage}, to:{nextStage}]`; key `plant_stage_advanced:{siteId}:{plantId}:{newStageId}`.
+  - `PlantHarvested` - `HarvestCropAdvancer.Step` atomik commit satırı; description `harvested species:{speciesId} qty:{HarvestYieldUnits} by:{actorId}`; author `actor.Id`. **Retired writer**: `world.harvest@Daily:25` (fiat teleport) - grammar VERBATIM taşındı, sadece author artık gerçek.
+  - `ActorActionCompleted` (`HarvestCrop` ve `HaulCrop` succeeded transition'ları) - `ActionLogManager` yolundan.
+- **Tükettiği** (typed input, event kanalından değil):
+  - `Season season` ← `SeasonCalendar.SeasonAt(world.Time)` (W36 wound-close bunu snow-gate'e çeviriyor).
+  - `WorkOrderLedger.PlantJob` completion → PlantSeed → yeni `PlantComponent` (bkz. `07-farming-jobs`).
+  - Shortage cascade `econ.shortage_response@Daily:27` → planting job (Plants store'una dolaylı input).
 
-**StockpileComponent** (`Assets/Scripts/Domain/Process/StockpileComponent.cs:12-101`):
-- `SiteId` + etiket->adet sozlugu; `Add` int-tasma korumali (satir 51-57), `Remove` sifir
-  altina inmez (64-75), `Entries` kanonik sirali (86-94)
+## Testler (bu sistemi pinleyen test dosyaları - W32-W36 hikâye-testleri dahil)
 
-**Kanonik tur katalogu** (`WorldTickComposer.cs:104-121`): tek tur "wheat"
-(seed 1 gun -> sprout 1 gun -> ripe hasatlik; `Season.None` kurali = her mevsim, kar engeli yok).
-`SeedItemTag="wheat_seed"`, `HarvestItemTag="wheat_grain"` — ikisi de canli yolda KULLANILMAZ
-(bkz. Borclar #3).
+- `Assets/Tests/EditMode/Process/PlantGrowthSystemTests.cs` - `AdvanceOneDay` pure unit'i (age++/stage-flip/species-mismatch skip/eventlog satırı).
+- `Assets/Tests/EditMode/Process/PlantDefinitionTests.cs` - `PlantSpeciesDef` ctor validation + `TryGetStage/TryGetNextStage/CanGrow`.
+- `Assets/Tests/EditMode/Composition/PlantGrowthSnowGateWireTests.cs` - **W36 B27 story test**: `PlantGrowthStep` gerçekten `isSnowing = (season == Winter)` geçiriyor mu (BlockedBySnow tür kışın donuyor, winter-tolerant devam ediyor, ilkbaharda ikisi de ilerliyor).
+- `Assets/Tests/EditMode/Process/HarvestSystemTests.cs` - Legacy hasat harness satırları (retired sisteme referanslar temizlendi; kalan invariant satırları action-yolunu doğruluyor).
+- `Assets/Tests/EditMode/Process/PlantingSystemTests.cs` - Retired PlantingSystem'in kontratı; new PlantSeedAdvancer'a köprü.
+- `Assets/Tests/EditMode/Actions/FarmPlantAuthorshipTests.cs` - **W33 F1**: plant sadece completed PlantSeed'ten doğar; remote/no-actor birth refuse.
+- `Assets/Tests/EditMode/Actions/FarmHarvestTeleportDeathTests.cs` - **W33 F2**: hasatçı yoksa 3 daily boundary boyunca hiçbir şey değişmez (fiat teleport ölü kaldığının kanıtı).
+- `Assets/Tests/EditMode/Actions/FarmPlotReservationConflictTests.cs` - **W33 F3**: iki farmer bir cell → deterministic winner, loser replan, interrupt = release.
+- `Assets/Tests/EditMode/Actions/FarmHaulConservationTests.cs` - **W33 F4**: `TotalCrop = pile + hands + ripe-plot potential` her interrupt noktasında düz - dup/kayıp yok.
+- `Assets/Tests/EditMode/Actions/FarmStoryChainTests.cs` - **W33 F5** (capstone): shortage → plant → grow → harvest → haul → eat tam zinciri.
+- `Assets/Tests/EditMode/Process/FarmingJobIntegrationTests.cs` - Job → PlantSeed → Plant birth halkası (bkz. `07-farming-jobs`).
+- `Assets/Tests/EditMode/Composition/WorldTickDigestGoldenTests.cs` - Daily:20 stage-advance ve PerTick:22 harvest/haul dijeste yansıyor (golden re-baseline W33 sonrası).
+- `Assets/Tests/EditMode/Composition/ActionPhaseChunkingInvarianceTests.cs` - Doc 04 §F6: HarvestCrop commit satırı chunk sınırında split olmuyor.
+- `Assets/Tests/EditMode/Composition/WorldTickRegistryTests.cs` - `World.Plants`/`World.Soils` yazar listesi (W35 B04 lint gate).
+- `Assets/Tests/EditMode/CanSuyu/LivingWorldGateTests.cs` - "Bitki yıllarca ayakta kalırsa" living-world alarm.
 
-**Sunum mirror'i** (`RuntimeFieldBuilder.cs:11-45`): statik kanal `RuntimeFieldMirror` —
-`HourOfDay` (14), `MinutesOfDay` (19, varsayilan 08:00), `WorldDay` (22), `PlantCount` (24),
-`StageIndex 0/1/2` (27), `PlantCell{Id, LocalX, LocalZ, Stage}` dizisi + monoton `PlantsStamp`
-(37-44).
+## W32-W36 Değişiklikleri (bu sistemin son 5 haftadaki büyük hareketleri)
 
-**Save**: `PlantComponentSaveData` (`WorldSaveData.WorldProcess.cs:62-71`) ve
-`SoilComponentSaveData` (50-59); mapper cift yonlu
-(`WorldSaveMapper.Process.cs:89-99` soil, `117-127` plant) — bitki/soil durumu save'de yasar.
+- **W32 (2026-07-25, 5049d445 "EAT slice")** - Bu sistemin doğrudan mutasyonu yok; ama W32 rezervasyon patterni (`ItemTag`, TTL, `TryGetByActor`) W33 hasat/haul akışının **iskeleti** oldu. `Reservations` mağarasına tek-yazar-per-actor kuralı bu sistemin plot→carry row swap'ının önkoşulu.
+- **W33 (2026-07-25, 61e340f3 "the FARM slice: crops travel the world, teleports are dead")** - EN BÜYÜK HAREKET. Retired: `HarvestStep` (world.harvest@Daily:25 fiat teleport). Doğdu: `HarvestCropAdvancer` (2 tick, atomik plant→hands commit), `HaulCropAdvancer` (yürü + reach-contact deposit), `FarmOperations` (HarvestReachCells=2, Chebyshev, CarryKey/plotKey parse, IsHarvestable, FindOrCreatePile), `PlantSeedAdvancer` (plant'ı bodied doğuran tek yolu). Event grammar VERBATIM (PlantHarvested + description) - sadece author artık gerçek aktör. Lifecycle wiring: `(Harvest, MoveToPlot) → HarvestCrop → (Harvest, HarvestCrop) → HaulCrop`. Story tests F1-F5 + FarmSliceWorld fixture.
+- **W34 (2026-07-25, 3aa87cf6 "SLEEP + WORK slices")** - Plant sistemine doğrudan dokunmadı ama tüm bodied-action patternini tekrar-eden şablonu (`SleepOperations`, `WorkOperations`, TryDecideX + NextLink + retirement) FarmOperations ile aynı diyeti pinledi. Bunun anlamı: bu sistemdeki `FarmOperations` API'si artık üç kardeşin ortak dili.
+- **W35 (2026-07-25, 20a3b899 "ScheduleSystem shrinks, ownership widens")** - **B04**: `FieldOwnershipRegistry` içine `World.Plants` ve `World.Soils` yazar deklarasyonları resmen eklendi (`econ.plantgrowth@Daily:20` + `living.action_advance@PerTick:22`). Reverse lint artık her iki mağarayı da öğrendi; kimsenin kaçak yazması mümkün değil.
+- **W36 (2026-07-26, f6c9e2d0 "the RUH_TESHIS post-arch tail")** - **B27 wound-close**: `DefaultTickSystems.PlantGrowthStep.Run` içindeki `isSnowing: false` hardcode ölü. Yerine kaba `isSnowing: season == Season.Winter` gate. `BlockedBySnow=true` türler kışın gerçekten donuyor; `winter-tolerant` türler ticaret gibi devam ediyor. Slice 2 spec'e (per-day weather roll) kadar tutulan geçici sözleşme.
+- **REFORM #1 (2026-07-24, 0e44f00a "the visual field IS the sim field")** - W32 öncesi ama bu sistemin **sunum yüzü**: polar `RuntimeFieldBuilder.BuildBelt` retired (fallback dekora düştü), `RuntimeFieldMirror.PlantCell[]` + `PlantsStamp` publish yolu doğdu, `SimFieldView` her plant için ayrı stalk yaratıyor, `CropStalkView.ExternalStage` ile o cell'in kendi stage'ini giyiyor. Sim-görsel union'ı bu sistem için burada kapandı.
 
-## LLD - Fonksiyon Haritasi
+## Bilinen Borçlar + Kaçak Kapıları
 
-- `PlantGrowthSystem.AdvanceOneDay(species, plants, eventLog, now, season, isSnowing) -> int`
-  (`PlantGrowthSystem.cs:17-79`) — bir turun tum bitkilerini bir gun ilerletir, evre atlayan
-  sayisini dondurur; bilinmeyen evre exception (satir 41).
-- `HarvestHandsService.FindHarvester(world, plant) -> ActorRecord`
-  (`HarvestHandsService.cs:18-36`) — 2 hucre (Chebyshev, `ReachCells` satir 15) icindeki en
-  yakin canli dusman-olmayan aktor; yoksa null.
-- `DefaultTickSystems.HarvestStep.Run(in TickContext)` (`DefaultTickSystems.cs:426-467`) —
-  canli hasat: ripe filtre + eller + stok + olay + ayni-Id tohum reset.
-- `DefaultTickSystems.PlantGrowthStep.Run(in TickContext)` (`DefaultTickSystems.cs:487-507`) —
-  sezonu cozer, katalog turlerini dongude buyutur.
-- `PlantingSystem.TryPlant(species, soils, plants, soilId, plantId, inventory, eventLog, now) -> bool`
-  (`PlantingSystem.cs:15-74`) — 1 tohum tuketir, bos soile bitki takar, `PlantPlanted` yazar.
-  URETIMDE CAGIRAN YOK (yalniz testler).
-- `HarvestSystem.TryHarvest(species, plants, soils, plantId, stockpile, eventLog, now, createHarvestItem) -> bool`
-  (`HarvestSystem.cs:17-83`) — `IsHarvestable` evredeki bitkiyi `InventoryState`'e urun olarak
-  ekler, bitkiyi siler, soili bosaltir, `PlantHarvested` yazar. URETIMDE CAGIRAN YOK.
-- `FarmingJobRequestFactory.CreatePlantingJob / CreateHarvestJob(...) -> JobRequest`
-  (`FarmingJobRequestFactory.cs:19-39`) — RecipeId 5101/5102, `WorksiteKind.Field` +
-  `JobKind.Farmer` isleri (satir 53-62). CreateHarvestJob'i ureten uretim kodu yok.
-- `ShortageResponseSystem.Tick(world, stamp) -> int` (`ShortageResponseSystem.cs:27-61`) —
-  kitlik -> planting is ilani; gida etiketleri CANLI bitki turlerinden turetilir
-  (`FoodTags`, satir 92-100), pozisyon mevcut bir bitkinin hucresi (`FieldPositionFor`, 82-90).
-- `DomainSimulationAdapter.PublishFieldMirror()` (`DomainSimulationAdapter.Clock.cs:81-147`) —
-  site sayimi + <=64 hucre projeksiyonu (satir 97-98 cap) + hash-gate yayin.
-- `RuntimeFieldMirror.Publish(plantCount, stageIndex)` (`RuntimeFieldBuilder.cs:29-33`) /
-  `PublishPlants(cells)` (40-44) — statik yayin; StageIndex 0-2'ye clamp'lenir.
-- `SimFieldView.Update()` (`RuntimeFieldBuilder.cs:157-180`) + `BuildPlot(cell)` (182-203) —
-  Id-anahtarli parsel yasam dongusu (kur/guncelle/buda).
-- `CropStalkView.Update()` (`RuntimeFieldBuilder.cs:67-91`) — evre -> renk/boy;
-  `ExternalStage >= 0` ise sim hucresi kazanir, degilse settlement-baskin mirror (satir 72).
-- `RuntimeFieldBuilder.BuildBelt / Build` (`RuntimeFieldBuilder.cs:101-140`) — OLU KOD:
-  polar dekor kusagi; repo'da hicbir cagiran kalmadi (dogrulandi: grep sifir sonuc).
-
-## LLD - Yazdigi/Okudugu Alanlar
-
-FieldOwnershipRegistry diliyle (`Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs:15-54`):
-
-Yazilan:
-- `World.Plants` — yazarlar: `econ.plantgrowth@Daily:20` (evre/gun ilerletme) ve
-  `world.harvest@Daily:25` (ayni-Id seed reset). **DEFTERDE KAYITLI DEGIL** — registry'de
-  `World.Plants` satiri yok; iki gunluk yazar fiilen dekларasyonsuz calisiyor (Borclar #1).
-- `World.Stockpiles` — `world.harvest@Daily:25` kayitli (`FieldOwnershipRegistry.cs:43-50`);
-  diger kayitli yazarlar (eatOnArrival/consumption/ambient/trade) bu sistemin disi.
-- `World.Events` — PlantStageAdvanced / PlantHarvested / PlantPlanted / ShortageDetected append.
-- `World.Jobs` — `econ.shortage_response@Daily:27` planting is ilani (registry'de bu alan da yok).
-- (Uyuyan yol: `World.Soils` — yalniz PlantingSystem/HarvestSystem yazardi; canli tick'te
-  Soils'a YAZAN YOK, worldgen tohumlamasi sonrasi donmus veridir.)
-
-Okunan:
-- `World.Plants.Rows` (HarvestStep, PlantGrowthSystem, ShortageResponse.FoodTags,
-  PublishFieldMirror, WorldProjection.DescribeActivity `DomainSimulationAdapter.WorldProjection.cs:128-138`)
-- `World.Actors.Records` (HarvestHandsService — canli/rol filtresi)
-- `World.Stockpiles` (HarvestStep site-pile bul/olustur `DefaultTickSystems.cs:445-455`)
-- `World.Time` (mirror saat/gun kanallari `Clock.cs:125-132`)
-- SeasonCalendar + PlantSpeciesDef katalogu (composer'a gomulu, `WorldTickComposer.cs:88-121`)
-- Sunum tarafi: yalniz `RuntimeFieldMirror` statikleri (sim'e geri yazim yok).
-
-## LLD - Urettigi/Tukettigi Olaylar
-
-Uretilen (`Assets/Scripts/Domain/World/WorldEventKind.cs`):
-- `PlantPlanted = 11` (satir 25) — yalniz uyuyan PlantingSystem yazar (`PlantingSystem.cs:58-72`);
-  canli tick'te hic uretilmez.
-- `PlantStageAdvanced = 12` (satir 26) — `PlantGrowthSystem.cs:60-74`,
-  log tag `plant_stage_advanced:{site}:{plant}:{stage}` + ReasonTrace `plant_growth`.
-- `PlantHarvested = 13` (satir 27) — iki uretici: canli `HarvestStep`
-  (`DefaultTickSystems.cs:460-462`, toplayici ActorId'li, ReasonTrace'siz kisa form) ve uyuyan
-  `HarvestSystem` (`HarvestSystem.cs:67-81`, ReasonTrace'li `plant_harvest` formu).
-- `ShortageDetected = 19` (satir 33) + `JobAssigned` "restock_job_posted reason:shortage"
-  (`ShortageResponseSystem.cs:42-57`).
-
-Tuketilen:
-- `PlantHarvested` -> NPC ustunde yuzen hasat ikonu
-  (`DomainSimulationAdapter.Clock.cs:66-70` -> `NpcEventEchoFeed.KindHarvest`).
-- `PlantPlanted`/`PlantHarvested` -> anlati fiilleri "planted"/"harvested"
-  (`WorldEventNarrator.cs:44-45`).
-- Sistemin kendisi hicbir WorldEvent TUKETMEZ; sim->gorsel akisi olay degil mirror iledir.
-
-## Testler
-
-- `Assets/Tests/EditMode/Process/PlantGrowthSystemTests.cs` — gun sayaci/evre siniri/olay
-  (satir 17), sezon-kar blogu (51), tur filtresi + son evre atlama (67), null/bilinmeyen evre (82).
-- `Assets/Tests/EditMode/Process/PlantingSystemTests.cs` — tohum tuket + soil bagla + olay (18),
-  mutasyonsuz red yollari (60), null redler (84). (Uyuyan sistemi pinler.)
-- `Assets/Tests/EditMode/Process/HarvestSystemTests.cs` — ripe -> stok + soil temizle (18),
-  ham bitki reddi (57), stok kabul etmezse mutasyonsuz (72), kotu factory (88). (Uyuyan sistem.)
-- `Assets/Tests/EditMode/Process/HarvestHandsServiceTests.cs` — komsu koylu eller (26),
-  kimse yoksa bekler (36), dusman asla toplamaz + en yakin kazanir (46).
-- `Assets/Tests/EditMode/Process/PlantDefinitionTests.cs` — bugday def sirali evreler (12),
-  bahar/yaz + kar blogu kurallari (27), gecersiz satir redleri (38).
-- `Assets/Tests/EditMode/Process/FarmingJobIntegrationTests.cs` — planting isi ciftciye atanir
-  (18), Field worksite yoksa harvest isi bekler (35), 5101/5102 ayrimi (50).
-- `Assets/Tests/EditMode/Composition/WorldTickRegistryTests.cs:81-82` —
-  `Daily:20:econ.plantgrowth` + `Daily:25:world.harvest` kadans/sira pinleri.
-- `Assets/Tests/EditMode/Composition/WorldTickDigestGoldenTests.cs` — golden digest;
-  2026-06-11 (HarvestStep) ve 2026-07-23 (M6 eller) re-baseline notlari (satir 16-24),
-  fixture'da plant+soil tohumu (101-102).
-- `Assets/Tests/EditMode/Composition/WorldLivesOverNTicksTests.cs:35-55` — "ekin YASADI:
-  evre ilerledi VEYA tam buyu->hasat dongusu" makro-canlilik pini.
-- `Assets/Tests/EditMode/Composition/FieldOwnershipRegistryTests.cs` — defter lint'i
-  (bu sistemin borcunu YAKALAMIYOR, bkz. Borclar #1).
-
-## Bilinen Borclar + Kacak Kapilari
-
-1. **`World.Plants` sahipsiz — aile (c), kadans yazar catismasi tohumu.**
-   `econ.plantgrowth@Daily:20` ve `world.harvest@Daily:25` ikisi de `world.Plants`'a yazar ama
-   `FieldOwnershipRegistry.Writers`'da `World.Plants` satiri yok (`FieldOwnershipRegistry.cs:16-53`);
-   `FieldOwnershipRegistryTests.CoreMutableFields` listesi de bu alani iceremiyor
-   (`FieldOwnershipRegistryTests.cs:36-40`). REFORM #2'nin "dekлаre edilmemis ikinci yazar CI
-   olayi olur" vaadi bu alan icin bos. Ustune, testteki `knownIds` "world.growth" /
-   "world.shortage" iceriyor (`FieldOwnershipRegistryTests.cs:20-21`) ama gercek id'ler
-   `econ.plantgrowth` (`DefaultTickSystems.cs:480`) ve `econ.shortage_response` (satir 348) —
-   lint listesi gercek kayitla senkron degil, sadece tesadufen patlamiyor.
-2. **Planting isi bitki DIKMEZ — aile (a)/(g), kapanmayan dongu.** ShortageResponse planting
-   isi ilan eder (`ShortageResponseSystem.cs:51-53`), JobAssignment isi tamamlar ve
-   `JobCompleted` yazar (`JobAssignmentSystem.Tick.cs:127-135`) ama tamamlama recipe-craft
-   yoludur; hicbir yerde `PlantingSystem.TryPlant` cagrilmaz (dogrulandi: uretimde sifir
-   cagiran). Yani kitlik cascade'i ciftciyi tarlaya yurutur, is "biter", yeni PlantComponent
-   DOGMAZ. Ekonomiyi ayakta tutan sey HarvestStep'in ayni-Id yeniden dikimi
-   (`DefaultTickSystems.cs:463-465`) — parsel sayisi dunya kurulumundaki sayida sonsuza dek
-   sabittir; tarla buyumez, kucul(e)mez.
-3. **Cift hasat yolu + etiket capraz-uyumsuzlugu — aile (a), tek-otorite ihlali.**
-   Canli HarvestStep stok etiketine `SpeciesId` ("wheat") ekler (`DefaultTickSystems.cs:457`);
-   uyuyan HarvestSystem `HarvestItemTag` ("wheat_grain") uretir (`HarvestSystem.cs:54-57`,
-   katalog: `WorldTickComposer.cs:108-109`). "wheat_grain" repo'da baska hicbir uretim kodunda
-   gecmiyor — uyuyan yol bir gun tick'e baglanirsa hasat urunu tuketim/fiyat sistemlerinin
-   bakmadigi bir etikete akar. `SeedItemTag="wheat_seed"` de ayni sekilde olu veri.
-4. **HarvestStep evreyi string ile tanir — aile (g).** `row.Value.StageId.Value == "ripe"`
-   (`DefaultTickSystems.cs:434`) ve mirror sayimi "ripe"/"sprout" stringleri
-   (`Clock.cs:92`, `104-109`); veri modelindeki `IsHarvestable` bayragi
-   (`PlantGrowthStageDef.cs:26`) canli yolda okunmaz. Ikinci bir tur farkli evre adlariyla
-   eklendiginde sessizce ne hasat edilir ne gorsellesir (hepsi stage 0 gorunur).
-5. **Soils canli dongunun disinda — aile (a).** HarvestStep soil'a dokunmaz; WorldFactory'nin
-   3 bitkisinin (`WorldFactory.cs:138-145`) soil karsiligi hic yok; tek soil worldgen'de
-   (`Worldgen.Production.cs:54-55`). Uyuyan HarvestSystem ise soil eslesmesi ZORUNLU kilar
-   (`HarvestSystem.cs:50-52`) — bugun baglansaydi factory bitkilerinde `return false` ile
-   sessizce hasat reddederdi. `Fertility/Moisture` hicbir sistemce okunmuyor.
-6. **`isSnowing: false` hardcode — aile (b) akrabasi (sim-hava kopuk).**
-   `DefaultTickSystems.cs:505` — kar sim'e hic girmez; `PlantGrowthRule.BlockedBySnow` ve
-   testteki kar senaryolari calisan koda degil, olu parametreye karsi yesil. Hava tamamen
-   sunum kurgusu oldugundan (SYSTEMS_ATLAS bulgu 5) gorselde kar yagarken ekin buyumeye devam eder.
-7. **Mirror 64-hucre cap'i — aile (g), unchecked kesme.** `Clock.cs:97-98`: 64'ten sonraki
-   bitkiler gorsel projeksiyona girmez (hash yine hepsini sayar). Bugun parsel sayisi sabit-3/4
-   oldugu icin gorunmez; #2 cozulup tarla buyurse sessiz kirpma olur.
-8. **Olu kod: `RuntimeFieldBuilder.BuildBelt/Build` + legacy mirror modu.** Polar kusak emekli
-   (cagiran sifir), ama sinif ve `CropStalkView`'in `ExternalStage == -1` legacy dali
-   (`RuntimeFieldBuilder.cs:72`) duruyor; `WorldSceneDirector.cs:117-121` hala kullanilmayan
-   `plots` sayisini hesaplayip log'luyor (satir 127) — DF-orani anlatisi gorselde artik temsili
-   degil.
-9. **Kacak kapilar (bilincli):** sezon cozulmezse Spring varsayimi
-   (`DefaultTickSystems.cs:493-495`); `PlantCell.Stage` clamp'i yalniz `Publish` yolunda,
-   `PublishPlants` hucreleri clamp'siz (`RuntimeFieldBuilder.cs:32` vs 40-44 — bugun guvenli,
-   cunku tek uretici Clock.cs 0-2 uretir); statik mirror kanallari domain-reload/senaryo
-   gecisinde sifirlanmaz (bilerek: director adapter'dan once kosar,
-   `RuntimeFieldBuilder.cs:5-9`).
+- **B27 tamamen kapanmadı (partial)** - W36 sadece `isSnowing = (Winter)` kaba gate koydu; RUH_TESHIS "Slice 2 spec"in vaadettiği gerçek per-day deterministik hava rulesu hâlâ borç. Bahar/sonbaharda kar yağarsa `PlantGrowthSystem` haber alamıyor. Kaçak kapı: `RuntimeFieldMirror.WorldDay`/`MinutesOfDay` presentation'da yayınlanıyor - sim tarafında bir `IWeatherOracle.IsSnowingAt(GameTime)` doğması ve `PlantGrowthStep`'in onu tüketmesi gerek.
+- **`RuntimeFieldBuilder.BuildBelt` polar dekor hâlâ derleniyor** - REFORM #1 sonrası kullanılmayan kod; `SimFieldView` boş bir sitede fallback görevi görüyor iddiası test'lenmemiş. Silinip silinmeyeceği açık borç (ARCHITECTURE_GAPS #4 kalıntısı).
+- **`DomainSimulationAdapter.Clock` PublishPlants pass 64-satırla clamp'li** (`plantCells.Count < 64`). 100+ plant'lı büyük çiftliklerde presentation eksik cell görür - sim tarafı doğru ama SimFieldView "silinmiş" gibi gösterir. Ölçek büyüdükçe patlayacak sessiz kap.
+- **`PlantHarvested` event ReasonTrace yok** - `PlantStageAdvanced` `ReasonTrace` doldururken hasat event'i sadece string description tutuyor. Auditor bir hasadın "kimin işi, hangi plot, hangi tick'te" cevabını action-log ile birleştirerek çıkarmak zorunda; standalone log incelemesi zayıf.
+- **Species catalog boot-time-only** - `WorldTickComposer` ctor'da `plantSpecies` sabit iletiliyor. Runtime'da yeni species eklemek mümkün değil (mod hook boşluğu, W40+ borç).
+- **`CanGrow` fallback kuralı = false** - `PlantGrowthRule` içinde `Season` eşleşmezse Growth susuyor. Yeni species eklerken `Season.None` catchall unutulursa bitki hiç büyümüyor - hata sessiz (`AdvanceOneDay` sadece `return 0` yapar, exception atmaz). `PlantDefinitionTests` şu an bu unutmayı yakalayacak lint satırı taşımıyor.
+- **Retired `HarvestStep` bridging yok** - Save v3 dosyalarında Daily:25 registered writer'ı yoksa `WorldSaveMapperGoldenRoundtripTests` restore path'inde ghost writer sanılmıyor mu? W33 sonrası bu risk kapatıldı ama regresyon golden testleri sadece "no writer" varsayımıyla; explicit "old save has this writer → drop silently" migration branchi yok.
+- **SimFieldView poll periyodu (1.5s) + CropStalkView poll periyodu (2s) sabit** - Frame budgeting'e reactive değiller; 500+ plant'lı sahnede update'ler dalgalanır. `PlantsStamp` monotonic olduğu için polling doğru ama incremental update değil, tam diff (kısa liste için tolere edilir).

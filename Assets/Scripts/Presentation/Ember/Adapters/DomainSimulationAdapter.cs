@@ -94,6 +94,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             }
         }
 
+        /// <summary>B25 W36-tail: DEPRECATED. Editor tooling (ForgeMenu) still reads the sim aggregate
+        /// directly; production Presentation MUST route through IWorldViewReadModel or a role interface.
+        /// The Obsolete marker draws the line without breaking the Editor asmdef.</summary>
+        [System.Obsolete("B25: use IWorldViewReadModel / role interfaces. Editor-only escape hatch.", false)]
         public WorldState World => _world;
 
         private static bool HasActionLogFlag()

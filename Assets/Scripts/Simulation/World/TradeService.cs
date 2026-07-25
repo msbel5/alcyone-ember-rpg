@@ -11,6 +11,9 @@ namespace EmberCrpg.Simulation.World
     /// other, optionally adjusts faction reputation, and emits TradeCompleted.
     /// Phase 6 Atom 11.
     /// </summary>
+    /// <summary>B29 dormant path — SettlementTradeService is the live counterpart used by
+    /// DomainSimulationAdapter.Trade. Kept as a design reference for a future rework.</summary>
+    [System.Obsolete("B29: dormant since 2026-07-25. SettlementTradeService is the production trade seam.", false)]
     public sealed class TradeService
     {
         public bool TryTrade(

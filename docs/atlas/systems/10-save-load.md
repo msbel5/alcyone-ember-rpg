@@ -1,100 +1,204 @@
 # 10-save-load
 
+> Kapsam: `WorldState` <-> `WorldSaveData` DTO cift yonlu esleme; slot dosya IO (`FileSaveRepository`); Unity uzeri kayit orkestrasyonu (`EmberSaveService` + `SaveEnvelopeCodec`); W32 EAT reservation/action-log paralel-dizi persist; W34 WORK park-list emeklilik; W33 golden roundtrip (reflection-diff).
+> Kanit disiplini: her iddia `file:line` ile. Emin olunmayan yerler "dogrulanmadi" olarak isaretli.
+
 ## HLD - Ne ve Neden
 
-Kayit/yukleme sistemi, deterministik `WorldState`'in tamamini JSON'a dondurup diskteki dosya slotlarina yazan ve geri okuyan katmanli boru hattidir. Oyuncuya gorunen yuzu: F5 quicksave / F9 quickload (`EmberSaveService.Update`, EmberSaveService.cs:46-50), 5 dakikada bir otomatik kayit (`RuntimeAutosaveView`, RuntimeAutosaveView.cs:13,25-27), sahne gecisinde autosave (EmberScenePortal.cs:33) ve ana menudeki Continue/slot tarayicisi. Felsefe uc kurala dayanir: (1) saf esleme — `WorldSaveMapper` motor-serbest (`noEngineReferences=true`) bir asmdef icinde yasar (EmberCrpg.Data.SliceJson.asmdef:16), Unity'ye tek temas noktasi Presentation'daki `JsonSliceSaveService`'in `JsonUtility` cagrisidir; (2) asla oyunu dusurme — kayit/yukleme govdeleri bastan sona try/catch ile sarilidir (EmberSaveService.cs:63-72, EmberSaveService.Load.cs:18-27), bozuk dosyalar `.corrupt[.N]` olarak karantinaya alinir (FileSaveRepository.cs:106-119); (3) yuvarlanabilirlik kanitla — golden roundtrip testi her DTO alanini yansima ile karsilastirir, digest testi bir gunluk simulasyondan sonra bayt-ozdesligi ister. Ic ice iki zarf vardir: dis `SaveEnvelope` (sahne adi + rig pozisyonu + tick + `domainStateJson` stringi, SaveEnvelope.cs:445-463) ve onun icindeki `WorldSaveData` domain JSON'u. Sema versiyonu (`schemaVersion`, su an 1) ileri-uyumsuz kayitlari acikca reddeder (WorldSaveMapper.cs:31,141-144).
+Kaydet, "**paralel dizi mezarligi**": `WorldSaveData` (`Assets/Scripts/Data/Save/WorldSaveData.cs:22-140`) tek bir `[Serializable]` DTO kok. Icinde 25+ arka arkaya dizilmis `ulong[] / int[] / string[]` sutunlari var (`pursuitGuardIds` + `pursuitTargetIds` + `pursuitUntilMinutes`; W32'de gelen 9-sutun `actionLog*` grubu; 5-sutun `reservation*` grubu; kritter, rumor, unrest, mainQuest, companion, spell dizileri). Bunu tek satirlik `struct` per-entry yerine paralel dizi olarak tutmanin gerekcesi: `UnityEngine.JsonUtility` **yalniz** `[Serializable]` diz ve DTO'lari serilestirir; `Dictionary` yok, `Tuple` yok, `List<T>` yok. Depo tarafinda tuttugumuz zengin domain kayitlari (`ReservationRecord`, `ActionLogEntry`, `PursuitRecord`) burada duz sutunlara acilir, load'da tekrar toplanir.
+
+Kaydet iki katmanli: (1) **pure mapper** — `EmberCrpg.Data.SliceJson` asmdef'i (`noEngineReferences=true`, README `Assets/Scripts/Data/Save/SliceJson/README.md`), `WorldSaveMapper` parcali (`*.cs`, `.Process.cs`, `.Economy.cs`, `.Narrative.cs`, `.Quest.cs`, `.World.cs`, `.ActorDetail.cs`, `.ActionLog.cs`). (2) **Unity JSON kopru** — `JsonSliceSaveService` (`Assets/Scripts/Presentation/Ember/Save/JsonSliceSaveService.cs:18`) `JsonUtility.ToJson/FromJson<WorldSaveData>` cagirir; `EmberSaveService` (`Assets/Scripts/Presentation/Ember/Save/EmberSaveService.cs:14`) F5/F9 girdisini ve zarf (envelope) sarmalayicisini sever.
+
+W32 EAT dilimi iki yeni yuk getirdi: `ReservationLedger` (5 sutun + `reservationNextId` sayaci) ve `ActionLogRing` (9 sutun + `actionLogTotalPushed` sayaci) — ikisi de golden roundtrip'in reflection-diff'inde alan-alan denetleniyor (`Assets/Tests/EditMode/Save/WorldSaveMapperGoldenRoundtripTests.cs:23-63`). W33 golden roundtrip zaten tum yeni koleksiyonlari (`GuardPursuits`, `Critters`, `Rumors`, `SiteUnrest`, `CompanionIds`, `MainQuest`) besleyip iki-kere save-load dongusunun **field-identical** olmasini talep ediyor; birakilan tek bir alan sonsuza kadar burada patlar.
+
+W34-C WORK dilimi eski `JsonSliceSaveService._recipeWorkOrders` park listesini **emekli etti** (`JsonSliceSaveService.cs:21-27` yorumu). Eskiden `SaveToJson` bu listeyi `data.recipeWorkOrders`'a klobber ediyor, `LoadFromJson` ise geri okurken hicbir yere yazmiyordu — tek yonlu bir cadde, yani B19'da bulunan **cift-tuketim yarasi**: yuklenen bir talep bir sonraki saatte inputlarini tekrar tuketiyordu. W34-C, `recipeWorkOrders` DTO alanini artik pure-Domain `WorldSaveMapper.ToWorkOrderLedger` (`WorldSaveMapper.Process.cs:47-89`) uzerinden `world.WorkOrders` root'una okuyor; `jobId == 0` satirlar (legacy park-list satirlari) dusuruluyor. Bu, save/load bariyerini geri kazandi.
+
+Schema surumleme: `WorldSaveData.schemaVersion` (`WorldSaveData.cs:26`), `WorldSaveMapper.CurrentSchemaVersion = 1` (`WorldSaveMapper.cs:30`). Pre-alan kayitlarda `JsonUtility` alan yoksa 0 okur → v1 taban kabul. Ileri surum (`schemaVersion > 1`) yuklenmez, `NotSupportedException` firlatilir (`WorldSaveMapper.cs:180-183`).
 
 ## HLD - Akis
 
-### Kayit (F5 / slot / autosave)
-1. **Tetik**: `EmberInput.SaveQuick` (F5, EmberSaveService.cs:48) -> `Save()`; slot UI -> `SaveSlot(SaveSlotId)` (EmberSaveService.cs:75); 300 sn unscaled kadansla `RuntimeAutosaveView.Update` -> `TryAutosaveActiveScene()` (RuntimeAutosaveView.cs:25-27, EmberSaveService.cs:112-126); sahne portali gecisinde de autosave (EmberScenePortal.cs:33).
-2. `SaveInternal(slot)` (EmberSaveService.cs:128-202): "PlayerRig" GameObject'i bulunamazsa **sessizce cikar** (satir 130-131). Adapter varsa `adapter.ExportStateJson()` cagrilir; hata firlatirsa `domainFailed` isaretlenir ve "Save partial: domain export failed." gosterilir (satir 150-158, 194).
-3. `ExportStateJson` -> `JsonSliceSaveService.SaveToJson(world)` (DomainSimulationAdapter.Save.cs:24-29, JsonSliceSaveService.cs:84-97): `WorldSaveMapper.ToData(world)` + bridge uzerinden `worksites/recipeWorkOrders/jobs/soils/plants` alanlarinin override'i -> `JsonUtility.ToJson(data, true)`.
-4. `SaveEnvelopeCodec.Encode` dis zarfi uretir (SaveEnvelopeCodec.cs:8-28).
-5. `FileSaveRepository.Save(id, payload, meta)` (FileSaveRepository.cs:50-59): payload `.tmp + File.Replace` ile atomik yayinlanir (DET-07, satir 179-188); metadata sidecar'i best-effort'tur, hatasi payload'i asla dusurmez (satir 57-58).
-6. Dosya yazimi basariliysa PlayerPrefs mirror'i + son-slot isaretcisi guncellenir (DET-05: ikisi birlikte ya da hicbiri, EmberSaveService.cs:171-201).
+### A. Kaydet (F5 quick / manual slot)
 
-### Yukleme (F9 / slot / menu Continue)
-1. **Tetik**: `EmberInput.LoadQuick` (F9) -> `Load()` (EmberSaveService.cs:49, EmberSaveService.Load.cs:12-28); slot UI -> `LoadSlot` (Load.cs:30-49); menu Continue -> `TryResolveLatestSave` + `PreparePendingLoad` (EmberSaveService.Resolve.cs:94-117,44-47).
-2. `ResolveLatestSaveJson` oncelik sirasi: Quick slot dosyasi -> son kullanilan sayili slot dosyasi -> legacy PlayerPrefs blob (Resolve.cs:57-72). Her dosya okuma `IsLoadableSaveJson` karantina yuklemi ile gecer (Resolve.cs:25-29); yuklemi gecemeyen dosya `.corrupt[.N]`'e tasinir (FileSaveRepository.cs:160-177,106-119).
-3. `SaveEnvelopeCodec.TryDecode` once guncel zarfi, olmuyorsa legacy ciplak `SaveData`'yi dener (SaveEnvelopeCodec.cs:30-49); legacy'den yuklenen slot hemen guncel zarf formatina geri yazilir (E7-007, Load.cs:82-94).
-4. Sahne farkliysa `_pendingLoad`'a koyulup `SceneManager.LoadScene`; yeni sahnenin `Start()`'i payload'i devralir (Load.cs:96-109, EmberSaveService.cs:204-223). Sahne EditorBuildSettings'te yoksa yukleme reddedilir (Load.cs:102-106).
-5. `ApplyDomainRestore` (Load.cs:149-187): `adapter.RestoreStateJson(domainStateJson)` basarirsa `EmberTickDriver.AlignTo(tickIndex)` — basarisizsa AlignTo atlanir (desync onlemi, PR #188 notu satir 155-162). Sonuc `NoPayload/NoAdapter/Failed/Restored` olarak UI statusune yansir.
-6. `RestoreStateJson` (DomainSimulationAdapter.Save.cs:31-65): `JsonSliceSaveService.LoadFromJson` -> `schemaVersion` kapisi (WorldSaveMapper.cs:141-144) -> `WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed)` (JsonSliceSaveService.cs:116, WorldSaveRehydration.cs:78-80) -> `WorldSaveMapper.ToWorld(data, seedWorld)` -> canli dunyaya `_world.CopyFrom(restored)`; canli oturumun `Overland`'i korunur (satir 44-49), `EnsureInvariants()` null store'lari onarir (satir 51-55), `_tickComposer.RebuildAccumulatorsFrom(_world.Time)` kadans akumulatorlerini mutlak oyun zamanina yeniden baglar (DET-01, satir 57-64).
+1. **Girdi:** `EmberInput.SaveQuick` → `EmberSaveService.Save()` → `SaveInternal(SaveSlotId.Quick)` (`EmberSaveService.cs:65,80,128`). Manual: `SaveSlot(SaveSlotId.Manual(n))` (`EmberSaveService.cs:79`).
+2. **Domain export:** `SaveInternal` adapter'i bulur, `adapter.ExportStateJson()` ile `WorldState` → JSON. Bu cagri **ic**te `JsonSliceSaveService.SaveToJson(world)` cagiriyor (dogrulanmadi — adapter dosyasinda `ExportStateJson` grep'lenmedi ama zincir belli).
+3. **Mapping:** `WorldSaveMapper.ToData(world)` (`WorldSaveMapper.cs:33-158`) her stor icin partial dosyalara delege eder:
+   - `.Process.cs`: worksites, jobs, soils, plants, **workOrders (W34)**.
+   - `.Economy.cs`: prices, stockpiles, tradeRoutes, caravans.
+   - `.Narrative.cs`: events, toolCallTrace, llmProposalLog, topics, npcMemories.
+   - `.Quest.cs`: quests, worldQuestStates, worldContracts.
+   - `.World.cs`: actors, items, sites, factions, npcSeeds, worldProfile.
+   - `.ActorDetail.cs`: player/talker/merchant/guard/enemy legacy role slotlari + envanterler.
+   - `.ActionLog.cs`: `ToActionLogData(ring, data)` 9 paralel sutun + `TotalPushed`.
+   - Inline (kok mapper): reservation 5 sutun + `NextId`; pursuit 3 sutun; critter 5; rumor 3 + `rumorEventCursorSeq` (B21); unrest 4; companion 1; mainQuest 4; spellIds 1.
+4. **Zarf:** `JsonUtility.ToJson(data, pretty=true)` → domain JSON string (`JsonSliceSaveService.cs:100`). Sonra `EmberSaveService.SaveInternal` bunu `SaveData.domainStateJson` alanina koyar (`EmberSaveService.cs:167`), `SaveEnvelopeCodec.Encode(data)` (`SaveEnvelopeCodec.cs:9-29`) `SaveEnvelope { envelopeVersion=1, payload }` sarar.
+5. **Diske:** `FileSaveRepository.Save(id, payloadJson, meta)` (`FileSaveRepository.cs:55-63`). Atomik: once `.tmp` yazar, sonra `File.Move`. `.meta.json` yan dosyasi best-effort — patlarsa payload commit'i olmus sayilir. Cikti: `<persistentDataPath>/saves/{quick|auto|manual_N}.json` + `.meta.json`.
+6. **PlayerPrefs:** `LastSlotKey = "ember.save.lastslot"` (`EmberSaveService.cs:17`) yalnizca "son slot" pointer'i olarak yasar, kayitlar dosyada.
 
-## LLD - Veri Modeli
+### B. Yukle (F9 quick / slot secimi)
 
-### WorldSaveData (kok DTO, partial sinif)
-- Govde: Assets/Scripts/Data/Save/WorldSaveData.cs:20-113. `schemaVersion` (satir 25), zaman/oda alanlari (26-35), dungeon dizileri (36-40), **legacy adli aktorler** `player/talker/merchant/guard/enemy` (41-45, geriye-uyumluluk icin cift yazilir — dosya basi tasarim notu satir 9-16), kanonik `actors[]` (46), store dizileri `itemRecords/sites/factions/factionReputations/prices/stockpiles/tradeRoutes/caravans` (47-54), `worldEvents/toolCallTrace/llmProposalLog/npcSeeds/worldProfile` (55-59), surec store'lari `worksites/recipeWorkOrders/jobs/soils/plants` (60-64), envanter/ekipman (65-67), oyuncu ilerlemesi (68-73), ana gorev omurgasi F31 (95-98), altin/pickup/topic/npc hafizasi/cooldown/shield (100-107), kapi-karsilasma bayraklari (108-112).
-- **Parallel arrays** (WorldSaveData.cs:74-93): pursuit `pursuitGuardIds/pursuitTargetIds/pursuitUntilMinutes` (75-77); critter `critterIds/critterSiteIds/critterXs/critterYs/critterKinds` (79-83); rumor `rumorBornMinutes/rumorSiteIds/rumorTexts` + `rumorEventCursor` (85-88); unrest `unrestSiteIds/unrestValues/unrestLastDecayDays/unrestSweepCooldownUntilMinutes` (90-93). Yazma tarafi `List.ConvertAll` ile ayni kaynak listeden uretildigi icin uzunluklar esittir (WorldSaveMapper.cs:96-111); okuma tarafi min-uzunluk zip'i ile korunur (WorldSaveMapper.cs:204-245).
-- Quest partial'i: `quests/worldQuestStates/worldContracts` (WorldSaveData.Quest.cs:124-131), `WorldContractSaveData` (133-150), `QuestStateSaveData` (152-160).
-- Aktor/dungeon DTO'lari: `ActorSaveData` (WorldSaveData.ActorDungeon.cs:70-123; `hasHomeAnchor` satir 81 ve `hasMood` satir 122 — "0 mu, alan yok mu" ayirt etme bayraklari), `JobRequestSaveData.claimSequence` (156-160, kuyruk sirasinin korunmasi), envanter/item/pickup/topic/npc-hafiza/cooldown/shield DTO'lari (163-257).
-- Ekonomi DTO'lari: WorldSaveData.Economy.cs:6-64. Anlati/AiDm DTO'lari: WorldSaveData.Narrative.cs:71-118. Surec DTO'lari: WorldSaveData.WorldProcess.cs:167-232. `NpcSeedSaveData/WorldProfileSaveData`: WorldSaveData.cs:115-140.
+1. **Girdi:** `EmberInput.LoadQuick` → `Load()` (`EmberSaveService.cs:48`) → `EmberSaveService.Load.cs:41` `LoadJson(json, slot)`.
+2. **Zarf coz:** `SaveEnvelopeCodec.TryDecode(raw, out data, out migratedFromLegacy)` (`EmberSaveService.Load.cs:68`) — modern zarfi denerse, sonra eski payload-only formatini dener; ikisinde de patlarsa quarantine yolu.
+3. **Legacy migrate:** `migratedFromLegacy == true` ise `_repo.Save(slot, migratedJson, meta)` ile yeni zarfa yazip payload'i **konumunda modernlestirir** (`EmberSaveService.Load.cs:87`) — bir daha eski format okumaz.
+4. **Sahne bekle:** `_pendingLoad = data` (`Load.cs:107`); scene load'dan sonra `EmberSaveService.cs:206-210` sahne adi eslesince `RestorePosition` + `ApplyDomainRestore` calisir.
+5. **Domain restore:** `ApplyDomainRestore` `domainStateJson`'u adapter'a verir (`Load.cs:166` `adapter.RestoreStateJson(...)`). Ic zincir: `JsonSliceSaveService.LoadFromJson(json)` (`JsonSliceSaveService.cs:104-131`):
+   - Bos/null JSON → `ArgumentException` (Codex A/P3 kararı: sessiz `NewGame`'e dusme).
+   - `JsonUtility.FromJson<WorldSaveData>(json)` → DTO.
+   - `WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed)` (`WorldSaveRehydration.cs:78-81`) tohum `WorldState`'i insa eder — bu Simulation layer'da (bakinci Codex 7. gecis B-P1 #10 not: Data asmdef Simulation'a bakmasin).
+   - `WorldSaveMapper.ToWorld(data, seedWorld)` (`WorldSaveMapper.cs:175-315`) alan-alan hidrasyon.
+6. **Schema kontrolu:** `data.schemaVersion > CurrentSchemaVersion` ise `NotSupportedException` (`WorldSaveMapper.cs:180-183`).
+7. **Store hidrasyonu:** her partial'in `ToXStore(data.xArr)` yolu; paralel diziler `for (i = 0; i < min(len...); i++)` ile `record` tekrar toplanir (bkz. `WorldSaveMapper.cs:263-315` reservation/pursuit/critter/rumor/unrest bloklari).
+8. **Ledger reset:** `world.Reservations.RebuildIndexes()` (`WorldSaveMapper.cs:279`), `WorkOrderLedger.RebuildIndexes()` (`WorldSaveMapper.Process.cs:87`), `world.ActionLog = ToActionLogRing(data)` (`WorldSaveMapper.cs:281`, `WorldSaveMapper.ActionLog.cs:42-76`) → `ring.Restore(entries, TotalPushed)`.
+9. **Bridge mirror:** `JsonSliceSaveService._bridge` alani `world.Worksites/Jobs/Soils/Plants` referanslarini kopyalar (`JsonSliceSaveService.cs:123-128`) — round-trip testlerinde ve pre-BindWorld caller'larda bu servisin property'lerini okuyanlar yuklenmis dunyayi gorur.
 
-### Zarf ve slot katmani
-- `SaveEnvelope` (`envelopeVersion`, `payload`) + `SaveEnvelopePayload` (`sceneName`, rig pozisyon/yaw, `tickIndex`, `domainStateJson` — domain JSON'u **string alan olarak gomulu**): SaveEnvelope.cs:444-463.
-- `SaveSlotId` (Kind+Index degeri esitlikli struct; dosya govdesi `manual_N|auto|quick`): SaveSlotId.cs:469-524. `SaveSlotKind` enum: SaveSlotKind.cs:528-533.
-- `SaveSlotMetadata` (metadataVersion, envelopeVersion, schemaVersion, slotKind/Index, label, sceneName, playtimeMinutes, savedAtUtcIso, thumbnailPath): SaveSlotMetadata.cs:539-552. Sidecar dosyasi `<stem>.meta.json` (FileSaveRepository.cs:38).
+### C. W34-C park-list emeklilik zinciri (B19 double-consumption kapanisi)
+
+- **Eski hal:** `JsonSliceSaveService._recipeWorkOrders` List. `SaveToJson` bu listeden `data.recipeWorkOrders`'i yazardi. `LoadFromJson` ise `data.recipeWorkOrders`'u park listeye geri koymaz, `world` uzerine de yansitmazdi. Sonuc: kayittan yuklenen bir talep sanki hic baslamamis gibi bir sonraki saatte tekrar hammadde tuketirdi (B19).
+- **Yeni hal (W34-C, `docs/ruh/w34/02 §5.2`):** park listesi ve `ReplaceRecipeWorkOrders()` API'si silindi (yorumla anitlastirildi: `JsonSliceSaveService.cs:21-27`). `WorldSaveMapper.ToData` `world.WorkOrders`'u DIREKT `data.recipeWorkOrders` DTO'suna `ToRecipeWorkOrderData(ledger)` (`WorldSaveMapper.Process.cs:51-67`) ile yazar. `ToWorld` `ToWorkOrderLedger(data.recipeWorkOrders)` (`WorldSaveMapper.Process.cs:69-89`) ile `world.WorkOrders`'a rehidre eder + `RebuildIndexes`.
+- **Legacy satir dusme:** `jobId == 0L` satirlar (eski park-list zamanindan kalan; `RecipeWorkOrderSaveData.jobId` W34'te eklenen alan, `JsonUtility` pre-W34 dosyalarda 0 okur) yuklemede atlanir (`WorldSaveMapper.Process.cs:75`). Not: bu satirlar zaten pre-W34'te de world'e geri koyulmuyordu — "keep dropping" statu-quo devam.
+- **Save-bridge klobber kaldirildi:** `SaveToJson` icinde `data.recipeWorkOrders` override calismasi silindi (`JsonSliceSaveService.cs:94-96` yorumu: "the retired park-list override used to CLOBBER it with an empty array here").
+
+### D. W32 EAT reservation persist
+
+- Yazma: `WorldSaveMapper.cs:105-111` — `reservationIds/SiteIds/ItemTags/ActorIds/UntilMinutes` = `world.Reservations.Rows.ConvertAll(...)`; `reservationNextId = world.Reservations.NextId ?? 1UL`.
+- Okuma: `WorldSaveMapper.cs:262-279` — pre-W32 kayitta diziler null → bos ledger, `NextId = data.reservationNextId != 0 ? ... : 1UL`; sonra `RebuildIndexes()` cagrilir (indexler derived).
+- Neden `NextId` diskte: yeniden 1'den baslarsa yeni rezervasyonlar eski id'lerle carpisir → determinism kirilir. Bu, dokta ozellikle vurgulanmis (`WorldSaveData.cs:81`).
+
+### E. W32 all-zero-extends-Idle
+
+- `WorldSaveData.cs:96-104` action-log 9 sutun `int[] actionLog{Intents,FromActions,FromPhases,ToActions,ToPhases,Reasons}` + 3 `long/ulong` sutun + `long actionLogTotalPushed`.
+- Pre-W32 kayitta hepsi null → `ToActionLogRing` early-return ile bos ring (`ActionLog.cs:47`).
+- Bir sutun eksik/yeni gelirse `JsonUtility` 0 okur; `(ActorActionType)0 == Idle`, `(ActionPhase)0 == Idle`, `(ActorIntent)0 == None`, `(ActionLogReason)0 == None` — hepsi Idle'a genisler (0-degeri enum guvenligi). Bu "all-zero-extends-Idle" invaryanti, unseasoned rows'un anlamli olmasini saglar; test edilen field: reflection golden diff (asagi).
+
+### F. W33 golden roundtrip (reflection-diff)
+
+`Assets/Tests/EditMode/Save/WorldSaveMapperGoldenRoundtripTests.cs:23`:
+1. `WorldFactory.Create(7)` seed.
+2. Her **yeni koleksiyon** (companions, pursuits, critters, rumors, unrest, W32 reservation + W32 action-state + W33 hands-full HaulCrop actor) doldurulur.
+3. `WorldSaveMapper.ToData(world)` → `ToWorld` → `ToData` (**iki-kere** save-load).
+4. `Assert.That(secondData, Is.EqualTo(firstData))` — reflection-diff. Bir mapper alani dusurdugunde HER ZAMAN buradan patlar (dokta "the Home/DayAnchor class of bug"). Kimse ozel test yazmayi hatirlamasa da bu tek test yeni alanlari yakalar.
+
+## LLD - Veri Modeli (file:line)
+
+| Tip | Alanlar | Yer |
+|---|---|---|
+| `WorldSaveData` | 25+ paralel-dizi + skaler alan; `schemaVersion, totalMinutes, currentRoomId, actors[], itemRecords[], sites[], factions[], factionReputations[], prices[], stockpiles[], tradeRoutes[], caravans[], worldEvents[], worldEventFirstRetainedSeq (B21), toolCallTrace[], llmProposalLog[], npcSeeds[], worldProfile, worksites[], recipeWorkOrders[], jobs[], soils[], plants[], inventory, playerEquipment, merchantInventory, companionIds[], pursuit(3), reservation(5)+NextId (W32), actionLog(9)+TotalPushed (W32), critters(5), rumors(3)+rumorEventCursorSeq (B21), unrest(4), mainQuest(4), playerKnownSpellIds[], playerGold/merchantGold, pickups[], topics[], npcMemories[], playerSpellCooldowns, playerShieldBuffs, doorOpen, ...` | `Data/Save/WorldSaveData.cs:22-140` |
+| `WorldSaveData` partial'lari | `.WorldProcess.cs`: ItemRecord/SiteRecord/Worksite/**RecipeWorkOrder(jobId+completedExecutions W34)**/Soil/Plant DTO; `.Economy.cs`, `.Narrative.cs`, `.Quest.cs`, `.ActorDungeon.cs` | `Data/Save/WorldSaveData.*.cs` |
+| `RecipeWorkOrderSaveData` | `recipeId, siteId, positionX/Y, actorId, progressTicks, jobId (W34), completedExecutions (W34)` | `Data/Save/WorldSaveData.WorldProcess.cs:37-51` |
+| `WorldSaveMapper` (kok) | `const int CurrentSchemaVersion = 1`; `static WorldSaveData ToData(WorldState)`; `static WorldState ToWorld(WorldSaveData, WorldState seedWorld)` | `Data/Save/SliceJson/WorldSaveMapper.cs:27-315` |
+| `SaveEnvelope` / `SaveEnvelopePayload` | `envelopeVersion=1, payload{sceneName, playerPosXYZ, playerYaw, tickIndex, domainStateJson}` | `Data/Save/SaveEnvelope.cs:5-25` |
+| `SaveSlotId` | `struct { SaveSlotKind Kind, int Index }`; `FileStem() = "manual_N" | "auto" | "quick"` | `Data/Save/SaveSlotId.cs:5-61` |
+| `SaveSlotKind` | `Manual | Auto | Quick` enum | `Data/Save/SaveSlotKind.cs` |
+| `SaveSlotMetadata` | `metadataVersion, envelopeVersion, schemaVersion, slotKind, slotIndex, label, sceneName, playtimeMinutes, savedAtUtcIso, thumbnailPath` | `Data/Save/SaveSlotMetadata.cs:5-19` |
+| `FileSaveRepository` | `_savesDir = <root>/saves`; atomic .tmp+Move; `.meta.json` sidecar best-effort; `.corrupt[.N]` quarantine (DET-06 forensics: en yeniyi ezmez, "corrupt.N" ile numaralar) | `Data/Save/FileSaveRepository.cs:15-140` |
+| `JsonSliceSaveService` (Presentation) | `WorldState _bridge`; `BindWorld(world)`; `SaveToJson(world)`; `LoadFromJson(json)`; W34: `_recipeWorkOrders` EMEKLI; ctor `Func<RecipeId, RecipeDef>` yalniz caller uyumu icin duruyor | `Presentation/Ember/Save/JsonSliceSaveService.cs:18-131` |
+| `SaveEnvelopeCodec` (Presentation) | `Encode(SaveData) → SaveEnvelope JSON`; `TryDecode(raw, out data, out migratedFromLegacy)` — modern zarf → eski payload-only → false | `Presentation/Ember/Save/SaveEnvelopeCodec.cs:1-50` |
+| `EmberSaveService` (Presentation) | `MonoBehaviour, partial (.cs/.Load/.Resolve/.Ui)`; F5/F9 kisayolu; `SaveInternal(slot)`; `LoadJson(json, slot?)`; `_pendingLoad` scene load bekleyicisi; `WorldFactory` seed'i `WorldSaveRehydration.CreateSeedWorld` uzerinden | `Presentation/Ember/Save/EmberSaveService*.cs` |
+| `WorldSaveRehydration` (Simulation) | `CreateSeedWorld(roomSeed)` = `new WorldFactory().Create(roomSeed)`; RecipeWorkOrder <-> DTO iki yon (LEGACY: bu iki metod Simulation.Process.RecipeWorkOrder cindi surer, W34-C sonrasi cagirilan yer YOK — dogrulanmadi grep aktif callsite icin) | `Simulation/Process/WorldSaveRehydration.cs:12-82` |
 
 ## LLD - Fonksiyon Haritasi
 
-- `WorldSaveMapper.ToData(WorldState world) -> WorldSaveData` — WorldSaveMapper.cs:33-131; dunyanin tamamini tek nesne baslaticisiyla DTO'ya dokerek null dunyada tipli istisna firlatir (satir 39). `recipeWorkOrders`'i **bilerek yazmaz** (satir 72-74).
-- `WorldSaveMapper.ToWorld(WorldSaveData data, WorldState seedWorld) -> WorldState` — WorldSaveMapper.cs:133-276; sema kapisi (141-144), store'larin geri kurulumu, parallel-array zip'leri, F31 varsayilanlari (250-258).
-- `WorldSaveMapper.CurrentSchemaVersion = 1` — WorldSaveMapper.cs:31.
-- `ActorSaveMapper.ToSave/FromSave` — ActorSaveMapper.cs:21-72,74-152; `hasMood` yoksa `mood>0` sezgiseli, `priority<=0 -> JobPriority.Disabled` sentineli (109-113).
-- `DungeonSaveMapper.ToRoomData/ToDoorData/ToSpawnData/ToLayout/ToRoomStates/ToDoorStates` — DungeonSaveMapper.cs:181-258.
-- `ItemSaveMapper.ToData/ToItem/ToPickup` — ItemSaveMapper.cs:308-348; slot cozumu `slotCode` oncelikli, legacy int fallback (325-327).
-- `SpellCooldownSaveMapper.ToData/ToState` — SpellCooldownSaveMapper.cs:365-401; ordinal siralama ile deterministik JSON (371).
-- `ShieldBuffSaveMapper.ToData/ToState` — ShieldBuffSaveMapper.cs:418-457.
-- `WorldSaveMapper.ToJobBoard(JobRequestSaveData[]) -> JobBoard` — WorldSaveMapper.Process.cs:221-259; once insertion-order ekleme, sonra `claimSequence` sirasiyla `TryRestoreClaim`; kurtarilamayan claim `InvalidOperationException` firlatir (255).
-- `WorldSaveMapper.ToWorldProfile` — WorldSaveMapper.Narrative.cs:227-241; `targetPopulation<=0` ise null doner (229).
-- `JsonSliceSaveService.SaveToJson/LoadFromJson/BindWorld` — JsonSliceSaveService.cs:84-97,99-127,39-44; tek Unity JSON temas noktasi.
-- `WorldSaveRehydration.ToRecipeWorkOrderData/ToRecipeWorkOrder/CreateSeedWorld` — WorldSaveRehydration.cs:28-42,49-70,78-80; Simulation-bagimli yeniden-kurulum Data asmdef'inden buraya tasindi (dosya basi not, 10-20).
-- `FileSaveRepository.Save/TryLoad/TryLoadPayload/TryLoadMetadata/Delete/ListAll` — FileSaveRepository.cs:42-59,69-90,94-104,131-140; `WriteAtomically` (179-188), `Quarantine` (106-119), regex tabanli metadata parse/yeniden-insa (214-236,302-365).
-- `SaveEnvelopeCodec.Encode/TryDecode` — SaveEnvelopeCodec.cs:8-28,30-49; legacy ciplak `SaveData` cozumu (79-103).
-- `EmberSaveService.Save/SaveSlot/SaveAuto/TryAutosaveActiveScene/SaveInternal` — EmberSaveService.cs:52-73,75-88,90-93,112-126,128-202.
-- `EmberSaveService.Load/LoadSlot/LoadJson/ApplyDomainRestore/RestorePosition` — EmberSaveService.Load.cs:12-28,30-49,66-130,149-187,189-209.
-- `EmberSaveService.ResolveLatestSaveJson/TryResolveLatestSave/PreparePendingLoad` — EmberSaveService.Resolve.cs:57-72,94-117,44-47.
-- `DomainSimulationAdapter.ExportStateJson/RestoreStateJson` — DomainSimulationAdapter.Save.cs:24-29,31-65.
+| Imza | Yer | Ne yapar |
+|---|---|---|
+| `static WorldSaveData WorldSaveMapper.ToData(WorldState world)` | `Data/Save/SliceJson/WorldSaveMapper.cs:33-158` | Domain → DTO. `world == null` → `ArgumentNullException`. Her stor icin partial'a delege eder; reservation/pursuit/critter/rumor/unrest/mainQuest inline paralel-dizi doldurur; sonda `ToActionLogData(world.ActionLog, data)`. |
+| `static WorldState WorldSaveMapper.ToWorld(WorldSaveData data, WorldState seedWorld)` | `Data/Save/SliceJson/WorldSaveMapper.cs:175-315` | DTO → Domain. `seedWorld == null` → `ArgumentNullException`. `schemaVersion > 1` → `NotSupportedException`. Aktor legacy role fallback (pre-actors[] kayitlar). `RebuildIndexes()` reservation ve workOrders'ta. |
+| `static RecipeWorkOrderSaveData[] WorldSaveMapper.ToRecipeWorkOrderData(WorkOrderLedger ledger)` | `Data/Save/SliceJson/WorldSaveMapper.Process.cs:51-67` | W34: pure-Domain `WorkOrderRecord` satirlarini DTO'ya cevirir (`jobId + completedExecutions` dahil). |
+| `static WorkOrderLedger WorldSaveMapper.ToWorkOrderLedger(RecipeWorkOrderSaveData[] data)` | `Data/Save/SliceJson/WorldSaveMapper.Process.cs:69-89` | W34: DTO → `WorkOrderLedger`. **`jobId == 0` legacy satirlari duser**; sonra `RebuildIndexes()`. |
+| `static JobBoard WorldSaveMapper.ToJobBoard(JobRequestSaveData[] data)` | `Data/Save/SliceJson/WorldSaveMapper.Process.cs:98-130` | Once insertion sirasinda `Add`, sonra `claimSequence` sirasinda `TryRestoreClaim` — PR#138 bot review fix'i (queue index roundtrip stabil). |
+| `private static void WorldSaveMapper.ToActionLogData(ActionLogRing ring, WorldSaveData data)` | `Data/Save/SliceJson/WorldSaveMapper.ActionLog.cs:14-40` | Ring → 9 paralel `int[]/ulong[]/long[]` sutun + `TotalPushed`. |
+| `private static ActionLogRing WorldSaveMapper.ToActionLogRing(WorldSaveData data)` | `Data/Save/SliceJson/WorldSaveMapper.ActionLog.cs:42-76` | Herhangi bir sutun null → bos ring (pre-W32). `count = Math.Min(...)` her sutunu klipler → yalniz tam-genislikli satirlari toplar; `ring.Restore(entries, TotalPushed)`. |
+| `string JsonSliceSaveService.SaveToJson(WorldState world)` | `Presentation/Ember/Save/JsonSliceSaveService.cs:79-101` | `WorldSaveMapper.ToData` + `_bridge` override'lari (yalniz `Count > 0` ise klobber yok) + `JsonUtility.ToJson(pretty=true)`. |
+| `WorldState JsonSliceSaveService.LoadFromJson(string json)` | `Presentation/Ember/Save/JsonSliceSaveService.cs:104-131` | Bos JSON → `ArgumentException`. `FromJson<WorldSaveData>` → `WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed)` → `WorldSaveMapper.ToWorld` → `_bridge`'e store mirror. |
+| `WorldState JsonSliceSaveService.BindWorld(WorldState world)` | `Presentation/Ember/Save/JsonSliceSaveService.cs:43-48` | Bridge'i canli dunyaya baglar, `EnsureInvariants`; adapter kurulumunda cagrilir. |
+| `string SaveEnvelopeCodec.Encode(SaveData data)` | `Presentation/Ember/Save/SaveEnvelopeCodec.cs:9-29` | `SaveData` → `SaveEnvelope(envelopeVersion=1)` → `JsonUtility.ToJson` (compact). |
+| `bool SaveEnvelopeCodec.TryDecode(string rawJson, out SaveData data, out bool migratedFromLegacy)` | `Presentation/Ember/Save/SaveEnvelopeCodec.cs:31-49` | Modern zarf → eski payload-only fallback → false; `migratedFromLegacy` flag'i in-place modernizasyon icin. |
+| `void EmberSaveService.Save()` / `SaveSlot(SaveSlotId)` | `Presentation/Ember/Save/EmberSaveService.cs:52-83` | BUG-SAVE-CRASH: **butun** govde `try/catch` sarilmis; F5 hicbir kosulda oyunu kapamaz. |
+| `void EmberSaveService.SaveInternal(SaveSlotId slot)` | `Presentation/Ember/Save/EmberSaveService.cs:128-190` | Adapter'dan `ExportStateJson()`, `SaveData` doldur, `SaveEnvelopeCodec.Encode`, `_repo.Save(slot, json, meta)`. |
+| `void EmberSaveService.LoadJson(string json, SaveSlotId? migratedSlot)` | `Presentation/Ember/Save/EmberSaveService.Load.cs:66-107` | `TryDecode` → legacy ise in-place migrate (`_repo.Save(slot, migratedJson, meta)`) → `_pendingLoad = data` + sahne bekle. |
+| `DomainRestoreResult EmberSaveService.ApplyDomainRestore(SaveData data)` | `Presentation/Ember/Save/EmberSaveService.Load.cs:140-170` | Bos `domainStateJson` → `NoPayload`; degilse `adapter.RestoreStateJson(data.domainStateJson)`. |
+| `string EmberSaveService.ResolveLatestSaveJson(FileSaveRepository)` | `Presentation/Ember/Save/EmberSaveService.Resolve.cs:57-77` | Continue akisi icin en yeni gecerli slotu bulur. |
+| `void FileSaveRepository.Save(SaveSlotId id, string payloadJson, SaveSlotMetadata meta)` | `Data/Save/FileSaveRepository.cs:55-63` | Atomik `.tmp`+Move payload, best-effort `.meta.json` sidecar. |
+| `bool FileSaveRepository.TryLoadPayload(SaveSlotId id, Func<string,bool> isValid, out string payloadJson)` | `Data/Save/FileSaveRepository.cs:75` | Bozuk payload ise `Quarantine` → `.corrupt[.N]` (DET-06). |
+| `static WorldState WorldSaveRehydration.CreateSeedWorld(int roomSeed)` | `Simulation/Process/WorldSaveRehydration.cs:78-81` | `new WorldFactory().Create(roomSeed)` — Simulation-side seed insaci; Data asmdef Simulation'a bakmasin diye buraya tasindi (Codex 7. gecis B-P1 #10). |
 
-## LLD - Yazdigi/Okudugu Alanlar
+## LLD - Yazdigi/Okudugu Alanlar (FieldOwnershipRegistry dilinde)
 
-`FieldOwnershipRegistry` yalnizca tick-zamani yazicilari bildirir (FieldOwnershipRegistry.cs:12-52); kayit/yukleme sistemi orada **bildirilmemis, bant-disi bir butun-dunya yazicisidir** — bu bilincli bir bosluktur ama registry'nin "tek-yazici" iddiasinin kapsam disi kapisidir.
+**Yazar (Save):** `WorldSaveMapper.ToData` `WorldState`'i **okur**; herhangi bir dunya alanini yazmaz. Bu bir "read-through export."
 
-- **Okur (kayit aninda)**: `WorldState`'in serilestirilen tum alanlari — `Actor.*` (Position, Needs, Vitals, Mood, ScheduleState, Memory...), `World.GuardPursuits`, `World.Stockpiles`, `World.Rumors`, `World.SiteUnrest`, `World.Critters`, tum store'lar (Actors/Items/Sites/Factions/Prices/TradeRoutes/Caravans/Worksites/Jobs/Soils/Plants/Quests/Events/ToolCallTrace/LlmProposalLog/NpcSeeds), oyuncu ilerleme alanlari (WorldSaveMapper.cs:40-130). Ayrica PlayerRig transform'u ve `EmberTickDriver.TickIndex` (EmberSaveService.cs:130,141).
-- **Yazar (yukleme aninda)**: yukaridaki alanlarin TAMAMI — `WorldSaveMapper.ToWorld` seed dunyaya alan alan (WorldSaveMapper.cs:146-274), ardindan `WorldState.CopyFrom` canli dunyaya toptan (DomainSimulationAdapter.Save.cs:47). Yani registry'deki `Actor.Position`, `Actor.Needs`, `Actor.Vitals`, `World.GuardPursuits`, `World.Stockpiles`, `World.Rumors`, `World.SiteUnrest` dahil her mutable alan load'da yeniden yazilir.
-- **Disk/PlayerPrefs**: `<persistentDataPath>/saves/{quick|auto|manual_N}.json` + `.meta.json` + `.corrupt[.N]` (FileSaveRepository.cs:34-38); PlayerPrefs `ember.save.v1` (legacy mirror) ve `ember.save.lastslot` (EmberSaveService.cs:16-17,191-193).
-- **Yazmadigi**: `WorldState.Overland` — kayida hic girmez; load'da canli oturumdakiyle korunur (DomainSimulationAdapter.Save.cs:41-49).
+**Yazar (Load):** `WorldSaveMapper.ToWorld` `seedWorld` uzerine **direkt** yazar (assignment). Dokunulan alanlarin ozeti (registry'ye "world.load@LoadFromJson" ekleyecek olsaydik):
+- Aktorler: `world.Actors` (roll actors[] veya legacy 5 slot).
+- Zamanlar: `world.Time`, `world.CurrentRoomId, PlayerRoomId, TalkerRoomId, MerchantRoomId, GuardRoomId, EnemyRoomId, PickupRoomId`.
+- Zindanlar: `world.Dungeon, DungeonRoomStates, DungeonDoorStates` (varsa).
+- Item/site/faction: `world.Items, Sites, Factions` + faction reputations uygulanmis.
+- Ekonomi: `world.Prices, Stockpiles, TradeRoutes, Caravans`.
+- Proses (SOUL-01 sonrasi world root'ta): `world.Worksites, Jobs, WorkOrders (W34), Soils, Plants`.
+- Quest: `world.Quests, WorldQuestStates, WorldContracts`.
+- Olay/log: `world.Events (+ FirstRetainedSeq B21), ToolCallTrace, LlmProposalLog, NpcSeeds, WorldProfile`.
+- Envanterler: `world.PlayerInventory, PlayerEquipment, MerchantInventory` (kapasite: DTO'da varsa DTO kazanir, degilse seed).
+- Oyuncu: `PlayerLevel, PlayerXp, PlayerClassName, PlayerReputation, PlayerBountyGold, PlayerGold, MerchantGold, MerchantStoreSeeded, PlayerKnownSpellIds` (B20: uzunluk-guard boş DTO icin in-memory listeyi ezmez), `PlayerSpellCooldowns, PlayerShieldBuffs`.
+- W32: `world.Reservations` (Rows + NextId + RebuildIndexes), `world.ActionLog` (Restore + TotalPushed).
+- P0-P2: `world.GuardPursuits, Critters, Rumors, RumorEventCursorSeq (B21), SiteUnrest`.
+- V3: `world.CompanionIds`.
+- F31: `world.MainQuest` (act clamp, RequiredInscriptions default 3, ClaimedDelveIds).
+- Dialog: `world.Pickups, Topics, NpcMemory`.
+- Gate flags: `DoorOpen, GuardDoorAccessGranted, GuardWarningCount, EncounterActive, LastNarrative`.
+
+**Registry mevcut kayit:** `Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs` icinde grep'te "save" bulunmadi — save yolu registry'ye kayitli DEGIL (dogrulanmadi ama arama negatif). Kayit sistemi butun dunyayi yaziyor; ownership registry per-tick sistem yazarlarina odaklanmis. Save-load yasi butun registry alanlarini "hepsi bir anda yazilir" olarak gorulmeli.
 
 ## LLD - Urettigi/Tukettigi Olaylar
 
-- **WorldEventKind uretmez** — sistem `WorldEventLog`'u yalnizca serilestirir/geri kurar (WorldSaveMapper.Narrative.cs:159-194); kayit-yukleme eylemi icin log'a olay eklenmez.
-- **Log taglari**: `[EmberSave]` (quick-save/load, slot islemleri: EmberSaveService.cs:62,66,70,77,81,85,97,103,107,123; EmberSaveService.Load.cs:17,21,25,32,42,46), `[Autosave]` (5 dk kadans: RuntimeAutosaveView.cs:28-30).
-- **UI statusleri** (fade text): "Saved.", "Save partial: domain export failed.", "Save failed: could not write save slot.", "Load failed: save corrupt.", "Load partial: domain restore failed.", "Load partial: domain restore unavailable.", "Loaded.", "No save found.", "Load failed: scene not in build." (EmberSaveService.cs:194-200, EmberSaveService.Load.cs:37,59,70-75,104,123-128, EmberSaveService.cs:216-221).
+- **Uretmez:** kayit/yukle yolu `WorldEventLog`'a olay eklemez (`WorldSaveMapper.ToWorld` sadece diskteki `worldEvents[]` dizisini `world.Events` icine kopyalar, yeni satir uretmez).
+- **Tuketir:** dogrudan yok. Ancak `WorldEventLog.FirstRetainedSeq` disk-persist edildigi icin (B21, `WorldSaveData.cs:60`; mapper `WorldSaveMapper.cs:88-90`), yuklemede `world.Events` cursor'lari (`RumorEventCursorSeq` + `FirstRetainedSeq`) seq-based olarak dogru offset'e dusurulur — cursor'lar olay-yayilim tuketicileri (rumor mill vb.) tarafindan sonraki tick'te tukenir.
+- **Unity taraf:** `EmberSaveService.SaveInternal` `Debug.Log("[EmberSave] quick-save ok")`, `LoadJson` `ShowStatus(...)` UI olayi (BUG-SAVE-CRASH koruma sarmali).
 
 ## Testler
 
-Hepsi Assets/Tests/EditMode/Save/ altinda:
-- `WorldSaveMapperGoldenRoundtripTests.cs` — **golden roundtrip**: temsili dunya `ToData -> ToWorld -> ToData`, iki DTO yansima ile ALAN ALAN karsilastirilir; alan dusuren mapper burada sonsuza dek yakalanir (satir 12-50).
-- `SaveLoadDigestRoundtripTests.cs` — **F4-DoD**: bir tam oyun gunu ilerlemis dunya roundtrip sonrasi `WorldStateDigest` ile bayt-ozdes olmali (satir 11-16); F22 dunya-gorevleri de digest'e dahil (28-46).
-- `SaveSchemaVersionTests.cs` — sema kontrati: ToData guncel versiyonu damgalar, v0 legacy=v1 kabul, gelecek versiyon reddedilir (satir 8-13).
-- `StoreRoundTripTests.cs` — kanonik store koklerinin (Actor/Item/Site/Faction/EventLog) roundtrip'i.
-- `FileSaveRepositoryTests.cs` — atomik yazim, karantina, metadata sidecar davranislari.
-- `SaveEnvelopeCodecTests.cs` — zarf encode/decode + legacy gecisi.
-- `JsonSliceSaveServiceTests.cs` — Unity JSON koprusu; `EmberSaveServiceResolutionTests.cs` — slot cozum oncelik sirasi.
-- Alan-ozel roundtrip'ler: `ActorSaveMapperTests.cs`, `ActorNeedsRoundTripTests.cs`, `JobAssignmentRoundTripTests.cs` (claim/queue), `PlantSeasonRoundTripTests.cs`, `RecipeWorksiteRoundTripTests.cs`, `SpellCooldownSaveMapperTests.cs`, `ShieldBuffSaveMapperTests.cs`, `WorldSaveMapperTradeFieldsTests.cs`, `SaveSlotBrowserStateTests.cs`, `SaveSlotRepositoryTests.cs`.
+- `Assets/Tests/EditMode/Save/WorldSaveMapperGoldenRoundtripTests.cs` — **W33 golden roundtrip** (reflection-diff, iki-kere roundtrip). W32-05 hikayesi: eat action-state, live reservation + bumped NextId; W33-01 §9.3 hikayesi: hands-full HaulCrop actor + carry: rezervasyon (`WorldSaveMapperGoldenRoundtripTests.cs:23-63`).
+- `Assets/Tests/EditMode/Save/SaveLoadDigestRoundtripTests.cs` — F4-DoD: seed → **tam gunluk tick** (jobs/growth/prices/needs) → save → load → `WorldStateDigest` byte-identical (`SaveLoadDigestRoundtripTests.cs:1-337`, ozel test: `WorldQuests_SurviveSaveLoadRoundtrip`, F22 slice).
+- `Assets/Tests/EditMode/Save/JsonSliceSaveServiceTests.cs` — servis-level roundtrip; bridge klobber davranisi (W33 farm slice fix).
+- `Assets/Tests/EditMode/Save/RecipeWorksiteRoundTripTests.cs` — W34-C oncesi park-list yolu; W34-C sonrasi W34 DoD altinda `world.WorkOrders` uzerinden yeniden yasar.
+- `Assets/Tests/EditMode/Save/JobAssignmentRoundTripTests.cs` — W34-C `WorkOrderLedger` + `JobBoard.TryRestoreClaim` sirasi.
+- `Assets/Tests/EditMode/Save/StoreRoundTripTests.cs` — ItemStore/SiteStore/FactionStore duz mapper testleri.
+- `Assets/Tests/EditMode/Save/ActorSaveMapperTests.cs`, `ActorNeedsRoundTripTests.cs`, `ShieldBuffSaveMapperTests.cs`, `SpellCooldownSaveMapperTests.cs` — per-mapper unit.
+- `Assets/Tests/EditMode/Save/SaveSchemaVersionTests.cs` — schema drift red senaryosu (`schemaVersion > 1` → `NotSupportedException`); pre-alan 0'in v1 taban kabulu.
+- `Assets/Tests/EditMode/Save/SaveEnvelopeCodecTests.cs` — modern zarf enc/dec + legacy payload-only migrasyonu.
+- `Assets/Tests/EditMode/Save/FileSaveRepositoryTests.cs` — atomik `.tmp`+Move, `.corrupt[.N]` quarantine, sidecar best-effort.
+- `Assets/Tests/EditMode/Save/SaveSlotRepositoryTests.cs`, `SaveSlotBrowserStateTests.cs` — slot listeleme/browser state.
+- `Assets/Tests/EditMode/Save/EmberSaveServiceResolutionTests.cs` — `ResolveLatestSaveJson` continue-akisi.
+- `Assets/Tests/EditMode/Save/WorldSaveMapperTradeFieldsTests.cs`, `PlantSeasonRoundTripTests.cs` — dilim-spesifik alanlar.
+- `Assets/Tests/EditMode/Worldgen/WorldProfileSaveRoundTripTests.cs`, `NpcSeedSaveRoundTripTests.cs` — worldgen tarafi DTO roundtrip.
+- `Assets/Tests/EditMode/Composition/WorldTickDigestGoldenTests.cs` — save patenti degil ama digest golden'i save-load sonrasi tick determinizminin (F4-DoD) altyapisi.
+
+## W32-W36 Degisiklikleri (bu sistemin son 5 haftadaki buyuk hareketleri)
+
+**W32 (EAT / action phase-machine):**
+- Reservation ledger persist: `WorldSaveData.cs:84-92` 5 sutun + `reservationNextId`. Mapper: `WorldSaveMapper.cs:105-111` (write) + `WorldSaveMapper.cs:262-279` (read + `RebuildIndexes`).
+- Action-log ring persist: `WorldSaveData.cs:96-104` 9 sutun + `actionLogTotalPushed`. Mapper: yeni partial `WorldSaveMapper.ActionLog.cs`. "All-zero-extends-Idle" invaryanti sayesinde eksik sutun eklendiginde eski kayitlar bozulmaz.
+- Golden roundtrip'e W32 hikayesi: `WorldSaveMapperGoldenRoundtripTests.cs:35-55` (eat action-state + non-zero progress + live reservation).
+
+**W33 (FARM):**
+- Bridge klobber fix: `JsonSliceSaveService.SaveToJson` `_bridge.Worksites/Jobs/Soils/Plants` override'lari **yalniz** `Count > 0` ise uygulanir (`JsonSliceSaveService.cs:82-100` yorumu). Onceki hal: bagli olmayan (unbound) bir servis, dis dunyanin store'larini bos bridge ile klobberliyordu → soil/plant/job kayboluyordu (faction-decay save-replay tesaduf golden'i turuyordu).
+- Golden roundtrip'e W33 hikayesi: hands-full HaulCrop actor + `carry:` rezervasyonu (`WorldSaveMapperGoldenRoundtripTests.cs:44-63`).
+
+**W34 (WORK):**
+- Park-list emeklilik: `_recipeWorkOrders` List<> ve `ReplaceRecipeWorkOrders` API'si `JsonSliceSaveService`'den kaldirildi (`JsonSliceSaveService.cs:21-27,94-96` yorumlari). B19 double-consumption save wound structurally closed.
+- `WorkOrderLedger` Domain store'u world root'a bindi (`world.WorkOrders`); mapper direkt yazip okuyor (`WorldSaveMapper.Process.cs:51-89`).
+- `RecipeWorkOrderSaveData` append-only 2 alan: `jobId` (rebind anahtari) + `completedExecutions` (`WorldSaveData.WorldProcess.cs:37-51`). `jobId == 0` legacy satirlari load'da dusuyor.
+- Save-mapping her iki yon + digest satirlari + golden seeds "non-default sleep/work state" ile beslendi (W34-A DoD).
+
+**W35-W36:** save-load sisteminde HLD-degistiren buyuk hareket bulunmadi (grep negatif `docs/atlas` altinda W35/W36 save baglantisi icin — dogrulanmadi ama kayit patologisi tarihcesi W34-C ile kapali gorunuyor).
+
+**B21 (jul 25-26 kayak):** WorldEventLog seq-based trim + `worldEventFirstRetainedSeq` + `rumorEventCursorSeq` migrasyon (`WorldSaveData.cs:58-62,110`). Mapper `WorldSaveMapper.cs:88-90` (write) + `world.Events = ToWorldEventLog(data.worldEvents, data.worldEventFirstRetainedSeq)` (read). Pre-fix `int rumorEventCursor` alani JsonUtility tarafinda missing-field-drops-to-0 semantigiyle dusuyor; sicak save gecisinde kayip.
+
+**B20 (jul 26):** `PlayerKnownSpellIds` restore uzunluk-guard'i (`WorldSaveMapper.cs:293-295`) — bos DTO in-memory listeyi ezmez.
 
 ## Bilinen Borclar + Kacak Kapilari
 
-1. **Overland persist edilmiyor** — kayit overland haritasini hic tasimiyor; ayni oturumda load canli overland'i koruyarak kurtariyor (DomainSimulationAdapter.Save.cs:41-49) ama **soguk yuklemede** (process yeniden basladiktan sonra Continue) overland seed fabrikasindan gelir; ayni seed'le deterministik olarak ayni haritayi uretip uretmedigi bu dosyalardan **dogrulanmadi**.
-2. **`recipeWorkOrders` asimetrisi** — `WorldSaveMapper.ToData` bu alani bilerek yazmaz (WorldSaveMapper.cs:72-74); yalnizca `JsonSliceSaveService.SaveToJson` doldurur (JsonSliceSaveService.cs:92). `ToData`'yi dogrudan cagiran her yol aktif is emirlerini kaybeder; golden test iki tarafta da null gordugu icin bunu YAKALAMAZ.
-3. **Legacy adli-rol yuzeyi hala cift yaziliyor** — `player/talker/...` + `*RoomId` alanlari deprecated WorldState gorunumlerini aynalar; Phase 13 temizligine kadar tasinacak (WorldSaveData.cs:9-16, WorldSaveMapper.cs:47-52,58-62; load fallback'i WorldSaveMapper.cs:160-171).
-4. **Elle JSON kazima** — `FileSaveRepository` metadata yeniden-insasi regex ile payload'dan alan ceker (FileSaveRepository.cs:214-236,334-365; sablon regex'ler 22-23 derlenmis ama `ToString()+Format` ile yeniden yorumlaniyor, derleme faydasi bosa gidiyor); `EmberSaveService.ExtractLong` `IndexOf` taramasi yapar (EmberSaveService.cs:248-260). JSON bicimi degisirse sessizce 0/bos doner — (a)-(g) hata ailesi eslemesi **dogrulanmadi** (taksonomi tanimina repo icinde rastlanmadi).
-5. **Lossy-by-design normalizasyon** — load filtreleri bazi satirlari sessizce dusurur: `siteId==0` veya bos tag fiyatlar (WorldSaveMapper.Economy.cs:36-37), `count<=0` stockpile girisleri (70-71), `a==b`/0 faction-rep satirlari (WorldSaveMapper.World.cs:166-167), id/home/faction=0 npcSeed'ler (WorldSaveMapper.Narrative.cs:363-369), `remainingTicks<=0` cooldown/shield girisleri (SpellCooldownSaveMapper.cs:394-395, ShieldBuffSaveMapper.cs:448-451), `questId<=0` görev satirlari (WorldSaveMapper.Quest.cs:40-41,81). Boyle satir iceren bir kayit bayt-ozdes roundtrip yapamaz; digest testleri bu bolgeye girmiyor.
-6. **`PlayerKnownSpellIds` bos-liste tuzagi** — load'da bos dizi seed dunyanin listesine geri duser (WorldSaveMapper.cs:259-261); mesru olarak sifir buyu bilen bir oyuncu, seed varsayilanlarini geri kazanabilir (hasMood/hasHomeAnchor'daki gibi bir "presence" bayragi yok).
-7. **JobBoard claim restore tek satirla tum yuklemeyi dusurur** — `TryRestoreClaim` basarisizsa `InvalidOperationException` (WorldSaveMapper.Process.cs:254-255); ust katman yakalayip "Load failed." gosterir ama kismi kurtarma yolu yok.
-8. **PlayerRig yoksa sessiz no-op kayit** — `SaveInternal` erken doner, status bile gostermez (EmberSaveService.cs:130-131); rig'siz bir sahnede F5/autosave hicbir sey yapmaz.
-9. **Statik global durum** — `_pendingLoad` (EmberSaveService.Resolve.cs:14) ve autosave cabasindaki `s_nextSaveAt` (RuntimeAutosaveView.cs:17) statiktir; test izolasyonu ve domain-reload davranisi acisindan kacak kapisi.
-10. **Best-effort catch-all'lar** — sidecar yazimi (FileSaveRepository.cs:57-58), karantina (117-118), silme (190-197,199-212) ve legacy gecis geri-yazimi (EmberSaveService.Load.cs:90-93) istisnalari sessizce yutar; tasarim geregi ama teshis izini de yutar.
-11. **`int` daralmalari** — `roomSeed/currentRoomId/dungeonStartRoomId` DTO'da `long` tutulup load'da `(int)` cast edilir (WorldSaveMapper.cs:148-149); 32-bit tasan deger sessizce sarmalanir (pratikte seed int uretiliyor, teorik borc).
-12. **Cift kayit yolu mirasi** — `Save(int slot,...)` legacy yolu sidecar yazmaz (FileSaveRepository.cs:42-46); `ListAll` bu slotlar icin metadata'yi regex ile payload'dan yeniden-insa etmek zorunda kalir (142-158,214-236). PlayerPrefs `ember.save.v1` mirror'i hala her kayitta guncellenir (EmberSaveService.cs:192) — EMB-011 "dosya tek gercek kaynak" hedefinin tamamlanmamis kuyrugu.
+- **Legacy role slotlari:** `player/talker/merchant/guard/enemy` + `playerRoomId..enemyRoomId` alanlari `actors[]`'e migre olmus dunyalarla birlikte hala yaziliyor (`WorldSaveData.cs:31-49` yorumu + `WorldSaveMapper.cs:61-65,185-197`). Phase 13 cleanup'a kadar duruyor — yeni kod bunlara yazmamali, `actors[]` / world stores'a yazmali. Kacak kapisi: mapper hala her save'de bu 5 role icin `FirstByRole(...)` cagirir; buyuk dunyalarda `O(N * 5)` linear scan.
+- **`WorldSaveRehydration.RecipeWorkOrder <-> DTO` iki metodu:** W34-C sonrasi cagiran YOK gorunuyor (`Simulation/Process/WorldSaveRehydration.cs:29-73`) — grep aktif callsite icin negatif kalmis (dogrulanmadi, geniş grep gerekir). Emekli olmasi lazim.
+- **Adapter'daki `ExportStateJson()` / `RestoreStateJson()`:** bu doktan iz surmedim (`DomainSimulationAdapter` altinda grep aktif metod adlariyla). Load zinciri `EmberSaveService.Load.cs:166` `adapter.RestoreStateJson(...)` cagriyor — implementasyonun icinde `JsonSliceSaveService.LoadFromJson` cagrildigi varsayimi mantikli ama **kesin dogrulanmadi**. Bir sonraki atlas revizyonunda bu koprunun tam dosyasi kanitlanmali.
+- **Schema versiyon 1'de takili:** hicbir yeni field bump gerektirmedi (append-only + `JsonUtility` missing-field-0 semantigi). Bir sey **inkompatibl** degistiginde `CurrentSchemaVersion++` + `ToWorld` icine migration branch eklenmeli (`WorldSaveMapper.cs:29-31` protokolu).
+- **JsonUtility 0-degeri enum guvenligi:** `ActorActionType.Idle == 0`, `ActionPhase.Idle == 0`, `ActorIntent.None == 0`, `ActionLogReason.None == 0`. Bir gun bu enum'lardan biri 0 slotuna baska anlam koyarsa "all-zero-extends-Idle" invaryanti sessizce kirilir. Bu kural yorumu yalniz `WorldSaveMapper.ActionLog.cs`'de gecmiyor — dogrulanmadi, "0-guard" testine ihtiyac var.
+- **`.corrupt.N` sonsuz birikimi:** `FileSaveRepository.Quarantine` her bozuk kayidi forensik olarak saklar (DET-06); temizlik yok. Uzun sureli oynayan bir kullanicida disk sisebilir. Kaçak: `saves/` altinda `.corrupt` sayaci monotonik.
+- **`SaveEnvelopeCodec` legacy fallback yolu:** payload-only eski format hala kabul ediliyor + in-place modernize ediliyor. Bu koruma sonsuza kadar acik kalirsa gecmis-yuk borcu birikir; bir tarihte "hard cut" gerekebilir.
+- **BUG-SAVE-CRASH sarma:** `Save()` govdesi butunuyle `try/catch` — bu, F5'in `Update` icinde patlayip prosesi indirmesini engelledi (`EmberSaveService.cs:52-71` yorumu). Ancak `StackOverflowException` gibi catchable-degil hatalar da unutulmamali; save yolu flat field-mapping, o yuzden risk yok (dokta soylenmis).
+- **Rumor cursor migrasyon:** B21 pre-fix `int rumorEventCursor` **kaybolur** (JsonUtility missing-field → 0). Bu sicak save gecisinde bir kez agri verir; production bir kayit gozetim ihtiyaci varsa bir sonraki release'de warn-toast yardimci olur.

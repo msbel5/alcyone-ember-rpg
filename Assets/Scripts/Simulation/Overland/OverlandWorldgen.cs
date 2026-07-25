@@ -14,6 +14,7 @@ namespace EmberCrpg.Simulation.Overland
     {
         private const uint FallbackSeed = 42u;
 
+        [System.Obsolete("B28: use Generate(GeneratedWorld, parameters) - this flat-worldgen overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25; kept for the char-creation pre-cache probe only.", false)]
         public static OverlandMap Generate(uint seed, OverlandParameters parameters)
         {
             if (parameters == null)
