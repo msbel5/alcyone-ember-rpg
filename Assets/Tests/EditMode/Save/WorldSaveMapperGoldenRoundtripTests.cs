@@ -58,6 +58,40 @@ namespace EmberCrpg.Tests.EditMode.Save
                            targetItem: ItemId.Empty, reservation: new ReservationId(carryRowId),
                            startedAtMinutes: 130, policy: ActionInterruptPolicy.Interruptible)
                     .WithCarriedUnits(2));
+            // W34: a mid-flight SLEEPER (Rest/Sleep@progress + a live "bed:" row on the actor's own
+            // Home cell) — a dropped intent/action range widening or bed-row mapping fails here.
+            var sleeper = world.Actors.Records.First(a => a != null && a.Id != eater.Id && a.Id != hauler.Id);
+            Assert.That(world.Reservations.TryReserve(
+                siteId: 0UL, tag: "bed:" + sleeper.Home.X + ":" + sleeper.Home.Y,
+                actorId: sleeper.Id.Value, untilMinutes: 999L, pileCount: 1, out var bedRowId), Is.True);
+            sleeper.ApplyActionState(
+                ActorActionState.ForIntent(ActorIntent.Rest)
+                    .Start(ActorActionType.Sleep, targetSite: default(SiteId),
+                           targetItem: ItemId.Empty, reservation: new ReservationId(bedRowId),
+                           startedAtMinutes: 1380, policy: ActionInterruptPolicy.Interruptible)
+                    .Advanced().Advanced().Advanced()); // Sleep@progress=3: mid-night save
+            // W34: a mid-flight WORKER (Work/PerformWork@progress, ReservationId.Empty by contract —
+            // the claim is the lock) + a frozen WorkOrderLedger row with EVERY field non-zero so the
+            // new jobId/completedExecutions DTO columns are proven by the reflection diff.
+            var worker = world.Actors.Records.First(a => a != null
+                && a.Id != eater.Id && a.Id != hauler.Id && a.Id != sleeper.Id);
+            worker.ApplyActionState(
+                ActorActionState.ForIntent(ActorIntent.Work)
+                    .Start(ActorActionType.PerformWork, targetSite: new SiteId(1),
+                           targetItem: ItemId.Empty, reservation: ReservationId.Empty,
+                           startedAtMinutes: 480, policy: ActionInterruptPolicy.Interruptible)
+                    .Advanced());
+            Assert.That(world.WorkOrders.Add(new EmberCrpg.Domain.Process.WorkOrderRecord
+            {
+                JobId = 701UL,
+                RecipeId = 1001UL,
+                SiteId = 1UL,
+                PositionX = 4,
+                PositionY = 5,
+                StartedByActorId = worker.Id.Value,
+                ProgressTicks = 1,
+                CompletedExecutions = 1,
+            }), Is.True);
             // W32: a non-empty phase trace so all nine actionLog columns + the counter are proven.
             world.ActionLog.Push(new EmberCrpg.Domain.Actors.Actions.ActionLogEntry(
                 123L, eater.Id.Value, ActorIntent.Eat,

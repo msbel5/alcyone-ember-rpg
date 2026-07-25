@@ -70,8 +70,10 @@ dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
                 tradeRoutes = ToTradeRouteData(world.TradeRoutes),
                 caravans = ToCaravanData(world.Caravans),
                 // SOUL-01: the production-economy process stores are now read from the world root
-                // (not the JsonSliceSaveService side-stores). recipeWorkOrders stays a Simulation
-                // type composed by the Presentation save bridge, so it is intentionally absent here.
+                // (not the JsonSliceSaveService side-stores). W34: recipeWorkOrders is now fed from
+                // the pure-Domain WorkOrderLedger; the Presentation save bridge may still overwrite
+                // the array from its legacy Simulation park list (rows with jobId 0 — dropped on load).
+                recipeWorkOrders = ToRecipeWorkOrderData(world.WorkOrders),
                 worksites = ToWorksiteData(world.Worksites),
                 jobs = ToJobBoardData(world.Jobs),
                 soils = ToSoilComponentData(world.Soils),
@@ -190,6 +192,9 @@ world.Items = ToItemStore(data.itemRecords);
             // SOUL-01: rehydrate the production-economy process stores onto the world root.
             world.Worksites = ToWorksiteStore(data.worksites);
             world.Jobs = ToJobBoard(data.jobs);
+            // W34: work orders land on the world root too (jobId == 0 legacy rows are dropped —
+            // they were never world-restored before either). Indexes rebuilt inside the mapper.
+            world.WorkOrders = ToWorkOrderLedger(data.recipeWorkOrders);
             world.Soils = ToSoilComponentStore(data.soils);
             world.Plants = ToPlantComponentStore(data.plants);
             world.Quests = ToQuestStore(data.quests);

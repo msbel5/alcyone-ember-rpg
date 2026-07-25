@@ -17,8 +17,12 @@ namespace EmberCrpg.Presentation.Ember.Save
     /// <summary>JsonUtility-backed save/load bridge for the vertical slice.</summary>
     public sealed class JsonSliceSaveService
     {
-        private readonly Func<RecipeId, RecipeDef> _resolveRecipe;
-        private List<RecipeWorkOrder> _recipeWorkOrders = new List<RecipeWorkOrder>();
+        // W34 WORK (docs/ruh/w34/02 §5.2): the _recipeWorkOrders park list and
+        // ReplaceRecipeWorkOrders are RETIRED. Orders are pure-Domain WorldState.WorkOrders
+        // rows now; WorldSaveMapper writes/reads them on the recipeWorkOrders DTO directly.
+        // The park list was a one-way street (nothing ever read it back into the world), so a
+        // loaded claimed job re-consumed its inputs on the next hour — the double-consumption
+        // save wound this retirement closes structurally.
 
         // SOUL-01: worksites/jobs/soils/plants are now the world root's canonical stores. This bridge
         // world holds them for callers that touch the save service directly (round-trip tests, the
@@ -26,9 +30,10 @@ namespace EmberCrpg.Presentation.Ember.Save
         // SaveToJson/LoadFromJson and the per-tick systems all read/write the same store instances.
         private WorldState _bridge = new WorldState();
 
+        /// <summary>The resolver parameter is kept for caller compatibility; work-order rows are
+        /// pure Domain data now (no RecipeDef rebind on load — the W34 park-list retirement).</summary>
         public JsonSliceSaveService(Func<RecipeId, RecipeDef> resolveRecipe = null)
         {
-            _resolveRecipe = resolveRecipe;
         }
 
         /// <summary>
@@ -71,16 +76,6 @@ namespace EmberCrpg.Presentation.Ember.Save
             set { _bridge.Plants = value ?? throw new ArgumentNullException(nameof(value)); }
         }
 
-        /// <summary>Active recipe work orders loaded by the latest JSON round-trip.</summary>
-        public IReadOnlyList<RecipeWorkOrder> RecipeWorkOrders => _recipeWorkOrders;
-
-        public void ReplaceRecipeWorkOrders(IEnumerable<RecipeWorkOrder> orders)
-        {
-            if (orders == null)
-                throw new ArgumentNullException(nameof(orders));
-            _recipeWorkOrders = orders.Select(order => order ?? throw new ArgumentException("Recipe work orders cannot contain null entries.", nameof(orders))).ToList();
-        }
-
         public string SaveToJson(WorldState world)
         {
             // ToData now reads the four process stores from the world root. When a caller has staged
@@ -95,7 +90,8 @@ namespace EmberCrpg.Presentation.Ember.Save
             var data = WorldSaveMapper.ToData(world);
             if (_bridge.Worksites != null && _bridge.Worksites.Count > 0)
                 data.worksites = WorldSaveMapper.ToWorksiteData(_bridge.Worksites);
-            data.recipeWorkOrders = _recipeWorkOrders.Select(EmberCrpg.Simulation.Process.WorldSaveRehydration.ToRecipeWorkOrderData).ToArray();
+            // W34: recipeWorkOrders now comes from WorldSaveMapper.ToData (world.WorkOrders) —
+            // the retired park-list override used to CLOBBER it with an empty array here.
             if (_bridge.Jobs != null && _bridge.Jobs.Count > 0)
                 data.jobs = WorldSaveMapper.ToJobBoardData(_bridge.Jobs);
             if (_bridge.Soils != null && _bridge.Soils.Count > 0)
@@ -131,18 +127,9 @@ namespace EmberCrpg.Presentation.Ember.Save
             _bridge.Jobs = world.Jobs;
             _bridge.Soils = world.Soils;
             _bridge.Plants = world.Plants;
-            _recipeWorkOrders = ToRecipeWorkOrders(data.recipeWorkOrders);
+            // W34: work orders already live on world.WorkOrders (WorldSaveMapper.ToWorld) —
+            // no park list to fill; the resolver stays for ctor compatibility only.
             return world;
-        }
-
-        private List<RecipeWorkOrder> ToRecipeWorkOrders(RecipeWorkOrderSaveData[] data)
-        {
-            if (data == null || data.Length == 0)
-                return new List<RecipeWorkOrder>();
-            if (_resolveRecipe == null)
-                throw new InvalidOperationException("JsonSliceSaveService needs a recipe resolver to load active recipe work orders.");
-
-            return data.Select(order => EmberCrpg.Simulation.Process.WorldSaveRehydration.ToRecipeWorkOrder(order, _resolveRecipe)).ToList();
         }
     }
 }

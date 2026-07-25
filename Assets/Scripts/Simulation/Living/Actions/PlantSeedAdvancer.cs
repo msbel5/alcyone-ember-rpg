@@ -83,7 +83,9 @@ namespace EmberCrpg.Simulation.Living.Actions
                 return;
             }
             world.Reservations.Release(row.Id);
-            CompleteJob(world, actor, stamp);
+            // W34: the JobCompleted grammar's ONE home is WorkOperations now (§7) — the farm
+            // and work chains complete jobs through the same seam, verbatim wording preserved.
+            WorkOperations.CompleteJob(world, actor, stamp);
             TransitionTo(world, actor, progressed.Succeeded(), ActionLogReason.Completed, stamp);
         }
 
@@ -97,28 +99,5 @@ namespace EmberCrpg.Simulation.Living.Actions
             actor.ApplyScheduleState(ActorScheduleState.Idle);
         }
 
-        // "İş ancak eylem zinciri biterse biter" — JobCompleted grammar VERBATIM from
-        // JobAssignmentSystem.Tick.cs so chronicle/proof consumers keep reading unchanged.
-        private static void CompleteJob(WorldState world, ActorRecord actor, GameTime stamp)
-        {
-            var jobId = actor.ScheduleState.CurrentJobId;
-            if (jobId.IsEmpty || world.Jobs == null || !world.Jobs.TryGet(jobId, out var request))
-                return;
-            world.Jobs.Complete(jobId);
-            world.Events?.Append(new WorldEvent(
-                stamp,
-                WorldEventKind.JobCompleted,
-                actor.Id,
-                request.SiteId,
-                $"job_completed:{request.Id.Value}",
-                new ReasonTrace(new[]
-                {
-                    $"job:{request.Id.Value}",
-                    $"recipe:{request.RecipeId.Value}",
-                    $"quantity:{request.Quantity}",
-                    $"worksite:{request.WorksiteKind}",
-                })));
-            actor.ApplyScheduleState(ActorScheduleState.Idle);
-        }
     }
 }

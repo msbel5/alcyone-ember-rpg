@@ -27,8 +27,9 @@ namespace EmberCrpg.Simulation.Composition
                 ["Actor.Needs"] = new[]
                 {
                     "living.needs@Hourly:30",           // the ramps
-                    "living.action_advance@PerTick:22", // W32: the ConsumeFood commit drops hunger
-                    "living.consumption@Hourly:35",     // NARROWED (W32): sleep/fatigue half only
+                    // W34: living.consumption@Hourly:35 retired — the Sleep recovery ladder now
+                    // rides the SAME advance slot the ConsumeFood commit already owned.
+                    "living.action_advance@PerTick:22", // W32 ConsumeFood drops hunger; W34 Sleep drops fatigue
                 },
                 ["Actor.ActionState"] = new[]
                 {
@@ -53,11 +54,26 @@ namespace EmberCrpg.Simulation.Composition
                 },
                 ["World.Stockpiles"] = new[]
                 {
-                    // W33: world.harvest@Daily:25 retired — stock now lands via HaulCrop deposit
-                    "living.action_advance@PerTick:22", // W32 TakeFood decrement + failure return; W33 HaulCrop deposit + PlantSeed seed take
+                    // W33: world.harvest@Daily:25 retired — stock now lands via HaulCrop deposit.
+                    // W34: econ.jobs@Hourly:10 retired — the step no longer touches piles; recipe
+                    // input consumption + output mint moved to PerformWork on the advance slot.
+                    "living.action_advance@PerTick:22", // W32 TakeFood decrement + failure return; W33 HaulCrop deposit + PlantSeed seed take; W34 PerformWork fund/mint
+                    "living.decision@PerTick:18", // W34: orphan work-order refund returns inputs to the site pile (§6.3)
                     "living.ambient@Hourly:50",   // vermin theft
                     "world.caravans@Daily:10", // B03: caravan load/unload (CaravanSystem Remove/Add) — the REAL daily trader; econ.trade was a ghost
-                    "econ.jobs@Hourly:10",        // W33 (B06): village recipes consume/fill SITE piles
+                },
+                // W34 WORK: the order row's declared writers — World.Reservations' two-slot mirror.
+                ["World.WorkOrders"] = new[]
+                {
+                    "living.decision@PerTick:18",       // orphan sweep + refund (docs/ruh/w34/02 §6.3)
+                    "living.action_advance@PerTick:22", // birth / funding / counter / removal (§7.2)
+                },
+                // W34: World.Jobs' long-standing multi-writer reality finally DECLARED (§9.1).
+                ["World.Jobs"] = new[]
+                {
+                    "econ.jobs@Hourly:10",              // claim / dead-claimant sweep / ghost-cancel
+                    "living.action_advance@PerTick:22", // Complete/Cancel — the de-facto writer since W33 PlantSeed
+                    "econ.shortage_response@Daily:27",  // posts the shortage cascade's planting jobs
                 },
                 ["World.Plants"] = new[]
                 {

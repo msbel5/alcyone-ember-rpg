@@ -96,6 +96,9 @@ namespace EmberCrpg.Domain.World
             Reservations ??= new ReservationLedger();
             // Derived (site,tag)/actor indexes are never serialized; a restored ledger is blind without them.
             Reservations.RebuildIndexes();
+            WorkOrders ??= new WorkOrderLedger();
+            // W34: the jobId index is derived, never serialized — rebuild or the resume path is blind.
+            WorkOrders.RebuildIndexes();
             ActionLog ??= new EmberCrpg.Domain.Actors.Actions.ActionLogRing();
             HealOrphanPlants();
         }
@@ -205,6 +208,9 @@ namespace EmberCrpg.Domain.World
         public List<PursuitRecord> GuardPursuits = new List<PursuitRecord>();
         /// <summary>W32 EAT: count-based stockpile reservations — the "last bread" is claimed once.</summary>
         public ReservationLedger Reservations = new ReservationLedger();
+        /// <summary>W34 WORK: in-flight recipe work orders on the world root (docs/ruh/w34/02 §5.2) —
+        /// the row outlives the action chain and the claimant, which IS the pause semantics.</summary>
+        public WorkOrderLedger WorkOrders = new WorkOrderLedger();
         /// <summary>W32 EAT: bounded deterministic action phase trace (terminal outcomes go to Events).</summary>
         public EmberCrpg.Domain.Actors.Actions.ActionLogRing ActionLog = new EmberCrpg.Domain.Actors.Actions.ActionLogRing();
         /// <summary>P1 ambient life: rats and cats - cheap agents with real stock effects.</summary>
@@ -287,6 +293,7 @@ namespace EmberCrpg.Domain.World
             CompanionIds = other.CompanionIds;
             GuardPursuits = other.GuardPursuits;
             Reservations = other.Reservations;
+            WorkOrders = other.WorkOrders;
             ActionLog = other.ActionLog;
             Critters = other.Critters;
             Rumors = other.Rumors;

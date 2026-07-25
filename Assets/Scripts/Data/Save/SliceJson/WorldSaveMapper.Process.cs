@@ -41,6 +41,53 @@ namespace EmberCrpg.Data.Save
         // EmberCrpg.Simulation.Process.WorldSaveRehydration so the Data
         // asmdef no longer leaks the Simulation namespace.
 
+        // W34 WORK slice (docs/ruh/w34/02 §5.2): the pure-Domain WorkOrderLedger rides the SAME
+        // recipeWorkOrders DTO array (append-only: + jobId + completedExecutions). The Presentation
+        // save bridge may still overwrite the array from its legacy Simulation park list (its rows
+        // carry jobId 0), so the load side drops jobId == 0 rows — legacy rows were never restored
+        // to the world before either; status quo, no regression.
+        public static RecipeWorkOrderSaveData[] ToRecipeWorkOrderData(WorkOrderLedger ledger)
+        {
+            return (ledger?.Rows ?? new List<WorkOrderRecord>())
+                .Where(row => row != null)
+                .Select(row => new RecipeWorkOrderSaveData
+                {
+                    recipeId = (long)row.RecipeId,
+                    siteId = (long)row.SiteId,
+                    positionX = row.PositionX,
+                    positionY = row.PositionY,
+                    actorId = (long)row.StartedByActorId,
+                    progressTicks = row.ProgressTicks,
+                    jobId = (long)row.JobId,
+                    completedExecutions = row.CompletedExecutions,
+                })
+                .ToArray();
+        }
+
+        public static WorkOrderLedger ToWorkOrderLedger(RecipeWorkOrderSaveData[] data)
+        {
+            var ledger = new WorkOrderLedger();
+            foreach (var row in data ?? Array.Empty<RecipeWorkOrderSaveData>())
+            {
+                if (row == null || row.jobId == 0L)
+                    continue; // legacy / park-list row: never world-restored before W34 — keep dropping
+                ledger.Add(new WorkOrderRecord
+                {
+                    JobId = (ulong)row.jobId,
+                    RecipeId = (ulong)row.recipeId,
+                    SiteId = (ulong)row.siteId,
+                    PositionX = row.positionX,
+                    PositionY = row.positionY,
+                    StartedByActorId = (ulong)row.actorId,
+                    ProgressTicks = row.progressTicks,
+                    CompletedExecutions = row.completedExecutions,
+                });
+            }
+
+            ledger.RebuildIndexes();
+            return ledger;
+        }
+
         public static JobRequestSaveData[] ToJobBoardData(JobBoard board)
         {
             return (board?.Requests ?? Array.Empty<JobRequest>()).Select(request => ToJobRequestData(request, board)).ToArray();

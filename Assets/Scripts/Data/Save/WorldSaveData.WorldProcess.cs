@@ -44,6 +44,11 @@ namespace EmberCrpg.Data.Save
         public int positionY;
         public long actorId;
         public int progressTicks;
+        // W34 WORK slice (append-only; JsonUtility reads missing fields as 0): the rebind key the
+        // legacy row never carried — jobId == 0 rows are DROPPED on load (docs/ruh/w34/02 §5.2,
+        // the de-facto legacy behaviour kept as status quo) — plus the migrated batch counter.
+        public long jobId;
+        public int completedExecutions;
     }
 
     [Serializable]

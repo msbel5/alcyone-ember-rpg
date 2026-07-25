@@ -6,7 +6,8 @@ namespace EmberCrpg.Domain.Actors
     /// <summary>Aktörün üst niyeti. Save'e int olarak yazılır: değerler SABİTTİR, silme/yeniden numaralama yasak.</summary>
     /// <remarks>W33: Plant/Harvest ayrı değerlerdir (tek "Farm" değil) — zincir çatalı NextLink'te
     /// bu MEVCUT alandan çözülür, ek saved alt-mod alanı gerekmez (W33-01 §2.1).</remarks>
-    public enum ActorIntent { None = 0, Eat = 1, Plant = 2, Harvest = 3 }
+    // W34: Rest/Work appended (docs/ruh/w34/04 §0 numbering; naming per docs/ruh/w34/01 §2 + 02 §4).
+    public enum ActorIntent { None = 0, Eat = 1, Plant = 2, Harvest = 3, Rest = 4, Work = 5 }
 
     /// <summary>Tipli eylem kimliği. UI bu değeri VERBATIM okur (RUH_TESHIS §10: activity == CurrentAction).</summary>
     public enum ActorActionType
@@ -14,6 +15,10 @@ namespace EmberCrpg.Domain.Actors
         None = 0, MoveToFood = 1, TakeFood = 2, ConsumeFood = 3,
         // W33 FARM slice (append-only; values are saved as ints and MUST stay fixed):
         MoveToPlot = 4, PlantSeed = 5, HarvestCrop = 6, HaulCrop = 7,
+        // W34 SLEEP slice (append-only; values are saved as ints and MUST stay fixed):
+        MoveToBed = 8, Sleep = 9,
+        // W34 WORK slice (append-only; values are saved as ints and MUST stay fixed):
+        MoveToWorksite = 10, PerformWork = 11,
     }
 
     /// <summary>
@@ -29,6 +34,8 @@ namespace EmberCrpg.Domain.Actors
         None = 0, NoFoodFound = 1, ReservationLost = 2, Unreachable = 3, Interrupted = 4, TimedOut = 5, SourceDrained = 6,
         PlotTaken = 7,   // W33: plot'ta beklenmeyen bitki — benden önce ekilmiş / doğrulama kaybı
         CropGone = 8,    // W33: hasat hedefi bitki yok ya da artık harvestable değil
+        JobLost = 9,     // W34 WORK: claim süpürüldü / job iptal / başkasına geçti (uyku YENİ değer eklemez)
+        WorksiteGone = 10, // W34 WORK: ocak söndü / worksite kaydı silindi ya da kind uyuşmaz
     }
 
     /// <summary>Karar sistemi yeni intent atamadan önce buna bakmak ZORUNDADIR.</summary>
@@ -208,10 +215,11 @@ namespace EmberCrpg.Domain.Actors
             out ActorActionState state)
         {
             state = Idle;
-            if (intent < ActorIntent.None || intent > ActorIntent.Harvest) return false;
-            if (action < ActorActionType.None || action > ActorActionType.HaulCrop) return false;
+            // W34: caps widened to the new enum tails (append-only growth — older saves unaffected).
+            if (intent < ActorIntent.None || intent > ActorIntent.Work) return false;
+            if (action < ActorActionType.None || action > ActorActionType.PerformWork) return false;
             if (phase < ActionPhase.None || phase > ActionPhase.Failed) return false;
-            if (failureReason < ActionFailureReason.None || failureReason > ActionFailureReason.CropGone) return false;
+            if (failureReason < ActionFailureReason.None || failureReason > ActionFailureReason.WorksiteGone) return false;
             if (policy < ActionInterruptPolicy.Interruptible || policy > ActionInterruptPolicy.NonInterruptible) return false;
             if (progressTicks < 0 || startedAtMinutes < 0L || carriedUnits < 0) return false;
             if (action == ActorActionType.None

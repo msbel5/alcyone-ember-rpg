@@ -8,8 +8,9 @@ using NUnit.Framework;
 namespace EmberCrpg.Tests.EditMode.Living
 {
     /// <summary>
-    /// W32 EAT: the eating half moved to the action layer (EatActionStoryTests owns those
-    /// pins); what remains here is the sleep/metabolism half and the food-spot geometry.
+    /// W32 EAT moved the eating half to the action layer (EatActionStoryTests owns those pins);
+    /// W34 SLEEP moved the night fatigue fiat to SleepAdvancer (the S-series owns recovery pins
+    /// now — heirs of the deleted hourly-rate pin). What remains here is food-spot geometry.
     /// </summary>
     public sealed class NeedConsumptionSystemTests
     {
@@ -28,47 +29,9 @@ namespace EmberCrpg.Tests.EditMode.Living
             return world;
         }
 
-        private static ActorRecord Hungry(ulong id, GridPosition position, int hunger)
-        {
-            var actor = new ActorRecord(
-                new ActorId(id), "Eater", ActorRole.Talker,
-                new EmberStatBlock(10, 10, 10, 10, 10, 10),
-                new ActorVitals(new VitalStat(10, 10), new VitalStat(10, 10), new VitalStat(10, 10)),
-                position, accuracy: 50, dodge: 10, armor: 0, baseDamage: 1);
-            actor.ApplyNeeds(actor.Needs.WithHunger(new NeedValue(hunger)));
-            return actor;
-        }
-
-        [Test]
-        public void Tick_NightHour_TiredCivilianSleepsAndMoodFollows()
-        {
-            var world = World((5UL, 0, 10));
-            var sleeper = Hungry(1, new GridPosition(2, 2), 10);
-            sleeper.ApplyNeeds(sleeper.Needs.WithFatigue(new NeedValue(60)));
-            world.Actors.Add(sleeper);
-
-            new NeedConsumptionSystem().Tick(world, hourOfDay: 23);
-
-            Assert.That(world.Actors.Get(new ActorId(1)).Needs.Fatigue.Value,
-                Is.EqualTo(60 - NeedConsumptionSystem.NightSleepFatigueRecovery),
-                "a night hour recovers fatigue by the fixed rate");
-        }
-
-        [Test]
-        public void Tick_DayHour_DoesNotRecoverFatigue_AndNeverFeeds()
-        {
-            var world = World((5UL, 0, 10));
-            var worker = Hungry(1, new GridPosition(2, 2), 80); // AT the larder, starving
-            worker.ApplyNeeds(worker.Needs.WithFatigue(new NeedValue(60)));
-            world.Actors.Add(worker);
-
-            new NeedConsumptionSystem().Tick(world, hourOfDay: 12);
-
-            Assert.That(world.Actors.Get(new ActorId(1)).Needs.Fatigue.Value, Is.EqualTo(60));
-            Assert.That(world.Actors.Get(new ActorId(1)).Needs.Hunger.Value, Is.EqualTo(80),
-                "W32: the hourly step NEVER feeds — meals belong to the action layer");
-            Assert.That(world.Stockpiles[0].Get("wheat"), Is.EqualTo(10), "stock untouched");
-        }
+        // W34: the two Tick pins died WITH the fiat they pinned (NeedConsumptionSystem.Tick is
+        // deleted — sleep recovery is the SleepAdvancer's 2-per-3-ticks ladder now, and "the
+        // hourly step never feeds" became vacuously true when the hourly step itself retired).
 
         [Test]
         public void FoodSpots_ReturnsOneCentrePerFoodHoldingPile()

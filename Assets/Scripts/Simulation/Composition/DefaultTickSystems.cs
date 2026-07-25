@@ -42,10 +42,13 @@ namespace EmberCrpg.Simulation.Composition
             // Actor.ActionState keeps a single writer while the registry shows both cadence slots.
             // W33: the SAME species list PlantGrowthStep reads feeds the farm rules — one catalog,
             // species truth cannot fork (W33-01 §7.1).
+            // W34 WORK: the SAME recipe registry econ.jobs' ghost net resolves feeds the work
+            // rules (null on unknown — the ghost net, not the action strip, owns that story).
             var actionLifecycle = new EmberCrpg.Simulation.Living.Actions.ActionLifecycleSystem(
                 new EmberCrpg.Domain.Actors.Actions.ActionLogManager(
                     new EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink()),
-                plantSpecies);
+                plantSpecies,
+                ResolveProductionRecipe);
             return new WorldTickRegistry(new IWorldTickSystem[]
             {
                 new TimeStep(timeAdvance),
@@ -57,7 +60,8 @@ namespace EmberCrpg.Simulation.Composition
                 new CompanionFollowStep(), // V3: companions heel-follow the player, sim-side
                 new NeedsStep(needs),
                 new ActionAdvancementStep(actionLifecycle),
-                new ConsumptionStep(),
+                // W34: living.consumption@Hourly:35 is RETIRED — the positionless night fatigue
+                // fiat died; recovery is now the action strip's MoveToBed→Sleep on PerTick:18/22.
                 new AmbientLifeStep(),
                 new RumorStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
                 new PredationStep(),    // CAN SUYU H3: hunters hunt IN the simulation, NPC-vs-NPC
@@ -77,6 +81,21 @@ namespace EmberCrpg.Simulation.Composition
         private static FactionDecayConfig Normalize(FactionDecayConfig config)
         {
             return config.DaysPerDecayStep < 1 ? FactionDecayConfig.Default : config;
+        }
+
+        // W34 WORK (docs/ruh/w34/02 §6): ProductionRecipeRegistry.Resolve behind a null-on-
+        // unknown wrapper for the action strip — the DomainSimulationAdapter delegate precedent.
+        // Unknown ids stay econ.jobs' ghost-cancel business; the decide gate just passes them by.
+        private static RecipeDef ResolveProductionRecipe(RecipeId id)
+        {
+            try
+            {
+                return ProductionRecipeRegistry.Resolve(id);
+            }
+            catch (KeyNotFoundException)
+            {
+                return null;
+            }
         }
 
         private abstract class StepBase : IWorldTickSystem
@@ -206,10 +225,12 @@ namespace EmberCrpg.Simulation.Composition
                     if (request.Kind == JobKind.Farmer)
                         continue;
 
-                    RecipeDef recipe;
                     try
                     {
-                        recipe = ProductionRecipeRegistry.Resolve(request.RecipeId);
+                        // W34: resolve-only probe. StartRecipeForClaim is RETIRED from this
+                        // step — order birth AND input consumption moved to the bench
+                        // (PerformWork's progress==0 step); this step starts NOTHING.
+                        ProductionRecipeRegistry.Resolve(request.RecipeId);
                     }
                     catch (KeyNotFoundException)
                     {
@@ -219,46 +240,18 @@ namespace EmberCrpg.Simulation.Composition
                         world.Events.Append(new WorldEvent(context.Stamp, WorldEventKind.ChronicleEvent,
                             default, request.SiteId,
                             $"job_dropped recipe:{request.RecipeId.Value} unregistered"));
-                        continue;
                     }
-
-                    // W33 (B06): village production eats from and fills the WORKSITE's real
-                    // container — the site stockpile — never world.PlayerInventory. The player
-                    // bag now belongs solely to player-initiated crafting.
-                    _jobAssignment.StartRecipeForClaim(
-                        world.Actors,
-                        world.Jobs,
-                        world.Worksites,
-                        recipe,
-                        SiteRecipeInventory(world, request.SiteId),
-                        request.Id,
-                        out _);
                 }
 
                 if (ghostJobs != null)
                     foreach (var ghost in ghostJobs)
                         world.Jobs.Cancel(ghost);
 
-                _jobAssignment.TickAssignedJobs(
-                    world.Actors,
-                    world.Jobs,
-                    world.Worksites,
-                    siteId => SiteRecipeInventory(world, siteId),
-                    world.Events,
-                    context.Stamp);
-            }
-
-            /// <summary>Find-or-create the site's stockpile as recipe IO (B06). Jobs always
-            /// carry a real SiteId, so the pile constructor's non-empty guard holds.</summary>
-            private static IRecipeInventory SiteRecipeInventory(WorldState world, SiteId siteId)
-            {
-                var pile = world.FindStockpile(siteId);
-                if (pile == null)
-                {
-                    pile = new StockpileComponent(siteId);
-                    world.Stockpiles.Add(pile);
-                }
-                return new StockpileRecipeInventory(pile);
+                // W34: TickAssignedJobs is RETIRED from this step — its free-running counter
+                // (progress as a function of the CALENDAR, not of labour) died with the WORK
+                // slice; the only mover of order progress is living.action_advance@PerTick:22.
+                // The SiteRecipeInventory helper retired with it (WorkOperations.SiteIo is the
+                // one home now). docs/ruh/w34/02 §8.
             }
         }
 
@@ -355,22 +348,6 @@ namespace EmberCrpg.Simulation.Composition
 
             public override void Run(in TickContext context)
                 => _mill.Tick(context.World, context.Stamp);
-        }
-
-        // CAN SUYU H1, narrowed by W32 EAT: only the sleep/metabolism half remains — eating
-        // belongs to the action layer now. Order 35: right after NeedsStep raises the ramps.
-        private sealed class ConsumptionStep : StepBase
-        {
-            private readonly EmberCrpg.Simulation.Living.NeedConsumptionSystem _consumption =
-                new EmberCrpg.Simulation.Living.NeedConsumptionSystem();
-
-            public ConsumptionStep() : base("living.consumption", TickCadence.Hourly, 35) { }
-
-            public override void Run(in TickContext context)
-            {
-                int hour = (int)((context.Stamp.TotalMinutes / 60) % 24);
-                _consumption.Tick(context.World, hour);
-            }
         }
 
         // V3 YOLDAŞ: per-tick heel-follow — order 21 runs AFTER living.schedule (20) so the

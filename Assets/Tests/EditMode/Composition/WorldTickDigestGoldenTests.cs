@@ -47,7 +47,16 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // roundtrip passed unchanged, and the capturing run produced byte-identical digests
         // across the same-seed double advance (captured == second digest in the red run log).
         // Old: 7ed20befd1bf5e68953037cba7d709b21dae48857ee269ad8638eeebb0a0cea9
-        private const string BaselineHash = "a2489e8b351428d834a05a98a42d472520e85f4eb0a7a5f7eaf22e84aab5923e";
+        // Re-baselined 2026-07-25 for W34 stage B (SLEEP slice live): night behaviour is REAL
+        // now — the hourly -40 fatigue fiat died into SleepAdvancer's 2-per-3-ticks ladder, so
+        // fatigue curves are tick-granular, actors physically commute home (positions differ),
+        // and the action log carries MoveToBed/Sleep phase rows (docs/ruh/w34/01 §7/§11 risk 1
+        // — the expected, deliberate drift). Chunking-invariance (Cadence/ActionPhase/
+        // EatChunking/FarmSlice) and every save/load digest roundtrip passed UNCHANGED in the
+        // capturing run, and the same-seed double advance produced byte-identical digests
+        // (captured == second digest in the red run log).
+        // Old: 62184354826f835f75b2180d6b295fc99a304c5ed1fea748c874b81f3e86e558
+        private const string BaselineHash = "c9f444f11936d93fc8510d4766648bbfda0cf8fe6f6be9db06d87e24ca831612";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

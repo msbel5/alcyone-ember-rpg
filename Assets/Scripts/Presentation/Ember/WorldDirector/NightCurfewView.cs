@@ -7,13 +7,13 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     /// solid — the live playtest walked into invisible bodies piled downtown ("collision oluyor
     /// ama onlari goremiyoruz"). Sleepers now stay VISIBLE: the billboard lies flat like the
     /// death pose (camera-facing off) and the colliders sleep with them so streets stay
-    /// walkable. Prowlers (guards, outlaws) keep standing watch. The GameObject stays alive —
-    /// the id-keyed sim sync still tracks positions.
+    /// walkable. The GameObject stays alive — the id-keyed sim sync still tracks positions.
+    /// W34: the Prowler flag (a view-side SECOND guess of who sleeps) is DELETED — the sim
+    /// says who sleeps now: Enemy never receives a Sleep decision, and a guard is Sleeping
+    /// only when it truly lies in bed (ActorViewState.Sleeping from CurrentAction == Sleep).
     /// </summary>
     public sealed class NightCurfewView : MonoBehaviour
     {
-        public bool Prowler;
-
         private SpriteRenderer _sprite;
         private Behaviour _facing;
         private Collider[] _colliders;
@@ -45,7 +45,7 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             // PLAYTEST FIX ("kimse eve gidip uyumuyor"): the sim now TELLS us when the actor
             // has arrived home for the night (ActorViewState.Sleeping via ActorView) - the hour
             // poll alone made whole streets lie down mid-commute where 22:00 caught them.
-            bool sleep = !Prowler && _sleepingFromSim;
+            bool sleep = _sleepingFromSim;
             if (sleep == _asleep) return;
             _asleep = sleep;
             if (_actorView != null) _actorView.ExternalPoseOverride = sleep; // stops the bob/lean writers

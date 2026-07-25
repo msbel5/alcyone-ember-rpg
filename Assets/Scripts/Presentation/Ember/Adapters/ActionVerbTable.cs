@@ -24,6 +24,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             ActorActionType.PlantSeed => "planting",
             ActorActionType.HarvestCrop => "harvesting",
             ActorActionType.HaulCrop => "hauling",
+            // W34 SLEEP: the night verbs' owners are real actions now — the projection's
+            // hour+position guesses died; the on-screen words stay VERBATIM (playtest continuity).
+            ActorActionType.MoveToBed => "heading home",
+            ActorActionType.Sleep => "sleeping",
+            // W34 WORK: the bench verb is REAL for the first time — projection guesswork's
+            // last castle falls (RUH_TESHIS §2.9); the label IS CurrentAction, verbatim.
+            ActorActionType.MoveToWorksite => "to work",
+            ActorActionType.PerformWork => "working",
             // CONSTRAINT: unknown kind NEVER falls back to a guess — loud sentinel + one warn.
             _ => Unknown(kind)
         };
@@ -38,6 +46,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             ActorActionType.PlantSeed => "PlantSeed",
             ActorActionType.HarvestCrop => "HarvestCrop",
             ActorActionType.HaulCrop => "HaulCrop",
+            ActorActionType.MoveToBed => "MoveToBed",
+            ActorActionType.Sleep => "Sleep",
+            ActorActionType.MoveToWorksite => "MoveToWorksite",
+            ActorActionType.PerformWork => "PerformWork",
             _ => null
         };
 

@@ -150,6 +150,62 @@ namespace EmberCrpg.Tests.EditMode.Save
                 "the plot row loads verbatim — the ledger IS the plot exclusivity");
         }
 
+        // W34 pin (DOC4 §2 row 10): the sleep+work twins of the eat/farm pins above. A mid-night
+        // Sleep flight (Rest intent + a live "bed:" row) and a mid-shift PerformWork flight
+        // (Work intent, ReservationId.Empty by contract) PLUS a FROZEN WorkOrderLedger row must
+        // roundtrip byte-identically — a dropped jobId/completedExecutions column would either
+        // orphan the order or replay its funding (the double-consumption wound this store closes).
+        [Test]
+        public void MidFlightSleepAndWorkEpisodes_SurviveRoundtrip_RowsIntact()
+        {
+            var world = BuildSeededWorld();
+            // Guard 4 sleeps at its Home cell (guards sleep too — W34 DOC1 §4 keeps the fiat's roles).
+            var guard = new ActorId(4UL);
+            var home = world.Actors.Get(guard).Home;
+            Assert.That(world.Reservations.TryReserve(0UL, "bed:" + home.X + ":" + home.Y,
+                guard.Value, untilMinutes: 999L, pileCount: 1, out var bedRow), Is.True);
+            world.Actors.Get(guard).ApplyActionState(ActorActionState.ForIntent(ActorIntent.Rest)
+                .Start(ActorActionType.Sleep, default(SiteId), ItemId.Empty, new ReservationId(bedRow),
+                       startedAtMinutes: 1380, ActionInterruptPolicy.Interruptible)
+                .Advanced().Advanced().Advanced()); // Sleep@progress=3, mid-night save
+            // Worker 1 stands at the bench mid-execution; the order row is the bench truth.
+            world.Actors.Get(Worker).ApplyActionState(ActorActionState.ForIntent(ActorIntent.Work)
+                .Start(ActorActionType.PerformWork, Site, ItemId.Empty, ReservationId.Empty,
+                       startedAtMinutes: 490, ActionInterruptPolicy.Interruptible)
+                .Advanced().Advanced()); // PerformWork@progress=2
+            Assert.That(world.WorkOrders.Add(new WorkOrderRecord
+            {
+                JobId = Job.Value,
+                RecipeId = 1001UL,
+                SiteId = Site.Value,
+                PositionX = ForgeCell.X,
+                PositionY = ForgeCell.Y,
+                StartedByActorId = Worker.Value,
+                ProgressTicks = 1,
+                CompletedExecutions = 0,
+            }), Is.True, "the frozen order row must seed");
+
+            var before = WorldStateDigest.Compute(world);
+            var loaded = WorldSaveMapper.ToWorld(WorldSaveMapper.ToData(world), BuildSeededWorld());
+
+            Assert.That(WorldStateDigest.Compute(loaded), Is.EqualTo(before),
+                "mid-flight sleep/work episodes must roundtrip byte-identically");
+            var sleeper = loaded.Actors.Get(guard).ActionState;
+            Assert.That((sleeper.CurrentIntent, sleeper.CurrentAction, sleeper.Phase, sleeper.ProgressTicks),
+                Is.EqualTo((ActorIntent.Rest, ActorActionType.Sleep, ActionPhase.Running, 3)),
+                "the sleep (intent, action, phase, progress) quad must load verbatim");
+            Assert.That(sleeper.ReservationId.Value, Is.EqualTo(bedRow), "the bed row follows the sleeper");
+            var busy = loaded.Actors.Get(Worker).ActionState;
+            Assert.That((busy.CurrentIntent, busy.CurrentAction, busy.Phase, busy.ProgressTicks),
+                Is.EqualTo((ActorIntent.Work, ActorActionType.PerformWork, ActionPhase.Running, 2)),
+                "the work (intent, action, phase, progress) quad must load verbatim");
+            Assert.That(loaded.WorkOrders.TryGetByJob(Job.Value, out var row), Is.True,
+                "the ledger's derived job index is rebuilt after load");
+            Assert.That((row.RecipeId, row.ProgressTicks, row.CompletedExecutions, row.StartedByActorId),
+                Is.EqualTo((1001UL, 1, 0, Worker.Value)),
+                "the frozen order row loads verbatim — funding state included");
+        }
+
         [Test]
         public void SaveThenLoad_PreservesWorldDigest()
         {

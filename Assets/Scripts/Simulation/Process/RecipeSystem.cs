@@ -98,6 +98,84 @@ namespace EmberCrpg.Simulation.Process
         }
 
         /// <summary>
+        /// W34 WORK slice (docs/ruh/w34/02 §5.2): funds ONE execution from the bench-side IO —
+        /// the TryStart io-overload's CountOf-then-TryConsume grammar reused for the Domain row
+        /// path. False = insufficient inputs, NOTHING consumed (the caller pauses SourceDrained).
+        /// CONSTRAINT (funding invariant): the caller MUST land the first counter hit in the
+        /// SAME PerformWork step this returns true, or the row lies about its inputs.
+        /// </summary>
+        public static bool TryFund(RecipeDef recipe, IRecipeInventory io)
+        {
+            if (recipe == null)
+                throw new ArgumentNullException(nameof(recipe));
+            if (io == null)
+                throw new ArgumentNullException(nameof(io));
+
+            foreach (var input in recipe.Inputs)
+                if (io.CountOf(input.ItemTag) < input.Quantity)
+                    return false;
+            foreach (var input in recipe.Inputs)
+                if (!io.TryConsume(input.ItemTag, input.Quantity))
+                    throw new InvalidOperationException(
+                        $"Recipe input {input.ItemTag} passed availability check but could not be consumed.");
+            return true;
+        }
+
+        /// <summary>
+        /// W34 WORK slice (docs/ruh/w34/02 §5.2): advances a Domain WorkOrderRecord row by one
+        /// bench stroke. Same body as the io Tick below, but (a) the counter lives on the saved
+        /// row, (b) RecipeCompleted carries the REAL boundary stamp — the GameTime(ProgressTicks)
+        /// fossil dies only on this new strip (the legacy overloads and their goldens stay put),
+        /// and (c) the event's actor is the FINISHER, not the starter (§13.4).
+        /// </summary>
+        public bool Tick(
+            EmberCrpg.Domain.Process.WorkOrderRecord row,
+            RecipeDef recipe,
+            IRecipeInventory io,
+            WorldEventLog eventLog,
+            GameTime stamp,
+            ActorId actorId)
+        {
+            if (row == null)
+                throw new ArgumentNullException(nameof(row));
+            if (recipe == null)
+                throw new ArgumentNullException(nameof(recipe));
+            if (io == null)
+                throw new ArgumentNullException(nameof(io));
+            if (eventLog == null)
+                throw new ArgumentNullException(nameof(eventLog));
+
+            if (row.ProgressTicks + 1 < recipe.DurationTicks)
+            {
+                row.ProgressTicks++;
+                return false;
+            }
+
+            var probe = io.CloneForPreflight();
+            foreach (var output in recipe.Outputs)
+                if (!probe.TryAccept(output.ItemTag, output.Quantity))
+                    throw new InvalidOperationException($"Recipe IO cannot accept output {output.ItemTag}.");
+            foreach (var output in recipe.Outputs)
+                if (!io.TryAccept(output.ItemTag, output.Quantity))
+                    throw new InvalidOperationException($"Recipe IO rejected output {output.ItemTag} after preflight.");
+
+            row.ProgressTicks++;
+            eventLog.Append(new WorldEvent(
+                stamp,
+                WorldEventKind.RecipeCompleted,
+                actorId,
+                new SiteId(row.SiteId),
+                $"recipe_completed:{recipe.Id.Value}",
+                new ReasonTrace(new[]
+                {
+                    $"recipe:{recipe.Id.Value}",
+                    $"worksite:{recipe.WorksiteKind}",
+                    $"duration_ticks:{recipe.DurationTicks}",
+                })));
+            return true;
+        }
+
+        /// <summary>
         /// W33 (B06): tag-count Tick — outputs land as counts (no ItemId mint). A preflight
         /// clone proves every output is acceptable BEFORE the first real accept, preserving
         /// the all-or-nothing output contract of the InventoryState path.

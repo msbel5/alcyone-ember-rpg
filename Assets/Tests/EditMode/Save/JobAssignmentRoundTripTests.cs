@@ -1,19 +1,19 @@
 using System.Linq;
-using EmberCrpg.Data.Save;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
-using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Presentation.Ember.Save;
-using EmberCrpg.Simulation.Process;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
 
 // Design note:
-// Pins the Phase 3 job-save-proof rail without adding new WorldState fields:
-// JsonSliceSaveService carries JobBoard state like the existing Worksite rail,
-// while actor records carry their schedule target through ActorSaveData.
+// Pins the Phase 3 job-save-proof rail: JsonSliceSaveService carries JobBoard state like the
+// existing Worksite rail, while actor records carry their schedule target through
+// ActorSaveData. W34 WORK migration (docs/ruh/w34/02 §5.2): the in-flight order rides
+// WorldState.WorkOrders (jobId-bound Domain row) instead of the retired Simulation park list —
+// the same save now proves claim + schedule + bench progress reload as ONE consistent truth,
+// which is exactly the double-consumption wound's closing condition.
 namespace EmberCrpg.Tests.EditMode.Save
 {
     public sealed class JobAssignmentRoundTripTests
@@ -24,7 +24,7 @@ namespace EmberCrpg.Tests.EditMode.Save
         private static readonly GridPosition FurnacePosition = new GridPosition(4, 5);
 
         [Test]
-        public void JsonDto_RoundTripsClaimedJobBoardAndActorScheduleState()
+        public void JsonDto_RoundTripsClaimedJobBoardActorScheduleAndWorkOrderRow()
         {
             var world = new WorldFactory().Create(303);
             var actor = world.Actors.FirstByRole(ActorRole.Player);
@@ -45,13 +45,24 @@ namespace EmberCrpg.Tests.EditMode.Save
             board.Add(request);
             Assert.That(board.TryClaim(Job, actor.Id, out _), Is.True);
 
-            var activeOrder = RecipeWorkOrder.Resume(CreateSmeltIronIngotRecipe(), FurnaceSite, FurnacePosition, actor.Id, progressTicks: 1);
-            var service = new JsonSliceSaveService(ResolveRecipe)
+            var service = new JsonSliceSaveService()
             {
                 Jobs = board,
                 Worksites = CreateActiveFurnaceStore(),
             };
-            service.ReplaceRecipeWorkOrders(new[] { activeOrder });
+            // W34: the claimed job's bench progress lives on the WORLD now — one execution done,
+            // the second mid-stroke. The load below must resume, never re-fund (§5.2 invariant).
+            world.WorkOrders.Add(new WorkOrderRecord
+            {
+                JobId = Job.Value,
+                RecipeId = Recipe.Value,
+                SiteId = FurnaceSite.Value,
+                PositionX = FurnacePosition.X,
+                PositionY = FurnacePosition.Y,
+                StartedByActorId = actor.Id.Value,
+                ProgressTicks = 1,
+                CompletedExecutions = 1,
+            });
 
             var json = service.SaveToJson(world);
             Assert.That(json, Does.Contain("jobs"));
@@ -71,25 +82,12 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(loadedJob.RecipeId, Is.EqualTo(Recipe));
             Assert.That(loadedJob.Quantity, Is.EqualTo(2));
             Assert.That(service.Jobs.GetClaimedBy(Job), Is.EqualTo(actor.Id));
-            Assert.That(service.RecipeWorkOrders.Single().ProgressTicks, Is.EqualTo(1));
             Assert.That(service.Worksites.Get(FurnaceSite, FurnacePosition).IsActive, Is.True);
-        }
 
-        private static RecipeDef ResolveRecipe(RecipeId recipeId)
-        {
-            var recipe = CreateSmeltIronIngotRecipe();
-            return recipe.Id.Equals(recipeId) ? recipe : null;
-        }
-
-        private static RecipeDef CreateSmeltIronIngotRecipe()
-        {
-            return new RecipeDef(
-                Recipe,
-                "furnace",
-                "smelting",
-                durationTicks: 2,
-                new[] { new RecipeIngredient("iron_ore", 2), new RecipeIngredient("fuel", 1) },
-                new[] { new RecipeOutput("iron_ingot", ItemMaterial.Iron, ItemQuality.Common, 1) });
+            Assert.That(loaded.WorkOrders.TryGetByJob(Job.Value, out var row), Is.True,
+                "the order row rebinds to the claim by jobId — the save wound's structural close");
+            Assert.That(row.ProgressTicks, Is.EqualTo(1), "ProgressTicks > 0 means funded: no re-consumption on load");
+            Assert.That(row.CompletedExecutions, Is.EqualTo(1));
         }
 
         private static WorksiteStore CreateActiveFurnaceStore()

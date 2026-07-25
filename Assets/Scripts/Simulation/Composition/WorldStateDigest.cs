@@ -48,6 +48,7 @@ namespace EmberCrpg.Simulation.Composition
             AppendSpellCooldowns(sb, world.PlayerSpellCooldowns);
             AppendShieldBuffs(sb, world.PlayerShieldBuffs);
             AppendReservations(sb, world.Reservations);
+            AppendWorkOrders(sb, world.WorkOrders);
             AppendEvents(sb, world.Events);
             AppendWorldQuests(sb, world);
 
@@ -487,6 +488,38 @@ namespace EmberCrpg.Simulation.Composition
                 AppendUlongField(sb, row.ActorId);
                 sb.Append('|');
                 AppendLongField(sb, row.UntilMinutes);
+                sb.Append('\n');
+            }
+        }
+
+        // W34 WORK slice (docs/ruh/w34/02 §9.5, AppendReservations precedent): the chunking referee
+        // sees the order counter — a counter that moves off the PerTick advance leaks as a byte diff.
+        private static void AppendWorkOrders(StringBuilder sb, WorkOrderLedger workOrders)
+        {
+            AppendSectionHeader(sb, "WORKORDERS");
+            var rows = workOrders?.Rows;
+            AppendCount(sb, rows?.Count ?? 0);
+            if (rows == null) return;
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                if (row == null) continue;
+                sb.Append("w|");
+                AppendUlongField(sb, row.JobId);
+                sb.Append('|');
+                AppendUlongField(sb, row.RecipeId);
+                sb.Append('|');
+                AppendUlongField(sb, row.SiteId);
+                sb.Append('|');
+                AppendIntField(sb, row.PositionX);
+                sb.Append('|');
+                AppendIntField(sb, row.PositionY);
+                sb.Append('|');
+                AppendUlongField(sb, row.StartedByActorId);
+                sb.Append('|');
+                AppendIntField(sb, row.ProgressTicks);
+                sb.Append('|');
+                AppendIntField(sb, row.CompletedExecutions);
                 sb.Append('\n');
             }
         }

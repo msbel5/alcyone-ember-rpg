@@ -12,7 +12,9 @@ namespace EmberCrpg.Simulation.Living.Actions
 
         public ActionAdvancerRegistry(params ActionAdvancer[] advancers)
         {
-            _byKind = new ActionAdvancer[(int)ActorActionType.HaulCrop + 1];
+            // W34: sized to the enum tail (same-PR rule with the enum growth, docs/ruh/w34/02 §4);
+            // unregistered kinds resolve to null, never out-of-range.
+            _byKind = new ActionAdvancer[(int)ActorActionType.PerformWork + 1];
             foreach (var advancer in advancers)
                 _byKind[(int)advancer.Handles] = advancer;
         }

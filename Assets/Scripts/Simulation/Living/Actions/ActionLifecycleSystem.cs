@@ -20,12 +20,18 @@ namespace EmberCrpg.Simulation.Living.Actions
         // W33: the composer's ONE plant catalog (same list PlantGrowthStep reads) — species
         // truth cannot fork. Null/empty disables the farm rules (bare EAT test worlds).
         private readonly System.Collections.Generic.IReadOnlyList<PlantSpeciesDef> _plantSpecies;
+        // W34 WORK: the composer's recipe resolver (ProductionRecipeRegistry behind a null-on-
+        // unknown wrapper). Null disables the WORK rules (bare EAT/FARM test worlds) — the
+        // _plantSpecies null contract's mirror (docs/ruh/w34/02 §6).
+        private readonly System.Func<RecipeId, RecipeDef> _resolveRecipe;
 
         public ActionLifecycleSystem(ActionLogManager log,
-            System.Collections.Generic.IReadOnlyList<PlantSpeciesDef> plantSpecies = null)
+            System.Collections.Generic.IReadOnlyList<PlantSpeciesDef> plantSpecies = null,
+            System.Func<RecipeId, RecipeDef> resolveRecipe = null)
         {
             log ??= new ActionLogManager();
             _plantSpecies = plantSpecies;
+            _resolveRecipe = resolveRecipe;
             _registry = new ActionAdvancerRegistry(
                 new MoveToFoodAdvancer(log),
                 new TakeFoodAdvancer(log),
@@ -33,7 +39,13 @@ namespace EmberCrpg.Simulation.Living.Actions
                 new MoveToPlotAdvancer(log, plantSpecies),
                 new PlantSeedAdvancer(log, plantSpecies),
                 new HarvestCropAdvancer(log, plantSpecies),
-                new HaulCropAdvancer(log));
+                new HaulCropAdvancer(log),
+                // W34 SLEEP: night commute + in-bed recovery (docs/ruh/w34/01 §5).
+                new MoveToBedAdvancer(log),
+                new SleepAdvancer(log),
+                // W34 WORK: bench commute + embodied production (docs/ruh/w34/02 §7).
+                new MoveToWorksiteAdvancer(log),
+                new PerformWorkAdvancer(log, resolveRecipe));
         }
 
         /// <summary>Decide phase (@PerTick:18): expiry sweep, then EatIntent + reservation +
@@ -44,6 +56,9 @@ namespace EmberCrpg.Simulation.Living.Actions
             if (world?.Actors == null) return;
             // Safety net: rows the fail paths missed (dead actors, mis-sized TTLs) — W32-02 §4.4.
             world.Reservations?.SweepExpired(stamp.TotalMinutes, null);
+            // W34 WORK (docs/ruh/w34/02 §6.3): orphan order rows (job cancelled / externally
+            // removed) refund their consumed inputs and leave — matter conservation's safety net.
+            SweepOrphanWorkOrders(world, stamp);
 
             List<string> species = null;
             List<FoodPileCache.Entry> cache = null;
@@ -72,15 +87,38 @@ namespace EmberCrpg.Simulation.Living.Actions
                         TryDecideEat(world, actor, species, cache, stamp);
                     if (actor.ActionState.CurrentAction != ActorActionType.None) continue;
                 }
-                // W33-02 §5: the farm rules fire ONLY when eat produced no decision; rule
+                // W34 SLEEP (docs/ruh/w34/01 §4): sleep loses to hunger — code order IS priority
+                // order (W33-02 §5 doctrine); a hungry sleeper eats first and beds down on the
+                // next decision tick. Threshold >= 1 keeps the fiat's "Fatigue > 0" gate verbatim;
+                // the guard live-pursuit gate above already covers this rule (chase outranks bed).
+                if (SleepOperations.IsNightHour(stamp.Hour)
+                    && actor.Needs.Fatigue.Value >= SleepOperations.FatigueSleepThreshold)
+                {
+                    TryDecideRest(world, actor, stamp);
+                    if (actor.ActionState.CurrentAction != ActorActionType.None) continue;
+                }
+                // W33-02 §5: the farm/work rules fire ONLY when eat produced no decision; rule
                 // order is code order — a fixed, deterministic priority. Cheap gates first.
-                if (_plantSpecies == null || _plantSpecies.Count == 0) continue;
-                if (actor.Role == ActorRole.Guard) continue; // the watch does not farm
-                if (!ScheduleSystem.IsWorkHour(stamp)) continue; // no fields at night
+                if (actor.Role == ActorRole.Guard) continue; // the watch does not farm or work
+                if (!ScheduleSystem.IsWorkHour(stamp)) continue; // no fields or benches at night
                 if (!actor.ScheduleState.IsIdle)
-                    TryDecidePlant(world, actor, stamp);
-                else
+                {
+                    // W34 (docs/ruh/w34/02 §6): a claimed actor's JOB KIND routes the chain —
+                    // Farmer stays on the W33 plant branch; every other kind is EMBODIED work.
+                    if (JobKindOf(world, actor) == JobKind.Farmer)
+                    {
+                        if (_plantSpecies != null && _plantSpecies.Count > 0)
+                            TryDecidePlant(world, actor, stamp);
+                    }
+                    else
+                    {
+                        TryDecideWork(world, actor, stamp);
+                    }
+                }
+                else if (_plantSpecies != null && _plantSpecies.Count > 0)
+                {
                     TryDecideHarvest(world, actor, stamp);
+                }
             }
         }
 
@@ -132,8 +170,94 @@ namespace EmberCrpg.Simulation.Living.Actions
             (ActorIntent.Plant, ActorActionType.MoveToPlot) => ActorActionType.PlantSeed,
             (ActorIntent.Harvest, ActorActionType.MoveToPlot) => ActorActionType.HarvestCrop,
             (ActorIntent.Harvest, ActorActionType.HarvestCrop) => ActorActionType.HaulCrop,
+            // W34: (Rest, Sleep) -> None via the default arm: dawn completes, Idle follows,
+            // and the morning decision starts clean (docs/ruh/w34/01 §4).
+            (ActorIntent.Rest, ActorActionType.MoveToBed) => ActorActionType.Sleep,
+            // W34 WORK: bench commute hands over to embodied production; (Work, PerformWork)
+            // -> None via the default arm — the commit frees the actor (docs/ruh/w34/02 §4).
+            (ActorIntent.Work, ActorActionType.MoveToWorksite) => ActorActionType.PerformWork,
             _ => ActorActionType.None,
         };
+
+        /// <summary>The kind of the actor's claimed job; None when the claim is gone (the
+        /// cancel/sweep race — TryDecideWork's own gates handle that honestly).</summary>
+        private static JobKind JobKindOf(WorldState world, ActorRecord actor)
+        {
+            var jobId = actor.ScheduleState.CurrentJobId;
+            if (jobId.IsEmpty || world.Jobs == null) return JobKind.None;
+            return world.Jobs.TryGet(jobId, out var request) ? request.Kind : JobKind.None;
+        }
+
+        // W34 WORK (docs/ruh/w34/02 §6.3): order rows whose job no longer exists (ghost-cancel,
+        // external removal). ProgressTicks > 0 means the current execution's inputs were consumed
+        // (the §5.2 funding invariant) — they return to the SITE pile before the row drops, the
+        // ConsumeFood-return conservation class. An unresolvable recipe id drops without refund
+        // (practically unreachable: rows are only born from resolvable ids).
+        private void SweepOrphanWorkOrders(WorldState world, GameTime stamp)
+        {
+            var orders = world.WorkOrders;
+            if (orders == null || orders.Rows == null || orders.Rows.Count == 0 || world.Jobs == null)
+                return;
+            System.Collections.Generic.List<WorkOrderRecord> orphans = null;
+            foreach (var row in orders.Rows)
+            {
+                if (row == null || world.Jobs.Contains(new JobId(row.JobId))) continue;
+                (orphans ??= new System.Collections.Generic.List<WorkOrderRecord>()).Add(row);
+            }
+            if (orphans == null) return;
+            foreach (var row in orphans)
+            {
+                if (row.ProgressTicks > 0)
+                {
+                    var recipe = _resolveRecipe?.Invoke(new RecipeId(row.RecipeId));
+                    var pile = FarmOperations.FindOrCreatePile(world, new SiteId(row.SiteId));
+                    if (recipe != null && pile != null)
+                        foreach (var input in recipe.Inputs)
+                            pile.Add(input.ItemTag, input.Quantity);
+                }
+                orders.Remove(row.JobId);
+                world.Events?.Append(new WorldEvent(stamp, WorldEventKind.ChronicleEvent,
+                    default, new SiteId(row.SiteId),
+                    $"work_order_refunded job:{row.JobId} recipe:{row.RecipeId}"));
+            }
+        }
+
+        // W34 WORK (docs/ruh/w34/02 §6): the jobs→decision bridge for NON-farm claims — the
+        // smelt/bake counterpart of TryDecidePlant. The lock is the CLAIM itself; no reservation
+        // row is opened (§3: the ledger is 1-row-per-actor and smelt needs two input tags).
+        // Gates cheap-to-expensive; every "return" leaves the job CLAIMED and waiting — a
+        // benchless/dry site never freezes or ghost-cancels a registered id (seedless-site rule).
+        private void TryDecideWork(WorldState world, ActorRecord actor, GameTime stamp)
+        {
+            if (_resolveRecipe == null) return; // null resolver: WORK rules off (bare test worlds)
+            var jobId = actor.ScheduleState.CurrentJobId;
+            if (jobId.IsEmpty || world.Jobs == null || world.Worksites == null || world.WorkOrders == null)
+                return;
+            if (!world.Jobs.TryGet(jobId, out var request)) return; // cancel race: next claim heals
+            if (request.Kind == JobKind.Farmer) return;             // defensive; routing already forked
+            if (world.Jobs.GetClaimedBy(jobId) != actor.Id) return; // sweep race: defensive
+            var recipe = _resolveRecipe(request.RecipeId);
+            if (recipe == null) return; // unknown id: econ.jobs' ghost net owns that story
+            if (!world.Worksites.TryGet(request.SiteId, request.WorksitePosition, out var worksite)
+                || !worksite.IsActive || worksite.Kind != request.WorksiteKind)
+                return; // job waits claimed — a cold forge is a pause, not a cancel
+            if (!world.WorkOrders.TryGetByJob(jobId.Value, out _))
+            {
+                // Fresh order: can the pile fund ONE execution? Read-only counts (no clone) —
+                // the REAL consumption happens at the bench (PerformWork's progress==0 step).
+                var pile = FoodOperations.FindPile(world, request.SiteId.Value);
+                foreach (var input in recipe.Inputs)
+                    if (pile == null || pile.Get(input.ItemTag) < input.Quantity)
+                        return; // job waits claimed; the caravan's restock starts the chain
+            }
+            // A resume row exists: funding is NOT asked — the inputs are either baked into the
+            // row (ProgressTicks > 0) or the bench will ask at progress==0 (docs/ruh/w34/02 §6.5).
+            var start = ActorActionState.ForIntent(ActorIntent.Work).Start(
+                ActorActionType.MoveToWorksite, request.SiteId, ItemId.Empty,
+                ReservationId.Empty, stamp.TotalMinutes, ActionInterruptPolicy.Interruptible);
+            _registry.For(ActorActionType.MoveToWorksite).TransitionTo(world, actor, start,
+                ActionLogReason.TargetSelected, stamp); // no reservation → ReservationAcquired would lie
+        }
 
         // Shape mirrors ActionAdvancer.IsPursuitQuarry — same expiry predicate (<=), keyed on
         // GuardId instead of TargetId. Deliberately NO dead-quarry/40-cell checks: those need
@@ -261,6 +385,30 @@ namespace EmberCrpg.Simulation.Living.Actions
                 new ReservationId(reservationId), stamp.TotalMinutes,
                 ActionInterruptPolicy.Interruptible);
             _registry.For(ActorActionType.MoveToPlot).TransitionTo(world, actor, start,
+                ActionLogReason.ReservationAcquired, stamp);
+        }
+
+        // W34 SLEEP (docs/ruh/w34/01 §3-§4): the TryDecideEat/TryDecidePlant mould with the
+        // actor's OWN Home cell as the bed — a stranger structurally CANNOT reserve a foreign
+        // bed because no code path ever targets one. Capacity = living residents of that cell
+        // (the residence rule: worldgen's house assignment IS the family definition). The row
+        // is the chain's per-step validation gate + the 1-row-per-actor chain-exclusion + the
+        // TTL cleanup + the future furniture-bed capacity hook, not a mere formality.
+        private void TryDecideRest(WorldState world, ActorRecord actor, GameTime stamp)
+        {
+            if (world.Reservations == null) return;
+            var home = actor.Home;
+            // Distance-scaled TTL (1 tick = 1 game minute): walk + sleep-until-dawn + slack.
+            long walk = FarmOperations.Chebyshev(actor.Position, home);
+            long until = stamp.TotalMinutes + walk + SleepOperations.MinutesUntilDawn(stamp) + 60;
+            if (!world.Reservations.TryReserve(0UL, SleepOperations.BedKey(home), actor.Id.Value,
+                    until, SleepOperations.ResidentCount(world, home), out var reservationId))
+                return; // bed full (family capacity) or a pre-existing row — not tonight, silent
+            var start = ActorActionState.ForIntent(ActorIntent.Rest).Start(
+                ActorActionType.MoveToBed, default(SiteId), ItemId.Empty,
+                new ReservationId(reservationId), stamp.TotalMinutes,
+                ActionInterruptPolicy.Interruptible);
+            _registry.For(ActorActionType.MoveToBed).TransitionTo(world, actor, start,
                 ActionLogReason.ReservationAcquired, stamp);
         }
     }

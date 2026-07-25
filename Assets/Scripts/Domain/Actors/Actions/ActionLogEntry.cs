@@ -21,6 +21,10 @@ namespace EmberCrpg.Domain.Actors.Actions
         // and "the crop was already taken" are two different sentences, never folded into TargetGone.
         PlotTaken = 10,
         CropGone = 11,
+        // W34 WORK slice (append-only): "my job was cancelled" and "the forge went cold" are two
+        // different sentences, never folded into TargetGone (the W33 no-folding rule above).
+        JobLost = 12,
+        WorksiteGone = 13,
     }
 
     /// <summary>One deterministic action phase-transition record.</summary>

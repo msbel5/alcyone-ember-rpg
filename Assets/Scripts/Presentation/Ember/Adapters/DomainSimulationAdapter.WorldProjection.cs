@@ -90,21 +90,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 UnityEngine.Quaternion.identity,
                 visible: true,
                 activity: DescribeActivity(actor),
-                sleeping: IsAsleepAtHome(actor),
+                // W34 SLEEP: the IsAsleepAtHome hour+Chebyshev GUESS is executed — the sim now
+                // TELLS the view who sleeps: only a Running/terminal Sleep action lies down.
+                sleeping: actor.ActionState.CurrentAction == ActorActionType.Sleep,
                 actionKind: ActionVerbTable.KindName(actor.ActionState.CurrentAction));
-        }
-
-        // PLAYTEST FIX ("kimse eve gidip uyumuyor"): the lying pose belongs to the BED, not the
-        // street - an actor sleeps only once the night commute has actually reached its home cell.
-        // GUESS(SLEEP slice): replace with ActionState.CurrentAction == Sleep.
-        private bool IsAsleepAtHome(ActorRecord actor)
-        {
-            if (actor.Role == ActorRole.Guard || actor.Role == ActorRole.Enemy) return false;
-            int hour = (int)((_world.Time.TotalMinutes / 60) % 24);
-            if (hour < 22 && hour >= 6) return false;
-            int dx = System.Math.Abs(actor.Position.X - actor.Home.X);
-            int dy = System.Math.Abs(actor.Position.Y - actor.Home.Y);
-            return System.Math.Max(dx, dy) <= 1;
         }
 
         // W32 DOC5: the verb is a PROJECTION of ActionState.CurrentAction, never an inference
@@ -125,12 +114,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // born only from ConsumeFood/MoveToFood actions.
         private string DescribeScheduleWord(ActorRecord actor)
         {
-            int hour = (int)((_world.Time.TotalMinutes / 60) % 24);
             if (actor.Role == ActorRole.Guard) return "on watch"; // GUESS(GUARD slice): retire with guard actions
             if (actor.Role == ActorRole.Enemy) return "hunting";  // GUESS(COMBAT slice): retire with combat actions
-            // GUESS(SLEEP slice): replace with ActionState.CurrentAction == Sleep.
-            if (hour < 6 || hour >= 22) return IsAsleepAtHome(actor) ? "sleeping" : "heading home";
-            if (hour >= 20) return "winding down"; // GUESS(SLEEP slice)
+            // W34: the night guesses are DEAD — "sleeping"/"heading home" are ActionVerbTable
+            // rows born only from real Sleep/MoveToBed actions now, and the 20:00-22:00
+            // "winding down" label died HEIRLESS (W32 DOC5 §4: a new verb needs a new action
+            // type, never a new guess branch).
             // W33: the FARM guess branch ("harvesting"/"tending the field" from crop-belt
             // proximity) is DEAD — those verbs are now born only from real MoveToPlot/
             // PlantSeed/HarvestCrop/HaulCrop actions read verbatim through ActionVerbTable.
