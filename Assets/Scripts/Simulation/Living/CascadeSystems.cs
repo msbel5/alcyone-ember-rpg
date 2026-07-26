@@ -37,6 +37,10 @@ namespace EmberCrpg.Simulation.Living
 
                 // The watch answers FIRST: a guard within reach of a hunter strikes it — the
                 // cascade's third link (and what keeps predation from depopulating the town).
+                // W36 GUARD+COMBAT: this branch STILL RUNS for action-driven hunters — the guard
+                // is the WRITER on this Actor.Vitals mutation, not the hunter itself, so the
+                // action-strip's StrikeQuarry (which mutates its PREY's Vitals) does not race
+                // this. Without this the town's mercy-clamped civilians would be mauled forever.
                 var guard = Nearest(world, hunter.Position, StrikeReach,
                     a => a.Role == ActorRole.Guard);
                 if (guard != null)
@@ -48,20 +52,26 @@ namespace EmberCrpg.Simulation.Living
                     if (!hunter.IsAlive) continue;
                 }
 
+                // W36 GUARD+COMBAT: a hunter with a live Hunt/StrikeQuarry action is action-strip
+                // driven — the PerTick advancer OWNS its legs and its blows. Predation skips the
+                // hunter-side (movement + prey strike) below to avoid a double-writer race on
+                // Actor.Position and the PREY's Actor.Vitals (guard-first-strike above is safe:
+                // it writes the HUNTER's Vitals, which no advancer touches this same tick).
+                if (hunter.ActionState.CurrentAction != ActorActionType.None) continue;
+
                 var prey = Nearest(world, hunter.Position, HuntRadius,
                     a => a.Role != ActorRole.Enemy && a.Role != ActorRole.Player && a.Role != ActorRole.Guard);
                 if (prey == null) continue;
 
-                if (Chebyshev(hunter.Position, prey.Position) <= StrikeReach)
+                if (hunter.Position.ChebyshevDistanceTo(prey.Position) <= StrikeReach)
                 {
                     Strike(world, resolver, action, hunter, prey, stamp);
                     strikes++;
                 }
                 else
                 {
-                    hunter.MoveTo(new GridPosition(
-                        hunter.Position.X + System.Math.Sign(prey.Position.X - hunter.Position.X),
-                        hunter.Position.Y + System.Math.Sign(prey.Position.Y - hunter.Position.Y)));
+                    // B10 §A5: route through the ONE grid stepper — refuses walls & corner-cuts.
+                    hunter.MoveTo(MovementService.StepToward(hunter.Position, prey.Position, world.NavView));
                 }
             }
             return strikes;
@@ -99,14 +109,11 @@ namespace EmberCrpg.Simulation.Living
             foreach (var actor in world.Actors.Records)
             {
                 if (actor == null || !actor.IsAlive || !filter(actor)) continue;
-                int d = Chebyshev(from, actor.Position);
+                int d = from.ChebyshevDistanceTo(actor.Position);
                 if (d <= radius && d < bestDist) { bestDist = d; best = actor; }
             }
             return best;
         }
-
-        internal static int Chebyshev(GridPosition a, GridPosition b)
-            => System.Math.Max(System.Math.Abs(a.X - b.X), System.Math.Abs(a.Y - b.Y));
 
         internal static SiteId FallbackSite(WorldState world, GridPosition position)
         {
@@ -162,7 +169,7 @@ namespace EmberCrpg.Simulation.Living
                     if (witness == null || !witness.IsAlive) continue;
                     if (witness.Role == ActorRole.Enemy || witness.Role == ActorRole.Player) continue;
                     if (witness.Id.Equals(evt.ActorId)) continue;
-                    if (PredationSystem.Chebyshev(witness.Position, attacker.Position) > WitnessRadius) continue;
+                    if (witness.Position.ChebyshevDistanceTo(attacker.Position) > WitnessRadius) continue;
 
                     var witnessMemory = world.NpcMemory.GetOrCreate(witness.Id);
                     witnessMemory.RecordEvent(new InteractionEvent(
@@ -178,7 +185,7 @@ namespace EmberCrpg.Simulation.Living
                         a => a.Role == ActorRole.Guard);
                     if (nearGuard != null)
                     {
-                        if (PredationSystem.Chebyshev(witness.Position, nearGuard.Position) <= 2)
+                        if (witness.Position.ChebyshevDistanceTo(nearGuard.Position) <= 2)
                         {
                             bool alreadyReported = false;
                             foreach (var known in witnessMemory.Events)
@@ -194,9 +201,8 @@ namespace EmberCrpg.Simulation.Living
                         }
                         else
                         {
-                            witness.MoveTo(new GridPosition(
-                                witness.Position.X + System.Math.Sign(nearGuard.Position.X - witness.Position.X),
-                                witness.Position.Y + System.Math.Sign(nearGuard.Position.Y - witness.Position.Y)));
+                            // B10 §A5: route through the ONE grid stepper — refuses walls & corner-cuts.
+                            witness.MoveTo(MovementService.StepToward(witness.Position, nearGuard.Position, world.NavView));
                         }
                     }
                 }
@@ -205,7 +211,7 @@ namespace EmberCrpg.Simulation.Living
                 foreach (var guard in world.Actors.Records)
                 {
                     if (guard == null || !guard.IsAlive || guard.Role != ActorRole.Guard) continue;
-                    int d = PredationSystem.Chebyshev(guard.Position, attacker.Position);
+                    int d = guard.Position.ChebyshevDistanceTo(attacker.Position);
                     if (d > ResponseRadius) continue;
                     // P0 pursuit: the report ARMS a chase the PerTick schedule will run - the
                     // hourly nudge below alone lost 60:1 to the return-to-post writer.
@@ -213,9 +219,8 @@ namespace EmberCrpg.Simulation.Living
                     // P2: every armed response also weighs on the town's ledger.
                     RaiseUnrest(world, evt.SiteId, 2, stamp, attacker.Id.Value);
                     if (d <= 1) continue;
-                    guard.MoveTo(new GridPosition(
-                        guard.Position.X + System.Math.Sign(attacker.Position.X - guard.Position.X),
-                        guard.Position.Y + System.Math.Sign(attacker.Position.Y - guard.Position.Y)));
+                    // B10 §A5: route through the ONE grid stepper — refuses walls & corner-cuts.
+                    guard.MoveTo(MovementService.StepToward(guard.Position, attacker.Position, world.NavView));
                 }
             }
             return recorded;

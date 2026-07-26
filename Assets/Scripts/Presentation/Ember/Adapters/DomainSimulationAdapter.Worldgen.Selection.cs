@@ -100,28 +100,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         {
             // FNV-1a-32 over the three strings concatenated with a unit
             // separator so "ab|c" and "a|bc" do not fold to the same seed.
-            const uint Prime = 16777619u;
-            uint hash = 2166136261u;
-            FoldString(ref hash, mood, Prime);
-            FoldString(ref hash, "", Prime);
-            FoldString(ref hash, calling, Prime);
-            FoldString(ref hash, "", Prime);
-            FoldString(ref hash, startLocation, Prime);
+            uint hash = Fnv1a.OffsetBasis32;
+            hash = Fnv1a.Fold32(hash, mood);
+            hash = Fnv1a.Fold32(hash, "");
+            hash = Fnv1a.Fold32(hash, calling);
+            hash = Fnv1a.Fold32(hash, "");
+            hash = Fnv1a.Fold32(hash, startLocation);
             // Avoid the XorShiftRng zero-seed reroute by nudging the result
             // when it lands on 0 — preserves determinism (the same inputs
             // still fold to the same seed) without losing entropy.
             if (hash == 0u) hash = 2463534242u;
             return hash;
-        }
-
-        private static void FoldString(ref uint hash, string s, uint prime)
-        {
-            if (s == null) return;
-            for (int i = 0; i < s.Length; i++)
-            {
-                hash ^= s[i];
-                hash *= prime;
-            }
         }
     }
 }

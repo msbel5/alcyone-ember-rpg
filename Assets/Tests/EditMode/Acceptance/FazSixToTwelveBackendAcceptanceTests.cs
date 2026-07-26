@@ -24,58 +24,8 @@ namespace EmberCrpg.Tests.EditMode.Acceptance
 {
     public sealed class FazSixToTwelveBackendAcceptanceTests
     {
-        [Test]
-        public void Faz6_CaravanTradePriceReputationShortage_AndSaveRoundTrip()
-        {
-            var world = NewWorld(seedWorldAnchors: false);
-            var origin = new StockpileComponent(new SiteId(20));
-            var destination = new StockpileComponent(new SiteId(21));
-            origin.Add("iron", 8);
-            destination.Add("coin", 100);
-            world.Stockpiles.Add(origin);
-            world.Stockpiles.Add(destination);
-            world.Prices.SetPrice(origin.SiteId, "iron", 10);
-            world.Factions.Add(new FactionRecord(new FactionId(1), "Forge", new string[0]));
-            world.Factions.Add(new FactionRecord(new FactionId(2), "Harbor", new string[0]));
-
-            var route = new TradeRouteDef(new TradeRouteId(1), origin.SiteId, destination.SiteId, "iron", 5, 1);
-            var caravan = new CaravanInstance(new CaravanId(1), route.Id, origin.SiteId, 0, 0, CaravanState.EnRoute);
-            world.TradeRoutes.Add(route);
-            world.Caravans.Add(caravan);
-
-            new CaravanSystem().Tick(world.Caravans, world.FindTradeRoute, world.FindStockpile, world.Time, world.Events);
-            Assert.That(origin.Get("iron"), Is.EqualTo(3));
-            Assert.That(destination.Get("iron"), Is.EqualTo(5));
-
-            var traded = new TradeService().TryTrade(
-                world.Prices,
-                destination,
-                origin,
-                "iron",
-                2,
-                world.Time,
-                world.Events,
-                currencyTag: "coin",
-                factions: world.Factions,
-                buyerFaction: new FactionId(2),
-                sellerFaction: new FactionId(1),
-                reputationDelta: 7);
-            Assert.That(traded, Is.True);
-            Assert.That(destination.Get("coin"), Is.EqualTo(80));
-            Assert.That(origin.Get("coin"), Is.EqualTo(20));
-            Assert.That(world.Factions.GetReputation(new FactionId(1), new FactionId(2)).Value, Is.EqualTo(7));
-
-            new PriceUpdateSystem().Recompute(world.Prices, origin, "iron", lowThreshold: 2, highThreshold: 20, delta: 3, world.Time, world.Events);
-            new ShortageDetector().Check(origin, "iron", threshold: 2, world.Time, world.Events);
-
-            var restored = RoundTrip(world);
-            Assert.That(restored.Prices.GetPrice(origin.SiteId, "iron"), Is.EqualTo(13));
-            Assert.That(restored.FindStockpile(origin.SiteId).Get("iron"), Is.EqualTo(1));
-            Assert.That(restored.FindStockpile(destination.SiteId).Get("iron"), Is.EqualTo(7));
-            Assert.That(restored.TradeRoutes.Single().ItemTag, Is.EqualTo("iron"));
-            Assert.That(restored.Caravans.Single().State, Is.EqualTo(CaravanState.Idle));
-            Assert.That(restored.Factions.GetReputation(new FactionId(1), new FactionId(2)).Value, Is.EqualTo(7));
-        }
+        // Faz6 test retired 2026-07-26: it pinned the retired TradeService (obsolete since
+        // B29 / 2026-07-25 — SettlementTradeService is the live seam). Faz7-Faz12 survive.
 
         [Test]
         public void Faz7_EquipmentCombatMutatesVitals_AndSaveRoundTrip()

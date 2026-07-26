@@ -46,11 +46,22 @@ namespace EmberCrpg.Simulation.Composition
                     "living.predation@Hourly:40",
                     "living.witness@Hourly:45",
                     "living.companion_guard@Hourly:42",
+                    // W36 GUARD+COMBAT: StrikeQuarryAdvancer resolves damage on PerTick under
+                    // the action-strip lifecycle. PredationSystem gates on non-None ActionState
+                    // to avoid a double-writer race on action-driven hostiles.
+                    "living.action_advance@PerTick:22",
                 },
                 ["World.GuardPursuits"] = new[]
                 {
                     "living.witness@Hourly:45",   // arms/refreshes
                     "living.schedule@PerTick:20", // resolves/prunes
+                },
+                // W36 GUARD+COMBAT: PursuitRecord's mirror on the enemy side. Decide arms;
+                // Advance clears the row on kill/clamp; expiry is a TTL, no tick sweeper needed.
+                ["World.HuntTargets"] = new[]
+                {
+                    "living.decision@PerTick:18",       // arms/refreshes on TryDecideHunt
+                    "living.action_advance@PerTick:22", // clears on StrikeQuarry kill/clamp
                 },
                 ["World.Stockpiles"] = new[]
                 {
@@ -92,11 +103,8 @@ namespace EmberCrpg.Simulation.Composition
                 // Boot-only + command-driven mutation stays UNDECLARED with a comment; the ledger
                 // is a "who writes in the loop" contract, not a where-does-every-byte-live index.
                 ["World.Time"] = new[] { "core.time@PerTick:10" },
-                ["World.Plants"] = new[]
-                {
-                    "living.action_advance@PerTick:22", // HarvestCrop removes; PlantSeed adds
-                    "econ.plantgrowth@Daily:20",        // ripens plants
-                },
+                // World.Plants declared above (econ.plantgrowth + living.action_advance) — the
+                // W35/B04 collection-initializer overwrite would silently shadow the first entry.
                 ["Actor.Mood"] = new[]
                 {
                     "living.action_advance@PerTick:22", // ConsumeFood/Sleep re-evaluate

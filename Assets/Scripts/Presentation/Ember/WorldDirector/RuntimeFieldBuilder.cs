@@ -33,14 +33,28 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
         }
 
         /// <summary>REFORM #1 (one spatial authority): the CURRENT settlement plants as
-        /// sim-projected local cells - the visual field IS the sim field, no polar decor.</summary>
-        public struct PlantCell { public ulong Id; public int LocalX; public int LocalZ; public int Stage; }
+        /// sim-projected local cells - the visual field IS the sim field, no polar decor.
+        /// HARVEST-CHAIN FIX: SoilId is the plot's identity so the tilled cube outlives the plant —
+        /// harvest destroys the stalk (transient) but keeps the soil (persistent), and the
+        /// deterministic same-soil replant grows a fresh stalk out of the existing tilled bed.</summary>
+        public struct PlantCell { public ulong Id; public ulong SoilId; public int LocalX; public int LocalZ; public int Stage; }
         public static PlantCell[] Plants { get; private set; } = System.Array.Empty<PlantCell>();
         public static int PlantsStamp { get; private set; }
         public static void PublishPlants(PlantCell[] plants)
         {
             Plants = plants ?? System.Array.Empty<PlantCell>();
             PlantsStamp++;
+        }
+
+        /// <summary>Sim SOIL rows as their own channel — the plot GameObject follows soil identity,
+        /// not plant identity, so an emptied bed stays visible between harvest and replant.</summary>
+        public struct SoilCell { public ulong Id; public int LocalX; public int LocalZ; }
+        public static SoilCell[] Soils { get; private set; } = System.Array.Empty<SoilCell>();
+        public static int SoilsStamp { get; private set; }
+        public static void PublishSoils(SoilCell[] soils)
+        {
+            Soils = soils ?? System.Array.Empty<SoilCell>();
+            SoilsStamp++;
         }
     }
 
@@ -144,42 +158,78 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
     /// REFORM #1 (ARCHITECTURE_GAPS #4): crops render AT the sim plants projected cells,
     /// one stalk per PlantComponent, each wearing ITS OWN stage - the seed-angled polar
     /// belt is retired. Plots appear/prune as the sim adds/removes plants.
+    /// HARVEST-CHAIN FIX (playtest report "tarla harvestten sonra kaybolmustu"): the plot
+    /// GameObject follows SOIL identity (persistent), the stalk follows PLANT identity
+    /// (transient). Harvest destroys the stalk only; the tilled bed stays; the deterministic
+    /// same-soil replant grows a fresh stalk out of the surviving plot.
     /// </summary>
     public sealed class SimFieldView : MonoBehaviour
     {
+        private readonly System.Collections.Generic.Dictionary<ulong, GameObject> _plots
+            = new System.Collections.Generic.Dictionary<ulong, GameObject>();
         private readonly System.Collections.Generic.Dictionary<ulong, CropStalkView> _stalks
             = new System.Collections.Generic.Dictionary<ulong, CropStalkView>();
-        private readonly System.Collections.Generic.HashSet<ulong> _alive
+        private readonly System.Collections.Generic.HashSet<ulong> _liveSoils
             = new System.Collections.Generic.HashSet<ulong>();
-        private int _seenStamp = -1;
+        private readonly System.Collections.Generic.HashSet<ulong> _livePlants
+            = new System.Collections.Generic.HashSet<ulong>();
+        private int _seenSoilsStamp = -1;
+        private int _seenPlantsStamp = -1;
         private float _nextPoll;
 
         private void Update()
         {
             if (Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 1.5f;
-            if (RuntimeFieldMirror.PlantsStamp == _seenStamp) return;
-            _seenStamp = RuntimeFieldMirror.PlantsStamp;
 
-            _alive.Clear();
-            foreach (var cell in RuntimeFieldMirror.Plants)
+            bool soilsChanged = RuntimeFieldMirror.SoilsStamp != _seenSoilsStamp;
+            bool plantsChanged = RuntimeFieldMirror.PlantsStamp != _seenPlantsStamp;
+            if (!soilsChanged && !plantsChanged) return;
+
+            if (soilsChanged)
             {
-                _alive.Add(cell.Id);
-                if (!_stalks.TryGetValue(cell.Id, out var stalk) || stalk == null)
-                    _stalks[cell.Id] = stalk = BuildPlot(cell);
-                stalk.ExternalStage = cell.Stage;
+                _seenSoilsStamp = RuntimeFieldMirror.SoilsStamp;
+                _liveSoils.Clear();
+                foreach (var cell in RuntimeFieldMirror.Soils)
+                {
+                    _liveSoils.Add(cell.Id);
+                    if (!_plots.TryGetValue(cell.Id, out var plot) || plot == null)
+                        _plots[cell.Id] = BuildPlot(cell);
+                }
+                var deadSoils = new System.Collections.Generic.List<ulong>();
+                foreach (var kv in _plots)
+                    if (!_liveSoils.Contains(kv.Key)) deadSoils.Add(kv.Key);
+                foreach (var id in deadSoils)
+                {
+                    if (_plots[id] != null) Destroy(_plots[id]);
+                    _plots.Remove(id);
+                }
             }
-            var dead = new System.Collections.Generic.List<ulong>();
-            foreach (var kv in _stalks)
-                if (!_alive.Contains(kv.Key)) dead.Add(kv.Key);
-            foreach (var id in dead)
+
+            if (plantsChanged)
             {
-                if (_stalks[id] != null) Destroy(_stalks[id].transform.parent.gameObject);
-                _stalks.Remove(id);
+                _seenPlantsStamp = RuntimeFieldMirror.PlantsStamp;
+                _livePlants.Clear();
+                foreach (var cell in RuntimeFieldMirror.Plants)
+                {
+                    _livePlants.Add(cell.Id);
+                    if (!_stalks.TryGetValue(cell.Id, out var stalk) || stalk == null)
+                        _stalks[cell.Id] = stalk = BuildStalk(cell);
+                    if (stalk != null) stalk.ExternalStage = cell.Stage;
+                }
+                var deadPlants = new System.Collections.Generic.List<ulong>();
+                foreach (var kv in _stalks)
+                    if (!_livePlants.Contains(kv.Key)) deadPlants.Add(kv.Key);
+                foreach (var id in deadPlants)
+                {
+                    // Destroy the STALK only — the parent plot survives so the tilled bed stays.
+                    if (_stalks[id] != null) Destroy(_stalks[id].gameObject);
+                    _stalks.Remove(id);
+                }
             }
         }
 
-        private CropStalkView BuildPlot(RuntimeFieldMirror.PlantCell cell)
+        private GameObject BuildPlot(RuntimeFieldMirror.SoilCell cell)
         {
             var plot = new GameObject("SimPlot_" + cell.Id);
             plot.transform.SetParent(transform, worldPositionStays: false);
@@ -193,7 +243,20 @@ namespace EmberCrpg.Presentation.Ember.WorldDirector
             soil.transform.localScale = new Vector3(2.4f, 0.08f, 1.8f);
             soil.GetComponent<MeshRenderer>().sharedMaterial =
                 RuntimeMaterialPalette.Solid(new Color(0.30f, 0.21f, 0.13f));
+            return plot;
+        }
 
+        private CropStalkView BuildStalk(RuntimeFieldMirror.PlantCell cell)
+        {
+            // Prefer the sim-authoritative plot for this plant's soil. Fallback (rare: PublishPlants
+            // arrived before PublishSoils in the same frame): synthesize a plot at the plant's
+            // local cell so a stalk still renders and the next Soils publish adopts it.
+            if (!_plots.TryGetValue(cell.SoilId, out var plot) || plot == null)
+            {
+                plot = BuildPlot(new RuntimeFieldMirror.SoilCell
+                { Id = cell.SoilId, LocalX = cell.LocalX, LocalZ = cell.LocalZ });
+                _plots[cell.SoilId] = plot;
+            }
             var stalkGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
             stalkGo.name = "CropStalk";
             Object.Destroy(stalkGo.GetComponent<Collider>());

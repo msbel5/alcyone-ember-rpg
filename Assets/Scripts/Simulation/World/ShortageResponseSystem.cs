@@ -94,14 +94,11 @@ namespace EmberCrpg.Simulation.World
             return null;
         }
 
+        // HARVEST-CHAIN FIX: delegate to FoodPileCache.FoodTags so "wheat" is a permanent staple
+        // — the earlier plants-only derivation left an empty tag set when the LAST plant of a
+        // species vanished mid-day, and the daily shortage sweep then never re-armed for that
+        // species (matches observation 19374: ShortageDetected fired only once in a 5-day run).
         private static List<string> FoodTags(WorldState world)
-        {
-            var tags = new List<string>();
-            if (world.Plants == null) return tags;
-            foreach (var row in world.Plants.Rows)
-                if (row.Value != null && !string.IsNullOrEmpty(row.Value.SpeciesId) && !tags.Contains(row.Value.SpeciesId))
-                    tags.Add(row.Value.SpeciesId);
-            return tags;
-        }
+            => EmberCrpg.Simulation.Living.FoodPileCache.FoodTags(world);
     }
 }

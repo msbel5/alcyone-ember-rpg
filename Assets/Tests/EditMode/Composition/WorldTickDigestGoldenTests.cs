@@ -56,7 +56,14 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // capturing run, and the same-seed double advance produced byte-identical digests
         // (captured == second digest in the red run log).
         // Old: 62184354826f835f75b2180d6b295fc99a304c5ed1fea748c874b81f3e86e558
-        private const string BaselineHash = "c9f444f11936d93fc8510d4766648bbfda0cf8fe6f6be9db06d87e24ca831612";
+        // Old: c9f444f11936d93fc8510d4766648bbfda0cf8fe6f6be9db06d87e24ca831612 (pre-2026-07-26)
+        // Re-baselined 2026-07-26 for the ActionLogManager descriptor extraction (OOP-2/OOP-8):
+        // IsChainTerminal now covers Sleep + PerformWork (the W34 additions previously missed),
+        // so Succeeded transitions on those two actions now emit WorldEventKind.ActionCompleted
+        // rows the digest captures. Chunking-invariance (ActionPhase/Cadence/EatChunking/
+        // FarmSlice, 5 tests) passed UNCHANGED and the same-seed double advance produced
+        // byte-identical digests (captured == second digest in the red run log).
+        private const string BaselineHash = "cb0b02a071e3b861a1c4792bd85ed5ebeb01899e756957584f8b7d0b275cc1ea";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 

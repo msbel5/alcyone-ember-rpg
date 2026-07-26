@@ -1,5 +1,6 @@
 // Why this file is intentionally long: the deterministic overland image sampler co-locates cache-key, land-mask, and pixel sampling helpers so map rendering stays engine-free and reproducible in one unit.
 using System;
+using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Overland;
 
 namespace EmberCrpg.Simulation.Overland
@@ -35,8 +36,9 @@ namespace EmberCrpg.Simulation.Overland
     {
         public const int DefaultImageSize = 512;
 
-        private const ulong FnvOffset = 14695981039346656037UL;
-        private const ulong FnvPrime = 1099511628211UL;
+        // Standard FNV-1a 64-bit basis — forwards to the canonical Fnv1a.* constants so callers
+        // reuse the same primitive as dialog/voice hashing without redeclaring the magic numbers.
+        private const ulong FnvOffset = Fnv1a.OffsetBasis64;
 
         public static OverlandMapImage Sample(
             OverlandMap map,
@@ -214,14 +216,8 @@ namespace EmberCrpg.Simulation.Overland
             return Mix(hash, (ulong)value);
         }
 
-        private static ulong Mix(ulong hash, ulong value)
-        {
-            unchecked
-            {
-                hash ^= value;
-                return hash * FnvPrime;
-            }
-        }
+        // Forwards to the canonical scalar Fnv1a.Fold64 primitive — bit-identical mix.
+        private static ulong Mix(ulong hash, ulong value) => Fnv1a.Fold64(hash, value);
 
         private static int ToIndex(int x, int y, int width)
         {

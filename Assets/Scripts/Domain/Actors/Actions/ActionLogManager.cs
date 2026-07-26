@@ -8,6 +8,10 @@ using EmberCrpg.Domain.World;
 // RumorMill/history/save read). CONSTRAINT: the only caller is ActionAdvancer.TransitionTo —
 // systems cannot touch the phase field directly, so "every step is logged" is structural,
 // not conventional. Sinks are observers and never affect determinism.
+// W-refactor 2026-07-26: Chain/Link/IsChainTerminal delegate to ActionKindDescriptors so
+// adding a new ActorActionType is ONE row in the descriptor table (not four scattered
+// switches). Fixed: Sleep + PerformWork silently missed IsChainTerminal + the Chain
+// ordinal-range check misfiled them as "farm".
 namespace EmberCrpg.Domain.Actors.Actions
 {
     /// <summary>Single gate from action phase transitions to ring, terminal events, and sinks.</summary>
@@ -24,41 +28,27 @@ namespace EmberCrpg.Domain.Actors.Actions
         {
             world.ActionLog?.Push(entry);
             if (entry.ToPhase == ActionPhase.Failed)
+            {
+                var d = ActionKindDescriptors.Get(entry.FromAction);
                 world.Events?.Append(new WorldEvent(
                     new GameTime(entry.TickMinutes), WorldEventKind.ActionFailed,
                     new ActorId(entry.ActorId), new SiteId(entry.TargetId),
-                    $"{Chain(entry.FromAction)}:{Link(entry.FromAction)} failed reason={entry.Reason} target=site:{entry.TargetId} t={entry.TickMinutes}"));
-            // W33: the terminal-completion event generalizes from "== ConsumeFood" to every
-            // chain-final link (PlantSeed and HaulCrop end their chains); the EAT line stays
-            // byte-identical — RumorMill/Gate meal counters keep reading it unchanged.
-            else if (entry.ToPhase == ActionPhase.Succeeded && IsChainTerminal(entry.ToAction))
-                world.Events?.Append(new WorldEvent(
-                    new GameTime(entry.TickMinutes), WorldEventKind.ActionCompleted,
-                    new ActorId(entry.ActorId), new SiteId(entry.TargetId),
-                    $"{Chain(entry.ToAction)}:{Link(entry.ToAction)} completed target=site:{entry.TargetId} t={entry.TickMinutes}"));
+                    $"{d.ChainName}:{d.LinkName} failed reason={entry.Reason} target=site:{entry.TargetId} t={entry.TickMinutes}"));
+            }
+            // The terminal-completion event fires whenever a chain-final link succeeds — the
+            // "consume/plant/haul/sleep/work" set is single-sourced from ActionKindDescriptors
+            // so a new terminal action only needs its descriptor row's IsChainTerminal flag set.
+            else if (entry.ToPhase == ActionPhase.Succeeded)
+            {
+                var d = ActionKindDescriptors.Get(entry.ToAction);
+                if (d.IsChainTerminal)
+                    world.Events?.Append(new WorldEvent(
+                        new GameTime(entry.TickMinutes), WorldEventKind.ActionCompleted,
+                        new ActorId(entry.ActorId), new SiteId(entry.TargetId),
+                        $"{d.ChainName}:{d.LinkName} completed target=site:{entry.TargetId} t={entry.TickMinutes}"));
+            }
             for (var i = 0; i < _sinks.Length; i++)
                 _sinks[i]?.OnPhase(entry);
         }
-
-        private static bool IsChainTerminal(ActorActionType action)
-            => action == ActorActionType.ConsumeFood
-            || action == ActorActionType.PlantSeed
-            || action == ActorActionType.HaulCrop;
-
-        // Enum layout truth: 1..3 are the EAT chain, 4..7 the FARM chain (append-only order).
-        private static string Chain(ActorActionType action)
-            => action >= ActorActionType.MoveToPlot ? "farm" : "eat";
-
-        private static string Link(ActorActionType action) => action switch
-        {
-            ActorActionType.MoveToFood => "move",
-            ActorActionType.TakeFood => "take",
-            ActorActionType.ConsumeFood => "consume",
-            ActorActionType.MoveToPlot => "move",
-            ActorActionType.PlantSeed => "plant",
-            ActorActionType.HarvestCrop => "harvest",
-            ActorActionType.HaulCrop => "haul",
-            _ => "none",
-        };
     }
 }

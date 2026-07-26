@@ -1,3 +1,5 @@
+using EmberCrpg.Domain.Core;
+
 namespace EmberCrpg.Simulation.AiDm
 {
     /// <summary>M3b: one NPC, one voice - forever. Derived from the actor id the way the forge
@@ -39,8 +41,9 @@ namespace EmberCrpg.Simulation.AiDm
         /// <summary>FNV-1a for authored actors that only have a name - stable across sessions.</summary>
         public static ulong VoiceKeyFor(string actorName)
         {
-            ulong hash = 1469598103934665603UL;
-            foreach (var ch in actorName ?? string.Empty) { hash ^= ch; hash *= 1099511628211UL; }
+            // Historical 13-digit chaos seed (NOT the standard FNV offset) — must not change or
+            // saved voice keys drift. Fnv1a.Fold64 forwards to the same xor+prime mix as before.
+            ulong hash = Fnv1a.Fold64(1469598103934665603UL, actorName);
             return hash == 0UL ? 1UL : hash;
         }
     }

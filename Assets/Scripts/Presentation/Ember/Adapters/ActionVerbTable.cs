@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Actors.Actions;
 using EmberCrpg.Simulation.Diagnostics;
 
 // Design note:
 // W32 DOC5 §3.1: the ONE translation table from action identity to the on-screen verb.
 // CONSTRAINT: pure static data — no clock, no position, no needs. A verb may ONLY be
 // derived from the action type. Adding an hour/position input here recreates RUH_TESHIS §2.9.
-// New verb = new action type + one row here (never a new guess branch in the projection).
+// New verb = new row in ActionKindDescriptors (Domain) — this file only wraps that row with a
+// projection-side warn seam so a truly missing kind stays LOUD on-screen and in the logs.
 namespace EmberCrpg.Presentation.Ember.Adapters
 {
     /// <summary>Presentation dictionary: ActorActionType -> verbatim activity verb.</summary>
@@ -14,44 +16,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
     // the RUH_TESHIS §10 "label == CurrentAction" contract needs a callable surface.
     public static class ActionVerbTable
     {
-        public static string Verb(ActorActionType kind) => kind switch
+        public static string Verb(ActorActionType kind)
         {
-            ActorActionType.MoveToFood => "seeking food",
-            ActorActionType.TakeFood => "taking food",
-            ActorActionType.ConsumeFood => "eating",
-            // W33 FARM: real actions now own the field verbs the projection used to guess.
-            ActorActionType.MoveToPlot => "to the field",
-            ActorActionType.PlantSeed => "planting",
-            ActorActionType.HarvestCrop => "harvesting",
-            ActorActionType.HaulCrop => "hauling",
-            // W34 SLEEP: the night verbs' owners are real actions now — the projection's
-            // hour+position guesses died; the on-screen words stay VERBATIM (playtest continuity).
-            ActorActionType.MoveToBed => "heading home",
-            ActorActionType.Sleep => "sleeping",
-            // W34 WORK: the bench verb is REAL for the first time — projection guesswork's
-            // last castle falls (RUH_TESHIS §2.9); the label IS CurrentAction, verbatim.
-            ActorActionType.MoveToWorksite => "to work",
-            ActorActionType.PerformWork => "working",
-            // CONSTRAINT: unknown kind NEVER falls back to a guess — loud sentinel + one warn.
-            _ => Unknown(kind)
-        };
+            var d = ActionKindDescriptors.Get(kind);
+            return d.Verb ?? Unknown(kind);
+        }
 
         /// <summary>Stable kind string for ActorViewState.ActionKind; null when the actor carries no action.</summary>
-        public static string KindName(ActorActionType kind) => kind switch
-        {
-            ActorActionType.MoveToFood => "MoveToFood",
-            ActorActionType.TakeFood => "TakeFood",
-            ActorActionType.ConsumeFood => "ConsumeFood",
-            ActorActionType.MoveToPlot => "MoveToPlot",
-            ActorActionType.PlantSeed => "PlantSeed",
-            ActorActionType.HarvestCrop => "HarvestCrop",
-            ActorActionType.HaulCrop => "HaulCrop",
-            ActorActionType.MoveToBed => "MoveToBed",
-            ActorActionType.Sleep => "Sleep",
-            ActorActionType.MoveToWorksite => "MoveToWorksite",
-            ActorActionType.PerformWork => "PerformWork",
-            _ => null
-        };
+        public static string KindName(ActorActionType kind) => ActionKindDescriptors.Get(kind).KindName;
 
         private static readonly EmberLogger Log = EmberLog.For("projection");
         private static readonly HashSet<ActorActionType> _warned = new HashSet<ActorActionType>(); // presentation-only state

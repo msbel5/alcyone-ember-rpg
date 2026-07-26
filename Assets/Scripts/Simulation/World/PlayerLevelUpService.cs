@@ -146,6 +146,10 @@ namespace EmberCrpg.Simulation.World
                 source.Home,
                 source.DayAnchor);
             copy.ReplaceAskedTopics(source.AskedTopicIds);
+            // W32 "sleeping pile" contract (mirrored in WithHomeAndAnchor): a clone that
+            // omits ActionState silently resets a running chain — level-up during Sleep or
+            // ConsumeFood would zero the phase without touching reservations. Carry it over.
+            copy.ApplyActionState(source.ActionState);
             return copy;
         }
     }

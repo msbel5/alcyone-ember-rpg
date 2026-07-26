@@ -248,7 +248,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 if (!_world.Actors.TryGet(actorId, out var hostile) || hostile == null || !hostile.IsAlive)
                     continue;
 
-                int dist = Chebyshev(hostile.Position, target);
+                int dist = hostile.Position.ChebyshevDistanceTo(target);
                 if (dist <= 2) continue; // already at melee reach
 
                 // F18 LAIR LEASH (pinned guards only — home == dayAnchor, the dungeon-dweller
@@ -259,7 +259,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 bool pinned = hostile.Home.Equals(hostile.DayAnchor);
                 bool lairBoss = seed.Id.Value >= HaunterNpcIdBase
                     && (seed.Id.Value - HaunterNpcIdBase) % 16UL == 15UL;
-                int homeDist = Chebyshev(hostile.Position, hostile.Home);
+                int homeDist = hostile.Position.ChebyshevDistanceTo(hostile.Home);
                 if (dist > 18 || (pinned && homeDist >= (lairBoss ? 3 : 10)))
                 {
                     if (pinned && homeDist > 0)
@@ -277,14 +277,14 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // (Review fix: guards are EXEMPT — settlements are safe FROM outlaws, not from
                 // the watch; the F23 bounty hunt must keep working exactly where crimes happen.)
                 if (!pinned && seed.Role != EmberCrpg.Domain.Worldgen.NpcRole.Guard
-                    && Chebyshev(target, BillboardOrigin()) <= 30)
+                    && target.ChebyshevDistanceTo(BillboardOrigin()) <= 30)
                     continue;
 
                 int dx = System.Math.Sign(target.X - hostile.Position.X);
                 int dy = System.Math.Sign(target.Y - hostile.Position.Y);
                 hostile.MoveTo(new GridPosition(hostile.Position.X + dx, hostile.Position.Y + dy));
 
-                if (Chebyshev(hostile.Position, target) <= 3 && WorldEncounterEnemy() == null)
+                if (hostile.Position.ChebyshevDistanceTo(target) <= 3 && WorldEncounterEnemy() == null)
                     TryBeginWorldEncounter(hostile, seed); // aggro: music flips, panel appears, sting plays
             }
         }
@@ -304,7 +304,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
 
             var player = _world.Actors?.FirstByRole(ActorRole.Player);
             if (player == null || !player.IsAlive) return;
-            if (Chebyshev(PlayerCombatPosition(player), enemy.Position) > 6)
+            if (PlayerCombatPosition(player).ChebyshevDistanceTo(enemy.Position) > 6)
             {
                 _lastCombatLine = $"{enemy.Name} stalks closer...";
                 return;
@@ -528,7 +528,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
                 if (!_world.Actors.TryGet(actorId, out var hostile) || hostile == null || !hostile.IsAlive)
                     continue;
-                sb.Append($" | {hostile.Name} pos=({hostile.Position.X},{hostile.Position.Y}) cheb={Chebyshev(hostile.Position, target)}");
+                sb.Append($" | {hostile.Name} pos=({hostile.Position.X},{hostile.Position.Y}) cheb={hostile.Position.ChebyshevDistanceTo(target)}");
             }
             return sb.ToString();
         }
@@ -764,7 +764,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             {
                 if (a == null || !a.IsAlive || a.Role == ActorRole.Player
                     || a.Role == ActorRole.Enemy || a.Role == ActorRole.Guard) continue;
-                if (Chebyshev(a.Position, spot) <= 6) count++;
+                if (a.Position.ChebyshevDistanceTo(spot) <= 6) count++;
             }
             UnityEngine.Debug.Log($"[Lunch] {count} civilians at the tavern (hour {(int)((_world.Time.TotalMinutes / 60) % 24):00}).");
             return $"LUNCH: {count} civilians within 6 cells of the tavern.";
@@ -806,7 +806,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     || seed.Role == EmberCrpg.Domain.Worldgen.NpcRole.Guard) continue;
                 var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
                 if (!_world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive) continue;
-                int dist = Chebyshev(from, actor.Position);
+                int dist = from.ChebyshevDistanceTo(actor.Position);
                 if (dist >= victimDist) continue;
                 victim = actor;
                 victimDist = dist;
@@ -837,7 +837,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     continue;
                 var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
                 if (!_world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive) continue;
-                int dist = Chebyshev(from, actor.Position);
+                int dist = from.ChebyshevDistanceTo(actor.Position);
                 if (dist >= guardDist) continue;
                 guard = actor;
                 guardDist = dist;
@@ -887,7 +887,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var actorId = new ActorId(GeneratedNpcActorOffset + seed.Id.Value);
                 if (!_world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive)
                     continue;
-                int dist = player != null ? Chebyshev(PlayerCombatPosition(player), actor.Position) : 0;
+                int dist = player != null ? PlayerCombatPosition(player).ChebyshevDistanceTo(actor.Position) : 0;
                 if (nearest != null && dist >= nearestDist) continue;
                 nearest = actor;
                 nearestSeed = seed;

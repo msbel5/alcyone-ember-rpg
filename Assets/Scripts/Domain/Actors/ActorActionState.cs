@@ -7,7 +7,8 @@ namespace EmberCrpg.Domain.Actors
     /// <remarks>W33: Plant/Harvest ayrı değerlerdir (tek "Farm" değil) — zincir çatalı NextLink'te
     /// bu MEVCUT alandan çözülür, ek saved alt-mod alanı gerekmez (W33-01 §2.1).</remarks>
     // W34: Rest/Work appended (docs/ruh/w34/04 §0 numbering; naming per docs/ruh/w34/01 §2 + 02 §4).
-    public enum ActorIntent { None = 0, Eat = 1, Plant = 2, Harvest = 3, Rest = 4, Work = 5 }
+    // W36 GUARD+COMBAT: Watch (guard's beat), Hunt (enemy's prey loop) — append-only, values saved.
+    public enum ActorIntent { None = 0, Eat = 1, Plant = 2, Harvest = 3, Rest = 4, Work = 5, Watch = 6, Hunt = 7 }
 
     /// <summary>Tipli eylem kimliği. UI bu değeri VERBATIM okur (RUH_TESHIS §10: activity == CurrentAction).</summary>
     public enum ActorActionType
@@ -19,6 +20,11 @@ namespace EmberCrpg.Domain.Actors
         MoveToBed = 8, Sleep = 9,
         // W34 WORK slice (append-only; values are saved as ints and MUST stay fixed):
         MoveToWorksite = 10, PerformWork = 11,
+        // W36 GUARD+COMBAT slice (append-only; values are saved as ints and MUST stay fixed):
+        // OnWatch = guard walks-the-beat single action (MoveToPost + stand-post fused, HaulCrop mould).
+        // Hunt / StrikeQuarry form the shared approach->strike loop used by Enemy Hunt intent
+        // (Chase for a Guard's pursuit is the same body, dispatched from the pursuit ledger).
+        OnWatch = 12, Hunt = 13, StrikeQuarry = 14,
     }
 
     /// <summary>
@@ -216,8 +222,8 @@ namespace EmberCrpg.Domain.Actors
         {
             state = Idle;
             // W34: caps widened to the new enum tails (append-only growth — older saves unaffected).
-            if (intent < ActorIntent.None || intent > ActorIntent.Work) return false;
-            if (action < ActorActionType.None || action > ActorActionType.PerformWork) return false;
+            if (intent < ActorIntent.None || intent > ActorIntent.Hunt) return false;
+            if (action < ActorActionType.None || action > ActorActionType.StrikeQuarry) return false;
             if (phase < ActionPhase.None || phase > ActionPhase.Failed) return false;
             if (failureReason < ActionFailureReason.None || failureReason > ActionFailureReason.WorksiteGone) return false;
             if (policy < ActionInterruptPolicy.Interruptible || policy > ActionInterruptPolicy.NonInterruptible) return false;

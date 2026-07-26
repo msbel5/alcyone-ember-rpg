@@ -77,39 +77,7 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(events.Count, Is.EqualTo(0));
         }
 
-        // ----- TradeService -----
-        [Test]
-        public void Trade_HappyPath_MovesStock_EmitsEvent()
-        {
-            var ledger = new PriceLedger();
-            ledger.SetPrice(Seller, "iron_ingot", 5);
-            var buyer = new StockpileComponent(Buyer);
-            var seller = new StockpileComponent(Seller);
-            seller.Add("iron_ingot", 10);
-            var events = new WorldEventLog();
-
-            var ok = new TradeService().TryTrade(ledger, buyer, seller, "iron_ingot", 3, default, events);
-
-            Assert.That(ok, Is.True);
-            Assert.That(seller.Get("iron_ingot"), Is.EqualTo(7));
-            Assert.That(buyer.Get("iron_ingot"), Is.EqualTo(3));
-            Assert.That(events.Count, Is.EqualTo(1));
-            Assert.That(events.Events[0].Kind, Is.EqualTo(WorldEventKind.TradeCompleted));
-        }
-
-        [Test]
-        public void Trade_InsufficientStock_ReturnsFalse_NoEvent()
-        {
-            var ledger = new PriceLedger();
-            var buyer = new StockpileComponent(Buyer);
-            var seller = new StockpileComponent(Seller);
-            seller.Add("iron_ingot", 2);
-            var events = new WorldEventLog();
-
-            var ok = new TradeService().TryTrade(ledger, buyer, seller, "iron_ingot", 5, default, events);
-
-            Assert.That(ok, Is.False);
-            Assert.That(events.Count, Is.EqualTo(0));
-        }
+        // TradeService coverage retired 2026-07-26: the service dropped with the DEAD-1
+        // sweep (obsolete since B29 / 2026-07-25 — SettlementTradeService is the live seam).
     }
 }

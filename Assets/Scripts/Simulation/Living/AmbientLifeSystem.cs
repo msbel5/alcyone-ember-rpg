@@ -42,7 +42,7 @@ namespace EmberCrpg.Simulation.Living
                     if (critter.Kind == "rat")
                     {
                         critter.Cell = MovementService.StepToward(critter.Cell, larder, world.NavView);
-                        if (Chebyshev(critter.Cell, larder) <= StealReach)
+                        if (critter.Cell.ChebyshevDistanceTo(larder) <= StealReach)
                         {
                             var tag = FirstStockedTag(pile);
                             if (tag != null)
@@ -64,7 +64,7 @@ namespace EmberCrpg.Simulation.Living
                     var prey = NearestRat(world, site.Id, cat.Cell);
                     if (prey == null) { cat.Cell = MovementService.StepToward(cat.Cell, larder, world.NavView); continue; }
                     cat.Cell = MovementService.StepToward(cat.Cell, prey.Cell, world.NavView);
-                    if (Chebyshev(cat.Cell, prey.Cell) <= 1)
+                    if (cat.Cell.ChebyshevDistanceTo(prey.Cell) <= 1)
                     {
                         world.Critters.Remove(prey);
                         world.Events?.Append(new WorldEvent(stamp, WorldEventKind.NeedChanged,
@@ -129,7 +129,7 @@ namespace EmberCrpg.Simulation.Living
             foreach (var critter in world.Critters)
             {
                 if (critter == null || critter.Kind != "rat" || !critter.SiteId.Equals(siteId)) continue;
-                int dist = Chebyshev(from, critter.Cell);
+                int dist = from.ChebyshevDistanceTo(critter.Cell);
                 if (dist < bestDist) { best = critter; bestDist = dist; }
             }
             return best;
@@ -140,8 +140,6 @@ namespace EmberCrpg.Simulation.Living
 
         // B10 §A5: the duplicate wall-blind primitive is retired — MovementService.StepToward with
         // world.NavView is the ONE grid stepper. Rats & cats now respect blockers like civilians do.
-
-        private static int Chebyshev(GridPosition a, GridPosition b)
-            => System.Math.Max(System.Math.Abs(a.X - b.X), System.Math.Abs(a.Y - b.Y));
+        // Grid distance measurement lives on GridPosition.ChebyshevDistanceTo — the sole primitive.
     }
 }

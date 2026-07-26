@@ -114,8 +114,13 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // born only from ConsumeFood/MoveToFood actions.
         private string DescribeScheduleWord(ActorRecord actor)
         {
-            if (actor.Role == ActorRole.Guard) return "on watch"; // GUESS(GUARD slice): retire with guard actions
-            if (actor.Role == ActorRole.Enemy) return "hunting";  // GUESS(COMBAT slice): retire with combat actions
+            // W36 GUARD+COMBAT: the Guard/Enemy GUESS branches ("on watch"/"hunting") are
+            // DEAD — those verbs are now born ONLY from real OnWatch/Hunt/StrikeQuarry actions
+            // read verbatim through ActionVerbTable (RUH_TESHIS §2.9 last two guesses closed).
+            // A pre-W36 fixture that constructs a lifecycle with enableGuardAndCombat=false
+            // (legacy default) leaves those roles action-less: the projection returns null
+            // (no label). The unwritten rule — "a verb appears only when it says something
+            // true and specific" (W34 doctrine) — applies to the watch and to hostiles too.
             // W34: the night guesses are DEAD — "sleeping"/"heading home" are ActionVerbTable
             // rows born only from real Sleep/MoveToBed actions now, and the 20:00-22:00
             // "winding down" label died HEIRLESS (W32 DOC5 §4: a new verb needs a new action

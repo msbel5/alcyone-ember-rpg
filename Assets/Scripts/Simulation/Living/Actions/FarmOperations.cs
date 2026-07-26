@@ -14,7 +14,7 @@ using EmberCrpg.Domain.World;
 namespace EmberCrpg.Simulation.Living.Actions
 {
     /// <summary>Shared world lookups + reservation-key codec for the FARM phase machine.</summary>
-    internal static class FarmOperations
+    public static class FarmOperations
     {
         /// <summary>Chebyshev reach for harvesting a plot — verbatim retired HarvestHandsService.ReachCells.</summary>
         public const int HarvestReachCells = 2;
@@ -121,7 +121,9 @@ namespace EmberCrpg.Simulation.Living.Actions
             return pile;
         }
 
+        // Forwards to the canonical GridPosition.ChebyshevDistanceTo primitive. Return-type
+        // widened to long stays for callers that store the result in a long walk/dist local.
         public static long Chebyshev(GridPosition a, GridPosition b)
-            => System.Math.Max(System.Math.Abs(a.X - b.X), System.Math.Abs(a.Y - b.Y));
+            => a.ChebyshevDistanceTo(b);
     }
 }

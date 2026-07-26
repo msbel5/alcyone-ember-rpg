@@ -85,9 +85,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             var topicLabel = !string.IsNullOrEmpty(topic?.Label) ? topic.Label : topicId;
             int asked = NextAskCount("name:" + actorName + "|" + topicId);
             SpeakPlayerQuestion(topicLabel); // M3b.3: you ask out loud, in your own voice
-            ulong seed = 1469598103934665603UL;
-            foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
-            foreach (var ch in topicId ?? string.Empty) { seed ^= ch; seed *= 1099511628211UL; }
+            ulong seed = Fnv1a.Fold64(Fnv1a.Fold64(1469598103934665603UL, actorName), topicId);
             seed += (ulong)asked * 2654435761UL; // repeats deserve fresh dice
 
             var request = new LlmRequest(

@@ -29,6 +29,12 @@ namespace EmberCrpg.Domain.Actors
             return Math.Abs(X - other.X) + Math.Abs(Y - other.Y);
         }
 
+        // Canonical 8-way (Chebyshev / chessboard) distance — the ONE home for grid stepping cost.
+        public int ChebyshevDistanceTo(GridPosition other)
+        {
+            return Math.Max(Math.Abs(X - other.X), Math.Abs(Y - other.Y));
+        }
+
         public bool Equals(GridPosition other)
         {
             return X == other.X && Y == other.Y;

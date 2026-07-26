@@ -88,8 +88,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
             int gen = _conversationSerial;
             int req = ++_dialogRequestSerial; // REVIEW FIX: latest-request-wins ordering
             // Stable per-name seed (string.GetHashCode is process-randomised, so fold the chars via FNV).
-            ulong seed = 1469598103934665603UL;
-            foreach (var ch in actorName) { seed ^= ch; seed *= 1099511628211UL; }
+            ulong seed = Fnv1a.Fold64(1469598103934665603UL, actorName);
 
             var request = new LlmRequest(
                 "npc_greeting",

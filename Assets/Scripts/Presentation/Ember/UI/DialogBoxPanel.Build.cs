@@ -38,7 +38,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             frt.anchorMax = Vector2.one;
             frt.offsetMin = Vector2.zero;
             frt.offsetMax = Vector2.zero;
-            var gold = new Color(0.949f, 0.859f, 0.620f, 0.30f);
+            var gold = EmberPalette.GoldHairline;
             AddEdge(frt, "Top",    new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -2f), new Vector2(0f,  0f), gold);
             AddEdge(frt, "Bottom", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f,  0f), new Vector2(0f,  2f), gold);
             AddEdge(frt, "Left",   new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f,  0f), new Vector2(2f,  0f), gold);
@@ -86,7 +86,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             text.fontSize = fontSize;
             // T-Dialog-AskAbout slice 1 — parchment on the void backing for legibility.
             // Legacy "Deep Charcoal Brown" (0.15, 0.1, 0.05) was invisible on the dark world.
-            text.color = new Color(0.949f, 0.859f, 0.620f, 1f); // #F2DB9E parchment
+            text.color = EmberPalette.Parchment;
             text.outlineWidth = 0.18f;
             text.outlineColor = new Color32(0, 0, 0, 220);
             return text;
@@ -105,7 +105,7 @@ namespace EmberCrpg.Presentation.Ember.UI
             frt.offsetMin = Vector2.zero;
             frt.offsetMax = Vector2.zero;
             var frameImg = frame.GetComponent<Image>();
-            frameImg.color = new Color(0.180f, 0.140f, 0.090f, 0.92f); // #2E2417 panel-brown @ 92%
+            frameImg.color = EmberPalette.PanelBrown;
             frameImg.raycastTarget = false;
 
             // Gold hairline around the frame.

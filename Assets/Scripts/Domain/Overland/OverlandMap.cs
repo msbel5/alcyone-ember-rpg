@@ -141,9 +141,8 @@ namespace EmberCrpg.Domain.Overland
 
         public static int ChebyshevDistance(GridPosition a, GridPosition b)
         {
-            int dx = Math.Abs(a.X - b.X);
-            int dy = Math.Abs(a.Y - b.Y);
-            return dx > dy ? dx : dy;
+            // Forwards to the canonical GridPosition.ChebyshevDistanceTo primitive.
+            return a.ChebyshevDistanceTo(b);
         }
 
         public static double EuclideanDistance(GridPosition a, GridPosition b)

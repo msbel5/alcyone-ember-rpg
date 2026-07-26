@@ -3,7 +3,7 @@ using EmberCrpg.Domain.Actors;
 
 // Design note:
 // B10 §A2: sim-blocked-cell store. Backing = HashSet<long> keyed by ((long)y * PackStride) + x,
-// mirroring GridPathfinder's PackStride shape so a future Stage-B wire-up shares the encoding.
+// packed as (y*Stride + x) so a future pathfinder can reuse the same encoding without re-scanning.
 // DERIVED state — never serialized. Rebuilt after any load via a HydrateBlockedCells re-call on
 // the same seam that runs EnsureInvariants (see WorldState). Revision bumps on any mutation so
 // a future path cache can invalidate for free when buildings/blockers change.

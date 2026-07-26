@@ -45,7 +45,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 && TryGetSettlementTile(npc.Home, out int gtx, out int gty)
                 && TryGetSettlementTile(here, out int htx, out int hty))
             {
-                distance = System.Math.Max(System.Math.Abs(gtx - htx), System.Math.Abs(gty - hty));
+                distance = new GridPosition(gtx, gty).ChebyshevDistanceTo(new GridPosition(htx, hty));
                 direction = OverlandDirection(gtx - htx, gty - hty);
                 unit = "tiles";
             }
@@ -80,7 +80,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var s = map.Settlements[i];
                 if (s.Kind != EmberCrpg.Domain.Overland.SettlementKind.Dungeon) continue;
                 int dx = s.TilePosition.X - htx, dy = s.TilePosition.Y - hty;
-                int d = System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy));
+                int d = s.TilePosition.ChebyshevDistanceTo(new GridPosition(htx, hty));
                 if (d < bestDist) { bestDist = d; bestName = s.Name; bdx = dx; bdy = dy; }
             }
             if (bestName == null) return QuestGuidanceRow.None;
@@ -163,7 +163,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private int DistanceFromPlayer(ActorRecord target)
         {
             return TryGetGuidancePlayerPosition(out var playerPosition)
-                ? Chebyshev(playerPosition, target.Position)
+                ? playerPosition.ChebyshevDistanceTo(target.Position)
                 : 0;
         }
 
@@ -217,13 +217,6 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private GridPosition PlayerCombatPosition(ActorRecord player)
         {
             return TryGetGuidancePlayerPosition(out var live) ? live : player.Position;
-        }
-
-        private static int Chebyshev(GridPosition a, GridPosition b)
-        {
-            int dx = System.Math.Abs(a.X - b.X);
-            int dy = System.Math.Abs(a.Y - b.Y);
-            return dx > dy ? dx : dy;
         }
 
         private static string BuildForgeGuidanceLine(QuestState state, string actorName, int distance, string direction, string unit)

@@ -156,47 +156,9 @@ namespace EmberCrpg.Domain.World
             }
         }
 
-        // Codex audit (sixth pass D-P3 #D2): the five named role views below
-        // (Player/Talker/Merchant/Guard/Enemy) are deprecated since Phase 1 but
-        // 71 call sites across Simulation/Presentation/Data still read or
-        // write them. Removal is scheduled for after the Phase 13 cleanup
-        // sprint — until then, the [Obsolete] attribute fires warning-only
-        // (error: false) so existing callers compile while new code is
-        // guided to ActorStore.FirstByRole(...).
-        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Player) or ActorStore role-view helpers.", false)]
-        public ActorRecord Player
-        {
-            get { return GetActorView(ActorRole.Player); }
-            set { SetActorView(ActorRole.Player, value); }
-        }
-
-        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Talker) or ActorStore role-view helpers.", false)]
-        public ActorRecord Talker
-        {
-            get { return GetActorView(ActorRole.Talker); }
-            set { SetActorView(ActorRole.Talker, value); }
-        }
-
-        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Merchant) or ActorStore role-view helpers.", false)]
-        public ActorRecord Merchant
-        {
-            get { return GetActorView(ActorRole.Merchant); }
-            set { SetActorView(ActorRole.Merchant, value); }
-        }
-
-        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Guard) or ActorStore role-view helpers.", false)]
-        public ActorRecord Guard
-        {
-            get { return GetActorView(ActorRole.Guard); }
-            set { SetActorView(ActorRole.Guard, value); }
-        }
-
-        [Obsolete("Slice-era role shim, scheduled for removal after Phase 13. Use Actors.FirstByRole(ActorRole.Enemy) or ActorStore role-view helpers.", false)]
-        public ActorRecord Enemy
-        {
-            get { return GetActorView(ActorRole.Enemy); }
-            set { SetActorView(ActorRole.Enemy, value); }
-        }
+        // W-refactor 2026-07-26 DEAD-6: the five slice-era named role shims
+        // (Player/Talker/Merchant/Guard/Enemy) retired — canonical accessor is
+        // Actors.FirstByRole(role). See ReplaceActorView(role, record) for writes.
         public InventoryState PlayerInventory;
         public EquipmentState PlayerEquipment = new EquipmentState();
         public InventoryState MerchantInventory;
@@ -232,6 +194,9 @@ namespace EmberCrpg.Domain.World
         public List<ulong> CompanionIds = new List<ulong>();
         /// <summary>P0 pursuit: active guard chases (guard -> quarry, with an expiry).</summary>
         public List<PursuitRecord> GuardPursuits = new List<PursuitRecord>();
+        /// <summary>W36 GUARD+COMBAT: active enemy hunts (hunter -> prey, with an expiry).
+        /// Pursuit's mirror on the enemy side — the Decide phase arms, Advance reads.</summary>
+        public List<HuntTargetRecord> HuntTargets = new List<HuntTargetRecord>();
         /// <summary>W32 EAT: count-based stockpile reservations — the "last bread" is claimed once.</summary>
         public ReservationLedger Reservations = new ReservationLedger();
         /// <summary>B10 §A3: sim-blocked cells (buildings projected from the presentation-side
@@ -324,6 +289,7 @@ namespace EmberCrpg.Domain.World
             NpcMemory = other.NpcMemory;
             CompanionIds = other.CompanionIds;
             GuardPursuits = other.GuardPursuits;
+            HuntTargets = other.HuntTargets;
             Reservations = other.Reservations;
             Blocked = other.Blocked; // B10 §A3: derived, but WorldStateCopyFromTests's reflection lint requires every field.
             WorkOrders = other.WorkOrders;
@@ -354,12 +320,6 @@ namespace EmberCrpg.Domain.World
         public void ReplaceActorView(ActorRole role, ActorRecord record)
         {
             SetActorView(role, record);
-        }
-
-        private ActorRecord GetActorView(ActorRole role)
-        {
-            EnsureActorStore();
-            return Actors.FirstByRole(role);
         }
 
         private void SetActorView(ActorRole expectedRole, ActorRecord record)

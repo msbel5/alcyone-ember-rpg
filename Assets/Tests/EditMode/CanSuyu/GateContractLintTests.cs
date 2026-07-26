@@ -69,7 +69,13 @@ namespace EmberCrpg.Tests.EditMode.CanSuyu
                 return;
             }
 
-            var roadmap = File.ReadAllLines(Path.Combine(root, "docs", "ROADMAP_V2_CAN_SUYU.md"));
+            var roadmapPath = Path.Combine(root, "docs", "ROADMAP_V2_CAN_SUYU.md");
+            if (!File.Exists(roadmapPath))
+            {
+                Assert.Inconclusive("ROADMAP_V2_CAN_SUYU.md was retired with the pre-RUH_TESHIS docs purge — lint has no target");
+                return;
+            }
+            var roadmap = File.ReadAllLines(roadmapPath);
             string[] bannedPhrases = { "sabit saat", "ekran görüntüsü yeterli", "screenshot proof", "saat 12'de" };
             var offending = roadmap
                 .Where(line => line.Contains("DoD:"))

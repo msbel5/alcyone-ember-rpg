@@ -89,9 +89,7 @@ namespace EmberCrpg.Simulation.Living
                 if (time.TotalMinutes > pursuit.UntilMinutes) { pursuits.RemoveAt(i); return false; }
                 if (!actors.TryGet(new ActorId(pursuit.TargetId), out var quarry) || quarry == null || !quarry.IsAlive)
                 { pursuits.RemoveAt(i); return false; }
-                int dist = System.Math.Max(
-                    System.Math.Abs(guard.Position.X - quarry.Position.X),
-                    System.Math.Abs(guard.Position.Y - quarry.Position.Y));
+                int dist = guard.Position.ChebyshevDistanceTo(quarry.Position);
                 if (dist > 40) { pursuits.RemoveAt(i); return false; } // lost them - back to post
                 target = quarry.Position;
                 return true;

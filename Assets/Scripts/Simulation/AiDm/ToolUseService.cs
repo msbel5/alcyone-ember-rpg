@@ -90,18 +90,9 @@ namespace EmberCrpg.Simulation.AiDm
             return ToolCallResult.AcceptedWith(ConsultFateOutcomeBucket.FromRoll(roll).Code);
         }
 
+        // Historical 13-digit chaos seed (NOT the standard FNV offset) — do not change or every
+        // cached tool-use fingerprint drifts. Fnv1a.Fold64 is bit-identical to the retired loop.
         private static ulong StableHash(string value)
-        {
-            unchecked
-            {
-                ulong hash = 1469598103934665603UL;
-                foreach (var c in value ?? string.Empty)
-                {
-                    hash ^= c;
-                    hash *= 1099511628211UL;
-                }
-                return hash;
-            }
-        }
+            => Fnv1a.Fold64(1469598103934665603UL, value);
     }
 }

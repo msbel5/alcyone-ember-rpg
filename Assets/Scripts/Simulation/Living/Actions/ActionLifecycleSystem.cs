@@ -24,15 +24,24 @@ namespace EmberCrpg.Simulation.Living.Actions
         // unknown wrapper). Null disables the WORK rules (bare EAT/FARM test worlds) — the
         // _plantSpecies null contract's mirror (docs/ruh/w34/02 §6).
         private readonly System.Func<RecipeId, RecipeDef> _resolveRecipe;
+        // W36 GUARD+COMBAT feature flag: DEFAULT OFF preserves the W35 tick surface so pre-W36
+        // fixtures (test worlds that do NOT expect enemies/guards to acquire action state) stay
+        // green. Composer sets it TRUE to enable the vertical slice; story tests do the same.
+        // When OFF, TryDecideWatch/TryDecideHunt are no-ops and the three W36 advancer slots
+        // stay unregistered (never dispatched — Decide never opens their intents).
+        private readonly bool _enableGuardAndCombat;
 
         public ActionLifecycleSystem(ActionLogManager log,
             System.Collections.Generic.IReadOnlyList<PlantSpeciesDef> plantSpecies = null,
-            System.Func<RecipeId, RecipeDef> resolveRecipe = null)
+            System.Func<RecipeId, RecipeDef> resolveRecipe = null,
+            bool enableGuardAndCombat = false)
         {
             log ??= new ActionLogManager();
             _plantSpecies = plantSpecies;
             _resolveRecipe = resolveRecipe;
-            _registry = new ActionAdvancerRegistry(
+            _enableGuardAndCombat = enableGuardAndCombat;
+            var advancers = new System.Collections.Generic.List<ActionAdvancer>
+            {
                 new MoveToFoodAdvancer(log),
                 new TakeFoodAdvancer(log),
                 new ConsumeFoodAdvancer(log),
@@ -45,7 +54,19 @@ namespace EmberCrpg.Simulation.Living.Actions
                 new SleepAdvancer(log),
                 // W34 WORK: bench commute + embodied production (docs/ruh/w34/02 §7).
                 new MoveToWorksiteAdvancer(log),
-                new PerformWorkAdvancer(log, resolveRecipe));
+                new PerformWorkAdvancer(log, resolveRecipe),
+            };
+            if (enableGuardAndCombat)
+            {
+                // W36 GUARD+COMBAT: guard beat + enemy approach->strike loop. Registered ONLY
+                // when the flag is on so a pre-W36 test that constructs the lifecycle without
+                // an ActorRole.Enemy hunter never dispatches the new strategies. Registry stays
+                // sized for the enum tail; unused slots stay null (safe, gated at Decide).
+                advancers.Add(new OnWatchAdvancer(log));
+                advancers.Add(new HuntAdvancer(log));
+                advancers.Add(new StrikeQuarryAdvancer(log));
+            }
+            _registry = new ActionAdvancerRegistry(advancers.ToArray());
         }
 
         /// <summary>Decide phase (@PerTick:18): expiry sweep, then EatIntent + reservation +
@@ -65,9 +86,21 @@ namespace EmberCrpg.Simulation.Living.Actions
             foreach (var actor in world.Actors.Records)
             {
                 if (actor == null || !actor.IsAlive) continue;
-                if (actor.Role == ActorRole.Player || actor.Role == ActorRole.Enemy) continue;
+                if (actor.Role == ActorRole.Player) continue;
+                // W36 GUARD+COMBAT: when the flag is ON, Enemy passes the door and drops into
+                // TryDecideHunt below. When OFF (legacy default), the blanket skip stays so
+                // pre-W36 test worlds see identical behaviour.
+                if (actor.Role == ActorRole.Enemy && !_enableGuardAndCombat) continue;
                 // One gate covers Running AND the one-advancement terminal handover states.
                 if (actor.ActionState.CurrentAction != ActorActionType.None) continue;
+                // W36 GUARD+COMBAT: Enemy's Decide short-circuits into Hunt — enemies eat, farm,
+                // work, sleep NONE of these; the only decision they take is the next prey. Guard
+                // + Watch is handled at the end of this loop after the eat carve-out.
+                if (actor.Role == ActorRole.Enemy)
+                {
+                    TryDecideHunt(world, actor, stamp);
+                    continue;
+                }
                 // guards-eat (B09 remainder): the watch eats only when no chase is live — pursuit
                 // outranks lunch, mirroring the quarry-side probe (ActionAdvancer.IsPursuitQuarry).
                 // READ-ONLY: living.decision is not a declared World.GuardPursuits writer
@@ -99,7 +132,15 @@ namespace EmberCrpg.Simulation.Living.Actions
                 }
                 // W33-02 §5: the farm/work rules fire ONLY when eat produced no decision; rule
                 // order is code order — a fixed, deterministic priority. Cheap gates first.
-                if (actor.Role == ActorRole.Guard) continue; // the watch does not farm or work
+                if (actor.Role == ActorRole.Guard)
+                {
+                    // W36 GUARD+COMBAT: idle guard with no pursuit and no eat need walks the
+                    // beat. Live pursuit was already gated at the top (HasLivePursuit), so this
+                    // path only fires when the watch has NOTHING better to do than stand post.
+                    if (_enableGuardAndCombat)
+                        TryDecideWatch(world, actor, stamp);
+                    continue; // the watch does not farm or work
+                }
                 if (!ScheduleSystem.IsWorkHour(stamp)) continue; // no fields or benches at night
                 if (!actor.ScheduleState.IsIdle)
                 {
@@ -176,6 +217,12 @@ namespace EmberCrpg.Simulation.Living.Actions
             // W34 WORK: bench commute hands over to embodied production; (Work, PerformWork)
             // -> None via the default arm — the commit frees the actor (docs/ruh/w34/02 §4).
             (ActorIntent.Work, ActorActionType.MoveToWorksite) => ActorActionType.PerformWork,
+            // W36 GUARD+COMBAT: the FIRST cyclic NextLink — Hunt ⇄ StrikeQuarry loops while
+            // the HuntTargets row survives; StrikeQuarry clears its own row on kill/clamp so
+            // the next Advance's Hunt fails NoFoodFound → Idle (the terminating condition).
+            // Watch chain is a single-link OnWatch → None: chain re-arms on the next Decide.
+            (ActorIntent.Hunt, ActorActionType.Hunt) => ActorActionType.StrikeQuarry,
+            (ActorIntent.Hunt, ActorActionType.StrikeQuarry) => ActorActionType.Hunt,
             _ => ActorActionType.None,
         };
 
@@ -295,8 +342,7 @@ namespace EmberCrpg.Simulation.Living.Actions
                     { tag = candidate; break; }
                 if (tag == null) continue; // drained or fully claimed
                 long dist = entry.HasSite
-                    ? System.Math.Max(System.Math.Abs(actor.Position.X - entry.CentreX),
-                                      System.Math.Abs(actor.Position.Y - entry.CentreY))
+                    ? actor.Position.ChebyshevDistanceTo(new GridPosition(entry.CentreX, entry.CentreY))
                     : 0L;
                 if (dist < bestDist)
                 { bestDist = dist; best = entry.Pile; bestTag = tag; bestCx = entry.CentreX; bestCy = entry.CentreY; }
@@ -307,9 +353,7 @@ namespace EmberCrpg.Simulation.Living.Actions
 
             var seat = CommunalSeat.For(new GridPosition(bestCx, bestCy),
                 (int)(actor.Id.Value % (ulong)CommunalSeat.SeatCount));
-            long walk = System.Math.Max(
-                System.Math.Abs(actor.Position.X - seat.X),
-                System.Math.Abs(actor.Position.Y - seat.Y));
+            long walk = actor.Position.ChebyshevDistanceTo(seat);
             // Distance-scaled TTL (1 tick = 1 game minute): walk + chew + slack — W32-02 §4.3.
             long until = stamp.TotalMinutes + walk + ConsumeFoodAdvancer.ConsumeDurationTicks + 60;
             if (!world.Reservations.TryReserve(best.SiteId.Value, bestTag, actor.Id.Value,
@@ -410,6 +454,71 @@ namespace EmberCrpg.Simulation.Living.Actions
                 ActionInterruptPolicy.Interruptible);
             _registry.For(ActorActionType.MoveToBed).TransitionTo(world, actor, start,
                 ActionLogReason.ReservationAcquired, stamp);
+        }
+
+        // W36 GUARD+COMBAT: the SIMPLEST decide method — no ledger, no reservation. A guard's
+        // beat is the actor's OWN DayAnchor cell; two guards may share it (posts are locations,
+        // not resources — the FoodPileCache seat-ring exclusivity does NOT apply). The chain
+        // re-arms on the next Decide tick after OnWatch's Succeeded returns Idle (one live row
+        // per guard via the CurrentAction == None gate above — chain-exclusion is structural).
+        // CONSTRAINT (Gate8 personal-space parity): fires ONLY during work hours — off-hours,
+        // the guard stays Idle and ScheduleSystem routes them Home (ClassicTarget's night rule).
+        // Without this, multiple guards sharing a DayAnchor stack there at night instead of
+        // scattering to their homes, and the 2-day soak gate breaks with "the crowd stacks".
+        private void TryDecideWatch(WorldState world, ActorRecord actor, GameTime stamp)
+        {
+            if (!ScheduleSystem.IsWorkHour(stamp)) return; // night: silent, ScheduleSystem routes home
+            // Live pursuit outranks the beat AND blocks re-arming it. Without this the guard
+            // ping-pongs OnWatch/Failed/Idle each pair of ticks while ScheduleSystem — which
+            // could route the chase — sees the non-None action state and skips the actor,
+            // trapping the pursuit indefinitely. Idle here lets the schedule take the wheel.
+            if (HasLivePursuit(world, actor, stamp)) return;
+            var start = ActorActionState.ForIntent(ActorIntent.Watch).Start(
+                ActorActionType.OnWatch, default(SiteId), ItemId.Empty,
+                ReservationId.Empty, stamp.TotalMinutes,
+                ActionInterruptPolicy.Interruptible);
+            _registry.For(ActorActionType.OnWatch).TransitionTo(world, actor, start,
+                ActionLogReason.TargetSelected, stamp); // no reservation → ReservationAcquired would lie
+        }
+
+        // W36 GUARD+COMBAT: enemy's TryDecidePlant equivalent — pick nearest prey within
+        // HuntRadius (Chebyshev, first-wins in ActorStore order), open a HuntTargets row
+        // (RegisterHunt: PursuitRecord's mirror; newest prey per hunter wins — same overwrite
+        // semantics), then start Hunt. Empty scan = no decision this tick (the hunter waits,
+        // never spam-logs). This is the ONLY writer of World.HuntTargets on the Decide slot.
+        private void TryDecideHunt(WorldState world, ActorRecord actor, GameTime stamp)
+        {
+            var prey = CombatOperations.Nearest(world, actor.Position,
+                CombatOperations.HuntRadius, CombatOperations.IsPrey);
+            if (prey == null) return; // no prey in range: quiet — a starving town's soundtrack
+            RegisterHunt(world, actor.Id.Value, prey.Id.Value, stamp);
+            var start = ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                ActorActionType.Hunt, default(SiteId), ItemId.Empty,
+                ReservationId.Empty, stamp.TotalMinutes,
+                ActionInterruptPolicy.Interruptible); // interruptible: a guard-strike stops the hunt
+            _registry.For(ActorActionType.Hunt).TransitionTo(world, actor, start,
+                ActionLogReason.TargetSelected, stamp); // no reservation row → TargetSelected reason
+        }
+
+        // W36 GUARD+COMBAT: newest prey wins per hunter (mirror of WitnessResponseSystem's
+        // RegisterPursuit overwrite semantics). Row lifetime is bounded (HuntMinutes); an
+        // unresolved row is pruned by the advancer's TTL check next tick.
+        private static void RegisterHunt(WorldState world, ulong hunterId, ulong targetId, GameTime stamp)
+        {
+            world.HuntTargets ??= new System.Collections.Generic.List<HuntTargetRecord>();
+            foreach (var row in world.HuntTargets)
+                if (row.HunterId == hunterId)
+                {
+                    row.TargetId = targetId;
+                    row.UntilMinutes = stamp.TotalMinutes + CombatOperations.HuntMinutes;
+                    return;
+                }
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = hunterId,
+                TargetId = targetId,
+                UntilMinutes = stamp.TotalMinutes + CombatOperations.HuntMinutes,
+            });
         }
     }
 }

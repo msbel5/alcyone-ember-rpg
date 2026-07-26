@@ -70,8 +70,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 // F23: auto-target only ever picks ENEMIES — a mashed attack key must never commit
                 // an accidental crime. Assault stays possible, but only by an AIMED (named) swing.
                 if (a.Role != ActorRole.Enemy || !a.IsAlive) continue;
-                int d = System.Math.Max(System.Math.Abs(a.Position.X - from.X),
-                                        System.Math.Abs(a.Position.Y - from.Y));
+                int d = a.Position.ChebyshevDistanceTo(from);
                 if (d > maxRange) continue;
                 if (d < bestDist || (d == bestDist && a.Id.Value < bestId)) { best = a; bestDist = d; bestId = a.Id.Value; }
             }

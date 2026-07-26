@@ -2551,14 +2551,23 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             return Path.Combine(Application.persistentDataPath, "proof-screenshots");
         }
 
-        // BOOT-RACE FIX (shipcheck "world-enter: no adapter"): the boot flow navigates Boot→MainMenu on
-        // its own schedule; a FIXED pre-wait raced it — when boot timing shifted (forge-off made it
-        // slower to settle), the boot's MainMenu navigation STOMPED our GeneratedWorld load. Wait until
-        // the MainMenu is actually the active scene (it cannot stomp after that), then a short grace.
+        // BOOT-RACE FIX (shipcheck "world-enter: no adapter" + the marathon regression it grew into):
+        // the boot flow navigates Boot→MainMenu on its own async schedule; a FIXED pre-wait raced it.
+        // Forge-on boots spend 60 s+ in ONNX before BootBootstrap even calls LoadSceneAsync(MainMenu)
+        // (see RunMarathon line ~935 comment) — the earlier 30 s window bailed on timeout, then the
+        // marathon's own SceneManager.LoadScene(GeneratedWorld) landed BEFORE the boot's async
+        // MainMenu load, and boot's continuation stomped GeneratedWorld right back out.
+        // Two paired closes: (1) lift the deadline to 180 s so the wait outlasts the worst forge boot
+        // and matches the adapterDeadline the marathon already accepts; (2) exit only once MainMenu
+        // is the active scene AND the LoadingScreen has been dismissed — BootBootstrap dismisses it
+        // AFTER its LoadSceneAsync(MainMenu) has RESOLVED (Presentation/Ember/Boot/BootBootstrap.cs),
+        // so !IsVisibleLoading is the deterministic single-signal that no further stomp is queued.
         private static IEnumerator WaitForBootToSettle()
         {
-            float deadline = Time.unscaledTime + 30f;
-            while (SceneManager.GetActiveScene().name != EmberScenes.MainMenu && Time.unscaledTime < deadline)
+            float deadline = Time.unscaledTime + 180f;
+            while (Time.unscaledTime < deadline &&
+                   (SceneManager.GetActiveScene().name != EmberScenes.MainMenu ||
+                    EmberCrpg.Presentation.Ember.Loading.LoadingScreen.IsVisibleLoading()))
                 yield return null;
             yield return new WaitForSecondsRealtime(0.8f);
         }

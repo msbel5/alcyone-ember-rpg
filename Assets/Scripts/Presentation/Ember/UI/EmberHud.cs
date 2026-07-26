@@ -80,13 +80,14 @@ namespace EmberCrpg.Presentation.Ember.UI
         private static readonly Color VitalHealth   = new Color(0.851f, 0.200f, 0.122f, 1f); // #D9331F
         private static readonly Color VitalFatigue  = new Color(0.851f, 0.702f, 0.102f, 1f); // #D9B31A
         private static readonly Color VitalMana     = new Color(0.200f, 0.451f, 0.949f, 1f); // #3373F2
-        private static readonly Color Parchment     = new Color(0.949f, 0.859f, 0.620f, 1f); // #F2DB9E
-        private static readonly Color ParchmentDim  = new Color(0.902f, 0.851f, 0.702f, 1f); // #E6D9B3
-        private static readonly Color Gold          = new Color(1.000f, 0.851f, 0.298f, 1f); // #FFD94C
-        private static readonly Color PanelBrown    = new Color(0.180f, 0.140f, 0.090f, 0.92f); // #2E2417 @ 92%
-        private static readonly Color PanelBrownHi  = new Color(0.227f, 0.180f, 0.114f, 1f); // #3A2E1D hover lift
+        // Palette moved to EmberPalette (one home for the six shared Ember UI colors).
+        private static readonly Color Parchment     = EmberPalette.Parchment;
+        private static readonly Color ParchmentDim  = EmberPalette.ParchmentDim;
+        private static readonly Color Gold          = EmberPalette.Gold;
+        private static readonly Color PanelBrown    = EmberPalette.PanelBrown;
+        private static readonly Color PanelBrownHi  = EmberPalette.PanelBrownHi;
         private static readonly Color BarTrack      = new Color(0.070f, 0.060f, 0.050f, 0.90f);
-        private static readonly Color GoldHairline  = new Color(0.949f, 0.859f, 0.620f, 0.30f);
+        private static readonly Color GoldHairline  = EmberPalette.GoldHairline;
         private static readonly Color InkOnGold     = new Color(0.149f, 0.102f, 0.051f, 1f); // #261A0D
 
         private void Awake()

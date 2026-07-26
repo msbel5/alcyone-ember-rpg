@@ -98,20 +98,10 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(world.Sites.Count, Is.EqualTo(0));
             Assert.That(world.Factions.Count, Is.EqualTo(0));
             Assert.That(world.Events.IsEmpty, Is.True);
-            // Codex review on PR #184 (P2): the Batch 1 sweep rewrote both
-            // sides of these assertions to the new API, leaving them
-            // tautological. The intent is to pin the compatibility contract —
-            // the deprecated named property MUST resolve to the same record
-            // ActorStore.FirstByRole returns during the obsolescence window.
-            // Keep the LEFT side on the deprecated property (warning silenced)
-            // and the RIGHT side on the canonical API.
-#pragma warning disable CS0618 // intentional cross-API equivalence check
-            Assert.That(world.Player, Is.SameAs(world.Actors.FirstByRole(ActorRole.Player)));
-            Assert.That(world.Talker, Is.SameAs(world.Actors.FirstByRole(ActorRole.Talker)));
-            Assert.That(world.Merchant, Is.SameAs(world.Actors.FirstByRole(ActorRole.Merchant)));
-            Assert.That(world.Guard, Is.SameAs(world.Actors.FirstByRole(ActorRole.Guard)));
-            Assert.That(world.Enemy, Is.SameAs(world.Actors.FirstByRole(ActorRole.Enemy)));
-#pragma warning restore CS0618
+            // DEAD-6 (2026-07-26): the five slice-era role shims retired — the equivalence
+            // pin they backed is gone with them; ActorStore.FirstByRole is now the sole seam.
+            foreach (var role in new[] { ActorRole.Player, ActorRole.Talker, ActorRole.Merchant, ActorRole.Guard, ActorRole.Enemy })
+                Assert.That(world.Actors.FirstByRole(role), Is.Not.Null);
         }
 
         private static ActorRecord MakeRecord(ulong id, string name, ActorRole role)

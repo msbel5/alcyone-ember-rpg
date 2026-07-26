@@ -44,11 +44,21 @@ namespace EmberCrpg.Simulation.Composition
             // species truth cannot fork (W33-01 §7.1).
             // W34 WORK: the SAME recipe registry econ.jobs' ghost net resolves feeds the work
             // rules (null on unknown — the ghost net, not the action strip, owns that story).
+            // W36 GUARD+COMBAT: the vertical slice ships DARK from the composer — enableGuardAndCombat
+            // stays FALSE here to protect the W35 tick surface (2-day life gates, ProofLivingCensus
+            // soak counters) while the new machinery is proven inside the Actions story tests
+            // (GuardOnWatchStoryTests / EnemyHuntStoryTests explicitly pass true). The projection's
+            // GUESS branches for Guard/Enemy are ALREADY DEAD (WorldProjection.DescribeScheduleWord)
+            // — flipping this switch here lights the labels, does not add them. Follow-up commit:
+            // measure LivingWorldGate Gate8 stack + ProofLivingCensus peak drift under the flag ON,
+            // update goldens with a dated re-baseline, then flip. See docs/atlas/systems/04-cascades-crime.md
+            // debt #1 and RUH_TESHIS §2.9 for the flip conditions.
             var actionLifecycle = new EmberCrpg.Simulation.Living.Actions.ActionLifecycleSystem(
                 new EmberCrpg.Domain.Actors.Actions.ActionLogManager(
                     new EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink()),
                 plantSpecies,
-                ResolveProductionRecipe);
+                ResolveProductionRecipe,
+                enableGuardAndCombat: false);
             return new WorldTickRegistry(new IWorldTickSystem[]
             {
                 new TimeStep(timeAdvance),

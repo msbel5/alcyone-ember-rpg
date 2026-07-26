@@ -9,11 +9,12 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
     [UnityEngine.Scripting.Preserve]
     public sealed partial class SettingsSection : IOptionsSection
     {
-        private static readonly Color Parchment = new Color(0.949f, 0.859f, 0.620f, 1f);
-        private static readonly Color ParchmentDim = new Color(0.902f, 0.851f, 0.702f, 1f);
-        private static readonly Color Gold = new Color(1f, 0.851f, 0.298f, 1f);
-        private static readonly Color PanelBrown = new Color(0.18f, 0.14f, 0.09f, 0.92f);
-        private static readonly Color GoldHairline = new Color(0.949f, 0.859f, 0.620f, 0.30f);
+        // Palette moved to EmberPalette (one home for the six shared Ember UI colors).
+        private static readonly Color Parchment = EmberPalette.Parchment;
+        private static readonly Color ParchmentDim = EmberPalette.ParchmentDim;
+        private static readonly Color Gold = EmberPalette.Gold;
+        private static readonly Color PanelBrown = EmberPalette.PanelBrown;
+        private static readonly Color GoldHairline = EmberPalette.GoldHairline;
         private TMP_FontAsset _font;
         private Sprite _frame;
 

@@ -27,7 +27,7 @@ namespace EmberCrpg.Simulation.Living
             if (world.CompanionIds.Contains(actorId.Value)) return false;
             if (!world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive) return false;
             if (actor.Role == ActorRole.Player || actor.Role == ActorRole.Enemy) return false;
-            if (Chebyshev(actor.Position, player.Position) > RecruitReachCells) return false;
+            if (actor.Position.ChebyshevDistanceTo(player.Position) > RecruitReachCells) return false;
 
             world.CompanionIds.Add(actorId.Value);
             world.Events?.Append(new WorldEvent(world.Time, WorldEventKind.ActorTalked, actorId, default,
@@ -55,8 +55,6 @@ namespace EmberCrpg.Simulation.Living
             return null;
         }
 
-        internal static int Chebyshev(GridPosition a, GridPosition b)
-            => System.Math.Max(System.Math.Abs(a.X - b.X), System.Math.Abs(a.Y - b.Y));
     }
 
     /// <summary>Per-tick heel-follow + hourly guard strike for recruited companions.</summary>
@@ -90,16 +88,15 @@ namespace EmberCrpg.Simulation.Living
             {
                 if (!world.Actors.TryGet(new ActorId(id), out var companion) || companion == null || !companion.IsAlive)
                     continue;
-                int gap = CompanionService.Chebyshev(companion.Position, player.Position);
+                int gap = companion.Position.ChebyshevDistanceTo(player.Position);
                 if (gap <= HeelCells)
                     continue; // at heel — no jitter
                 // P0 re-pin: a badly lagging companion double-steps - the schedule/meal detours
                 // introduced by eat-on-arrival must never out-walk the heel contract.
                 int steps = gap > HeelCells + 1 ? 2 : 1;
-                for (int s = 0; s < steps && CompanionService.Chebyshev(companion.Position, player.Position) > HeelCells; s++)
-                    companion.MoveTo(new GridPosition(
-                        companion.Position.X + System.Math.Sign(player.Position.X - companion.Position.X),
-                        companion.Position.Y + System.Math.Sign(player.Position.Y - companion.Position.Y)));
+                for (int s = 0; s < steps && companion.Position.ChebyshevDistanceTo(player.Position) > HeelCells; s++)
+                    // B10 §A5: route through the ONE grid stepper — refuses walls & corner-cuts.
+                    companion.MoveTo(MovementService.StepToward(companion.Position, player.Position, world.NavView));
                 moved++;
             }
             return moved;
@@ -143,8 +140,8 @@ namespace EmberCrpg.Simulation.Living
             {
                 if (actor == null || !actor.IsAlive || actor.Role != ActorRole.Enemy) continue;
                 int dist = System.Math.Min(
-                    CompanionService.Chebyshev(actor.Position, player),
-                    CompanionService.Chebyshev(actor.Position, companion));
+                    actor.Position.ChebyshevDistanceTo(player),
+                    actor.Position.ChebyshevDistanceTo(companion));
                 if (dist <= GuardReachCells && dist < bestDist) { bestDist = dist; best = actor; }
             }
             return best;

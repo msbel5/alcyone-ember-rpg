@@ -29,9 +29,7 @@ namespace EmberCrpg.Simulation.Living.Actions
             if (world.Sites?.Records == null) return true;
             if (!NeedConsumptionSystem.TryGetSiteCentre(world, new SiteId(siteId), out var centre))
                 return true;
-            return System.Math.Max(
-                System.Math.Abs(actor.Position.X - centre.X),
-                System.Math.Abs(actor.Position.Y - centre.Y)) <= NeedConsumptionSystem.EatReachCells;
+            return actor.Position.ChebyshevDistanceTo(centre) <= NeedConsumptionSystem.EatReachCells;
         }
 
         /// <summary>The reserved seat is a pure function of (site centre, actor id): a deterministic

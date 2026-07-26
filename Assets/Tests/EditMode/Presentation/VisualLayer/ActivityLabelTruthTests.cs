@@ -82,9 +82,13 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
                 Assert.That(code.Contains(banned), Is.False,
                     $"'{banned}' guess branch still lives in the projection — the view invents verbs");
 
-            // Surviving non-EAT guesses must be tagged for their retiring slice (grep contract).
-            Assert.That(code, Does.Contain("GUESS("),
-                "surviving guess branches must carry the GUESS(<slice>) retirement tag");
+            // W36 GUARD+COMBAT: the last two GUESS branches (Guard "on watch", Enemy "hunting")
+            // are DEAD. DescribeScheduleWord has no surviving guess to tag — the lint's earlier
+            // "no surviving guess" contract now supersedes the "surviving guesses must be
+            // tagged" contract. Any regression that re-introduces a guess must (a) tag it
+            // GUESS(<slice>) AND (b) update this assertion to Does.Contain again.
+            Assert.That(code, Does.Not.Contain("GUESS("),
+                "no surviving guess branches — verb births exclusively from ActionVerbTable now");
         }
 
         [Test]

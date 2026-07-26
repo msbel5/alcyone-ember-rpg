@@ -151,3 +151,15 @@ Assets/StreamingAssets/Models/matte.meta
 .validation-dotnet-home/
 Assets/StreamingAssets/Models/tts/
 Assets/StreamingAssets/Models/tts.meta
+
+# Unity package examples not needed in repo
+Assets/TextMesh Pro/Examples & Extras/
+Assets/TextMesh Pro/Examples & Extras.meta
+Assets/pold/
+Assets/pold.meta
+D:/proofs/
+
+
+# transient build/proof outputs and IDE workspace
+build-*.log
+.claude/

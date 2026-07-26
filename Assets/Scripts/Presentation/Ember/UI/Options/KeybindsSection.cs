@@ -9,8 +9,9 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
     /// </summary>
     public sealed class KeybindsSection : IOptionsSection
     {
-        private static readonly Color Parchment = new Color(0.949f, 0.859f, 0.620f, 1f);
-        private static readonly Color Gold = new Color(1f, 0.851f, 0.298f, 1f);
+        // Palette moved to EmberPalette (one home for the six shared Ember UI colors).
+        private static readonly Color Parchment = EmberPalette.Parchment;
+        private static readonly Color Gold = EmberPalette.Gold;
 
         public string Title => "Keybinds";
         public int Order => 30;
