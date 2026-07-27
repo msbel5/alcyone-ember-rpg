@@ -97,7 +97,7 @@ inventory = ToInventoryData(world.PlayerInventory),
                 playerClassName = world.PlayerClassName,
                 playerReputation = world.PlayerReputation,
                 playerBountyGold = world.PlayerBountyGold,
-                companionIds = world.CompanionIds?.ToArray() ?? System.Array.Empty<ulong>(),
+                companionIds = world.CompanionIds?.ConvertAll(a => a.Value).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitGuardIds = world.GuardPursuits?.ConvertAll(p => p.GuardId).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitTargetIds = world.GuardPursuits?.ConvertAll(p => p.TargetId).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitUntilMinutes = world.GuardPursuits?.ConvertAll(p => p.UntilMinutes).ToArray() ?? System.Array.Empty<long>(),
@@ -282,9 +282,10 @@ world.Items = ToItemStore(data.itemRecords);
                             && i < data.unrestSweepCooldownUntilMinutes.Length
                             ? data.unrestSweepCooldownUntilMinutes[i] : 0L,
                     });
-            world.CompanionIds = data.companionIds != null
-                ? new System.Collections.Generic.List<ulong>(data.companionIds)
-                : new System.Collections.Generic.List<ulong>(); // V3: the party survives save/load
+            world.CompanionIds = new System.Collections.Generic.List<EmberCrpg.Domain.Core.ActorId>();
+            if (data.companionIds != null) // V3: the party survives save/load
+                for (int i = 0; i < data.companionIds.Length; i++)
+                    world.CompanionIds.Add(new EmberCrpg.Domain.Core.ActorId(data.companionIds[i]));
             // F31: the main-quest spine — act 0 in old saves means "never configured": keep defaults.
             world.MainQuest = new EmberCrpg.Domain.Quest.MainQuestState
             {

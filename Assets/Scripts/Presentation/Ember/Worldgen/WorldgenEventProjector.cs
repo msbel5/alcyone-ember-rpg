@@ -171,10 +171,6 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
             }
         }
 
-        private static string EscapeJson(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return string.Empty;
-            return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
-        }
+        private static string EscapeJson(string value) => WorldgenJson.Escape(value);
     }
 }

@@ -22,10 +22,14 @@ namespace EmberCrpg.Domain.Combat
 
         public ActorId PlayerId { get; }
         public ActorId EnemyId { get; }
-        public bool PlayerActsNext { get; set; }
+        // Only two turn transitions exist in this bounded loop; SwitchTurn keeps the toggle
+        // arithmetic inside the owning object instead of at every caller.
+        public bool PlayerActsNext { get; private set; }
         public bool IsFinished { get; private set; }
         public string WinnerName { get; private set; }
         public IReadOnlyList<string> LogLines => _logLines;
+
+        public void SwitchTurn() => PlayerActsNext = !PlayerActsNext;
 
         public void AddLog(string line)
         {

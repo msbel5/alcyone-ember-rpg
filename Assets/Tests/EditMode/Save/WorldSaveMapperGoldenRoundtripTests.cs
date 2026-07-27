@@ -24,7 +24,7 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             // Populate every NEWER collection so silence can't hide a dropped field.
             world.PlayerClassName = "Warrior";
-            world.CompanionIds.Add(101UL);
+            world.CompanionIds.Add(new EmberCrpg.Domain.Core.ActorId(101UL));
             world.GuardPursuits.Add(new PursuitRecord { GuardId = 5, TargetId = 6, UntilMinutes = 999 });
             world.Critters.Add(new AmbientCritter
             { Id = 11, SiteId = new SiteId(1), Cell = new GridPosition(4, 5), Kind = "rat" });

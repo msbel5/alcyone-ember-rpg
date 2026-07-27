@@ -94,5 +94,32 @@ namespace EmberCrpg.Domain.Inventory
                 clone.TryAdd(item.Clone());
             return clone;
         }
+
+        // Deterministic next-id seed: max(existing ids) + 1, floor 1 so `new ItemId(0)` (Empty) never leaks.
+        // The mint owner walks BOTH inventories (player+merchant) when needed — see the two-arg overload.
+        public EmberCrpg.Domain.Core.ItemId NextItemId()
+        {
+            ulong max = 0UL;
+            for (int i = 0; i < _items.Count; i++)
+                if (_items[i].Id.Value > max) max = _items[i].Id.Value;
+            return new EmberCrpg.Domain.Core.ItemId(max + 1UL);
+        }
+
+        /// <summary>Cross-inventory seed for mints that span two bags (e.g. player+merchant trade).</summary>
+        public static EmberCrpg.Domain.Core.ItemId NextItemIdAcross(InventoryState first, InventoryState second)
+        {
+            ulong max = 0UL;
+            max = MaxIdIn(first, max);
+            max = MaxIdIn(second, max);
+            return new EmberCrpg.Domain.Core.ItemId(max + 1UL);
+        }
+
+        private static ulong MaxIdIn(InventoryState inv, ulong seed)
+        {
+            if (inv == null) return seed;
+            for (int i = 0; i < inv._items.Count; i++)
+                if (inv._items[i].Id.Value > seed) seed = inv._items[i].Id.Value;
+            return seed;
+        }
     }
 }

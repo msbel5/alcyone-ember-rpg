@@ -8,8 +8,29 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         public void AdvanceTick(int tickIndex)
         {
             DrainMainThreadApply(); // DET-02: apply queued off-thread LLM results on the main thread
-            _tick = tickIndex;
-            _tickComposer.Advance(_world, tickIndex);
+            // W39 CENSUS-PEAK FIX: when the marathon has armed proof-mode sampling, walk the
+            // composer ONE tick at a time and fold ProofSampleLivingPeaks after each step —
+            // otherwise slices that start AND end inside a jumped Advance never light the
+            // peaks and the marathon reports peaks(eat=0) beside meals=6198. REFORM #2 in
+            // WorldTickComposer pins chunking-invariance ("a 40-tick jump and forty 1-tick
+            // calls produce the IDENTICAL history"), so the step-loop stays deterministic.
+            // Production paths (armed=false) keep the single-shot Advance and pay zero cost.
+            if (_peakSamplingArmed && tickIndex > _tick + 1)
+            {
+                int target = tickIndex;
+                while (_tick < target)
+                {
+                    _tick++;
+                    _tickComposer.Advance(_world, _tick);
+                    ProofSampleLivingPeaks();
+                }
+            }
+            else
+            {
+                _tick = tickIndex;
+                _tickComposer.Advance(_world, tickIndex);
+                if (_peakSamplingArmed) ProofSampleLivingPeaks();
+            }
             PublishEventEchoes();
             PublishFieldMirror();
         }
@@ -128,11 +149,10 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 var p = row.Value;
                 if (p == null || !p.SiteId.Equals(site)) continue;
                 int stageIdx = p.StageId.Value == "ripe" ? 2 : (p.StageId.Value == "sprout" ? 1 : 0);
-                // PlantIdFor(soilId) = PlantIdBase + soilId.Value — the deterministic inverse
-                // gives the plot's identity to the visual layer without a Soil lookup.
-                ulong soilIdValue = p.Id.Value >= EmberCrpg.Simulation.Living.Actions.FarmOperations.PlantIdBase
-                    ? p.Id.Value - EmberCrpg.Simulation.Living.Actions.FarmOperations.PlantIdBase
-                    : p.Id.Value;
+                // Deterministic inverse of FarmOperations.PlantIdFor — the plot's identity for
+                // the visual layer without a Soil lookup. Kept as a single helper (no duplicated arithmetic).
+                ulong soilIdValue = EmberCrpg.Simulation.Living.Actions.FarmOperations
+                    .SoilIdFromPlantId(p.Id).Value;
                 if (plantCells.Count < 64)
                     plantCells.Add(new EmberCrpg.Presentation.Ember.WorldDirector.RuntimeFieldMirror.PlantCell
                     {

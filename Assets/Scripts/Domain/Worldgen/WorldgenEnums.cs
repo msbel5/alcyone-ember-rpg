@@ -42,6 +42,15 @@ namespace EmberCrpg.Domain.Worldgen
         Capital = 5,
     }
 
+    /// <summary>Predicates on <see cref="SettlementSize"/>. ONE arithmetic home for the
+    /// "urban" bucket (City+Capital) — five worldgen call sites used to hand-roll the OR.</summary>
+    public static class SettlementSizeExtensions
+    {
+        /// <summary>City-tier or above: the two tiers that grant urban name-forge / role-mix rules.</summary>
+        public static bool IsUrban(this SettlementSize size)
+            => size == SettlementSize.City || size == SettlementSize.Capital;
+    }
+
     /// <summary>
     /// NPC role bucket used by the FOUNDATION generator. Roles are coarse
     /// because the simulation kernel that consumes them (jobs, dialog,

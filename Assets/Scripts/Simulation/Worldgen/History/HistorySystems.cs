@@ -32,8 +32,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
                 }
             }
 
-            state.LifeEmerged = true;
-            state.LifeCradleRegionIndex = cradle;
+            state.MarkLifeEmerged(cradle);
 
             var cradleRegion = state.Regions[cradle];
             cradleRegion.Population = Math.Max(cradleRegion.Population, cradleRegion.CarryingCapacity * 0.045 + rng.NextInt(800));
@@ -290,9 +289,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
                 || !state.HasMinimumSpacing(settlement.RegionIndex, settlement.Record.Size, region.Population, threshold))
                 return;
 
-            settlement.Founded = true;
-            settlement.FoundedYear = year;
-            settlement.CurrentTier = SettlementSize.Hamlet;
+            settlement.Found(year, SettlementSize.Hamlet);
 
             sink.Emit(new WorldHistoryEvent(
                 year,
@@ -337,7 +334,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
             if ((int)next <= (int)settlement.CurrentTier)
                 return;
 
-            settlement.CurrentTier = next;
+            settlement.PromoteTier(next);
             sink.Emit(new WorldHistoryEvent(
                 year,
                 WorldHistoryKind.SiteGrew,
@@ -352,15 +349,14 @@ namespace EmberCrpg.Simulation.Worldgen.History
 
         private static void TryAbandonSettlement(HistoricalSettlementState settlement, HistoryRegionState region, int year, IHistoryEventSink sink)
         {
-            if (!settlement.Founded || (int)settlement.CurrentTier > (int)SettlementSize.Village)
+            if (!settlement.Founded || settlement.CurrentTier > SettlementSize.Village)
                 return;
 
             double floor = settlement.CurrentTier == SettlementSize.Hamlet ? 180.0 : 420.0;
             if (region.Population >= floor)
                 return;
 
-            settlement.Founded = false;
-            settlement.CurrentTier = SettlementSize.None;
+            settlement.Disband();
             sink.Emit(new WorldHistoryEvent(
                 year,
                 WorldHistoryKind.SiteAbandoned,
@@ -452,7 +448,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
             for (int i = 0; i < state.Settlements.Length && built < budget; i++)
             {
                 var source = state.Settlements[i];
-                if (!source.Founded || (int)source.CurrentTier < (int)SettlementSize.Village)
+                if (!source.Founded || source.CurrentTier < SettlementSize.Village)
                     continue;
 
                 int targetIndex = FindRoadTarget(state, source, year);
@@ -486,7 +482,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
                     state.Factions[source.FactionIndex].Record.Id,
                     state.Factions[target.FactionIndex].Record.Id));
 
-                if (source.FactionIndex != target.FactionIndex || (int)source.CurrentTier >= (int)SettlementSize.Town || (int)target.CurrentTier >= (int)SettlementSize.Town)
+                if (source.FactionIndex != target.FactionIndex || source.CurrentTier >= SettlementSize.Town || target.CurrentTier >= SettlementSize.Town)
                 {
                     sink.Emit(new WorldHistoryEvent(
                         year,
@@ -537,7 +533,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
 
         private void EmitIsolationIfNeeded(HistoryState state, HistoricalSettlementState settlement, int year, IHistoryEventSink sink)
         {
-            if (settlement.Isolated || (int)settlement.CurrentTier < (int)SettlementSize.Town)
+            if (settlement.Isolated || settlement.CurrentTier < SettlementSize.Town)
                 return;
 
             settlement.Isolated = true;

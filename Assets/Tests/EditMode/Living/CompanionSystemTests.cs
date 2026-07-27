@@ -44,7 +44,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             bool joined = CompanionService.TryRecruit(world, friend.Id);
 
             Assert.That(joined, Is.True);
-            Assert.That(world.CompanionIds, Does.Contain(friend.Id.Value));
+            Assert.That(world.CompanionIds, Does.Contain(friend.Id));
             Assert.That(world.Events.Events.Any(e =>
                 e.Kind == WorldEventKind.ActorTalked && e.Reason.StartsWith("companion_joined")), Is.True,
                 "recruitment is a story beat — it must be logged");

@@ -57,6 +57,11 @@ namespace EmberCrpg.Simulation.Living.Actions
         public static WorldComponentId PlantIdFor(WorldComponentId soilId)
             => new WorldComponentId(PlantIdBase + soilId.Value);
 
+        // Inverse of PlantIdFor. Pre-heal orphan plants (Id < PlantIdBase) map identity — the
+        // adapter's visual layer treats them as their own plot rather than crashing on underflow.
+        public static WorldComponentId SoilIdFromPlantId(WorldComponentId plantId)
+            => new WorldComponentId(plantId.Value >= PlantIdBase ? plantId.Value - PlantIdBase : plantId.Value);
+
         /// <summary>The soil whose PlantId links the given plant; null = orphan (pre-heal saves).</summary>
         public static SoilComponent FindSoilForPlant(WorldState world, WorldComponentId plantId)
         {

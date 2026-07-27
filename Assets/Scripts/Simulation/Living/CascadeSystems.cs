@@ -281,24 +281,14 @@ namespace EmberCrpg.Simulation.Living
                 default, siteId, $"watch_sweep guards:{swept} target:{attackerId}"));
         }
 
-        /// <summary>Arm/refresh a chase: one active pursuit per guard, newest trouble wins.</summary>
+        /// <summary>Arm/refresh a chase: one active pursuit per guard, newest trouble wins —
+        /// upsert loop lives in Domain.World.PursuitLedgerQuery, shared with RegisterHunt.</summary>
         private const long PursuitMinutes = 120;
         private static void RegisterPursuit(WorldState world, ulong guardId, ulong targetId, GameTime stamp)
         {
             world.GuardPursuits ??= new System.Collections.Generic.List<PursuitRecord>();
-            foreach (var pursuit in world.GuardPursuits)
-                if (pursuit.GuardId == guardId)
-                {
-                    pursuit.TargetId = targetId;
-                    pursuit.UntilMinutes = stamp.TotalMinutes + PursuitMinutes;
-                    return;
-                }
-            world.GuardPursuits.Add(new PursuitRecord
-            {
-                GuardId = guardId,
-                TargetId = targetId,
-                UntilMinutes = stamp.TotalMinutes + PursuitMinutes,
-            });
+            PursuitLedgerQuery.UpsertPursuit(world.GuardPursuits, guardId, targetId,
+                stamp.TotalMinutes + PursuitMinutes);
         }
     }
 }

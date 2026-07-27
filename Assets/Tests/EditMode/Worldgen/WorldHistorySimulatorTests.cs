@@ -147,7 +147,7 @@ namespace EmberCrpg.Tests.EditMode.Worldgen
             if (!prime)
                 return state;
 
-            state.LifeEmerged = true;
+            state.MarkLifeEmerged(0);
             for (int i = 0; i < state.Regions.Length; i++)
                 state.Regions[i].Population = state.Regions[i].CarryingCapacity * 0.62;
 

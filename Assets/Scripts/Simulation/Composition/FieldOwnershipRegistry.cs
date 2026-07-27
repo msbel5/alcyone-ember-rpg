@@ -56,12 +56,19 @@ namespace EmberCrpg.Simulation.Composition
                     "living.witness@Hourly:45",   // arms/refreshes
                     "living.schedule@PerTick:20", // resolves/prunes
                 },
-                // W36 GUARD+COMBAT: PursuitRecord's mirror on the enemy side. Decide arms;
-                // Advance clears the row on kill/clamp; expiry is a TTL, no tick sweeper needed.
+                // W36 GUARD+COMBAT (LIVE W39): PursuitRecord's mirror on the enemy side.
+                // The two ids below are the ACTUAL registered composer steps (see
+                // DefaultTickSystems.DecisionStep + ActionAdvancementStep); the ownership lint
+                // resolves each triple against the live registry so a rename here fails CI.
+                //   living.decision@PerTick:18       -> ActionLifecycleSystem.Decide:TryDecideHunt
+                //                                       arms/refreshes a HuntTargetRecord row.
+                //   living.action_advance@PerTick:22 -> StrikeQuarryAdvancer / HuntAdvancer via
+                //                                       the ActionAdvancementStep, clears the row
+                //                                       on kill/clamp (TTL owns natural expiry).
                 ["World.HuntTargets"] = new[]
                 {
-                    "living.decision@PerTick:18",       // arms/refreshes on TryDecideHunt
-                    "living.action_advance@PerTick:22", // clears on StrikeQuarry kill/clamp
+                    "living.decision@PerTick:18",
+                    "living.action_advance@PerTick:22",
                 },
                 ["World.Stockpiles"] = new[]
                 {

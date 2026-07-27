@@ -191,7 +191,8 @@ namespace EmberCrpg.Domain.World
 
         // V3 YOLDAŞ: recruited companion actor ids. Membership only — the actors themselves
         // stay in Actors with their roles, sprites, and memories intact.
-        public List<ulong> CompanionIds = new List<ulong>();
+        // Typed ActorId (not raw ulong): callers stop hand-rolling `new ActorId(raw)` at every read.
+        public List<EmberCrpg.Domain.Core.ActorId> CompanionIds = new List<EmberCrpg.Domain.Core.ActorId>();
         /// <summary>P0 pursuit: active guard chases (guard -> quarry, with an expiry).</summary>
         public List<PursuitRecord> GuardPursuits = new List<PursuitRecord>();
         /// <summary>W36 GUARD+COMBAT: active enemy hunts (hunter -> prey, with an expiry).

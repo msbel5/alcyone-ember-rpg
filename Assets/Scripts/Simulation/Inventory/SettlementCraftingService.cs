@@ -57,7 +57,7 @@ namespace EmberCrpg.Simulation.Inventory
                 return false;
             }
 
-            ulong nextItemId = NextInventoryItemId(world.PlayerInventory);
+            ulong nextItemId = world.PlayerInventory.NextItemId().Value;
             world.Events ??= new WorldEventLog();
             while (!order.IsComplete)
             {
@@ -134,20 +134,5 @@ namespace EmberCrpg.Simulation.Inventory
             return total;
         }
 
-        private static ulong NextInventoryItemId(InventoryState inventory)
-        {
-            ulong max = 1UL;
-            if (inventory == null)
-                return max;
-
-            for (int i = 0; i < inventory.Items.Count; i++)
-            {
-                var value = inventory.Items[i].Id.Value;
-                if (value >= max)
-                    max = value + 1UL;
-            }
-
-            return max;
-        }
     }
 }

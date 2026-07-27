@@ -40,7 +40,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 {
                     var names = new System.Collections.Generic.List<string>();
                     foreach (var id in _world.CompanionIds)
-                        if (_world.Actors.TryGet(new EmberCrpg.Domain.Core.ActorId(id), out var c) && c != null)
+                        if (_world.Actors.TryGet(id, out var c) && c != null)
                             names.Add(c.Name);
                     if (names.Count > 0) where += $"   •   PARTY {string.Join(", ", names)}";
                 }

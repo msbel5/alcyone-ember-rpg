@@ -107,6 +107,45 @@ namespace EmberCrpg.Tests.EditMode.Diagnostics
                 "every explicit sample counts (plus the one folded by ProofLivingCensus itself)");
         }
 
+        /// <summary>
+        /// T-CENSUS-4 (W39): the sampling GAP that broke the marathon — an outer sample every
+        /// N seconds misses actions that start AND end inside one AdvanceTick jump. The fix
+        /// arms per-tick sampling INSIDE AdvanceTick so a five-tick jump folds five peaks
+        /// (one per composer sub-step), not one. Unarmed AdvanceTick folds none — production
+        /// paths keep paying zero. Together the two asserts pin the actual mechanism the
+        /// marathon censusOk gate now depends on.
+        /// </summary>
+        [Test]
+        public void ArmedAdvanceTick_FoldsOnePeakPerComposerSubStep()
+        {
+            var world = EatSliceWorld.Build(wheat: 10);
+            world.Actors.Add(EatSliceWorld.Hungry(1UL, 5, 5));
+            var adapter = new DomainSimulationAdapter(world);
+
+            // Anchor the composer so subsequent jumps produce a real delta (first-ever
+            // Advance is an anchor-only no-op per WorldTickComposer's contract).
+            adapter.AdvanceTick(adapter.TickIndex);
+
+            adapter.ProofResetLivingPeaks();
+            adapter.ProofArmPeakSampling(true);
+            int before = adapter.ProofLivingPeaks().samples;
+
+            // Jump five ticks in ONE call. The armed path must sample after every sub-step
+            // so a slice born and buried inside the jump still lights the peak.
+            adapter.AdvanceTick(adapter.TickIndex + 5);
+
+            int afterArmed = adapter.ProofLivingPeaks().samples;
+            Assert.That(afterArmed - before, Is.EqualTo(5),
+                "armed AdvanceTick folds ONE peak per composer sub-step (5 ticks -> 5 samples), which is why an in-flight Sleep between two outer samples still lands in the peaks");
+
+            // Symmetric disarm: production paths must pay zero per-tick sampler cost.
+            adapter.ProofArmPeakSampling(false);
+            int mark = adapter.ProofLivingPeaks().samples;
+            adapter.AdvanceTick(adapter.TickIndex + 5);
+            Assert.That(adapter.ProofLivingPeaks().samples, Is.EqualTo(mark),
+                "unarmed AdvanceTick folds NO samples — the marathon's proof-only hook does not leak into normal play");
+        }
+
     }
 }
 #endif

@@ -192,11 +192,7 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
                 _panel?.SetVisible("answer" + i, false);
         }
 
-        private static string EscapeJson(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return string.Empty;
-            return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
-        }
+        private static string EscapeJson(string value) => WorldgenJson.Escape(value);
 
         private static void AppendFailureJsonLineToDisk(string payload)
         {

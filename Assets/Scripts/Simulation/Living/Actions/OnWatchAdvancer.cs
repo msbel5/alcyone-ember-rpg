@@ -53,17 +53,9 @@ namespace EmberCrpg.Simulation.Living.Actions
             TransitionTo(world, actor, state.Succeeded(), ActionLogReason.Arrived, stamp);
         }
 
-        // Mirror of ActionAdvancer.IsPursuitQuarry keyed on GuardId — the pursuit's PURSUER
-        // side. Kept local (not moved to the base) so the base template's contract stays
-        // "quarry probe only"; the guard-side probe is guard-only ergonomics.
+        // ONE arithmetic home: Domain.World.PursuitLedgerQuery — the guard-side probe. The
+        // base template stays "quarry probe only"; guard-side is guard-only ergonomics.
         private static bool HasLivePursuit(WorldState world, ActorRecord actor, GameTime stamp)
-        {
-            var pursuits = world.GuardPursuits;
-            if (pursuits == null) return false;
-            for (var i = 0; i < pursuits.Count; i++)
-                if (pursuits[i].GuardId == actor.Id.Value && stamp.TotalMinutes <= pursuits[i].UntilMinutes)
-                    return true;
-            return false;
-        }
+            => PursuitLedgerQuery.IsActivePursuer(world.GuardPursuits, actor.Id, stamp.TotalMinutes);
     }
 }

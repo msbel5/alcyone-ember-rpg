@@ -60,26 +60,13 @@ namespace EmberCrpg.Domain.Quest
 
         private static ulong FindNextItemIdSeed(WorldState world)
         {
-            ulong max = 1UL;
-
-            if (world.PlayerInventory != null)
-            {
-                foreach (var item in world.PlayerInventory.Items)
-                {
-                    if (item.Id.Value >= max)
-                        max = item.Id.Value + 1UL;
-                }
-            }
-
+            // ONE inventory scan lives on InventoryState.NextItemId; world.Items extends it further
+            // because grants collide with BOTH stores. Floor 1 keeps ItemId(0) reserved as Empty.
+            ulong max = world.PlayerInventory != null ? world.PlayerInventory.NextItemId().Value : 1UL;
             if (world.Items != null)
-            {
                 foreach (var item in world.Items.Records)
-                {
                     if (item.Id.Value >= max)
                         max = item.Id.Value + 1UL;
-                }
-            }
-
             return max;
         }
     }

@@ -565,7 +565,7 @@ namespace EmberCrpg.Simulation.Worldgen.PlanetIntegration
                 int population = Math.Max(1, settlement.Population);
                 SettlementSize size = SizeFor(settlement.Type, population);
                 string word = SyllableNameForge.ForgeUnique(rng, nameBag);
-                string name = size == SettlementSize.Capital || size == SettlementSize.City
+                string name = size.IsUrban()
                     ? word
                     : word + SettlementSuffixes[rng.NextInt(SettlementSuffixes.Length)];
 
@@ -751,9 +751,7 @@ namespace EmberCrpg.Simulation.Worldgen.PlanetIntegration
             {
                 var s = state.Settlements[i];
                 if (s.Founded) continue;
-                s.Founded = true;
-                s.CurrentTier = SettlementSize.Hamlet;
-                s.FoundedYear = 1100;
+                s.Found(1100, SettlementSize.Hamlet);
                 alive++;
                 founded++;
             }
@@ -1164,7 +1162,7 @@ namespace EmberCrpg.Simulation.Worldgen.PlanetIntegration
         {
             int roll = rng.NextInt(100);
             int factionBias = (int)(faction.Value % 5UL);
-            if (size == SettlementSize.Capital || size == SettlementSize.City)
+            if (size.IsUrban())
             {
                 if (roll < 5) return NpcRole.Noble;
                 if (roll < 10) return factionBias == 0 ? NpcRole.Knight : NpcRole.Guard;

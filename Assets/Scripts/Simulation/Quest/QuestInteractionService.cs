@@ -157,12 +157,13 @@ namespace EmberCrpg.Simulation.Quest
             return count;
         }
 
+        // Floor 4001 spaces quest-commission ids past ordinary pickup/crafted mints; delegates
+        // the scan to InventoryState.NextItemId — ONE arithmetic home for the scan itself.
+        private const ulong CommissionIdFloor = 4001UL;
         private static ItemId NextItemId(InventoryState inventory)
         {
-            ulong max = 4000;
-            foreach (var item in inventory.Items)
-                if (item != null && item.Id.Value > max) max = item.Id.Value;
-            return new ItemId(max + 1);
+            ulong next = inventory.NextItemId().Value;
+            return new ItemId(next < CommissionIdFloor ? CommissionIdFloor : next);
         }
 
         private static bool TryStartForgeQuest(WorldState world, ActorId actorId, NpcSeedRecord npc, out string line)

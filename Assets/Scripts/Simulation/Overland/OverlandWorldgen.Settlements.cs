@@ -77,7 +77,7 @@ namespace EmberCrpg.Simulation.Overland
 
         private static SettlementKind ClassifySettlementKind(SettlementSize size, BiomeKind biome, int roll)
         {
-            if (size == SettlementSize.Capital || size == SettlementSize.City)
+            if (size.IsUrban())
                 return SettlementKind.City;
             if (size == SettlementSize.Town)
                 return roll < 70 ? SettlementKind.Town : SettlementKind.Village;

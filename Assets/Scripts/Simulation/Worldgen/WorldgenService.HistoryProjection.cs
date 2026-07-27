@@ -39,9 +39,7 @@ namespace EmberCrpg.Simulation.Worldgen
             {
                 var s = state.Settlements[i];
                 if (s.Founded) continue;
-                s.Founded = true;
-                s.CurrentTier = SettlementSize.Hamlet;
-                s.FoundedYear = 1100;
+                s.Found(1100, SettlementSize.Hamlet);
                 alive++;
                 founded++;
             }

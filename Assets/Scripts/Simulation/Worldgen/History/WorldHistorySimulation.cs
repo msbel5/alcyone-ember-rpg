@@ -327,8 +327,16 @@ namespace EmberCrpg.Simulation.Worldgen.History
         public double[,] TradeLinks { get; }
         public int[] RegionDominantFaction { get; }
         public List<HistoricalFigureState> Figures { get; }
-        public bool LifeEmerged { get; set; }
-        public int LifeCradleRegionIndex { get; set; }
+        // Life-emergence is atomic: the cradle index is meaningless until LifeEmerged is true,
+        // so the pair travels through MarkLifeEmerged instead of two independent setters.
+        public bool LifeEmerged { get; private set; }
+        public int LifeCradleRegionIndex { get; private set; }
+
+        public void MarkLifeEmerged(int cradleRegionIndex)
+        {
+            LifeEmerged = true;
+            LifeCradleRegionIndex = cradleRegionIndex;
+        }
 
         public int FoundedSettlementCount
         {
@@ -598,11 +606,11 @@ namespace EmberCrpg.Simulation.Worldgen.History
         {
             int x = tile % geography.Width;
             int y = tile / geography.Width;
-            int distance = Math.Abs(region.X - x) + Math.Abs(region.Y - y);
+            int distance = TaxiDistance(region.X, region.Y, x, y);
             int score = (int)(SettlementBiomeWeight(geography.WorldBiomes[tile], record.Size) * 1000.0);
             score += (int)(geography.Elevation[tile] * 90.0);
             score -= occupancy * 90;
-            score -= distance * ((int)record.Size >= (int)SettlementSize.Town ? 18 : 9);
+            score -= distance * (record.Size >= SettlementSize.Town ? 18 : 9);
             score += StableSettlementTie(record.Id, tile);
             return score;
         }
@@ -623,7 +631,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
                 default: value = 0.50; break;
             }
 
-            if (size == SettlementSize.Capital || size == SettlementSize.City)
+            if (size.IsUrban())
             {
                 if (biome == BiomeKind.TemperatePlain || biome == BiomeKind.CoastalMarsh || biome == BiomeKind.BorealForest)
                     value += 0.24;
@@ -697,7 +705,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
             for (int i = 0; i < Settlements.Length; i++)
             {
                 var settlement = Settlements[i];
-                if (!settlement.Founded || (int)settlement.CurrentTier < (int)SettlementSize.Town)
+                if (!settlement.Founded || settlement.CurrentTier < SettlementSize.Town)
                     continue;
 
                 bool sameRegion = settlement.RegionIndex == regionIndex;
@@ -995,10 +1003,13 @@ namespace EmberCrpg.Simulation.Worldgen.History
             return best == int.MaxValue ? GridWidth * 2 : best;
         }
 
+        // Grid-cell taxi metric between the two regions (both endpoints scored equally).
+        // ONE arithmetic home — ScoreSettlementTile below and public callers share it.
         public int ManhattanDistance(int regionA, int regionB)
-        {
-            return Math.Abs(Regions[regionA].X - Regions[regionB].X) + Math.Abs(Regions[regionA].Y - Regions[regionB].Y);
-        }
+            => TaxiDistance(Regions[regionA].X, Regions[regionA].Y, Regions[regionB].X, Regions[regionB].Y);
+
+        internal static int TaxiDistance(int x1, int y1, int x2, int y2)
+            => Math.Abs(x1 - x2) + Math.Abs(y1 - y2);
 
         public HistoricalFigureState AddFigure(string name, int factionIndex, int birthYear, int dynastySeed)
         {
@@ -1038,9 +1049,7 @@ namespace EmberCrpg.Simulation.Worldgen.History
         public void ForceFoundSettlement(int settlementIndex, int year, SettlementSize tier)
         {
             var settlement = Settlements[settlementIndex];
-            settlement.Founded = true;
-            settlement.FoundedYear = year;
-            settlement.CurrentTier = tier;
+            settlement.Found(year, tier);
             var faction = Factions[settlement.FactionIndex];
             faction.Active = true;
             if (!faction.CivilizationFounded)
@@ -1365,10 +1374,34 @@ namespace EmberCrpg.Simulation.Worldgen.History
         public int FactionIndex { get; set; }
         public int TileX { get; }
         public int TileY { get; }
-        public bool Founded { get; set; }
+        // Founded / FoundedYear / CurrentTier travel together — three callers used to hand-roll
+        // the atomic write. Found/Disband keep the trio consistent (tier > None iff Founded).
+        public bool Founded { get; private set; }
         public bool Isolated { get; set; }
-        public int FoundedYear { get; set; }
-        public SettlementSize CurrentTier { get; set; }
+        public int FoundedYear { get; private set; }
+        public SettlementSize CurrentTier { get; private set; }
+
+        public void Found(int year, SettlementSize tier)
+        {
+            if (tier == SettlementSize.None)
+                throw new ArgumentException("Founded settlements must have a non-None tier.", nameof(tier));
+            Founded = true;
+            FoundedYear = year;
+            CurrentTier = tier;
+        }
+
+        public void Disband()
+        {
+            Founded = false;
+            CurrentTier = SettlementSize.None;
+        }
+
+        public void PromoteTier(SettlementSize next)
+        {
+            if (!Founded)
+                throw new InvalidOperationException("Cannot promote tier on an unfounded settlement.");
+            CurrentTier = next;
+        }
     }
 
     public sealed class HistoryFactionState

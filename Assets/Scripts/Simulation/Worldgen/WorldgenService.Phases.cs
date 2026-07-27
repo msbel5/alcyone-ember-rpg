@@ -202,7 +202,7 @@ namespace EmberCrpg.Simulation.Worldgen
         {
             var word = SyllableNameForge.ForgeUnique(rng, nameBag);
             string name;
-            if (size == SettlementSize.Capital || size == SettlementSize.City)
+            if (size.IsUrban())
             {
                 name = word;
             }

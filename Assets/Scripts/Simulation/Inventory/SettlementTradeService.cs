@@ -39,7 +39,7 @@ namespace EmberCrpg.Simulation.Inventory
             if (world == null || world.MerchantStoreSeeded || world.MerchantInventory == null || seedItems == null)
                 return;
 
-            ulong nextId = NextInventoryItemId(world.PlayerInventory, world.MerchantInventory);
+            ulong nextId = InventoryState.NextItemIdAcross(world.PlayerInventory, world.MerchantInventory).Value;
             for (int i = 0; i < seedItems.Count; i++)
             {
                 var seed = seedItems[i];
@@ -77,7 +77,7 @@ namespace EmberCrpg.Simulation.Inventory
             if (!world.MerchantInventory.TryRemove(stockItem.TemplateId, 1))
                 return new TradeOperationResult(false, "The merchant's ledger desynced.");
 
-            var moved = CloneSingle(stockItem, NextInventoryItemId(world.PlayerInventory, world.MerchantInventory));
+            var moved = CloneSingle(stockItem, InventoryState.NextItemIdAcross(world.PlayerInventory, world.MerchantInventory).Value);
             if (!world.PlayerInventory.TryAdd(moved))
             {
                 world.MerchantInventory.TryAdd(moved);
@@ -105,7 +105,7 @@ namespace EmberCrpg.Simulation.Inventory
             if (!world.PlayerInventory.TryRemove(playerItem.TemplateId, 1, world.PlayerEquipment))
                 return new TradeOperationResult(false, "The sale could not be completed.");
 
-            var moved = CloneSingle(playerItem, NextInventoryItemId(world.PlayerInventory, world.MerchantInventory));
+            var moved = CloneSingle(playerItem, InventoryState.NextItemIdAcross(world.PlayerInventory, world.MerchantInventory).Value);
             if (!world.MerchantInventory.TryAdd(moved))
             {
                 world.PlayerInventory.TryAdd(moved);
@@ -150,24 +150,5 @@ namespace EmberCrpg.Simulation.Inventory
             return new InventoryItem(new ItemId(nextId), item.TemplateId, item.DisplayName, 1, item.EquipmentSlot, item.AccuracyBonus, item.DamageBonus);
         }
 
-        private static ulong NextInventoryItemId(InventoryState first, InventoryState second)
-        {
-            ulong max = 0UL;
-            max = MaxInventoryId(first, max);
-            max = MaxInventoryId(second, max);
-            return max + 1UL;
-        }
-
-        private static ulong MaxInventoryId(InventoryState inventory, ulong max)
-        {
-            if (inventory == null) return max;
-            for (int i = 0; i < inventory.Items.Count; i++)
-            {
-                var value = inventory.Items[i].Id.Value;
-                if (value > max)
-                    max = value;
-            }
-            return max;
-        }
     }
 }

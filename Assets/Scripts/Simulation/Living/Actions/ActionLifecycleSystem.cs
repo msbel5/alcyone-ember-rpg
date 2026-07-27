@@ -306,20 +306,12 @@ namespace EmberCrpg.Simulation.Living.Actions
                 ActionLogReason.TargetSelected, stamp); // no reservation → ReservationAcquired would lie
         }
 
-        // Shape mirrors ActionAdvancer.IsPursuitQuarry — same expiry predicate (<=), keyed on
-        // GuardId instead of TargetId. Deliberately NO dead-quarry/40-cell checks: those need
-        // pruning to stay cheap, and pruning is living.schedule's job under the single-writer
-        // ledger. Worst case a stale-but-unexpired row defers lunch until UntilMinutes passes —
-        // bounded and deterministic (the schedule prunes the row the same tick it routes him).
+        // ONE arithmetic home: Domain.World.PursuitLedgerQuery. Deliberately NO dead-quarry /
+        // 40-cell checks: pruning stays living.schedule's job under the single-writer ledger.
+        // Worst case a stale-but-unexpired row defers lunch until UntilMinutes passes — bounded
+        // and deterministic (the schedule prunes the row the same tick it routes him).
         private static bool HasLivePursuit(WorldState world, ActorRecord actor, GameTime stamp)
-        {
-            var pursuits = world.GuardPursuits;
-            if (pursuits == null) return false;
-            for (var i = 0; i < pursuits.Count; i++)
-                if (pursuits[i].GuardId == actor.Id.Value && stamp.TotalMinutes <= pursuits[i].UntilMinutes)
-                    return true;
-            return false;
-        }
+            => PursuitLedgerQuery.IsActivePursuer(world.GuardPursuits, actor.Id, stamp.TotalMinutes);
 
         private void TryDecideEat(WorldState world, ActorRecord actor,
             List<string> species, List<FoodPileCache.Entry> cache, GameTime stamp)
@@ -500,25 +492,14 @@ namespace EmberCrpg.Simulation.Living.Actions
                 ActionLogReason.TargetSelected, stamp); // no reservation row → TargetSelected reason
         }
 
-        // W36 GUARD+COMBAT: newest prey wins per hunter (mirror of WitnessResponseSystem's
-        // RegisterPursuit overwrite semantics). Row lifetime is bounded (HuntMinutes); an
-        // unresolved row is pruned by the advancer's TTL check next tick.
+        // W36 GUARD+COMBAT: newest prey wins per hunter. Same upsert shape as RegisterPursuit —
+        // ONE arithmetic home lives in Domain.World.PursuitLedgerQuery. Row lifetime is bounded
+        // (HuntMinutes); an unresolved row is pruned by the advancer's TTL check next tick.
         private static void RegisterHunt(WorldState world, ulong hunterId, ulong targetId, GameTime stamp)
         {
             world.HuntTargets ??= new System.Collections.Generic.List<HuntTargetRecord>();
-            foreach (var row in world.HuntTargets)
-                if (row.HunterId == hunterId)
-                {
-                    row.TargetId = targetId;
-                    row.UntilMinutes = stamp.TotalMinutes + CombatOperations.HuntMinutes;
-                    return;
-                }
-            world.HuntTargets.Add(new HuntTargetRecord
-            {
-                HunterId = hunterId,
-                TargetId = targetId,
-                UntilMinutes = stamp.TotalMinutes + CombatOperations.HuntMinutes,
-            });
+            PursuitLedgerQuery.UpsertHunt(world.HuntTargets, hunterId, targetId,
+                stamp.TotalMinutes + CombatOperations.HuntMinutes);
         }
     }
 }

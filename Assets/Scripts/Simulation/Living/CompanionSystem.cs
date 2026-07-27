@@ -24,12 +24,12 @@ namespace EmberCrpg.Simulation.Living
             var player = FindPlayer(world);
             if (player == null || world.CompanionIds == null) return false;
             if (world.CompanionIds.Count >= MaxCompanions) return false;
-            if (world.CompanionIds.Contains(actorId.Value)) return false;
+            if (world.CompanionIds.Contains(actorId)) return false;
             if (!world.Actors.TryGet(actorId, out var actor) || actor == null || !actor.IsAlive) return false;
             if (actor.Role == ActorRole.Player || actor.Role == ActorRole.Enemy) return false;
             if (actor.Position.ChebyshevDistanceTo(player.Position) > RecruitReachCells) return false;
 
-            world.CompanionIds.Add(actorId.Value);
+            world.CompanionIds.Add(actorId);
             world.Events?.Append(new WorldEvent(world.Time, WorldEventKind.ActorTalked, actorId, default,
                 $"companion_joined name:{actor.Name}"));
             return true;
@@ -37,7 +37,7 @@ namespace EmberCrpg.Simulation.Living
 
         public static bool TryDismiss(WorldState world, ActorId actorId)
         {
-            if (world?.CompanionIds == null || !world.CompanionIds.Remove(actorId.Value)) return false;
+            if (world?.CompanionIds == null || !world.CompanionIds.Remove(actorId)) return false;
             world.Actors.TryGet(actorId, out var actor);
             world.Events?.Append(new WorldEvent(world.Time, WorldEventKind.ActorTalked, actorId, default,
                 $"companion_left name:{actor?.Name ?? "?"}"));
@@ -45,7 +45,7 @@ namespace EmberCrpg.Simulation.Living
         }
 
         public static bool IsCompanion(WorldState world, ActorId actorId)
-            => world?.CompanionIds != null && world.CompanionIds.Contains(actorId.Value);
+            => world?.CompanionIds != null && world.CompanionIds.Contains(actorId);
 
         public static ActorRecord FindPlayer(WorldState world) // public: the proof surface in Presentation also needs it
         {
@@ -74,19 +74,19 @@ namespace EmberCrpg.Simulation.Living
             // removal is safe mid-iteration.
             for (int i = world.CompanionIds.Count - 1; i >= 0; i--)
             {
-                if (world.Actors.TryGet(new ActorId(world.CompanionIds[i]), out var member)
+                if (world.Actors.TryGet(world.CompanionIds[i], out var member)
                     && member != null && member.IsAlive)
                     continue;
                 var fallenId = world.CompanionIds[i];
                 world.CompanionIds.RemoveAt(i);
-                world.Actors.TryGet(new ActorId(fallenId), out var fallen);
+                world.Actors.TryGet(fallenId, out var fallen);
                 world.Events?.Append(new WorldEvent(world.Time, WorldEventKind.ActorTalked,
-                    new ActorId(fallenId), default, $"companion_fell name:{fallen?.Name ?? "?"}"));
+                    fallenId, default, $"companion_fell name:{fallen?.Name ?? "?"}"));
             }
 
             foreach (var id in world.CompanionIds)
             {
-                if (!world.Actors.TryGet(new ActorId(id), out var companion) || companion == null || !companion.IsAlive)
+                if (!world.Actors.TryGet(id, out var companion) || companion == null || !companion.IsAlive)
                     continue;
                 int gap = companion.Position.ChebyshevDistanceTo(player.Position);
                 if (gap <= HeelCells)
@@ -116,7 +116,7 @@ namespace EmberCrpg.Simulation.Living
 
             foreach (var id in world.CompanionIds)
             {
-                if (!world.Actors.TryGet(new ActorId(id), out var companion) || companion == null || !companion.IsAlive)
+                if (!world.Actors.TryGet(id, out var companion) || companion == null || !companion.IsAlive)
                     continue;
                 var threat = NearestHostile(world, player.Position, companion.Position);
                 if (threat == null) continue;

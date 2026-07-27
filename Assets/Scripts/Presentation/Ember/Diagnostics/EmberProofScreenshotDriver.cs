@@ -946,10 +946,15 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             // B26/§6.2: capture start game-clock and RESET the adapter's peak accumulators —
             // peaks live across marathon runs within one Editor session; forgetting to reset
             // means the second run inherits the first's peaks and falsely PASSes a broken world.
+            // W39 CENSUS-PEAK FIX: also ARM the adapter's per-tick sampler so AdvanceTick folds
+            // a peak after every composer sub-step (not just at the outer iteration boundary).
+            // The old boundary-only sampling missed slices born and buried inside one jump — a
+            // full-day soak reported peaks(sleep=0 work=0 eat=0 farm=0) despite meals=6198.
             var soakAdapter = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current
                 as EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter;
             long gameMinStart = soakAdapter?.WorldTimeMinutesOrZero() ?? 0L;
             soakAdapter?.ProofResetLivingPeaks();
+            soakAdapter?.ProofArmPeakSampling(true);
 
             while (Time.unscaledTime < endAt)
             {
@@ -1039,6 +1044,9 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                       $"(peak {memPeak / 1048576}MB, flat={flat}), " +
                       $"gameHours={gameHours} censusOk={censusOk} " +
                       $"peaks(sleep={peaks.sleeping} work={peaks.working} eat={peaks.eating} farm={peaks.farming} n={peaks.samples}).");
+            // W39 CENSUS-PEAK FIX: disarm so any post-marathon game-loop ticks stop paying the
+            // per-tick sampler cost. Next run's arm call re-enables it symmetrically.
+            livingAdapter?.ProofArmPeakSampling(false);
         }
 
         // F32-DoD (--ember-igtour): EVERY in-game screen, one frame each — HUD, inventory,

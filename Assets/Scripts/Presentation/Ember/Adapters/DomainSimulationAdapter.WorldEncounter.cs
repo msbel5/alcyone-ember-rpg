@@ -43,6 +43,16 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         private int _livingPeakSleeping, _livingPeakWorking, _livingPeakEating, _livingPeakFarming;
         private int _livingPeakSamples;                    // 0 = never sampled
         private long _livingPeakSampledAtMinutes;          // last-sample game-clock, for the honesty rule
+        // W39 CENSUS-PEAK FIX: per-outer-iteration sampling (once per marathon step or heartbeat)
+        // missed slices that started AND ended inside one AdvanceTick jump — marathon reported
+        // meals=6198 alongside peaks(eat=0), the exact split-clock the peaks were supposed to
+        // close. When armed, AdvanceTick steps the composer one tick at a time and folds a
+        // sample after each step, so peaks now say "some actor was mid-<verb> at ANY point
+        // during the soak" instead of "at the exact sample tick". Proof-only, gated by the
+        // driver (--ember-proof-screenshots RunMarathon); production paths leave it false and
+        // pay zero per-tick cost.
+        private bool _peakSamplingArmed;
+        internal bool PeakSamplingArmed => _peakSamplingArmed;
 
         /// <summary>The live world-encounter opponent, or null when none is bound.</summary>
         private ActorRecord WorldEncounterEnemy()
@@ -739,13 +749,22 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         }
 
         /// <summary>B26/§6.2: reset before each marathon arm — peaks live on the adapter and would
-        /// otherwise leak from a first run into a second, falsely passing a broken second run.</summary>
+        /// otherwise leak from a first run into a second, falsely passing a broken second run.
+        /// Reset does NOT touch the armed flag; the marathon toggles that explicitly via
+        /// <see cref="ProofArmPeakSampling"/> so unit tests calling reset in isolation don't
+        /// silently enable per-tick sampling on adapters that never opted in.</summary>
         public void ProofResetLivingPeaks()
         {
             _livingPeakSleeping = _livingPeakWorking = _livingPeakEating = _livingPeakFarming = 0;
             _livingPeakSamples = 0;
             _livingPeakSampledAtMinutes = 0L;
         }
+
+        /// <summary>W39 CENSUS-PEAK FIX: opt this adapter INTO the per-tick sampler inside
+        /// AdvanceTick. Only the --ember-proof-screenshots marathon flips this on; production
+        /// AdvanceTick pays zero cost when the flag stays false. Idempotent; caller passes true
+        /// to arm, false to disarm.</summary>
+        public void ProofArmPeakSampling(bool armed) => _peakSamplingArmed = armed;
 
         /// <summary>B26/§6.3: the peaks the marathon PASS gate consults.</summary>
         public (int sleeping, int working, int eating, int farming, int samples) ProofLivingPeaks()

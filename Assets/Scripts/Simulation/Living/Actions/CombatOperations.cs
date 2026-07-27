@@ -80,8 +80,9 @@ namespace EmberCrpg.Simulation.Living.Actions
         /// <summary>Reach for a Hunt→StrikeQuarry adjacency test. Mirror of PredationSystem.StrikeReach.</summary>
         public const int StrikeReach = 1;
 
-        /// <summary>Enemy hunt scan radius. Mirror of PredationSystem.HuntRadius.</summary>
-        public const int HuntRadius = 6;
+        /// <summary>Enemy hunt scan radius. Owned by PredationSystem.HuntRadius —
+        /// the two decides used to hand-roll the same 6 with a "mirror of" comment.</summary>
+        public const int HuntRadius = PredationSystem.HuntRadius;
 
         /// <summary>Bounded hunt-target TTL: an unresolved target expires and clears the row
         /// (dead-quarry / lost-prey pruning is the advancer's job on the same call). Matches

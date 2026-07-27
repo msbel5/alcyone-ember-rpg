@@ -39,6 +39,7 @@
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldGenesisMapper.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldgenVisibleEvent.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldgenEventProjector.cs" />
+    <Compile Include="../../../Assets/Scripts/Presentation/Ember/Worldgen/WorldgenJson.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/JsonSliceSaveService.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveData.cs" />
     <Compile Include="../../../Assets/Scripts/Presentation/Ember/Save/SaveEnvelopeCodec.cs" />

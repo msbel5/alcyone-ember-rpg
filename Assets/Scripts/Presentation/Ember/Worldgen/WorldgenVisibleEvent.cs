@@ -52,10 +52,6 @@ namespace EmberCrpg.Presentation.Ember.Worldgen
         }
         public static WorldgenVisibleEvent Completed(string stats) => new WorldgenVisibleEvent(WorldgenVisibleEventKind.Completed, "completed", "[done] " + stats, null, string.Empty);
 
-        private static string EscapeJson(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return string.Empty;
-            return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
-        }
+        private static string EscapeJson(string value) => WorldgenJson.Escape(value);
     }
 }

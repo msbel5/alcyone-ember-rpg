@@ -41,7 +41,7 @@ namespace EmberCrpg.Simulation.Combat
                 return strike;
             }
 
-            encounter.PlayerActsNext = !encounter.PlayerActsNext;
+            encounter.SwitchTurn();
             return strike;
         }
     }

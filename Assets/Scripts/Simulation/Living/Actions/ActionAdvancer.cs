@@ -101,14 +101,9 @@ namespace EmberCrpg.Simulation.Living.Actions
             _ => ActionLogReason.InterruptPreempted,
         };
 
+        // ONE arithmetic home: Domain.World.PursuitLedgerQuery — same expiry predicate on
+        // both sides (quarry here, pursuer at ActionLifecycleSystem / OnWatchAdvancer).
         private static bool IsPursuitQuarry(WorldState world, ActorRecord actor, GameTime stamp)
-        {
-            var pursuits = world.GuardPursuits;
-            if (pursuits == null) return false;
-            for (var i = 0; i < pursuits.Count; i++)
-                if (pursuits[i].TargetId == actor.Id.Value && stamp.TotalMinutes <= pursuits[i].UntilMinutes)
-                    return true;
-            return false;
-        }
+            => PursuitLedgerQuery.IsActiveQuarry(world.GuardPursuits, actor.Id, stamp.TotalMinutes);
     }
 }
