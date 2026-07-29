@@ -49,15 +49,12 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 "PerTick:18:living.decision", // W32: intent + reservation BEFORE the router runs
                 "PerTick:20:core.magic",
                 "PerTick:20:living.schedule",
-                "PerTick:21:living.companion_follow", // V3: heel-follow after schedule
-                "PerTick:22:living.action_advance", // W32: the EAT phase machine in eatOnArrival's slot
+                "PerTick:22:living.action_advance", // W32/PRD-04: all active action movement, including follow
                 "Hourly:10:econ.jobs",
                 "Hourly:15:quest.tick",
                 "Hourly:30:living.needs",
                 // W34: Hourly:35:living.consumption RETIRED — the night fatigue fiat died; sleep
                 // recovery is now the action strip's MoveToBed→Sleep on PerTick:18/22.
-                "Hourly:40:living.predation",   // CAN SUYU H3: NPC-vs-NPC in the sim
-                "Hourly:42:living.companion_guard", // V3: companions strike beside the player
                 "Hourly:45:living.witness",     // CAN SUYU H3: seen, remembered, answered
                 "Hourly:50:living.ambient",     // P1: rats raid, cats hunt - cheap agents, real stock
                 "Hourly:55:living.rumors",      // P1: new events become one-line town talk

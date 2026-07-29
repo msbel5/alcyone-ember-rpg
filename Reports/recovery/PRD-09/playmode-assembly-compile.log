@@ -1,0 +1,9 @@
+C:\Program Files\dotnet\sdk\8.0.423\Microsoft.Common.CurrentVersion.targets(93,5): error MSB4184: "[Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformSDKLocation(Windows, 7.0)" ifadesi değerlendirilemiyor. Access to the path 'C:\Users\msbel\AppData\Local\Microsoft SDKs' is denied. [D:\projects\alcyone-ember-rpg\EmberCrpg.Tests.PlayMode.csproj]
+
+Oluşturma BAŞARISIZ OLDU.
+
+C:\Program Files\dotnet\sdk\8.0.423\Microsoft.Common.CurrentVersion.targets(93,5): error MSB4184: "[Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformSDKLocation(Windows, 7.0)" ifadesi değerlendirilemiyor. Access to the path 'C:\Users\msbel\AppData\Local\Microsoft SDKs' is denied. [D:\projects\alcyone-ember-rpg\EmberCrpg.Tests.PlayMode.csproj]
+    0 Uyarı
+    1 Hata
+
+Geçen Süre 00:00:00.33

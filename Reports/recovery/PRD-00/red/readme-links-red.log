@@ -1,0 +1,14 @@
+
+=== 0. README local document references ===
+  MISSING README document: docs/AI_STACK.md
+  MISSING README document: docs/CURRENT_STATE.md
+  MISSING README document: docs/EMBER_GOAL.md
+  MISSING README document: docs/EMBER_VISION_BIBLE.md
+  MISSING README document: docs/PRD_GOVERNANCE.md
+  MISSING README document: docs/RELEASE_NOTES_v1.0.md
+  MISSING README document: docs/REMEDIATION_V2_COUNTER.md
+  MISSING README document: docs/ROADMAP_V1.md
+FAIL: 8 README document reference(s) are dangling.
+
+=== RESULT ===
+static-audit FAIL

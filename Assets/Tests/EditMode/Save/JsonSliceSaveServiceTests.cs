@@ -1,5 +1,7 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Actors.Actions;
+using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Inventory;
 using EmberCrpg.Domain.Magic;
 using EmberCrpg.Domain.Memory;
@@ -122,6 +124,62 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             Assert.That(loaded.PlayerLevel, Is.EqualTo(3));
             Assert.That(loaded.PlayerKnownSpellIds, Is.EqualTo(world.PlayerKnownSpellIds));
+        }
+
+        [Test]
+        public void SaveAndLoad_MidPursuit_PreservesActionTargetAndRelationshipLedgers()
+        {
+            var world = new WorldFactory().Create(2029);
+            var guard = world.Actors.FirstByRole(ActorRole.Guard);
+            var target = world.Actors.FirstByRole(ActorRole.Enemy);
+            var hunter = target;
+            var prey = world.Actors.FirstByRole(ActorRole.Player);
+            guard.ApplyActionState(
+                ActorActionState.ForIntent(ActorIntent.Pursue).Start(
+                    ActorActionType.Pursue,
+                    default,
+                    ItemId.Empty,
+                    ReservationId.Empty,
+                    startedAtMinutes: 321,
+                    policy: ActionInterruptPolicy.Interruptible,
+                    targetActor: target.Id).Advanced());
+            world.GuardPursuits.Clear();
+            world.GuardPursuits.Add(new PursuitRecord
+            {
+                GuardId = guard.Id.Value,
+                TargetId = target.Id.Value,
+                UntilMinutes = 900,
+            });
+            world.HuntTargets.Clear();
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = hunter.Id.Value,
+                TargetId = prey.Id.Value,
+                UntilMinutes = 901,
+            });
+            world.SiteUnrest.Clear();
+            world.SiteUnrest.Add(new SiteUnrestRecord
+            {
+                SiteId = new SiteId(77),
+                Unrest = 8,
+                LastDecayDay = 2,
+                SweepCooldownUntilMinutes = 902,
+            });
+
+            var service = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService();
+            var loaded = service.LoadFromJson(service.SaveToJson(world));
+            var loadedGuard = loaded.Actors.FirstByRole(ActorRole.Guard);
+
+            Assert.That(loadedGuard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.Pursue));
+            Assert.That(loadedGuard.ActionState.TargetActorId, Is.EqualTo(target.Id));
+            Assert.That(loadedGuard.ActionState.ProgressTicks, Is.EqualTo(1));
+            Assert.That(loaded.GuardPursuits.Single().GuardId, Is.EqualTo(guard.Id.Value));
+            Assert.That(loaded.GuardPursuits.Single().TargetId, Is.EqualTo(target.Id.Value));
+            Assert.That(loaded.HuntTargets.Single().HunterId, Is.EqualTo(hunter.Id.Value));
+            Assert.That(loaded.HuntTargets.Single().TargetId, Is.EqualTo(prey.Id.Value));
+            Assert.That(loaded.SiteUnrest.Single().SiteId, Is.EqualTo(new SiteId(77)));
+            Assert.That(loaded.SiteUnrest.Single().Unrest, Is.EqualTo(8));
+            Assert.That(loaded.SiteUnrest.Single().SweepCooldownUntilMinutes, Is.EqualTo(902));
         }
     }
 }

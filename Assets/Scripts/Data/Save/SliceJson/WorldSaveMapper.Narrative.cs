@@ -25,6 +25,7 @@ namespace EmberCrpg.Data.Save
         {
             return new WorldEventSaveData
             {
+                sequence = worldEvent.Sequence,
                 tickMinutes = worldEvent.Tick.TotalMinutes,
                 kind = (int)worldEvent.Kind,
                 actorId = (long)worldEvent.ActorId.Value,
@@ -34,23 +35,46 @@ namespace EmberCrpg.Data.Save
             };
         }
 
-        private static WorldEventLog ToWorldEventLog(WorldEventSaveData[] data, long firstRetainedSeq)
+        private static WorldEventLog ToWorldEventLog(
+            WorldEventSaveData[] data,
+            long firstRetainedSeq,
+            long nextSequence)
         {
-            // B21: seed the seq baseline so cursors restore correctly. Pre-fix saves lack the field
-            // (Newtonsoft defaults to 0), which collapses to absolute-index identity — safe migration.
-            var log = new WorldEventLog(firstRetainedSeq);
-            foreach (var worldEvent in data ?? Array.Empty<WorldEventSaveData>())
+            // Keep the retained window contiguous even when a hand-edited/corrupt save contains
+            // null or gapped rows. The window is anchored at the greatest trustworthy "next"
+            // candidate, so a subsequent append can never reuse an observed sequence identity.
+            var rows = (data ?? Array.Empty<WorldEventSaveData>())
+                .Where(row => row != null)
+                .ToArray();
+            var safeFirst = Math.Max(0L, firstRetainedSeq);
+            var safeNext = Math.Max(0L, nextSequence);
+            var countDerivedNext = safeFirst > long.MaxValue - rows.LongLength
+                ? long.MaxValue
+                : safeFirst + rows.LongLength;
+            var rowDerivedNext = 0L;
+            foreach (var row in rows)
             {
-                if (worldEvent != null)
-                {
-                    log.Append(new WorldEvent(
-                        new GameTime(worldEvent.tickMinutes),
-                        (WorldEventKind)worldEvent.kind,
-                        new ActorId((ulong)worldEvent.actorId),
-                        new SiteId((ulong)worldEvent.siteId),
-                        worldEvent.reason,
-                        ToReasonTrace(worldEvent.reasonTrace)));
-                }
+                if (row.sequence < 0)
+                    continue;
+                var candidate = row.sequence == long.MaxValue
+                    ? long.MaxValue
+                    : row.sequence + 1L;
+                if (candidate > rowDerivedNext)
+                    rowDerivedNext = candidate;
+            }
+
+            var restoredNext = Math.Max(safeNext, Math.Max(countDerivedNext, rowDerivedNext));
+            var restoredFirst = restoredNext - rows.LongLength;
+            var log = new WorldEventLog(restoredFirst);
+            foreach (var worldEvent in rows)
+            {
+                log.Append(new WorldEvent(
+                    new GameTime(worldEvent.tickMinutes),
+                    (WorldEventKind)worldEvent.kind,
+                    new ActorId((ulong)worldEvent.actorId),
+                    new SiteId((ulong)worldEvent.siteId),
+                    worldEvent.reason,
+                    ToReasonTrace(worldEvent.reasonTrace)));
             }
             return log;
         }

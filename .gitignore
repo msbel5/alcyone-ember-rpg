@@ -163,3 +163,6 @@ D:/proofs/
 # transient build/proof outputs and IDE workspace
 build-*.log
 .claude/
+
+
+_codex_handoff/

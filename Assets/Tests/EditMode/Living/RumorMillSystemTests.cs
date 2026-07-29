@@ -22,7 +22,7 @@ namespace EmberCrpg.Tests.EditMode.Living
         public void Tick_DistillsEventsOnce_AndCursorNeverReMills()
         {
             var world = World();
-            world.Events.Append(new WorldEvent(new GameTime(60), WorldEventKind.NeedChanged,
+            world.Events.Append(new WorldEvent(new GameTime(60), WorldEventKind.VerminTheft,
                 default, new SiteId(1), "vermin_theft item:wheat critter:9"));
 
             var mill = new RumorMillSystem();
@@ -38,6 +38,17 @@ namespace EmberCrpg.Tests.EditMode.Living
             world.Rumors.Add(new RumorEntry { BornMinutes = 0, SiteId = new SiteId(1), Text = "old news" });
             new RumorMillSystem().Tick(world, new GameTime(RumorMillSystem.LifeMinutes + 61));
             Assert.That(world.Rumors, Is.Empty, "three-day-old talk dies");
+        }
+
+        [Test]
+        public void Distill_TheftShapedNeedChanged_IsNotTreatedAsVerminTheft()
+        {
+            var legacyMisclassified = new WorldEvent(
+                new GameTime(60), WorldEventKind.NeedChanged,
+                default, new SiteId(1), "vermin_theft item:wheat qty:1");
+
+            Assert.That(RumorMillSystem.Distill(legacyMisclassified), Is.Null,
+                "NeedChanged is reserved for actual need transitions");
         }
 
         [Test]

@@ -10,16 +10,14 @@ read-only reference only.
 - Local-first AI flavour layer (never world authority)
 - No silent black-box generation during boot/new-game flows
 
-## Canonical docs (read in this order)
+## Canonical recovery docs (read in this order)
 
-1. `docs/CURRENT_STATE.md`
-2. `docs/REMEDIATION_V2_COUNTER.md`
-3. `docs/EMBER_VISION_BIBLE.md`
-4. `docs/AI_STACK.md`
-5. `docs/PRD_GOVERNANCE.md`
+1. [Current state](docs/recovery/CURRENT_STATE.md)
+2. [Recovery counter](docs/recovery/RECOVERY_COUNTER.md)
+3. [PRD governance](docs/recovery/PRD_GOVERNANCE.md)
 
-Compatibility note: `docs/EMBER_GOAL.md` now redirects to this same canonical
-read order.
+The [systems Atlas](docs/atlas/INDEX.md) is explanatory/historical material,
+not current implementation or closure authority.
 
 ## Proof modes (important)
 
@@ -50,15 +48,17 @@ bash tools/validation/run-validation.sh --mode fallback
 
 ## Repo note
 
-`Reference/**` and `docs/reference/**` are reference/history material. Active
-Unity implementation requirements live under `docs/prds/` and the docs listed
-above.
+`Reference/**` is reference/history material. Recovery scope and current
+evidence authority live only in the canonical recovery documents listed above.
 
 ## License
 
 MIT.
 
-## How to Play (v0.1.0 vertical slice)
+## Historical product narrative (not current proof)
+
+The milestone narrative below is retained for context. It does not override
+[current state](docs/recovery/CURRENT_STATE.md) or supply current runtime proof.
 
 Run `Builds\Windows64\alcyone-ember-rpg.exe` → New Game → answer the creation questions → you spawn in a
 procedurally realized settlement on a 5120 km living continent.
@@ -133,7 +133,7 @@ SDXL portrait forge stops fighting the GPU mid-measurement. Shipcheck: 9 section
 (world-enter, quest-seed, encounter-loot 13 swings, economy, perf 11.9ms avg, soak 10 hops 0 exceptions,
 economy-chain, audio-forge, modal-capture).
 
-### v0.4 "Combat Depth" — SHIPPED (roadmap: docs/ROADMAP_V1.md; shipcheck 9/9 PASS, perf 11.9ms avg)
+### v0.4 "Combat Depth" — historical milestone claim (shipcheck 9/9 PASS, perf 11.9ms avg)
 
 F14 enemy movement SHIPPED: hostiles that see the player (12m) give CHASE at ~2.2 m/s, stop adjacent
 and fight, and reaching aggro range auto-binds the encounter — walking into a delve chamber starts the
@@ -439,5 +439,5 @@ seviye atlarken seçilir; Mnd puanı mana havuzunu büyütür (+2/puan).
 arketipe göre şef-varyantı Warden (mağara→kurt, kripta→hayalet, harabe→haydut; 2× can).
 Vuruş sesi vurduğun gövdeye göre değişir.
 
-**Bilinen sınırlar:** docs/RELEASE_NOTES_v1.0.md'deki dürüst liste — forge-OFF silüetler,
+**Historical known-limits note:** forge-OFF silhouettes,
 salt-okunur keybind'ler, journal-intro, mirror-frame yürüyüş ve diğerleri.

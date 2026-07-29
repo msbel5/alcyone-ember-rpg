@@ -47,7 +47,7 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
         public void ActionlessActor_HasNoActionLabel()
         {
             Assert.That(ActionVerbTable.KindName(ActorActionType.None), Is.Null,
-                "no action -> no ActionKind — the schedule-word fallback owns actionless actors");
+                "no action -> no projected action identity");
         }
 
         [Test]
@@ -68,6 +68,8 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
                 "the projection must read the ONE truth source");
             Assert.That(code, Does.Contain("ActionState.CurrentAction"),
                 "the verb must be born from the actor's carried action");
+            Assert.That(code, Does.Not.Contain("DescribeScheduleWord"),
+                "an actionless schedule/role fallback is a second projection authority");
             // W33 F7: the farm guesses join the banned list — those verbs may only be born from
             // MoveToPlot/PlantSeed/HarvestCrop/HaulCrop actions, and the retired GUESS(FARM)
             // tag may not linger (a landed slice leaves no surviving guess to tag).
@@ -119,5 +121,6 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
             }
             return null;
         }
+
     }
 }

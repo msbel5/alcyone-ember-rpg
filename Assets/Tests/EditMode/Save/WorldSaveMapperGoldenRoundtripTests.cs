@@ -26,6 +26,7 @@ namespace EmberCrpg.Tests.EditMode.Save
             world.PlayerClassName = "Warrior";
             world.CompanionIds.Add(new EmberCrpg.Domain.Core.ActorId(101UL));
             world.GuardPursuits.Add(new PursuitRecord { GuardId = 5, TargetId = 6, UntilMinutes = 999 });
+            world.HuntTargets.Add(new HuntTargetRecord { HunterId = 6, TargetId = 5, UntilMinutes = 1001 });
             world.Critters.Add(new AmbientCritter
             { Id = 11, SiteId = new SiteId(1), Cell = new GridPosition(4, 5), Kind = "rat" });
             world.Rumors.Add(new RumorEntry
@@ -57,7 +58,7 @@ namespace EmberCrpg.Tests.EditMode.Save
                     .Start(ActorActionType.HaulCrop, targetSite: new SiteId(1),
                            targetItem: ItemId.Empty, reservation: new ReservationId(carryRowId),
                            startedAtMinutes: 130, policy: ActionInterruptPolicy.Interruptible)
-                    .WithCarriedUnits(2));
+                    .WithCarriedMatter("wheat", 2));
             // W34: a mid-flight SLEEPER (Rest/Sleep@progress + a live "bed:" row on the actor's own
             // Home cell) — a dropped intent/action range widening or bed-row mapping fails here.
             var sleeper = world.Actors.Records.First(a => a != null && a.Id != eater.Id && a.Id != hauler.Id);

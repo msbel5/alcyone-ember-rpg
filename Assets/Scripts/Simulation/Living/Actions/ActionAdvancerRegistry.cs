@@ -17,7 +17,7 @@ namespace EmberCrpg.Simulation.Living.Actions
             // W36 GUARD+COMBAT: tail is now StrikeQuarry — a lifecycle constructed without the
             // W36 advancers leaves those three slots null, which is EXPECTED for W35-era test
             // worlds that do not enable the Guard/Combat rules (feature-flag default OFF).
-            _byKind = new ActionAdvancer[(int)ActorActionType.StrikeQuarry + 1];
+            _byKind = new ActionAdvancer[(int)ActorActionType.Pursue + 1];
             foreach (var advancer in advancers)
                 _byKind[(int)advancer.Handles] = advancer;
         }

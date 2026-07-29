@@ -50,6 +50,33 @@ namespace EmberCrpg.Simulation.Living
                 .WithThirst(needs.Thirst.Increase(ScaleRate(ThirstIncreasePerTick, ticks)));
         }
 
+        /// <summary>
+        /// Recovery role matrix. Talkers and merchants are civilians; companions retain one
+        /// of those roles (or Guard), so they share the same Eat/Sleep closure. Player needs
+        /// are an explicit opt-out until a player-survival feature exists, and enemies opt out
+        /// because this recovery does not add an enemy-eating behavior.
+        /// Active closure: Hunger + Thirst -> ConsumeFood, Fatigue -> Sleep.
+        /// </summary>
+        public static bool AppliesPressure(ActorRole role)
+        {
+            switch (role)
+            {
+                case ActorRole.Talker:
+                case ActorRole.Merchant:
+                case ActorRole.Guard:
+                    return true;
+                case ActorRole.Player:
+                case ActorRole.Enemy:
+                default:
+                    return false;
+            }
+        }
+
+        public ActorNeeds TickNeeds(ActorRole role, ActorNeeds needs, int ticks = 1)
+        {
+            return AppliesPressure(role) ? TickNeeds(needs, ticks) : needs;
+        }
+
         public ActorMood RecomputeMood(ActorRecord actor)
         {
             if (actor == null)
@@ -72,9 +99,11 @@ namespace EmberCrpg.Simulation.Living
                 throw new ArgumentNullException(nameof(eventLog));
             if (ticks <= 0)
                 return false;
+            if (!AppliesPressure(actor.Role))
+                return false;
 
             var previousNeeds = actor.Needs;
-            var nextNeeds = TickNeeds(previousNeeds, ticks);
+            var nextNeeds = TickNeeds(actor.Role, previousNeeds, ticks);
             actor.ApplyNeeds(nextNeeds);
             var nextMood = RecomputeMood(actor);
 

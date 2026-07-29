@@ -171,6 +171,8 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                     return "Grain runs thin — the fields are being planted in a hurry.";
                 case WorldEventKind.CaravanArrived:
                     return "A caravan rolled in off the trade road, wheels heavy.";
+                case WorldEventKind.CaravanStalled:
+                    return "A caravan has stalled on the trade road; its goods have not arrived.";
                 case WorldEventKind.PriceChanged:
                     return "Market prices have shifted again; the merchants are muttering.";
                 case WorldEventKind.FactionReputationChanged:

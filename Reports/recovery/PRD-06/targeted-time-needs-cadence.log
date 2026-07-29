@@ -1,0 +1,209 @@
+  ValidationFallbackHarness -> D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll (.NETCoreApp,Version=v8.0) için test çalıştırması
+VSTest sürümü 17.11.1 (x64)
+
+Test yürütmesi başlatılıyor, lütfen bekleyin...
+Toplam 1 test dosyası belirtilen desenle eşleşti.
+NUnit Adapter 4.6.0.0: Test execution started
+Running selected tests in D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+   NUnit3TestExecutor discovered 101 of 101 NUnit test cases using Current Discovery mode, Non-Explicit run
+  Başarılı EnemyClosesInAndStrikesUntilTargetIsMauled [98 ms]
+  Başarılı EnemyHuntProjectsAsHuntNotAsGuess [3 ms]
+  Başarılı EnemyWithNoPreyInRangeStaysIdleAndOpensNoRow [3 ms]
+  Başarılı HuntCadenceWait_DoesNotMoveOrIncrementProgress [3 ms]
+  Başarılı HuntInterruptedByPursuit_RemovesRelationship [12 ms]
+  Başarılı HuntNoRoute_FailsWithoutProgress_AndRemovesTargetClaim [1 ms]
+  Başarılı HuntOppositeIntegerBoundaries_DoesNotFalseArriveOrThrow [2 ms]
+  Başarılı HuntTerminalTargetLoss_FailsAndRemovesRelationship("expired") [< 1 ms]
+  Başarılı HuntTerminalTargetLoss_FailsAndRemovesRelationship("dead") [< 1 ms]
+  Başarılı HuntTerminalTargetLoss_FailsAndRemovesRelationship("missing") [< 1 ms]
+  Başarılı StrikeQuarryMissingTarget_FailsAndRemovesRelationship [< 1 ms]
+  Başarılı GuardEatsOffWatch [78 ms]
+  Başarılı LunchAfterTheChase [1 ms]
+  Başarılı PursuitOutranksLunch [15 ms]
+  Başarılı FatigueDrops_OnlyDuringRunningSleep_AtHomeCell [72 ms]
+  Başarılı NeedsSystem_IsTheOnlyOtherFatigueWriter_AndItNeverDecreases [< 1 ms]
+  Başarılı TwoDayHorizon_ContainsAWorkThenSleepThenWork_Cycle [61 ms]
+  Başarılı CombatActionTimingProfile_ForEachKind_ReturnsPositiveActive [2 ms]
+  Başarılı CombatActionTimingProfile_ForUnknownKind_Throws [9 ms]
+  Başarılı DialogueResponse_Refused_CarriesReason [< 1 ms]
+  Başarılı DialogueResponse_Spoken_ProducesNonRefused [< 1 ms]
+  Başarılı EncounterState_AddLog_AppendsInOrder [< 1 ms]
+  Başarılı EncounterState_Finish_SetsWinnerAndCompletes [< 1 ms]
+  Başarılı PlantGrowthRule_CanGrow_BlockedBySnowGate [< 1 ms]
+  Başarılı PlantGrowthRule_Matches_NoneActsAsWildcard [< 1 ms]
+  Başarılı PlantGrowthRule_Matches_SpecificSeasonExcludesOthers [< 1 ms]
+  Başarılı SliceTickComposer_BackwardsTickIsIdempotent [< 1 ms]
+INVENTORY Actor.ActionState/invoke-or-direct-assign count=6
+  Assets/Scripts/Data/Save/ActorSaveMapper.cs:170::record.ApplyActionState(ActorActionStateSaveReader.Read(save));
+  Assets/Scripts/Domain/Actors/ActorRecord.cs:119::copy.ApplyActionState(ActionState);
+  Assets/Scripts/Domain/Actors/ActorRecord.cs:178::ActionState = actionState;
+  Assets/Scripts/Domain/Actors/ActorRecord.cs:60::ActionState = actionState;
+  Assets/Scripts/Simulation/Living/Actions/ActionAdvancer.cs:55::actor.ApplyActionState(next);
+  Assets/Scripts/Simulation/World/PlayerLevelUpService.cs:152::copy.ApplyActionState(source.ActionState);
+  Başarılı SliceTickComposer_FirstAdvanceIsNoOpThenSecondMovesTime [< 1 ms]
+  Başarılı SliceTickComposer_HourlyCatchupStampsEventsAtBoundaryNotPostAdvanceTime [2 ms]
+  Başarılı SliceTickComposer_ResetAnchor_PreventsDoubleTickAfterRestore [7 ms]
+  Başarılı SliceTickComposer_ResetAnchorThenRebuildAccumulators_RestoresHourlyRemainder [< 1 ms]
+  Başarılı SpellExecutionService_LiveCast_MutatesEnemyVitals [19 ms]
+  Başarılı TickByTick_AndRaggedChunks_ProduceIdenticalEventLogs [181 ms]
+  Başarılı ActorActionState_HasOneAuthoritativeProductionWriter_AndNoHiddenCallsites [399 ms]
+  Başarılı CompanionCutover_ActiveActionHasOneMovementWriterAndLegacyStepsAreGone [5 ms]
+  Başarılı CoreMutableFields_HaveDeclaredOwnership [< 1 ms]
+INVENTORY Actor.Position/.MoveTo count=25
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Combat.Spells.cs:143::player.MoveTo(CenterOfSite(SettlementSiteId(CurrentSettlementOrStart)));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Combat.Spells.cs:59::player.MoveTo(liveCastPosition);
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Travel.cs:57::player.MoveTo(CenterOfSite(SettlementSiteId(settlement.Id)));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:1004::target.MoveTo(new EmberCrpg.Domain.Actors.GridPosition(castFrom.X + 3, castFrom.Y));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:1033::actor.MoveTo(new EmberCrpg.Domain.Actors.GridPosition(center.X + (posted - 1) * 2, center.Y));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:276::hostile.MoveTo(new GridPosition(
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:295::hostile.MoveTo(new GridPosition(hostile.Position.X + dx, hostile.Position.Y + dy));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:370::player.MoveTo(CenterOfSite(SettlementSiteId(here)));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:406::outlaw.MoveTo(new GridPosition(player.Position.X + 1, player.Position.Y)); // the duel is adjacent
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:493::dummy.MoveTo(new GridPosition(player.Position.X + 1, player.Position.Y));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:665::host.MoveTo(tavernGrid);
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:682::player.MoveTo(new EmberCrpg.Domain.Actors.GridPosition(target.Position.X + 1, target.Position.Y));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Worldgen.Npcs.cs:140::worker.MoveTo(preferredSmithPosition);
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Worldgen.Player.cs:45::player.MoveTo(CenterOfSite(SettlementSiteId(StartingSettlement)));
+  Assets/Scripts/Simulation/Living/Actions/FollowPlayerAdvancer.cs:48::actor.MoveTo(movement.Position);
+  Assets/Scripts/Simulation/Living/Actions/HaulCropAdvancer.cs:45::actor.MoveTo(MovementService.StepToward(actor.Position, centre, world?.NavView));
+  Assets/Scripts/Simulation/Living/Actions/HuntAdvancer.cs:61::actor.MoveTo(movement.Position);
+  Assets/Scripts/Simulation/Living/Actions/MoveToBedAdvancer.cs:50::actor.MoveTo(movement.Position);
+  Assets/Scripts/Simulation/Living/Actions/MoveToFoodAdvancer.cs:46::actor.MoveTo(movement.Position);
+  Assets/Scripts/Simulation/Living/Actions/MoveToPlotAdvancer.cs:79::actor.MoveTo(movement.Position);
+  Assets/Scripts/Simulation/Living/Actions/MoveToWorksiteAdvancer.cs:55::actor.MoveTo(movement.Position);
+  Assets/Scripts/Simulation/Living/Actions/OnWatchAdvancer.cs:45::actor.MoveTo(MovementService.StepToward(actor.Position, post, world?.NavView));
+  Assets/Scripts/Simulation/Living/Actions/PursueAdvancer.cs:57::actor.MoveTo(movement.Position);
+  Assets/Scripts/Simulation/Living/Actions/ReportCrimeAdvancer.cs:75::actor.MoveTo(movement.Position);
+  Assets/Scripts/Simulation/Living/ScheduleSystem.cs:61::actor.MoveTo(next);
+INVENTORY Actor.Vitals/.ApplyVitals count=24
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Combat.Melee.cs:170::target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Damage(rawDamage)));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Combat.cs:36::player.ApplyVitals(player.Vitals.WithHealth(player.Vitals.Health.Damage(amount)));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Travel.cs:99::player.ApplyVitals(EmberCrpg.Simulation.World.PlayerRestService.RestedVitals(player.Vitals, hoursSlept));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:1005::target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Restore(target.Vitals.Health.Max)));
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:362::player.ApplyVitals(new EmberCrpg.Domain.Actors.ActorVitals(
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:503::dummy.ApplyVitals(new EmberCrpg.Domain.Actors.ActorVitals(
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:606::player.ApplyVitals(new EmberCrpg.Domain.Actors.ActorVitals(
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:630::player.ApplyVitals(new EmberCrpg.Domain.Actors.ActorVitals(
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.WorldEncounter.cs:991::player.ApplyVitals(player.Vitals.WithMana(new VitalStat(40, 40)));
+  Assets/Scripts/Simulation/Combat/CombatActionResolver.cs:61::attacker.ApplyVitals(attacker.Vitals.WithFatigue(attacker.Vitals.Fatigue.Damage(action.StaminaCost)));
+  Assets/Scripts/Simulation/Combat/CombatActionResolver.cs:72::defender.ApplyVitals(defender.Vitals.WithHealth(defender.Vitals.Health.Damage(damage)));
+  Assets/Scripts/Simulation/Combat/CombatMathService.cs:47::defender.ApplyVitals(defender.Vitals.WithHealth(defender.Vitals.Health.Damage(mitigatedDamage)));
+  Assets/Scripts/Simulation/Combat/RealtimeDamageService.cs:64::defender.ApplyVitals(defender.Vitals.WithHealth(defender.Vitals.Health.Damage(mitigatedDamage)));
+  Assets/Scripts/Simulation/Living/Actions/CombatOperations.cs:73::target.ApplyVitals(new ActorVitals(
+  Assets/Scripts/Simulation/Magic/SpellCastingService.cs:91::caster.ApplyVitals(caster.Vitals.WithMana(caster.Vitals.Mana.Damage(spell.ManaCost)));
+  Assets/Scripts/Simulation/Magic/SpellEffectResolutionService.cs:102::target.ApplyVitals(target.Vitals.WithFatigue(target.Vitals.Fatigue.Damage(effect.Magnitude)));
+  Assets/Scripts/Simulation/Magic/SpellEffectResolutionService.cs:73::target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Damage(effect.Magnitude)));
+  Assets/Scripts/Simulation/Magic/SpellEffectResolutionService.cs:78::target.ApplyVitals(target.Vitals.WithHealth(target.Vitals.Health.Restore(effect.Magnitude)));
+  Assets/Scripts/Simulation/Magic/SpellEffectResolutionService.cs:84::target.ApplyVitals(target.Vitals.WithFatigue(target.Vitals.Fatigue.Restore(effect.Magnitude)));
+  Assets/Scripts/Simulation/Magic/SpellEffectResolutionService.cs:90::target.ApplyVitals(target.Vitals.WithMana(target.Vitals.Mana.Restore(effect.Magnitude)));
+  Assets/Scripts/Simulation/Magic/SpellEffectResolutionService.cs:96::target.ApplyVitals(target.Vitals.WithMana(target.Vitals.Mana.Damage(effect.Magnitude)));
+  Assets/Scripts/Simulation/Magic/SpellResolver.cs:112::context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Damage(operation.Magnitude)));
+  Assets/Scripts/Simulation/Magic/SpellResolver.cs:118::context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Restore(operation.Magnitude)));
+  Assets/Scripts/Simulation/Magic/SpellResolver.cs:132::context.TargetActor.ApplyVitals(context.TargetActor.Vitals.WithHealth(context.TargetActor.Vitals.Health.Damage(operation.Magnitude)));
+INVENTORY Actor.Needs/.ApplyNeeds count=5
+  Assets/Scripts/Simulation/Composition/DefaultTickSystems.cs:406::actor.ApplyNeeds(_needs.TickNeeds(actor.Role, actor.Needs));
+  Assets/Scripts/Simulation/Living/Actions/ConsumeFoodAdvancer.cs:54::actor.ApplyNeeds(fed);
+  Assets/Scripts/Simulation/Living/Actions/SleepAdvancer.cs:66::actor.ApplyNeeds(rested);
+  Assets/Scripts/Simulation/Living/NeedRecoverySystem.cs:92::actor.ApplyNeeds(nextNeeds);
+  Assets/Scripts/Simulation/Living/NeedsSystem.cs:107::actor.ApplyNeeds(nextNeeds);
+  Başarılı EveryDeclaredWriter_IsARealRegisteredSystem_AtItsDeclaredSlot [2 ms]
+  Başarılı MoveToAndApplyVitals_ProductionCallsites_MatchTheRepoRelativeGate [661 ms]
+INVENTORY World.Stockpiles/add-remove-assign count=28
+  Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.Economy.cs:72::stockpile.Add(entry.itemTag, entry.count);
+  Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.Economy.cs:74::stockpiles.Add(stockpile);
+  Assets/Scripts/Data/Save/SliceJson/WorldSaveMapper.cs:199::world.Stockpiles = ToStockpiles(data.stockpiles);
+  Assets/Scripts/Domain/Process/StockpileRecipeInventory.cs:25::return _pile.Remove(itemTag, quantity) == quantity;
+  Assets/Scripts/Domain/Process/StockpileRecipeInventory.cs:33::_pile.Add(itemTag, quantity);
+  Assets/Scripts/Domain/World/WorldState.cs:280::Stockpiles = other.Stockpiles;
+  Assets/Scripts/Domain/World/WorldState.cs:46::public List<StockpileComponent> Stockpiles = new List<StockpileComponent>();
+  Assets/Scripts/Domain/World/WorldState.cs:85::Stockpiles ??= new List<StockpileComponent>();
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Worldgen.Hydration.cs:153::larder.Add("wheat", 150);
+  Assets/Scripts/Presentation/Ember/Adapters/DomainSimulationAdapter.Worldgen.Hydration.cs:154::_world.Stockpiles.Add(larder);
+  Assets/Scripts/Simulation/Living/Actions/ActionAdvancer.cs:76::FoodOperations.FindPile(world, row.SiteId)?.Add(row.ItemTag, 1);
+  Assets/Scripts/Simulation/Living/Actions/ActionAdvancer.cs:82::?.Add(cropTag, state.CarriedUnits);
+  Assets/Scripts/Simulation/Living/Actions/ActionLifecycleSystem.cs:317::pile.Add(input.ItemTag, input.Quantity);
+  Assets/Scripts/Simulation/Living/Actions/FarmOperations.cs:124::world.Stockpiles.Add(pile);
+  Assets/Scripts/Simulation/Living/Actions/HaulCropAdvancer.cs:56::pile.Add(cropTag, state.CarriedUnits);
+  Assets/Scripts/Simulation/Living/Actions/PlantSeedAdvancer.cs:77::FarmOperations.PlantIdFor(soil.Id), () => pile.Remove(seedTag, 1) == 1,
+  Assets/Scripts/Simulation/Living/Actions/TakeFoodAdvancer.cs:42::pile.Remove(row.ItemTag, 1); // unit is physically in hand now (all-or-nothing)
+  Assets/Scripts/Simulation/Living/AmbientLifeSystem.cs:50::pile.Remove(tag, 1);
+  Assets/Scripts/Simulation/Magic/SpellResolver.cs:129::context.TerrainStockpile.Remove(requiredTag, 1);
+  Assets/Scripts/Simulation/Magic/SpellResolver.cs:130::context.TerrainStockpile.Add(context.ResultTerrainTag, 1);
+  Assets/Scripts/Simulation/World/CaravanSystem.cs:50::var loaded = origin?.Remove(route.ItemTag, route.QuantityPerCaravan) ?? 0;
+  Assets/Scripts/Simulation/World/CaravanSystem.cs:92::destination.Add(route.ItemTag, caravan.PayloadRemaining);
+  Assets/Scripts/Simulation/World/RuntimeHistorySystem.cs:100::world.Stockpiles[0].Add("wheat", CaravanWheat + intensity);
+  Assets/Scripts/Simulation/World/WorldFactory.cs:129::furnaceStock.Add("iron", 8);
+  Assets/Scripts/Simulation/World/WorldFactory.cs:131::stallStock.Add("coin", 100);
+  Assets/Scripts/Simulation/World/WorldFactory.cs:135::stallStock.Add("wheat", 320) /* PLAYTEST maul-survivors eat too: 13 mouths x 5 gate days */;
+  Assets/Scripts/Simulation/World/WorldFactory.cs:136::world.Stockpiles.Add(furnaceStock);
+  Assets/Scripts/Simulation/World/WorldFactory.cs:137::world.Stockpiles.Add(stallStock);
+  Başarılı NeedsAndStockpiles_ProductionMutations_MatchTheExplicitDebtGate [982 ms]
+  Başarılı ColdLoad_RebuildAccumulators_ReproducesContinuousCadence [15 ms]
+  Başarılı ColdLoad_ResetAnchorOnly_DesyncsCadence_ProvingTheBug [11 ms]
+  Başarılı OneDay_Is1440Ticks_WithExactly24HourlyBoundaries [41 ms]
+  Başarılı Advance_DifferentTickHorizons_ProduceDifferentDigests [47 ms]
+  Başarılı Advance_OverTwoGameDays_MatchesCommittedBaselineDigest [55 ms]
+  Başarılı Advance_SameSeedSameTicks_ProducesSameDigest [57 ms]
+  Başarılı ActiveEatAction_BlocksCompanionFollowMovementInTheSameTick [2 ms]
+  Başarılı DecisionSweep_CompanionDied_LeavesThePartyWithAFallenEvent [7 ms]
+  Başarılı FollowAction_CompanionLagsBehind_PersistsAndMovesOncePerTick [2 ms]
+  Başarılı FollowAction_DismissedCompanion_FailsInterruptedWithoutMovingAgain [< 1 ms]
+  Başarılı FollowDecision_CompanionAtHeel_HoldsPositionAndStaysIdle [< 1 ms]
+  Başarılı GuardAction_DismissedCompanion_CleansTargetAndFailsInterrupted [< 1 ms]
+  Başarılı GuardAction_EnemyBesideThePlayer_UsesStrikeResolverAndCompletes [< 1 ms]
+  Başarılı MidFollow_SaveLoad_PreservesPersistentActionAndProjectionVerb [79 ms]
+  Başarılı MidGuard_SaveLoad_PreservesIntentTargetAndDeterministicContinuation [1 ms]
+  Başarılı TryDismiss_Companion_LeavesAndEmitsEvent [< 1 ms]
+  Başarılı TryRecruit_BeyondReachOrOverCap_IsRefused [< 1 ms]
+  Başarılı TryRecruit_NearbyCivilian_JoinsAndEmitsEvent [1 ms]
+  Başarılı Decision_PicksTheNearestLarder_FirstWinsOnTies [9 ms]
+  Başarılı Decision_SkipsActorsWithRunningAction_TheCommitmentHolds [1 ms]
+  Başarılı ExpiredReservation_IsSweptDeterministically_AndFreesTheUnit [< 1 ms]
+  Başarılı HungryCivilian_WalksTakesAndConsumes_HungerDropsOnlyAtCompletion [< 1 ms]
+  Başarılı InterruptedConsume_ConservesTheUnit_AndFreesTheClaim [1 ms]
+  Başarılı LastUnit_TwoHungryActors_OneReservationOneRefusal [< 1 ms]
+  Başarılı PileDrained_MidRoute_FailsSourceDrained_AndReplans [< 1 ms]
+  Başarılı RemoteEating_IsImpossible_TheWalkStillMatters [8 ms]
+  Başarılı Advance_ExpiredPursuit_IsPruned_AndTheWatchGoesHome [1 ms]
+  Başarılı Digest_DistinguishesDifferentPersistedPursuitTargets [3 ms]
+  Başarılı IdleGuard_AdjacentEnemyStartsCanonicalPursuitWithoutWitness [8 ms]
+  Başarılı MidPursuit_SaveLoad_PreservesDurableActorTargetAndLedgers [17 ms]
+  Başarılı NewReport_RetargetsRunningPursuitWithoutDeletingNewestLedger [7 ms]
+  Başarılı NonInterruptiblePolicy_IsHonoredByReportAction [1 ms]
+  Başarılı PursueAction_ClosesAtMostOneStepPerTick_WithoutRubberBanding [1 ms]
+  Başarılı PursueAction_TargetDies_FailsWithSemanticTargetGoneAndCleansClaims [< 1 ms]
+  Başarılı PursueAction_TargetEscapesBeyondBound_FailsAndCleansClaims [< 1 ms]
+  Başarılı PursueStrike_EmitsOneCombatResolved_ThenCompletesAndProjectsTruth [< 1 ms]
+  Başarılı PursueStrike_KilledRunningHunterRetiresItsActionAndTargetLedger [< 1 ms]
+  Başarılı ReportCrime_DeadTargetClosesFactWithoutArmingPursuitOrRetry [1 ms]
+  Başarılı StrikePhase_ExpiredPursuitFailsTimedOut [< 1 ms]
+  Başarılı WitnessReport_ArmsAPursuit_ForGuardsInEarshot [1 ms]
+  Başarılı TickActorNeeds_AppendsNeedChangedEventWithReasonTrace [6 ms]
+  Başarılı TickActorNeeds_NonPositiveTicksDoNotAppendEvent [< 1 ms]
+  Başarılı TickActorNeeds_RejectsNullInputs [< 1 ms]
+  Başarılı RecomputeMood_AppliesDerivedMoodToActor [< 1 ms]
+  Başarılı ThreeUnfedNeedTicks_LowerMoodUnderRefusalThreshold [< 1 ms]
+  Başarılı RolePolicy_AppliesPressureOnlyWhereEatAndSleepCloseTheLoop(Player,False) [1 ms]
+  Başarılı RolePolicy_AppliesPressureOnlyWhereEatAndSleepCloseTheLoop(Enemy,False) [< 1 ms]
+  Başarılı RolePolicy_AppliesPressureOnlyWhereEatAndSleepCloseTheLoop(Talker,True) [< 1 ms]
+  Başarılı RolePolicy_AppliesPressureOnlyWhereEatAndSleepCloseTheLoop(Merchant,True) [< 1 ms]
+  Başarılı RolePolicy_AppliesPressureOnlyWhereEatAndSleepCloseTheLoop(Guard,True) [< 1 ms]
+  Başarılı TickNeeds_AdvancesHungerFatigueAndThirst [< 1 ms]
+  Başarılı TickNeeds_NonPositiveTicksDoNotChangeNeeds [1 ms]
+  Başarılı TickNeeds_RepeatedTicksClampAtMaximum [1 ms]
+NUnit Adapter 4.6.0.0: Test execution complete
+  Başarılı ToData_StampsCurrentSchemaVersion [< 1 ms]
+  Başarılı ToWorld_AcceptsCurrentVersion_Roundtrip [< 1 ms]
+  Başarılı ToWorld_RejectsFutureSchemaVersion [< 1 ms]
+  Başarılı ToWorld_TreatsLegacyZeroAsV1 [1 ms]
+  Başarılı Advance_AppendsDayAdvancedEventWhenDayChanges [2 ms]
+  Başarılı Advance_AppendsSeasonChangedAfterDayEventWhenBoundaryCrosses [2 ms]
+  Başarılı Advance_DoesNotAppendEventsWhenStillSameDayAndSeason [< 1 ms]
+  Başarılı Advance_RejectsInvalidInputs [1 ms]
+  Başarılı Advance_ReturnsTimeAdvancedByMinutesWithoutSideEffects [< 1 ms]
+
+Test Çalıştırması Başarılı.
+Toplam test sayısı: 101
+     Geçti: 101
+ Toplam süre: 4,5728 Saniye

@@ -33,7 +33,8 @@ namespace EmberCrpg.Simulation.Living.Actions
         {
             // Pull-based probe at every step start (W32-03 §7): being hunted outranks lunch.
             // Deterministic and order-independent; no push/callback machinery.
-            if (IsPursuitQuarry(world, actor, stamp))
+            if (actor.ActionState.InterruptPolicy == ActionInterruptPolicy.Interruptible
+                && IsPursuitQuarry(world, actor, stamp))
             {
                 Fail(world, actor, ActionFailureReason.Interrupted, stamp);
                 return;
@@ -64,29 +65,84 @@ namespace EmberCrpg.Simulation.Living.Actions
         /// <summary>Uniform failure gate: conserve the carried unit, release the claim ONCE, mark Failed.</summary>
         protected void Fail(WorldState world, ActorRecord actor, ActionFailureReason reason, GameTime stamp)
         {
-            var state = actor.ActionState;
+            var state = RecoverMatterAndReleaseReservation(world, actor, actor.ActionState, stamp);
+            // PRD-03: HuntTargets is the target-identity ledger for BOTH Hunt and
+            // StrikeQuarry. Every terminal failure path (expired/dead/missing prey,
+            // interruption, unreachable) must retire the relationship exactly here.
+            if (state.CurrentIntent == ActorIntent.Hunt
+                || state.CurrentIntent == ActorIntent.GuardCompanion
+                || state.CurrentIntent == ActorIntent.Pursue)
+                ClearHuntTarget(world, actor.Id.Value);
+            if (state.CurrentIntent == ActorIntent.Pursue)
+                ClearGuardPursuit(world, actor.Id.Value);
+            TransitionTo(world, actor, state.Failed(reason), ToLogReason(reason), stamp);
+        }
+
+        /// <summary>
+        /// Shared interruption cleanup for both Running failures and a target killed while its
+        /// action is already terminal. Matter and the reservation close before the caller idles it.
+        /// </summary>
+        protected ActorActionState RecoverMatterAndReleaseReservation(
+            WorldState world,
+            ActorRecord actor,
+            ActorActionState state,
+            GameTime stamp)
+        {
+            var carriedMatterRecovered = state.CarriedUnits == 0;
             if (world.Reservations != null
                 && world.Reservations.TryGetByActor(actor.Id.Value, out var row)
                 && row.Id == state.ReservationId.Value)
             {
                 // ConsumeFood means the unit left the pile at TakeFood — matter conservation
                 // returns it before the claim dies (no dup, no loss; W32-06 T5 contract).
-                if (state.CurrentAction == ActorActionType.ConsumeFood)
+                if (state.CurrentAction == ActorActionType.ConsumeFood || (state.CurrentAction == ActorActionType.TakeFood && state.Phase == ActionPhase.Succeeded))
                     FoodOperations.FindPile(world, row.SiteId)?.Add(row.ItemTag, 1);
                 // W33-01 §6: a failed haul's load sweeps into the destination pile the carry
                 // row names — conservation over realism (same class as the ConsumeFood return).
-                else if (state.CarriedUnits > 0
-                    && FarmOperations.TryParseCarryKey(row.ItemTag, out var cropTag))
-                    FarmOperations.FindOrCreatePile(world, new EmberCrpg.Domain.Core.SiteId(row.SiteId))
-                        ?.Add(cropTag, state.CarriedUnits);
+                else if (state.CarriedUnits > 0)
+                {
+                    var cropTag = state.CarriedMatterTag;
+                    if (string.IsNullOrWhiteSpace(cropTag)
+                        && FarmOperations.TryParseCarryKey(row.ItemTag, out var rowCropTag))
+                        cropTag = rowCropTag;
+                    RecoverCarriedMatter(world, actor, state, cropTag, stamp, missingReservation: false);
+                    carriedMatterRecovered = true;
+                }
                 world.Reservations.Release(row.Id);
             }
-            // W33: hands zero on EVERY failure — the load was swept above, or (rowless: the
-            // mis-TTL/death class) is buried with its carrier; a Failed state still carrying
-            // units would double-count against the pile in the conservation ledger.
+            if (!carriedMatterRecovered)
+                RecoverCarriedMatter(
+                    world, actor, state, state.CarriedMatterTag, stamp, missingReservation: true);
+            // Hands zero only after the carried quantity has been returned to an authoritative pile.
             if (state.CarriedUnits > 0)
                 state = state.WithCarriedUnits(0);
-            TransitionTo(world, actor, state.Failed(reason), ToLogReason(reason), stamp);
+            return state;
+        }
+
+        private static void RecoverCarriedMatter(
+            WorldState world,
+            ActorRecord actor,
+            ActorActionState state,
+            string itemTag,
+            GameTime stamp,
+            bool missingReservation)
+        {
+            if (string.IsNullOrWhiteSpace(itemTag))
+                throw new System.InvalidOperationException(
+                    "Carried matter cannot be recovered without an item tag.");
+            if (missingReservation && world.Events == null)
+                throw new System.InvalidOperationException(
+                    "Carried matter recovery requires the authoritative event log.");
+            var pile = FarmOperations.FindOrCreatePile(world, state.TargetSiteId);
+            if (pile == null)
+                throw new System.InvalidOperationException(
+                    "Carried matter cannot be recovered without a target-site stockpile.");
+
+            pile.Add(itemTag, state.CarriedUnits);
+            if (missingReservation)
+                world.Events.Append(new WorldEvent(
+                    stamp, WorldEventKind.MatterRecovered, actor.Id, state.TargetSiteId,
+                    $"carried_matter_recovered item:{itemTag} qty:{state.CarriedUnits} path:missing_reservation"));
         }
 
         internal static ActionLogReason ToLogReason(ActionFailureReason reason) => reason switch
@@ -98,8 +154,27 @@ namespace EmberCrpg.Simulation.Living.Actions
             ActionFailureReason.SourceDrained => ActionLogReason.TargetGone,
             ActionFailureReason.PlotTaken => ActionLogReason.PlotTaken,
             ActionFailureReason.CropGone => ActionLogReason.CropGone,
+            ActionFailureReason.TargetGone => ActionLogReason.TargetGone,
             _ => ActionLogReason.InterruptPreempted,
         };
+
+        private static void ClearHuntTarget(WorldState world, ulong hunterId)
+        {
+            var rows = world.HuntTargets;
+            if (rows == null) return;
+            for (var i = rows.Count - 1; i >= 0; i--)
+                if (rows[i].HunterId == hunterId)
+                    rows.RemoveAt(i);
+        }
+
+        private static void ClearGuardPursuit(WorldState world, ulong guardId)
+        {
+            var rows = world.GuardPursuits;
+            if (rows == null) return;
+            for (var i = rows.Count - 1; i >= 0; i--)
+                if (rows[i].GuardId == guardId)
+                    rows.RemoveAt(i);
+        }
 
         // ONE arithmetic home: Domain.World.PursuitLedgerQuery — same expiry predicate on
         // both sides (quarry here, pursuer at ActionLifecycleSystem / OnWatchAdvancer).

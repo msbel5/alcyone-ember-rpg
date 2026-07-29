@@ -1,9 +1,6 @@
-using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
-using EmberCrpg.Simulation.Combat;
-using EmberCrpg.Simulation.Rng;
 
 // V3 YOLDAŞ: companions are recruited CIVILIANS, not a new actor role — they keep their
 // identity, their sprite, and crucially their ActorMemory, so the dialogue pipeline recalls
@@ -57,21 +54,21 @@ namespace EmberCrpg.Simulation.Living
 
     }
 
-    /// <summary>Per-tick heel-follow + hourly guard strike for recruited companions.</summary>
+    /// <summary>
+    /// Companion membership housekeeping and deterministic target selection.
+    /// Movement and combat are owned by the action lifecycle, never by this policy helper.
+    /// </summary>
     public sealed class CompanionSystem
     {
         public const int HeelCells = 1;       // at or inside heel range the companion stands easy
         public const int GuardReachCells = 2; // hostiles this close to player OR companion get struck
 
-        /// <summary>PerTick: lagging companions take one Chebyshev step toward the player.</summary>
-        public int TickFollow(WorldState world)
+        /// <summary>Decision-slot cleanup: fallen companions leave the roster loudly.</summary>
+        public int SweepFallen(WorldState world)
         {
-            var player = CompanionService.FindPlayer(world);
-            if (player == null || world.CompanionIds == null || world.CompanionIds.Count == 0) return 0;
+            if (world?.CompanionIds == null || world.CompanionIds.Count == 0) return 0;
 
-            int moved = 0;
-            // M2: the fallen leave the roster LOUDLY — death is a story beat. Reverse walk so
-            // removal is safe mid-iteration.
+            var removed = 0;
             for (int i = world.CompanionIds.Count - 1; i >= 0; i--)
             {
                 if (world.Actors.TryGet(world.CompanionIds[i], out var member)
@@ -79,61 +76,28 @@ namespace EmberCrpg.Simulation.Living
                     continue;
                 var fallenId = world.CompanionIds[i];
                 world.CompanionIds.RemoveAt(i);
+                if (world.HuntTargets != null)
+                    for (var row = world.HuntTargets.Count - 1; row >= 0; row--)
+                        if (world.HuntTargets[row].HunterId == fallenId.Value)
+                            world.HuntTargets.RemoveAt(row);
                 world.Actors.TryGet(fallenId, out var fallen);
                 world.Events?.Append(new WorldEvent(world.Time, WorldEventKind.ActorTalked,
                     fallenId, default, $"companion_fell name:{fallen?.Name ?? "?"}"));
+                removed++;
             }
-
-            foreach (var id in world.CompanionIds)
-            {
-                if (!world.Actors.TryGet(id, out var companion) || companion == null || !companion.IsAlive)
-                    continue;
-                int gap = companion.Position.ChebyshevDistanceTo(player.Position);
-                if (gap <= HeelCells)
-                    continue; // at heel — no jitter
-                // P0 re-pin: a badly lagging companion double-steps - the schedule/meal detours
-                // introduced by eat-on-arrival must never out-walk the heel contract.
-                int steps = gap > HeelCells + 1 ? 2 : 1;
-                for (int s = 0; s < steps && companion.Position.ChebyshevDistanceTo(player.Position) > HeelCells; s++)
-                    // B10 §A5: route through the ONE grid stepper — refuses walls & corner-cuts.
-                    companion.MoveTo(MovementService.StepToward(companion.Position, player.Position, world.NavView));
-                moved++;
-            }
-            return moved;
+            return removed;
         }
 
-        /// <summary>Hourly: each companion strikes one hostile within guard reach of the player
-        /// or of itself — same deterministic dice as predation (boundary stamp + both ids).</summary>
-        public int TickGuard(WorldState world, GameTime stamp)
+        /// <summary>
+        /// First deterministic live enemy within guard reach of either the player or companion.
+        /// Selection is read-only; the lifecycle records the relationship in HuntTargets.
+        /// </summary>
+        public ActorRecord FindGuardThreat(
+            WorldState world,
+            GridPosition player,
+            GridPosition companion)
         {
-            var player = CompanionService.FindPlayer(world);
-            if (player == null || world?.CompanionIds == null || world.CompanionIds.Count == 0) return 0;
-
-            int strikes = 0;
-            var resolver = new CombatActionResolver(new CombatHitRollService(), new CombatDamageService());
-            var action = new EmberCrpg.Domain.Combat.CombatActionDef(
-                new EmberCrpg.Domain.Combat.CombatActionId("companion_guard"), 0, "accuracy_vs_dodge", "base_minus_armor", "strike");
-
-            foreach (var id in world.CompanionIds)
-            {
-                if (!world.Actors.TryGet(id, out var companion) || companion == null || !companion.IsAlive)
-                    continue;
-                var threat = NearestHostile(world, player.Position, companion.Position);
-                if (threat == null) continue;
-
-                var rng = new XorShiftRng((uint)(
-                    (stamp.TotalMinutes * 2654435761L)
-                    ^ (long)(companion.Id.Value * 97L) ^ (long)(threat.Id.Value * 193L)) | 1u);
-                resolver.Resolve(action, companion, threat,
-                    damageBandWidth: System.Math.Max(1, companion.BaseDamage / 2),
-                    rng: rng, now: stamp, siteId: PredationSystem.FallbackSite(world, threat.Position), events: world.Events);
-                strikes++;
-            }
-            return strikes;
-        }
-
-        private static ActorRecord NearestHostile(WorldState world, GridPosition player, GridPosition companion)
-        {
+            if (world?.Actors?.Records == null) return null;
             ActorRecord best = null;
             int bestDist = int.MaxValue;
             foreach (var actor in world.Actors.Records)

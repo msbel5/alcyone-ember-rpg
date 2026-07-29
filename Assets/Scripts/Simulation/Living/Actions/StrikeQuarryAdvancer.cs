@@ -21,12 +21,6 @@ namespace EmberCrpg.Simulation.Living.Actions
     /// <summary>Strikes the hunter's quarry once; loops via NextLink until the target is down or gone.</summary>
     public sealed class StrikeQuarryAdvancer : ActionAdvancer
     {
-        /// <summary>Swings are gated to the game-hour boundary — the retired PredationSystem's
-        /// Hourly:40 cadence preserved on the PerTick advancer. Without this, damage-per-second
-        /// ~60x-es and the 2-day Gate soaks (LivingWorldGate Gate8/civilian stacking, ProofLivingCensus
-        /// meal counters) drift wildly from the pre-W36 baseline.</summary>
-        public const int SwingCadenceMinutes = 60;
-
         public StrikeQuarryAdvancer(ActionLogManager log) : base(log) { }
 
         public override ActorActionType Handles => ActorActionType.StrikeQuarry;
@@ -34,9 +28,40 @@ namespace EmberCrpg.Simulation.Living.Actions
         protected override void Step(WorldState world, ActorRecord actor, GameTime stamp)
         {
             var state = actor.ActionState;
+            if (state.CurrentIntent == ActorIntent.GuardCompanion
+                && !CompanionService.IsCompanion(world, actor.Id))
+            {
+                Fail(world, actor, ActionFailureReason.Interrupted, stamp);
+                return;
+            }
+            if (state.CurrentIntent == ActorIntent.Pursue)
+            {
+                if (!PursueAdvancer.TryResolveLivePursuit(
+                        world, actor, stamp, out var pursuit, out var pursuitTarget, out var failure))
+                {
+                    Fail(world, actor, failure, stamp);
+                    return;
+                }
+                if (!pursuitTarget.Id.Equals(state.TargetActorId))
+                {
+                    world.HuntTargets ??= new System.Collections.Generic.List<HuntTargetRecord>();
+                    PursuitLedgerQuery.UpsertHunt(
+                        world.HuntTargets, actor.Id.Value, pursuitTarget.Id.Value, pursuit.UntilMinutes);
+                    var retargeted = ActorActionState.ForIntent(ActorIntent.Pursue).Start(
+                        ActorActionType.Pursue,
+                        PredationSystem.FallbackSite(world, pursuitTarget.Position),
+                        ItemId.Empty,
+                        ReservationId.Empty,
+                        stamp.TotalMinutes,
+                        ActionInterruptPolicy.Interruptible,
+                        pursuitTarget.Id);
+                    TransitionTo(world, actor, retargeted, ActionLogReason.TargetSelected, stamp);
+                    return;
+                }
+            }
             if (!HuntAdvancer.TryResolvePrey(world, actor, stamp, out var prey))
             {
-                Fail(world, actor, ActionFailureReason.NoFoodFound, stamp);
+                Fail(world, actor, ActionFailureReason.TargetGone, stamp);
                 return;
             }
             // Adjacency probe BEFORE the swing: a fled quarry does not eat a free hit — the
@@ -47,28 +72,57 @@ namespace EmberCrpg.Simulation.Living.Actions
                 return;
             }
             // Cooldown: swings align to the game-hour boundary so damage-per-hour matches
-            // pre-W36 PredationSystem (Hourly:40). In-cooldown ticks Advance in place — the
-            // TransitionTo no-op branch (same action + same phase) writes NO log row, so the
-            // hourly rhythm survives without B21 spam.
-            if (stamp.TotalMinutes % SwingCadenceMinutes != 0)
+            // pre-W36 PredationSystem (Hourly:40). Waiting is exact state retention: no movement,
+            // strike, or other work happened, so progress must not advance.
+            if (!EmberCrpg.Simulation.Composition.WorldTickComposer.IsHourlyBoundary(stamp))
             {
-                TransitionTo(world, actor, state.Advanced(), ActionLogReason.ProgressTicked, stamp);
                 return;
             }
+            var targetWasAlive = prey.IsAlive;
             CombatOperations.ResolveStrike(world, actor, prey, stamp);
+            var strikeKilledTarget = targetWasAlive && !prey.IsAlive;
+            if (state.CurrentIntent == ActorIntent.Pursue)
+                world.Events?.Append(new WorldEvent(
+                    stamp, WorldEventKind.GuardResponded, actor.Id,
+                    PredationSystem.FallbackSite(world, prey.Position),
+                    $"guard_strikes_hunter target:{prey.Id.Value}"));
             CombatOperations.MaybeMaulClamp(world, actor, prey, stamp);
+            if (strikeKilledTarget)
+                RetireDeadTargetAction(world, prey, stamp);
             // Kill / clamp: clear the row so the chain terminates on the next Advance (Hunt
             // → NoFoodFound → Idle). Predator-vs-predator: the row also clears when the prey
             // died-for-real (IsAlive false and no clamp — that path is Enemy-vs-Guard only).
-            if (!prey.IsAlive || prey.Vitals.Health.Current <= 1)
+            if (strikeKilledTarget)
             {
                 // Health.Current == 1 is the mauled-survives clamp signature (civilian target
                 // resurrected at 1 HP): the hunt is over for THIS quarry either way.
                 ClearHuntRow(world, actor.Id.Value);
+                if (state.CurrentIntent == ActorIntent.Pursue)
+                    ClearPursuitRow(world, actor.Id.Value);
             }
             // Succeeded every tick; NextLink returns Hunt while the row is live, None once
             // it is cleared (the loop's fixed point). One log per swing (phase boundary).
             TransitionTo(world, actor, state.Succeeded(), ActionLogReason.Completed, stamp);
+        }
+
+        private void RetireDeadTargetAction(WorldState world, ActorRecord target, GameTime stamp)
+        {
+            var targetState = target.ActionState;
+            if (targetState.CurrentAction == ActorActionType.None) return;
+            if (targetState.Phase == ActionPhase.Running)
+            {
+                Fail(world, target, ActionFailureReason.Interrupted, stamp);
+                targetState = target.ActionState;
+            }
+            else
+            {
+                targetState = RecoverMatterAndReleaseReservation(
+                    world, target, targetState, stamp);
+            }
+            ClearHuntRow(world, target.Id.Value);
+            ClearPursuitRow(world, target.Id.Value);
+            TransitionTo(world, target, ActorActionState.Idle,
+                ActionLogReason.InterruptPreempted, stamp);
         }
 
         private static void ClearHuntRow(WorldState world, ulong hunterId)
@@ -77,6 +131,15 @@ namespace EmberCrpg.Simulation.Living.Actions
             if (rows == null) return;
             for (var i = rows.Count - 1; i >= 0; i--)
                 if (rows[i].HunterId == hunterId)
+                    rows.RemoveAt(i);
+        }
+
+        private static void ClearPursuitRow(WorldState world, ulong guardId)
+        {
+            var rows = world.GuardPursuits;
+            if (rows == null) return;
+            for (var i = rows.Count - 1; i >= 0; i--)
+                if (rows[i].GuardId == guardId)
                     rows.RemoveAt(i);
         }
     }

@@ -87,7 +87,7 @@ namespace EmberCrpg.Simulation.Living.Actions
                     "HarvestCrop invariant: the carry row must be reservable right after the plot release.");
             var next = progressed
                 .WithReservation(new ReservationId(carryRowId))
-                .WithCarriedUnits(HarvestYieldUnits)
+                .WithCarriedMatter(plant.SpeciesId, HarvestYieldUnits)
                 .Succeeded();
             TransitionTo(world, actor, next, ActionLogReason.ProgressTicked, stamp);
         }

@@ -64,7 +64,9 @@ namespace EmberCrpg.Presentation.Ember.UI
         // Why: produce a stable row identity so duplicate logging is prevented across overlapping tail snapshots.
         private static string RowKey(WorldEventRow row)
         {
-            return row.Tick.TotalMinutes + "|" + row.KindCode + "|" + row.ActorId.Value + "|" + row.SiteId.Value + "|" + row.Reason;
+            return row.Sequence >= 0
+                ? row.Sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : row.Tick.TotalMinutes + "|" + row.KindCode + "|" + row.ActorId.Value + "|" + row.SiteId.Value + "|" + row.Reason;
         }
 
         // Why: detect which trailing rows were already present in the previous render when the tail window slides.

@@ -72,6 +72,86 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(worldEvent.SiteId, Is.EqualTo(siteId));
             Assert.That(worldEvent.Reason, Is.EqualTo("faz1-store-roundtrip"));
             Assert.That(worldEvent.ReasonTrace.Causes, Is.EqualTo(new[] { "seed", "spawn-guard" }));
+            Assert.That(worldEvent.Sequence, Is.EqualTo(0L));
+        }
+
+        [Test]
+        public void TrimmedEventLog_SaveLoad_PreservesSequenceAndNextAppendIdentity()
+        {
+            var world = new WorldFactory().Create(2112, seedWorldAnchors: false);
+            world.Events = new WorldEventLog();
+            for (var i = 0; i < 10; i++)
+                world.Events.Append(new WorldEvent(
+                    new GameTime(i), WorldEventKind.ChronicleEvent,
+                    default, new SiteId(1), "event-" + i));
+            world.Events.TrimOldest(4);
+
+            var service = new JsonSliceSaveService();
+            var loaded = service.LoadFromJson(service.SaveToJson(world));
+
+            Assert.That(loaded.Events.FirstRetainedSeq, Is.EqualTo(6L));
+            Assert.That(loaded.Events.TotalAppended, Is.EqualTo(10L));
+            Assert.That(loaded.Events.Events.Select(e => e.Sequence), Is.EqualTo(new long[] { 6, 7, 8, 9 }));
+            var appended = new WorldEvent(
+                new GameTime(10), WorldEventKind.ChronicleEvent,
+                default, new SiteId(1), "event-10");
+            loaded.Events.Append(appended);
+            Assert.That(appended.Sequence, Is.EqualTo(10L),
+                "next sequence survives trim + JSON save/load");
+        }
+
+        [Test]
+        public void EmptyTrimmedEventLog_SaveLoad_PreservesNextAppendIdentity()
+        {
+            var world = new WorldFactory().Create(2113, seedWorldAnchors: false);
+            world.Events = new WorldEventLog();
+            for (var i = 0; i < 10; i++)
+                world.Events.Append(new WorldEvent(
+                    new GameTime(i), WorldEventKind.ChronicleEvent,
+                    default, new SiteId(1), "event-" + i));
+            world.Events.TrimOldest(0);
+
+            var service = new JsonSliceSaveService();
+            var loaded = service.LoadFromJson(service.SaveToJson(world));
+
+            Assert.That(loaded.Events.Count, Is.EqualTo(0));
+            Assert.That(loaded.Events.FirstRetainedSeq, Is.EqualTo(10L));
+            Assert.That(loaded.Events.TotalAppended, Is.EqualTo(10L));
+            var appended = new WorldEvent(
+                new GameTime(10), WorldEventKind.ChronicleEvent,
+                default, new SiteId(1), "event-10");
+            loaded.Events.Append(appended);
+            Assert.That(appended.Sequence, Is.EqualTo(10L));
+        }
+
+        [Test]
+        public void CorruptRetainedRows_RebuildContiguousWindowWithoutReusingSavedNextSequence()
+        {
+            var world = new WorldFactory().Create(2114, seedWorldAnchors: false);
+            world.Events = new WorldEventLog();
+            for (var i = 0; i < 4; i++)
+                world.Events.Append(new WorldEvent(
+                    new GameTime(i), WorldEventKind.ChronicleEvent,
+                    default, new SiteId(1), "event-" + i));
+            var data = WorldSaveMapper.ToData(world);
+            data.worldEvents = new[] { data.worldEvents[0], null, data.worldEvents[3] };
+            data.worldEvents[0].sequence = 6;
+            data.worldEvents[2].sequence = 9;
+            data.worldEventFirstRetainedSeq = 6;
+            data.worldEventNextSequence = 10;
+
+            var loaded = WorldSaveMapper.ToWorld(
+                data,
+                EmberCrpg.Simulation.Process.WorldSaveRehydration.CreateSeedWorld((int)data.roomSeed));
+
+            Assert.That(loaded.Events.FirstRetainedSeq, Is.EqualTo(8L));
+            Assert.That(loaded.Events.TotalAppended, Is.EqualTo(10L));
+            Assert.That(loaded.Events.Events.Select(e => e.Sequence), Is.EqualTo(new long[] { 8, 9 }));
+            var appended = new WorldEvent(
+                new GameTime(10), WorldEventKind.ChronicleEvent,
+                default, new SiteId(1), "event-10");
+            loaded.Events.Append(appended);
+            Assert.That(appended.Sequence, Is.EqualTo(10L));
         }
 
         [Test]

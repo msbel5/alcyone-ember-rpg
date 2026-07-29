@@ -17,6 +17,8 @@ namespace EmberCrpg.Tests.EditMode.Save
         {
             var data = WorldSaveMapper.ToData(new WorldFactory().Create(1337));
             Assert.That(data.schemaVersion, Is.EqualTo(WorldSaveMapper.CurrentSchemaVersion));
+            Assert.That(data.schemaVersion, Is.EqualTo(2),
+                "actor-target actions require v2 so older builds reject unknown running actions");
         }
 
         [Test]

@@ -45,5 +45,21 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.That(system.TickNeeds(needs, ticks: 0), Is.EqualTo(needs));
             Assert.That(system.TickNeeds(needs, ticks: -2), Is.EqualTo(needs));
         }
+
+        [TestCase(ActorRole.Player, false)]
+        [TestCase(ActorRole.Enemy, false)]
+        [TestCase(ActorRole.Talker, true)]
+        [TestCase(ActorRole.Merchant, true)]
+        [TestCase(ActorRole.Guard, true)]
+        public void RolePolicy_AppliesPressureOnlyWhereEatAndSleepCloseTheLoop(
+            ActorRole role,
+            bool expectedActive)
+        {
+            var seed = new ActorNeeds(new NeedValue(10), new NeedValue(20), new NeedValue(30));
+            var system = new NeedsSystem();
+
+            Assert.That(NeedsSystem.AppliesPressure(role), Is.EqualTo(expectedActive));
+            Assert.That(system.TickNeeds(role, seed) != seed, Is.EqualTo(expectedActive));
+        }
     }
 }

@@ -59,9 +59,9 @@ namespace EmberCrpg.Presentation.Ember.UI.Options
             Editable(timing, "Fate Placeholder", Read(() => Options.WorldHost.FatePlaceholderSeconds), "live", text => CommitFloat(text, (o, v) => o.WorldHost.FatePlaceholderSeconds = Math.Max(0.1f, v), () => Options.WorldHost.FatePlaceholderSeconds));
             Editable(timing, "Fate Resolved", Read(() => Options.WorldHost.FateResolvedSeconds), "live", text => CommitFloat(text, (o, v) => o.WorldHost.FateResolvedSeconds = Math.Max(0.1f, v), () => Options.WorldHost.FateResolvedSeconds));
             Editable(timing, "Escape Hold", Read(() => Options.WorldHost.EscapeHoldQuitSeconds), "live", text => CommitFloat(text, (o, v) => o.WorldHost.EscapeHoldQuitSeconds = Math.Max(0.1f, v), () => Options.WorldHost.EscapeHoldQuitSeconds));
-            Editable(timing, "Minutes / Tick", Read(() => Options.Tick.MinutesPerTick), "live", text => CommitInt(text, (o, v) => o.Tick.MinutesPerTick = Math.Max(1, v), () => (int)Options.Tick.MinutesPerTick));
-            Editable(timing, "Ticks / Day", Read(() => Options.Tick.TicksPerDay), "live", text => CommitInt(text, (o, v) => o.Tick.TicksPerDay = Math.Max(1, v), () => Options.Tick.TicksPerDay));
-            Editable(timing, "Ticks / Hour", Read(() => Options.Tick.TicksPerHour), "live", text => CommitInt(text, (o, v) => o.Tick.TicksPerHour = Math.Max(1, v), () => Options.Tick.TicksPerHour));
+            ReadOnly(timing, "Minutes / Tick (fixed)", Read(() => Options.Tick.MinutesPerTick));
+            ReadOnly(timing, "Ticks / Day (derived)", Read(() => Options.Tick.TicksPerDay));
+            ReadOnly(timing, "Ticks / Hour (derived)", Read(() => Options.Tick.TicksPerHour));
             ReadOnly(timing, "Boot Forge Wait", Read(() => Options.Boot.ForgeWaitFrames));
             ReadOnly(timing, "Boot Post Delay", Read(() => Options.Boot.PostGenerationDelayMs));
             ReadOnly(timing, "Menu Refresh", Read(() => Options.Menu.DecorationRefreshSeconds));

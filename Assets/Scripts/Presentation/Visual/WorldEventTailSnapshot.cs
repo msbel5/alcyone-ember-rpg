@@ -61,6 +61,7 @@ namespace EmberCrpg.Presentation.Visual
         private static WorldEventRow ToRow(WorldEvent worldEvent)
         {
             return new WorldEventRow(
+                worldEvent.Sequence,
                 worldEvent.Tick,
                 worldEvent.Kind.ToString(),
                 worldEvent.ActorId,
@@ -72,8 +73,9 @@ namespace EmberCrpg.Presentation.Visual
     /// <summary>One row in <see cref="WorldEventTailSnapshot"/>.</summary>
     public readonly struct WorldEventRow
     {
-        public WorldEventRow(GameTime tick, string kindCode, ActorId actorId, SiteId siteId, string reason)
+        public WorldEventRow(long sequence, GameTime tick, string kindCode, ActorId actorId, SiteId siteId, string reason)
         {
+            Sequence = sequence;
             Tick = tick;
             KindCode = kindCode ?? string.Empty;
             ActorId = actorId;
@@ -81,6 +83,12 @@ namespace EmberCrpg.Presentation.Visual
             Reason = reason ?? string.Empty;
         }
 
+        public WorldEventRow(GameTime tick, string kindCode, ActorId actorId, SiteId siteId, string reason)
+            : this(-1L, tick, kindCode, actorId, siteId, reason)
+        {
+        }
+
+        public long Sequence { get; }
         public GameTime Tick { get; }
         public string KindCode { get; }
         public ActorId ActorId { get; }

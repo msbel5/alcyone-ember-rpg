@@ -11,7 +11,7 @@ using EmberCrpg.Domain.World;
 // is a location not a resource). Interruptibility for pursuit rides the base template's
 // IsPursuitQuarry probe on the quarry SIDE only — a guard is the CHASER, so this file adds
 // its own IsPursuingGuard probe: an armed guard fails OnWatch to Interrupted, Idle follows,
-// and the SAME PerTick ScheduleSystem routes the chase (existing pursuit lifecycle).
+// and the canonical pursuit action chain takes over on the next decision.
 // CONSTRAINT (single-writer): Actor.Position mutations here register under
 // living.action_advance@PerTick:22; FieldOwnershipRegistry declares it.
 namespace EmberCrpg.Simulation.Living.Actions
@@ -38,19 +38,29 @@ namespace EmberCrpg.Simulation.Living.Actions
                 Fail(world, actor, ActionFailureReason.Interrupted, stamp);
                 return;
             }
+            if (!ScheduleSystem.IsWorkHour(stamp))
+            {
+                TransitionTo(world, actor, state.Succeeded(), ActionLogReason.Completed, stamp);
+                return;
+            }
             var post = actor.DayAnchor;
             var dist = FarmOperations.Chebyshev(actor.Position, post);
             if (dist > PostReachCells)
             {
-                actor.MoveTo(MovementService.StepToward(actor.Position, post, world?.NavView));
+                var movement = MovementService.RouteToward(
+                    actor.Position, post, world?.NavView, PostReachCells);
+                if (!movement.Moved)
+                {
+                    Fail(world, actor, ActionFailureReason.Unreachable, stamp);
+                    return;
+                }
+                actor.MoveTo(movement.Position);
                 TransitionTo(world, actor, state.Advanced(), ActionLogReason.ProgressTicked, stamp);
                 return;
             }
-            // On post: the terminal step. Succeeded => NextLink None => Idle => next Decide
-            // tick re-opens OnWatch. The heartbeat is one Started/one Completed per beat,
-            // not per tick (B21 spam lesson). PredationSystem's guard-first-strike still
-            // triggers when a hunter enters StrikeReach — the beat writer is not the striker.
-            TransitionTo(world, actor, state.Succeeded(), ActionLogReason.Arrived, stamp);
+            // On post: hold the same Running state. Shift end or pursuit interruption are the
+            // only terminal paths, so standing guard cannot mint Started/Completed heartbeats.
+            TransitionTo(world, actor, state, ActionLogReason.ProgressTicked, stamp);
         }
 
         // ONE arithmetic home: Domain.World.PursuitLedgerQuery — the guard-side probe. The

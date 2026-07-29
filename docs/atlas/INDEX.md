@@ -1,26 +1,34 @@
-# SYSTEMS ATLAS - 2026-07-25 (post-W36)
+# SYSTEMS ATLAS — Explanatory/Historical Navigation
 
-Usage: `grep -r 'Actor.Position' docs/atlas/` to find where fields live across systems.
+> This Atlas is a repository-relative navigation aid, not current
+> implementation or closure authority. Method/callsite presence cannot close
+> an item. Use [CURRENT_STATE](../recovery/CURRENT_STATE.md) and
+> [IMPLEMENTATION_STATUS](../recovery/IMPLEMENTATION_STATUS.md) for current
+> evidence status.
+>
+> Regenerate deterministically with
+> `python tools/validation/atlas-authority.py --write`; validate with `--check`.
+
+Usage: `rg 'Actor.Position' docs/atlas/` to find where fields live across systems.
 Bug scorecard: [BUG_REPORT_SCORECARD.md](BUG_REPORT_SCORECARD.md)
-Diagnostics reference: [docs/RUH_TESHIS.md](../RUH_TESHIS.md)
 
-- [Time & Cadence](systems/01-time-cadence.md) - Wrote 01-time-cadence.md from current W36 code: composer per-tick replay, registry sort contract, and the 20-row FieldOwnershipRegistry after W35's 6 new field groups.
-- [Needs & Consumption](systems/02-needs-consumption.md) - 02-needs-consumption reset to code-truth: hourly ramps (living.needs@Hourly:30), W32 ConsumeFoodAdvancer atomik meal commit, W34 SleepAdvancer 2/3-tick fatigue ladder, retired living.consumption@Hourly:35 + instant-eat fiat, defterdeki Actor.Needs iki-yazar deklarasyonu.
-- [Schedule & Movement](systems/03-schedule-movement.md) - Reset 03-schedule-movement atlas doc to reflect post-W36 code: Idle-only ScheduleSystem + MovementService.StepToward with IWorldNavigability probe.
-- [Cascades & Crime](systems/04-cascades-crime.md) - 04-cascades-crime.md yeniden yazildi: predation/witness/pursuit/sweep + companion + W30-W36 dogrulamasi.
-- [Economy](systems/05-economy.md) - 05-economy.md yeniden yazildi: StockpileComponent, PriceLedger + B08 zero-stock reprice, CaravanSystem + B07 re-arm, TradeService (Codex A/P2 fix), ShortageResponseSystem stateless, W33 B06 IRecipeInventory kopru gercek koda gore pinlendi.
-- [Plants & Harvest](systems/06-plants-harvest.md) - Reset 06-plants-harvest.md to current code: PlantGrowthSystem daily stage tick (W36 snow gate season==Winter), W33 real HarvestCropAdvancer(2t atomic) + HaulCropAdvancer with fiat teleport dead, RuntimeFieldMirror.PlantCell[] + SimFieldView sim-visual union (REFORM #1).
-- [History & Rumors](systems/07-history-rumors.md) - History/rumors atlas reset to current W36 code: append-only WorldEventLog + B21 seq-cursor RumorMill + Daily RuntimeHistory + Ring-buffer NpcEventEchoFeed.
-- [Quests](systems/08-quests.md) - Rewrote 08-quests.md against current code: catalog quest + contract machine + main-quest spine, W28 dialog wiring, W31 smith commission, W33 save persistence.
-- [Magic & Combat](systems/09-magic-combat.md) - 09-magic-combat atlas reset - live cast uses TryExecuteWithRoll (B12 fizzle SHIPPED W36), but SpellResolver + EffectDefinition data-driven bridge STILL open (test-only); melee routes through CombatActionResolver with W31 IsModalOpen guard.
-- [Save/Load](systems/10-save-load.md) - 10-save-load full HLD/LLD rewritten from live code: WorldSaveData parallel arrays, WorldSaveMapper both directions, W32 EAT reservation+action-log persist, W33 golden reflection roundtrip, W34-C park-list retirement closing B19 double-consumption save wound.
-- [Worldgen & Overland](systems/11-worldgen-overland.md) - Reset 11-worldgen-overland atlas: PlanetWorldService cache, OverlandWorldgen dual-overload, W32-B02 cold-load rebuild via WorldProfile.Seed.
-- [World Realize](systems/12-world-realize.md) - World-realize atlas doc yeniden yazildi: WorldSceneDirector + RuntimeBuildingBuilder (W31 hollow wings + W32 doorsteps + W30 dungeon spawn), koddan dogrulanmis file:line ile.
-- [Actor Views](systems/13-actor-views.md) - 13-actor-views atlas rewritten from current code - spawner (W30 despawn + streaming rescan), projector (ReplaceActorViews), ActorView (glide/snap 5m + wander), ActorCombatFeedbackView (B24 VARIANT B arbiter, SHIPPED-NO-TEST), plus all F27/F29/F33 vitrine views.
-- [Dialog State](systems/14-dialog-state.md) - Reset 14-dialog-state.md to reflect current DomainSimulationAdapter.Dialog.* code (W23 state machine, W28 memory, W31 lazy-seed + ID parity + first-line RecordNpcSaid, W36 ForgeLocator).
-- [LLM Runtime](systems/15-llm-runtime.md) - Reset 15-llm-runtime.md as of 2026-07-26: LLamaSharp StatelessExecutor over GGUF Qwen behind LlmRoutingService, M3a streaming with request-serial + main-thread apply queue, DialogStreamText parrot-proof followups/NaturalQuestion pure rules, deterministic-outcome ConsultFate DM oracle, and the W36-B13 DefaultNpcPortraitJsonProvider wire onto ForgeLocator.NativeLlm - with the still-open USE_LLAMASHARP scripting-define caveat.
-- [TTS & Speech](systems/16-tts-speech.md) - TTS atlas doc reset to current code - W31 spatial voice + W36 B16 bounded retry with cooldown, all four presentation files mapped to file:line.
-- [Forge & Assets](systems/17-forge-assets.md) - Reset 17-forge-assets.md: SDXL/SD15 ONNX pipeline + decorator chain + B17 placeholder-never-stamped + B18 v2 cache key including W/H/negative/steps.
-- [UI & Input](systems/18-ui-input.md) - Atlas 18-ui-input reset to reflect current InGameUiController + Options + W36 B30 keybind truth-up.
-- [Adapter Contract](systems/19-adapter-contract.md) - Reset 19-adapter-contract to the live 6-role interface split, 40 partials, W31 CurrentSettlementKey+spawner despawn, and ActionVerbTable verbatim projection.
-- [Proof Harness](systems/20-proof-harness.md) - Proof harness atlas reset from live code: master-flag Bootstrap gate, 17 --ember-* modes, W30 quit-always/runInBackground/WaitForBootToSettle lessons, W32 DOC5 render-layer spatial+label invariants (TryResolveViewState + RenderedText), W36/B26 ProofLivingCensus peaks accumulator + PASS gate, fallback harness split (T-CENSUS-1/2 Editor-only, T-CENSUS-3 pure-boolean fallback-safe).
+- [Time & Cadence](systems/01-time-cadence.md) - Historical map of tick composition, cadence, time ownership, and field-writer ordering.
+- [Needs & Consumption](systems/02-needs-consumption.md) - Historical map of needs progression, food reservations, consumption actions, and recovery policy.
+- [Schedule & Movement](systems/03-schedule-movement.md) - Historical map of schedule intent, action-owned movement, navigation, and reachability.
+- [Cascades & Crime](systems/04-cascades-crime.md) - Historical map of predation, witnesses, reports, pursuits, guards, and companions.
+- [Economy](systems/05-economy.md) - Historical map of stockpiles, prices, caravans, trade, and shortage response.
+- [Plants & Harvest](systems/06-plants-harvest.md) - Historical map of plant growth, planting, harvest, haul, and field projection.
+- [History & Rumors](systems/07-history-rumors.md) - Historical map of world events, runtime history, rumors, chronicles, and NPC echoes.
+- [Quests](systems/08-quests.md) - Historical map of catalog quests, generated contracts, and the main-quest spine.
+- [Magic & Combat](systems/09-magic-combat.md) - Historical map of spell execution, melee resolution, effects, and combat boundaries.
+- [Save/Load](systems/10-save-load.md) - Historical map of save DTOs, mapper directions, action persistence, and digest round-trips.
+- [Worldgen & Overland](systems/11-worldgen-overland.md) - Historical map of planet generation, overland generation, caching, and cold-load rebuild.
+- [World Realize](systems/12-world-realize.md) - Historical map of scene realization, buildings, interiors, dungeons, and runtime terrain.
+- [Actor Views](systems/13-actor-views.md) - Historical map of actor spawning, simulation projection, animation, labels, and feedback.
+- [Dialog State](systems/14-dialog-state.md) - Historical map of dialog state, topic flow, memory, deterministic text, and AI flavor.
+- [LLM Runtime](systems/15-llm-runtime.md) - Historical map of local model routing, request serialization, sanitization, and fallback.
+- [TTS & Speech](systems/16-tts-speech.md) - Historical map of speech synthesis, playback ownership, retry, cooldown, and shutdown.
+- [Forge & Assets](systems/17-forge-assets.md) - Historical map of generated assets, inference routing, cache identity, and provenance.
+- [UI & Input](systems/18-ui-input.md) - Historical map of UI ownership, modal input, options, keybind display, and player controls.
+- [Adapter Contract](systems/19-adapter-contract.md) - Historical map of adapter roles, read models, commands, projection, and async apply boundaries.
+- [Proof Harness](systems/20-proof-harness.md) - Historical map of proof modes, runtime capture, census observation, and source-only fallback limits.

@@ -7,7 +7,7 @@ using EmberCrpg.Domain.World;
 // a HARDCODED 12:00-13:59 lunch window — choreography, not behavior (the audit's canonical
 // example). H2 replaced it with a UTILITY SELECTOR over the actor's OWN needs and the clock.
 // W32 EAT: the eat option moved to ActionLifecycleSystem (decision + persistent EatAction);
-// this system routes only ACTIONLESS actors between rest / work / idle and resolves pursuits.
+// this system routes only ACTIONLESS actors between rest / work / idle.
 // Pure Domain/Simulation: deterministic, no Unity, no I/O.
 namespace EmberCrpg.Simulation.Living
 {
@@ -29,21 +29,12 @@ namespace EmberCrpg.Simulation.Living
 
         public void Advance(ActorStore actors, GameTime time)
         {
-            Advance(actors, time, pursuits: null, world: null);
-        }
-
-        /// <summary>P0 pursuit overload: active guard chases (from WitnessResponse) outrank the
-        /// return-to-post routing at the SAME PerTick cadence - the chase can finally win.</summary>
-        public void Advance(ActorStore actors, GameTime time,
-            System.Collections.Generic.List<PursuitRecord> pursuits)
-        {
-            Advance(actors, time, pursuits, world: null);
+            Advance(actors, time, world: null);
         }
 
         /// <summary>B10 §A5: nav-aware overload — the composer path passes `world` so StepToward can
         /// consult world.NavView. Older overloads and tests keep the wall-blind primitive.</summary>
-        public void Advance(ActorStore actors, GameTime time,
-            System.Collections.Generic.List<PursuitRecord> pursuits, WorldState world)
+        public void Advance(ActorStore actors, GameTime time, WorldState world)
         {
             if (actors == null)
                 return;
@@ -64,37 +55,11 @@ namespace EmberCrpg.Simulation.Living
                 if (actor.Role == ActorRole.Enemy && actor.Home.Equals(actor.DayAnchor))
                     continue;
 
-                GridPosition target;
-                if (actor.Role == ActorRole.Guard && TryResolvePursuit(pursuits, actors, actor, time, out var quarryCell))
-                    target = quarryCell; // the chase, at full tick speed
-                else
-                    target = ChooseTarget(actor, time);
+                var target = ChooseTarget(actor, time);
                 var next = MovementService.StepToward(actor.Position, target, world?.NavView);
                 if (!next.Equals(actor.Position))
                     actor.MoveTo(next);
             }
-        }
-
-        /// <summary>Resolve this guard's active chase to the quarry's LIVE cell; prunes
-        /// expired / dead-quarry / lost (>40 cells) entries in place.</summary>
-        private static bool TryResolvePursuit(System.Collections.Generic.List<PursuitRecord> pursuits,
-            ActorStore actors, ActorRecord guard, GameTime time, out GridPosition target)
-        {
-            target = default;
-            if (pursuits == null) return false;
-            for (int i = pursuits.Count - 1; i >= 0; i--)
-            {
-                var pursuit = pursuits[i];
-                if (pursuit.GuardId != guard.Id.Value) continue;
-                if (time.TotalMinutes > pursuit.UntilMinutes) { pursuits.RemoveAt(i); return false; }
-                if (!actors.TryGet(new ActorId(pursuit.TargetId), out var quarry) || quarry == null || !quarry.IsAlive)
-                { pursuits.RemoveAt(i); return false; }
-                int dist = guard.Position.ChebyshevDistanceTo(quarry.Position);
-                if (dist > 40) { pursuits.RemoveAt(i); return false; } // lost them - back to post
-                target = quarry.Position;
-                return true;
-            }
-            return false;
         }
 
         /// <summary>True when the supplied timestamp falls within the working day.</summary>

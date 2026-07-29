@@ -1,82 +1,102 @@
 [
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\01-time-cadence.md",
-    "oneLiner": "Wrote 01-time-cadence.md from current W36 code: composer per-tick replay, registry sort contract, and the 20-row FieldOwnershipRegistry after W35's 6 new field groups."
+    "title": "Time & Cadence",
+    "file": "docs/atlas/systems/01-time-cadence.md",
+    "oneLiner": "Historical map of tick composition, cadence, time ownership, and field-writer ordering."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/02-needs-consumption.md",
-    "oneLiner": "02-needs-consumption reset to code-truth: hourly ramps (living.needs@Hourly:30), W32 ConsumeFoodAdvancer atomik meal commit, W34 SleepAdvancer 2/3-tick fatigue ladder, retired living.consumption@Hourly:35 + instant-eat fiat, defterdeki Actor.Needs iki-yazar deklarasyonu."
+    "title": "Needs & Consumption",
+    "file": "docs/atlas/systems/02-needs-consumption.md",
+    "oneLiner": "Historical map of needs progression, food reservations, consumption actions, and recovery policy."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\03-schedule-movement.md",
-    "oneLiner": "Reset 03-schedule-movement atlas doc to reflect post-W36 code: Idle-only ScheduleSystem + MovementService.StepToward with IWorldNavigability probe."
+    "title": "Schedule & Movement",
+    "file": "docs/atlas/systems/03-schedule-movement.md",
+    "oneLiner": "Historical map of schedule intent, action-owned movement, navigation, and reachability."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\04-cascades-crime.md",
-    "oneLiner": "04-cascades-crime.md yeniden yazildi: predation/witness/pursuit/sweep + companion + W30-W36 dogrulamasi."
+    "title": "Cascades & Crime",
+    "file": "docs/atlas/systems/04-cascades-crime.md",
+    "oneLiner": "Historical map of predation, witnesses, reports, pursuits, guards, and companions."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/05-economy.md",
-    "oneLiner": "05-economy.md yeniden yazildi: StockpileComponent, PriceLedger + B08 zero-stock reprice, CaravanSystem + B07 re-arm, TradeService (Codex A/P2 fix), ShortageResponseSystem stateless, W33 B06 IRecipeInventory kopru gercek koda gore pinlendi."
+    "title": "Economy",
+    "file": "docs/atlas/systems/05-economy.md",
+    "oneLiner": "Historical map of stockpiles, prices, caravans, trade, and shortage response."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/06-plants-harvest.md",
-    "oneLiner": "Reset 06-plants-harvest.md to current code: PlantGrowthSystem daily stage tick (W36 snow gate season==Winter), W33 real HarvestCropAdvancer(2t atomic) + HaulCropAdvancer with fiat teleport dead, RuntimeFieldMirror.PlantCell[] + SimFieldView sim-visual union (REFORM #1)."
+    "title": "Plants & Harvest",
+    "file": "docs/atlas/systems/06-plants-harvest.md",
+    "oneLiner": "Historical map of plant growth, planting, harvest, haul, and field projection."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/07-history-rumors.md",
-    "oneLiner": "History/rumors atlas reset to current W36 code: append-only WorldEventLog + B21 seq-cursor RumorMill + Daily RuntimeHistory + Ring-buffer NpcEventEchoFeed."
+    "title": "History & Rumors",
+    "file": "docs/atlas/systems/07-history-rumors.md",
+    "oneLiner": "Historical map of world events, runtime history, rumors, chronicles, and NPC echoes."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/08-quests.md",
-    "oneLiner": "Rewrote 08-quests.md against current code: catalog quest + contract machine + main-quest spine, W28 dialog wiring, W31 smith commission, W33 save persistence."
+    "title": "Quests",
+    "file": "docs/atlas/systems/08-quests.md",
+    "oneLiner": "Historical map of catalog quests, generated contracts, and the main-quest spine."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/09-magic-combat.md",
-    "oneLiner": "09-magic-combat atlas reset - live cast uses TryExecuteWithRoll (B12 fizzle SHIPPED W36), but SpellResolver + EffectDefinition data-driven bridge STILL open (test-only); melee routes through CombatActionResolver with W31 IsModalOpen guard."
+    "title": "Magic & Combat",
+    "file": "docs/atlas/systems/09-magic-combat.md",
+    "oneLiner": "Historical map of spell execution, melee resolution, effects, and combat boundaries."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\10-save-load.md",
-    "oneLiner": "10-save-load full HLD/LLD rewritten from live code: WorldSaveData parallel arrays, WorldSaveMapper both directions, W32 EAT reservation+action-log persist, W33 golden reflection roundtrip, W34-C park-list retirement closing B19 double-consumption save wound."
+    "title": "Save/Load",
+    "file": "docs/atlas/systems/10-save-load.md",
+    "oneLiner": "Historical map of save DTOs, mapper directions, action persistence, and digest round-trips."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\Docs\\atlas\\systems\\11-worldgen-overland.md",
-    "oneLiner": "Reset 11-worldgen-overland atlas: PlanetWorldService cache, OverlandWorldgen dual-overload, W32-B02 cold-load rebuild via WorldProfile.Seed."
+    "title": "Worldgen & Overland",
+    "file": "docs/atlas/systems/11-worldgen-overland.md",
+    "oneLiner": "Historical map of planet generation, overland generation, caching, and cold-load rebuild."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/12-world-realize.md",
-    "oneLiner": "World-realize atlas doc yeniden yazıldı: WorldSceneDirector + RuntimeBuildingBuilder (W31 hollow wings + W32 doorsteps + W30 dungeon spawn), koddan doğrulanmış file:line ile."
+    "title": "World Realize",
+    "file": "docs/atlas/systems/12-world-realize.md",
+    "oneLiner": "Historical map of scene realization, buildings, interiors, dungeons, and runtime terrain."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\13-actor-views.md",
-    "oneLiner": "13-actor-views atlas rewritten from current code — spawner (W30 despawn + streaming rescan), projector (ReplaceActorViews), ActorView (glide/snap 5m + wander), ActorCombatFeedbackView (B24 VARIANT B arbiter, SHIPPED-NO-TEST), plus all F27/F29/F33 vitrine views."
+    "title": "Actor Views",
+    "file": "docs/atlas/systems/13-actor-views.md",
+    "oneLiner": "Historical map of actor spawning, simulation projection, animation, labels, and feedback."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\14-dialog-state.md",
-    "oneLiner": "Reset 14-dialog-state.md to reflect current DomainSimulationAdapter.Dialog.* code (W23 state machine, W28 memory, W31 lazy-seed + ID parity + first-line RecordNpcSaid, W36 ForgeLocator)."
+    "title": "Dialog State",
+    "file": "docs/atlas/systems/14-dialog-state.md",
+    "oneLiner": "Historical map of dialog state, topic flow, memory, deterministic text, and AI flavor."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/15-llm-runtime.md",
-    "oneLiner": "Reset 15-llm-runtime.md as of 2026-07-26: LLamaSharp StatelessExecutor over GGUF Qwen behind LlmRoutingService, M3a streaming with request-serial + main-thread apply queue, DialogStreamText parrot-proof followups/NaturalQuestion pure rules, deterministic-outcome ConsultFate DM oracle, and the W36-B13 DefaultNpcPortraitJsonProvider wire onto ForgeLocator.NativeLlm - with the still-open USE_LLAMASHARP scripting-define caveat."
+    "title": "LLM Runtime",
+    "file": "docs/atlas/systems/15-llm-runtime.md",
+    "oneLiner": "Historical map of local model routing, request serialization, sanitization, and fallback."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\16-tts-speech.md",
-    "oneLiner": "TTS atlas doc reset to current code — W31 spatial voice + W36 B16 bounded retry with cooldown, all four presentation files mapped to file:line."
+    "title": "TTS & Speech",
+    "file": "docs/atlas/systems/16-tts-speech.md",
+    "oneLiner": "Historical map of speech synthesis, playback ownership, retry, cooldown, and shutdown."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\17-forge-assets.md",
-    "oneLiner": "Reset 17-forge-assets.md: SDXL/SD15 ONNX pipeline + decorator chain + B17 placeholder-never-stamped + B18 v2 cache key including W/H/negative/steps."
+    "title": "Forge & Assets",
+    "file": "docs/atlas/systems/17-forge-assets.md",
+    "oneLiner": "Historical map of generated assets, inference routing, cache identity, and provenance."
   },
   {
-    "file": "D:\\projects\\alcyone-ember-rpg\\docs\\atlas\\systems\\18-ui-input.md",
-    "oneLiner": "Atlas 18-ui-input reset to reflect current InGameUiController + Options + W36 B30 keybind truth-up."
+    "title": "UI & Input",
+    "file": "docs/atlas/systems/18-ui-input.md",
+    "oneLiner": "Historical map of UI ownership, modal input, options, keybind display, and player controls."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/19-adapter-contract.md",
-    "oneLiner": "Reset 19-adapter-contract to the live 6-role interface split, 40 partials, W31 CurrentSettlementKey+spawner despawn, and ActionVerbTable verbatim projection."
+    "title": "Adapter Contract",
+    "file": "docs/atlas/systems/19-adapter-contract.md",
+    "oneLiner": "Historical map of adapter roles, read models, commands, projection, and async apply boundaries."
   },
   {
-    "file": "D:/projects/alcyone-ember-rpg/docs/atlas/systems/20-proof-harness.md",
-    "oneLiner": "Proof harness atlas reset from live code: master-flag Bootstrap gate, 17 --ember-* modes, W30 quit-always/runInBackground/WaitForBootToSettle lessons, W32 DOC5 render-layer spatial+label invariants (TryResolveViewState + RenderedText), W36/B26 ProofLivingCensus peaks accumulator + PASS gate, fallback harness split (T-CENSUS-1/2 Editor-only, T-CENSUS-3 pure-boolean fallback-safe)."
+    "title": "Proof Harness",
+    "file": "docs/atlas/systems/20-proof-harness.md",
+    "oneLiner": "Historical map of proof modes, runtime capture, census observation, and source-only fallback limits."
   }
 ]

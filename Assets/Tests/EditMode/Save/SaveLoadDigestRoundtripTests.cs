@@ -1,9 +1,12 @@
+using System.Linq;
 using EmberCrpg.Data.Save;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Actors.Actions;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Composition;
+using EmberCrpg.Simulation.Living.Actions;
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Save
@@ -22,6 +25,47 @@ namespace EmberCrpg.Tests.EditMode.Save
         private static readonly WorldComponentId PlantId = new WorldComponentId(90UL);
         private static readonly WorldComponentId SoilId = new WorldComponentId(10UL);
         private static readonly ActorId Worker = new ActorId(1UL);
+        // A real pre-HuntTargets JSON fixture: schema v0 and no huntHunterIds/huntTargetIds/
+        // huntUntilMinutes properties. Loading it through JsonSliceSaveService exercises the
+        // canonical JsonUtility -> WorldSaveData -> WorldSaveMapper seam.
+        private const string LegacyMidHuntV0Json =
+            "{"
+            + "\"schemaVersion\":0,"
+            + "\"roomSeed\":1337,"
+            + "\"totalMinutes\":480,"
+            + "\"actors\":[{"
+            + "\"id\":5,"
+            + "\"name\":\"Legacy Hunter\","
+            + "\"role\":4,"
+            + "\"positionX\":3,"
+            + "\"positionY\":5,"
+            + "\"hasHomeAnchor\":true,"
+            + "\"homeX\":3,"
+            + "\"homeY\":5,"
+            + "\"dayAnchorX\":3,"
+            + "\"dayAnchorY\":5,"
+            + "\"mig\":10,"
+            + "\"agi\":10,"
+            + "\"end\":10,"
+            + "\"mnd\":10,"
+            + "\"ins\":10,"
+            + "\"pre\":10,"
+            + "\"healthCurrent\":10,"
+            + "\"healthMax\":10,"
+            + "\"fatigueCurrent\":10,"
+            + "\"fatigueMax\":10,"
+            + "\"manaCurrent\":10,"
+            + "\"manaMax\":10,"
+            + "\"hasMood\":true,"
+            + "\"mood\":50,"
+            + "\"currentIntent\":7,"
+            + "\"currentAction\":13,"
+            + "\"actionPhase\":1,"
+            + "\"actionTargetSiteId\":77,"
+            + "\"actionProgressTicks\":1,"
+            + "\"actionStartedAtMinutes\":480,"
+            + "\"actionInterruptPolicy\":0"
+            + "}]}";
 
         // F22: world quests joined the digest + the mapper — save→load must keep the journal
         // identical: an OPEN generated contract, a COMPLETED one, and the fixed pair's states.
@@ -122,18 +166,23 @@ namespace EmberCrpg.Tests.EditMode.Save
         public void MidFlightFarmEpisode_SurvivesRoundtrip_HandsAndClaimsIntact()
         {
             var world = BuildSeededWorld();
+            world.Stockpiles[0].Add("wheat", 5);
+            Assert.That(world.Stockpiles[0].Remove("wheat", 2), Is.EqualTo(2),
+                "the two carried units leave the pile before the save");
             Assert.That(world.Reservations.TryReserve(Site.Value, "carry:wheat", Worker.Value,
                 untilMinutes: 999L, pileCount: int.MaxValue, out var carryRow), Is.True);
             world.Actors.Get(Worker).ApplyActionState(ActorActionState.ForIntent(ActorIntent.Harvest)
                 .Start(ActorActionType.HaulCrop, Site, ItemId.Empty, new ReservationId(carryRow),
                        startedAtMinutes: 100, ActionInterruptPolicy.Interruptible)
-                .WithCarriedUnits(2).Advanced()); // HaulCrop@progress=1 with 2 units in hand
+                .WithCarriedMatter("wheat", 2).Advanced()); // HaulCrop@progress=1 with 2 units in hand
             // A SECOND actor holds the plot claim ("plot:{soilId}" — FarmOperations' codec):
             // one row per actor, so the harvest-in-waiting belongs to the guard.
             var guard = new ActorId(4UL);
             Assert.That(world.Reservations.TryReserve(Site.Value, "plot:10", guard.Value,
                 untilMinutes: 999L, pileCount: 1, out var plotRow), Is.True);
 
+            var matterBefore = world.Stockpiles[0].Get("wheat")
+                + world.Actors.Records.Sum(a => a?.ActionState.CarriedUnits ?? 0);
             var before = WorldStateDigest.Compute(world);
             var loaded = WorldSaveMapper.ToWorld(WorldSaveMapper.ToData(world), BuildSeededWorld());
 
@@ -143,11 +192,16 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That((back.CurrentAction, back.Phase, back.ProgressTicks, back.CarriedUnits),
                 Is.EqualTo((ActorActionType.HaulCrop, ActionPhase.Running, 1, 2)),
                 "the (action, phase, progress, hands) quad must load verbatim");
+            Assert.That(back.CarriedMatterTag, Is.EqualTo("wheat"));
             Assert.That(back.ReservationId.Value, Is.EqualTo(carryRow), "the carry row follows the hauler");
             Assert.That(loaded.Reservations.TryGetByActor(guard.Value, out var plot), Is.True,
                 "the plot claim survives beside the carry row");
             Assert.That((plot.Id, plot.ItemTag), Is.EqualTo((plotRow, "plot:10")),
                 "the plot row loads verbatim — the ledger IS the plot exclusivity");
+            var matterAfter = loaded.Stockpiles[0].Get("wheat")
+                + loaded.Actors.Records.Sum(a => a?.ActionState.CarriedUnits ?? 0);
+            Assert.That(matterAfter, Is.EqualTo(matterBefore).And.EqualTo(5),
+                "matter is neither lost nor duplicated across the mid-haul save/load boundary");
         }
 
         // W34 pin (DOC4 §2 row 10): the sleep+work twins of the eat/farm pins above. A mid-night
@@ -207,6 +261,165 @@ namespace EmberCrpg.Tests.EditMode.Save
         }
 
         [Test]
+        public void MidHunt_SurvivesRoundtrip_AndFirstRestoredTickContinuesDeterministically()
+        {
+            var world = BuildSeededWorld();
+            var hunterId = new ActorId(5UL);
+            var hunter = world.Actors.Get(hunterId);
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = hunterId.Value,
+                TargetId = Worker.Value,
+                UntilMinutes = 999L,
+            });
+            hunter.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt)
+                .Start(ActorActionType.Hunt, Site, ItemId.Empty, ReservationId.Empty,
+                    startedAtMinutes: 480L, ActionInterruptPolicy.Interruptible)
+                .Advanced());
+
+            var before = MidActionSemanticSnapshot(world);
+            var data = WorldSaveMapper.ToData(world);
+            var first = WorldSaveMapper.ToWorld(data, BuildSeededWorld());
+            var second = WorldSaveMapper.ToWorld(data, BuildSeededWorld());
+
+            Assert.That(MidActionSemanticSnapshot(first), Is.EqualTo(before),
+                "actor mind plus hunt target ledger is the semantic save snapshot");
+            Assert.That(MidActionSemanticSnapshot(second), Is.EqualTo(before));
+            Assert.That(first.HuntTargets.Single().TargetId, Is.EqualTo(Worker.Value),
+                "mid-hunt prey identity must not disappear");
+
+            var firstHunter = first.Actors.Get(hunterId);
+            var secondHunter = second.Actors.Get(hunterId);
+            var start = firstHunter.Position;
+            var stamp = new GameTime(540L); // hour boundary: HuntAdvancer must take one route step
+            new HuntAdvancer(new ActionLogManager()).Advance(first, firstHunter, stamp);
+            new HuntAdvancer(new ActionLogManager()).Advance(second, secondHunter, stamp);
+
+            Assert.That(firstHunter.Position, Is.Not.EqualTo(start),
+                "the first post-load tick continues the running hunt");
+            Assert.That(firstHunter.Position, Is.EqualTo(secondHunter.Position),
+                "two restores choose the same first route step");
+            Assert.That(firstHunter.ActionState, Is.EqualTo(secondHunter.ActionState));
+            Assert.That((firstHunter.ActionState.Phase, firstHunter.ActionState.ProgressTicks),
+                Is.EqualTo((ActionPhase.Running, 2)),
+                "movement advances exactly once from the restored progress value");
+        }
+
+        [Test]
+        public void LegacySaveWithoutHuntFields_LoadsEmpty_ThenRunningHuntFailsDeterministically()
+        {
+            var world = BuildSeededWorld();
+            var hunterId = new ActorId(5UL);
+            world.Actors.Get(hunterId).ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt)
+                .Start(ActorActionType.Hunt, Site, ItemId.Empty, ReservationId.Empty,
+                    startedAtMinutes: 480L, ActionInterruptPolicy.Interruptible));
+            var legacy = WorldSaveMapper.ToData(world);
+            legacy.schemaVersion = 0;
+            legacy.huntHunterIds = null;
+            legacy.huntTargetIds = null;
+            legacy.huntUntilMinutes = null;
+
+            var seed = BuildSeededWorld();
+            seed.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = hunterId.Value,
+                TargetId = Worker.Value,
+                UntilMinutes = 999L,
+            });
+            var loaded = WorldSaveMapper.ToWorld(legacy, seed);
+
+            Assert.That(loaded.HuntTargets, Is.Not.Null.And.Empty,
+                "missing append-only fields mean empty, never stale seed relationships");
+            var hunter = loaded.Actors.Get(hunterId);
+            new HuntAdvancer(new ActionLogManager()).Advance(loaded, hunter, new GameTime(541L));
+            Assert.That((hunter.ActionState.Phase, hunter.ActionState.FailureReason),
+                Is.EqualTo((ActionPhase.Failed, ActionFailureReason.TargetGone)),
+                "a rowless restored Hunt terminates deterministically on its first advancement");
+        }
+
+        [Test]
+        public void LegacyJsonFixtureWithoutHuntFields_CanonicalLoadUsesSafeDeterministicDefault()
+        {
+            Assert.That(LegacyMidHuntV0Json, Does.Not.Contain("huntHunterIds")
+                .And.Not.Contain("huntTargetIds").And.Not.Contain("huntUntilMinutes"),
+                "fixture must genuinely omit the append-only HuntTargets fields");
+
+            var loaded = new EmberCrpg.Presentation.Ember.Save.JsonSliceSaveService()
+                .LoadFromJson(LegacyMidHuntV0Json);
+
+            Assert.That(loaded.HuntTargets, Is.Not.Null.And.Empty,
+                "legacy JSON cannot inherit or invent a hunt relationship");
+            var hunter = loaded.Actors.Get(new ActorId(5UL));
+            Assert.That((hunter.ActionState.CurrentAction, hunter.ActionState.Phase,
+                    hunter.ActionState.ProgressTicks),
+                Is.EqualTo((ActorActionType.Hunt, ActionPhase.Running, 1)),
+                "the old JSON still restores its action block before validation");
+
+            new HuntAdvancer(new ActionLogManager()).Advance(loaded, hunter, new GameTime(541L));
+
+            Assert.That((hunter.ActionState.Phase, hunter.ActionState.FailureReason,
+                    hunter.ActionState.ProgressTicks),
+                Is.EqualTo((ActionPhase.Failed, ActionFailureReason.TargetGone, 1)),
+                "first post-load advancement fails once, predictably, without fabricating progress");
+        }
+
+        [Test]
+        public void EnsureInvariants_RepairsEveryCanonicalMutableCollectionRoot()
+        {
+            var world = new WorldState
+            {
+                PlayerInventory = null,
+                PlayerEquipment = null,
+                MerchantInventory = null,
+                PlayerKnownSpellIds = null,
+                Pickups = null,
+                DungeonRoomStates = null,
+                DungeonDoorStates = null,
+                Topics = null,
+                NpcMemory = null,
+                CompanionIds = null,
+                GuardPursuits = null,
+                HuntTargets = null,
+                Reservations = null,
+                WorkOrders = null,
+                ActionLog = null,
+                Critters = null,
+                Rumors = null,
+                SiteUnrest = null,
+                PlayerSpellCooldowns = null,
+                PlayerShieldBuffs = null,
+            };
+
+            world.EnsureInvariants();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(world.PlayerInventory, Is.Not.Null);
+                Assert.That(world.PlayerInventory.Capacity, Is.EqualTo(10));
+                Assert.That(world.PlayerEquipment, Is.Not.Null);
+                Assert.That(world.MerchantInventory, Is.Not.Null);
+                Assert.That(world.MerchantInventory.Capacity, Is.EqualTo(32));
+                Assert.That(world.PlayerKnownSpellIds, Is.Not.Null);
+                Assert.That(world.Pickups, Is.Not.Null);
+                Assert.That(world.DungeonRoomStates, Is.Not.Null);
+                Assert.That(world.DungeonDoorStates, Is.Not.Null);
+                Assert.That(world.Topics, Is.Not.Null);
+                Assert.That(world.NpcMemory, Is.Not.Null);
+                Assert.That(world.CompanionIds, Is.Not.Null);
+                Assert.That(world.GuardPursuits, Is.Not.Null);
+                Assert.That(world.HuntTargets, Is.Not.Null);
+                Assert.That(world.Reservations, Is.Not.Null);
+                Assert.That(world.WorkOrders, Is.Not.Null);
+                Assert.That(world.ActionLog, Is.Not.Null);
+                Assert.That(world.Critters, Is.Not.Null);
+                Assert.That(world.Rumors, Is.Not.Null);
+                Assert.That(world.SiteUnrest, Is.Not.Null);
+                Assert.That(world.PlayerSpellCooldowns, Is.Not.Null);
+                Assert.That(world.PlayerShieldBuffs, Is.Not.Null);
+            });
+        }
+
+        [Test]
         public void SaveThenLoad_PreservesWorldDigest()
         {
             var world = BuildSeededWorld();
@@ -223,6 +436,13 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             Assert.That(after, Is.EqualTo(before),
                 "save→load must reproduce the world byte-identically (a dropped/distorted store fails here)");
+        }
+
+        private static string MidActionSemanticSnapshot(WorldState world)
+        {
+            var huntRows = string.Join(";", (world.HuntTargets ?? new System.Collections.Generic.List<HuntTargetRecord>())
+                .Select(row => $"{row.HunterId}:{row.TargetId}:{row.UntilMinutes}"));
+            return WorldStateDigest.Compute(world) + "\nHUNTTARGETS\n" + huntRows;
         }
 
         private static WorldState BuildSeededWorld()

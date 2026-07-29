@@ -130,12 +130,14 @@ namespace EmberCrpg.Data.Save
         public int actionPhase;            // ActionPhase
         public long actionTargetItemId;    // 0 = ItemId.Empty
         public long actionTargetSiteId;    // 0 = SiteId.Empty
+        public long actionTargetActorId;   // PRD-05 append-only; 0 = ActorId.Empty
         public long actionReservationId;   // 0 = ReservationId.Empty
         public int actionProgressTicks;
         public long actionStartedAtMinutes;
         public int actionFailureReason;    // ActionFailureReason
         public int actionInterruptPolicy;  // ActionInterruptPolicy
         public int actionCarriedUnits;     // W33: eldeki hasat adedi; 0 = eller boş (Idle ile bit uyumlu)
+        public string actionCarriedMatterTag; // PRD-08: reservation-loss recovery identity
     }
 
     [Serializable]

@@ -9,7 +9,7 @@ Dunya uretimi **iki katman**: (1) FOUNDATION — `WorldgenService.Generate(seed,
 
 Neden singleton onbellek: gezegen boru hatti (subdivision level 5, ~10,242 tile + plate simulasyonu) birkac saniye surer; karakter yaratim reveal'i onu **streamed** (observer'li) uretir, `SeedWorld` sonra ayni tohumla `Has(seed)` true bularak dogrudan onbellekten okur — cift-uretim yok, ayni tohum ayni GeneratedWorld (`PlanetWorldService.cs:25-27`).
 
-Neden `Generate(GeneratedWorld, ...)` overload'u zorunlu: `OverlandWorldgen.Generate(uint, ...)` (`OverlandWorldgen.cs:17-27`) `WorldgenService.Generate(FallbackSeed_if_zero, Default)` cagirir — **planet path'i degil, flat worldgen path'ini** vurur; ayni tohum icin ayri bir harita cikar. B28 interlock (`Docs/ruh/w32/00-bug-triage.md:257`): SeedWorld ve B02 cold-load rebuild yalniz `Generate(generated, parameters)` overload'unu kullanir.
+Neden `Generate(GeneratedWorld, ...)` overload'u zorunlu: `OverlandWorldgen.Generate(uint, ...)` (`OverlandWorldgen.cs:17-27`) `WorldgenService.Generate(FallbackSeed_if_zero, Default)` cagirir — **planet path'i degil, flat worldgen path'ini** vurur; ayni tohum icin ayri bir harita cikar. Tarihsel B28 notu current authority degildir; guncel durum `docs/recovery/CURRENT_STATE.md` altindadir. SeedWorld ve B02 cold-load rebuild yalniz `Generate(generated, parameters)` overload'unu kullanir.
 
 Overland tarafinda **maketleme kontrati**: `OverlandParameters.Width/Height` `world.Geography.Width/Height` ile birebir ayni olmali (`OverlandWorldgen.cs:52-59`); planet mapper 128x64 bir grid urettigi icin `SeedWorld` ve B02 rebuild yollari `overlandGeo = generated.Geography` uzerinden parametreleri turetir (`DomainSimulationAdapter.Worldgen.cs:78-86`, `DomainSimulationAdapter.Save.cs:65-70`).
 
@@ -42,7 +42,7 @@ Overland tarafinda **maketleme kontrati**: `OverlandParameters.Width/Height` `wo
    - Log: `"[Load] B02 overland rebuilt from profile seed=... settlements=..."` (`.Save.cs:71-72`).
 4. **Invariants + composer resync:** `_world.EnsureInvariants()` + `_tickComposer.RebuildAccumulatorsFrom(_world.Time)` (`.Save.cs:77-82`).
 
-**Kalan sinir (`Docs/ruh/w32/00-bug-triage.md:56-63`):** `WorldSceneDirector.Realize` `EmberWorldHost.Awake`'te, `EmberSaveService.Start`'in `RestoreStateJson`'u tetiklemesinden ONCE calisir; rebuild sonrasi sahnenin re-realize'i (veya bekleyen-yuk tuketiminin realize once cekilmesi) hala acik borc (dogrulanmadi — kod tarafinda pin yok).
+**Kalan sinir (current authority: `docs/recovery/CURRENT_STATE.md`):** `WorldSceneDirector.Realize` `EmberWorldHost.Awake`'te, `EmberSaveService.Start`'in `RestoreStateJson`'u tetiklemesinden ONCE calisir; rebuild sonrasi sahnenin re-realize'i (veya bekleyen-yuk tuketiminin realize once cekilmesi) hala acik borc (dogrulanmadi — kod tarafinda pin yok).
 
 ### C. FOUNDATION — `WorldgenService.Generate` faz sirasi (`WorldgenService.cs:59-86`)
 
@@ -136,19 +136,19 @@ Not: `PlanetField` (`GeneratedWorld.PlanetData`) **save payload'da yer almaz** (
 - `Assets/Tests/EditMode/Worldgen/NpcSeedSaveRoundTripTests.cs` — `SliceSaveMapper_RoundTripsNpcSeedPortraitAssetPath`.
 - `Assets/Tests/EditMode/Worldgen/WorldStyleMatrixTests.cs`, `WorldHistorySimulatorTests.cs`, `WorldGenesisMapperTests.cs` — style/history/genesis pin'leri.
 - `Assets/Tests/EditMode/WorldDirector/WorldGeoSamplerTests.cs`, `WorldGeoSamplerShoreTests.cs`, `WorldSpaceProjectionDirectionTests.cs`, `SettlementLayoutDeterminismTests.cs`, `SettlementLayoutStrategyFactoryTests.cs`, `StreetLayoutStrategyTests.cs` — jeografi-sampler + settlement layout deterministlik.
-- **B02 cold-load pin'i: DOGRULANMADI** — `Assets/Tests` altinda `B02 / cold-load / RestoreStateJson-overland-rebuild` string'i grep'lenmedi; W32 fix `Docs/ruh/w32/00-bug-triage.md:42-63` **regresyon testi olmadan** yasiyor.
+- **B02 cold-load pin'i: DOGRULANMADI** — `Assets/Tests` altinda `B02 / cold-load / RestoreStateJson-overland-rebuild` string'i grep'lenmedi; tarihsel W32 iddiasi current authority degildir (`docs/recovery/CURRENT_STATE.md`).
 
 ## W32-W36 Degisiklikleri
 
-- **W32-B02 (spot-fix, `DomainSimulationAdapter.Save.cs:51-73`):** cold Continue oncesi kayipli overland; `RestoreStateJson` `WorldProfile.Seed`'ten `PlanetWorldService.GetOrGenerate` + `OverlandWorldgen.Generate(generated, ...)` cagirisi eklendi. B28 interlock nedeniyle `Generate(GeneratedWorld, ...)` overload'u zorunlu. `Docs/ruh/w32/00-bug-triage.md:42-63` — regresyon test PIN'i **DOGRULANMADI**.
-- **W32-B28 (documented, `.Save.cs:53-56` yorumu + `Docs/ruh/w32/00-bug-triage.md:257`):** iki `OverlandWorldgen.Generate` overload'unun ayni tohum icin ayri harita uretmesi problemi; fix salt yorum + kullanim disiplini (planet path'i zorla) — kod ayrimi hala mevcut (`OverlandWorldgen.cs:17-27` vs `:29-49`).
+- **W32-B02 (spot-fix, `DomainSimulationAdapter.Save.cs:51-73`):** cold Continue oncesi kayipli overland; `RestoreStateJson` `WorldProfile.Seed`'ten `PlanetWorldService.GetOrGenerate` + `OverlandWorldgen.Generate(generated, ...)` cagirisi eklendi. B28 interlock nedeniyle `Generate(GeneratedWorld, ...)` overload'u zorunlu. Regresyon test PIN'i **DOGRULANMADI**; current authority `docs/recovery/CURRENT_STATE.md`.
+- **W32-B28 (documented, `.Save.cs:53-56` yorumu):** iki `OverlandWorldgen.Generate` overload'unun ayni tohum icin ayri harita uretmesi problemi; fix salt yorum + kullanim disiplini (planet path'i zorla) — kod ayrimi hala mevcut (`OverlandWorldgen.cs:17-27` vs `:29-49`). Current authority `docs/recovery/CURRENT_STATE.md`.
 - **W34-C (borc):** `FieldOwnershipRegistry` (`Assets/Scripts/Simulation/Composition/FieldOwnershipRegistry.cs`) B04 kapsaminda 7 alan ekledi (W35 icin isaretli); worldgen tarafi (`World.WorldProfile / World.Overland / World.NpcSeeds`) hala **undeclared** — bilincli boot-only karari (`.cs:88-98` yorumu).
-- **W36 (post-fix):** `Docs/atlas/systems/11-worldgen-overland.md` (bu dosya) yeniden yazildi; `Jul 26, 2026 19842` observation'i `Atlas Full Regeneration + B01-B30 Bug Scorecard Workflow Launched` metadata'sini not eder. Kod tarafinda W35/W36 icin worldgen dosyalarinda **yeni yazim yok** (dogrulanmadi — `git log`ile tekrar dogrulanmali).
+- **W36 (post-fix):** `docs/atlas/systems/11-worldgen-overland.md` (bu dosya) yeniden yazildi; `Jul 26, 2026 19842` observation'i `Atlas Full Regeneration + B01-B30 Bug Scorecard Workflow Launched` metadata'sini not eder. Kod tarafinda W35/W36 icin worldgen dosyalarinda **yeni yazim yok** (dogrulanmadi — `git log`ile tekrar dogrulanmali).
 - **W32-B10 §A6 (indirekt, `.Worldgen.Hydration.cs:40-96`):** `HydrateBlockedCells` `SettlementLayoutStrategyFactory` uzerinden deterministic layouts'u sim-blocker grid'ine projekte eder; DERIVED, save'e girmez, her load'da yeniden calisir.
 
 ## Bilinen Borclar + Kacak Kapilari
 
-1. **B02 test PIN eksik.** `RestoreStateJson` B02 rebuild yolu hala regresyon testi ile pinlenmedi (`Docs/ruh/w32/00-bug-triage.md:62` "Pin with a fresh-process save/load test"); "kayittan sonra dunya M haritasi calisiyor mu" invarianti sadece playtest yaklasimiyla korunuyor.
+1. **B02 test PIN eksik.** `RestoreStateJson` B02 rebuild yolu hala regresyon testi ile pinlenmedi; "kayittan sonra dunya M haritasi calisiyor mu" invarianti sadece playtest yaklasimiyla korunuyor. Current authority `docs/recovery/CURRENT_STATE.md`.
 2. **Realize sirasi acik borc.** `WorldSceneDirector.Realize` `EmberWorldHost.Awake`'te calisir; B02 rebuild `EmberSaveService.Start` icinde gerceklesir — Realize ONCE calisirsa bos-Perlin failsafe'e duser (`WorldSceneDirector.cs:30-43`), sonra rebuild olsa bile sahne tazelenmez. Fix onerisi (`00-bug-triage.md:56-61`): re-realize veya pending-load'u realize once tuketmek. Kod yok.
 3. **Dual `Generate` overload trap.** `OverlandWorldgen.Generate(uint seed, ...)` (`.cs:17-27`) hala public — yanlislikla cagrilirsa ayni tohum icin ayri harita uretir; B28 kod-level nakavtu yok, sadece yorum + disiplin.
 4. **`FieldOwnershipRegistry` bosluklari.** `World.WorldProfile / World.Overland / World.NpcSeeds / World.Sites / World.Stockpiles (boot mint) / World.Actors (boot mint) / World.Factions (boot mint)` undeclared; W35 B04 pass'i boot-only siniri "yaz-ledger disi" olarak kabul etti — worldgen tarafi bilincli olarak lint disi.

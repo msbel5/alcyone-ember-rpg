@@ -71,6 +71,25 @@ namespace EmberCrpg.Tests.EditMode.Presentation
             Assert.That(EmberRuntimeOptionsProvider.Current.CharacterCreation.PortraitForgeWaitFrames, Is.EqualTo(1));
             Assert.That(EmberRuntimeOptionsProvider.Current.CharacterCreation.PortraitForgeTimeoutSeconds, Is.EqualTo(5f));
         }
+
+        [Test]
+        public void TickCadence_RejectsNonOneMinute_AndDerivedCountsAreReadOnly()
+        {
+            var tick = new TickRuntimeOptions();
+
+            var error = Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => tick.MinutesPerTick = 7);
+
+            Assert.That(error.Message, Does.Contain("exactly one in-game minute"));
+            Assert.That(
+                typeof(TickRuntimeOptions).GetProperty(nameof(TickRuntimeOptions.TicksPerHour)).CanWrite,
+                Is.False);
+            Assert.That(
+                typeof(TickRuntimeOptions).GetProperty(nameof(TickRuntimeOptions.TicksPerDay)).CanWrite,
+                Is.False);
+            Assert.That(tick.TicksPerHour, Is.EqualTo(60));
+            Assert.That(tick.TicksPerDay, Is.EqualTo(1440));
+        }
     }
 }
 #endif

@@ -52,15 +52,15 @@ namespace EmberCrpg.Tests.EditMode.Actions
 
             composer.Advance(world, 1);
 
-            Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.None),
+            Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.Pursue),
                 "a hungry mid-chase guard gets NO EatIntent — lunch may not starve justice");
             Assert.That(Chebyshev(guard.Position, world.Actors.Get(new ActorId(9)).Position),
-                Is.EqualTo(3), // was 4: the schedule (which still owns his legs) stepped the chase
-                "the SAME tick still steps him toward the quarry");
+                Is.EqualTo(3),
+                "the SAME tick steps him through the canonical Pursue advancer");
 
             for (var tick = 2; tick <= 10; tick++)
                 composer.Advance(world, tick);
-            Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.None),
+            Assert.That(guard.ActionState.CurrentIntent, Is.EqualTo(ActorIntent.Pursue),
                 "the chase stays lunch-proof while the pursuit row is live");
             Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.ActionCompleted), Is.False);
         }
@@ -79,10 +79,13 @@ namespace EmberCrpg.Tests.EditMode.Actions
             composer.Advance(world, 0);
 
             composer.Advance(world, 1); // stamp 61: 61 <= 61 -> still live
-            Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.None),
+            Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.Pursue),
                 "on the boundary minute the pursuit still outranks lunch (<=, not <)");
 
-            composer.Advance(world, 2); // stamp 62: expired -> the next Decide grants EatIntent
+            composer.Advance(world, 2); // stamp 62: Pursue fails TimedOut and releases its rows
+            Assert.That(guard.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.TimedOut));
+            composer.Advance(world, 3); // terminal failure hands back to Idle
+            composer.Advance(world, 4); // next Decide grants EatIntent
             Assert.That(guard.ActionState.CurrentIntent, Is.EqualTo(ActorIntent.Eat),
                 "the chase over, the watch finally eats");
             Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.MoveToFood));

@@ -66,13 +66,13 @@ namespace EmberCrpg.Simulation.Living
                     return "A trade caravan moved goods between the towns.";
                 case WorldEventKind.ChronicleEvent:
                     return "The chroniclers wrote a new page this month, so the elders say.";
+                case WorldEventKind.VerminTheft:
+                    return "Rats got into the larder again - the stores are lighter for it.";
+                case WorldEventKind.CritterCaught:
+                    return "The tavern cat caught another rat. Good beast.";
+                case WorldEventKind.MaulSurvived:
+                    return "Someone was mauled near the edge of town - alive, but barely.";
                 case WorldEventKind.NeedChanged:
-                    if (reason.StartsWith("vermin_theft", System.StringComparison.Ordinal))
-                        return "Rats got into the larder again - the stores are lighter for it.";
-                    if (reason.StartsWith("cat_catch", System.StringComparison.Ordinal))
-                        return "The tavern cat caught another rat. Good beast.";
-                    if (reason.StartsWith("mauled_survives", System.StringComparison.Ordinal))
-                        return "Someone was mauled near the edge of town - alive, but barely.";
                     return null;
                 default:
                     return null;

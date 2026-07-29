@@ -1,9 +1,11 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Actors.Actions;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Composition;
+using EmberCrpg.Simulation.Living.Actions;
 using EmberCrpg.Tests.EditMode.Actions.Support;
 using NUnit.Framework;
 
@@ -66,6 +68,63 @@ namespace EmberCrpg.Tests.EditMode.Actions
             Assert.That(world.Reservations.TryReserve(1UL, "wheat", 8UL,
                 untilMinutes: world.Time.TotalMinutes + 99, pileCount: 1, out _), Is.True,
                 "the unit belongs to the world again");
+        }
+
+        [Test]
+        public void StrikeInterruption_AfterTakeSucceeded_ReturnsTheTakenUnitBeforeIdle()
+        {
+            var world = EatSliceWorld.Build(wheat: 1);
+            var diner = EatSliceWorld.Hungry(7, 5, 5);
+            var hunter = new ActorRecord(
+                new ActorId(8), "Hunter", ActorRole.Enemy,
+                new EmberStatBlock(10, 10, 10, 10, 10, 10),
+                new ActorVitals(
+                    new VitalStat(30, 30),
+                    new VitalStat(10, 10),
+                    new VitalStat(10, 10)),
+                new GridPosition(5, 4),
+                accuracy: 100, dodge: 0, armor: 0, baseDamage: 100);
+            world.Actors.Add(diner);
+            world.Actors.Add(hunter);
+            Assert.That(world.Reservations.TryReserve(
+                1UL, "wheat", diner.Id.Value, 600, 1, out var claim), Is.True);
+            diner.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Eat).Start(
+                ActorActionType.TakeFood,
+                new SiteId(1),
+                ItemId.Empty,
+                new ReservationId(claim),
+                1,
+                ActionInterruptPolicy.Interruptible));
+            new TakeFoodAdvancer(new ActionLogManager())
+                .Advance(world, diner, new GameTime(1));
+            Assert.That(diner.ActionState.Phase, Is.EqualTo(ActionPhase.Succeeded));
+            Assert.That(world.Stockpiles[0].Get("wheat"), Is.Zero);
+
+            hunter.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                ActorActionType.StrikeQuarry,
+                new SiteId(1),
+                ItemId.Empty,
+                ReservationId.Empty,
+                1,
+                ActionInterruptPolicy.Interruptible,
+                diner.Id));
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = hunter.Id.Value,
+                TargetId = diner.Id.Value,
+                UntilMinutes = 600,
+            });
+
+            new StrikeQuarryAdvancer(new ActionLogManager())
+                .Advance(world, hunter, new GameTime(60));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(diner.ActionState.IsIdle, Is.True);
+                Assert.That(world.Stockpiles[0].Get("wheat"), Is.EqualTo(1));
+                Assert.That(world.Reservations.Rows, Is.Empty);
+                Assert.That(diner.Needs.Hunger.Value, Is.EqualTo(80));
+            });
         }
     }
 }

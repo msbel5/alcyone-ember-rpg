@@ -96,45 +96,12 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                 actionKind: ActionVerbTable.KindName(actor.ActionState.CurrentAction));
         }
 
-        // W32 DOC5: the verb is a PROJECTION of ActionState.CurrentAction, never an inference
-        // from hour or position (RUH_TESHIS §2.9). Guess branches survive ONLY for actors that
-        // cannot carry an action yet (DescribeScheduleWord) and each is tagged with the slice
-        // that retires it.
+        // The verb is a projection of ActionState.CurrentAction, never an inference from
+        // role, hour, needs, or position. An actionless actor is deliberately unlabelled.
         private string DescribeActivity(ActorRecord actor)
         {
             var action = actor.ActionState.CurrentAction;
-            if (action != ActorActionType.None) return ActionVerbTable.Verb(action); // VERBATIM — no clue inputs
-            return DescribeScheduleWord(actor);
-        }
-
-        // PLAYTEST FIX ("npclerin ne yaptigi anlasilmiyor"), now for CurrentAction == None only:
-        // a floating one-word calendar guess per actor. W32 DOC5 §4: NEW guess branches are
-        // FORBIDDEN — a new verb means a new action type plus an ActionVerbTable row. The EAT
-        // guesses (12-14 plaza "eating", hunger "to the tavern") are DELETED: those verbs are now
-        // born only from ConsumeFood/MoveToFood actions.
-        private string DescribeScheduleWord(ActorRecord actor)
-        {
-            // W36 GUARD+COMBAT: the Guard/Enemy GUESS branches ("on watch"/"hunting") are
-            // DEAD — those verbs are now born ONLY from real OnWatch/Hunt/StrikeQuarry actions
-            // read verbatim through ActionVerbTable (RUH_TESHIS §2.9 last two guesses closed).
-            // A pre-W36 fixture that constructs a lifecycle with enableGuardAndCombat=false
-            // (legacy default) leaves those roles action-less: the projection returns null
-            // (no label). The unwritten rule — "a verb appears only when it says something
-            // true and specific" (W34 doctrine) — applies to the watch and to hostiles too.
-            // W34: the night guesses are DEAD — "sleeping"/"heading home" are ActionVerbTable
-            // rows born only from real Sleep/MoveToBed actions now, and the 20:00-22:00
-            // "winding down" label died HEIRLESS (W32 DOC5 §4: a new verb needs a new action
-            // type, never a new guess branch).
-            // W33: the FARM guess branch ("harvesting"/"tending the field" from crop-belt
-            // proximity) is DEAD — those verbs are now born only from real MoveToPlot/
-            // PlantSeed/HarvestCrop/HaulCrop actions read verbatim through ActionVerbTable.
-            // W34: the WORK guess branch (schedule-derived "working" for any claimed but
-            // action-less actor) is DEAD — a claimed actor turns into MoveToWorksite via
-            // TryDecideWork within one Decide tick, and the ActionVerbTable then labels
-            // it truthfully. A between-tick idle actor with a job is unlabelled, not lied to.
-            // PLAYTEST ('hepsinin kafasinda about town'): an idle stroll is not information -
-            // no label at all. A verb appears only when it says something true and specific.
-            return null;
+            return action == ActorActionType.None ? null : ActionVerbTable.Verb(action);
         }
 
         // SOUL-04 (spawn-from-worldgen): hand the host a flat, Domain-free list of candidate

@@ -1,8 +1,10 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Actors.Actions;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Composition;
+using EmberCrpg.Simulation.Living.Actions;
 using EmberCrpg.Tests.EditMode.Actions.Support;
 using NUnit.Framework;
 
@@ -78,6 +80,113 @@ namespace EmberCrpg.Tests.EditMode.Actions
             Assert.That(world.Stockpiles[0].Get(FarmSliceWorld.CropTag), Is.EqualTo(FarmSliceWorld.HarvestYield),
                 "pile delta == hands delta: the chain's one stock-raising gate is the deposit");
             Assert.That(A().ActionState.CarriedUnits, Is.Zero, "hands empty after the deposit");
+        }
+
+        [Test]
+        public void ExpiredCarryReservation_RefundsTaggedMatterBeforeFailure()
+        {
+            var world = FarmSliceWorld.Build(seedStock: 0, soilCells: 1);
+            var farmer = FarmSliceWorld.Farmer(7, 12, 12);
+            world.Actors.Add(farmer);
+            Assert.That(world.Reservations.TryReserve(
+                FarmSliceWorld.Site.Value,
+                FarmSliceWorld.CarryKeyPrefix + FarmSliceWorld.CropTag,
+                farmer.Id.Value,
+                untilMinutes: 0,
+                pileCount: int.MaxValue,
+                out var claim), Is.True);
+            farmer.ApplyActionState(
+                ActorActionState.ForIntent(ActorIntent.Harvest)
+                    .Start(
+                        ActorActionType.HaulCrop,
+                        FarmSliceWorld.Site,
+                        ItemId.Empty,
+                        new ReservationId(claim),
+                        startedAtMinutes: 0,
+                        policy: ActionInterruptPolicy.Interruptible)
+                    .WithCarriedMatter(FarmSliceWorld.CropTag, FarmSliceWorld.HarvestYield));
+            var composer = new WorldTickComposer();
+            composer.Advance(world, 0);
+            var before = world.Stockpiles[0].Get(FarmSliceWorld.CropTag)
+                + farmer.ActionState.CarriedUnits;
+
+            composer.Advance(world, 1);
+
+            var after = world.Stockpiles[0].Get(FarmSliceWorld.CropTag)
+                + farmer.ActionState.CarriedUnits;
+            Assert.That(after, Is.EqualTo(before).And.EqualTo(FarmSliceWorld.HarvestYield));
+            Assert.That(farmer.ActionState.Phase, Is.EqualTo(ActionPhase.Failed));
+            Assert.That(farmer.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.ReservationLost));
+            Assert.That(farmer.ActionState.CarriedUnits, Is.Zero);
+            Assert.That(world.Reservations.Rows, Is.Empty);
+            var recovery = world.Events.Events.Single(e => e.Kind == WorldEventKind.MatterRecovered);
+            Assert.That(recovery.Reason,
+                Does.Contain("item:wheat").And.Contain("qty:2").And.Contain("path:missing_reservation"));
+        }
+
+        [Test]
+        public void StrikeInterruption_AfterHarvestSucceeded_RefundsMatterAndClaimBeforeIdle()
+        {
+            var world = FarmSliceWorld.Build(seedStock: 0, soilCells: 1);
+            var carrier = FarmSliceWorld.Farmer(7, 1, 0);
+            var hunter = new ActorRecord(
+                new ActorId(8), "Hunter", ActorRole.Enemy,
+                new EmberStatBlock(10, 10, 10, 10, 10, 10),
+                new ActorVitals(
+                    new VitalStat(30, 30),
+                    new VitalStat(10, 10),
+                    new VitalStat(10, 10)),
+                new GridPosition(0, 0),
+                accuracy: 100, dodge: 0, armor: 0, baseDamage: 100);
+            world.Actors.Add(carrier);
+            world.Actors.Add(hunter);
+            Assert.That(world.Reservations.TryReserve(
+                FarmSliceWorld.Site.Value,
+                FarmSliceWorld.CarryKeyPrefix + FarmSliceWorld.CropTag,
+                carrier.Id.Value,
+                untilMinutes: 600,
+                pileCount: int.MaxValue,
+                out var claim), Is.True);
+            carrier.ApplyActionState(
+                ActorActionState.ForIntent(ActorIntent.Harvest)
+                    .Start(
+                        ActorActionType.HaulCrop,
+                        FarmSliceWorld.Site,
+                        ItemId.Empty,
+                        new ReservationId(claim),
+                        startedAtMinutes: 1,
+                        policy: ActionInterruptPolicy.Interruptible)
+                    .WithCarriedMatter(FarmSliceWorld.CropTag, FarmSliceWorld.HarvestYield)
+                    .Succeeded());
+            hunter.ApplyActionState(
+                ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                    ActorActionType.StrikeQuarry,
+                    FarmSliceWorld.Site,
+                    ItemId.Empty,
+                    ReservationId.Empty,
+                    startedAtMinutes: 1,
+                    policy: ActionInterruptPolicy.Interruptible,
+                    targetActor: carrier.Id));
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = hunter.Id.Value,
+                TargetId = carrier.Id.Value,
+                UntilMinutes = 600,
+            });
+            var before = FarmSliceWorld.TotalCrop(world);
+
+            new StrikeQuarryAdvancer(new ActionLogManager())
+                .Advance(world, hunter, new GameTime(60));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(carrier.ActionState.IsIdle, Is.True);
+                Assert.That(carrier.ActionState.CarriedUnits, Is.Zero);
+                Assert.That(world.Reservations.Rows, Is.Empty);
+                Assert.That(FarmSliceWorld.TotalCrop(world), Is.EqualTo(before));
+                Assert.That(world.Stockpiles[0].Get(FarmSliceWorld.CropTag),
+                    Is.EqualTo(FarmSliceWorld.HarvestYield));
+            });
         }
     }
 }

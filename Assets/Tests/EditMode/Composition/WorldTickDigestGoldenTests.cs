@@ -1,5 +1,6 @@
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Composition;
@@ -63,7 +64,12 @@ namespace EmberCrpg.Tests.EditMode.Composition
         // rows the digest captures. Chunking-invariance (ActionPhase/Cadence/EatChunking/
         // FarmSlice, 5 tests) passed UNCHANGED and the same-seed double advance produced
         // byte-identical digests (captured == second digest in the red run log).
-        private const string BaselineHash = "cb0b02a071e3b861a1c4792bd85ed5ebeb01899e756957584f8b7d0b275cc1ea";
+        // PRD-05: actor rows now include the persisted TargetActorId field. The fixed-width
+        // digest grammar changes even when the value is zero; same-seed double capture stayed
+        // byte-identical at the new value.
+        // PRD-10: action-driving memory, companion/pursuit/hunt ledgers, critters, rumors/cursor
+        // and unrest now participate in the digest; the same-seed double capture remained equal.
+        private const string BaselineHash = "8cf51593eec7c64e51babc6107eb888b429943fcb15b84cc5b629742a7cdf3c8";
         private static int OneGameDayTicks => WorldTickComposer.TicksPerGameDay;
         private static int TwoGameDaysTicks => 2 * WorldTickComposer.TicksPerGameDay;
 
@@ -104,6 +110,62 @@ namespace EmberCrpg.Tests.EditMode.Composition
             var oneDay = DigestAfterTicks(OneGameDayTicks);
             var twoDays = DigestAfterTicks(TwoGameDaysTicks);
             Assert.That(twoDays, Is.Not.EqualTo(oneDay), "digest should move when simulation horizon changes");
+        }
+
+        [Test]
+        public void Digest_DistinguishesActionDrivingMemoryMembershipAndTargetLedgers()
+        {
+            var baseline = WorldStateDigest.Compute(BuildSeededWorld());
+            var memoryWorld = BuildSeededWorld();
+            memoryWorld.NpcMemory.GetOrCreate(Worker).RecordEvent(new InteractionEvent(
+                new GameTime(1), "witnessed_attack", new ActorId(2),
+                "predation", string.Empty, 0, new GridPosition(1, 1)));
+            var companionWorld = BuildSeededWorld();
+            companionWorld.CompanionIds.Add(Worker);
+            var pursuitWorld = BuildSeededWorld();
+            pursuitWorld.GuardPursuits.Add(new PursuitRecord
+                { GuardId = Worker.Value, TargetId = 2, UntilMinutes = 120 });
+            var huntWorld = BuildSeededWorld();
+            huntWorld.HuntTargets.Add(new HuntTargetRecord
+                { HunterId = Worker.Value, TargetId = 2, UntilMinutes = 120 });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(WorldStateDigest.Compute(memoryWorld), Is.Not.EqualTo(baseline));
+                Assert.That(WorldStateDigest.Compute(companionWorld), Is.Not.EqualTo(baseline));
+                Assert.That(WorldStateDigest.Compute(pursuitWorld), Is.Not.EqualTo(baseline));
+                Assert.That(WorldStateDigest.Compute(huntWorld), Is.Not.EqualTo(baseline));
+            });
+        }
+
+        [Test]
+        public void Digest_DistinguishesLivingCascadeStateAndRumorCursor()
+        {
+            var baseline = WorldStateDigest.Compute(BuildSeededWorld());
+            var critterWorld = BuildSeededWorld();
+            critterWorld.Critters.Add(new AmbientCritter
+            {
+                Id = 9,
+                SiteId = Site,
+                Cell = new GridPosition(1, 2),
+                Kind = "rat",
+            });
+            var rumorWorld = BuildSeededWorld();
+            rumorWorld.Rumors.Add(new RumorEntry
+                { BornMinutes = 1, SiteId = Site, Text = "real event" });
+            var cursorWorld = BuildSeededWorld();
+            cursorWorld.RumorEventCursorSeq = 1;
+            var unrestWorld = BuildSeededWorld();
+            unrestWorld.SiteUnrest.Add(new SiteUnrestRecord
+                { SiteId = Site, Unrest = 2, LastDecayDay = 1, SweepCooldownUntilMinutes = 60 });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(WorldStateDigest.Compute(critterWorld), Is.Not.EqualTo(baseline));
+                Assert.That(WorldStateDigest.Compute(rumorWorld), Is.Not.EqualTo(baseline));
+                Assert.That(WorldStateDigest.Compute(cursorWorld), Is.Not.EqualTo(baseline));
+                Assert.That(WorldStateDigest.Compute(unrestWorld), Is.Not.EqualTo(baseline));
+            });
         }
 
         private static string DigestAfterTicks(int ticks)

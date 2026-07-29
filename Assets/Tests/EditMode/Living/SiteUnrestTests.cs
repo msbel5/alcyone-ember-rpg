@@ -1,8 +1,10 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
+using EmberCrpg.Domain.Actors.Actions;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.Living;
+using EmberCrpg.Simulation.Living.Actions;
 using NUnit.Framework;
 
 namespace EmberCrpg.Tests.EditMode.Living
@@ -38,14 +40,18 @@ namespace EmberCrpg.Tests.EditMode.Living
         }
 
         [Test]
-        public void RepeatedReports_CrossTheThreshold_AndTheWholeWatchSweeps()
+        public void RepeatedReports_CrossTheThreshold_ArmsWholeWatchWithoutDirectMovement()
         {
             var world = World();
             var attacker = Actor(1, "Hound", ActorRole.Enemy, new GridPosition(5, 5));
+            var nearGuard = Actor(3, "NearWatch", ActorRole.Guard, new GridPosition(9, 5));
+            var farGuard = Actor(4, "FarWatch", ActorRole.Guard, new GridPosition(28, 28));
             world.Actors.Add(attacker);
             world.Actors.Add(Actor(2, "Witness", ActorRole.Talker, new GridPosition(6, 5)));
-            world.Actors.Add(Actor(3, "NearWatch", ActorRole.Guard, new GridPosition(9, 5)));
-            world.Actors.Add(Actor(4, "FarWatch", ActorRole.Guard, new GridPosition(28, 28)));
+            world.Actors.Add(nearGuard);
+            world.Actors.Add(farGuard);
+            var nearBefore = nearGuard.Position;
+            var farBefore = farGuard.Position;
 
             for (int hour = 1; hour <= 3; hour++) Report(world, attacker, hour);
 
@@ -53,8 +59,11 @@ namespace EmberCrpg.Tests.EditMode.Living
                 e.Kind == WorldEventKind.ChronicleEvent
                 && e.Reason != null && e.Reason.StartsWith("watch_sweep")), Is.True,
                 "three reported attacks in a day must trip the sweep");
-            Assert.That(world.GuardPursuits.Any(p => p.GuardId == 4UL && p.TargetId == 1UL), Is.True,
-                "the sweep arms even the guard on the FAR side of town");
+            Assert.That(world.GuardPursuits.Count(p => p.TargetId == attacker.Id.Value), Is.EqualTo(2),
+                "the sweep assigns intent to each in-site guard");
+            Assert.That(nearGuard.Position, Is.EqualTo(nearBefore));
+            Assert.That(farGuard.Position, Is.EqualTo(farBefore),
+                "the hourly event writer may arm intent but cannot move actors directly");
         }
 
         [Test]
@@ -75,7 +84,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.That(Sweeps(), Is.EqualTo(1),
                 "a day of continuous trouble is ONE sweep, not a chronicle flood");
 
-            Report(world, attacker, 26); // past the one-day cooldown
+            Report(world, attacker, 28); // first sweep was hour 3; this is past its one-day cooldown
             Assert.That(Sweeps(), Is.EqualTo(2),
                 "the watch re-arms once the cooldown lapses");
         }

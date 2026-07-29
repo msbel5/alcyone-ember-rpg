@@ -60,7 +60,7 @@ namespace EmberCrpg.Simulation.World
                     {
                         events.Append(new WorldEvent(
                             now,
-                            WorldEventKind.CaravanArrived,
+                            WorldEventKind.CaravanStalled,
                             default,
                             route.OriginSiteId,
                             $"caravan_stuck id:{caravan.Id} route:{caravan.RouteId} item:{route.ItemTag} reason:origin_empty"));
@@ -81,7 +81,7 @@ namespace EmberCrpg.Simulation.World
                 {
                     events.Append(new WorldEvent(
                         now,
-                        WorldEventKind.CaravanArrived,
+                        WorldEventKind.CaravanStalled,
                         default,
                         route.DestinationSiteId,
                         $"caravan_stuck id:{caravan.Id} route:{caravan.RouteId} item:{route.ItemTag} reason:destination_unavailable"));

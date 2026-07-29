@@ -1,0 +1,24 @@
+  ValidationFallbackHarness -> D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll (.NETCoreApp,Version=v8.0) için test çalıştırması
+VSTest sürümü 17.11.1 (x64)
+
+Test yürütmesi başlatılıyor, lütfen bekleyin...
+Toplam 1 test dosyası belirtilen desenle eşleşti.
+  Atlandı Lint_RoadmapDoDs_DoNotPromiseFixedHourOrScreenshotProofs [40 ms]
+  Başarısız OneReplayedDay_AtLiveScale_StaysUnderThreeSeconds [15 s]
+  Hata İletisi:
+     one live-scale replayed day took 15741 ms - the per-tick food path regressed to actors x piles x sites again
+Assert.That(watch.ElapsedMilliseconds, Is.LessThan(3000))
+  Expected: less than 3000
+  But was:  15741
+
+  Yığın İzleme:
+     at EmberCrpg.Tests.EditMode.Composition.LiveScaleCatchupPerfPinTests.OneReplayedDay_AtLiveScale_StaysUnderThreeSeconds() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\LiveScaleCatchupPerfPinTests.cs:line 56
+
+1)    at EmberCrpg.Tests.EditMode.Composition.LiveScaleCatchupPerfPinTests.OneReplayedDay_AtLiveScale_StaysUnderThreeSeconds() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\LiveScaleCatchupPerfPinTests.cs:line 56
+
+
+  Atlandı SdxlEulerSchedule_FourSteps_MatchesScaledLinearMilestones [4 ms]
+  Atlandı Encode_RealModel_DimensionMatches [< 1 ms]
+  Atlandı OnnxAssetForge_RealModels_DimensionMatchesRequest [< 1 ms]
+  Atlandı SdxlTurbo_GeneratedPng_HasValidHeader [< 1 ms]

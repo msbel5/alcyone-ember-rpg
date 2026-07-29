@@ -32,6 +32,7 @@ namespace EmberCrpg.Domain.World
             SiteId = siteId;
             Reason = reason;
             ReasonTrace = reasonTrace;
+            Sequence = -1L;
         }
 
         public GameTime Tick { get; }
@@ -40,5 +41,17 @@ namespace EmberCrpg.Domain.World
         public SiteId SiteId { get; }
         public string Reason { get; }
         public ReasonTrace ReasonTrace { get; }
+
+        /// <summary>Monotonic append identity assigned exactly once by WorldEventLog.</summary>
+        public long Sequence { get; private set; }
+
+        internal void AssignSequence(long sequence)
+        {
+            if (sequence < 0)
+                throw new ArgumentOutOfRangeException(nameof(sequence));
+            if (Sequence >= 0 && Sequence != sequence)
+                throw new InvalidOperationException("WorldEvent already belongs to another sequence.");
+            Sequence = sequence;
+        }
     }
 }

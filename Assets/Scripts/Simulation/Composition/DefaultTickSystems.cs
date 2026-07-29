@@ -68,15 +68,12 @@ namespace EmberCrpg.Simulation.Composition
                 new QuestStep(new QuestSystem()),
                 new DecisionStep(actionLifecycle),
                 new ScheduleStep(schedule),
-                new CompanionFollowStep(), // V3: companions heel-follow the player, sim-side
                 new NeedsStep(needs),
                 new ActionAdvancementStep(actionLifecycle),
                 // W34: living.consumption@Hourly:35 is RETIRED — the positionless night fatigue
                 // fiat died; recovery is now the action strip's MoveToBed→Sleep on PerTick:18/22.
                 new AmbientLifeStep(),
                 new RumorStep(), // CAN SUYU H1: needs finally COME BACK DOWN (eat/sleep)
-                new PredationStep(),    // CAN SUYU H3: hunters hunt IN the simulation, NPC-vs-NPC
-                new CompanionGuardStep(), // V3: companions strike hostiles beside the player
                 new WitnessStep(),      // CAN SUYU H3: attacks are seen, remembered, answered
                 new CaravanStep(caravans),
                 new PlantGrowthStep(plantGrowth, seasonCalendar, plantSpecies),
@@ -285,7 +282,7 @@ namespace EmberCrpg.Simulation.Composition
                 // schedule now routes only actionless actors (rest/work/idle + pursuits).
                 if (context.World.Actors != null)
                     // B10 §A5: pass the world too so StepToward can consult world.NavView (blocker probe).
-                    _schedule.Advance(context.World.Actors, context.Stamp, context.World.GuardPursuits, context.World);
+                    _schedule.Advance(context.World.Actors, context.Stamp, context.World);
             }
         }
 
@@ -362,32 +359,6 @@ namespace EmberCrpg.Simulation.Composition
                 => _mill.Tick(context.World, context.Stamp);
         }
 
-        // V3 YOLDAŞ: per-tick heel-follow — order 21 runs AFTER living.schedule (20) so the
-        // follow step owns a lagging companion's tile for the tick (no schedule/follow jitter).
-        private sealed class CompanionFollowStep : StepBase
-        {
-            private readonly CompanionSystem _companions = new CompanionSystem();
-            public CompanionFollowStep() : base("living.companion_follow", TickCadence.PerTick, 21) { }
-            public override void Run(in TickContext context) => _companions.TickFollow(context.World);
-        }
-
-        // V3 YOLDAŞ: hourly guard strike with predation's deterministic dice.
-        private sealed class CompanionGuardStep : StepBase
-        {
-            private readonly CompanionSystem _companions = new CompanionSystem();
-            public CompanionGuardStep() : base("living.companion_guard", TickCadence.Hourly, 42) { }
-            public override void Run(in TickContext context) => _companions.TickGuard(context.World, context.Stamp);
-        }
-
-        // CAN SUYU H3: predation runs in the SIM (not the render pump) and hits NPCs.
-        private sealed class PredationStep : StepBase
-        {
-            private readonly EmberCrpg.Simulation.Living.PredationSystem _predation =
-                new EmberCrpg.Simulation.Living.PredationSystem();
-            public PredationStep() : base("living.predation", TickCadence.Hourly, 40) { }
-            public override void Run(in TickContext context) => _predation.Tick(context.World, context.Stamp);
-        }
-
         // CAN SUYU H3: witnesses write REAL memory and the watch converges.
         private sealed class WitnessStep : StepBase
         {
@@ -430,8 +401,9 @@ namespace EmberCrpg.Simulation.Composition
                 foreach (var actor in world.Actors.Records)
                 {
                     if (actor == null || !actor.IsAlive) continue; // corpses do not hunger (review fix)
+                    if (!NeedsSystem.AppliesPressure(actor.Role)) continue;
                     if (ticked == 0) anchor = actor.Id; // deterministic representative for the summary event
-                    actor.ApplyNeeds(_needs.TickNeeds(actor.Needs));
+                    actor.ApplyNeeds(_needs.TickNeeds(actor.Role, actor.Needs));
                     _needs.RecomputeMood(actor);
                     ticked++;
                 }

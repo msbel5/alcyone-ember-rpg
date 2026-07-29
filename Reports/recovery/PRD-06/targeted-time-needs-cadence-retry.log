@@ -1,0 +1,39 @@
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(13,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(14,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(23,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(24,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(26,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(27,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(33,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(34,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(72,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(123,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(189,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\WorldDirector\WorldGeoSamplerTests.cs(16,45): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+  ValidationFallbackHarness -> D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll (.NETCoreApp,Version=v8.0) için test çalıştırması
+VSTest sürümü 17.11.1 (x64)
+
+Test yürütmesi başlatılıyor, lütfen bekleyin...
+Toplam 1 test dosyası belirtilen desenle eşleşti.
+NUnit Adapter 4.6.0.0: Test execution started
+Running selected tests in D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+   NUnit3TestExecutor discovered 12 of 12 NUnit test cases using Current Discovery mode, Non-Explicit run
+  Başarılı ActiveEatAction_BlocksCompanionFollowMovementInTheSameTick [96 ms]
+  Başarılı DecisionSweep_CompanionDied_LeavesThePartyWithAFallenEvent [8 ms]
+  Başarılı FollowAction_CompanionLagsBehind_PersistsAndMovesOncePerTick [4 ms]
+  Başarılı FollowAction_DismissedCompanion_FailsInterruptedWithoutMovingAgain [8 ms]
+  Başarılı FollowDecision_CompanionAtHeel_HoldsPositionAndStaysIdle [< 1 ms]
+  Başarılı GuardAction_DismissedCompanion_CleansTargetAndFailsInterrupted [4 ms]
+  Başarılı GuardAction_EnemyBesideThePlayer_UsesStrikeResolverAndCompletes [11 ms]
+  Başarılı MidFollow_SaveLoad_PreservesPersistentActionAndProjectionVerb [87 ms]
+  Başarılı MidGuard_SaveLoad_PreservesIntentTargetAndDeterministicContinuation [2 ms]
+NUnit Adapter 4.6.0.0: Test execution complete
+  Başarılı TryDismiss_Companion_LeavesAndEmitsEvent [< 1 ms]
+  Başarılı TryRecruit_BeyondReachOrOverCap_IsRefused [< 1 ms]
+  Başarılı TryRecruit_NearbyCivilian_JoinsAndEmitsEvent [< 1 ms]
+
+Test Çalıştırması Başarılı.
+Toplam test sayısı: 12
+     Geçti: 12
+ Toplam süre: 1,6608 Saniye

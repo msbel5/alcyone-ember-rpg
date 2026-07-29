@@ -75,7 +75,10 @@ namespace EmberCrpg.Domain.World
         {
             if (worldEvent == null)
                 throw new ArgumentNullException(nameof(worldEvent));
+            if (_totalAppended == long.MaxValue)
+                throw new InvalidOperationException("World event sequence exhausted.");
 
+            worldEvent.AssignSequence(_totalAppended);
             _events.Add(worldEvent);
             _totalAppended++;
         }

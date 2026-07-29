@@ -42,6 +42,8 @@ namespace EmberCrpg.Tests.EditMode.Living
         public void Tick_RatAtTheLarder_StealsRealStock()
         {
             var world = World(out var pile);
+            pile.Add("coin", 7);
+            pile.Add("iron", 5);
             world.Critters.Add(new AmbientCritter
             { Id = 1, SiteId = new SiteId(1), Cell = new GridPosition(10, 10), Kind = "rat" });
 
@@ -49,8 +51,43 @@ namespace EmberCrpg.Tests.EditMode.Living
             new AmbientLifeSystem().Tick(world, new GameTime(60));
 
             Assert.That(pile.Get("wheat"), Is.EqualTo(before - 1), "the theft is REAL stock");
-            Assert.That(world.Events.Events.Any(e => e.Reason != null && e.Reason.StartsWith("vermin_theft")),
-                Is.True, "the theft is on the record");
+            Assert.That(pile.Get("coin"), Is.EqualTo(7));
+            Assert.That(pile.Get("iron"), Is.EqualTo(5));
+            var theft = world.Events.Events.Single(e => e.Kind == WorldEventKind.VerminTheft);
+            Assert.That(theft.Reason, Does.Contain("item:wheat").And.Contain("qty:1").And.Contain("sink:vermin"));
+            Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.NeedChanged), Is.False);
+            Assert.That(before - pile.Get("wheat"), Is.EqualTo(1),
+                "initial - explicit vermin loss = final matter");
+        }
+
+        [Test]
+        public void Tick_RatAtLarder_WithOnlyNonFood_DoesNotMutateStock()
+        {
+            var world = World(out var pile);
+            pile.Remove("wheat", 50);
+            pile.Add("coin", 7);
+            pile.Add("iron", 5);
+            world.Critters.Add(new AmbientCritter
+            { Id = 1, SiteId = new SiteId(1), Cell = new GridPosition(10, 10), Kind = "rat" });
+
+            new AmbientLifeSystem().Tick(world, new GameTime(60));
+
+            Assert.That(pile.Get("coin"), Is.EqualTo(7));
+            Assert.That(pile.Get("iron"), Is.EqualTo(5));
+            Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.VerminTheft), Is.False);
+        }
+
+        [Test]
+        public void Tick_WithoutEventLog_FailsClosedBeforeMatterMutation()
+        {
+            var world = World(out var pile);
+            world.Critters.Add(new AmbientCritter
+            { Id = 1, SiteId = new SiteId(1), Cell = new GridPosition(10, 10), Kind = "rat" });
+            world.Events = null;
+
+            new AmbientLifeSystem().Tick(world, new GameTime(60));
+
+            Assert.That(pile.Get("wheat"), Is.EqualTo(50));
         }
 
         [Test]
@@ -60,13 +97,31 @@ namespace EmberCrpg.Tests.EditMode.Living
             world.Critters.Add(new AmbientCritter
             { Id = 1, SiteId = new SiteId(1), Cell = new GridPosition(3, 3), Kind = "rat" });
             world.Critters.Add(new AmbientCritter
+            { Id = 3, SiteId = new SiteId(1), Cell = new GridPosition(3, 4), Kind = "rat" });
+            world.Critters.Add(new AmbientCritter
             { Id = 2, SiteId = new SiteId(1), Cell = new GridPosition(4, 3), Kind = "cat" });
 
             new AmbientLifeSystem().Tick(world, new GameTime(60));
 
-            Assert.That(world.Critters.Any(c => c.Id == 1UL), Is.False, "the cat earned its keep");
-            Assert.That(world.Events.Events.Any(e => e.Reason != null && e.Reason.StartsWith("cat_catch")),
-                Is.True, "the catch is on the record");
+            Assert.That(world.Critters.Count(c => c.Kind == "rat"), Is.EqualTo(1),
+                "one cat catches at most one rat per tick");
+            Assert.That(world.Events.Events.Count(e => e.Kind == WorldEventKind.CritterCaught), Is.EqualTo(1));
+            Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.NeedChanged), Is.False);
+        }
+
+        [Test]
+        public void Tick_RefillAfterRemoval_KeepsCritterIdsUnique()
+        {
+            var world = World(out _);
+            var system = new AmbientLifeSystem();
+            system.Tick(world, new GameTime(60));
+            var removed = world.Critters.Where(c => c.Kind == "rat").OrderBy(c => c.Id).First();
+            world.Critters.Remove(removed);
+
+            system.Tick(world, new GameTime(120));
+
+            Assert.That(world.Critters.Count(c => c.Kind == "rat"), Is.EqualTo(AmbientLifeSystem.MaxRatsPerSite));
+            Assert.That(world.Critters.Select(c => c.Id).Distinct().Count(), Is.EqualTo(world.Critters.Count));
         }
     }
 }

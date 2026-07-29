@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Ember static asset/source audit (audit items EMB-004 / EMB-002 / EMB-003 / quick-checks §9).
 #
-# Pure bash + coreutils — no Unity, no LFS bytes required. Safe to run on a clean `lfs:false`
+# Bash + coreutils + Python 3 — no Unity, no LFS bytes required. Safe to run on a clean `lfs:false`
 # checkout (that is exactly the false-green scenario it exists to catch).
 #
 # Sections:
+#   0. README local document references -> HARD FAIL (dangling authority)
+#   0b.Atlas authority manifest/index    -> HARD FAIL (portable paths + proof status)
 #   1. Duplicate .meta GUIDs             -> HARD FAIL (always corrupts Unity asset identity)
 #   2. LFS pointer runtime/plugin/model  -> reported; HARD FAIL with --require-runtime
 #   2b.LFS pointer runtime visual assets -> reported; HARD FAIL with --require-runtime-visual
@@ -17,6 +19,7 @@
 #   tools/validation/static-audit.sh --require-runtime                # strict plugins/models
 #   tools/validation/static-audit.sh --require-runtime --require-runtime-visual
 #                                                                      # strict plugins/models + art visuals
+#   tools/validation/static-audit.sh --readme-links-only               # targeted authority gate
 #   tools/validation/static-audit.sh --quiet                          # summary lines only
 set -u
 
@@ -25,11 +28,13 @@ cd "$REPO_ROOT" || exit 2
 
 REQUIRE_RUNTIME=0
 REQUIRE_RUNTIME_VISUAL=0
+README_LINKS_ONLY=0
 QUIET=0
 for arg in "$@"; do
   case "$arg" in
     --require-runtime) REQUIRE_RUNTIME=1 ;;
     --require-runtime-visual) REQUIRE_RUNTIME=1; REQUIRE_RUNTIME_VISUAL=1 ;;
+    --readme-links-only) README_LINKS_ONLY=1 ;;
     --quiet) QUIET=1 ;;
   esac
 done
@@ -37,6 +42,57 @@ done
 FAIL=0
 say()  { [ "$QUIET" -eq 1 ] || echo "$@"; }
 head() { say ""; say "=== $* ==="; }
+
+# ---------------------------------------------------------------------------
+# 0. README local document references  (HARD FAIL — PRD-00 authority lock)
+#    Validate both Markdown links and inline-code paths by checking every
+#    docs/*.md token. Removing link syntax must not bypass the gate.
+# ---------------------------------------------------------------------------
+head "0. README local document references"
+README_DOC_REFS="$(grep -oE 'docs/[A-Za-z0-9._/-]+\.md' README.md 2>/dev/null | sort -u)"
+MISSING_README_DOCS=0
+while IFS= read -r doc; do
+  [ -z "$doc" ] && continue
+  if [ ! -f "$doc" ]; then
+    echo "  MISSING README document: $doc"
+    MISSING_README_DOCS=$((MISSING_README_DOCS+1))
+  fi
+done <<< "$README_DOC_REFS"
+if [ "$MISSING_README_DOCS" -eq 0 ]; then
+  say "PASS: every README docs/*.md reference exists."
+else
+  echo "FAIL: $MISSING_README_DOCS README document reference(s) are dangling."
+  FAIL=1
+fi
+
+if [ "$README_LINKS_ONLY" -eq 1 ]; then
+  head "RESULT"
+  if [ "$FAIL" -eq 0 ]; then echo "static-audit PASS"; else echo "static-audit FAIL"; fi
+  exit "$FAIL"
+fi
+
+# ---------------------------------------------------------------------------
+# 0b. Atlas authority  (HARD FAIL — PRD-09 portable navigation/proof status)
+# ---------------------------------------------------------------------------
+head "0b. Atlas authority"
+ATLAS_PYTHON=()
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 8))' >/dev/null 2>&1; then
+  ATLAS_PYTHON=(python3)
+elif command -v python >/dev/null 2>&1 && python -c 'import sys; raise SystemExit(sys.version_info < (3, 8))' >/dev/null 2>&1; then
+  ATLAS_PYTHON=(python)
+elif command -v py >/dev/null 2>&1 && py -3 -c 'import sys; raise SystemExit(sys.version_info < (3, 8))' >/dev/null 2>&1; then
+  ATLAS_PYTHON=(py -3)
+fi
+
+if [ "${#ATLAS_PYTHON[@]}" -eq 0 ]; then
+  echo "FAIL: Python 3 is required for tools/validation/atlas-authority.py --check."
+  FAIL=1
+elif ATLAS_OUTPUT="$("${ATLAS_PYTHON[@]}" tools/validation/atlas-authority.py --check 2>&1)"; then
+  say "$ATLAS_OUTPUT"
+else
+  echo "$ATLAS_OUTPUT"
+  FAIL=1
+fi
 
 # ---------------------------------------------------------------------------
 # 1. Duplicate .meta GUIDs  (HARD FAIL)
@@ -119,14 +175,24 @@ if [ "$MISSING" -eq 0 ]; then say "PASS: every non-hidden Asset file has a .meta
 head "3b. Tracked asset whose .meta is untracked"
 UNTRACKED_META=0
 if git rev-parse --git-dir >/dev/null 2>&1; then
-  while IFS= read -r asset; do
-    case "$asset" in *.meta) continue ;; esac
-    case "$asset" in */.*|.*) continue ;; esac
-    if [ -z "$(git ls-files "${asset}.meta" 2>/dev/null)" ]; then
+  declare -A TRACKED_FILES=()
+  TRACKED_ASSETS=()
+  TRACKED_METAS=()
+  while IFS= read -r -d '' tracked; do
+    TRACKED_FILES["$tracked"]=1
+    case "$tracked" in
+      *.meta) TRACKED_METAS+=("$tracked") ;;
+      */.*|.*) ;;
+      *) TRACKED_ASSETS+=("$tracked") ;;
+    esac
+  done < <(git ls-files -z Assets 2>/dev/null)
+
+  for asset in "${TRACKED_ASSETS[@]}"; do
+    if [ -z "${TRACKED_FILES["${asset}.meta"]+present}" ]; then
       echo "  UNTRACKED meta for tracked asset: ${asset}.meta"
       UNTRACKED_META=$((UNTRACKED_META+1))
     fi
-  done < <(git ls-files Assets 2>/dev/null)
+  done
   if [ "$UNTRACKED_META" -eq 0 ]; then say "PASS: every tracked asset has a tracked .meta."
   else echo "FAIL: $UNTRACKED_META tracked asset(s) have an untracked .meta (git add them)."; FAIL=1; fi
 else
@@ -143,14 +209,22 @@ fi
 head "3c. Tracked .meta whose asset is gitignored"
 IGNORED_ASSET_META=0
 if git rev-parse --git-dir >/dev/null 2>&1; then
-  while IFS= read -r meta; do
-    case "$meta" in *.meta) ;; *) continue ;; esac
+  declare -A IGNORED_PATHS=()
+  while IFS= read -r -d '' ignored; do
+    IGNORED_PATHS["$ignored"]=1
+  done < <(
+    for meta in "${TRACKED_METAS[@]}"; do
+      printf '%s\0' "${meta%.meta}"
+    done | git check-ignore --no-index -z --stdin 2>/dev/null
+  )
+
+  for meta in "${TRACKED_METAS[@]}"; do
     asset="${meta%.meta}"
-    if git check-ignore -q "$asset" 2>/dev/null && ! git check-ignore -q "$meta" 2>/dev/null; then
+    if [ -n "${IGNORED_PATHS["$asset"]+ignored}" ]; then
       echo "  TRACKED meta for gitignored asset: $meta"
       IGNORED_ASSET_META=$((IGNORED_ASSET_META+1))
     fi
-  done < <(git ls-files Assets 2>/dev/null)
+  done
   if [ "$IGNORED_ASSET_META" -eq 0 ]; then say "PASS: no tracked .meta points at a gitignored asset."
   else echo "FAIL: $IGNORED_ASSET_META tracked .meta point at a gitignored asset (gitignore the .meta too)."; FAIL=1; fi
 else

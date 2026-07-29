@@ -29,6 +29,22 @@ namespace EmberCrpg.Domain.World
             return false;
         }
 
+        public static bool TryGetPursuit(
+            List<PursuitRecord> pursuits,
+            ActorId guard,
+            out PursuitRecord pursuit)
+        {
+            pursuit = null;
+            if (pursuits == null) return false;
+            for (var i = 0; i < pursuits.Count; i++)
+                if (pursuits[i].GuardId == guard.Value)
+                {
+                    pursuit = pursuits[i];
+                    return true;
+                }
+            return false;
+        }
+
         // Newest-wins per source. Both RegisterPursuit (WitnessResponseSystem, PursuitRecord/GuardId)
         // and RegisterHunt (ActionLifecycleSystem, HuntTargetRecord/HunterId) used to hand-roll this
         // find-or-append loop identically — ONE arithmetic home lives here.

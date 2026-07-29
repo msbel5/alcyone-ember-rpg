@@ -112,10 +112,41 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(caravan.PayloadRemaining, Is.EqualTo(0));
             // One stuck event emitted at the ORIGIN site, not the destination.
             Assert.That(events.Count, Is.EqualTo(1));
-            Assert.That(events.Events[0].Kind, Is.EqualTo(WorldEventKind.CaravanArrived));
+            Assert.That(events.Events[0].Kind, Is.EqualTo(WorldEventKind.CaravanStalled));
             Assert.That(events.Events[0].SiteId, Is.EqualTo(Origin));
             Assert.That(events.Events[0].Reason, Does.Contain("caravan_stuck"));
             Assert.That(events.Events[0].Reason, Does.Contain("origin_empty"));
+        }
+
+        [Test]
+        public void Tick_DestinationUnavailable_RetainsCargoThenRetryConservesAndArrives()
+        {
+            var caravan = new CaravanInstance(CaravanId, RouteId, Origin, 0, 2, CaravanState.EnRoute);
+            var route = Route();
+            var originStock = new StockpileComponent(Origin);
+            originStock.Add("iron_ingot", 5);
+            var destinationStock = new StockpileComponent(Destination);
+            var events = new WorldEventLog();
+            var system = new CaravanSystem();
+
+            StockpileComponent MissingDestination(SiteId siteId)
+                => siteId.Equals(Origin) ? originStock : null;
+            system.Tick(new[] { caravan }, _ => route, MissingDestination, default, events);
+
+            Assert.That(originStock.Get("iron_ingot") + caravan.PayloadRemaining
+                + destinationStock.Get("iron_ingot"), Is.EqualTo(5));
+            Assert.That(caravan.PayloadRemaining, Is.EqualTo(5));
+            Assert.That(events.Events[0].Kind, Is.EqualTo(WorldEventKind.CaravanStalled));
+
+            StockpileComponent AvailableDestination(SiteId siteId)
+                => siteId.Equals(Origin) ? originStock
+                    : siteId.Equals(Destination) ? destinationStock : null;
+            system.Tick(new[] { caravan }, _ => route, AvailableDestination, default, events);
+
+            Assert.That(originStock.Get("iron_ingot") + caravan.PayloadRemaining
+                + destinationStock.Get("iron_ingot"), Is.EqualTo(5));
+            Assert.That(destinationStock.Get("iron_ingot"), Is.EqualTo(5));
+            Assert.That(events.Events[1].Kind, Is.EqualTo(WorldEventKind.CaravanArrived));
         }
     }
 }

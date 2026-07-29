@@ -6,6 +6,7 @@ namespace EmberCrpg.Data.Save
     [Serializable]
     public sealed class WorldEventSaveData
     {
+        public long sequence;
         public long tickMinutes;
         public int kind;
         public long actorId;

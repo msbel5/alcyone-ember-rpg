@@ -1,3 +1,4 @@
+using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Actors.Actions;
 using EmberCrpg.Domain.Core;
@@ -14,9 +15,8 @@ namespace EmberCrpg.Tests.EditMode.Actions
     /// PINS: an idle guard walks to DayAnchor and stands post; an armed pursuit interrupts
     /// OnWatch on the very next Advance (matter conservation: no ledger row leaks, the
     /// guard drops to Idle and the existing pursuit lifecycle takes over).
-    /// The tests construct ActionLifecycleSystem DIRECTLY with enableGuardAndCombat=true —
-    /// the composer wiring is left OFF (protecting the pre-W36 tick surface until goldens
-    /// are re-baselined for the flip commit).
+    /// The tests construct ActionLifecycleSystem directly with guard/combat enabled so each
+    /// lifecycle boundary is explicit; composer wiring is covered by composition tests.
     /// </summary>
     public sealed class GuardOnWatchStoryTests
     {
@@ -36,7 +36,7 @@ namespace EmberCrpg.Tests.EditMode.Actions
         }
 
         [Test]
-        public void OnWatchWalksTheBeatAndCompletes()
+        public void OnWatchWalksTheBeatAndRemainsRunningWithoutCompletionSpam()
         {
             var world = EatSliceWorld.Build(wheat: 0); // no eat rule fires (guard isn't hungry either)
             world.Time = new GameTime(6 * 60); // hour 6 — OnWatch only fires during work hours
@@ -44,13 +44,41 @@ namespace EmberCrpg.Tests.EditMode.Actions
             world.Actors.Add(guard);
             var lifecycle = Lifecycle();
 
+            Pump(world, lifecycle, 5);
+            var pushedAtPost = world.ActionLog.TotalPushed;
             Pump(world, lifecycle, 10);
 
             Assert.That(guard.Position.ChebyshevDistanceTo(new GridPosition(3, 3)),
                 Is.LessThanOrEqualTo(OnWatchAdvancer.PostReachCells),
                 "guard reached the beat within a few PerTick advances");
-            Assert.That(ActionTrace.Of(world), Does.Contain("OnWatch/Running->OnWatch/Succeeded"),
-                "the beat completes through the SAME machinery — TransitionTo/Arrived seam");
+            Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.OnWatch));
+            Assert.That(guard.ActionState.Phase, Is.EqualTo(ActionPhase.Running));
+            Assert.That(ActionTrace.Of(world), Does.Not.Contain("OnWatch/Running->OnWatch/Succeeded"));
+            Assert.That(world.ActionLog.TotalPushed, Is.EqualTo(pushedAtPost),
+                "holding post must not grow the bounded phase log");
+            Assert.That(world.Events.Events.Count(e =>
+                e.Kind == WorldEventKind.ActionCompleted && e.ActorId.Equals(guard.Id)), Is.EqualTo(0),
+                "standing on post must not emit completion heartbeats");
+        }
+
+        [Test]
+        public void ShiftEnd_CompletesOnWatchExactlyOnce_ThenGuardReturnsIdle()
+        {
+            var world = EatSliceWorld.Build(wheat: 0);
+            world.Time = new GameTime(19 * 60 + 58);
+            var guard = Guard(id: 7, x: 3, y: 3, dayAnchor: new GridPosition(3, 3));
+            world.Actors.Add(guard);
+            var lifecycle = Lifecycle();
+
+            Pump(world, lifecycle); // 19:59: opens and holds Running OnWatch
+            Assert.That(guard.ActionState.Phase, Is.EqualTo(ActionPhase.Running));
+            Pump(world, lifecycle); // 20:00: shift boundary -> Succeeded
+            Assert.That(guard.ActionState.Phase, Is.EqualTo(ActionPhase.Succeeded));
+            Pump(world, lifecycle); // terminal handover -> Idle; off-shift does not re-arm
+
+            Assert.That(guard.ActionState.IsIdle, Is.True);
+            Assert.That(world.Events.Events.Count(e =>
+                e.Kind == WorldEventKind.ActionCompleted && e.ActorId.Equals(guard.Id)), Is.EqualTo(1));
         }
 
         [Test]
@@ -58,18 +86,18 @@ namespace EmberCrpg.Tests.EditMode.Actions
         {
             var world = EatSliceWorld.Build(wheat: 0);
             world.Time = new GameTime(6 * 60);
-            var guard = Guard(id: 7, x: 0, y: 0, dayAnchor: new GridPosition(10, 10)); // far post
+            var guard = Guard(id: 7, x: 3, y: 3, dayAnchor: new GridPosition(3, 3));
             world.Actors.Add(guard);
             var quarry = Bystander(id: 9, x: 12, y: 12);
             world.Actors.Add(quarry);
             var lifecycle = Lifecycle();
 
-            Pump(world, lifecycle); // Decide opens OnWatch, Advance steps one cell in
+            Pump(world, lifecycle); // Decide opens OnWatch already on-post
             Assert.That(guard.ActionState.CurrentIntent, Is.EqualTo(ActorIntent.Watch));
             Assert.That(guard.ActionState.Phase, Is.EqualTo(ActionPhase.Running),
-                "guard is still walking to the beat — the interrupt scenario NEEDS a live approach");
+                "guard holds a live OnWatch action while standing post");
 
-            // Arm the pursuit AFTER OnWatch is Running (mid-walk): the "witness arms mid-beat" case.
+            // Arm the pursuit AFTER OnWatch is Running on-post.
             world.GuardPursuits.Add(new PursuitRecord
             {
                 GuardId = 7, TargetId = 9, UntilMinutes = 1_000_000L,
@@ -77,6 +105,9 @@ namespace EmberCrpg.Tests.EditMode.Actions
             Pump(world, lifecycle); // OnWatchAdvancer.Step: HasLivePursuit → Fail(Interrupted)
             Assert.That(guard.ActionState.Phase, Is.EqualTo(ActionPhase.Failed),
                 "one Advance drops OnWatch to Failed(Interrupted); the terminal handover is next tick");
+            Assert.That(guard.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.Interrupted));
+            Assert.That(world.Events.Events.Count(e =>
+                e.Kind == WorldEventKind.ActionCompleted && e.ActorId.Equals(guard.Id)), Is.EqualTo(0));
             Pump(world, lifecycle); // Failed→Idle terminal handover (Advance's first branch)
             Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.None),
                 "the terminal handover routes Failed→Idle on the next Advance");

@@ -16,7 +16,7 @@ namespace EmberCrpg.Tests.EditMode.Actions
     /// adjacent StrikeQuarry resolves damage through CombatOperations.ResolveStrike (also
     /// hourly cadence). Matter conservation: a civilian target dropping to 0 is clamped to
     /// 1 HP (mauled_survives event) AND the HuntTargets row clears the same tick — the
-    /// cyclic NextLink terminates because HuntAdvancer.TryResolvePrey fails NoFoodFound
+    /// cyclic NextLink terminates because HuntAdvancer.TryResolvePrey fails TargetGone
     /// → Idle on the next Advance.
     /// Direct-lifecycle idiom: composer wiring is dark (docs/atlas/systems/04-cascades-crime.md
     /// debt #1); enableGuardAndCombat is passed explicitly here so the machinery is proven
@@ -61,7 +61,9 @@ namespace EmberCrpg.Tests.EditMode.Actions
                 Pump(world, lifecycle);
                 strikeCount = world.Events.Events.Count(e => e.Kind == WorldEventKind.CombatResolved
                     && e.ActorId.Equals(enemy.Id));
-                if (world.HuntTargets.Count == 0) break;
+                // An expired relationship now cleans up immediately and may be re-armed on the
+                // next idle decision. Stop on the story outcome, not on a transient empty ledger.
+                if (prey.Vitals.Health.Current <= 1) break;
             }
 
             Assert.That(strikeCount, Is.GreaterThan(0),
@@ -69,10 +71,12 @@ namespace EmberCrpg.Tests.EditMode.Actions
             Assert.That(prey.IsAlive, Is.True, "matter conservation: the civilian is MAULED, not killed");
             Assert.That(prey.Vitals.Health.Current, Is.EqualTo(1),
                 "the clamp fired: predation preserves town population (PLAYTEST parity)");
-            Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.NeedChanged
+            Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.MaulSurvived
                     && e.Reason != null
-                    && e.Reason.StartsWith("mauled_survives", System.StringComparison.Ordinal)), Is.True,
+                    && e.Reason.Contains("policy:civilian_maul_survival")), Is.True,
                 "the mauled_survives event was appended by MaybeMaulClamp");
+            Assert.That(world.Events.Events.Any(e => e.Kind == WorldEventKind.NeedChanged
+                    && e.Reason != null && e.Reason.StartsWith("mauled_survives")), Is.False);
             Assert.That(world.HuntTargets.Count, Is.EqualTo(0),
                 "the HuntTargets row cleared on the clamp — the cyclic NextLink terminated");
         }
@@ -93,6 +97,181 @@ namespace EmberCrpg.Tests.EditMode.Actions
                 "no prey in range = no decision — cheap silent return");
             Assert.That(world.HuntTargets.Count, Is.EqualTo(0),
                 "matter conservation: an empty scan opens NO row (a starving hunter's soundtrack is silence)");
+        }
+
+        [Test]
+        public void HuntCadenceWait_DoesNotMoveOrIncrementProgress()
+        {
+            var world = HuntSliceWorld.Build();
+            var enemy = HuntSliceWorld.Enemy(id: 100, x: 0, y: 0);
+            var prey = HuntSliceWorld.Prey(id: 200, x: 5, y: 0, hp: 10);
+            world.Actors.Add(enemy);
+            world.Actors.Add(prey);
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = enemy.Id.Value,
+                TargetId = prey.Id.Value,
+                UntilMinutes = 999,
+            });
+            enemy.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                ActorActionType.Hunt, new SiteId(1), ItemId.Empty, ReservationId.Empty,
+                startedAtMinutes: 60, ActionInterruptPolicy.Interruptible));
+
+            new HuntAdvancer(new ActionLogManager()).Advance(world, enemy, new GameTime(61));
+
+            Assert.That(enemy.Position, Is.EqualTo(new GridPosition(0, 0)));
+            Assert.That(enemy.ActionState.Phase, Is.EqualTo(ActionPhase.Running));
+            Assert.That(enemy.ActionState.ProgressTicks, Is.EqualTo(0),
+                "cadence waiting is not movement progress");
+        }
+
+        [TestCase("expired")]
+        [TestCase("dead")]
+        [TestCase("missing")]
+        public void HuntTerminalTargetLoss_FailsAndRemovesRelationship(string loss)
+        {
+            var world = HuntSliceWorld.Build();
+            var enemy = HuntSliceWorld.Enemy(id: 100, x: 0, y: 0);
+            var prey = HuntSliceWorld.Prey(id: 200, x: 5, y: 0, hp: 10);
+            world.Actors.Add(enemy);
+            if (loss != "missing")
+                world.Actors.Add(prey);
+            if (loss == "dead")
+                prey.ApplyVitals(prey.Vitals.WithHealth(prey.Vitals.Health.Damage(999)));
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = enemy.Id.Value,
+                TargetId = prey.Id.Value,
+                UntilMinutes = loss == "expired" ? 59L : 999L,
+            });
+            enemy.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                ActorActionType.Hunt, new SiteId(1), ItemId.Empty, ReservationId.Empty,
+                startedAtMinutes: 60, ActionInterruptPolicy.Interruptible));
+
+            new HuntAdvancer(new ActionLogManager()).Advance(world, enemy, new GameTime(60));
+
+            Assert.That((enemy.ActionState.Phase, enemy.ActionState.FailureReason),
+                Is.EqualTo((ActionPhase.Failed, ActionFailureReason.TargetGone)));
+            Assert.That(world.HuntTargets, Is.Empty,
+                "expired/dead/missing quarry cannot leave a stale target relationship");
+        }
+
+        [Test]
+        public void HuntInterruptedByPursuit_RemovesRelationship()
+        {
+            var world = HuntSliceWorld.Build();
+            var enemy = HuntSliceWorld.Enemy(id: 100, x: 0, y: 0);
+            var prey = HuntSliceWorld.Prey(id: 200, x: 5, y: 0, hp: 10);
+            world.Actors.Add(enemy);
+            world.Actors.Add(prey);
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = enemy.Id.Value,
+                TargetId = prey.Id.Value,
+                UntilMinutes = 999L,
+            });
+            world.GuardPursuits.Add(new PursuitRecord
+            {
+                GuardId = 300UL,
+                TargetId = enemy.Id.Value,
+                UntilMinutes = 999L,
+            });
+            enemy.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                ActorActionType.Hunt, new SiteId(1), ItemId.Empty, ReservationId.Empty,
+                startedAtMinutes: 60, ActionInterruptPolicy.Interruptible));
+
+            new HuntAdvancer(new ActionLogManager()).Advance(world, enemy, new GameTime(61));
+
+            Assert.That((enemy.ActionState.Phase, enemy.ActionState.FailureReason),
+                Is.EqualTo((ActionPhase.Failed, ActionFailureReason.Interrupted)));
+            Assert.That(world.HuntTargets, Is.Empty,
+                "the generic interruption gate must retire the Hunt target identity");
+        }
+
+        [Test]
+        public void StrikeQuarryMissingTarget_FailsAndRemovesRelationship()
+        {
+            var world = HuntSliceWorld.Build();
+            var enemy = HuntSliceWorld.Enemy(id: 100, x: 0, y: 0);
+            world.Actors.Add(enemy);
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = enemy.Id.Value,
+                TargetId = 200UL,
+                UntilMinutes = 999L,
+            });
+            enemy.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                ActorActionType.StrikeQuarry, new SiteId(1), ItemId.Empty, ReservationId.Empty,
+                startedAtMinutes: 60, ActionInterruptPolicy.Interruptible));
+
+            new StrikeQuarryAdvancer(new ActionLogManager()).Advance(world, enemy, new GameTime(60));
+
+            Assert.That((enemy.ActionState.Phase, enemy.ActionState.FailureReason),
+                Is.EqualTo((ActionPhase.Failed, ActionFailureReason.TargetGone)));
+            Assert.That(world.HuntTargets, Is.Empty,
+                "StrikeQuarry shares the same terminal relationship cleanup");
+        }
+
+        [Test]
+        public void HuntNoRoute_FailsWithoutProgress_AndRemovesTargetClaim()
+        {
+            var world = HuntSliceWorld.Build();
+            var enemy = HuntSliceWorld.Enemy(id: 100, x: 0, y: 0);
+            var prey = HuntSliceWorld.Prey(id: 200, x: 5, y: 0, hp: 10);
+            world.Actors.Add(enemy);
+            world.Actors.Add(prey);
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = enemy.Id.Value,
+                TargetId = prey.Id.Value,
+                UntilMinutes = 999,
+            });
+            for (var x = -1; x <= 1; x++)
+                for (var y = -1; y <= 1; y++)
+                    if (x != 0 || y != 0)
+                        world.Blocked.Add(new GridPosition(x, y));
+            enemy.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                ActorActionType.Hunt, new SiteId(1), ItemId.Empty, ReservationId.Empty,
+                startedAtMinutes: 60, ActionInterruptPolicy.Interruptible));
+
+            new HuntAdvancer(new ActionLogManager()).Advance(world, enemy, new GameTime(120));
+
+            Assert.That(enemy.Position, Is.EqualTo(new GridPosition(0, 0)));
+            Assert.That(enemy.ActionState.Phase, Is.EqualTo(ActionPhase.Failed));
+            Assert.That(enemy.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.Unreachable));
+            Assert.That(enemy.ActionState.ProgressTicks, Is.EqualTo(0));
+            Assert.That(world.HuntTargets, Is.Empty,
+                "terminal no-route removes the hunt claim instead of retrying forever");
+        }
+
+        [Test]
+        public void HuntOppositeIntegerBoundaries_DoesNotFalseArriveOrThrow()
+        {
+            var world = HuntSliceWorld.Build();
+            var edge = new GridPosition(int.MaxValue, 0);
+            var enemy = HuntSliceWorld.Enemy(id: 100, x: edge.X, y: edge.Y);
+            var prey = HuntSliceWorld.Prey(id: 200, x: int.MinValue, y: 0, hp: 10);
+            world.Actors.Add(enemy);
+            world.Actors.Add(prey);
+            world.HuntTargets.Add(new HuntTargetRecord
+            {
+                HunterId = enemy.Id.Value,
+                TargetId = prey.Id.Value,
+                UntilMinutes = 999,
+            });
+            enemy.ApplyActionState(ActorActionState.ForIntent(ActorIntent.Hunt).Start(
+                ActorActionType.Hunt, new SiteId(1), ItemId.Empty, ReservationId.Empty,
+                startedAtMinutes: 60, ActionInterruptPolicy.Interruptible));
+
+            Assert.DoesNotThrow(() =>
+                new HuntAdvancer(new ActionLogManager())
+                    .Advance(world, enemy, new GameTime(120)));
+
+            Assert.That(enemy.Position, Is.EqualTo(edge));
+            Assert.That(enemy.ActionState.Phase, Is.EqualTo(ActionPhase.Failed),
+                "opposite int boundaries are maximally far, never adjacent");
+            Assert.That(enemy.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.Unreachable));
+            Assert.That(enemy.ActionState.ProgressTicks, Is.EqualTo(0));
         }
 
         [Test]

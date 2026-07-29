@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Magic;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
@@ -39,6 +40,10 @@ namespace EmberCrpg.Simulation.Composition
 
             AppendTime(sb, world);
             AppendActors(sb, world.Actors);
+            AppendNpcMemory(sb, world.NpcMemory);
+            AppendCompanions(sb, world.CompanionIds);
+            AppendPursuitLedgers(sb, world.GuardPursuits, world.HuntTargets);
+            AppendLivingCascadeState(sb, world);
             AppendPlants(sb, world.Plants);
             AppendSoils(sb, world.Soils);
             AppendJobs(sb, world.Jobs);
@@ -111,6 +116,8 @@ namespace EmberCrpg.Simulation.Composition
                 sb.Append('|');
                 AppendUlongField(sb, actor.ActionState.TargetSiteId.Value);
                 sb.Append('|');
+                AppendUlongField(sb, actor.ActionState.TargetActorId.Value);
+                sb.Append('|');
                 AppendUlongField(sb, actor.ActionState.ReservationId.Value);
                 sb.Append('|');
                 AppendIntField(sb, actor.ActionState.ProgressTicks);
@@ -120,6 +127,190 @@ namespace EmberCrpg.Simulation.Composition
                 // hands share a digest and the chunking referee is blind to the divergence.
                 sb.Append('|');
                 AppendIntField(sb, actor.ActionState.CarriedUnits);
+                sb.Append('|');
+                AppendStringField(sb, actor.ActionState.CarriedMatterTag);
+                sb.Append('\n');
+            }
+        }
+
+        private static void AppendNpcMemory(StringBuilder sb, NpcMemoryStore memoryStore)
+        {
+            AppendSectionHeader(sb, "NPCMEMORY");
+            var memories = memoryStore?.GetAllSorted();
+            AppendCount(sb, memories?.Count ?? 0);
+            if (memories == null) return;
+
+            for (var memoryIndex = 0; memoryIndex < memories.Count; memoryIndex++)
+            {
+                var memory = memories[memoryIndex];
+                sb.Append("m|");
+                AppendUlongField(sb, memory.ActorId.Value);
+                sb.Append('\n');
+
+                AppendCount(sb, memory.Events.Count);
+                for (var eventIndex = 0; eventIndex < memory.Events.Count; eventIndex++)
+                {
+                    var row = memory.Events[eventIndex];
+                    sb.Append("me|");
+                    AppendLongField(sb, row.Timestamp.TotalMinutes);
+                    sb.Append('|');
+                    AppendStringField(sb, row.EventType);
+                    sb.Append('|');
+                    AppendUlongField(sb, row.ActorSeen.Value);
+                    sb.Append('|');
+                    AppendStringField(sb, row.SubjectId);
+                    sb.Append('|');
+                    AppendStringField(sb, row.ItemTemplateId);
+                    sb.Append('|');
+                    AppendIntField(sb, row.Amount);
+                    sb.Append('|');
+                    AppendIntField(sb, row.Location.X);
+                    sb.Append('|');
+                    AppendIntField(sb, row.Location.Y);
+                    sb.Append('\n');
+                }
+
+                var dialogue = new List<string>(memory.DialogueSeen);
+                dialogue.Sort(StringComparer.Ordinal);
+                AppendCount(sb, dialogue.Count);
+                for (var dialogueIndex = 0; dialogueIndex < dialogue.Count; dialogueIndex++)
+                {
+                    sb.Append("md|");
+                    AppendStringField(sb, dialogue[dialogueIndex]);
+                    sb.Append('\n');
+                }
+
+                AppendCount(sb, memory.Transactions.Count);
+                for (var transactionIndex = 0;
+                     transactionIndex < memory.Transactions.Count;
+                     transactionIndex++)
+                {
+                    var row = memory.Transactions[transactionIndex];
+                    sb.Append("mt|");
+                    AppendLongField(sb, row.Timestamp.TotalMinutes);
+                    sb.Append('|');
+                    AppendStringField(sb, row.TransactionType);
+                    sb.Append('|');
+                    AppendStringField(sb, row.ItemTemplateId);
+                    sb.Append('|');
+                    AppendIntField(sb, row.Count);
+                    sb.Append('|');
+                    AppendIntField(sb, row.GoldDelta);
+                    sb.Append('\n');
+                }
+            }
+        }
+
+        private static void AppendCompanions(
+            StringBuilder sb,
+            List<EmberCrpg.Domain.Core.ActorId> companionIds)
+        {
+            AppendSectionHeader(sb, "COMPANIONS");
+            AppendCount(sb, companionIds?.Count ?? 0);
+            if (companionIds == null) return;
+            for (var index = 0; index < companionIds.Count; index++)
+            {
+                sb.Append("c|");
+                AppendUlongField(sb, companionIds[index].Value);
+                sb.Append('\n');
+            }
+        }
+
+        private static void AppendPursuitLedgers(
+            StringBuilder sb,
+            List<PursuitRecord> pursuits,
+            List<HuntTargetRecord> hunts)
+        {
+            AppendSectionHeader(sb, "GUARDPURSUITS");
+            AppendCount(sb, pursuits?.Count ?? 0);
+            if (pursuits != null)
+            {
+                for (var index = 0; index < pursuits.Count; index++)
+                {
+                    var row = pursuits[index];
+                    sb.Append("gp|");
+                    AppendUlongField(sb, row?.GuardId ?? 0UL);
+                    sb.Append('|');
+                    AppendUlongField(sb, row?.TargetId ?? 0UL);
+                    sb.Append('|');
+                    AppendLongField(sb, row?.UntilMinutes ?? 0L);
+                    sb.Append('\n');
+                }
+            }
+
+            AppendSectionHeader(sb, "HUNTTARGETS");
+            AppendCount(sb, hunts?.Count ?? 0);
+            if (hunts == null) return;
+            for (var index = 0; index < hunts.Count; index++)
+            {
+                var row = hunts[index];
+                sb.Append("ht|");
+                AppendUlongField(sb, row?.HunterId ?? 0UL);
+                sb.Append('|');
+                AppendUlongField(sb, row?.TargetId ?? 0UL);
+                sb.Append('|');
+                AppendLongField(sb, row?.UntilMinutes ?? 0L);
+                sb.Append('\n');
+            }
+        }
+
+        private static void AppendLivingCascadeState(StringBuilder sb, WorldState world)
+        {
+            AppendSectionHeader(sb, "CRITTERS");
+            AppendCount(sb, world.Critters?.Count ?? 0);
+            if (world.Critters != null)
+            {
+                for (var index = 0; index < world.Critters.Count; index++)
+                {
+                    var row = world.Critters[index];
+                    sb.Append("cr|");
+                    AppendUlongField(sb, row?.Id ?? 0UL);
+                    sb.Append('|');
+                    AppendUlongField(sb, row?.SiteId.Value ?? 0UL);
+                    sb.Append('|');
+                    AppendIntField(sb, row?.Cell.X ?? 0);
+                    sb.Append('|');
+                    AppendIntField(sb, row?.Cell.Y ?? 0);
+                    sb.Append('|');
+                    AppendStringField(sb, row?.Kind);
+                    sb.Append('\n');
+                }
+            }
+
+            AppendSectionHeader(sb, "RUMORS");
+            AppendCount(sb, world.Rumors?.Count ?? 0);
+            sb.Append("rc|");
+            AppendLongField(sb, world.RumorEventCursorSeq);
+            sb.Append('\n');
+            if (world.Rumors != null)
+            {
+                for (var index = 0; index < world.Rumors.Count; index++)
+                {
+                    var row = world.Rumors[index];
+                    sb.Append("ru|");
+                    AppendLongField(sb, row?.BornMinutes ?? 0L);
+                    sb.Append('|');
+                    AppendUlongField(sb, row?.SiteId.Value ?? 0UL);
+                    sb.Append('|');
+                    AppendStringField(sb, row?.Text);
+                    sb.Append('\n');
+                }
+            }
+
+            AppendSectionHeader(sb, "SITEUNREST");
+            AppendCount(sb, world.SiteUnrest?.Count ?? 0);
+            if (world.SiteUnrest == null) return;
+            for (var index = 0; index < world.SiteUnrest.Count; index++)
+            {
+                var row = world.SiteUnrest[index];
+                sb.Append("su|");
+                AppendUlongField(sb, row?.SiteId.Value ?? 0UL);
+                sb.Append('|');
+                AppendIntField(sb, row?.Unrest ?? 0);
+                sb.Append('|');
+                AppendLongField(sb, row?.LastDecayDay ?? 0L);
+                sb.Append('|');
+                AppendLongField(sb, row?.SweepCooldownUntilMinutes ?? 0L);
                 sb.Append('\n');
             }
         }
@@ -535,6 +726,11 @@ namespace EmberCrpg.Simulation.Composition
 
             var rows = events.Events;
             AppendCount(sb, rows.Count);
+            sb.Append("seq|");
+            AppendLongField(sb, events.FirstRetainedSeq);
+            sb.Append('|');
+            AppendLongField(sb, events.TotalAppended);
+            sb.Append('\n');
 
             for (var i = 0; i < rows.Count; i++)
             {
@@ -554,6 +750,8 @@ namespace EmberCrpg.Simulation.Composition
                 }
 
                 sb.Append("e|");
+                AppendLongField(sb, row.Sequence);
+                sb.Append('|');
                 AppendLongField(sb, row.Tick.TotalMinutes);
                 sb.Append('|');
                 AppendIntField(sb, (int)row.Kind);

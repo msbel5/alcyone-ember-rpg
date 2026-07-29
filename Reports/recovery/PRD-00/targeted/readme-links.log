@@ -1,0 +1,6 @@
+
+=== 0. README local document references ===
+PASS: every README docs/*.md reference exists.
+
+=== RESULT ===
+static-audit PASS

@@ -96,9 +96,23 @@ namespace EmberCrpg.Simulation.World
                     entry = "festival";
                     break;
                 case 1: // caravan surge: real grain hits the larder
-                    if (world.Stockpiles.Count > 0 && world.Stockpiles[0] != null)
-                        world.Stockpiles[0].Add("wheat", CaravanWheat + intensity);
-                    entry = "caravan_surge";
+                    var destination = world.FindStockpile(site);
+                    if (destination != null)
+                    {
+                        var quantity = CaravanWheat + intensity;
+                        destination.Add("wheat", quantity);
+                        world.Events.Append(new WorldEvent(
+                            stamp, WorldEventKind.CaravanArrived, default, site,
+                            $"history_caravan_arrived item:wheat qty:{quantity}"));
+                        entry = "caravan_surge";
+                    }
+                    else
+                    {
+                        world.Events.Append(new WorldEvent(
+                            stamp, WorldEventKind.CaravanStalled, default, site,
+                            "history_caravan_stalled reason:destination_unavailable"));
+                        entry = "caravan_diverted";
+                    }
                     break;
                 default: // border dispute: the law and the merchants fall out
                     _reputation.ApplyDelta(world.Factions, law.Id, trade.Id, DisputeDelta, "border_dispute", stamp, world.Events);

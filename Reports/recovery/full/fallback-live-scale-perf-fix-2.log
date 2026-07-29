@@ -1,0 +1,48 @@
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(23,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(24,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(33,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(34,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(123,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(13,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(14,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(26,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(27,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(72,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(189,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\WorldDirector\WorldGeoSamplerTests.cs(16,45): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+  ValidationFallbackHarness -> D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll (.NETCoreApp,Version=v8.0) için test çalıştırması
+VSTest sürümü 17.11.1 (x64)
+
+Test yürütmesi başlatılıyor, lütfen bekleyin...
+Toplam 1 test dosyası belirtilen desenle eşleşti.
+  Başarısız NeedsAndStockpiles_ProductionMutations_MatchTheExplicitDebtGate [2 s]
+  Hata İletisi:
+     new unregistered World.Stockpiles/add-remove-assign callsite(s): Assets/Scripts/Simulation/Living/Actions/HaulCropAdvancer.cs:76::pile.Add(cropTag, state.CarriedUnits);
+Assert.That(unregistered, Is.Empty)
+  Expected: <empty>
+  But was:  < "Assets/Scripts/Simulation/Living/Actions/HaulCropAdvancer.cs:76::pile.Add(cropTag, state.CarriedUnits);" >
+
+  Yığın İzleme:
+     at EmberCrpg.Tests.EditMode.Composition.FieldOwnershipRegistryTests.AssertInventoryMatches(String label, IReadOnlyList`1 actual, IEnumerable`1 allowed) in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\FieldOwnershipRegistryTests.cs:line 192
+   at EmberCrpg.Tests.EditMode.Composition.FieldOwnershipRegistryTests.NeedsAndStockpiles_ProductionMutations_MatchTheExplicitDebtGate() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\FieldOwnershipRegistryTests.cs:line 74
+
+1)    at EmberCrpg.Tests.EditMode.Composition.FieldOwnershipRegistryTests.AssertInventoryMatches(String label, IReadOnlyList`1 actual, IEnumerable`1 allowed) in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\FieldOwnershipRegistryTests.cs:line 192
+   at EmberCrpg.Tests.EditMode.Composition.FieldOwnershipRegistryTests.NeedsAndStockpiles_ProductionMutations_MatchTheExplicitDebtGate() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\FieldOwnershipRegistryTests.cs:line 74
+
+
+  Başarısız OneReplayedDay_AtLiveScale_StaysUnderThreeSeconds [4 s]
+  Hata İletisi:
+     one live-scale replayed day took 4681 ms - the per-tick food path regressed to actors x piles x sites again
+Assert.That(watch.ElapsedMilliseconds, Is.LessThan(3000))
+  Expected: less than 3000
+  But was:  4681
+
+  Yığın İzleme:
+     at EmberCrpg.Tests.EditMode.Composition.LiveScaleCatchupPerfPinTests.OneReplayedDay_AtLiveScale_StaysUnderThreeSeconds() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\LiveScaleCatchupPerfPinTests.cs:line 56
+
+1)    at EmberCrpg.Tests.EditMode.Composition.LiveScaleCatchupPerfPinTests.OneReplayedDay_AtLiveScale_StaysUnderThreeSeconds() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\LiveScaleCatchupPerfPinTests.cs:line 56
+
+
+
+Başarısız! - Başarısız:     2, Başarılı:    37, Atlanan:     0, Toplam:    39, Süre: 10 s - ValidationFallbackHarness.dll (net8.0)

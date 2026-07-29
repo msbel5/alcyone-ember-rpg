@@ -17,13 +17,6 @@ namespace EmberCrpg.Simulation.Living.Actions
     /// <summary>Walks the hunter one step per hour toward the prey named by its HuntTargets row.</summary>
     public sealed class HuntAdvancer : ActionAdvancer
     {
-        /// <summary>Movement cadence — one cell per game hour, matching the retired
-        /// PredationSystem@Hourly:40 hunter step. Without this the hunter would close in ~60x
-        /// faster than pre-W36 baseline and 2-day soak gates (Gate8 personal-space, ProofLivingCensus
-        /// meal peaks) would drift. In-cooldown ticks Advance in place — same B21-safe idiom
-        /// StrikeQuarry uses (TransitionTo Advanced→Advanced writes no log row).</summary>
-        public const int StepCadenceMinutes = 60;
-
         public HuntAdvancer(ActionLogManager log) : base(log) { }
 
         public override ActorActionType Handles => ActorActionType.Hunt;
@@ -31,9 +24,15 @@ namespace EmberCrpg.Simulation.Living.Actions
         protected override void Step(WorldState world, ActorRecord actor, GameTime stamp)
         {
             var state = actor.ActionState;
+            if (state.CurrentIntent == ActorIntent.GuardCompanion
+                && !CompanionService.IsCompanion(world, actor.Id))
+            {
+                Fail(world, actor, ActionFailureReason.Interrupted, stamp);
+                return;
+            }
             if (!TryResolvePrey(world, actor, stamp, out var prey))
             {
-                Fail(world, actor, ActionFailureReason.NoFoodFound, stamp);
+                Fail(world, actor, ActionFailureReason.TargetGone, stamp);
                 return;
             }
             var dist = actor.Position.ChebyshevDistanceTo(prey.Position);
@@ -45,12 +44,21 @@ namespace EmberCrpg.Simulation.Living.Actions
                 return;
             }
             // Cadence gate: only step on the game-hour boundary — preserves pre-W36 baseline.
-            if (stamp.TotalMinutes % StepCadenceMinutes != 0)
+            if (!EmberCrpg.Simulation.Composition.WorldTickComposer.IsHourlyBoundary(stamp))
             {
-                TransitionTo(world, actor, state.Advanced(), ActionLogReason.ProgressTicked, stamp);
+                // Cadence waiting is not action progress: retain the exact state.
+                TransitionTo(world, actor, state, ActionLogReason.ProgressTicked, stamp);
                 return;
             }
-            actor.MoveTo(MovementService.StepToward(actor.Position, prey.Position, world?.NavView));
+            var movement = MovementService.RouteToward(
+                actor.Position, prey.Position, world?.NavView, CombatOperations.StrikeReach);
+            if (!movement.Moved)
+            {
+                // The shared Fail gate retires the HuntTargets relationship.
+                Fail(world, actor, ActionFailureReason.Unreachable, stamp);
+                return;
+            }
+            actor.MoveTo(movement.Position);
             TransitionTo(world, actor, state.Advanced(), ActionLogReason.ProgressTicked, stamp);
         }
 
@@ -62,10 +70,12 @@ namespace EmberCrpg.Simulation.Living.Actions
             prey = null;
             var rows = world.HuntTargets;
             if (rows == null) return false;
+            var durableTarget = hunter.ActionState.TargetActorId;
             for (var i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
                 if (row.HunterId != hunter.Id.Value) continue;
+                if (!durableTarget.IsEmpty && row.TargetId != durableTarget.Value) continue;
                 if (stamp.TotalMinutes > row.UntilMinutes) return false;
                 if (!world.Actors.TryGet(new ActorId(row.TargetId), out var candidate)
                     || candidate == null || !candidate.IsAlive)

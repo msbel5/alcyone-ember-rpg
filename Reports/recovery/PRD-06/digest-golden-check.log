@@ -1,0 +1,33 @@
+  ValidationFallbackHarness -> D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll (.NETCoreApp,Version=v8.0) için test çalıştırması
+VSTest sürümü 17.11.1 (x64)
+
+Test yürütmesi başlatılıyor, lütfen bekleyin...
+Toplam 1 test dosyası belirtilen desenle eşleşti.
+NUnit Adapter 4.6.0.0: Test execution started
+Running selected tests in D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+   NUnit3TestExecutor discovered 3 of 3 NUnit test cases using Current Discovery mode, Non-Explicit run
+NUnit Adapter 4.6.0.0: Test execution complete
+  Başarılı Advance_DifferentTickHorizons_ProduceDifferentDigests [226 ms]
+  Başarısız Advance_OverTwoGameDays_MatchesCommittedBaselineDigest [85 ms]
+  Hata İletisi:
+     World digest baseline drifted. Captured digest: bd3fbf9bb2549f3375053965865158b6bf7001929661ca3ec8c70b115c0a4cdc second digest: bd3fbf9bb2549f3375053965865158b6bf7001929661ca3ec8c70b115c0a4cdc
+Assert.That(digest, Is.EqualTo(BaselineHash))
+  String lengths are both 64. Strings differ at index 0.
+  Expected: "cb0b02a071e3b861a1c4792bd85ed5ebeb01899e756957584f8b7d0b275cc1ea"
+  But was:  "bd3fbf9bb2549f3375053965865158b6bf7001929661ca3ec8c70b115c0a4cdc"
+  -----------^
+
+  Yığın İzleme:
+     at EmberCrpg.Tests.EditMode.Composition.WorldTickDigestGoldenTests.Advance_OverTwoGameDays_MatchesCommittedBaselineDigest() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\WorldTickDigestGoldenTests.cs:line 87
+
+1)    at EmberCrpg.Tests.EditMode.Composition.WorldTickDigestGoldenTests.Advance_OverTwoGameDays_MatchesCommittedBaselineDigest() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Composition\WorldTickDigestGoldenTests.cs:line 87
+
+
+  Başarılı Advance_SameSeedSameTicks_ProducesSameDigest [36 ms]
+
+Toplam test sayısı: 3
+     Geçti: 2
+     Başarısız: 1
+Test Çalıştırması Başarısız.
+ Toplam süre: 1,8442 Saniye

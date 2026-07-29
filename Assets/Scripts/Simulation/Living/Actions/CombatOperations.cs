@@ -18,6 +18,8 @@ namespace EmberCrpg.Simulation.Living.Actions
     /// <summary>Prey scan + deterministic strike resolution for enemy Hunt and guard Chase.</summary>
     internal static class CombatOperations
     {
+        public const string CivilianMaulSurvivalPolicy = "civilian_maul_survival";
+
         /// <summary>Enemy prey filter — civilians only (Merchant/Talker/etc.); never enemies,
         /// guards, or the player. Mirror of PredationSystem's hunter loop filter (CascadeSystems.cs
         /// prey line) so a retirement of PredationSystem drops this filter into that seat.</summary>
@@ -72,13 +74,14 @@ namespace EmberCrpg.Simulation.Living.Actions
             if (target.Role == ActorRole.Enemy || target.Role == ActorRole.Guard) return;
             target.ApplyVitals(new ActorVitals(
                 new VitalStat(1, target.Vitals.Health.Max), target.Vitals.Fatigue, target.Vitals.Mana));
-            world.Events?.Append(new WorldEvent(stamp, WorldEventKind.NeedChanged, target.Id,
+            world.Events?.Append(new WorldEvent(stamp, WorldEventKind.MaulSurvived, target.Id,
                 PredationSystem.FallbackSite(world, target.Position),
-                $"mauled_survives by:{attacker.Id.Value}"));
+                $"mauled_survives policy:{CivilianMaulSurvivalPolicy} by:{attacker.Id.Value}"));
         }
 
-        /// <summary>Reach for a Hunt→StrikeQuarry adjacency test. Mirror of PredationSystem.StrikeReach.</summary>
-        public const int StrikeReach = 1;
+        /// <summary>Reach for a Hunt→StrikeQuarry adjacency test. Preserves the retired
+        /// PredationSystem's two-cell strike contract.</summary>
+        public const int StrikeReach = 2;
 
         /// <summary>Enemy hunt scan radius. Owned by PredationSystem.HuntRadius —
         /// the two decides used to hand-roll the same 6 with a "mirror of" comment.</summary>

@@ -52,5 +52,11 @@ namespace EmberCrpg.Domain.World
         // resurrect the B21 per-step spam class (~1GB log by day 90).
         ActionCompleted = 33,
         ActionFailed = 34,
+        // PRD-08: append-only semantic outcomes; NeedChanged remains needs-only.
+        VerminTheft = 35,
+        CritterCaught = 36,
+        MaulSurvived = 37,
+        MatterRecovered = 38,
+        CaravanStalled = 39,
     }
 }

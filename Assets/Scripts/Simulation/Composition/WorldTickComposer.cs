@@ -43,6 +43,8 @@ namespace EmberCrpg.Simulation.Composition
     /// </summary>
     public sealed class WorldTickComposer
     {
+        public const int MaxRetainedWorldEvents = 16_384;
+
         /// <summary>
         /// 1 ember-tick == 1 in-game minute. Aligns with
         /// <c>EmberCrpg.Presentation.Ember.Adapters.DomainSimulationAdapter.HudText</c>
@@ -65,6 +67,10 @@ namespace EmberCrpg.Simulation.Composition
         /// rather than every minute.
         /// </summary>
         public static int TicksPerGameHour => EmberRuntimeOptionsProvider.Current.Tick.TicksPerHour;
+
+        /// <summary>Single cadence predicate for action steps that run on the hourly band.</summary>
+        public static bool IsHourlyBoundary(GameTime stamp)
+            => stamp.TotalMinutes % (TicksPerGameHour * MinutesPerTick) == 0;
 
         private readonly WorldTickRegistry _tickRegistry;
 
@@ -277,6 +283,10 @@ namespace EmberCrpg.Simulation.Composition
                             Accumulate(system.GetType().Name, SystemWatch.Elapsed.TotalMilliseconds);
                         }
                 }
+
+                // PRD-07 single finalization owner: all per-tick/hourly/daily writers have run.
+                // The log may exceed the cap only inside this tick and is bounded before return.
+                world.Events?.TrimOldest(MaxRetainedWorldEvents);
             }
 
             double totalMs = advanceWatch.Elapsed.TotalMilliseconds;
@@ -316,14 +326,14 @@ namespace EmberCrpg.Simulation.Composition
         /// Codex ninth-pass A-P2: deterministically rebuild the
         /// hourly/daily accumulators from a restored <see cref="GameTime"/>.
         /// Use after save/load when the in-memory accumulator state can't
-        /// be trusted. The remainder of (TotalMinutes mod TicksPerGameHour)
-        /// is the in-flight progress toward the next hourly tick.
+        /// be trusted. Restored minutes are first converted through the same
+        /// MinutesPerTick unit used by the live clock, then reduced to cadence.
         /// </summary>
         public void RebuildAccumulatorsFrom(GameTime worldTime)
         {
-            long minutes = worldTime.TotalMinutes;
-            _ticksSinceHourly = (int)(minutes % TicksPerGameHour);
-            _ticksSinceDaily = (int)(minutes % TicksPerGameDay);
+            long elapsedTicks = worldTime.TotalMinutes / MinutesPerTick;
+            _ticksSinceHourly = (int)(elapsedTicks % TicksPerGameHour);
+            _ticksSinceDaily = (int)(elapsedTicks % TicksPerGameDay);
             _lastTickIndex = -1;
         }
     }

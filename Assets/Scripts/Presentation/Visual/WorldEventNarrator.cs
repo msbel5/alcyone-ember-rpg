@@ -50,6 +50,11 @@ namespace EmberCrpg.Presentation.Visual
                 case "TradeCompleted": return "traded";
                 case "CombatResolved": return "fought";
                 case "SpellResolved": return "cast";
+                case "VerminTheft": return "lost food";
+                case "CritterCaught": return "caught vermin";
+                case "MaulSurvived": return "survived mauling";
+                case "MatterRecovered": return "recovered cargo";
+                case "CaravanStalled": return "caravan stalled";
                 default: return kindCode ?? string.Empty;
             }
         }

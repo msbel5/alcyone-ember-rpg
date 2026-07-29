@@ -58,6 +58,52 @@ namespace EmberCrpg.Tests.EditMode.Save
             Assert.That(back.ActionState, Is.EqualTo(state), "every mind field must survive the save");
         }
 
+        // PRD-03: all canonical action families must keep their selected Running phase verbatim.
+        // Before this pin, only Eat was representative coverage; a later per-action mapper branch
+        // could silently drop Plant/Harvest/Haul/Sleep/Work/Watch/Hunt state.
+        [TestCase(ActorIntent.Eat, ActorActionType.ConsumeFood, 0)]
+        [TestCase(ActorIntent.Plant, ActorActionType.PlantSeed, 0)]
+        [TestCase(ActorIntent.Harvest, ActorActionType.HarvestCrop, 2)]
+        [TestCase(ActorIntent.Harvest, ActorActionType.HaulCrop, 2)]
+        [TestCase(ActorIntent.Rest, ActorActionType.Sleep, 0)]
+        [TestCase(ActorIntent.Work, ActorActionType.PerformWork, 0)]
+        [TestCase(ActorIntent.Watch, ActorActionType.OnWatch, 0)]
+        [TestCase(ActorIntent.Hunt, ActorActionType.Hunt, 0)]
+        public void Roundtrip_SelectedRunningActionFamily_PreservesSemanticState(
+            ActorIntent intent,
+            ActorActionType action,
+            int carriedUnits)
+        {
+            var actor = Villager();
+            var targetSite = action == ActorActionType.Sleep || action == ActorActionType.OnWatch
+                ? default(SiteId)
+                : new SiteId(4);
+            var targetItem = intent == ActorIntent.Eat ? new ItemId(91) : ItemId.Empty;
+            var reservation = action == ActorActionType.PerformWork
+                || action == ActorActionType.OnWatch
+                || action == ActorActionType.Hunt
+                    ? ReservationId.Empty
+                    : new ReservationId(12);
+            var state = ActorActionState.ForIntent(intent)
+                .Start(action, targetSite, targetItem, reservation,
+                    startedAtMinutes: 480, policy: ActionInterruptPolicy.Interruptible)
+                .Advanced()
+                .Advanced();
+            if (carriedUnits > 0)
+                state = state.WithCarriedMatter("wheat", carriedUnits);
+            actor.ApplyActionState(state);
+
+            var back = ActorSaveMapper.ToActor(ActorSaveMapper.ToData(actor)).ActionState;
+
+            Assert.That(back, Is.EqualTo(state),
+                "phase/progress/targets/reservation/carried matter must survive as one semantic block");
+            Assert.That((back.Phase, back.ProgressTicks, back.StartedAtMinutes),
+                Is.EqualTo((ActionPhase.Running, 2, 480L)));
+            Assert.That((back.TargetItemId, back.TargetSiteId, back.ReservationId, back.CarriedUnits),
+                Is.EqualTo((targetItem, targetSite, reservation, carriedUnits)));
+            Assert.That(back.CarriedMatterTag, Is.EqualTo(carriedUnits > 0 ? "wheat" : null));
+        }
+
         [Test]
         public void Load_CorruptActionBlock_NormalizesToIdle()
         {

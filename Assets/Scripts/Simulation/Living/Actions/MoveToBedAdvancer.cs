@@ -39,7 +39,16 @@ namespace EmberCrpg.Simulation.Living.Actions
             }
 
             if (FarmOperations.Chebyshev(actor.Position, actor.Home) > SleepOperations.BedReachCells)
-                actor.MoveTo(MovementService.StepToward(actor.Position, actor.Home, world?.NavView));
+            {
+                var movement = MovementService.RouteToward(
+                    actor.Position, actor.Home, world?.NavView, SleepOperations.BedReachCells);
+                if (!movement.Moved)
+                {
+                    Fail(world, actor, ActionFailureReason.Unreachable, stamp);
+                    return;
+                }
+                actor.MoveTo(movement.Position);
+            }
             // Arrival = within BedReachCells (NOT the exact cell): family members share the
             // Home cell, so they settle in the 3x3 bedroom instead of stacking on one tile.
             if (FarmOperations.Chebyshev(actor.Position, actor.Home) <= SleepOperations.BedReachCells)

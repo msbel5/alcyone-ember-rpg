@@ -1,6 +1,7 @@
 using System;
 using EmberCrpg.Domain.Core;
 using EmberCrpg.Domain.World;
+using EmberCrpg.Simulation.Composition;
 using NUnit.Framework;
 
 // Design note:
@@ -52,6 +53,7 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(log.IsEmpty, Is.False);
             Assert.That(log.Events, Has.Count.EqualTo(1));
             Assert.That(log.Events[0], Is.SameAs(evt));
+            Assert.That(evt.Sequence, Is.EqualTo(0L));
         }
 
         /// <summary>Multiple appends are exposed in deterministic insertion order.</summary>
@@ -69,6 +71,9 @@ namespace EmberCrpg.Tests.EditMode.World
 
             Assert.That(log.Count, Is.EqualTo(3));
             Assert.That(log.Events, Is.EqualTo(new[] { first, second, third }));
+            Assert.That(log.Events[0].Sequence, Is.EqualTo(0L));
+            Assert.That(log.Events[1].Sequence, Is.EqualTo(1L));
+            Assert.That(log.Events[2].Sequence, Is.EqualTo(2L));
         }
 
         /// <summary>Out-of-order ticks are still appended in insertion order — the log is a chronicle, not a sorter.</summary>
@@ -172,6 +177,8 @@ namespace EmberCrpg.Tests.EditMode.World
                 "matter-conservation invariant: TotalAppended == FirstRetainedSeq + Count");
             // The oldest surviving event is the one appended at index 6 (reason "e6").
             Assert.That(log.Events[0].Reason, Is.EqualTo("e6"));
+            Assert.That(log.Events[0].Sequence, Is.EqualTo(6L));
+            Assert.That(log.Events[3].Sequence, Is.EqualTo(9L));
         }
 
         /// <summary>TryIndexForSeq maps seq→index correctly across a trim (path avoids the dropped band).</summary>
@@ -196,6 +203,25 @@ namespace EmberCrpg.Tests.EditMode.World
             // A future seq clamps to Count (nothing to consume yet).
             Assert.That(log.TryIndexForSeq(999L, out int futureIdx), Is.True);
             Assert.That(futureIdx, Is.EqualTo(log.Count));
+        }
+
+        [Test]
+        public void ComposerFinalization_IsTheBoundedProductionOwner()
+        {
+            var world = new WorldState();
+            for (var i = 0; i < WorldTickComposer.MaxRetainedWorldEvents + 25; i++)
+                world.Events.Append(MakeEvent(i, WorldEventKind.ActorSpawned, "e" + i));
+            var composer = new WorldTickComposer();
+            composer.Advance(world, 0);
+
+            composer.Advance(world, 1);
+
+            Assert.That(world.Events.Count, Is.EqualTo(WorldTickComposer.MaxRetainedWorldEvents));
+            Assert.That(world.Events.FirstRetainedSeq,
+                Is.EqualTo(world.Events.TotalAppended - world.Events.Count));
+            Assert.That(world.Events.Events[0].Sequence, Is.EqualTo(world.Events.FirstRetainedSeq));
+            Assert.That(world.Events.Events[world.Events.Count - 1].Sequence,
+                Is.EqualTo(world.Events.TotalAppended - 1));
         }
     }
 }

@@ -1,6 +1,7 @@
 using System.Linq;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 using EmberCrpg.Simulation.World;
 using NUnit.Framework;
@@ -88,6 +89,26 @@ namespace EmberCrpg.Tests.EditMode.World
             Assert.That(world.Factions.GetReputation(new FactionId(3), new FactionId(1)).Value,
                 Is.EqualTo(before + RuntimeHistorySystem.GuardRenownDelta),
                 "the watch answering trouble must drift law↔craft standing upward");
+        }
+
+        [Test]
+        public void Tick_CaravanChronicle_DeliversToEventSiteNotStockpileListHead()
+        {
+            var world = World(1);
+            world.Sites.Add(new SiteRecord(new SiteId(2), SiteKind.Settlement, "Elsewhere",
+                new GridPosition(10, 10), new GridPosition(14, 14)));
+            var wrongHead = new StockpileComponent(new SiteId(2));
+            var destination = new StockpileComponent(new SiteId(1));
+            world.Stockpiles.Add(wrongHead);
+            world.Stockpiles.Add(destination);
+
+            new RuntimeHistorySystem().Tick(world, Day(30));
+
+            Assert.That(destination.Get("wheat"), Is.EqualTo(27));
+            Assert.That(wrongHead.Get("wheat"), Is.EqualTo(0));
+            var arrival = world.Events.Events.Single(e => e.Kind == WorldEventKind.CaravanArrived);
+            Assert.That(arrival.SiteId, Is.EqualTo(new SiteId(1)));
+            Assert.That(arrival.Reason, Does.Contain("item:wheat").And.Contain("qty:27"));
         }
     }
 }

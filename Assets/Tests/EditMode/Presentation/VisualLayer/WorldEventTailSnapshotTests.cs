@@ -35,6 +35,8 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
             var snapshot = WorldEventTailSnapshot.FromLog(log, 10);
 
             Assert.That(snapshot.Rows.Count, Is.EqualTo(2));
+            Assert.That(snapshot.Rows[0].Sequence, Is.EqualTo(0L));
+            Assert.That(snapshot.Rows[1].Sequence, Is.EqualTo(1L));
             Assert.That(snapshot.Rows[0].KindCode, Is.EqualTo("ActorSpawned"));
             Assert.That(snapshot.Rows[1].KindCode, Is.EqualTo("SiteEntered"));
         }
@@ -50,8 +52,28 @@ namespace EmberCrpg.Tests.EditMode.Presentation.VisualLayer
             var snapshot = WorldEventTailSnapshot.FromLog(log, 2);
 
             Assert.That(snapshot.Rows.Count, Is.EqualTo(2));
+            Assert.That(snapshot.Rows[0].Sequence, Is.EqualTo(1L));
+            Assert.That(snapshot.Rows[1].Sequence, Is.EqualTo(2L));
             Assert.That(snapshot.Rows[0].Reason, Is.EqualTo("second"));
             Assert.That(snapshot.Rows[1].Reason, Is.EqualTo("third"));
+        }
+
+        [Test]
+        public void FrontTrim_PreservesAbsoluteSequenceIdentityForIdenticalPayloads()
+        {
+            var log = new WorldEventLog();
+            for (var i = 0; i < 5; i++)
+                log.Append(new WorldEvent(
+                    default, WorldEventKind.ChronicleEvent,
+                    default, new SiteId(1UL), "identical"));
+            log.TrimOldest(2);
+
+            var snapshot = WorldEventTailSnapshot.FromLog(log, 10);
+
+            Assert.That(snapshot.Rows.Count, Is.EqualTo(2));
+            Assert.That(snapshot.Rows[0].Sequence, Is.EqualTo(3L));
+            Assert.That(snapshot.Rows[1].Sequence, Is.EqualTo(4L));
+            Assert.That(snapshot.Rows[0].Reason, Is.EqualTo(snapshot.Rows[1].Reason));
         }
     }
 }

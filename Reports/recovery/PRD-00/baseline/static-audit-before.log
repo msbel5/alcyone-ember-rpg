@@ -1,0 +1,8 @@
+
+=== 1. Duplicate .meta GUIDs ===
+PASS: no duplicate GUIDs.
+
+=== 2. LFS pointer runtime plugins/models ===
+PASS: no runtime plugins/models are LFS pointers — RUNTIME-PRESENT MODE.
+
+=== 2b. LFS pointer runtime visuals ===

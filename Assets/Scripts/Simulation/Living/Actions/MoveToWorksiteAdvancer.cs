@@ -43,12 +43,34 @@ namespace EmberCrpg.Simulation.Living.Actions
 
             var bench = actor.ScheduleState.TargetWorksitePosition;
             if (FarmOperations.Chebyshev(actor.Position, bench) > WorkOperations.WorkReachCells)
-                actor.MoveTo(MovementService.StepToward(actor.Position, bench, world?.NavView));
+            {
+                var movement = MovementService.RouteToward(
+                    actor.Position, bench, world?.NavView, WorkOperations.WorkReachCells);
+                if (!movement.Moved)
+                {
+                    ReleaseUnreachableClaim(world, actor);
+                    Fail(world, actor, ActionFailureReason.Unreachable, stamp);
+                    return;
+                }
+                actor.MoveTo(movement.Position);
+            }
             // Arrival is ADJACENCY (≤ WorkReachCells): the bench cell is occupied furniture.
             if (FarmOperations.Chebyshev(actor.Position, bench) <= WorkOperations.WorkReachCells)
                 TransitionTo(world, actor, state.Succeeded(), ActionLogReason.Arrived, stamp);
             else
                 TransitionTo(world, actor, state.Advanced(), ActionLogReason.ProgressTicked, stamp);
+        }
+
+        // An unreachable bench must not leave a permanent JobBoard owner. The work order,
+        // if one exists from a resumed execution, remains attached to the pending job so the
+        // next claimant resumes the same conserved inputs.
+        private static void ReleaseUnreachableClaim(WorldState world, ActorRecord actor)
+        {
+            var jobId = actor.ScheduleState.CurrentJobId;
+            if (!jobId.IsEmpty && world.Jobs != null
+                && world.Jobs.GetClaimedBy(jobId) == actor.Id)
+                world.Jobs.ReleaseClaim(jobId);
+            actor.ApplyScheduleState(ActorScheduleState.Idle);
         }
     }
 }

@@ -92,7 +92,20 @@ namespace EmberCrpg.Domain.World
             Soils ??= new ComponentStore<SoilComponent>();
             Jobs ??= new JobBoard();
             Worksites ??= new WorksiteStore();
+            // Save/raw-restore boundary: these are canonical mutable roots too. Empty instances
+            // are safer than a null that crashes the first post-load interaction/tick.
+            PlayerInventory ??= new InventoryState(10);
+            PlayerEquipment ??= new EquipmentState();
+            MerchantInventory ??= new InventoryState(32);
             PlayerKnownSpellIds ??= new List<string>();
+            Pickups ??= new List<RoomPickup>();
+            DungeonRoomStates ??= new List<DungeonRoomState>();
+            DungeonDoorStates ??= new List<DungeonDoorState>();
+            Topics ??= new List<AskAboutTopic>();
+            NpcMemory ??= new NpcMemoryStore();
+            CompanionIds ??= new List<ActorId>();
+            GuardPursuits ??= new List<PursuitRecord>();
+            HuntTargets ??= new List<HuntTargetRecord>();
             Reservations ??= new ReservationLedger();
             // Derived (site,tag)/actor indexes are never serialized; a restored ledger is blind without them.
             Reservations.RebuildIndexes();
@@ -102,13 +115,21 @@ namespace EmberCrpg.Domain.World
             // W34: the jobId index is derived, never serialized — rebuild or the resume path is blind.
             WorkOrders.RebuildIndexes();
             ActionLog ??= new EmberCrpg.Domain.Actors.Actions.ActionLogRing();
+            Critters ??= new List<AmbientCritter>();
+            Rumors ??= new List<RumorEntry>();
+            SiteUnrest ??= new List<SiteUnrestRecord>();
+            PlayerSpellCooldowns ??= new SpellCooldownState();
+            PlayerShieldBuffs ??= new ShieldBuffState();
             HealOrphanPlants();
         }
 
         /// <summary>B10 §A5: allocation-free nav-view accessor threaded into MovementService.
-        /// Just returns `this` — the WorldState implements IWorldNavigability directly so a per-tick
-        /// world.NavView read is one field load, no boxing, no wrapper allocation.</summary>
-        public EmberCrpg.Domain.Core.IWorldNavigability NavView => this;
+        /// Returns the canonical open view when the derived blocker set is empty; otherwise this
+        /// WorldState remains the authoritative blocker probe. Both views feed MovementService.</summary>
+        public EmberCrpg.Domain.Core.IWorldNavigability NavView
+            => Blocked == null || Blocked.Count == 0
+                ? EmberCrpg.Domain.Core.MovementService.OpenNav
+                : this;
 
         // B10 §A3: IWorldNavigability impl — CIVILIAN nav only sees Blocked cells. Room walls stay
         // the dungeon slice's business (RoomMovementService already consults ProceduralRoom.IsWalkable

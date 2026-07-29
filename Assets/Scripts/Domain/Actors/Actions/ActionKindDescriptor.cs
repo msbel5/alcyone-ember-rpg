@@ -56,11 +56,14 @@ namespace EmberCrpg.Domain.Actors.Actions
             new ActionKindDescriptor("to work",      "MoveToWorksite", "work",  "move",    false),               // 10
             new ActionKindDescriptor("working",      "PerformWork",    "work",  "work",    true),                // 11
             // W36 GUARD+COMBAT slice: guard beat + enemy approach->strike loop.
-            // OnWatch is terminal (arrival succeeds, chain ends Idle); StrikeQuarry is NOT terminal
-            // when the target survives — NextLink loops it back to Hunt for another approach.
+            // OnWatch is terminal only when the work shift ends; reaching post holds Running.
+            // StrikeQuarry is NOT terminal while the target survives — NextLink loops to Hunt.
             new ActionKindDescriptor("on watch",     "OnWatch",        "watch", "watch",   true),                // 12
             new ActionKindDescriptor("hunting",      "Hunt",           "hunt",  "move",    false),               // 13
             new ActionKindDescriptor("striking",     "StrikeQuarry",   "hunt",  "strike",  false),               // 14
+            new ActionKindDescriptor("following",    "FollowPlayer",   "companion", "follow", true),             // 15
+            new ActionKindDescriptor("reporting crime", "ReportCrime", "justice", "report", true),               // 16
+            new ActionKindDescriptor("pursuing",     "Pursue",         "justice", "pursue", false),               // 17
         };
 
         /// <summary>Descriptor for `kind`, or the sentinel None descriptor when out of range.</summary>

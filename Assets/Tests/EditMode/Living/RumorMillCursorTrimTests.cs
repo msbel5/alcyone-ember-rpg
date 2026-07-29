@@ -36,7 +36,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             for (int i = 0; i < 300; i++)
             {
                 world.Events.Append(new WorldEvent(new GameTime(60 + i),
-                    WorldEventKind.NeedChanged, default, new SiteId(1),
+                    WorldEventKind.VerminTheft, default, new SiteId(1),
                     "vermin_theft item:wheat critter:" + i));
             }
 
@@ -57,7 +57,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             for (int i = 0; i < 5; i++)
             {
                 world.Events.Append(new WorldEvent(new GameTime(1000 + i),
-                    WorldEventKind.NeedChanged, default, new SiteId(1),
+                    WorldEventKind.VerminTheft, default, new SiteId(1),
                     "vermin_theft item:wheat critter:new" + i));
             }
             Assert.That(world.Events.TotalAppended, Is.EqualTo(305L));

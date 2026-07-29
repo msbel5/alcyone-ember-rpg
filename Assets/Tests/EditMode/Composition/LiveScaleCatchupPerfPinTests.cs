@@ -32,7 +32,9 @@ namespace EmberCrpg.Tests.EditMode.Composition
                 world.Sites.Add(new SiteRecord(new SiteId((ulong)(900 + s)), SiteKind.Settlement,
                     "PerfTown" + s, new GridPosition(bx, 0), new GridPosition(bx + 30, 30)));
                 var pile = new StockpileComponent(new SiteId((ulong)(900 + s)));
-                pile.Add("grain", 500);
+                // Canonical food tag: the fixture must create forty usable larders, not
+                // thirty-nine non-food piles plus the factory world's lone wheat pile.
+                pile.Add("wheat", 500);
                 world.Stockpiles.Add(pile);
                 for (int a = 0; a < 20; a++)
                 {

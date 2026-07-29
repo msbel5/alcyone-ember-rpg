@@ -1,0 +1,4 @@
+PASS: Atlas is explanatory/historical
+PASS: dangling RUH_TESHIS reference removed
+PASS: SHIPPED row statuses removed
+PASS: method/callsite presence is explicitly not CLOSED

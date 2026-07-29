@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using EmberCrpg.Domain.Actors;
 using EmberCrpg.Domain.Actors.Actions;
 using EmberCrpg.Domain.Core;
+using EmberCrpg.Domain.Memory;
 using EmberCrpg.Domain.Process;
 using EmberCrpg.Domain.World;
 
@@ -24,6 +25,7 @@ namespace EmberCrpg.Simulation.Living.Actions
         // unknown wrapper). Null disables the WORK rules (bare EAT/FARM test worlds) — the
         // _plantSpecies null contract's mirror (docs/ruh/w34/02 §6).
         private readonly System.Func<RecipeId, RecipeDef> _resolveRecipe;
+        private readonly CompanionSystem _companions = new CompanionSystem();
         // W36 GUARD+COMBAT feature flag: DEFAULT OFF preserves the W35 tick surface so pre-W36
         // fixtures (test worlds that do NOT expect enemies/guards to acquire action state) stay
         // green. Composer sets it TRUE to enable the vertical slice; story tests do the same.
@@ -55,6 +57,11 @@ namespace EmberCrpg.Simulation.Living.Actions
                 // W34 WORK: bench commute + embodied production (docs/ruh/w34/02 §7).
                 new MoveToWorksiteAdvancer(log),
                 new PerformWorkAdvancer(log, resolveRecipe),
+                // PRD-04: companion locomotion shares the canonical action-advance writer.
+                new FollowPlayerAdvancer(log),
+                // PRD-05: witness reports and guard pursuit movement share the same writer.
+                new ReportCrimeAdvancer(log),
+                new PursueAdvancer(log),
             };
             if (enableGuardAndCombat)
             {
@@ -80,6 +87,7 @@ namespace EmberCrpg.Simulation.Living.Actions
             // W34 WORK (docs/ruh/w34/02 §6.3): orphan order rows (job cancelled / externally
             // removed) refund their consumed inputs and leave — matter conservation's safety net.
             SweepOrphanWorkOrders(world, stamp);
+            _companions.SweepFallen(world);
 
             List<string> species = null;
             List<FoodPileCache.Entry> cache = null;
@@ -93,6 +101,12 @@ namespace EmberCrpg.Simulation.Living.Actions
                 if (actor.Role == ActorRole.Enemy && !_enableGuardAndCombat) continue;
                 // One gate covers Running AND the one-advancement terminal handover states.
                 if (actor.ActionState.CurrentAction != ActorActionType.None) continue;
+                var isCompanion = CompanionService.IsCompanion(world, actor.Id);
+                // An immediate threat outranks starting a new need/follow action. Existing
+                // Eat/Sleep/Work actions already passed through the busy gate above unchanged.
+                if (isCompanion && _enableGuardAndCombat
+                    && TryDecideCompanionGuard(world, actor, stamp))
+                    continue;
                 // W36 GUARD+COMBAT: Enemy's Decide short-circuits into Hunt — enemies eat, farm,
                 // work, sleep NONE of these; the only decision they take is the next prey. Guard
                 // + Watch is handled at the end of this loop after the eat carve-out.
@@ -101,6 +115,14 @@ namespace EmberCrpg.Simulation.Living.Actions
                     TryDecideHunt(world, actor, stamp);
                     continue;
                 }
+                if (actor.Role == ActorRole.Guard
+                    && _enableGuardAndCombat
+                    && (TryDecideGuardPursuit(world, actor, stamp)
+                        || TryDecideGuardDefense(world, actor, stamp)))
+                    continue;
+                if (actor.Role != ActorRole.Guard
+                    && TryDecideReportCrime(world, actor, stamp))
+                    continue;
                 // guards-eat (B09 remainder): the watch eats only when no chase is live — pursuit
                 // outranks lunch, mirroring the quarry-side probe (ActionAdvancer.IsPursuitQuarry).
                 // READ-ONLY: living.decision is not a declared World.GuardPursuits writer
@@ -129,6 +151,13 @@ namespace EmberCrpg.Simulation.Living.Actions
                 {
                     TryDecideRest(world, actor, stamp);
                     if (actor.ActionState.CurrentAction != ActorActionType.None) continue;
+                }
+                // Party membership replaces schedule/farm wandering only after real needs had
+                // the opportunity to open their own persistent action.
+                if (isCompanion)
+                {
+                    TryDecideCompanionFollow(world, actor, stamp);
+                    continue;
                 }
                 // W33-02 §5: the farm/work rules fire ONLY when eat produced no decision; rule
                 // order is code order — a fixed, deterministic priority. Cheap gates first.
@@ -184,7 +213,7 @@ namespace EmberCrpg.Simulation.Living.Actions
                 }
                 if (state.Phase == ActionPhase.Succeeded)
                 {
-                    var next = NextLink(state.CurrentIntent, state.CurrentAction);
+                    var next = NextLink(world, actor, state.CurrentIntent, state.CurrentAction);
                     if (next == ActorActionType.None)
                     {
                         _registry.For(state.CurrentAction).TransitionTo(world, actor,
@@ -192,7 +221,8 @@ namespace EmberCrpg.Simulation.Living.Actions
                         continue;
                     }
                     var started = state.Start(next, state.TargetSiteId, state.TargetItemId,
-                        state.ReservationId, state.StartedAtMinutes, state.InterruptPolicy);
+                        state.ReservationId, state.StartedAtMinutes, state.InterruptPolicy,
+                        state.TargetActorId);
                     _registry.For(next).TransitionTo(world, actor, started, ActionLogReason.ProgressTicked, stamp);
                     state = started;
                 }
@@ -203,7 +233,11 @@ namespace EmberCrpg.Simulation.Living.Actions
         // Chains are fixed pipelines derived from the intent (W32-01 §8) — never saved.
         // W33-01 §2.1: MoveToPlot's successor forks on the intent, which is why Plant and
         // Harvest are two enum values instead of one "Farm" plus a saved sub-mode field.
-        private static ActorActionType NextLink(ActorIntent intent, ActorActionType current)
+        private static ActorActionType NextLink(
+            WorldState world,
+            ActorRecord actor,
+            ActorIntent intent,
+            ActorActionType current)
             => (intent, current) switch
         {
             (ActorIntent.Eat, ActorActionType.MoveToFood) => ActorActionType.TakeFood,
@@ -220,11 +254,31 @@ namespace EmberCrpg.Simulation.Living.Actions
             // W36 GUARD+COMBAT: the FIRST cyclic NextLink — Hunt ⇄ StrikeQuarry loops while
             // the HuntTargets row survives; StrikeQuarry clears its own row on kill/clamp so
             // the next Advance's Hunt fails NoFoodFound → Idle (the terminating condition).
-            // Watch chain is a single-link OnWatch → None: chain re-arms on the next Decide.
+            // Watch is a single-link OnWatch → None at shift end; on-post work hours hold Running.
             (ActorIntent.Hunt, ActorActionType.Hunt) => ActorActionType.StrikeQuarry,
             (ActorIntent.Hunt, ActorActionType.StrikeQuarry) => ActorActionType.Hunt,
+            (ActorIntent.GuardCompanion, ActorActionType.Hunt) => ActorActionType.StrikeQuarry,
+            (ActorIntent.GuardCompanion, ActorActionType.StrikeQuarry) =>
+                HasHuntTarget(world, actor.Id.Value)
+                    ? ActorActionType.Hunt
+                    : ActorActionType.None,
+            (ActorIntent.Pursue, ActorActionType.Pursue) => ActorActionType.StrikeQuarry,
+            (ActorIntent.Pursue, ActorActionType.StrikeQuarry) =>
+                HasHuntTarget(world, actor.Id.Value)
+                    ? ActorActionType.Pursue
+                    : ActorActionType.None,
             _ => ActorActionType.None,
         };
+
+        private static bool HasHuntTarget(WorldState world, ulong hunterId)
+        {
+            var rows = world?.HuntTargets;
+            if (rows == null) return false;
+            for (var i = 0; i < rows.Count; i++)
+                if (rows[i].HunterId == hunterId)
+                    return true;
+            return false;
+        }
 
         /// <summary>The kind of the actor's claimed job; None when the claim is gone (the
         /// cancel/sweep race — TryDecideWork's own gates handle that honestly).</summary>
@@ -306,12 +360,112 @@ namespace EmberCrpg.Simulation.Living.Actions
                 ActionLogReason.TargetSelected, stamp); // no reservation → ReservationAcquired would lie
         }
 
-        // ONE arithmetic home: Domain.World.PursuitLedgerQuery. Deliberately NO dead-quarry /
-        // 40-cell checks: pruning stays living.schedule's job under the single-writer ledger.
-        // Worst case a stale-but-unexpired row defers lunch until UntilMinutes passes — bounded
-        // and deterministic (the schedule prunes the row the same tick it routes him).
+        // ONE arithmetic home: Domain.World.PursuitLedgerQuery. PursueAdvancer owns active
+        // dead/lost/expired cleanup; this read-only gate only protects decision priority.
         private static bool HasLivePursuit(WorldState world, ActorRecord actor, GameTime stamp)
             => PursuitLedgerQuery.IsActivePursuer(world.GuardPursuits, actor.Id, stamp.TotalMinutes);
+
+        private bool TryDecideReportCrime(WorldState world, ActorRecord actor, GameTime stamp)
+        {
+            if (world.NpcMemory == null
+                || !world.NpcMemory.TryGet(actor.Id, out var memory)
+                || memory == null)
+                return false;
+
+            InteractionEvent pending = default;
+            var found = false;
+            for (var i = 0; i < memory.Events.Count; i++)
+            {
+                var candidate = memory.Events[i];
+                if (candidate.EventType != "witnessed_attack"
+                    || candidate.ActorSeen.IsEmpty
+                    || HasReported(memory, candidate.ActorSeen))
+                    continue;
+                pending = candidate;
+                found = true;
+                break;
+            }
+            if (!found) return false;
+            if (CombatOperations.Nearest(
+                    world, actor.Position, ReportCrimeAdvancer.GuardSearchRadius,
+                    candidate => candidate.Role == ActorRole.Guard) == null)
+                return false;
+
+            var start = ActorActionState.ForIntent(ActorIntent.ReportCrime).Start(
+                ActorActionType.ReportCrime,
+                PredationSystem.FallbackSite(world, pending.Location),
+                ItemId.Empty,
+                ReservationId.Empty,
+                stamp.TotalMinutes,
+                ActionInterruptPolicy.Interruptible,
+                pending.ActorSeen);
+            _registry.For(ActorActionType.ReportCrime).TransitionTo(
+                world, actor, start, ActionLogReason.TargetSelected, stamp);
+            return true;
+        }
+
+        private bool TryDecideGuardPursuit(
+            WorldState world,
+            ActorRecord guard,
+            GameTime stamp)
+        {
+            var rows = world.GuardPursuits;
+            if (rows == null) return false;
+            for (var i = rows.Count - 1; i >= 0; i--)
+            {
+                var row = rows[i];
+                if (row.GuardId != guard.Id.Value) continue;
+                if (stamp.TotalMinutes > row.UntilMinutes
+                    || !world.Actors.TryGet(new ActorId(row.TargetId), out var target)
+                    || target == null
+                    || !target.IsAlive
+                    || guard.Position.ChebyshevDistanceTo(target.Position) > PursueAdvancer.MaxDistance)
+                {
+                    rows.RemoveAt(i);
+                    continue;
+                }
+
+                world.HuntTargets ??= new List<HuntTargetRecord>();
+                PursuitLedgerQuery.UpsertHunt(
+                    world.HuntTargets, guard.Id.Value, target.Id.Value, row.UntilMinutes);
+                var start = ActorActionState.ForIntent(ActorIntent.Pursue).Start(
+                    ActorActionType.Pursue,
+                    PredationSystem.FallbackSite(world, target.Position),
+                    ItemId.Empty,
+                    ReservationId.Empty,
+                    stamp.TotalMinutes,
+                    ActionInterruptPolicy.Interruptible,
+                    target.Id);
+                _registry.For(ActorActionType.Pursue).TransitionTo(
+                    world, guard, start, ActionLogReason.TargetSelected, stamp);
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryDecideGuardDefense(
+            WorldState world,
+            ActorRecord guard,
+            GameTime stamp)
+        {
+            var threat = CombatOperations.Nearest(
+                world, guard.Position, CombatOperations.HuntRadius,
+                candidate => candidate.Role == ActorRole.Enemy);
+            if (threat == null) return false;
+            WitnessResponseSystem.RegisterPursuit(
+                world, guard.Id.Value, threat.Id.Value, stamp);
+            return TryDecideGuardPursuit(world, guard, stamp);
+        }
+
+        private static bool HasReported(ActorMemory memory, ActorId attacker)
+        {
+            foreach (var known in memory.Events)
+                if ((known.EventType == "reported_attack"
+                        || known.EventType == "report_closed")
+                    && known.ActorSeen.Equals(attacker))
+                    return true;
+            return false;
+        }
 
         private void TryDecideEat(WorldState world, ActorRecord actor,
             List<string> species, List<FoodPileCache.Entry> cache, GameTime stamp)
@@ -333,9 +487,16 @@ namespace EmberCrpg.Simulation.Living.Actions
                         - world.Reservations.ReservedCount(entry.Pile.SiteId.Value, candidate) > 0)
                     { tag = candidate; break; }
                 if (tag == null) continue; // drained or fully claimed
+                var centre = new GridPosition(entry.CentreX, entry.CentreY);
+                var candidateSeat = CommunalSeat.For(
+                    centre, (int)(actor.Id.Value % (ulong)CommunalSeat.SeatCount));
                 long dist = entry.HasSite
-                    ? actor.Position.ChebyshevDistanceTo(new GridPosition(entry.CentreX, entry.CentreY))
+                    ? actor.Position.ChebyshevDistanceTo(candidateSeat)
                     : 0L;
+                // A target outside the canonical route budget is not selectable. Starting it
+                // would create a deterministic Fail/Idle/retry event storm every other tick.
+                if (dist > MovementService.RouteRadiusBudget)
+                    continue;
                 if (dist < bestDist)
                 { bestDist = dist; best = entry.Pile; bestTag = tag; bestCx = entry.CentreX; bestCy = entry.CentreY; }
             }
@@ -450,9 +611,8 @@ namespace EmberCrpg.Simulation.Living.Actions
 
         // W36 GUARD+COMBAT: the SIMPLEST decide method — no ledger, no reservation. A guard's
         // beat is the actor's OWN DayAnchor cell; two guards may share it (posts are locations,
-        // not resources — the FoodPileCache seat-ring exclusivity does NOT apply). The chain
-        // re-arms on the next Decide tick after OnWatch's Succeeded returns Idle (one live row
-        // per guard via the CurrentAction == None gate above — chain-exclusion is structural).
+        // not resources — the FoodPileCache seat-ring exclusivity does NOT apply). It remains
+        // Running on-post until shift end; the CurrentAction == None gate keeps the start unique.
         // CONSTRAINT (Gate8 personal-space parity): fires ONLY during work hours — off-hours,
         // the guard stays Idle and ScheduleSystem routes them Home (ClassicTarget's night rule).
         // Without this, multiple guards sharing a DayAnchor stack there at night instead of
@@ -487,9 +647,47 @@ namespace EmberCrpg.Simulation.Living.Actions
             var start = ActorActionState.ForIntent(ActorIntent.Hunt).Start(
                 ActorActionType.Hunt, default(SiteId), ItemId.Empty,
                 ReservationId.Empty, stamp.TotalMinutes,
-                ActionInterruptPolicy.Interruptible); // interruptible: a guard-strike stops the hunt
+                ActionInterruptPolicy.Interruptible, prey.Id); // interruptible: a guard-strike stops the hunt
             _registry.For(ActorActionType.Hunt).TransitionTo(world, actor, start,
                 ActionLogReason.TargetSelected, stamp); // no reservation row → TargetSelected reason
+        }
+
+        private bool TryDecideCompanionGuard(
+            WorldState world,
+            ActorRecord actor,
+            GameTime stamp)
+        {
+            var player = CompanionService.FindPlayer(world);
+            if (player == null) return false;
+            var threat = _companions.FindGuardThreat(world, player.Position, actor.Position);
+            if (threat == null) return false;
+
+            RegisterHunt(world, actor.Id.Value, threat.Id.Value, stamp);
+            var start = ActorActionState.ForIntent(ActorIntent.GuardCompanion).Start(
+                ActorActionType.Hunt, default(SiteId), ItemId.Empty,
+                ReservationId.Empty, stamp.TotalMinutes,
+                ActionInterruptPolicy.Interruptible, threat.Id);
+            _registry.For(ActorActionType.Hunt).TransitionTo(
+                world, actor, start, ActionLogReason.TargetSelected, stamp);
+            return true;
+        }
+
+        private void TryDecideCompanionFollow(
+            WorldState world,
+            ActorRecord actor,
+            GameTime stamp)
+        {
+            var player = CompanionService.FindPlayer(world);
+            if (player == null
+                || actor.Position.ChebyshevDistanceTo(player.Position) <= CompanionSystem.HeelCells)
+                return;
+
+            var start = ActorActionState.ForIntent(ActorIntent.FollowPlayer).Start(
+                ActorActionType.FollowPlayer, default(SiteId), ItemId.Empty,
+                ReservationId.Empty, stamp.TotalMinutes,
+                ActionInterruptPolicy.Interruptible);
+            _registry.For(ActorActionType.FollowPlayer).TransitionTo(
+                world, actor, start, ActionLogReason.TargetSelected, stamp);
         }
 
         // W36 GUARD+COMBAT: newest prey wins per hunter. Same upsert shape as RegisterPursuit —

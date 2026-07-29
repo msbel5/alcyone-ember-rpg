@@ -74,12 +74,14 @@ namespace EmberCrpg.Data.Save
                 actionPhase = (int)actor.ActionState.Phase,
                 actionTargetItemId = (long)actor.ActionState.TargetItemId.Value,
                 actionTargetSiteId = (long)actor.ActionState.TargetSiteId.Value,
+                actionTargetActorId = (long)actor.ActionState.TargetActorId.Value,
                 actionReservationId = (long)actor.ActionState.ReservationId.Value,
                 actionProgressTicks = actor.ActionState.ProgressTicks,
                 actionStartedAtMinutes = actor.ActionState.StartedAtMinutes,
                 actionFailureReason = (int)actor.ActionState.FailureReason,
                 actionInterruptPolicy = (int)actor.ActionState.InterruptPolicy,
                 actionCarriedUnits = actor.ActionState.CarriedUnits,
+                actionCarriedMatterTag = actor.ActionState.CarriedMatterTag,
             };
         }
 
@@ -195,10 +197,12 @@ namespace EmberCrpg.Data.Save
                 (ActionPhase)save.actionPhase,
                 new ItemId((ulong)save.actionTargetItemId),
                 new SiteId((ulong)save.actionTargetSiteId),
+                new ActorId((ulong)save.actionTargetActorId),
                 new ReservationId((ulong)save.actionReservationId),
                 save.actionProgressTicks,
                 save.actionStartedAtMinutes,
                 save.actionCarriedUnits,
+                save.actionCarriedMatterTag,
                 (ActionFailureReason)save.actionFailureReason,
                 (ActionInterruptPolicy)save.actionInterruptPolicy,
                 out var state) ? state : ActorActionState.Idle;

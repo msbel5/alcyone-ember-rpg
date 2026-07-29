@@ -28,7 +28,10 @@ namespace EmberCrpg.Data.Save
         // EMB-012: current on-disk save schema version. Bump on any incompatible shape change and add
         // a migration branch in ToWorld; WorldSaveData.schemaVersion records the version a save was
         // written with so old saves can be detected and migrated rather than silently misread.
-        public const int CurrentSchemaVersion = 1;
+        // v2 adds persisted action actor-targets and append-only ReportCrime/Pursue enum values.
+        // Older builds must reject those saves instead of accepting v1 and normalizing the
+        // unknown running action to Idle.
+        public const int CurrentSchemaVersion = 2;
 
         public static WorldSaveData ToData(WorldState world)
         {
@@ -82,9 +85,8 @@ dungeonRooms = DungeonSaveMapper.ToRoomData(world.Dungeon),
                 worldQuestStates = ToWorldQuestStatesData(world.WorldQuestStates),
                 worldContracts = ToWorldContractsData(world.WorldContracts),
                 worldEvents = ToWorldEventLogData(world.Events),
-                // B21: only firstRetainedSeq hits disk — TotalAppended is derived at load-time as
-                // firstRetainedSeq + worldEvents.Length (invariant TotalAppended == FirstRetainedSeq + Count).
                 worldEventFirstRetainedSeq = world.Events?.FirstRetainedSeq ?? 0L,
+                worldEventNextSequence = world.Events?.TotalAppended ?? 0L,
                 toolCallTrace = ToToolCallTraceData(world.ToolCallTrace),
                 llmProposalLog = ToLlmProposalLogData(world.LlmProposalLog),
                 npcSeeds = ToNpcSeedData(world.NpcSeeds),
@@ -101,6 +103,9 @@ inventory = ToInventoryData(world.PlayerInventory),
                 pursuitGuardIds = world.GuardPursuits?.ConvertAll(p => p.GuardId).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitTargetIds = world.GuardPursuits?.ConvertAll(p => p.TargetId).ToArray() ?? System.Array.Empty<ulong>(),
                 pursuitUntilMinutes = world.GuardPursuits?.ConvertAll(p => p.UntilMinutes).ToArray() ?? System.Array.Empty<long>(),
+                huntHunterIds = world.HuntTargets?.ConvertAll(h => h.HunterId).ToArray() ?? System.Array.Empty<ulong>(),
+                huntTargetIds = world.HuntTargets?.ConvertAll(h => h.TargetId).ToArray() ?? System.Array.Empty<ulong>(),
+                huntUntilMinutes = world.HuntTargets?.ConvertAll(h => h.UntilMinutes).ToArray() ?? System.Array.Empty<long>(),
                 // W32 EAT: reservation ledger rows in insertion order + the persisted id counter.
                 reservationIds = world.Reservations?.Rows.ConvertAll(r => r.Id).ToArray() ?? System.Array.Empty<ulong>(),
                 reservationSiteIds = world.Reservations?.Rows.ConvertAll(r => r.SiteId).ToArray() ?? System.Array.Empty<ulong>(),
@@ -204,7 +209,10 @@ world.Items = ToItemStore(data.itemRecords);
             world.Quests = ToQuestStore(data.quests);
             world.WorldQuestStates = ToWorldQuestStates(data.worldQuestStates);
             world.WorldContracts = ToWorldContracts(data.worldContracts);
-            world.Events = ToWorldEventLog(data.worldEvents, data.worldEventFirstRetainedSeq);
+            world.Events = ToWorldEventLog(
+                data.worldEvents,
+                data.worldEventFirstRetainedSeq,
+                data.worldEventNextSequence);
             world.ToolCallTrace = ToToolCallTrace(data.toolCallTrace);
             world.LlmProposalLog = ToLlmProposalLog(data.llmProposalLog);
             world.NpcSeeds = ToNpcSeeds(data.npcSeeds);
@@ -228,6 +236,18 @@ world.Items = ToItemStore(data.itemRecords);
                         GuardId = data.pursuitGuardIds[i],
                         TargetId = data.pursuitTargetIds[i],
                         UntilMinutes = data.pursuitUntilMinutes[i],
+                    });
+            // PRD-03: preserve the enemy-side pursuit relationship too. Missing arrays are the
+            // append-compatible old-save shape and intentionally replace any seed rows with empty.
+            world.HuntTargets = new System.Collections.Generic.List<HuntTargetRecord>();
+            if (data.huntHunterIds != null && data.huntTargetIds != null && data.huntUntilMinutes != null)
+                for (int i = 0; i < data.huntHunterIds.Length
+                     && i < data.huntTargetIds.Length && i < data.huntUntilMinutes.Length; i++)
+                    world.HuntTargets.Add(new HuntTargetRecord
+                    {
+                        HunterId = data.huntHunterIds[i],
+                        TargetId = data.huntTargetIds[i],
+                        UntilMinutes = data.huntUntilMinutes[i],
                     });
             // W32 EAT: rebuild the reservation ledger; pre-W32 saves (null arrays, counter 0) load
             // as an empty ledger with NextId 1. Indexes are derived, so rebuild closes the load.

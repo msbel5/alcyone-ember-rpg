@@ -42,13 +42,30 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // deterministic main-thread tick, guarantees those writes land on the main thread in order.
         private readonly System.Collections.Concurrent.ConcurrentQueue<System.Action> _mainThreadApply
             = new System.Collections.Concurrent.ConcurrentQueue<System.Action>();
+        private static readonly EmberCrpg.Simulation.Diagnostics.EmberLogger MainThreadApplyLog
+            = EmberCrpg.Simulation.Diagnostics.EmberLog.For("main-thread-apply");
+        private long _mainThreadApplyFailureCount;
+
+        /// <summary>Monotone diagnostic count of queued applies that threw while draining.</summary>
+        public long MainThreadApplyFailureCount
+            => System.Threading.Interlocked.Read(ref _mainThreadApplyFailureCount);
 
         private void DrainMainThreadApply()
         {
             while (_mainThreadApply.TryDequeue(out var apply))
             {
                 try { apply(); }
-                catch (System.Exception) { /* a queued apply must never break the tick */ }
+                catch (System.Exception ex)
+                {
+                    var count = System.Threading.Interlocked.Increment(
+                        ref _mainThreadApplyFailureCount);
+                    var message = (ex.Message ?? string.Empty)
+                        .Replace('\r', ' ')
+                        .Replace('\n', ' ');
+                    MainThreadApplyLog.Warn(
+                        $"severity=error event=apply_failed count={count} " +
+                        $"exception={ex.GetType().FullName} message={message}");
+                }
             }
         }
         public int TickIndex => _tick;
@@ -56,7 +73,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // F1/CROPS: publish the home site's REAL PlantGrowth stage census to the field mirror each tick —
         // the realized farm plot's stalks read it and rise from seed to ripe as sim days pass. Cheap scan
         // (a handful of plant components); dominant stage keeps the visual stable.
-        private int _echoCursor = -1;
+        private long _echoCursorSeq = -1L;
         private ulong _lastPlantsHash;
         private ulong _lastSoilsHash;
 
@@ -64,10 +81,17 @@ namespace EmberCrpg.Presentation.Ember.Adapters
         // the CURRENT end so loading a 10k-event save replays nothing; per-tick scan is capped.
         private void PublishEventEchoes()
         {
-            var events = _world?.Events?.Events;
+            var log = _world?.Events;
+            var events = log?.Events;
             if (events == null) return;
-            if (_echoCursor < 0 || _echoCursor > events.Count) { _echoCursor = events.Count; return; }
-            int start = events.Count - _echoCursor > 256 ? events.Count - 256 : _echoCursor;
+            if (_echoCursorSeq < 0) { _echoCursorSeq = log.TotalAppended; return; }
+            if (_echoCursorSeq < log.FirstRetainedSeq)
+                _echoCursorSeq = log.FirstRetainedSeq;
+            if (_echoCursorSeq > log.TotalAppended)
+                _echoCursorSeq = log.TotalAppended;
+            if (log.TotalAppended - _echoCursorSeq > 256)
+                _echoCursorSeq = log.TotalAppended - 256;
+            log.TryIndexForSeq(_echoCursorSeq, out int start);
             for (int i = start; i < events.Count; i++)
             {
                 var evt = events[i];
@@ -105,7 +129,7 @@ namespace EmberCrpg.Presentation.Ember.Adapters
                         break;
                 }
             }
-            _echoCursor = events.Count;
+            _echoCursorSeq = log.TotalAppended;
         }
 
         private void PublishFieldMirror()

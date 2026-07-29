@@ -290,7 +290,7 @@ namespace EmberCrpg.Tests.EditMode.Audit
 
             // Register an actor so NeedsSystem actually appends events.
             world.Actors.Add(new ActorRecord(
-                new ActorId(1UL), "Hungry", ActorRole.Player,
+                new ActorId(1UL), "Hungry", ActorRole.Talker,
                 new EmberStatBlock(10, 10, 10, 10, 10, 10),
                 new ActorVitals(
                     new VitalStat(20, 20),

@@ -1,0 +1,62 @@
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\WorldDirector\WorldGeoSamplerTests.cs(16,45): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(23,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(24,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(33,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(34,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(123,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandWorldgenTests.cs(189,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(13,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(14,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(26,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(27,24): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Overland\OverlandMapImageSamplerTests.cs(72,23): warning CS0618: 'OverlandWorldgen.Generate(uint, OverlandParameters)' artık kullanılmıyor: 'B28: test-only. Production uses Generate(GeneratedWorld, parameters); this flat-seed overload builds a DIFFERENT map for the same seed (planet pipeline vs default). Live callers migrated 2026-07-25.' [D:\projects\alcyone-ember-rpg\tools\validation\fallback\ValidationFallbackHarness.csproj]
+  ValidationFallbackHarness -> D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll (.NETCoreApp,Version=v8.0) için test çalıştırması
+VSTest sürümü 17.11.1 (x64)
+
+Test yürütmesi başlatılıyor, lütfen bekleyin...
+Toplam 1 test dosyası belirtilen desenle eşleşti.
+NUnit Adapter 4.6.0.0: Test execution started
+Running selected tests in D:\projects\alcyone-ember-rpg\validation-output\fallback-harness\bin\net8.0\ValidationFallbackHarness.dll
+   NUnit3TestExecutor discovered 23 of 23 NUnit test cases using Current Discovery mode, Non-Explicit run
+  Başarılı OneEpisode_LogsTheFullChain_InCauseOrder_UnderOneIdentity [120 ms]
+  Başarılı EnemyClosesInAndStrikesUntilTargetIsMauled [32 ms]
+  Başarılı EnemyHuntProjectsAsHuntNotAsGuess [1 ms]
+  Başarılı EnemyWithNoPreyInRangeStaysIdleAndOpensNoRow [< 1 ms]
+  Başarılı HuntCadenceWait_DoesNotMoveOrIncrementProgress [3 ms]
+  Başarılı HuntNoRoute_FailsWithoutProgress_AndRemovesTargetClaim [2 ms]
+  Başarılı ShortageToMeal_TheChainLivesInCauseOrder [159 ms]
+  Başarısız EqualDetours_OneHundredRuns_HaveIdenticalNextStepAndWorldDigest [72 ms]
+  Hata İletisi:
+     Assert.That(expectedStep, Is.EqualTo(new GridPosition(4, 3)))
+  Expected: (4,3)
+  But was:  (3,3)
+
+  Yığın İzleme:
+     at EmberCrpg.Tests.EditMode.Actions.MoveAvoidsBlockedCellsTests.EqualDetours_OneHundredRuns_HaveIdenticalNextStepAndWorldDigest() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Actions\MoveAvoidsBlockedCellsTests.cs:line 156
+
+1)    at EmberCrpg.Tests.EditMode.Actions.MoveAvoidsBlockedCellsTests.EqualDetours_OneHundredRuns_HaveIdenticalNextStepAndWorldDigest() in D:\projects\alcyone-ember-rpg\Assets\Tests\EditMode\Actions\MoveAvoidsBlockedCellsTests.cs:line 156
+
+
+  Başarılı MoveToFood_StepDoesNotEnterBlockedCandidate_UsesDeterministicDetour [< 1 ms]
+  Başarılı MoveToFood_UnreachableFailsWithoutProgress_AndReleasesReservation [< 1 ms]
+  Başarılı MoveToFood_WithoutBlockers_StillTakesTheDiagonalCandidate [< 1 ms]
+  Başarılı MoveToWorksite_UnreachableReleasesJobClaim_AndClearsSchedule [1 ms]
+  Başarılı TwoDayHorizon_ContainsAWorkThenSleepThenWork_Cycle [44 ms]
+  Başarılı PostedSmeltJob_BecomesABodiedChain_AndTheIngotLandsInTheSitePile [6 ms]
+  Başarılı BlockedDiagonalAndXAxial_DetoursViaY [< 1 ms]
+  Başarılı BlockedDiagonalCandidate_DetoursViaX_FirstInFixedOrder [< 1 ms]
+  Başarılı DiagonalCornerCut_ThroughWallCrack_IsRefused [< 1 ms]
+  Başarılı LongWall_RouteFindsDetourWithinPinnedBudgets [2 ms]
+NUnit Adapter 4.6.0.0: Test execution complete
+  Başarılı NullNav_PreservesLegacyChebyshevPrimitive [< 1 ms]
+  Başarılı OneCellWall_RouteReachesTargetWithoutEnteringWall [< 1 ms]
+  Başarılı OpenCandidate_TakesTheDiagonal [< 1 ms]
+  Başarılı SealedStart_ReturnsExplicitNoRoute [< 1 ms]
+  Başarılı StraightAxialTarget_IsUnaffectedByDiagonalRule [< 1 ms]
+
+Toplam test sayısı: 23
+     Geçti: 22
+     Başarısız: 1
+Test Çalıştırması Başarısız.
+ Toplam süre: 1,5892 Saniye

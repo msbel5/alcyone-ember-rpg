@@ -27,8 +27,8 @@ namespace EmberCrpg.Simulation.Living.Actions
                 Fail(world, actor, ActionFailureReason.SourceDrained, stamp);
                 return;
             }
-            // The row carries the crop TAG; losing it (mis-TTL sweep) buries the load — the
-            // W32-accepted rare exception class. Fail zeroes the hands (ActionAdvancer.Fail).
+            // The carry row remains the live claim; ActorActionState also owns the matter tag
+            // so a missing/expired row can refund the load instead of erasing it.
             if (world.Reservations == null
                 || !world.Reservations.TryGetByActor(actor.Id.Value, out var row)
                 || row.Id != state.ReservationId.Value
@@ -37,12 +37,32 @@ namespace EmberCrpg.Simulation.Living.Actions
                 Fail(world, actor, ActionFailureReason.ReservationLost, stamp);
                 return;
             }
+            if (!string.IsNullOrWhiteSpace(state.CarriedMatterTag)
+                && !string.Equals(state.CarriedMatterTag, cropTag, System.StringComparison.Ordinal))
+            {
+                Fail(world, actor, ActionFailureReason.ReservationLost, stamp);
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(state.CarriedMatterTag))
+            {
+                state = state.WithCarriedMatter(cropTag, state.CarriedUnits);
+                TransitionTo(world, actor, state, ActionLogReason.ProgressTicked, stamp);
+            }
 
             // Siteless worlds (bare tests) have no centre: stay permissive and deliver in place,
             // matching FoodOperations.WithinEatReach's contract.
             if (NeedConsumptionSystem.TryGetSiteCentre(world, state.TargetSiteId, out var centre)
                 && !FoodOperations.WithinEatReach(world, actor, state.TargetSiteId.Value))
-                actor.MoveTo(MovementService.StepToward(actor.Position, centre, world?.NavView));
+            {
+                var movement = MovementService.RouteToward(
+                    actor.Position, centre, world?.NavView, NeedConsumptionSystem.EatReachCells);
+                if (!movement.Moved)
+                {
+                    Fail(world, actor, ActionFailureReason.Unreachable, stamp);
+                    return;
+                }
+                actor.MoveTo(movement.Position);
+            }
 
             if (FoodOperations.WithinEatReach(world, actor, state.TargetSiteId.Value))
             {

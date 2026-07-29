@@ -53,11 +53,10 @@ public DungeonRoomSaveData[] dungeonRooms;
         public TradeRouteSaveData[] tradeRoutes;
         public CaravanSaveData[] caravans;
         public WorldEventSaveData[] worldEvents;
-        // B21 (W32-04 §6): seq of the first row in worldEvents so a bounded log restores its cursors.
-        // Pre-fix saves lack the field → deserializes to 0 → seq math collapses to absolute-index
-        // identity, so the legacy int cursor drops in as a seq unchanged. TotalAppended is derived
-        // at load-time as firstRetainedSeq + worldEvents.Length (only one field on disk).
+        // PRD-07: retained window bounds for the bounded event log. Old saves deserialize both
+        // fields to 0; the mapper then rebuilds a safe monotone range from the retained rows.
         public long worldEventFirstRetainedSeq;
+        public long worldEventNextSequence;
         public ToolCallTraceSaveData[] toolCallTrace;
         public LlmProposalLogSaveData[] llmProposalLog;
         public NpcSeedSaveData[] npcSeeds;
@@ -80,6 +79,11 @@ public DungeonRoomSaveData[] dungeonRooms;
         public ulong[] pursuitGuardIds;
         public ulong[] pursuitTargetIds;
         public long[] pursuitUntilMinutes;
+        // PRD-03 / W36: enemy hunt ledger. Append-only parallel triple; null in old saves
+        // means an empty ledger, matching the existing GuardPursuits compatibility rule.
+        public ulong[] huntHunterIds;
+        public ulong[] huntTargetIds;
+        public long[] huntUntilMinutes;
         // W32 EAT: reservation ledger as parallel arrays (null on pre-W32 saves -> empty ledger).
         public ulong[] reservationIds;
         public ulong[] reservationSiteIds;
