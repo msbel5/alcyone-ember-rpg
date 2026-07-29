@@ -28,7 +28,7 @@ namespace EmberCrpg.Tests.EditMode.Soak
             var first = Run(days);
             var second = Run(days);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(second.Digest, Is.EqualTo(first.Digest));
                 Assert.That(second.ActionTrace, Is.EqualTo(first.ActionTrace));
@@ -109,7 +109,7 @@ namespace EmberCrpg.Tests.EditMode.Soak
             var before = WorldStateDigest.Compute(original);
             var data = WorldSaveMapper.ToData(original);
             var loaded = WorldSaveMapper.ToWorld(data, BuildWorld());
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(WorldStateDigest.Compute(loaded), Is.EqualTo(before),
                     "the save boundary itself must be byte-identical");
@@ -128,7 +128,7 @@ namespace EmberCrpg.Tests.EditMode.Soak
                 var nextTick = tick + step;
                 originalComposer.Advance(original, nextTick);
                 loadedComposer.Advance(loaded, nextTick);
-                Assert.Multiple(() =>
+                global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
                 {
                     Assert.That(WorldStateDigest.Compute(loaded),
                         Is.EqualTo(WorldStateDigest.Compute(original)),

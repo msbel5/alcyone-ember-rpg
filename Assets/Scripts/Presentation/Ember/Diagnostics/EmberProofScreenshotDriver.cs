@@ -454,6 +454,20 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             string trade = adapter.ProofRunTradeLeg();
             Section("economy", trade.Contains("success=True"), trade);
 
+            // The proof flag opens the real action-transition mirror so the initial world,
+            // quest and combat legs leave greppable runtime evidence. Close that observer-only
+            // window before timing and multi-day catch-up: otherwise tens of thousands of
+            // Debug.Log writes measure disk/console throughput instead of gameplay and can turn
+            // the 10-travel soak into a many-minute apparent hang. Authoritative ActionLogRing
+            // and WorldEventLog state remain enabled and bounded throughout the run.
+            bool actionMirrorWasEnabled =
+                EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink.Enabled;
+            if (actionMirrorWasEnabled)
+            {
+                EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink.Enabled = false;
+                Debug.Log("[Proof] bounded action-transition capture closed before perf/soak.");
+            }
+
             float sum = 0f, worst = 0f;
             for (int i = 0; i < 90; i++)
             {
@@ -465,8 +479,12 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             float avg = sum / 90f;
             Section("perf", avg <= 16f, $"avg={avg:0.0}ms worst={worst:0.0}ms (budget 16)");
 
-            // SOAK: 10 fast-travels across the realm (legacy sync path), scene reload each time — the
-            // streamer's OnDestroy frees terrain, the continuity hand-off carries the live world.
+            // SOAK: 10 travel/reload legs through the production frame-chunked path. The old
+            // proof called the legacy synchronous helper, which can replay 14 full one-minute
+            // days without yielding and is correctly reported by Windows as an unresponsive
+            // application at live population scale. One honest sim-day per leg is enough here:
+            // this section owns scene/continuity/exception soak, while economy-chain below owns
+            // multi-day cadence proof.
             var view = EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.WorldViewReadModel;
             var names = new System.Collections.Generic.List<string>();
             var map = view?.Overland;
@@ -474,16 +492,21 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 for (int i = 0; i < map.Settlements.Count && names.Count < 11; i++)
                     names.Add(map.Settlements[i].Name);
             int hops = 0;
+            int plannedDays = 0;
             for (int i = 0; i < names.Count && hops < 10; i++)
             {
-                if (!adapter.TryTravelToSettlement(names[i], out _)) continue;
+                if (!adapter.TryBeginTravelToSettlement(names[i], out int travelDays, out _)) continue;
+                plannedDays += travelDays;
+                adapter.AdvanceTravelDay();
                 hops++;
+                yield return null; // keep the window responsive between live-scale catch-up chunks
                 EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
                     EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
                 SceneManager.LoadScene(EmberScenes.GeneratedWorld);
                 yield return new WaitForSecondsRealtime(2.0f);
             }
-            Section("soak-travel", hops >= 10 && exceptions == 0, $"hops={hops} exceptions={exceptions}");
+            Section("soak-travel", hops >= 10 && exceptions == 0,
+                $"hops={hops} simulatedDays={hops} plannedJourneyDays={plannedDays} exceptions={exceptions}");
 
             // F7-DoD: harvest→stock→price movement over 3 sim days (or honest seasonal dormancy).
             string chain = adapter.ProofEconomyChain();
@@ -532,6 +555,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
 
             yield return new WaitForEndOfFrame();
             CaptureToPng(Path.Combine(_outputDir, "shipcheck_final.png"));
+            EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink.Enabled = actionMirrorWasEnabled;
             Debug.Log($"SHIPCHECK VERDICT: {(allPass ? "PASS" : "FAIL")} ({sections.Count} sections, {exceptions} exceptions logged)");
         }
 
@@ -1228,6 +1252,20 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             SceneManager.LoadScene(EmberScenes.GeneratedWorld);
             yield return new WaitForSecondsRealtime(4.0f);
 
+            // Enter the world like a player before taking review frames. Leaving this modal up
+            // dimmed and covered the entire town/weather/spell tour, making the visual evidence
+            // technically fresh but useless for judging the rendered world.
+            yield return new WaitForSecondsRealtime(2.0f);
+            EmberCrpg.Presentation.Ember.UI.InGame.InGameUiController.ActiveOpeningDismiss?.Invoke();
+            yield return new WaitForSecondsRealtime(0.25f);
+
+            // Shipcheck already owns the bounded action-log proof window. This visual tour makes
+            // large clock jumps and would otherwise spend most of its run writing duplicate
+            // transition lines instead of rendering the frames it exists to inspect.
+            bool actionMirrorWasEnabled =
+                EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink.Enabled;
+            EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink.Enabled = false;
+
             var rig = GameObject.Find("PlayerRig");
             Vector3 spawnPos = rig != null ? rig.transform.position : Vector3.zero;
             // EVIDENCE (rt-look): all six ring frames were byte-identical — EmberFirstPersonController
@@ -1561,8 +1599,12 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
             if (nightAdapter != null)
             {
                 var delveRow = nightAdapter.ReadDelveGuidance();
-                if (delveRow.HasTarget && nightAdapter.TryTravelToSettlement(delveRow.TargetName, out _))
+                if (delveRow.HasTarget
+                    && nightAdapter.TryBeginTravelToSettlement(
+                        delveRow.TargetName, out _, out _))
                 {
+                    nightAdapter.AdvanceTravelDay();
+                    yield return null;
                     EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
                         EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
                     SceneManager.LoadScene(EmberScenes.GeneratedWorld);
@@ -1850,7 +1892,10 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 {
                     string delveName = delveNames[d];
                     if (delveName == firstDelve) continue; // the F18 leg already covered it
-                    if (!nightAdapter.TryTravelToSettlement(delveName, out _)) continue;
+                    if (!nightAdapter.TryBeginTravelToSettlement(
+                            delveName, out _, out _)) continue;
+                    nightAdapter.AdvanceTravelDay();
+                    yield return null;
                     EmberCrpg.Presentation.Ember.Bootstrap.EmberWorldContinuity.Carry(
                         EmberCrpg.Presentation.Ember.Adapters.EmberDomainAdapterLocator.Current);
                     SceneManager.LoadScene(EmberScenes.GeneratedWorld);
@@ -1887,6 +1932,7 @@ namespace EmberCrpg.Presentation.Ember.Diagnostics
                 if (variants == 0)
                     Debug.Log("[Proof] F19: no second delve in this world — variety rests on the mapping test.");
             }
+            EmberCrpg.Simulation.Living.Actions.ActionLogDebugSink.Enabled = actionMirrorWasEnabled;
         }
 
         private IEnumerator RunRescueProof()

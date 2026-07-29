@@ -392,7 +392,7 @@ namespace EmberCrpg.Tests.EditMode.Save
 
             world.EnsureInvariants();
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(world.PlayerInventory, Is.Not.Null);
                 Assert.That(world.PlayerInventory.Capacity, Is.EqualTo(10));

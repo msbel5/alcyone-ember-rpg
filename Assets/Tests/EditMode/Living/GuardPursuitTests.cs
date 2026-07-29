@@ -142,7 +142,7 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             lifecycle.Advance(world, new GameTime(61));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(guard.ActionState.Phase, Is.EqualTo(ActionPhase.Failed));
                 Assert.That(guard.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.TargetGone));
@@ -166,7 +166,7 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             new PursueAdvancer(new ActionLogManager()).Advance(world, guard, new GameTime(61));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(guard.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.TargetGone));
                 Assert.That(world.GuardPursuits.Any(row => row.GuardId == guard.Id.Value), Is.False);
@@ -202,7 +202,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             new PursueAdvancer(new ActionLogManager())
                 .Advance(world, guard, new GameTime(62));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.Pursue));
                 Assert.That(guard.ActionState.TargetActorId, Is.EqualTo(newTarget.Id));
@@ -236,7 +236,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             lifecycle.Advance(world, new GameTime(61));
             lifecycle.Decide(world, new GameTime(62));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(witness.ActionState.IsIdle, Is.True);
                 Assert.That(world.GuardPursuits, Is.Empty);
@@ -273,7 +273,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             lifecycle.Advance(world, new GameTime(61));
             lifecycle.Decide(world, new GameTime(62));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(witness.ActionState.IsIdle, Is.True);
                 Assert.That(world.GuardPursuits, Is.Empty);
@@ -326,7 +326,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             new StrikeQuarryAdvancer(new ActionLogManager())
                 .Advance(world, guard, new GameTime(61));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(guard.ActionState, Is.EqualTo(before));
                 Assert.That(world.ActionLog.Count, Is.Zero);
@@ -345,7 +345,7 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             Lifecycle().Decide(world, new GameTime(60));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(guard.ActionState.CurrentAction, Is.EqualTo(ActorActionType.Pursue));
                 Assert.That(guard.ActionState.TargetActorId, Is.EqualTo(enemy.Id));
@@ -373,7 +373,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             Tick(world, lifecycle, 120);
             Tick(world, lifecycle, 121);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(world.Events.Events.Count(e =>
                         e.Kind == WorldEventKind.CombatResolved
@@ -416,7 +416,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             new StrikeQuarryAdvancer(new ActionLogManager())
                 .Advance(world, guard, new GameTime(60));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(hunter.IsAlive, Is.False);
                 Assert.That(hunter.ActionState.IsIdle, Is.True);
@@ -445,7 +445,7 @@ namespace EmberCrpg.Tests.EditMode.Living
                 new WorldFactory().Create(1337));
             var restored = loaded.Actors.Get(guard.Id);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(restored.ActionState.CurrentIntent, Is.EqualTo(ActorIntent.Pursue));
                 Assert.That(restored.ActionState.CurrentAction, Is.EqualTo(ActorActionType.Pursue));

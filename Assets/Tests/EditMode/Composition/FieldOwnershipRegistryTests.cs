@@ -136,7 +136,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
             var production = DefaultRegistryFixture.CreateDefault().Ordered.ToArray();
             var actionSlot = production.Single(step => step.Id == "living.action_advance");
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(after.ChebyshevDistanceTo(before), Is.EqualTo(1),
                     "the active Eat advancer owns exactly one autonomous movement step");

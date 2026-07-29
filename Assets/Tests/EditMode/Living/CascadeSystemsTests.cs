@@ -99,7 +99,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             var before = witness.Position;
             lifecycle.Advance(world, stamp);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(witness.Position.ChebyshevDistanceTo(before), Is.EqualTo(1));
                 Assert.That(witness.ActionState.CurrentAction, Is.EqualTo(ActorActionType.ReportCrime));

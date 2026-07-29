@@ -129,7 +129,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
             huntWorld.HuntTargets.Add(new HuntTargetRecord
                 { HunterId = Worker.Value, TargetId = 2, UntilMinutes = 120 });
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(WorldStateDigest.Compute(memoryWorld), Is.Not.EqualTo(baseline));
                 Assert.That(WorldStateDigest.Compute(companionWorld), Is.Not.EqualTo(baseline));
@@ -159,7 +159,7 @@ namespace EmberCrpg.Tests.EditMode.Composition
             unrestWorld.SiteUnrest.Add(new SiteUnrestRecord
                 { SiteId = Site, Unrest = 2, LastDecayDay = 1, SweepCooldownUntilMinutes = 60 });
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(WorldStateDigest.Compute(critterWorld), Is.Not.EqualTo(baseline));
                 Assert.That(WorldStateDigest.Compute(rumorWorld), Is.Not.EqualTo(baseline));

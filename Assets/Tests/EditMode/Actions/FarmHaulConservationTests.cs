@@ -178,7 +178,7 @@ namespace EmberCrpg.Tests.EditMode.Actions
             new StrikeQuarryAdvancer(new ActionLogManager())
                 .Advance(world, hunter, new GameTime(60));
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(carrier.ActionState.IsIdle, Is.True);
                 Assert.That(carrier.ActionState.CarriedUnits, Is.Zero);

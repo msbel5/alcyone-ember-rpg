@@ -1,4 +1,4 @@
-# PRD-10 Final Report — source/pure-C# PASS, runtime DEFERRED
+# PRD-10 Final Report — source and targeted runtime PASS, full lane PARTIAL
 
 ## Result
 
@@ -43,14 +43,27 @@
 - Pure-C# full fallback suite: **DEFERRED**. The single allowed attempt reached
   its 300-second budget. The current-diff movement performance regression exposed
   before timeout was fixed, and its focused gate plus the final selected gate pass.
-- Unity compile/EditMode/PlayMode, Windows build, built-player screenshots/JSONL,
-  and runtime soak: **DEFERRED**. Sandboxed Unity could not access its user cache,
-  and approval capacity was unavailable. No source-only result is presented as
-  runtime proof.
+- Targeted Unity EditMode determinism soak: **PASS**, 5/5.
+- Targeted Unity PlayMode action projection/story pack: **PASS**, 8/8.
+- Windows64 player build: **PASS**, `14,159,578,133`-byte reported total payload.
+- Built-player shipcheck: **PASS**, 9/9 sections with zero logged exceptions.
+- Built-player visual tour: **COMPLETE**, with zero scanned runtime exceptions.
+- Full EditMode/Forge CUDA lane: **PARTIAL**. The recovery fixtures pass, but the
+  Forge smoke crashes Unity inside `cudnn64_9.dll`; it is not reported as PASS.
+- Built-player action-transition JSONL: **DEFERRED**. PlayMode owns the current
+  runtime action-story proof.
+
+Detailed runtime evidence and the player-facing review are in
+`Reports/recovery/PRD-10/RUNTIME_VALIDATION_REPORT.md`.
 
 ## Remaining debt
 
-- Runtime proof must be executed in a Unity-capable environment.
+- Forge's on-demand CUDA/cuDNN path needs isolation from the Unity process or a
+  compatible provider stack before the full EditMode lane can pass.
+- Manual keyboard/mouse play remains unproven because Computer Use was
+  unavailable; the built-player self-play was harness-driven.
+- Player action-transition JSONL evidence remains to be captured.
+- World/dungeon presentation and camera clipping remain substantial polish debt.
 - The line-oriented mutation inventory is intentionally cheaper than a Roslyn gate.
 - Report dedup is bounded by the 64-entry actor-memory window.
 - Reservation TTL still estimates direct distance rather than exact detour length;

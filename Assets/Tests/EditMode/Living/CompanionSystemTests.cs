@@ -109,7 +109,7 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             Tick(world, lifecycle, 60);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(friend.Position, Is.EqualTo(new GridPosition(7, 5)),
                     "the canonical advancer owns exactly one autonomous movement step");
@@ -151,7 +151,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             Tick(world, lifecycle, 120); // canonical hourly strike
             Tick(world, lifecycle, 121); // consume successful terminal handover
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(world.Events.Events.Any(e =>
                     e.Kind == WorldEventKind.CombatResolved && e.ActorId.Equals(friend.Id)), Is.True,
@@ -176,7 +176,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             Assert.That(CompanionService.TryDismiss(world, friend.Id), Is.True);
             Tick(world, lifecycle, 61);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(friend.Position, Is.EqualTo(beforeDismissedAdvance));
                 Assert.That(friend.ActionState.Phase, Is.EqualTo(ActionPhase.Failed));
@@ -198,7 +198,7 @@ namespace EmberCrpg.Tests.EditMode.Living
             CompanionService.TryDismiss(world, friend.Id);
             Tick(world, lifecycle, 62);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(friend.ActionState.Phase, Is.EqualTo(ActionPhase.Failed));
                 Assert.That(friend.ActionState.FailureReason, Is.EqualTo(ActionFailureReason.Interrupted));
@@ -224,7 +224,7 @@ namespace EmberCrpg.Tests.EditMode.Living
 
             Tick(world, Lifecycle(), 60);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(friend.Position.ChebyshevDistanceTo(before), Is.EqualTo(1),
                     "the real Eat advancer owns the only autonomous movement step");
@@ -283,7 +283,7 @@ namespace EmberCrpg.Tests.EditMode.Living
                 SeedWorld());
             Assert.That(loaded.Actors.TryGet(friend.Id, out var restored), Is.True);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(loaded.CompanionIds, Does.Contain(friend.Id));
                 Assert.That(restored.ActionState.CurrentIntent, Is.EqualTo(ActorIntent.FollowPlayer));
@@ -309,7 +309,7 @@ namespace EmberCrpg.Tests.EditMode.Living
                 SeedWorld());
             Assert.That(loaded.Actors.TryGet(friend.Id, out var restored), Is.True);
 
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.EditMode.TestAssert.Multiple(() =>
             {
                 Assert.That(restored.ActionState.CurrentIntent, Is.EqualTo(ActorIntent.GuardCompanion));
                 Assert.That(restored.ActionState.CurrentAction, Is.EqualTo(ActorActionType.Hunt));

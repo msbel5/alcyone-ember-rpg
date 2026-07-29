@@ -234,7 +234,7 @@ namespace EmberCrpg.Tests.PlayMode.Living
         {
             Assert.That(actor.ActionState.CurrentAction, Is.EqualTo(expected));
             Assert.That(adapter.TryReadActor(actor.Id, out var projected), Is.True);
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.PlayMode.TestAssert.Multiple(() =>
             {
                 Assert.That(projected.ActionKind, Is.EqualTo(ActionVerbTable.KindName(expected)));
                 Assert.That(projected.Activity, Is.EqualTo(ActionVerbTable.Verb(expected)));
@@ -246,7 +246,7 @@ namespace EmberCrpg.Tests.PlayMode.Living
             Assert.That(actor.ActionState.CurrentAction, Is.EqualTo(ActorActionType.None));
             var adapter = new DomainSimulationAdapter(world);
             Assert.That(adapter.TryReadActor(actor.Id, out var projected), Is.True);
-            Assert.Multiple(() =>
+            global::EmberCrpg.Tests.PlayMode.TestAssert.Multiple(() =>
             {
                 Assert.That(projected.ActionKind, Is.Null);
                 Assert.That(projected.Activity, Is.Null);
